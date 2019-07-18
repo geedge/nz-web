@@ -72,7 +72,7 @@ public class SysUserController extends AbstractController {
 		//更新密码
 		boolean flag = sysUserService.updatePassword(getUserId(), password, newPassword);
 		if(!flag){
-			return R.error(RCode.SYS_USER_OLDPWD.getCode());
+			return R.error(RCode.SYS_USER_OLDPWD);
 		}
 		
 		return R.ok();
@@ -129,11 +129,11 @@ public class SysUserController extends AbstractController {
 	@RequiresPermissions("sys:user:delete")
 	public R delete(@RequestBody Long[] userIds){
 		if(ArrayUtils.contains(userIds, 1L)){
-			return R.error(RCode.SYS_USER_DELADMIN.getCode());
+			return R.error(RCode.SYS_USER_DELADMIN);
 		}
 		
 		if(ArrayUtils.contains(userIds, getUserId())){
-			return R.error(RCode.SYS_USER_CANNOTDEL.getCode());
+			return R.error(RCode.SYS_USER_CANNOTDEL);
 		}
 
 		sysUserService.removeByIds(Arrays.asList(userIds));

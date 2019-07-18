@@ -1,24 +1,13 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nis.common.validator.group.AddGroup;
-import com.nis.common.validator.group.UpdateGroup;
+import com.fetech.smart.validate.an.NotNull;
+import com.nis.common.utils.RCode;
+
 import lombok.Data;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
@@ -42,7 +31,7 @@ public class SystemInfoEntity implements Serializable {
 	/**
 	 * 业务系统名
 	 */
-	@NotBlank(message="业务系统名称不能为空", groups = {AddGroup.class, UpdateGroup.class})
+	@NotNull(msg = RCode.SYS_SYS_NULLNAME)
 	private String name;
 
 	/**

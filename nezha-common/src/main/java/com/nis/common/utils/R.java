@@ -13,45 +13,40 @@ public class R extends HashMap<String, Object> {
 	
 	//调用示例
 	public static void main(String[] args) {
-		//返回{"code":200, msg:"success"}
+		//返回{"code":"200", msg:"success"}
 		R r0 = R.ok();
 		System.out.println(r0);
 		
-		//返回{"code":200, msg:"delete_success"}
+		//返回{"code":"200", msg:"delete_success"}
 		R r1 = R.ok("delete_success");
 		System.out.println(r1);
 		
-		//返回{"code":999, msg:"error"}
+		//返回{"code":"999", msg:"error"}
 		R r2 = R.error();
 		System.out.println(r2);
 		
-		//返回{"code":101000, msg:"system_name_duplicate"}
-		R r3 = R.error(RCode.SYS_SYS_DUPLICATENAME.getCode());
+		//返回{"code":"101000", msg:"system_name_duplicate"}
+		R r3 = R.error(RCode.SYS_SYS_DUPLICATENAME);
 		System.out.println(r3);
 	}
 	
 	public R() {
-		put("code", RCode.SUCCESS.getCode());
-		put("msg", RCode.SUCCESS.getMsg());
+		put("code", RCode.SUCCESS);
+		put("msg", RCode.SUCCESS);
 	}
 	
 	public static R error() {
-		return error(RCode.ERROR.getCode(), RCode.ERROR.getMsg());
+		return error(RCode.ERROR, RCode.ERROR);
 	}
 	
-	public static R error(int code) {
+	public static R error(String code) {
 		R r = new R();
 		r.put("code", code);
-		for (RCode c : RCode.values()) {
-			if (code == c.getCode().intValue()) {
-				r.put("msg", c.getMsg());
-				break;
-			}
-		}
+		r.put("msg", RCode.codeMap.get(code));
 		return r;
 	}
 	
-	private static R error(int code, String msg) {
+	private static R error(String code, String msg) {
 		R r = new R();
 		r.put("code", code);
 		r.put("msg", msg);

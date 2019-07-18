@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.imageio.ImageIO;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -72,7 +71,7 @@ public class SysLoginController extends AbstractController {
 	public R login(String username, String password, String captcha) {
 		String kaptcha = ShiroUtils.getKaptcha(Constants.KAPTCHA_SESSION_KEY);
 		if(!captcha.equalsIgnoreCase(kaptcha)){
-			return R.error(RCode.SYS_LOGIN_CAPTCHA.getCode());
+			return R.error(RCode.SYS_LOGIN_CAPTCHA);
 		}
 		
 		try{
@@ -84,17 +83,17 @@ public class SysLoginController extends AbstractController {
 			List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
 			if (systemInfosByUserId == null || systemInfosByUserId.size() == 0) {
 				subject.logout();
-				return R.error(RCode.SYS_LOGIN_NOSYSTEM.getCode());
+				return R.error(RCode.SYS_LOGIN_NOSYSTEM);
 			}
 			return R.ok(systemInfosByUserId);
 		}catch (UnknownAccountException e) {
-			return R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT.getCode());
+			return R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
 		}catch (IncorrectCredentialsException e) {
-			return R.error(RCode.SYS_LOGIN_USERPWD.getCode());
+			return R.error(RCode.SYS_LOGIN_USERPWD);
 		}catch (LockedAccountException e) {
-			return R.error(RCode.SYS_LOGIN_LOCK.getCode());
+			return R.error(RCode.SYS_LOGIN_LOCK);
 		}catch (AuthenticationException e) {
-			return R.error(RCode.SYS_LOGIN_ACCOUNTAUTH.getCode());
+			return R.error(RCode.SYS_LOGIN_ACCOUNTAUTH);
 		}
 	}
 	
@@ -106,20 +105,23 @@ public class SysLoginController extends AbstractController {
 	 */
 	@ResponseBody
 	@RequestMapping("/setSystem")
-	public R setSystem(@RequestParam Map<String, Object> params, HttpServletRequest request){
+	public R setSystem(@RequestParam Map<String, Object> params){
 		String s = (String) params.get("systemId");
 		Long systemId = null;
 		try {
 			systemId = Long.valueOf(s);
 			if (s == null || systemId < 1) {
-				return R.error(RCode.SYS_LOGIN_SELECTSYS.getCode());
+				return R.error(RCode.SYS_LOGIN_SELECTSYS);
 			} else {
 				Long userId = getUserId();
 				List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
+				
+				//判断当前用户是否拥有请求来的systemId权限
 				boolean flag = false;
 				for (SystemInfoEntity systemInfoEntity : systemInfosByUserId) {
 					if (systemInfoEntity.getId().longValue() == systemId.longValue()) {
 						flag = true;
+						//设置为当前systemId
 						getUser().setCurrSystemId(systemInfoEntity.getId());
 						break;
 					}
@@ -127,11 +129,11 @@ public class SysLoginController extends AbstractController {
 				if (flag) {
 					return R.ok();
 				} else {
-					return R.error(RCode.SYS_LOGIN_SELECTSYS.getCode());
+					return R.error(RCode.SYS_LOGIN_SELECTSYS);
 				}
 			}
 		} catch (NumberFormatException e) {
-			return R.error(RCode.SYS_LOGIN_SELECTSYS.getCode());
+			return R.error(RCode.SYS_LOGIN_SELECTSYS);
 		}
 	}
 	

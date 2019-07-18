@@ -43,13 +43,13 @@ public class NZExceptionHandler {
 	@ExceptionHandler(DuplicateKeyException.class)
 	public R handleDuplicateKeyException(DuplicateKeyException e){
 		logger.error(e.getMessage(), e);
-		return R.error(RCode.SYS_DB_DUPLICATERECORD.getCode());
+		return R.error(RCode.SYS_DB_DUPLICATERECORD);
 	}
 
 	@ExceptionHandler(AuthorizationException.class)
 	public R handleAuthorizationException(AuthorizationException e){
 		logger.error(e.getMessage(), e);
-		return R.error(RCode.SYS_DB_AUTH.getCode());
+		return R.error(RCode.SYS_DB_AUTH);
 	}
 
 	@ExceptionHandler(Exception.class)
