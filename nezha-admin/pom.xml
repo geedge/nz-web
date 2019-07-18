@@ -95,11 +95,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>com.fetech</groupId>
-			<artifactId>smart-validate</artifactId>
-			<version>1.1.0</version>
-		</dependency>
     </dependencies>
 
 	<build>
