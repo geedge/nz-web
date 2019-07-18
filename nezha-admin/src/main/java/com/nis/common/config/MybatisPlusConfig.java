@@ -8,11 +8,13 @@
 
 package com.nis.common.config;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
 import com.baomidou.mybatisplus.core.injector.ISqlInjector;
 import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
 import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * mybatis-plus配置
@@ -31,7 +33,25 @@ public class MybatisPlusConfig {
     }
 
     @Bean
+    public SeqKeyGenerator seqKeyGenerator() {
+    	return new SeqKeyGenerator();
+    }
+    
+    @Bean
     public ISqlInjector sqlInjector() {
         return new LogicSqlInjector();
     }
+    
+    /**
+     * 自定义主键生成器
+     * @author fang
+     *
+     */
+    static class SeqKeyGenerator implements IKeyGenerator {
+		@Override
+		public String executeSql(String incrementerName) {
+			return String.format("select seq_nextval('%s')", incrementerName);
+		}
+    }
+    
 }

@@ -1,5 +1,7 @@
 package com.nis.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -19,13 +21,14 @@ import java.util.List;
  */
 @Data
 @TableName("system_info")
+@KeySequence(value="seq_system_info")
 public class SystemInfoEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	/**
 	 * 业务系统id
 	 */
-	@TableId
+	@TableId(type=IdType.INPUT)
 	private Long id;
 
 	/**
