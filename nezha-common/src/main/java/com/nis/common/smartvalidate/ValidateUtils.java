@@ -4,6 +4,7 @@ import com.nis.common.smartvalidate.ann.*;
 import com.nis.common.smartvalidate.ValidateHandler;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.smartvalidate.utils.ReflectUtils;
+import com.nis.common.utils.RCode;
 import com.nis.common.smartvalidate.ValidateCache;
 import org.apache.commons.beanutils.PropertyUtils;
 
@@ -59,7 +60,7 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils notNull(String code) {
+    public ValidateUtils notNull(RCode code) {
         ValidateHandler.notNull(value, code);
         return this;
     }
@@ -81,8 +82,8 @@ public class ValidateUtils {
      * @param msg   错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils regex(String regex, String msg) {
-        ValidateHandler.regex(regex, value, msg);
+    public ValidateUtils regex(String regex, RCode code) {
+        ValidateHandler.regex(regex, value, code);
         return this;
     }
 
@@ -103,8 +104,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils max(Number max, String msg) {
-        ValidateHandler.max(max, value, msg);
+    public ValidateUtils max(Number max, RCode code) {
+        ValidateHandler.max(max, value, code);
         return this;
     }
 
@@ -125,8 +126,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils min(Number min, String msg) {
-        ValidateHandler.min(min, value, msg);
+    public ValidateUtils min(Number min, RCode code) {
+        ValidateHandler.min(min, value, code);
         return this;
     }
 
@@ -147,8 +148,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils maxLength(int max, String msg) {
-        ValidateHandler.maxLength(max, value, msg);
+    public ValidateUtils maxLength(int max, RCode code) {
+        ValidateHandler.maxLength(max, value, code);
         return this;
     }
 
@@ -169,8 +170,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils minLength(int min, String msg) {
-        ValidateHandler.minLength(min, value, msg);
+    public ValidateUtils minLength(int min, RCode code) {
+        ValidateHandler.minLength(min, value, code);
         return this;
     }
 
@@ -189,8 +190,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils chinese(String msg) {
-        ValidateHandler.chinese(value, msg);
+    public ValidateUtils chinese(RCode code) {
+        ValidateHandler.chinese(value, code);
         return this;
     }
 
@@ -209,8 +210,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils english(String msg) {
-        ValidateHandler.english(value, msg);
+    public ValidateUtils english(RCode code) {
+        ValidateHandler.english(value, code);
         return this;
     }
 
@@ -229,8 +230,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils phone(String msg) {
-        ValidateHandler.phone(value, msg);
+    public ValidateUtils phone(RCode code) {
+        ValidateHandler.phone(value, code);
         return this;
     }
 
@@ -249,8 +250,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils email(String msg) {
-        ValidateHandler.email(value, msg);
+    public ValidateUtils email(RCode code) {
+        ValidateHandler.email(value, code);
         return this;
     }
 
@@ -271,8 +272,8 @@ public class ValidateUtils {
      * @param msg    错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils date(String format, String msg) {
-        ValidateHandler.date(format, value, msg);
+    public ValidateUtils date(String format, RCode code) {
+        ValidateHandler.date(format, value, code);
         return this;
     }
 
@@ -291,8 +292,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils idCard(String msg) {
-        ValidateHandler.idCard(value, msg);
+    public ValidateUtils idCard(RCode code) {
+        ValidateHandler.idCard(value, code);
         return this;
     }
 
@@ -311,8 +312,8 @@ public class ValidateUtils {
      * @param msg 错误信息
      * @return ValidateUtils
      */
-    public ValidateUtils ip(String msg) {
-        ValidateHandler.ip(value, msg);
+    public ValidateUtils ip(RCode code) {
+        ValidateHandler.ip(value, code);
         return this;
     }
 
@@ -349,7 +350,7 @@ public class ValidateUtils {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            for (Annotation annotation : annotations) {
+            /*for (Annotation annotation : annotations) {
                 if (annotation instanceof NotNull) {
                     validateUtils.and(fieldValue).notNull(((NotNull) annotation).code());
                 } else if (annotation instanceof Max) {
@@ -384,7 +385,7 @@ public class ValidateUtils {
                 } else if (annotation instanceof IP) {
                     validateUtils.and(fieldValue).ip(((IP) annotation).msg());
                 }
-            }
+            }*/
         }
         return validateUtils;
     }

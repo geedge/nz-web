@@ -8,7 +8,6 @@
 
 package com.nis.common.exception;
 
-import com.alibaba.druid.util.StringUtils;
 import com.nis.common.utils.RCode;
 
 /**
@@ -20,12 +19,17 @@ public class NZException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 	
     private String msg;
-    private String code = RCode.ERROR;
+    private int code = RCode.ERROR.getCode();
     
-    public NZException(String code) {
-    	super(RCode.codeMap.get(StringUtils.isEmpty(code) ? "999" : code));
-		this.code = StringUtils.isEmpty(code) ? "999" : code;
-		this.msg = RCode.codeMap.get(code);
+    public NZException(RCode rCode) {
+    	this.code = rCode.getCode();
+    	this.msg = rCode.getMsg();
+    	
+    }
+    
+    public NZException(String msg) {
+    	super(msg);
+		this.msg = msg;
 	}
 	
 	public NZException(String msg, Throwable e) {
@@ -33,13 +37,13 @@ public class NZException extends RuntimeException {
 		this.msg = msg;
 	}
 	
-	public NZException(String msg, String code) {
+	public NZException(String msg, int code) {
 		super(msg);
 		this.msg = msg;
 		this.code = code;
 	}
 	
-	public NZException(String msg, String code, Throwable e) {
+	public NZException(String msg, int code, Throwable e) {
 		super(msg, e);
 		this.msg = msg;
 		this.code = code;
@@ -53,11 +57,11 @@ public class NZException extends RuntimeException {
 		this.msg = msg;
 	}
 
-	public String getCode() {
+	public int getCode() {
 		return code;
 	}
 
-	public void setCode(String code) {
+	public void setCode(int code) {
 		this.code = code;
 	}
 	
