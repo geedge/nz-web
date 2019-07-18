@@ -37,6 +37,7 @@ public class RCode {
 	public static final String GRAPH_ERROR = "600000"; //60xxxx，图形类通用错误
 	
 	
+	public static final String NOT_NULL_ERROR = "990"; //通用错误/未知错误
 	public static final String ERROR = "999"; //通用错误/未知错误
 	
 	static {
@@ -69,6 +70,7 @@ public class RCode {
 		
 		codeMap.put(GRAPH_ERROR, "graph_error");
 		
+		codeMap.put(NOT_NULL_ERROR, "not_null_error");
 		codeMap.put(ERROR, "error");
 	}
 }

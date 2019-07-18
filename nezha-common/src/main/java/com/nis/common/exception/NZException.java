@@ -8,6 +8,7 @@
 
 package com.nis.common.exception;
 
+import com.alibaba.druid.util.StringUtils;
 import com.nis.common.utils.RCode;
 
 /**
@@ -22,8 +23,8 @@ public class NZException extends RuntimeException {
     private String code = RCode.ERROR;
     
     public NZException(String code) {
-    	super(RCode.codeMap.get(code));
-		this.code = code;
+    	super(RCode.codeMap.get(StringUtils.isEmpty(code) ? "999" : code));
+		this.code = StringUtils.isEmpty(code) ? "999" : code;
 		this.msg = RCode.codeMap.get(code);
 	}
 	
