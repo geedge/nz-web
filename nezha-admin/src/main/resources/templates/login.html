@@ -127,7 +127,7 @@ var vm = new Vue({
 });
 
 function getSeleSysDom(systems) {
-	var contents = "<select id='seleSys'><option></option>";
+	var contents = "<select id='seleSys'>";
 	
 	for (var i = 0; i < systems.length; i++) {
 		contents += ("<option value='" + systems[i].id + "'>" + systems[i].name + "</option>");

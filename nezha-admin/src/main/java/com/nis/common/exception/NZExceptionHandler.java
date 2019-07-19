@@ -35,7 +35,7 @@ public class NZExceptionHandler {
 	public R handleNZException(NZException e){
 		R r = new R();
 		r.put("code", e.getCode());
-		r.put("msg", e.getMessage());
+		r.put("msg", e.getMsg());
 
 		return r;
 	}

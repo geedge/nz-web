@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,9 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
 @RestController
 @RequestMapping("/system")
 public class SystemInfoController extends AbstractController {
@@ -37,15 +41,18 @@ public class SystemInfoController extends AbstractController {
 	}
 	
 	@RequestMapping("/save")
-	public R save(@RequestBody SystemInfoEntity systemInfo){
-		//校验实体类的方式：
-		//在SystemInfoEntity的name字段上加上注解  @NotNull(msg = RCode.XXX)
-		//当name为空时，程序抛出ParamsException异常，捕获它并根据RCode.XXX获取错误msg
-		/*try {
-			ValidateUtils.check(systemInfo);
-		} catch (ParamsException e) {
-			return R.error(e.getMessage());
-		}*/
+	@ApiOperation(httpMethod = "POST", response = SystemInfoEntity.class, value = "保存业务系统")
+	public R save(@ApiParam @RequestBody SystemInfoEntity systemInfo){
+		ValidateUtils.is(systemInfo.getName()).notNull(RCode.SYS_SYS_NULLNAME);
+		
+		Date now = new Date();
+		
+		systemInfo.setCreateBy(getUserId());
+		systemInfo.setUpdateBy(getUserId());
+		systemInfo.setCreateDate(now);
+		systemInfo.setUpdateDate(now);
+		
+		systemInfoService.save(systemInfo);
 		
 		return R.ok();
 	}
