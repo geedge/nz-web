@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.mission.dao.MissionInfoDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.mission.entity.MissionInfoEntity" id="missionInfoMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="state" column="state"/>
+        <result property="viewLevel" column="view_level"/>
+        <result property="isLoop" column="is_loop"/>
+        <result property="loopInterval" column="loop_interval"/>
+        <result property="param" column="param"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="operator" column="operator"/>
+        <result property="opTime" column="op_time"/>
+        <result property="stateDesc" column="state_desc"/>
+    </resultMap>
+    
+    <!-- 关联表查询结果封装 -->
+    <resultMap type="com.nis.modules.mission.entity.MissionInfoEntity" id="missionInfoUnio">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="state" column="state"/>
+        <result property="viewLevel" column="view_level"/>
+        <result property="isLoop" column="is_loop"/>
+        <result property="loopInterval" column="loop_interval"/>
+        <result property="param" column="param"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="operator" column="operator"/>
+        <result property="opTime" column="op_time"/>
+        
+        <collection property="">
+        
+        </collection>
+    </resultMap>
+    
+    
+    <!-- 任务列表查询 -->
+	<select id="queryAllMission" resultMap="missionInfoMap">
+		select mi.*,mr.desc as state_desc from mission_info mi
+			left Join mission_result mr on mi.id=mr.mission_id
+		<where>
+			${ew.sqlSegment}
+		</where>
+	</select>
+
+	<!-- 任务列表分页查询 -->
+	<select id="queryPageMission" resultMap="missionInfoMap">
+		select mi.*,mr.desc as state_desc from mission_info mi
+			left Join mission_result mr on mi.id=mr.mission_id
+		where mi.del_flag=0
+		<if test="isLoop!=null and isLoop!=''">
+			and mi.is_loop=#{isLoop}
+		</if>
+		<if test="type!=null and type!=''">
+			and mi.type=#{type}
+		</if>
+		<if test="name!=null and name!=''">
+			and mi.name=#{name}
+		</if>
+		<!-- <if test="name != null and name != ''">
+			AND a.name LIKE 
+				<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
+				<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
+				<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
+				<if test="dbName == 'postgre'">concat('%',#{name},'%')</if>
+		</if> -->
+		<choose>
+			<when test="sidx !=null and sidx != '' and order!=null and order!=''">
+				ORDER BY #{sidx} #{order}
+			</when>
+			<otherwise>
+				ORDER BY mi.op_time DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	<!-- 任务详情获取 -->
+	<select id="getMissionById" resultMap="missionInfoUnio">
+		select mi.*,mr.desc as state_desc from mission_info mi
+			left Join mission_result mr on mi.id=mr.mission_id
+			left Join mission_node_rel mnr on mi.id=mnr.mission_id
+		where mi.id=#{id}
+	</select>
+
+
+</mapper>

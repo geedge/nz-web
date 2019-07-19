@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.mission.dao.MissionResultDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.mission.entity.MissionResultEntity" id="missionResultMap">
+        <result property="id" column="id"/>
+        <result property="missionId" column="mission_id"/>
+        <result property="uuid" column="uuid"/>
+        <result property="desc" column="desc"/>
+        <result property="state" column="state"/>
+        <result property="cycle" column="cycle"/>
+        <result property="file" column="file"/>
+        <result property="opTime" column="op_time"/>
+    </resultMap>
+
+
+</mapper>
