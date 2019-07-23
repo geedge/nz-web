@@ -36,8 +36,23 @@ public enum RCode {
     NODEGROUP_NAME_DUPLICATE(200003, "duplicate_name_error"), // name 节点组 名称  重复
 	
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误
-	
-	
+	/**
+	 * 301xxx 监测类别相关异常
+	 * 302xxx 监测设置相关异常
+	 * 303xxx 监测告警相关异常
+	 * */
+	TYPE_NAME_ISNULL(301001,"type_name_isNull"),//监测类别名称为空
+	TYPE_NAME_EXISTS(301002,"type_name_exists"),//监测类别名称已存在
+	TYPE_SAVE_IDISNULL(301003,"type_save_idIsNull"),//监测类别ID为空
+	META_NAME_ISNULL(301004,"meta_name_isnull"),//监测类别元数据名称为空
+	PARAM_NAME_ISNULL(301005,"param_name_isnull"),//监测类别参数名称为空
+	META_NAME_EXISTS(301006,"meta_name_exists"), //监测类别元数据名称重复
+	PARAM_NAME_EXISTS(301007,"param_name_exists"), //监测类别参数名称重复
+	META_NAME_INVAILD(301008,"meta_name_invaild"),	//监测类别元数据名称不合法
+	META_NAME_HAVEKEYWORD(301009,"meta_name_haveKeyword"),	//监测类别元数据名称是数据库关键字
+	PARAM_INDEX_ISNULL(301010,"param_index_isNull"),//监测类别参数下标为空
+	TYPE_TABLE_EXISTS(301011,"type_table_exists"),//监测类别对应表已存在
+
 	MISSION_ERROR(400000, "mission_error"), //40xxxx，任务类通用错误
 	
 	
