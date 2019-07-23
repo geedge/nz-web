@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.smartvalidate.ann.NotNull;
+import com.nis.common.utils.RCode;
 
 import lombok.Data;
 
@@ -32,6 +34,7 @@ public class SystemInfoEntity implements Serializable {
 	/**
 	 * 业务系统名
 	 */
+	@NotNull(code = RCode.SYS_SYS_NULLNAME)
 	private String name;
 
 	/**
@@ -77,4 +80,7 @@ public class SystemInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private List<Integer> usergroupIds;
+	
+	@TableField(exist=false)
+	private Long usergroupId;
 }

@@ -119,4 +119,5 @@ public class Constant {
         }
     }
 
+    public static final Long GLOBAL_ID = 1l;
 }

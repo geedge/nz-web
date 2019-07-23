@@ -110,7 +110,7 @@ public class SysLoginController extends AbstractController {
 		Long systemId = null;
 		try {
 			systemId = Long.valueOf(s);
-			if (s == null || systemId < 1) {
+			if (systemId == null || systemId < 1) {
 				return R.error(RCode.SYS_LOGIN_SELECTSYS);
 			} else {
 				Long userId = getUserId();

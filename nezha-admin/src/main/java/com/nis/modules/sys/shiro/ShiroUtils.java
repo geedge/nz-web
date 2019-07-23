@@ -9,6 +9,7 @@
 package com.nis.modules.sys.shiro;
 
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
@@ -53,7 +54,7 @@ public class ShiroUtils {
 	}
 	
 	public static boolean isGlobal() {
-		return getCurrSystemId().longValue() == 1l;
+		return getCurrSystemId().longValue() == Constant.GLOBAL_ID;
 	}
 	
 	public static void setSessionAttribute(Object key, Object value) {

@@ -8,10 +8,13 @@
 
 package com.nis.modules.sys.dao;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -29,5 +32,16 @@ public interface SystemInfoDao extends BaseMapper<SystemInfoEntity> {
 	 */
 	List<SystemInfoEntity> querySystemInfosByUserId(Long userId);
 
-
+	/**
+	 * 查询业务系统分页列表，可筛选用户组
+	 * @param entity  systemInfoEntity
+	 */
+	List<SystemInfoEntity> list(IPage page, @Param("sys")SystemInfoEntity entity);
+	
+	/**
+	 * 查询业务系统详情
+	 * @param id
+	 * @return
+	 */
+	SystemInfoEntity detail(Long id);
 }

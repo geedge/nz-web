@@ -2,9 +2,11 @@ package com.nis.common.smartvalidate.ann;
 
 import java.lang.annotation.*;
 
+import com.nis.common.utils.RCode;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 @Documented
 public @interface NotNull {
-    String code() default "999";
+	RCode code() default RCode.ERROR;
 }
