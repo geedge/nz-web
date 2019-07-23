@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
+<mapper namespace="com.nis.modules.dashboard.dao.DashboardDao">
+
+	<select id="selectAllDashboards" parameterType="java.lang.Long" resultType="com.nis.modules.dashboard.entity.DashboardEntity">
+		select * from dashboard where system_id=#{systemId}
+	</select>
+<!-- 	
+	<delete id="deleteDashboardById" parameterType="java.lang.Long">
+		delete from dashboard where id=#{id}
+	</delete>
+	
+	<insert id="insertDashboard" parameterType="com.nis.modules.dashboard.entity.DashboardEntity" useGeneratedKeys="true" keyProperty="chartId">
+		insert into dashboard(
+			name,
+			system_id,
+			chart_type,
+			x,
+			y,
+			width,
+			height,
+			data,
+			operator,
+			op_time
+		) values (
+			#{dashboard.name},
+			#{dashboard.systemId},
+			#{dashboard.chartType},
+			#{dashboard.x},
+			#{dashboard.y},
+			#{dashboard.width},
+			#{dashboard.height},
+			#{dashboard.data},
+			#{dashboard.sysUserEntity.userId},
+			now()
+		)
+	</insert>
+	
+	<update id="updateDashboard">
+		UPDATE dashboard SET 	
+			name=#{dashboard.name},
+			system_id=#{dashboard.systemId},
+			chart_type=#{dashboard.chartType},
+			x=#{dashboard.x},
+			y=#{dashboard.y},
+			width=#{dashboard.width},
+			height=#{dashboard.height},
+			data=#{dashboard.data},
+			operator=#{dashboard.sysUserEntity.userId},
+			op_time=now()
+		WHERE id = #{dashboard.id}
+	</update> -->
+</mapper>
