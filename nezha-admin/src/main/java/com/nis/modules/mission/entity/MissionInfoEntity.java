@@ -77,7 +77,7 @@ public class MissionInfoEntity implements Serializable {
 	 * 任务状态描述
 	 */
 	@TableField(exist=false)
-	private String stateDesc;
+	private Integer[] stateDesc;
 	
 	/**
 	 * 查看人    组名或业务系统名称

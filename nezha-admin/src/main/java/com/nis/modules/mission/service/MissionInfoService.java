@@ -18,7 +18,7 @@ public interface MissionInfoService extends IService<MissionInfoEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
     
-    PageUtils queryPageList(Map<String, Object> params);
+    //PageUtils queryPageList(Map<String, Object> params);
     
     //根据任务id获取任务详情
     MissionInfoEntity getMissionById(Integer id);

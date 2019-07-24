@@ -24,10 +24,10 @@ import org.springframework.data.repository.query.Param;
 @Mapper
 public interface MissionInfoDao extends BaseMapper<MissionInfoEntity> {
 	
-	IPage<MissionInfoEntity> queryPageMission(IPage<MissionInfoEntity> page,Map<String, Object> params);
+	//IPage<MissionInfoEntity> queryPageMission(IPage<MissionInfoEntity> page,Map<String, Object> params);
 	//List<MissionInfoEntity> queryPageMission(Page page,Map<String, Object> params);
 	
-	IPage<MissionInfoEntity> queryAllMission(@Param("ew") Wrapper<MissionInfoEntity> userWrapper,IPage<MissionInfoEntity> page);
+	//IPage<MissionInfoEntity> queryAllMission(@Param("ew") Wrapper<MissionInfoEntity> userWrapper,IPage<MissionInfoEntity> page);
 	
 	//根据id获取任务信息详情
 	//MissionInfoEntity getMissionById(Integer id);

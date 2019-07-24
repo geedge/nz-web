@@ -35,7 +35,7 @@ public class MissionResultEntity implements Serializable {
 	/**
 	 * 任务结果描述信息
 	 */
-	private String describess;
+	private String descr;
 	/**
 	 * 任务执行状态
 	 */

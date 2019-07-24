@@ -61,7 +61,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
         	//任务id下对应的各个节点任务的执行情况
         	List<MissionResultEntity> missionResultList=missionResultDao.selectList(
         		new QueryWrapper<MissionResultEntity>()
-        		.eq(true, "mission_id", missionInfoEntity.getId())
+        		.eq("mission_id", missionInfoEntity.getId())
         	);
         	
         	//遍历 missionResultList   进行任务执行情况统计
@@ -80,7 +80,11 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
         		
         	}
         	
-        	String res=success+","+fail+","+timeOut;
+        	//String res=success+","+fail+","+timeOut;
+        	Integer[] res = new Integer[3];
+        	res[0]=success;
+        	res[1]=fail;
+        	res[2]=timeOut;
         	missionInfoEntity.setStateDesc(res);
         	
         	
@@ -122,17 +126,17 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
     }*/
     
     
-    public PageUtils queryPageList(Map<String, Object> params) {
+    /*public PageUtils queryPageList(Map<String, Object> params) {
       
         IPage<MissionInfoEntity> page = this.page(
                 new Query<MissionInfoEntity>().getPage(params));
         
         return new PageUtils(missionInfoDao.queryPageMission(page,params));    
-        /*Page page1=new Page<MissionInfoEntity>();
+        Page page1=new Page<MissionInfoEntity>();
          
-        return Pag(missionInfoDao.queryPageMission(page1,params));*/
+        return Pag(missionInfoDao.queryPageMission(page1,params));
         
-    }
+    }*/
     
     public MissionInfoEntity getMissionById(Integer id) {
     	
@@ -160,7 +164,11 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
     		
     	}
     	
-    	String res=success+","+fail+","+timeOut;
+    	//String res=success+","+fail+","+timeOut;
+    	Integer[] res = new Integer[3];
+    	res[0]=success;
+    	res[1]=fail;
+    	res[2]=timeOut;
     	missionInfoEntity.setStateDesc(res);
     	
     	//查询节点组

@@ -17,7 +17,6 @@
         <result property="delFlag" column="del_flag"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
-        <result property="stateDesc" column="state_desc"/>
     </resultMap>
     
     <!-- 关联表查询结果封装 -->
