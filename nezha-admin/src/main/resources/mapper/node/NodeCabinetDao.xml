@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.node.dao.NodeCabinetDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.node.entity.NodeCabinetEntity" id="cabinetMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="roomId" column="room_id"/>
+        <result property="roomRow" column="room_row"/>
+        <result property="roomCol" column="room_col"/>
+        <result property="ubit" column="ubit"/>
+        <result property="remarks" column="remarks"/>
+        <result property="operator" column="operator"/>
+        <result property="opTime" column="op_time"/>
+    </resultMap>
+
+
+</mapper>

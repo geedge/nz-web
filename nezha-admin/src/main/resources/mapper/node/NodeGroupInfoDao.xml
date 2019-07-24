@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.node.dao.NodeGroupInfoDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.node.entity.NodeGroupInfoEntity" id="nodegroupInfoMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="systemId" column="system_id"/>
+        <result property="pid" column="pid"/>
+        <result property="pids" column="pids"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="operator" column="operator"/>
+        <result property="opTime" column="op_time"/>
+    </resultMap>
+
+
+    <select id="assList" resultType="com.nis.modules.node.entity.NodeInfoEntity">
+        select t.* from
+        (
+            select b.* from system_node_rel a
+            left join node_info b on a.uuid = b.uuid
+            where a.system_id = #{params.systemId}
+
+            <if test="params.ip != null and params.ip != ''">
+                and b.ip like CONCAT('%', #{params.ip}, '%')
+            </if>
+        ) t
+
+        left join
+
+        (
+            select d.uuid as i from node_group_rel c
+            left join node_info d on c.uuid = d.uuid
+            where c.del_flag = 0 and c.group_id = #{params.groupId}
+        ) t1 on t.uuid = t1.i
+
+        where t1.i is null
+    </select>
+</mapper>
