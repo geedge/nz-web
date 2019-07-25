@@ -54,7 +54,7 @@ public enum RCode {
 	 * */
 	TYPE_NAME_ISNULL(301001,"type_name_isNull"),//监测类别名称为空
 	TYPE_NAME_EXISTS(301002,"type_name_exists"),//监测类别名称已存在
-	TYPE_SAVE_IDISNULL(301003,"type_save_idIsNull"),//监测类别ID为空
+    META_FIELDNAME_EXISTS(301003,"meta_fieldname_exists"),//监测类别元数据字段名称重复
 	META_NAME_ISNULL(301004,"meta_name_isnull"),//监测类别元数据名称为空
 	PARAM_NAME_ISNULL(301005,"param_name_isnull"),//监测类别参数名称为空
 	META_NAME_EXISTS(301006,"meta_name_exists"), //监测类别元数据名称重复
