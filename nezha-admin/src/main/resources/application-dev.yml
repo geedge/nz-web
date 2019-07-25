@@ -2,6 +2,10 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
+#      driver-class-name: org.postgresql.Driver
+#      url: jdbc:postgresql://192.168.41.68:5432/nezha
+#      username: postgres
+#      password: root
       driver-class-name: com.mysql.jdbc.Driver
       url: jdbc:mysql://192.168.40.247:3306/nezha?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
       username: root

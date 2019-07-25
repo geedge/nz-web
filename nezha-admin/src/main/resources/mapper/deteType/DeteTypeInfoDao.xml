@@ -1,21 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.nis.modules.detectType.dao.DeteTypeInfoDao">
+<mapper namespace="com.nis.modules.detect.dao.DeteTypeInfoDao">
     <sql id="commonFields">
         <if test="_databaseId  == 'oracle'">
+            ,data_check_time date,
+            data_arrive_time date,
+            id number(20) ,
+            CONSTRAINT PRIMARY KEY(id)
+            );
         </if>
         <if test="_databaseId  == 'mysql'">
             ,data_check_time timestamp DEFAULT current_timestamp(),
             data_arrive_time timestamp DEFAULT current_timestamp(),
             id bigint ,
             primary key (id)
-            )ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT
+            )
 
         </if>
         <if test="_databaseId  == 'postgresql'">
+            ,data_check_time timestamp DEFAULT current_timestamp,
+            data_arrive_time timestamp DEFAULT current_timestamp,
+            id int4 ,
+            primary key (id)
+            );
         </if>
     </sql>
+
+    <sql id="fieldTpyeAdd">
+        <if test="_databaseId  == 'oracle'">
+            <choose>
+                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
+                    number(
+                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
+                        65
+                    </if>
+                    ,${meta.decimalPointLimit})
+                </when>
+                <otherwise>
+                    varchar (
+                    <if test="meta.dataLenth !=null ">
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null">
+                        255
+                    </if>
+                    )
+                </otherwise>
+            </choose>
+        </if>
+        <if test="_databaseId  == 'mysql'">
+            <choose>
+                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
+                    decimal(
+                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
+                        65
+                    </if>
+                    ,${meta.decimalPointLimit})
+                </when>
+                <otherwise>
+                    varchar (
+                    <if test="meta.dataLenth !=null ">
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null">
+                        255
+                    </if>
+                    )
+                </otherwise>
+            </choose>
+
+        </if>
+        <if test="_databaseId  == 'postgresql'">
+            <choose>
+                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
+                    decimal(
+                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
+                        65
+                    </if>
+                    ,${meta.decimalPointLimit})
+                </when>
+                <otherwise>
+                    varchar (
+                    <if test="meta.dataLenth !=null ">
+                        ${meta.dataLenth}
+                    </if>
+                    <if test="meta.dataLenth ==null">
+                        255
+                    </if>
+                    )
+                </otherwise>
+            </choose>
+        </if>
+
+    </sql>
+
 
     <select id="queryTables" parameterType="java.lang.String" resultType="java.util.HashMap" databaseId="mysql">
         <if test="_databaseId  == 'oracle'">
@@ -56,41 +144,22 @@
         <if test="_databaseId  == 'oracle'">
             create table ${tableName}
             <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="(" close=")" index="idx">
+                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
                     ${meta.fieldName}
                     <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
-                        <choose>
-                            <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                                decimal(
-                                <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                                    65
-                                </if>
-                                ,${meta.decimalPointLimit})
-                            </when>
-                            <otherwise>
-                                varchar (
-                                <if test="meta.dataLenth !=null ">
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null">
-                                    255
-                                </if>
-                                )
-                            </otherwise>
-                        </choose>
+                        <include refid="fieldTpyeAdd"></include>
                         <if test="idx != deteTypeMetas.size -1 "> <!--fieldType==1 此字段需要加索引-->
                             ,
                         </if>
                         <include refid="commonFields"/>
                     </if>
-                </foreach>;
-                <foreach collection="deteTypeMetas" item="meta" >
+                </foreach>
+                <include refid="commonFields"/>
+                COMMENT ON TABLE ${tableName} is #{remark}
+                <foreach collection="deteTypeMetas" item="meta">
                     create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
                 </foreach>
-                <foreach collection="deteTypeMetas" item="meta" >
+                <foreach collection="deteTypeMetas" item="meta">
                     <if test="meta.remark != null">
                         COMMENT ON COLUMN ${tableName}.${meta.fieldName} IS #{meta.remark};
                     </if>
@@ -100,31 +169,10 @@
         <if test="_databaseId  == 'mysql'">
             create table ${tableName}
             <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="("  index="idx">
+                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
                     ${meta.fieldName}
                     <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
-                        <choose>
-                            <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                                decimal(
-                                <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                                    65
-                                </if>
-                                ,${meta.decimalPointLimit})
-                            </when>
-                            <otherwise>
-                                varchar (
-                                <if test="meta.dataLenth !=null ">
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null">
-                                    255
-                                </if>
-                                )
-                            </otherwise>
-                        </choose>
+                        <include refid="fieldTpyeAdd"></include>
                         <if test="meta.remark !=null">
                             COMMENT #{meta.remark}
                         </if>
@@ -146,38 +194,18 @@
         <if test="_databaseId  == 'postgresql'">
             create table ${tableName}
             <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="(" close=")" index="idx">
+                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
                     ${meta.fieldName}
                     <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
-                        <choose>
-                            <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                                number(
-                                <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                                    65
-                                </if>
-                                ,${meta.decimalPointLimit})
-                            </when>
-                            <otherwise>
-                                varchar (
-                                <if test="meta.dataLenth !=null ">
-                                    ${meta.dataLenth}
-                                </if>
-                                <if test="meta.dataLenth ==null">
-                                    255
-                                </if>
-                                )
-                            </otherwise>
-                        </choose>
+                        <include refid="fieldTpyeAdd"></include>
                         <if test="idx != deteTypeMetas.size -1 "> <!--fieldType==1 此字段需要加索引-->
                             ,
                         </if>
-                        <include refid="commonFields"/>
                     </if>
-                </foreach>;
-                <foreach collection="deteTypeMetas" item="meta" >
+                </foreach>
+                <include refid="commonFields"/>
+                <!--COMMENT ON TABLE ${tableName} is #{remark};-->
+                <foreach collection="deteTypeMetas" item="meta">
                     create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
                 </foreach>
                 <!--<foreach collection="deteTypeMetas" item="meta" >
@@ -188,5 +216,90 @@
             </if>
         </if>
 
+    </update>
+
+    <select id="checkDetectSetConfigExists" parameterType="Long" resultType="Integer">
+        select count(1) from dete_set_info where type_id = #{typeId}
+    </select>
+
+    <update id="addTableFields">
+        <if test="_databaseId  == 'mysql'">
+            alter table ${tableName}
+            <foreach collection="metaAddList" item="meta" index="idx">
+                add column ${meta.fieldName}
+                <include refid="fieldTpyeAdd"></include>
+                <if test="meta.remark !=null ">
+                    COMMENT #{meta.remark}
+                </if>
+                <if test="idx != metaAddList.size -1 or meta.fieldType == 1">
+                    ,
+                </if>
+                <if test="meta.fieldType == 1 and idx != metaAddList.size -1"><!--fieldType==1 此字段需要加索引-->
+                    add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName}),
+                </if>
+                <if test="meta.fieldType == 1 and idx == metaAddList.size -1">
+                    add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName})
+                </if>
+
+            </foreach>
+        </if>
+    </update>
+
+    <update id="delTableFields">
+        <if test="_databaseId  == 'mysql'">
+            alter table ${tableName}
+            <foreach collection="metaDelList" item="meta" index="idx">
+                DROP column ${meta.fieldName}
+                <if test="idx != metaDelList.size -1 ">
+                    ,
+                </if>
+            </foreach>
+        </if>
+    </update>
+
+    <update id="alterTableFields">
+        <if test="_databaseId  == 'mysql'">
+            alter table ${tableName}
+            <foreach collection="metaUpdateList" item="meta" index="idx">
+                modify column ${meta.fieldName}
+                <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
+                    <include refid="fieldTpyeAdd"></include>
+                    <if test="meta.remark !=null ">
+                        COMMENT #{meta.remark}
+                    </if>
+                    <if test="idx != metaUpdateList.size -1 ">
+                        ,
+                    </if>
+                </if>
+            </foreach>
+        </if>
+    </update>
+
+    <update id="addTableIndexs">
+        <if test="_databaseId  == 'mysql'">
+            alter table ${tableName}
+            <foreach collection="indexAddList" item="meta" index="idx">
+                add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName})
+                <if test="idx != indexAddList.size -1 ">
+                    ,
+                </if>
+            </foreach>
+        </if>
+    </update>
+    <update id="delTableIndexs">
+        <if test="_databaseId  == 'mysql'">
+            alter table ${tableName}
+            <foreach collection="indexDelList" item="meta" index="idx">
+                drop index ${tableName}_${meta.fieldName}_INDEX
+                <if test="idx != indexDelList.size -1 ">
+                    ,
+                </if>
+            </foreach>
+        </if>
+    </update>
+    <update id="dropTable">
+        <if test="_databaseId  == 'mysql'">
+           drop table if exists ${tableName}
+        </if>
     </update>
 </mapper>

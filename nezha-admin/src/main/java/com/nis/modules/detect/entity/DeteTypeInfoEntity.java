@@ -1,4 +1,4 @@
-package com.nis.modules.detectType.entity;
+package com.nis.modules.detect.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
