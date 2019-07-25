@@ -233,6 +233,17 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     }
 
     public void createTable(DeteTypeInfoEntity detectTypeInfo) {
+
+        //fieldType==3表示该字段为临时字段，不入库
+        List<DeteTypeMetaEntity> deteTypeMetas = detectTypeInfo.getDeteTypeMetas();
+        Iterator<DeteTypeMetaEntity> iterator = deteTypeMetas.iterator();
+        while(iterator.hasNext()){
+            DeteTypeMetaEntity next = iterator.next();
+            if(next.getFieldType()==null||"3".equals(next.getFieldType())){
+                iterator.remove();
+            }
+        }
+        detectTypeInfo.setDeteTypeMetas(deteTypeMetas);
         this.getBaseMapper().createTable(detectTypeInfo);
     }
 
