@@ -165,5 +165,10 @@
 
     </select>
 
-
+	<select id="queryNodeBySystemId" resultMap="infoMap">
+		SELECT ni.* FROM system_info si
+		LEFT JOIN system_node_rel snr ON si.id=snr.system_id
+		LEFT JOIN node_info ni ON snr.uuid=ni.uuid
+		WHERE si.id=#{id} AND si.del_flag=0 AND snr.del_flag=0 AND ni.state=3
+	</select>
 </mapper>

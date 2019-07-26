@@ -76,7 +76,7 @@ public class SystemInfoEntity implements Serializable {
 	 * 关联的用户组
 	 */
 	@TableField(exist=false)
-	private List<UsergroupEntity> usergroups;
+	private List<UserGroupEntity> usergroups;
 	
 	@TableField(exist=false)
 	private List<Integer> usergroupIds;

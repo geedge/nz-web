@@ -36,5 +36,8 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
 
     // 查询可用可用 机房 下 机柜 的 起始位置
     List<AvailCabinetEntity> selectCab(Long uuid, Integer uSize);
+    
+    // 查询业务系统的节点列表
+    PageUtils queryPageBySystemId(Map<String, Object> params);
 }
 

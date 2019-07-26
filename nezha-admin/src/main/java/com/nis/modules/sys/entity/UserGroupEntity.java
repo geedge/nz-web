@@ -30,7 +30,7 @@ import java.util.List;
  */
 @Data
 @TableName("user_group")
-public class UsergroupEntity implements Serializable {
+public class UserGroupEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	/**

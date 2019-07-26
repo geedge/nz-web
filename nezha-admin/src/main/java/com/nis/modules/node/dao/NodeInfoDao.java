@@ -29,4 +29,6 @@ public interface NodeInfoDao extends BaseMapper<NodeInfoEntity> {
 
     //查询节点组和包含子节点组的节点
     List<NodeInfoEntity> selectListByGroups(IPage<NodeInfoEntity> page, @Param("params") Map<String, Object> params, @Param("groupdIds") Long[] groupdIds);
+
+    List<NodeInfoEntity> queryNodeBySystemId(IPage page, @Param("id") Long id);
 }

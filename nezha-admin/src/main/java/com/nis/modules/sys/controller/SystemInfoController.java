@@ -1,11 +1,9 @@
 package com.nis.modules.sys.controller;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +13,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -28,6 +27,8 @@ public class SystemInfoController extends AbstractController {
 	
 	@Autowired
 	private SystemInfoService systemInfoService;
+	@Autowired
+	private NodeInfoService nodeInfoService;
 	
 	@RequestMapping("/list")
 	@ApiOperation(httpMethod = "GET", value = "业务系统列表查询")
@@ -107,5 +108,15 @@ public class SystemInfoController extends AbstractController {
 		}
 		systemInfoService.delete(id);
 		return R.ok();
+	}
+	
+	@RequestMapping("/nodes")
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "查询业务系统下的节点")
+	public R nodes(@RequestParam Map<String, Object> params){
+		ValidateUtils.is(params.get("id")).notNull(RCode.NOT_NULL_ERROR);
+		params.put("id", Long.valueOf((String)params.get("id")));
+		
+		PageUtils queryPageBySystemId = nodeInfoService.queryPageBySystemId(params);
+		return R.ok(queryPageBySystemId);
 	}
 }

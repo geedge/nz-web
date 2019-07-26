@@ -370,4 +370,12 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         }
         return result;
     }
+    
+    @Override
+	public PageUtils queryPageBySystemId(Map<String, Object> params) {
+		IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
+		List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.queryNodeBySystemId(page, (Long)params.get("id"));
+		page.setRecords(queryNodeBySystemId);
+		return new PageUtils(page);
+	}
 }
