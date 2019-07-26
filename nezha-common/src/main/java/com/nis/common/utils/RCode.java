@@ -34,8 +34,8 @@ public enum RCode {
 	NODE_IPADDRESS_FORMAT(201001, "ipaddress_format_error"),// ip 地址不合法 格式错误
 	NODE_IPADDRESS_DUPLICATE(201002, "duplicate_ipaddress_error"), // IP 地址重复
 	NODE_NAME_DUPLICATE(201003, "duplicate_name_error"), // name 名称  重复
-	NODEROOM_ROW_OCCUPIED(203002,"node_row_occupied"), // 机房行号已被占用
-	NODEROOM_COL_OCCUPIED(20300,"node_col_occupied"),   // 机房列号已被占用
+	NODEROOM_ROW_OCCUPIED(203002,"nodeRoom_row_occupied_error"), // 机房行号已被占用
+	NODEROOM_COL_OCCUPIED(203003,"nodeRoom_col_occupied_error"), // 机房列号已被占用
 
 	NODEGROUP_NAME_DUPLICATE(202001, "duplicate_group_name_error"), // name 节点组 名称  重复
 
