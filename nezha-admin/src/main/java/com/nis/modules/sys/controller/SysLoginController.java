@@ -12,7 +12,9 @@ package com.nis.modules.sys.controller;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
 import com.nis.modules.sys.entity.SystemInfoEntity;
+import com.nis.modules.sys.entity.UserGroupEntity;
 import com.nis.modules.sys.service.SystemInfoService;
+import com.nis.modules.sys.service.UserGroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 import com.nis.common.utils.R;
@@ -46,6 +48,8 @@ public class SysLoginController extends AbstractController {
 	private Producer producer;
 	@Autowired
 	private SystemInfoService systemInfoService;
+	@Autowired
+	private UserGroupService usergroupService;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -77,14 +81,18 @@ public class SysLoginController extends AbstractController {
 		try{
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, password);
-			subject.login(token);
+			subject.login(token); //登录
 			
 			Long userId = getUserId();
+			//检查是否有可用的业务系统
 			List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
 			if (systemInfosByUserId == null || systemInfosByUserId.size() == 0) {
 				subject.logout();
 				return R.error(RCode.SYS_LOGIN_NOSYSTEM);
 			}
+			//查出该用户所属的所有用户组
+			List<UserGroupEntity> queryByUser = usergroupService.queryByUser(userId);
+			getUser().setUsergroups(queryByUser);
 			return R.ok(systemInfosByUserId);
 		}catch (UnknownAccountException e) {
 			return R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT);

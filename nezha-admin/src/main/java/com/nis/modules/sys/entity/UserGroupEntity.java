@@ -53,5 +53,9 @@ public class UserGroupEntity implements Serializable {
 	/**
 	 * 备注
 	 */
-	private String remarks;
+	private String remark;
+	
+	private Date opTime;
+	
+	private String delFlag;
 }

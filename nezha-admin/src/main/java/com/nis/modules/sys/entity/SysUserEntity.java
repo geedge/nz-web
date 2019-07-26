@@ -85,5 +85,8 @@ public class SysUserEntity implements Serializable {
 	 * 创建时间
 	 */
 	private Date createTime;
+	
+	@TableField(exist=false)
+	private List<UserGroupEntity> usergroups;
 
 }

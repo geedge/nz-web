@@ -13,5 +13,10 @@
         <result property="delFlag" column="del_flag"/>
     </resultMap>
 
-
+	<select id="queryByUser" resultMap="userGroupMap">
+		SELECT ug.* FROM sys_user su
+		LEFT JOIN user_usergroup uu ON su.user_id=uu.user_id
+		LEFT JOIN user_group ug ON ug.id=uu.group_id
+		WHERE su.user_id=1 AND uu.del_flag=0 AND ug.del_flag=0
+	</select>
 </mapper>

@@ -2,6 +2,9 @@ package com.nis.modules.sys.dao;
 
 import com.nis.modules.sys.entity.UserGroupEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -14,4 +17,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface UserGroupDao extends BaseMapper<UserGroupEntity> {
 	
+	List<UserGroupEntity> queryByUser(Long userId);
 }
