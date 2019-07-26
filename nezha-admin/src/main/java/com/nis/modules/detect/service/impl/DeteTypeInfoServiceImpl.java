@@ -5,14 +5,14 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.detect.dao.DeteTypeInfoDao;
-import com.nis.modules.detect.entity.DeteTypeInfoEntity;
-import com.nis.modules.detect.entity.DeteTypeMetaEntity;
-import com.nis.modules.detect.entity.DeteTypeParamEntity;
+import com.nis.modules.detect.entity.*;
 import com.nis.modules.detect.service.DeteTypeInfoService;
+import com.nis.modules.detect.service.DeteTypeMetaMappingService;
 import com.nis.modules.detect.service.DeteTypeMetaService;
 import com.nis.modules.detect.service.DeteTypeParamService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -29,6 +29,8 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     private DeteTypeMetaService deteTypeMetaService;
     @Autowired
     private DeteTypeParamService deteTypeParamService;
+    @Autowired
+    private DeteTypeMetaMappingService deteTypeMetaMappingService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -65,7 +67,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
-        this.save(deteTypeInfo);
+
 
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
 
@@ -84,39 +86,55 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
             deteTypeMetaEntity.setOperator(userId);
             deteTypeMetaEntity.setOpTime(date);
         }
-        deteTypeMetaService.saveBatch(deteTypeMetas);
+
 
         List<DeteTypeParamEntity> deteTypeParams = deteTypeInfo.getDeteTypeParams();
 
         for (int i = 0; i < deteTypeParams.size(); i++) {
             DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
-
+            deteTypeParamEntity.setParamIndex(i);
             deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
             deteTypeParamEntity.setOperator(userId);
             deteTypeParamEntity.setOpTime(date);
         }
 
-        deteTypeParamService.saveBatch(deteTypeParams);
-        createTable(deteTypeInfo);
 
+        createTable(deteTypeInfo);
+        //为避免在DDL语句发出时会自动commit，故将所有的数据操作放在DDL后
+        this.save(deteTypeInfo);
+
+        for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
+            deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
+        }
+        deteTypeMetaService.saveBatch(deteTypeMetas);
+        for (int i = 0; i < deteTypeParams.size(); i++) {
+            DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
+            deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
+        }
+        deteTypeParamService.saveBatch(deteTypeParams);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateEntity(DeteTypeInfoEntity deteTypeInfo) {
+        DeteTypeInfoEntity old = this.getById(deteTypeInfo.getId());
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
         List<DeteTypeParamEntity> deteTypeParams = deteTypeInfo.getDeteTypeParams();
         Long userId = ShiroUtils.getUserId();//操作员
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
-        this.updateById(deteTypeInfo);
-        deteTypeInfo=this.getById(deteTypeInfo.getId());
+        deteTypeInfo.setTableName(old.getTableName());
 
+        //需要修改表字段
         List<DeteTypeMetaEntity> metaUpdateList = new ArrayList<DeteTypeMetaEntity>();
+        //需要添加表字段
         List<DeteTypeMetaEntity> metaAddList = new ArrayList<DeteTypeMetaEntity>();
+        //需要删除表字段
         List<DeteTypeMetaEntity> metaDelList = new ArrayList<DeteTypeMetaEntity>();
+        //需要添加索引
         List<DeteTypeMetaEntity> indexAddList = new ArrayList<DeteTypeMetaEntity>();
+        //需要删除索引
         List<DeteTypeMetaEntity> indexDelList = new ArrayList<DeteTypeMetaEntity>();
         Set<String> fieldNameFilter = new HashSet<String>();
         if(deteTypeMetas!=null){
@@ -140,35 +158,14 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                         metaUpdateList.add(deteTypeMetaEntity);
                     }
                 } else {
-                    deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
                     //字段名称不允许修改，故只在此set
                     deteTypeMetaEntity.setFieldName(fieldName);
                     metaAddList.add(deteTypeMetaEntity);
                 }
             }
 
-            deteTypeMetaService.saveOrUpdateBatch(deteTypeMetas);
+
         }
-
-
-        if(deteTypeParams!=null&&deteTypeParams.size()>0){
-
-
-            for (int i = 0; i < deteTypeParams.size(); i++) {
-                DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
-                deteTypeParamEntity.setOperator(userId);
-                deteTypeParamEntity.setOpTime(date);
-                deteTypeParamEntity.setParamIndex(i);
-
-                if (deteTypeParamEntity.getId() == null) {
-
-                    deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
-                }
-            }
-
-            deteTypeParamService.saveOrUpdateBatch(deteTypeParams);
-        }
-
 
         this.judgeTableFields(metaUpdateList,metaAddList,metaDelList,indexAddList,indexDelList);
 
@@ -193,6 +190,43 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         if(!checkDetectSetConfigExists(deteTypeInfo.getId())&&metaUpdateList.size()>0){
             this.getBaseMapper().alterTableFields(deteTypeInfo.getTableName(),metaUpdateList);
         }
+
+        this.updateById(deteTypeInfo);
+        for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
+            if(deteTypeMetaEntity.getId()!=null){
+                if(deteTypeMetaEntity.getDelFlag()!=null&&!Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())){
+                    deteTypeMetaService.removeById(deteTypeMetaEntity.getId());
+                }else{
+                    deteTypeMetaService.updateById(deteTypeMetaEntity);
+                }
+            }else{
+                deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
+                deteTypeMetaService.save(deteTypeMetaEntity);
+            }
+        }
+
+        if(deteTypeParams!=null&&deteTypeParams.size()>0){
+            for (int i = 0; i < deteTypeParams.size(); i++) {
+                DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
+                deteTypeParamEntity.setOperator(userId);
+                deteTypeParamEntity.setOpTime(date);
+                deteTypeParamEntity.setParamIndex(i);
+                if(deteTypeParamEntity.getId() == null){
+
+                    deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
+                }
+                if(deteTypeParamEntity.getId()!=null){
+                    if(deteTypeParamEntity.getDelFlag()!=null&&!Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())){
+                        deteTypeMetaService.removeById(deteTypeParamEntity.getId());
+                    }else{
+                        deteTypeParamService.updateById(deteTypeParamEntity);
+                    }
+                }else{
+                    deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
+                    deteTypeParamService.save(deteTypeParamEntity);
+                }
+            }
+        }
     }
 
 
@@ -203,20 +237,21 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         //删除detectType
         this.update(new UpdateWrapper<DeteTypeInfoEntity>()
                 .eq("id",deteTypeInfoEntity.getId())
-                .set("del_flag","1"));
+                .set("del_flag", Constant.DELFLAG_TRUE));
         //删除detectTypeMeta
         deteTypeMetaService.update(new UpdateWrapper<DeteTypeMetaEntity>()
                 .eq("type_id",deteTypeInfoEntity.getId())
-                .set("del_flag","1"));
+                .set("del_flag",Constant.DELFLAG_TRUE));
         //删除detectTypeParam
         deteTypeParamService.update(new UpdateWrapper<DeteTypeParamEntity>()
                 .eq("type_id",deteTypeInfoEntity.getId())
-                .set("del_flag","1"));
+                .set("del_flag",Constant.DELFLAG_TRUE));
         //删除detectSetInfo 相关
 
         //drop对应的表
         this.getBaseMapper().dropTable(oldType.getTableName());
     }
+
 
     /**
      * @Description通过表名判断表是否存在
@@ -252,10 +287,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         return count > 0;
     }
 
-    public String formatString(String str) {
 
-        return str.replaceAll("\\W", "").toUpperCase();
-    }
 
     /**
      * @Description校验前段传递的数据
@@ -269,7 +301,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         ValidateUtils.is(deteTypeInfo).notNull(RCode.DETE_ERROR);
 
         ValidateUtils.is(deteTypeInfo.getName()).notNull(RCode.TYPE_NAME_ISNULL);
-        boolean typeNameExists = this.checkFieldExists("name", deteTypeInfo.getName());
+        boolean typeNameExists = this.checkFieldExists(deteTypeInfo.getId(),"name", deteTypeInfo.getName());
         if (typeNameExists) {
             throw new NZException(RCode.TYPE_NAME_EXISTS);
         }
@@ -292,7 +324,9 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
             if (nameFilter.contains(name)) {
                 throw new NZException(RCode.META_NAME_EXISTS);
             } else {
-                nameFilter.add(name);
+                if(deteTypeMetaEntity.getDelFlag()!=null&&Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())){
+                    nameFilter.add(name);
+                }
             }
 
 
@@ -308,7 +342,9 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                 if (nameFilter.contains(name)) {
                     throw new NZException(RCode.PARAM_NAME_EXISTS);
                 } else {
-                    nameFilter.add(name);
+                    if(deteTypeParamEntity.getDelFlag()!=null&&Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())){
+                        nameFilter.add(name);
+                    }
                 }
             }
         }

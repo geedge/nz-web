@@ -16,13 +16,11 @@ public class DeteTypeMetaMappingEntity implements Serializable {
     @TableId(type= IdType.INPUT)
     private Long id;
     //映射类型
-    private Long type;
+    private String type;
     //原值
     private String val;
     //映射后值
     private String mapping;
-    //备注
-    private String remark; //备注
     //是否删除
     @TableLogic
     private String delFlag; //是否删除，1：删除，0：未删除，默认：0

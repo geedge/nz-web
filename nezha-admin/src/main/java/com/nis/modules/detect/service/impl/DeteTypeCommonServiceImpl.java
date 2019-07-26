@@ -6,9 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.modules.detect.service.DeteTypeCommonService;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class DeteTypeCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImpl<M ,T> implements DeteTypeCommonService<T>  {
 
@@ -32,6 +30,18 @@ public class DeteTypeCommonServiceImpl<M extends BaseMapper<T>,T> extends Servic
                 .eq(StringUtils.isNotEmpty(name)&&StringUtils.isNotEmpty(field),field, name));
 
         return list!=null&&list.size()>0;
+    }
+    /**
+     * @Description去除字符串中的特殊字符
+     * @Author  rui
+     * @Date   2019/7/26
+     * @Param
+     * @Return
+     * @Exception
+     */
+    public String formatString(String str) {
+
+        return str.replaceAll("\\W", "").toUpperCase();
     }
 
 }

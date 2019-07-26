@@ -6,5 +6,5 @@ public interface DeteTypeCommonService<T> extends IService<T>{
     boolean checkFieldExists(String field,String name);
     boolean checkFieldExists(Long id,String field,String name);
     boolean checkFieldExists(String field,String name,Long typeId);
-
+    String formatString(String tableName);
 }

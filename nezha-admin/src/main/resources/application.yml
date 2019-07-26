@@ -56,7 +56,7 @@ mybatis-plus:
       field-strategy: NOT_NULL
       #驼峰下划线转换
       column-underline: true
-      logic-delete-value: -1
+      logic-delete-value: 1
       logic-not-delete-value: 0
     banner: false
     key-generator: com.nis.common.config.MybatisPlusConfig.SeqKeyGenerator

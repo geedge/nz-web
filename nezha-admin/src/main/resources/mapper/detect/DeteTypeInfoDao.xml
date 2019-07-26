@@ -153,14 +153,8 @@
                     <include refid="commonFields"/>
                 </foreach>
                 <include refid="commonFields"/>
-                COMMENT ON TABLE ${tableName} is #{remark}
                 <foreach collection="deteTypeMetas" item="meta">
                     create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
-                </foreach>
-                <foreach collection="deteTypeMetas" item="meta">
-                    <if test="meta.remark != null">
-                        COMMENT ON COLUMN ${tableName}.${meta.fieldName} IS #{meta.remark};
-                    </if>
                 </foreach>
             </if>
         </if>
@@ -170,13 +164,10 @@
                 <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
                     ${meta.fieldName}
                     <include refid="fieldTpyeAdd"></include>
-                    <if test="meta.remark !=null">
-                        COMMENT #{meta.remark}
-                    </if>
                     <if test="idx != deteTypeMetas.size -1 or meta.fieldType == 1">
                         ,
                     </if>
-                    <if test="meta.fieldType == 1 and idx != deteTypeMetas.size -1"><!--fieldType==1 此字段需要加索引-->
+                    <if test="meta.fieldType == 1 and idx != deteTypeMetas.size -1">
                         index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName}),
                     </if>
                     <if test="meta.fieldType == 1 and idx == deteTypeMetas.size -1">
@@ -184,7 +175,6 @@
                     </if>
                 </foreach>
                 <include refid="commonFields"/>
-                COMMENT= #{remark}
             </if>
         </if>
         <if test="_databaseId  == 'postgresql'">
@@ -198,18 +188,12 @@
                     </if>
                 </foreach>
                 <include refid="commonFields"/>
-                <!--COMMENT ON TABLE ${tableName} is #{remark};-->
                 <foreach collection="deteTypeMetas" item="meta">
                     <if test="meta.fieldType == 1">
                         create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
                     </if>
 
                 </foreach>
-                <!--<foreach collection="deteTypeMetas" item="meta" >
-                    <if test="meta.remark != null">
-                        COMMENT ON COLUMN ${tableName}.${meta.fieldName} IS #{meta.remark};
-                    </if>
-                </foreach>-->
             </if>
         </if>
 
@@ -225,13 +209,10 @@
             <foreach collection="metaAddList" item="meta" index="idx">
                 add column ${meta.fieldName}
                 <include refid="fieldTpyeAdd"></include>
-                <if test="meta.remark !=null ">
-                    COMMENT #{meta.remark}
-                </if>
                 <if test="idx != metaAddList.size -1 or meta.fieldType == 1">
                     ,
                 </if>
-                <if test="meta.fieldType == 1 and idx != metaAddList.size -1"><!--fieldType==1 此字段需要加索引-->
+                <if test="meta.fieldType == 1 and idx != metaAddList.size -1">
                     add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName}),
                 </if>
                 <if test="meta.fieldType == 1 and idx == metaAddList.size -1">
@@ -255,11 +236,6 @@
             <foreach collection="metaAddList" item="meta" index="idx">
                 alter table ${tableName} add ${fieldName}
                 <include refid="fieldTpyeAdd"></include>;
-            </foreach>
-            <foreach collection="metaUpdateList" item="meta">
-                <if test="meta.remark != null">
-                    COMMENT ON COLUMN ${tableName}.${meta.fieldName} IS #{meta.remark};
-                </if>
             </foreach>
         </if>
     </update>
@@ -301,9 +277,6 @@
                 modify column ${meta.fieldName}
                 <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
                     <include refid="fieldTpyeAdd"></include>
-                    <if test="meta.remark !=null ">
-                        COMMENT #{meta.remark}
-                    </if>
                     <if test="idx != metaUpdateList.size -1 ">
                         ,
                     </if>
@@ -315,11 +288,6 @@
                 alter table ${tableName} modify (${meta.fieldName}
                 <include refid="fieldTpyeAdd"></include>
                 );
-            </foreach>
-            <foreach collection="metaUpdateList" item="meta">
-                <if test="meta.remark != null">
-                    COMMENT ON COLUMN ${tableName}.${meta.fieldName} IS #{meta.remark};
-                </if>
             </foreach>
         </if>
         <if test="_databaseId  == 'postgresql'">

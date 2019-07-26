@@ -32,7 +32,7 @@ public class DeteTypeMetaEntity implements Serializable {
     //单位
     private String unit;
     //字典类型
-    private Long dicType; //与DETE_TYPE_META_MAPPING表的type关联
+    private String dicType; //与DETE_TYPE_META_MAPPING表的type关联
     //数据库字段名称
     private String fieldName; //数据库字段名称，不需要用户填写，使用name值去除特殊字符
     //国际化code
