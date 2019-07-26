@@ -20,7 +20,9 @@ import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.entity.MissionResultEntity;
 import com.nis.modules.mission.service.MissionInfoService;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
 
 import net.bytebuddy.matcher.EqualityMatcher;
 
@@ -90,14 +92,14 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
         	
         	//获取操作人所在组
         	if("1".equals(missionInfoEntity.getViewLevel())) {
-        		String iperateId=missionInfoEntity.getOperator();//操作人id
+        		//String iperateId=ShiroUtils.getUserId();//操作人id
         		
         	}
         	
         	
         	//根据用户id获取用户名
         	SysUserEntity sysUser=sysUserDao.selectById(missionInfoEntity.getOperator());
-        	missionInfoEntity.setOperator(sysUser.getUsername());
+        	missionInfoEntity.setOperator(ShiroUtils.getUserId());
         	
         	
         }
@@ -181,9 +183,15 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
     	
     	//根据用户id获取用户名
     	SysUserEntity sysUser=sysUserDao.selectById(missionInfoEntity.getOperator());
-    	missionInfoEntity.setOperator(sysUser.getUsername());
+    	missionInfoEntity.setOperator(ShiroUtils.getUserId());
     	
     	return missionInfoEntity;
     }
+
+	@Override
+	public List<MissionInfoEntity> queryByPermission(PermissionInfoEntity entity) {
+		List<MissionInfoEntity> queryByPermission = baseMapper.queryByPermission(entity);
+		return queryByPermission;
+	}
 
 }

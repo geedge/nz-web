@@ -17,6 +17,11 @@
         <result property="delFlag" column="del_flag"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
+        <result property="permission.id" column="pm_id"/>
+        <result property="permission.type" column="pm_type"/>
+        <result property="permission.typeId" column="pm_type_id"/>
+        <result property="permission.viewLevel" column="pm_view_level"/>
+        <result property="permission.relId" column="pm_rel_id"/>
     </resultMap>
     
     <!-- 关联表查询结果封装 -->
@@ -33,7 +38,6 @@
         <result property="delFlag" column="del_flag"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
-        
         <collection property="">
         
         </collection>
@@ -89,5 +93,13 @@
 		where mi.id=#{id}
 	</select>
 
+	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="missionInfoMap">
+		SELECT mi.*, pmi.id as pm_id, pmi.type as pm_type, pmi.type_id as pm_type_id, 
+			   pmi.view_level as pm_view_level, pmi.rel_id as pm_rel_id 
+		FROM mission_info mi
+		LEFT JOIN permission_info pmi ON pmi.type_id=mi.id
+		WHERE pmi.type=#{type} AND pmi.rel_id=#{relId} AND mi.view_level=#{viewLevel}
+			  AND pmi.del_flag=0 AND mi.del_flag=0
+	</select>
 
 </mapper>

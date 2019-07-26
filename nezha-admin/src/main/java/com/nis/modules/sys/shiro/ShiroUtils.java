@@ -50,7 +50,8 @@ public class ShiroUtils {
 	}
 	
 	public static Long getCurrSystemId() {
-		return getUserEntity().getCurrSystemId();
+		Long currSystemId = getUserEntity().getCurrSystemId();
+		return currSystemId;
 	}
 	
 	public static boolean isGlobal() {

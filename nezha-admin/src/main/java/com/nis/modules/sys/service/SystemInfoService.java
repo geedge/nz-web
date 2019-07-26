@@ -27,4 +27,8 @@ public interface SystemInfoService extends IService<SystemInfoEntity> {
 	PageUtils queryPage(Map<String, Object> params);
 
 	SystemInfoEntity queryDetail(Long id);
+
+	boolean checkName(SystemInfoEntity systemInfo);
+
+	boolean delete(Long id);
 }

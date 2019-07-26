@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.mission.entity.MissionInfoEntity;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,5 +24,7 @@ public interface MissionInfoService extends IService<MissionInfoEntity> {
     
     //根据任务id获取任务详情
     MissionInfoEntity getMissionById(Integer id);
+    
+    List<MissionInfoEntity> queryByPermission(PermissionInfoEntity entity);
 }
 

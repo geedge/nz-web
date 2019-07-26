@@ -120,4 +120,18 @@ public class Constant {
     }
 
     public static final Long GLOBAL_ID = 1l;
+    
+    //delFlag
+    public static final String DELFLAG_TRUE = "1"; //删除
+    public static final String DELFLAG_FALSE = "0"; //未删除
+    
+    //permission type
+    public static final String PM_TYPE_DETESET = "2";
+    public static final String PM_TYPE_MISSION = "4";
+    
+    //view level
+    public static final String VIEWLEVEL_UG = "1"; //usergroup
+    public static final String VIEWLEVEL_SYS = "2";
+    public static final String VIEWLEVEL_ALL = "3";
+    
 }

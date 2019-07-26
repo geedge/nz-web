@@ -3,6 +3,7 @@ package com.nis.modules.mission.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -68,7 +69,7 @@ public class MissionInfoEntity implements Serializable {
 	/**
 	 * 
 	 */
-	private String operator;
+	private Long operator;
 	/**
 	 * 操作时间
 	 */
@@ -96,5 +97,11 @@ public class MissionInfoEntity implements Serializable {
 	//节点uuid
 	@TableField(exist=false)
 	private List<String> nodeIds;
+	
+	/**
+	 * 权限记录
+	 */
+	@TableField(exist=false)
+	private PermissionInfoEntity permission;
 
 }

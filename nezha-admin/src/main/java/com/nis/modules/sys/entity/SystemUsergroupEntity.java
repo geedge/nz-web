@@ -8,6 +8,8 @@
 
 package com.nis.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -22,13 +24,14 @@ import java.util.Date;
  */
 @Data
 @TableName("system_usergroup_rel")
+@KeySequence(value="seq_system_usergroup_rel")
 public class SystemUsergroupEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	/**
 	 * ID
 	 */
-	@TableId
+	@TableId(type=IdType.INPUT)
 	private Long id;
 
 	/**

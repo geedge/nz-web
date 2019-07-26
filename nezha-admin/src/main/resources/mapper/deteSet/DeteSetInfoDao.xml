@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.detectSet.dao.DeteSetInfoDao">
+
+    <resultMap type="com.nis.modules.detectSet.entity.DeteSetInfoEntity" id="deteSetInfoMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="typeId" column="type_id"/>
+        <result property="buildIn" column="build_in"/>
+        <result property="params" column="params"/>
+        <result property="viewLevel" column="view_level"/>
+        <result property="state" column="state"/>
+        <result property="remark" column="remark"/>
+        <result property="i18nCode" column="i18n_code"/>
+        <result property="operator" column="operator"/>
+        <result property="permission.id" column="pm_id"/>
+        <result property="permission.type" column="pm_type"/>
+        <result property="permission.typeId" column="pm_type_id"/>
+        <result property="permission.viewLevel" column="pm_view_level"/>
+        <result property="permission.relId" column="pm_rel_id"/>
+    </resultMap>
+
+	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="deteSetInfoMap">
+		SELECT dsi.*, pmi.id as "pm_id", pmi.type as "pm_type", pmi.type_id as "pm_type_id", 
+			   pmi.view_level as "pm_view_level", pmi.rel_id as "pm_rel_id"
+		FROM dete_set_info dsi
+		LEFT JOIN permission_info pmi ON pmi.type_id=dsi.id
+		WHERE pmi.type=#{type} AND pmi.rel_id=#{relId} AND dsi.view_level=#{viewLevel}
+			  AND pmi.del_flag=0 AND dsi.state!=1
+	</select>
+
+</mapper>

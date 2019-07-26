@@ -1,7 +1,7 @@
 package com.nis.modules.mission.dao;
 
 import com.nis.modules.mission.entity.MissionInfoEntity;
-
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -31,5 +31,7 @@ public interface MissionInfoDao extends BaseMapper<MissionInfoEntity> {
 	
 	//根据id获取任务信息详情
 	//MissionInfoEntity getMissionById(Integer id);
+	
+	List<MissionInfoEntity> queryByPermission(PermissionInfoEntity entity);
 	
 }
