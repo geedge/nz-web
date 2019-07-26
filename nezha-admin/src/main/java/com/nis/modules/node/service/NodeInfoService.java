@@ -2,9 +2,10 @@ package com.nis.modules.node.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
+import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,5 +33,8 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
 
     // 修改
     void updateNodeInfo(NodeInfoEntity nodeInfoEntity);
+
+    // 查询可用可用 机房 下 机柜 的 起始位置
+    List<AvailCabinetEntity> selectCab(Long uuid, Integer uSize);
 }
 

@@ -27,16 +27,18 @@
     </resultMap>
 
 
+    <!-- 状态变更 -->
     <update id="changeState">
         UPDATE node_info SET state = #{state}
-        where uuid in
+        WHERE uuid IN
         <foreach collection="uuids" item="uuids" index="no" open="(" separator="," close=")">
             #{uuids}
         </foreach>
     </update>
 
+    <!-- 保存 -->
     <insert id="save">
-        insert into node_info(
+        INSERT INTO node_info(
             id,
             name,
             ip,
@@ -54,7 +56,7 @@
             remark,
             operator,
             op_time
-        )values(
+        )VALUES(
             seq_nextval('seq_node_info_id'),
             #{name},
             #{ip},
@@ -74,4 +76,94 @@
             #{opTime}
         )
     </insert>
+
+
+
+    <!--  查询机房下所包含的所有节点  包含节点自身的过滤条件  -->
+    <select id="selectListByRoomId" resultType="com.nis.modules.node.entity.NodeInfoEntity">
+        SELECT a.name,a.host_name,a.ip,a.uuid,a.type,a.tag,a.user_name,a.password,a.state,a.u_size,a.cabinet_start,a.snmp_port,a.snmp_community,a.remark,a.cabinet_id
+        FROM node_info a
+        <if test="params.roomId != null and params.roomId != ''">
+            LEFT JOIN node_cabinet b ON a.cabinet_id = b.id
+        </if>
+        WHERE a.state != 3
+        <if test="params.roomId != null and params.roomId != ''">
+            AND b.room_id = #{params.roomId} AND b.del_flag = 0
+        </if>
+
+        <if test="params.ip != null and params.ip != ''">
+            AND a.ip LIKE CONCAT('%', #{params.ip}, '%')
+        </if>
+
+        <if test="params.name != null and params.name != ''">
+            AND a.name like CONCAT('%', #{params.name}, '%')
+        </if>
+
+        <if test="params.state != null and params.state != ''">
+            AND a.state = #{params.state}
+        </if>
+
+        <if test="params.type != null and params.type != ''">
+            AND a.type = #{params.type}
+        </if>
+
+        <if test="params.tag != null and params.tag != ''">
+            AND a.tag = #{params.tag}
+        </if>
+
+        <if test="params.cabinetId != null and params.cabinetId != ''">
+            AND a.cabinet_id = #{params.cabinetId}
+        </if>
+
+    </select>
+
+    <select id="selectListByGroups" resultType="com.nis.modules.node.entity.NodeInfoEntity">
+        SELECT c.name,c.host_name,c.ip,c.uuid,c.type,c.tag,c.user_name,c.password,c.state,c.u_size,c.cabinet_start,c.snmp_port,c.snmp_community,c.remark,c.cabinet_id FROM
+        (
+            SELECT DISTINCT b.* FROM node_group_rel a
+            LEFT JOIN node_info b on a.uuid = b.uuid
+            WHERE a.del_flag = 0  AND  a.group_id IN
+            <foreach collection="groupdIds" item="groupdIds" index="no" open="(" separator="," close=")">
+                #{groupdIds}
+            </foreach>
+        ) c
+
+        <!-- 此处选用inner 原因 选中节点组之后 组内节点有可能没有指定机柜 也就是使用left join 会把未指定的列出来 right join 会展示null数据 在有机柜未包含节点时 -->
+        <if test="params.roomId != null and params.roomId != ''">
+            INNER JOIN node_cabinet d ON c.cabinet_id = d.id
+        </if>
+
+        WHERE c.state != 3
+
+        <if test="params.roomId != null and params.roomId != ''">
+            AND d.room_id  = #{params.roomId}
+        </if>
+
+        <if test="params.ip != null and params.ip != ''">
+            AND c.ip LIKE CONCAT('%', #{params.ip}, '%')
+        </if>
+
+        <if test="params.name != null and params.name != ''">
+            AND c.name LIKE CONCAT('%', #{params.name}, '%')
+        </if>
+
+        <if test="params.state != null and params.state != ''">
+            AND c.state = #{params.state}
+        </if>
+
+        <if test="params.type != null and params.type != ''">
+            AND c.type = #{params.type}
+        </if>
+
+        <if test="params.tag != null and params.tag != ''">
+            AND c.tag = #{params.tag}
+        </if>
+
+        <if test="params.cabinetId != null and params.cabinetId != ''">
+            AND c.cabinet_id = #{params.cabinetId}
+        </if>
+
+    </select>
+
+
 </mapper>

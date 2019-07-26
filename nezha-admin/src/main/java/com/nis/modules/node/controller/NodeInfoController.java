@@ -1,18 +1,21 @@
 package com.nis.modules.node.controller;
 
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.mission.utils.ApiJsonObject;
-import com.nis.modules.mission.utils.ApiJsonProperty;
+import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.node.service.NodeInfoService;
-import io.swagger.annotations.*;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -24,7 +27,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/node")
-@Api(tags="节点node-info")
+@Api(tags = "节点node-info")
 public class NodeInfoController {
 
     @Autowired
@@ -37,7 +40,7 @@ public class NodeInfoController {
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = nodeInfoService.queryPage(params);
-        return R.ok().put("data", page);
+        return R.ok(page);
     }
 
     /**
@@ -141,6 +144,19 @@ public class NodeInfoController {
     public R changeState(@RequestParam("uuids") Long[] uuids, @RequestParam("state") String state) {
         nodeInfoService.changeState(uuids, state);
         return R.ok();
+    }
+
+    @ApiOperation("查询可用机柜")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "uuid", value = "uuid", paramType = "query", dataType = "Long"),
+            @ApiImplicitParam(name = "uSize", value = "uSize", required = true, paramType = "query", dataType = "Long")
+    })
+    @RequestMapping(value = "/selectCab", method = RequestMethod.GET)
+    public R selectCab(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam("uSize") Integer uSize) {
+        List<AvailCabinetEntity> availCabinetEntities = nodeInfoService.selectCab(uuid, uSize);
+        Map<String, List<AvailCabinetEntity>> map = new HashMap();
+        map.put("list", availCabinetEntities);
+        return R.ok(map);
     }
 
 }

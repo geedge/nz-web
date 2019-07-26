@@ -32,20 +32,25 @@ import java.util.Map;
 @Service("nodeGroupInfoService")
 public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, NodeGroupInfoEntity> implements NodeGroupInfoService {
 
+    // 节点组 dao
     @Autowired
     private NodeGroupInfoDao nodegroupInfoDao;
 
+    // 业务系统service
     @Autowired
     private SystemInfoServiceImpl systemInfoService;
 
+    // 节点组 节点 关联 service
     @Autowired
     private NodeGroupRelServiceImpl nodeGroupRelService;
 
+    // 节点 节点组 关联 dao
     @Autowired
-    private NodeGroupRelDao nodeGroupRelDao;// 节点 节点组 关系
+    private NodeGroupRelDao nodeGroupRelDao;
 
+    //  业务系统 节点 关联 关系
     @Autowired
-    private SystemNodeRelService systemNodeRelService;//  业务系统 节点 关联 关系
+    private SystemNodeRelService systemNodeRelService;
 
     /**
      * 涉及权限   global下列出所有业务系统和其下节点组，普通业务系统只列出自身的节点组；
@@ -83,7 +88,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 entity.setAllowAss("0");
             }
             //2.2 能否增加子节点组 0不能，1可以  只要跟自己没有直接关联的节点就可以
-            if (nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId())) < 1) {//此节点组下没有关联的节点
+            if (nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId()).eq("del_flag", 0)) < 1) {//此节点组下没有关联的节点
                 entity.setAllowSub("1");
             } else {
                 entity.setAllowSub("0");

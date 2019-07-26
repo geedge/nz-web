@@ -11,16 +11,12 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.entity.*;
-import com.nis.modules.node.service.NodeCabinetService;
-import com.nis.modules.node.service.NodeInfoService;
-import com.nis.modules.node.service.NodeRoomService;
-import com.nis.modules.node.service.SystemNodeRelService;
+import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,35 +50,35 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Autowired
     private SystemNodeRelService systemNodeRelService;
 
+    // 节点组service
+    @Autowired
+    private NodeGroupInfoService nodeGroupInfoService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        //ip地址
-        String ip = (String) params.get("ip");
-        //名称
-        String name = (String) params.get("name");
-        //设备状态
-        String state = (String) params.get("state");
-        //设备类型
-        String type = (String) params.get("type");
-        //设备标签
-        String tag = (String) params.get("tag");
-        //机柜ID
-        Long cabinetId = null;
-        if (cabinetId != null) {
-            cabinetId = Long.valueOf(params.get("cabinetId").toString());
+        // 1.  groupId 存在  以 group 关联 为主
+        IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
+        if (params.get("groupId") != null) {
+            // 1.1 查询出选中节点组的子节点组的ID
+            Long groupId = Long.valueOf(params.get("groupId").toString());
+            NodeGroupInfoEntity nodeGroup = nodeGroupInfoService.getOne(new QueryWrapper<NodeGroupInfoEntity>().eq("id", groupId));
+            // 1.2 获取包含的子节点组
+            List<NodeGroupInfoEntity> childe = nodeGroupInfoService.list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodeGroup.getPids() + nodeGroup.getId()));
+            childe.add(nodeGroup);
+            Long[] groupdIds = new Long[childe.size()];
+            for (int i = 0; i < childe.size(); i++) {
+                groupdIds[i] = childe.get(i).getId();
+            }
+            page.setRecords(nodeInfoDao.selectListByGroups(page, params, groupdIds));
+            for (NodeInfoEntity entity : page.getRecords()) {
+                handlerEntity(entity);
+            }
+            // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
+            return new PageUtils(page);
         }
 
-        QueryWrapper<NodeInfoEntity> queryWrapper = new QueryWrapper<NodeInfoEntity>()
-                .like(StringUtils.isNotBlank(ip), "ip", ip)
-                .like(StringUtils.isNotBlank(name), "name", name)
-                .eq(StringUtils.isNotBlank(state), "state", state)
-                .eq(StringUtils.isNotBlank(type), "type", type)
-                .eq(StringUtils.isNotBlank(tag), "tag", tag)
-                .eq((cabinetId != null), "cabinet_id", cabinetId)
-                .ne("state", 3);// state 3 是删除状态
-        IPage<NodeInfoEntity> page = this.page(new Query<NodeInfoEntity>().getPage(params), queryWrapper);
-
-        // 处理返回结果
+        // 2. 节点自身的过滤 包含机房
+        page.setRecords(nodeInfoDao.selectListByRoomId(page, params));
         for (NodeInfoEntity entity : page.getRecords()) {
             handlerEntity(entity);
         }
@@ -104,12 +100,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     //处理返回结果  添加 机柜 机房 业务系统相关信息
     public void handlerEntity(NodeInfoEntity nodeInfoEntity) {
-        // 1.得到所属机柜
-        NodeCabinetEntity cabinet = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
-        nodeInfoEntity.setCabinetInfo(cabinet);
-        // 2.得到所属机房名称
-        NodeRoomEntity nodeRoom = nodeRoomService.getById(cabinet.getRoomId());
-        nodeInfoEntity.setRoomName(nodeRoom.getName());
+        if (nodeInfoEntity.getCabinetId() != 0) { // 未指定机柜的节点不需要 补充 机柜机房信息
+            // 1.得到所属机柜
+            NodeCabinetEntity cabinet = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
+            nodeInfoEntity.setCabinetInfo(cabinet);
+            // 2.得到所属机房名称
+            NodeRoomEntity nodeRoom = nodeRoomService.getById(cabinet.getRoomId());
+            nodeInfoEntity.setRoomName(nodeRoom.getName());
+        }
         // 3.得到此节点所在的所有业务系统
         List<SystemInfoEntity> sysList = new ArrayList<>();
         List<SystemNodeRelEntity> list = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", nodeInfoEntity.getUuid()).eq("del_flag", 0));
@@ -190,19 +188,144 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Transactional(rollbackFor = Exception.class)
     public void updateNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
-        if (ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp()) && nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
-            //2. IP地址转换 IP整数
-            nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-            //3. 密码加密 base64
-            nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-            nodeInfoEntity.setOperator(1L);
-            nodeInfoEntity.setOpTime(new Date());
-            //4. 入库
-            update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>()
-                    .eq("uuid", nodeInfoEntity.getUuid()));
+        if (ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
+            if(nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())){
+                //2. IP地址转换 IP整数
+                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+                //3. 密码加密 base64
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOpTime(new Date());
+                //4. 入库
+                update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>()
+                        .eq("uuid", nodeInfoEntity.getUuid()));
+            }else{
+                throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+            }
         } else {
-            throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
+            throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);// IP地址重复
         }
+    }
+
+    /**
+     * 查询可用机柜 返回机房 机柜 和 可用下标
+     *
+     * @param uuid  O
+     * @param uSize R
+     * @return
+     */
+    @Override
+    public List<AvailCabinetEntity> selectCab(Long uuid, Integer uSize) {
+        //定义返回集合
+        List<AvailCabinetEntity> retAvailCabs = new ArrayList<>();
+
+        // 1.0 得到所有机房
+        List<NodeRoomEntity> nodeRooms = nodeRoomService.list(new QueryWrapper<NodeRoomEntity>().eq("del_flag", 0));
+
+
+        Long cabinetId = null;
+        if (uuid != null) { // 修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
+            NodeInfoEntity updateNodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
+            cabinetId = updateNodeInfo.getCabinetId();
+        }
+
+        for (NodeRoomEntity nodeRoom : nodeRooms) {
+            //定义返回格式
+            AvailCabinetEntity availCab = new AvailCabinetEntity();
+            availCab.setRoomId(nodeRoom.getId());
+            availCab.setRoomName(nodeRoom.getName());
+
+            // 1.1 查询每个机房下所有的机柜
+            List<NodeCabinetEntity> nodeCabinets = nodeCabinetService.list(new QueryWrapper<NodeCabinetEntity>().eq("room_id", nodeRoom.getId()).eq("del_flag", 0));
+
+            // 2.0 遍历机柜 得到下面的所有节点
+            for (NodeCabinetEntity cab : nodeCabinets) {
+
+                // 2.1 得到每个机柜下包含的节点信息
+                List<NodeInfoEntity> nodeInfos = this.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", cab.getId()).ne("state", 3));
+                // 2.2 获取当前机柜的全部位置
+                Integer[] allPosition = new Integer[cab.getUbit()];
+                for (int i = 0; i < allPosition.length; i++) {
+                    allPosition[i] = i + 1;
+                } //操作之后  allPosition 中的数据格式应为 1,2,3,4 ...  从1开始到uBit   也就是所有位置
+
+                List<Integer> occList = new ArrayList<>(); // 记录的是整个机柜下 节点所占用的位置
+
+                if (cabinetId == cab.getId()) { // 修改时节点的所属的机柜  应还回节点
+
+                    // 2.3 根据得到的节点信息 得到占用的位置
+                    for (NodeInfoEntity nodeInfo : nodeInfos) {
+                        if (nodeInfo.getUuid() == uuid) { // 修改的情况下
+                            continue;
+                        }
+                        for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetStart() + nodeInfo.getuSize(); i++) {
+                            //2.4 这里 i 就是要从 allPostion 中剔除的数据  例如 5,7  那这里的I 就是 5 ,6
+                            occList.add(i);
+                        }
+                    }
+
+                } else {
+
+                    for (NodeInfoEntity nodeInfo : nodeInfos) {
+                        for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetStart() + nodeInfo.getuSize(); i++) {
+                            //2.4 这里 i 就是要从 allPostion 中剔除的数据  例如 5,7  那这里的I 就是 5 ,6
+                            occList.add(i);
+                        }
+                    }
+
+                }
+                // 3.0 根据全部的位置 去除已经占用的位置 得到空闲的位置
+                List<Integer> freePosition = new ArrayList<>(Arrays.asList(allPosition));
+                freePosition.removeAll(occList); // freePosition 为剩余的位置 例如 1,2,3,4,(5,6,) 7,8,(9),10
+                // 4.0 在此处处理一下可用位置
+                String convertStr = convertStr(freePosition);// 处理之后的格式  '1-4,7,10'
+                //5.0  拿到处理好的格式之后进行判断U位规格
+                String[] handleArr = convertStr.split(",");  //   格式例如 [ "1-4" , "7"  , "10"]
+
+                // 6.0 记录符合返回段的数据
+                List<String> availPostion = new ArrayList<>();
+                if (uSize > 1) {
+                    //进行U位大小的判断 查询可用位置
+                    for (String str : handleArr) {
+                        if (str.contains("-")) { // 如果包含 ‘-’ 绝对是连续 不包含就是单条的 此处条件为uSize > 1
+                            String[] split = str.split("-");// 继续分割 找到可用的起始位置 5,7
+                            Integer u = Integer.valueOf(split[1]) - Integer.valueOf(split[0]) + 1;//得到这个范围的位置个数 1-4 为4个位置 4-1 = 3
+                            if (u < uSize) {// 这个连续段的大小不符合U位
+                                continue;
+                            } else {
+                                availPostion.add(str); // 输入的U位大小符合这个范围段
+                            }
+                        }
+                        continue;
+                    }
+
+                    // 6.1 此处对可用的范围段做出相应的处理  availPostion中记录的是范围段   多个返回段  6-10   13-17 .... 这种
+                    List<Integer> endList = new ArrayList<>();
+                    if (ArrayUtils.isNotEmpty(allPosition)) {
+                        for (String str : availPostion) {
+                            String[] split = str.split("-");
+                            for (int i = Integer.valueOf(split[0]); i < Integer.valueOf(split[1]); i++) { // 1 4  2
+                                if (Integer.valueOf(split[1]) - i + 1 >= uSize) {//从后往前判断可以从哪些开始
+                                    //可以开始的位置   记录并返回前台
+                                    endList.add(i);
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                    // 此处的endList 为开始下标了
+                    cab.setStarts(endList);
+                } else {
+                    //这种情况就是用户输入的U位是1  可以把所有的位置都返回  都可以选择 如果存在可用位置的情况下  如果不存在返回 Null 合理
+                    cab.setStarts(freePosition);
+                }
+            }
+
+            availCab.setCabinets(nodeCabinets);
+            retAvailCabs.add(availCab);
+        }
+
+        return retAvailCabs;
     }
 
 
@@ -217,5 +340,34 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             return false;
         }
         return true;
+    }
+
+
+    //判断是否连续的  并用字符串的形式返回
+    public String convertStr(List<Integer> list) {
+        int state = 0;
+        String result = "";
+        for (int i = 0; i < list.size(); i++) {
+            if (i == list.size() - 1) state = 2;
+            if (state == 0) {
+                if (list.get(i + 1) == list.get(i) + 1) {
+                    result += Integer.toString(list.get(i));
+                    result += "-";
+                    state = 1;
+                } else {
+                    result += Integer.toString(list.get(i));
+                    result += ",";
+                }
+            } else if (state == 1) {
+                if (list.get(i + 1) != list.get(i) + 1) {
+                    result += Integer.toString(list.get(i));
+                    result += ",";
+                    state = 0;
+                }
+            } else {
+                result += Integer.toString(list.get(i));
+            }
+        }
+        return result;
     }
 }
