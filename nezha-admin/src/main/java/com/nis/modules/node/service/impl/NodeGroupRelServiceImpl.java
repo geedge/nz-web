@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.service.NodeGroupRelService;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,5 +16,10 @@ import org.springframework.stereotype.Service;
 @Service("nodeGroupRelService")
 public class NodeGroupRelServiceImpl extends ServiceImpl<NodeGroupRelDao, NodeGroupRelEntity> implements NodeGroupRelService {
 
+	@Override
+	public List<NodeGroupRelEntity> queryBySystemId(Long id) {
+		List<NodeGroupRelEntity> queryBySystemId = baseMapper.queryBySystemId(id);
+		return queryBySystemId;
+	}
 
 }

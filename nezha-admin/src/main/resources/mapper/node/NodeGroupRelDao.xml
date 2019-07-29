@@ -22,5 +22,10 @@
         </foreach>
     </update>
 
-
+	<select id="queryBySystemId" resultType="nodeGroupRelEntity">
+		select ngr.* 
+		from nodegroup_info ngi
+		left join node_group_rel ngr on ngr.group_id=ngi.id
+		where ngi.del_flag=0 and ngr.del_flag=0 and ngi.system_id=#{id}
+	</select>
 </mapper>

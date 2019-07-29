@@ -9,12 +9,16 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
+import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
 import com.nis.modules.detectSet.service.DeteSetInfoService;
+import com.nis.modules.detectSet.service.DeteSetNodeRelService;
 import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.service.MissionInfoService;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.SystemNodeRelEntity;
 import com.nis.modules.node.service.NodeGroupInfoService;
+import com.nis.modules.node.service.NodeGroupRelService;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
@@ -49,9 +53,13 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	@Autowired
 	private NodeGroupInfoService nodegroupService;
 	@Autowired
+	private NodeGroupRelService nodeGroupRelService;
+	@Autowired
 	private PermissionInfoService permissionService;
 	@Autowired
 	private DeteSetInfoService deteSetService;
+	@Autowired
+	private DeteSetNodeRelService deteSetNodeService;
 	@Autowired
 	private MissionInfoService missionService;
 	
@@ -228,5 +236,105 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		permissionService.updateBatchById(waitingDeletePermissions);
 		
 		return true;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public boolean saveNodeRel(SystemInfoEntity entity) {
+		Date now = new Date();
+		List<Long> uuids = entity.getUuids();
+		if (uuids.size() > 0) {
+			//先查出已有的关联，用于去重
+			List<SystemNodeRelEntity> oldSysNodeRel = sysNodeService.list(
+					new QueryWrapper<SystemNodeRelEntity>()
+					.eq(true, "del_flag", Constant.DELFLAG_FALSE)
+					.eq(true, "system_id", entity.getId()));
+			//保存sys-node
+			List<SystemNodeRelEntity> toSaveSysNodeRel = new ArrayList<>();
+			for (Long uuid : uuids) {
+				if (!checkDuplicate(oldSysNodeRel, entity.getId(), uuid)) {
+					continue;
+				}
+				
+				SystemNodeRelEntity snr = new SystemNodeRelEntity();
+				snr.setUuid(uuid);
+				snr.setSystemId(entity.getId());
+				snr.setOperator(ShiroUtils.getUserId());
+				snr.setOpTime(now);
+				toSaveSysNodeRel.add(snr);
+			}
+			
+			if (toSaveSysNodeRel.size() > 0) {
+				sysNodeService.saveBatch(toSaveSysNodeRel);
+			}
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteNodeRel(SystemInfoEntity entity) {
+		Date now = new Date();
+		/*
+		 * 一共更新三个表：system_node_rel、node_group_rel、dete_set_node_rel
+		 * 即删除系统-节点、系统专属监测设置-节点、节点组-节点三个关联
+		 */
+		
+		//system_node_rel
+		UpdateWrapper<SystemNodeRelEntity> sysNodeWrapper = new UpdateWrapper<>();
+		sysNodeWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
+		sysNodeWrapper.eq(true, "system_id", entity.getId());
+		sysNodeWrapper.in(true, "uuid", entity.getUuids());
+		sysNodeWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
+		sysNodeService.update(sysNodeWrapper);
+		
+		//node_group_rel
+		List<NodeGroupRelEntity> queryBySystemId = nodeGroupRelService.queryBySystemId(entity.getId());
+		if (queryBySystemId != null && queryBySystemId.size() > 0) {
+			for (NodeGroupRelEntity en : queryBySystemId) {
+				if (!entity.getUuids().contains(en.getUuid())) {
+					continue;
+				}
+				en.setDelFlag(Constant.DELFLAG_TRUE);
+				en.setOperator(ShiroUtils.getUserId());
+				en.setOpTime(now);
+			}
+			nodeGroupRelService.updateBatchById(queryBySystemId);
+		}
+		
+		//dete_set_node_rel
+		PermissionInfoEntity queryParam = new PermissionInfoEntity();
+		queryParam.setRelId(entity.getId());
+		queryParam.setType(Constant.PM_TYPE_DETESET);
+		queryParam.setViewLevel(Constant.VIEWLEVEL_SYS);
+		queryParam.setQueryColumn(Constant.DETESET_NODE_RELTYPE_NODE + "");
+		queryParam.setUuids(entity.getUuids());
+		List<DeteSetNodeRelEntity> queryBySystemId2 = deteSetNodeService.queryBySystemId(queryParam);
+		if (queryBySystemId2 != null && queryBySystemId2.size() > 0) {
+			for (DeteSetNodeRelEntity en : queryBySystemId2) {
+				en.setDelFlag(Constant.DELFLAG_TRUE);
+				en.setOperator(ShiroUtils.getUserId());
+				en.setOpTime(now);
+			}
+			deteSetNodeService.updateBatchById(queryBySystemId2);
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * oldSysNodeRel-uuid查重，重复返回false，不重复返回true
+	 * @param oldSysNodeRel
+	 * @param uuid
+	 * @return
+	 */
+	private boolean checkDuplicate(List<SystemNodeRelEntity> oldSysNodeRel, Long systemId, Long uuid) {
+		boolean flag = true;
+		for (SystemNodeRelEntity o : oldSysNodeRel) {
+			if (o.getUuid() == uuid && o.getSystemId() == systemId) {
+				flag = false;
+				break;
+			}
+		}
+		return flag;
 	}
 }

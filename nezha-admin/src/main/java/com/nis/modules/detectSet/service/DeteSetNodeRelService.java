@@ -3,7 +3,9 @@ package com.nis.modules.detectSet.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,5 +18,7 @@ import java.util.Map;
 public interface DeteSetNodeRelService extends IService<DeteSetNodeRelEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+    
+    List<DeteSetNodeRelEntity> queryBySystemId(PermissionInfoEntity entity);
 }
 

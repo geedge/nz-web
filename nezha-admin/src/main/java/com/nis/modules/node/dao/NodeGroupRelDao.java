@@ -2,6 +2,9 @@ package com.nis.modules.node.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
+
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -17,5 +20,7 @@ import org.springframework.stereotype.Repository;
 public interface NodeGroupRelDao extends BaseMapper<NodeGroupRelEntity> {
 
     void deleteNodeRel(@Param("id") Long id, @Param("uuids") Long[] uuids);
+    
+    List<NodeGroupRelEntity> queryBySystemId(Long id);
 
 }

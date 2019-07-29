@@ -31,4 +31,8 @@ public interface SystemInfoService extends IService<SystemInfoEntity> {
 	boolean checkName(SystemInfoEntity systemInfo);
 
 	boolean delete(Long id);
+
+	boolean saveNodeRel(SystemInfoEntity entity);
+
+	boolean deleteNodeRel(SystemInfoEntity entity);
 }

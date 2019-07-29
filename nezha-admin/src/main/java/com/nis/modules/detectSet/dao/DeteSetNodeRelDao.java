@@ -1,7 +1,11 @@
 package com.nis.modules.detectSet.dao;
 
 import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -13,5 +17,5 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface DeteSetNodeRelDao extends BaseMapper<DeteSetNodeRelEntity> {
-	
+	List<DeteSetNodeRelEntity> queryBySystemId(PermissionInfoEntity entity);
 }

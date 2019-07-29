@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nis.common.smartvalidate.ann.NotNull;
 import com.nis.common.utils.RCode;
 
@@ -83,4 +84,8 @@ public class SystemInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private Long usergroupId;
+	
+	@JsonIgnore
+	@TableField(exist=false)
+	private List<Long> uuids;
 }

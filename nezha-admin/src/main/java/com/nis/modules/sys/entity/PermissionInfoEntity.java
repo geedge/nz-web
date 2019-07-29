@@ -2,11 +2,14 @@ package com.nis.modules.sys.entity;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Data;
 
@@ -33,4 +36,12 @@ public class PermissionInfoEntity implements Serializable {
 	private Long operator;
 	
 	private Date opTime;
+	
+	@JsonIgnore
+	@TableField(exist = false)
+	private List<Long> uuids;
+	
+	@JsonIgnore
+	@TableField(exist = false)
+	private String queryColumn;
 }

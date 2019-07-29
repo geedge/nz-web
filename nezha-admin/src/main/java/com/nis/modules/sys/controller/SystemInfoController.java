@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
@@ -110,6 +111,9 @@ public class SystemInfoController extends AbstractController {
 		return R.ok();
 	}
 	
+	/**
+	 * 查询业务系统下的节点
+	 */
 	@RequestMapping("/nodes")
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "查询业务系统下的节点")
 	public R nodes(@RequestParam Map<String, Object> params){
@@ -118,5 +122,57 @@ public class SystemInfoController extends AbstractController {
 		
 		PageUtils queryPageBySystemId = nodeInfoService.queryPageBySystemId(params);
 		return R.ok(queryPageBySystemId);
+	}
+	
+	/**
+	 * 分配节点
+	 */
+	@RequestMapping("/saveNodeRel")
+	@ApiOperation(httpMethod = "POST", response = R.class, value = "分配节点")
+	public R saveNodeRel(@ApiParam SystemInfoEntity entity){
+		if (!ShiroUtils.isGlobal()) {
+			entity.setId(ShiroUtils.getCurrSystemId());
+		}
+		ValidateUtils.is(entity.getId()).notNull(RCode.NOT_NULL_ERROR)
+					 .and(entity.getUuids()).notNull(RCode.NOT_NULL_ERROR);
+		
+		systemInfoService.saveNodeRel(entity);
+		return R.ok();
+	}
+	
+	/**
+	 * 移除节点
+	 */
+	@RequestMapping("/deleteNodeRel")
+	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "移除节点")
+	public R deleteNodeRel(@ApiParam SystemInfoEntity entity){
+		if (!ShiroUtils.isGlobal()) {
+			entity.setId(ShiroUtils.getCurrSystemId());
+		}
+		ValidateUtils.is(entity.getId()).notNull(RCode.NOT_NULL_ERROR)
+					 .and(entity.getUuids()).notNull(RCode.NOT_NULL_ERROR);
+		
+		systemInfoService.deleteNodeRel(entity);
+		return R.ok();
+	}
+	
+	@RequestMapping("/nameCheck")
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "业务系统名称校验")
+	public R nameCheck(@RequestParam Map<String, Object> params){
+		ValidateUtils.is(params.get("name")).notNull();
+		//校验名称重复
+		SystemInfoEntity queryParam = new SystemInfoEntity();
+		Object object = params.get("id");
+		System.out.println(object.toString());
+		if (object != null && !StringUtils.isEmpty(object.toString())) {
+			queryParam.setId(Long.valueOf((String)object));
+		}
+		queryParam.setName((String)params.get("name"));
+		
+		if (systemInfoService.checkName(queryParam)) {
+			return R.error(RCode.SYS_SYS_DUPLICATENAME);
+		} else {
+			return R.ok();
+		}
 	}
 }

@@ -134,4 +134,6 @@ public class Constant {
     public static final String VIEWLEVEL_SYS = "2";
     public static final String VIEWLEVEL_ALL = "3";
     
+    public static final Integer DETESET_NODE_RELTYPE_NODE = 1;
+    public static final Integer DETESET_NODE_RELTYPE_NODEGROUP = 2;
 }
