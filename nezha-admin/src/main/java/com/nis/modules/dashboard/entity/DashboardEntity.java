@@ -5,6 +5,9 @@ import java.util.Date;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -33,6 +36,13 @@ public class DashboardEntity implements Serializable {
 	private String data;
 	private Long operator;
 	private Date opTime;
+	/*@TableField(exist = false)
+	private ChartSingleEntity chartSingleEntity;
+	@TableField(exist = false)
+	private ChartTableEntity chartTableEntity;
+	@TableField(exist = false)
+	private ChartStatisticalEntity chartStatisticalEntity;*/
+	
 	
 	public void setOperator() {
 		this.operator=ShiroUtils.getUserEntity().getUserId();

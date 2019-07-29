@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.modules.dashboard.entity.ChartEntity;
 import com.nis.modules.dashboard.entity.DashboardEntity;
 import com.nis.modules.dashboard.service.DashboardService;
 import com.nis.modules.sys.controller.AbstractController;
@@ -32,40 +35,59 @@ public class DashboardController extends AbstractController {
 	@Autowired
 	private DashboardService dashboardService;
 	
-	@GetMapping("/queryAllDashboards")
+	@GetMapping("/list")
 	@ResponseBody
 	@ApiOperation(httpMethod="GET",value="查询所有仪表盘信息", notes="暂无任何条件")
-	public R queryAllDashboards() {
+	public R list() {
 		List<DashboardEntity> dashboards = dashboardService.queryAllDashboards();
 		return R.ok().put("data", dashboards);
 	}
 	
-	@DeleteMapping("/removeDashboard")
+	@DeleteMapping("/delete")
 	@ApiImplicitParam(name = "id", value = "id值", required = false, dataType = "long", defaultValue="")
 	@ApiOperation(httpMethod="DELETE",value="删除仪表盘信息", notes="仪表盘ID")
 	@RequiresPermissions("dashboard:dashboard:delete")
 	@ResponseBody
-	public R removeDashboard(@RequestBody Long id) {
+	public R delete(@RequestBody Long id) {
+		ValidateUtils.is(id).notNull(RCode.DASHBOARD_ID_NULL);
 		dashboardService.removeDashboardById(id);
 		return R.ok();
 	}
 	
-	@PostMapping("/addDashboard")
+	@PostMapping("/save")
 	@ApiOperation(httpMethod="POST",value="新增仪表盘信息", notes="仪表盘各项属性")
 	@RequiresPermissions("dashboard:dashboard:insert")
 	@ResponseBody
-	public R addDashboard(@RequestBody DashboardEntity dashboard) {
+	public R save(@RequestBody DashboardEntity dashboard) {
+		// 验证用户传参数 是否能生成有效图形
+		dashboardService.validateDashboardData(dashboard);
 		dashboardService.addDashboard(dashboard);
 		return R.ok();
 	}
 	
-	@PutMapping("/modifyDashboard")
+	@PutMapping("/update")
 	@ApiOperation(httpMethod="PUT",value="修改仪表盘信息", notes="仪表盘各项属性")
 	@RequiresPermissions("dashboard:dashboard:update")
 	@ResponseBody
-	public R modifyDashboard(@RequestBody DashboardEntity dashboard) {
+	public R update(@RequestBody DashboardEntity dashboard) {
+		ValidateUtils.is(dashboard.getId()).notNull(RCode.DASHBOARD_ID_NULL);
+		// 验证用户传参数 是否能生成有效图形
+		dashboardService.validateDashboardData(dashboard);
 		dashboardService.modifyDashboard(dashboard);
 		return R.ok();
 	}
 	
+	@PutMapping("/modifyShape")
+	@ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
+	@RequiresPermissions("dashboard:dashboard:update")
+	@ResponseBody
+	public R modifyShape(@RequestBody DashboardEntity dashboard) {
+		ValidateUtils.is(dashboard.getId()).notNull(RCode.DASHBOARD_ID_NULL);
+		ValidateUtils.is(dashboard.getX()).notNull(RCode.DASHBOARD_X_NULL);
+		ValidateUtils.is(dashboard.getY()).notNull(RCode.DASHBOARD_Y_NULL);
+		ValidateUtils.is(dashboard.getHeight()).notNull(RCode.DASHBOARD_HEIGHT_NULL);
+		ValidateUtils.is(dashboard.getWidth()).notNull(RCode.DASHBOARD_WIDTH_NULL);
+		dashboardService.modifyDashboard(dashboard);
+		return R.ok();
+	}
 }

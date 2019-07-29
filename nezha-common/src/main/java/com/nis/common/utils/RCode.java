@@ -68,8 +68,15 @@ public enum RCode {
 
 
 	DASHBOARD_ERROR(500000, "dashboard_error"), //50xxxx，仪表盘通用错误
-
-
+	DASHBOARD_ID_NULL(500001,"dashboard_id_null"),  //仪表盘id为空
+	DASHBOARD_X_NULL(500002,"dashboard_x_postion_null"),  //仪表盘x轴位置为空
+	DASHBOARD_Y_NULL(500003,"dashboard_Y_postion_null"),  //仪表盘y轴位置为空
+	DASHBOARD_HEIGHT_NULL(500004,"dashboard_height_null"),  //仪表盘高度为空
+	DASHBOARD_WIDTH_NULL(500005,"dashboard_width_null"),  //仪表盘宽度为空
+	DASHBOARD_TYPE_NULL(500006,"dashboard_type_null"),  //仪表盘类型为空
+	DASHBOARD_USERSQL_NULL(500007,"dashboard_user_sql_null"),  //仪表盘查询语句为空
+	DASHBOARD_USERSQL_ERROR(500008,"dashboard_user_sql_error"),  //仪表盘查询语句错误
+	
 	GRAPH_ERROR(600000, "graph_error"), //60xxxx，图形类通用错误
 
 

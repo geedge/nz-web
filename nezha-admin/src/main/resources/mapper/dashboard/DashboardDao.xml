@@ -5,6 +5,10 @@
 	<select id="selectAllDashboards" parameterType="java.lang.Long" resultType="com.nis.modules.dashboard.entity.DashboardEntity">
 		select * from dashboard where system_id=#{systemId}
 	</select>
+	
+	<select id="selectResultData" parameterType="java.lang.String" resultType="com.nis.modules.dashboard.entity.ChartSeriesEntity">
+		 ${userSql}
+	</select>
 <!-- 	
 	<delete id="deleteDashboardById" parameterType="java.lang.Long">
 		delete from dashboard where id=#{id}
