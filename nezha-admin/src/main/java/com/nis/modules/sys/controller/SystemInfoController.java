@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,14 +33,14 @@ public class SystemInfoController extends AbstractController {
 	@Autowired
 	private NodeInfoService nodeInfoService;
 	
-	@RequestMapping("/list")
+	@RequestMapping(value = "list", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", value = "业务系统列表查询")
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils queryPage = systemInfoService.queryPage(params);
 		return R.ok(queryPage);
 	}
 	
-	@RequestMapping("/detail")
+	@RequestMapping(value = "detail", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", value = "业务系统详情查询")
 	public R detail(@ApiParam @RequestParam Long id) {
 		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
@@ -47,7 +48,7 @@ public class SystemInfoController extends AbstractController {
 		return R.ok(queryDetail);
 	}
 	
-	@RequestMapping("/save")
+	@RequestMapping(value = "save", method = RequestMethod.POST)
 	@ApiOperation(httpMethod = "POST", response = R.class, value = "保存业务系统")
 	public R save(@ApiParam SystemInfoEntity systemInfo){
 		//global限制
@@ -73,7 +74,7 @@ public class SystemInfoController extends AbstractController {
 		return R.ok();
 	}
 	
-	@RequestMapping("/update")
+	@RequestMapping(value = "update", method = RequestMethod.PUT)
 	@ApiOperation(httpMethod = "PUT", response = R.class, value = "修改业务系统")
 	public R update(@ApiParam SystemInfoEntity systemInfo){
 		//global限制
@@ -98,7 +99,7 @@ public class SystemInfoController extends AbstractController {
 		return R.ok();
 	}
 	
-	@RequestMapping("/delete")
+	@RequestMapping(value = "delete", method = RequestMethod.DELETE)
 	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "删除业务系统")
 	public R delete(@ApiParam @RequestParam Long id){
 		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
@@ -115,7 +116,7 @@ public class SystemInfoController extends AbstractController {
 	/**
 	 * 查询业务系统下的节点
 	 */
-	@RequestMapping("/nodes")
+	@RequestMapping(value = "nodes", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "查询业务系统下的节点")
 	public R nodes(@RequestParam Map<String, Object> params){
 		ValidateUtils.is(params.get("id")).notNull(RCode.NOT_NULL_ERROR);
@@ -128,7 +129,7 @@ public class SystemInfoController extends AbstractController {
 	/**
 	 * 分配节点
 	 */
-	@RequestMapping("/saveNodeRel")
+	@RequestMapping(value = "saveNodeRel", method = RequestMethod.POST)
 	@ApiOperation(httpMethod = "POST", response = R.class, value = "分配节点")
 	public R saveNodeRel(@ApiParam SystemInfoEntity entity){
 		if (!ShiroUtils.isGlobal()) {
@@ -144,7 +145,7 @@ public class SystemInfoController extends AbstractController {
 	/**
 	 * 移除节点
 	 */
-	@RequestMapping("/deleteNodeRel")
+	@RequestMapping(value = "deleteNodeRel", method = RequestMethod.DELETE)
 	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "移除节点")
 	public R deleteNodeRel(@ApiParam SystemInfoEntity entity){
 		if (!ShiroUtils.isGlobal()) {
@@ -162,7 +163,7 @@ public class SystemInfoController extends AbstractController {
 	 * @param params
 	 * @return
 	 */
-	@RequestMapping("/nameCheck")
+	@RequestMapping(value = "nameCheck", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "业务系统名称校验")
 	public R nameCheck(@RequestParam Map<String, Object> params){
 		ValidateUtils.is(params.get("name")).notNull();
@@ -186,7 +187,7 @@ public class SystemInfoController extends AbstractController {
 	 * 用户所属业务系统的列表
 	 * @return
 	 */
-	@RequestMapping("/listByUser")
+	@RequestMapping(value = "listByUser", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "用户所属业务系统的列表")
 	public R listByUser(){
 		Long userId = getUserId();
@@ -204,7 +205,7 @@ public class SystemInfoController extends AbstractController {
 	 * @param id
 	 * @return
 	 */
-	@RequestMapping("/changeSystem")
+	@RequestMapping(value = "changeSystem", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "切换业务系统")
 	public R changeSystem(@ApiParam @RequestParam Long id){
 		ValidateUtils.is(id).notNull();

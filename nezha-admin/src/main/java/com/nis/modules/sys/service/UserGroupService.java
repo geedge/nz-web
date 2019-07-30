@@ -3,6 +3,7 @@ package com.nis.modules.sys.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.sys.entity.UserGroupEntity;
+import com.nis.modules.sys.entity.UserGroupEntity2;
 
 import java.util.List;
 import java.util.Map;
@@ -19,5 +20,7 @@ public interface UserGroupService extends IService<UserGroupEntity> {
     PageUtils queryPage(Map<String, Object> params);
     
     List<UserGroupEntity> queryByUser(Long userId);
+
+	UserGroupEntity2 queryDetail(Long id);
 }
 

@@ -3,16 +3,20 @@ package com.nis.modules.sys.controller;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.modules.sys.entity.UserGroupEntity;
+import com.nis.modules.sys.entity.UserGroupEntity2;
 import com.nis.modules.sys.service.UserGroupService;
+
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 
@@ -34,8 +38,8 @@ public class UserGroupController {
     /**
      * 列表
      */
-    @RequestMapping("/list")
-    @RequiresPermissions("sys:usergroup:list")
+    @RequestMapping(value = "list", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", value = "用户组列表查询")
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = userGroupService.queryPage(params);
 
@@ -46,20 +50,20 @@ public class UserGroupController {
     /**
      * 信息
      */
-    @RequestMapping("/info/{id}")
-    @RequiresPermissions("sys:usergroup:info")
-    public R info(@PathVariable("id") Long id){
-		UserGroupEntity userGroup = userGroupService.getById(id);
+    @RequestMapping(value = "detail", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", value = "用户组详情查询")
+    public R detail(@ApiParam @RequestParam Long id){
+		UserGroupEntity2 userGroup = userGroupService.queryDetail(id);
 
-        return R.ok().put("userGroup", userGroup);
+        return R.ok(userGroup);
     }
 
     /**
      * 保存
      */
     @RequestMapping("/save")
-    @RequiresPermissions("sys:usergroup:save")
-    public R save(@RequestBody UserGroupEntity userGroup){
+    @ApiOperation(httpMethod = "POST", value = "新增用户组")
+    public R save(@ApiParam @RequestBody UserGroupEntity userGroup){
 		userGroupService.save(userGroup);
 
         return R.ok();
@@ -69,8 +73,8 @@ public class UserGroupController {
      * 修改
      */
     @RequestMapping("/update")
-    @RequiresPermissions("sys:usergroup:update")
-    public R update(@RequestBody UserGroupEntity userGroup){
+    @ApiOperation(httpMethod = "PUT", value = "修改用户组")
+    public R update(@ApiParam @RequestBody UserGroupEntity userGroup){
 		userGroupService.updateById(userGroup);
 
         return R.ok();
@@ -80,7 +84,7 @@ public class UserGroupController {
      * 删除
      */
     @RequestMapping("/delete")
-    @RequiresPermissions("sys:usergroup:delete")
+    @ApiOperation(httpMethod = "DELETE", value = "删除用户组")
     public R delete(@RequestBody Long[] ids){
 		userGroupService.removeByIds(Arrays.asList(ids));
 
