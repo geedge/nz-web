@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -156,6 +157,11 @@ public class SystemInfoController extends AbstractController {
 		return R.ok();
 	}
 	
+	/**
+	 * 业务系统名称校验
+	 * @param params
+	 * @return
+	 */
 	@RequestMapping("/nameCheck")
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "业务系统名称校验")
 	public R nameCheck(@RequestParam Map<String, Object> params){
@@ -175,4 +181,54 @@ public class SystemInfoController extends AbstractController {
 			return R.ok();
 		}
 	}
+	
+	/**
+	 * 用户所属业务系统的列表
+	 * @return
+	 */
+	@RequestMapping("/listByUser")
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "用户所属业务系统的列表")
+	public R listByUser(){
+		Long userId = getUserId();
+		//检查是否有可用的业务系统
+		List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
+		if (systemInfosByUserId == null || systemInfosByUserId.size() == 0) {
+			return R.error(RCode.SYS_LOGIN_SELECTSYS);
+		} else {
+			return R.ok(systemInfosByUserId);
+		}
+	}
+	
+	/**
+	 * 切换业务系统
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping("/changeSystem")
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "切换业务系统")
+	public R changeSystem(@ApiParam @RequestParam Long id){
+		ValidateUtils.is(id).notNull();
+		Long userId = getUserId();
+		//检查是否有可用的业务系统
+		List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
+		if (systemInfosByUserId == null || systemInfosByUserId.size() == 0) {
+			return R.error(RCode.SYS_LOGIN_SELECTSYS);
+		} else {
+			boolean flag = false;
+			for (SystemInfoEntity si : systemInfosByUserId) {
+				if (si.getId() == id) {
+					flag = true;
+					break;
+				}
+			}
+			if (flag) {
+				ShiroUtils.getUserEntity().setCurrSystemId(id);
+				return R.ok();
+			} else {
+				return R.error(RCode.SYS_LOGIN_SELECTSYS);
+			}
+		}
+	}
+	
+	
 }
