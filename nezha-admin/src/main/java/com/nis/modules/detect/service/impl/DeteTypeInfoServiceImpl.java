@@ -5,12 +5,12 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
+import com.nis.common.utils.SqlHelper.KeywordsType;
 import com.nis.modules.detect.dao.DeteTypeInfoDao;
-import com.nis.modules.detect.entity.*;
+import com.nis.modules.detect.entity.DeteTypeInfoEntity;
+import com.nis.modules.detect.entity.DeteTypeMetaEntity;
+import com.nis.modules.detect.entity.DeteTypeParamEntity;
 import com.nis.modules.detect.service.DeteTypeInfoService;
 import com.nis.modules.detect.service.DeteTypeMetaMappingService;
 import com.nis.modules.detect.service.DeteTypeMetaService;
@@ -18,13 +18,15 @@ import com.nis.modules.detect.service.DeteTypeParamService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service("deteTypeInfoService")
-public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeInfoDao, DeteTypeInfoEntity> implements DeteTypeInfoService {
+public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeInfoDao, DeteTypeInfoEntity> implements DeteTypeInfoService, ApplicationRunner {
     @Autowired
     private DeteTypeMetaService deteTypeMetaService;
     @Autowired
@@ -32,6 +34,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     @Autowired
     private DeteTypeMetaMappingService deteTypeMetaMappingService;
 
+    private SQLUtils sqlUtils;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String deteTypeName = (String) params.get("name");
@@ -63,7 +66,8 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveEntity(DeteTypeInfoEntity deteTypeInfo) {
-        Long userId = ShiroUtils.getUserId();//操作员
+//        Long userId = ShiroUtils.getUserId();//操作员
+        Long userId = 1L;//操作员
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
@@ -71,32 +75,37 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
 
-        Set<String> fieldNameFilter = new HashSet<String>();
-        for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
-            //field_name字段默认为 f_元数据名称去除特殊字符
-            String fieldName = "f_" + this.formatString(deteTypeMetaEntity.getName());
-            //防止处理后的字段名称重复
-            if (fieldNameFilter.contains(fieldName)) {
-                throw new NZException(RCode.META_FIELDNAME_EXISTS);
-            } else {
-                deteTypeMetaEntity.setFieldName(fieldName);
-                fieldNameFilter.add(fieldName);
+        if(deteTypeMetas!=null&&deteTypeMetas.size()>0){
+            Set<String> fieldNameFilter = new HashSet<String>();
+            for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
+                //field_name字段默认为 f_元数据名称去除特殊字符
+                String fieldName = ("f_" + this.formatString(deteTypeMetaEntity.getName())).toUpperCase();
+                //防止处理后的字段名称重复
+                if (fieldNameFilter.contains(fieldName)) {
+                    throw new NZException(RCode.META_FIELDNAME_EXISTS);
+                } else {
+                    deteTypeMetaEntity.setFieldName(fieldName);
+                    fieldNameFilter.add(fieldName);
+                }
+                deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
+                deteTypeMetaEntity.setOperator(userId);
+                deteTypeMetaEntity.setOpTime(date);
             }
-            deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
-            deteTypeMetaEntity.setOperator(userId);
-            deteTypeMetaEntity.setOpTime(date);
         }
+
 
 
         List<DeteTypeParamEntity> deteTypeParams = deteTypeInfo.getDeteTypeParams();
-
-        for (int i = 0; i < deteTypeParams.size(); i++) {
-            DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
-            deteTypeParamEntity.setParamIndex(i);
-            deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
-            deteTypeParamEntity.setOperator(userId);
-            deteTypeParamEntity.setOpTime(date);
+        if(deteTypeParams!=null&& deteTypeParams.size()>0){
+            for (int i = 0; i < deteTypeParams.size(); i++) {
+                DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
+                deteTypeParamEntity.setParamIndex(i);
+                deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
+                deteTypeParamEntity.setOperator(userId);
+                deteTypeParamEntity.setOpTime(date);
+            }
         }
+
 
 
         createTable(deteTypeInfo);
@@ -137,12 +146,12 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         //需要删除索引
         List<DeteTypeMetaEntity> indexDelList = new ArrayList<DeteTypeMetaEntity>();
         Set<String> fieldNameFilter = new HashSet<String>();
-        if(deteTypeMetas!=null){
+        if (deteTypeMetas != null) {
             for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
                 deteTypeMetaEntity.setOperator(userId);
                 deteTypeMetaEntity.setOpTime(date);
                 //field_name字段默认为 f_元数据名称去除特殊字符
-                String fieldName = "f_" + this.formatString(deteTypeMetaEntity.getName());
+                String fieldName = ("f_" + this.formatString(deteTypeMetaEntity.getName())).toUpperCase();
                 //防止处理后的字段名称重复
                 if (fieldNameFilter.contains(fieldName)) {
                     throw new NZException(RCode.META_FIELDNAME_EXISTS);
@@ -152,9 +161,9 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                 }
 
                 if (deteTypeMetaEntity.getId() != null) {
-                    if("1".equals(deteTypeMetaEntity.getDelFlag())){
+                    if ("1".equals(deteTypeMetaEntity.getDelFlag())) {
                         metaDelList.add(deteTypeMetaEntity);
-                    }else{
+                    } else {
                         metaUpdateList.add(deteTypeMetaEntity);
                     }
                 } else {
@@ -167,61 +176,92 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
         }
 
-        this.judgeTableFields(metaUpdateList,metaAddList,metaDelList,indexAddList,indexDelList);
+        this.judgeTableFields(metaUpdateList, metaAddList, metaDelList, indexAddList, indexDelList);
 
         //处理添加索引
-        if(indexAddList.size()>0){
-            this.getBaseMapper().addTableIndexs(deteTypeInfo.getTableName(), indexAddList);
+        if (indexAddList.size() > 0) {
+            Map<String, String[]> map = new HashMap<String, String[]>();
+            for (DeteTypeMetaEntity meta : indexAddList) {
+                String indexName = deteTypeInfo.getTableName().toUpperCase() + "_" + meta.getFieldName().toUpperCase() + "_INDEX";
+                String fieldName = meta.getFieldName();
+                map.put(indexName, new String[]{fieldName});
+            }
+            addIndexs(deteTypeInfo.getTableName(), map);
         }
         //处理删除索引
-        if(indexDelList.size()>0){
-            this.getBaseMapper().delTableIndexs(deteTypeInfo.getTableName(), indexDelList);
+        if (indexDelList.size() > 0) {
+            String[] indexs = new String[indexDelList.size()];
+            for (int i = 0; i < indexDelList.size(); i++) {
+                DeteTypeMetaEntity meta = indexDelList.get(i);
+                String indexName = deteTypeInfo.getTableName().toUpperCase() + "_" + meta.getFieldName().toUpperCase() + "_INDEX";
+                indexs[i] = indexName;
+            }
+            dropIndexs(deteTypeInfo.getTableName(), indexs);
         }
         //处理字段添加
-        if(metaAddList.size()>0){
-            this.getBaseMapper().addTableFields(deteTypeInfo.getTableName(), metaAddList);
+        if (metaAddList.size() > 0) {
+            Map<String, String> fields = new LinkedHashMap<String, String>();
+            Map<String, String[]> indexs = new HashMap<String, String[]>();
+
+            preFieldAdd(deteTypeInfo.getTableName(), fields, indexs, metaAddList);
+
+            dropFields(deteTypeInfo.getTableName(),  fields.keySet().toArray(new String[fields.size()]));
+
+            String sql = sqlUtils.addFields(deteTypeInfo.getTableName(), fields);
+            this.getBaseMapper().addTableFields(sql);
+
+            addIndexs(deteTypeInfo.getTableName(), indexs);
         }
         //处理字段删除
-        if(metaDelList.size()>0){
-            this.getBaseMapper().delTableFields(deteTypeInfo.getTableName(),metaDelList);
+        if (metaDelList.size() > 0) {
+            String[] fields = new String[metaDelList.size()];
+            for (int i = 0; i < metaDelList.size(); i++) {
+                fields[i] = metaDelList.get(i).getFieldName();
+            }
+
+            dropFields(deteTypeInfo.getTableName(), fields);
         }
         //处理字段修改
         //如果是已经创建了监测设置的，则不允许修改字段类型和长度
-        if(!checkDetectSetConfigExists(deteTypeInfo.getId())&&metaUpdateList.size()>0){
-            this.getBaseMapper().alterTableFields(deteTypeInfo.getTableName(),metaUpdateList);
+        if (!checkDetectSetConfigExists(deteTypeInfo.getId()) && metaUpdateList.size() > 0) {
+            Map<String, String> fields = new LinkedHashMap<String, String>();
+            preFieldAdd(deteTypeInfo.getTableName(), fields, null,metaUpdateList );
+
+            String sql = sqlUtils.modifyFields(deteTypeInfo.getTableName(), fields);
+            this.getBaseMapper().alterTableFields(sql);
         }
 
         this.updateById(deteTypeInfo);
         for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
-            if(deteTypeMetaEntity.getId()!=null){
-                if(deteTypeMetaEntity.getDelFlag()!=null&&!Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())){
+            if (deteTypeMetaEntity.getId() != null) {
+                if (deteTypeMetaEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())) {
                     deteTypeMetaService.removeById(deteTypeMetaEntity.getId());
-                }else{
+                } else {
                     deteTypeMetaService.updateById(deteTypeMetaEntity);
                 }
-            }else{
+            } else {
                 deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
                 deteTypeMetaService.save(deteTypeMetaEntity);
             }
         }
 
-        if(deteTypeParams!=null&&deteTypeParams.size()>0){
+        if (deteTypeParams != null && deteTypeParams.size() > 0) {
             for (int i = 0; i < deteTypeParams.size(); i++) {
                 DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
                 deteTypeParamEntity.setOperator(userId);
                 deteTypeParamEntity.setOpTime(date);
                 deteTypeParamEntity.setParamIndex(i);
-                if(deteTypeParamEntity.getId() == null){
+                if (deteTypeParamEntity.getId() == null) {
 
                     deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
                 }
-                if(deteTypeParamEntity.getId()!=null){
-                    if(deteTypeParamEntity.getDelFlag()!=null&&!Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())){
+                if (deteTypeParamEntity.getId() != null) {
+                    if (deteTypeParamEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())) {
                         deteTypeMetaService.removeById(deteTypeParamEntity.getId());
-                    }else{
+                    } else {
                         deteTypeParamService.updateById(deteTypeParamEntity);
                     }
-                }else{
+                } else {
                     deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
                     deteTypeParamService.save(deteTypeParamEntity);
                 }
@@ -236,16 +276,16 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         DeteTypeInfoEntity oldType = this.getById(deteTypeInfoEntity.getId());
         //删除detectType
         this.update(new UpdateWrapper<DeteTypeInfoEntity>()
-                .eq("id",deteTypeInfoEntity.getId())
+                .eq("id", deteTypeInfoEntity.getId())
                 .set("del_flag", Constant.DELFLAG_TRUE));
         //删除detectTypeMeta
         deteTypeMetaService.update(new UpdateWrapper<DeteTypeMetaEntity>()
-                .eq("type_id",deteTypeInfoEntity.getId())
-                .set("del_flag",Constant.DELFLAG_TRUE));
+                .eq("type_id", deteTypeInfoEntity.getId())
+                .set("del_flag", Constant.DELFLAG_TRUE));
         //删除detectTypeParam
         deteTypeParamService.update(new UpdateWrapper<DeteTypeParamEntity>()
-                .eq("type_id",deteTypeInfoEntity.getId())
-                .set("del_flag",Constant.DELFLAG_TRUE));
+                .eq("type_id", deteTypeInfoEntity.getId())
+                .set("del_flag", Constant.DELFLAG_TRUE));
         //删除detectSetInfo 相关
 
         //drop对应的表
@@ -262,31 +302,97 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
      * @Exception
      */
     public boolean checkTablesExists(String tableName) {
-        Map<String, String> tables = this.getBaseMapper().queryTables(tableName);
+        String sql = sqlUtils.queryTables(tableName);
+        Map<String, String> tables = this.getBaseMapper().queryTables(sql);
 
         return tables != null && tables.size() > 0;
     }
 
     public void createTable(DeteTypeInfoEntity detectTypeInfo) {
+        String tableName = detectTypeInfo.getTableName();
 
-        //fieldType==3表示该字段为临时字段，不入库
+        Map<String, String> fields = new LinkedHashMap<String, String>();
+        fields.put("ID", sqlUtils.getRestrict(KeywordsType.PRIMARYKEY,null,null));
+        fields.put("TIME", sqlUtils.getRestrict(KeywordsType.DATE,null,null));
+        fields.put("TYPE_ID", sqlUtils.getRestrict(KeywordsType.NUMBER,20,null));
+        fields.put("SET_ID", sqlUtils.getRestrict(KeywordsType.NUMBER,20,null));
+        fields.put("DEVICE_ID", sqlUtils.getRestrict(KeywordsType.NUMBER,20,null));
+        fields.put("TAG", sqlUtils.getRestrict(KeywordsType.NUMBER,20,null));
+
+        Map<String, String[]> indexs = new HashMap<String, String[]>();
+        indexs.put(tableName.toUpperCase() + "_TIME_INDEX", new String[]{"TIME"});
+        indexs.put(tableName.toUpperCase() + "_TYPEID_INDEX", new String[]{"TYPE_ID"});
+        indexs.put(tableName.toUpperCase() + "_SETID_INDEX", new String[]{"SET_ID"});
+        indexs.put(tableName.toUpperCase() + "_DEVICEID_INDEX", new String[]{"DEVICE_ID"});
+        indexs.put(tableName.toUpperCase() + "_TAG_INDEX", new String[]{"TAG"});
+
         List<DeteTypeMetaEntity> deteTypeMetas = detectTypeInfo.getDeteTypeMetas();
-        Iterator<DeteTypeMetaEntity> iterator = deteTypeMetas.iterator();
-        while(iterator.hasNext()){
-            DeteTypeMetaEntity next = iterator.next();
-            if(next.getFieldType()==null||"3".equals(next.getFieldType())){
-                iterator.remove();
+        if(deteTypeMetas!=null && deteTypeMetas.size()>0){
+            preFieldAdd(tableName, fields, indexs, deteTypeMetas);
+
+            String createTableSql = sqlUtils.createTable(tableName, fields);
+            this.getBaseMapper().createTable(createTableSql);
+
+            addIndexs(tableName, indexs);
+        }
+
+
+    }
+
+    private void preFieldAdd(String tableName, Map<String, String> fields, Map<String, String[]> indexs, List<DeteTypeMetaEntity> deteTypeMetas) {
+        for (DeteTypeMetaEntity meta : deteTypeMetas) {
+            String fieldName = meta.getFieldName();
+            String fieldType = meta.getFieldType();
+            String dataType = meta.getDataType();
+            Integer dataLen = meta.getDataLenth();
+            //fieldType==3 临时字段不入库
+            if ("3".equals(fieldType)) {
+                continue;
+            }
+
+            if ("1".equals(fieldType) && StringUtils.isNotBlank(fieldName) && indexs != null) {
+                String indexName = tableName.toUpperCase() + "_" + fieldName.toUpperCase() + "_INDEX";
+                indexs.put(indexName, new String[]{fieldName});
+            }
+            if (fields != null) {
+                if ("3".equals(dataType)) {
+
+                    fields.put(fieldName, sqlUtils.getRestrict(KeywordsType.STRING,dataLen,null) );
+                } else {
+
+                    fields.put(fieldName, sqlUtils.getRestrict(KeywordsType.COMPUTE,dataLen,2));
+                }
             }
         }
-        detectTypeInfo.setDeteTypeMetas(deteTypeMetas);
-        this.getBaseMapper().createTable(detectTypeInfo);
     }
+
+    public void dropFields(String tableName, String... fields) {
+        String sql = sqlUtils.delFields(tableName, fields);
+        this.getBaseMapper().delTableFields(sql);
+    }
+
+    public void addIndexs(String tableName, Map<String, String[]> indexs) {
+        String sql = sqlUtils.addIndexs(tableName, indexs);
+        this.getBaseMapper().addTableIndexs(sql);
+    }
+
+    public void dropIndexs(String tableName, String[] indexNames) {
+
+        String sql = sqlUtils.delIndexs(tableName, indexNames);
+
+        this.getBaseMapper().delTableIndexs(sql);
+    }
+
+    public void dropTable(String tableName) {
+        String sql = sqlUtils.dropTable(tableName);
+        this.getBaseMapper().dropTable(sql);
+    }
+
 
     public boolean checkDetectSetConfigExists(Long id) {
         int count = this.getBaseMapper().checkDetectSetConfigExists(id);
         return count > 0;
     }
-
 
 
     /**
@@ -301,7 +407,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         ValidateUtils.is(deteTypeInfo).notNull(RCode.DETE_ERROR);
 
         ValidateUtils.is(deteTypeInfo.getName()).notNull(RCode.TYPE_NAME_ISNULL);
-        boolean typeNameExists = this.checkFieldExists(deteTypeInfo.getId(),"name", deteTypeInfo.getName());
+        boolean typeNameExists = this.checkFieldExists(deteTypeInfo.getId(), "name", deteTypeInfo.getName());
         if (typeNameExists) {
             throw new NZException(RCode.TYPE_NAME_EXISTS);
         }
@@ -318,13 +424,16 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         }
         Set<String> nameFilter = new HashSet<String>();
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
+        if(deteTypeMetas==null||deteTypeMetas.size()<1){
+            throw new NZException(RCode.NOT_NULL_ERROR);
+        }
         for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
             ValidateUtils.is(deteTypeMetaEntity.getName()).notNull(RCode.META_NAME_ISNULL);
             String name = deteTypeMetaEntity.getName();
             if (nameFilter.contains(name)) {
                 throw new NZException(RCode.META_NAME_EXISTS);
             } else {
-                if(deteTypeMetaEntity.getDelFlag()!=null&&Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())){
+                if (deteTypeMetaEntity.getDelFlag() != null && Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())) {
                     nameFilter.add(name);
                 }
             }
@@ -333,6 +442,9 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         }
         nameFilter.clear();
         List<DeteTypeParamEntity> deteTypeParams = deteTypeInfo.getDeteTypeParams();
+        if(deteTypeParams==null||deteTypeParams.size()<1){
+            throw  new NZException(RCode.NOT_NULL_ERROR);
+        }
         for (int i = 0; i < deteTypeParams.size(); i++) {
             DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
             if (deteTypeParamEntity.getId() == null) {
@@ -342,7 +454,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                 if (nameFilter.contains(name)) {
                     throw new NZException(RCode.PARAM_NAME_EXISTS);
                 } else {
-                    if(deteTypeParamEntity.getDelFlag()!=null&&Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())){
+                    if (deteTypeParamEntity.getDelFlag() != null && Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())) {
                         nameFilter.add(name);
                     }
                 }
@@ -350,19 +462,20 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         }
         nameFilter = null;
     }
+
     private void judgeTableFields(List<DeteTypeMetaEntity> metaUpdateList,
                                   List<DeteTypeMetaEntity> metaAddList, List<DeteTypeMetaEntity> metaDelList,
                                   List<DeteTypeMetaEntity> indexAddList, List<DeteTypeMetaEntity> indexDelList) {
-        if(metaUpdateList.size()<1){
-            return ;
+        if (metaUpdateList.size() < 1) {
+            return;
         }
         Iterator<DeteTypeMetaEntity> iterator = metaUpdateList.iterator();
 
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             DeteTypeMetaEntity deteTypeMetaEntity = iterator.next();
             DeteTypeMetaEntity oldMeta = deteTypeMetaService.getById(deteTypeMetaEntity.getId());
             //判断是否更改fieldType
-            if(!oldMeta.getFieldType().equals(deteTypeMetaEntity.getFieldType())) {
+            if (!oldMeta.getFieldType().equals(deteTypeMetaEntity.getFieldType())) {
                 if ("3".equals(oldMeta.getFieldType())) {//临时字段-->入库字段
                     iterator.remove();
                     metaAddList.add(deteTypeMetaEntity);
@@ -385,14 +498,14 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
             //判断dataTpye
             String dataType = deteTypeMetaEntity.getDataType();
-            if(oldMeta.getDataType().equals(dataType)){
-                if(oldMeta.getDataLenth()==deteTypeMetaEntity.getDataLenth()){
+            if (oldMeta.getDataType().equals(dataType)) {
+                if (oldMeta.getDataLenth() == deteTypeMetaEntity.getDataLenth()) {
                     iterator.remove();
                     continue;
                 }
-            }else{
+            } else {
                 //数据长度相等，且都为数值型，不做修改（都是decimal）
-                if(oldMeta.getDataLenth()==deteTypeMetaEntity.getDataLenth()&&!"3".equals(oldMeta.getDataType())&&!"3".equals(dataType)){
+                if (oldMeta.getDataLenth() == deteTypeMetaEntity.getDataLenth() && !"3".equals(oldMeta.getDataType()) && !"3".equals(dataType)) {
                     iterator.remove();
                     continue;
                 }
@@ -401,5 +514,10 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         }
 
         //至此，metaUpdateList中的数据都是需要修改字段类型或字段长度的
+    }
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        sqlUtils=SpringContextUtils.getBean("getSqlUtils",SQLUtils.class);
     }
 }

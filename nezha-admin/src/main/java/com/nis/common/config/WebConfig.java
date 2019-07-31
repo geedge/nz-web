@@ -8,13 +8,21 @@
 
 package com.nis.common.config;
 
+import com.nis.common.utils.SQLUtils;
+import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.SqlHelper.MysqlHelper;
+import com.nis.common.utils.SqlHelper.OracleHelper;
+import com.nis.common.utils.SqlHelper.PostgresqlHelper;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.Properties;
 
 /**
@@ -46,7 +54,25 @@ public class WebConfig implements WebMvcConfigurer {
         properties.setProperty("Hana","hana");
         databaseIdProvider.setProperties(properties);
 
-        System.err.println("初始化数据库类型完成。。。");
         return databaseIdProvider;
+    }
+    @Bean
+    public SQLUtils getSqlUtils() throws SQLException {
+        DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
+        DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
+        String databaseId = databaseIdProvider.getDatabaseId(dataSource);
+        System.err.println("sqlUtil init....");
+        switch (databaseId){
+            case "mysql":
+                System.err.println("init mysql util");
+                return new MysqlHelper();
+            case "postgresql":
+                return new PostgresqlHelper();
+            case "oracle":
+                return new OracleHelper();
+            default:
+                return new MysqlHelper();
+        }
+
     }
 }

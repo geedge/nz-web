@@ -11,21 +11,21 @@ import java.util.Map;
 
 @Mapper
 public interface DeteTypeInfoDao extends BaseMapper<DeteTypeInfoEntity> {
-    Map<String, String> queryTables(@Param("tableName")String tableName);
+    Map<String, String> queryTables(@Param("sql") String sql);
 
-    void createTable(DeteTypeInfoEntity deteTypeInfo);
+    void createTable(@Param("sql") String sql);
 
     int checkDetectSetConfigExists(@Param("typeId")Long typeId);
 
-    void addTableFields(@Param("tableName")String tableName, List<DeteTypeMetaEntity> metaAddList);
+    void addTableFields(@Param("sql") String sql);
 
-    void delTableFields(@Param("tableName")String tableName, List<DeteTypeMetaEntity> metaDelList);
+    void delTableFields(@Param("sql") String sql);
 
-    void alterTableFields(@Param("tableName")String tableName, List<DeteTypeMetaEntity> metaUpdateList);
+    void alterTableFields(@Param("sql") String sql);
 
-    void addTableIndexs(@Param("tableName")String tableName, List<DeteTypeMetaEntity> indexAddList);
+    void addTableIndexs(@Param("sql") String sql);
 
-    void delTableIndexs(@Param("tableName")String tableName, List<DeteTypeMetaEntity> indexDelList);
+    void delTableIndexs(@Param("sql") String sql);
 
-    void dropTable(@Param("tableName")String tableName);
+    void dropTable(@Param("sql") String sql);
 }

@@ -2,201 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.nis.modules.detect.dao.DeteTypeInfoDao">
-    <sql id="commonFields">
-        <if test="_databaseId  == 'oracle'">
-            ,data_check_time date,
-            data_arrive_time date,
-            id number(20) ,
-            CONSTRAINT PRIMARY KEY(id)
-            );
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            ,data_check_time timestamp DEFAULT current_timestamp(),
-            data_arrive_time timestamp DEFAULT current_timestamp(),
-            id bigint ,
-            primary key (id)
-            )
 
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            ,data_check_time timestamp DEFAULT current_timestamp,
-            data_arrive_time timestamp DEFAULT current_timestamp,
-            id int4 ,
-            primary key (id)
-            );
-        </if>
-    </sql>
-
-    <sql id="fieldTpyeAdd">
-        <if test="_databaseId  == 'oracle'">
-            <choose>
-                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                    number(
-                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                        65
-                    </if>
-                    ,${meta.decimalPointLimit})
-                </when>
-                <otherwise>
-                    varchar (
-                    <if test="meta.dataLenth !=null ">
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null">
-                        255
-                    </if>
-                    )
-                </otherwise>
-            </choose>
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            <choose>
-                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                    decimal(
-                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                        65
-                    </if>
-                    ,${meta.decimalPointLimit})
-                </when>
-                <otherwise>
-                    varchar (
-                    <if test="meta.dataLenth !=null ">
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null">
-                        255
-                    </if>
-                    )
-                </otherwise>
-            </choose>
-
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            <choose>
-                <when test="meta.dataType !=null and meta.dataType == 1 or meta.dataType == 2"> <!-- dataType==1 counter 字段 dataType==2 瞬时值-->
-                    decimal(
-                    <if test="meta.dataLenth !=null and meta.dataLenth >= 2"><!--数据库整数位长度要>= 小数位-->
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null or meta.dataLenth lt 2">
-                        65
-                    </if>
-                    ,${meta.decimalPointLimit})
-                </when>
-                <otherwise>
-                    varchar (
-                    <if test="meta.dataLenth !=null ">
-                        ${meta.dataLenth}
-                    </if>
-                    <if test="meta.dataLenth ==null">
-                        255
-                    </if>
-                    )
-                </otherwise>
-            </choose>
-        </if>
-
-    </sql>
-
-
-    <select id="queryTables" parameterType="java.lang.String" resultType="java.util.HashMap" databaseId="mysql">
-        <if test="_databaseId  == 'oracle'">
-            SELECT
-            t.TABLE_NAME AS name,
-            c.COMMENTS AS comments
-            FROM user_tables t, user_tab_comments c
-            WHERE t.table_name = c.table_name
-            <if test="tableName != null and tableName != ''">
-                AND t.TABLE_NAME = upper(#{tableName})
-            </if>
-            ORDER BY t.TABLE_NAME
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            SELECT t.table_name AS name,t.TABLE_COMMENT AS comments
-            FROM information_schema.`TABLES` t
-            WHERE t.TABLE_SCHEMA = (select database())
-            <if test="tableName != null and tableName != ''">
-                AND t.TABLE_NAME = (#{tableName})
-            </if>
-            ORDER BY t.TABLE_NAME
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            select pgt.tablename as name,pgd.description as comments
-            from pg_tables pgt
-            join pg_class pgc on
-            pgt.tablename=pgc.relname
-            and pgt.schemaname='public'
-            <if test="tableName != null and tableName != ''">
-                AND pgt.tablename = #{tableName}
-            </if>
-            left join pg_description pgd on
-            pgd.objoid=pgc.oid and pgd.objsubid=0
-        </if>
+    <select id="queryTables" parameterType="java.lang.String" resultType="java.util.HashMap" >
+        ${sql}
     </select>
 
     <update id="createTable">
-        <if test="_databaseId  == 'oracle'">
-            create table ${tableName}
-            <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
-                    ${meta.fieldName}
-                    <include refid="fieldTpyeAdd"></include>
-                    <if test="idx != deteTypeMetas.size -1 ">
-                        ,
-                    </if>
-                    <include refid="commonFields"/>
-                </foreach>
-                <include refid="commonFields"/>
-                <foreach collection="deteTypeMetas" item="meta">
-                    create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
-                </foreach>
-            </if>
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            create table ${tableName}
-            <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
-                    ${meta.fieldName}
-                    <include refid="fieldTpyeAdd"></include>
-                    <if test="idx != deteTypeMetas.size -1 or meta.fieldType == 1">
-                        ,
-                    </if>
-                    <if test="meta.fieldType == 1 and idx != deteTypeMetas.size -1">
-                        index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName}),
-                    </if>
-                    <if test="meta.fieldType == 1 and idx == deteTypeMetas.size -1">
-                        index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName})
-                    </if>
-                </foreach>
-                <include refid="commonFields"/>
-            </if>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            create table ${tableName}
-            <if test="deteTypeMetas != null and deteTypeMetas.size > 0">
-                <foreach collection="deteTypeMetas" item="meta" open="(" index="idx">
-                    ${meta.fieldName}
-                    <include refid="fieldTpyeAdd"></include>
-                    <if test="idx != deteTypeMetas.size -1 ">
-                        ,
-                    </if>
-                </foreach>
-                <include refid="commonFields"/>
-                <foreach collection="deteTypeMetas" item="meta">
-                    <if test="meta.fieldType == 1">
-                        create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName});
-                    </if>
-
-                </foreach>
-            </if>
-        </if>
-
+       ${sql}
     </update>
 
     <select id="checkDetectSetConfigExists" parameterType="Long" resultType="Integer">
@@ -204,151 +16,24 @@
     </select>
 
     <update id="addTableFields">
-        <if test="_databaseId  == 'mysql'">
-            alter table ${tableName}
-            <foreach collection="metaAddList" item="meta" index="idx">
-                add column ${meta.fieldName}
-                <include refid="fieldTpyeAdd"></include>
-                <if test="idx != metaAddList.size -1 or meta.fieldType == 1">
-                    ,
-                </if>
-                <if test="meta.fieldType == 1 and idx != metaAddList.size -1">
-                    add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName}),
-                </if>
-                <if test="meta.fieldType == 1 and idx == metaAddList.size -1">
-                    add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName})
-                </if>
-
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            alter table ${tableName}
-            <foreach collection="metaAddList" item="meta" index="idx">
-                add column ${meta.fieldName}
-                <include refid="fieldTpyeAdd"></include>
-                <if test="idx != metaAddList.size -1 or meta.fieldType == 1">
-                    ,
-                </if>
-            </foreach>
-
-        </if>
-        <if test="_databaseId  == 'oracle'">
-            <foreach collection="metaAddList" item="meta" index="idx">
-                alter table ${tableName} add ${fieldName}
-                <include refid="fieldTpyeAdd"></include>;
-            </foreach>
-        </if>
+        ${sql}
     </update>
 
     <update id="delTableFields">
-        <if test="_databaseId  == 'mysql'">
-            alter table ${tableName}
-            <foreach collection="metaDelList" item="meta" index="idx">
-                DROP column ${meta.fieldName}
-                <if test="idx != metaDelList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            alter table ${tableName}
-            <foreach collection="metaDelList" item="meta" index="idx">
-                DROP column ${meta.fieldName}
-                <if test="idx != metaDelList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'oracle'">
-            alter table ${tableName}
-            <foreach collection="metaDelList" item="meta" index="idx">
-                DROP column ${meta.fieldName}
-                <if test="idx != metaDelList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
+        ${sql}
     </update>
 
     <update id="alterTableFields">
-        <if test="_databaseId  == 'mysql'">
-            alter table ${tableName}
-            <foreach collection="metaUpdateList" item="meta" index="idx">
-                modify column ${meta.fieldName}
-                <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
-                    <include refid="fieldTpyeAdd"></include>
-                    <if test="idx != metaUpdateList.size -1 ">
-                        ,
-                    </if>
-                </if>
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'oracle'">
-            <foreach collection="metaUpdateList" item="meta" index="idx">
-                alter table ${tableName} modify (${meta.fieldName}
-                <include refid="fieldTpyeAdd"></include>
-                );
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            ALTER TABLE ${tableName}
-            <foreach collection="metaUpdateList" item="meta" index="idx">
-                alter column ${meta.fieldName} type
-                <if test="meta.fieldType != null and meta.fieldType != 3"><!--fieldType==3 表示为临时字段，不在数据库存储-->
-                    <include refid="fieldTpyeAdd"></include>
-                </if>
-                <if test="idx != metaUpdateList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
+        ${sql}
     </update>
 
     <update id="addTableIndexs">
-        <if test="_databaseId  == 'oracle'">
-            <foreach collection="indexAddList" item="meta" index="idx">
-                create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName}) ;
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            alter table ${tableName}
-            <foreach collection="indexAddList" item="meta" index="idx">
-                add index ${tableName}_${meta.fieldName}_INDEX(${meta.fieldName})
-                <if test="idx != indexAddList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            <foreach collection="indexAddList" item="meta" index="idx">
-                create index ${tableName}_${meta.fieldName}_INDEX on ${tableName} (${meta.fieldName}) ;
-            </foreach>
-        </if>
+        ${sql}
     </update>
     <update id="delTableIndexs">
-        <if test="_databaseId  == 'oracle'">
-            <foreach collection="indexDelList" item="meta" index="idx">
-                drop index ${tableName}_${meta.fieldName}_INDEX;
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'mysql'">
-            alter table ${tableName}
-            <foreach collection="indexDelList" item="meta" index="idx">
-                drop index ${tableName}_${meta.fieldName}_INDEX
-                <if test="idx != indexDelList.size -1 ">
-                    ,
-                </if>
-            </foreach>
-        </if>
-        <if test="_databaseId  == 'postgresql'">
-            <foreach collection="indexDelList" item="meta" index="idx">
-                drop index ${tableName}_${meta.fieldName}_INDEX;
-            </foreach>
-        </if>
+        ${sql}
     </update>
     <update id="dropTable">
-
-           drop table if exists ${tableName}
-
+          ${sql}
     </update>
 </mapper>
