@@ -61,10 +61,8 @@ public class WebConfig implements WebMvcConfigurer {
         DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
         String databaseId = databaseIdProvider.getDatabaseId(dataSource);
-        System.err.println("sqlUtil init....");
         switch (databaseId){
             case "mysql":
-                System.err.println("init mysql util");
                 return new MysqlHelper();
             case "postgresql":
                 return new PostgresqlHelper();
