@@ -15,6 +15,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.sys.controller.AbstractController;
+import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.topo.entity.TopoInfoEntity;
 import com.nis.modules.topo.entity.TopoLineInfoEntity;
@@ -153,5 +154,21 @@ public class TopoController extends AbstractController{
 		topoLineInfoService.delete(id);
 		return R.ok();
 	}
+	
+	/**
+     * 
+    * @Title: list 
+    * @Description: 拓扑节点静态图片列表查询
+    * @return R    返回类型
+    * @throws
+     */
+    @ApiOperation(httpMethod="GET", response = TopoInfoEntity.class, value="拓扑节点静态图片列表查询", notes="拓扑节点静态图片列表查询，查询sys_dict表获取所有节点图片")
+    @RequestMapping("/imgList")
+    public R imgList(){
+    	List<SysDictEntity> topoInfoList = topoInfoService.queryNodeImgList();
+	    Map<String, List<SysDictEntity>> map = new HashMap<String, List<SysDictEntity>>();
+	    map.put("list", topoInfoList);
+	    return R.ok().put("data", map);
+    }
 	
 }

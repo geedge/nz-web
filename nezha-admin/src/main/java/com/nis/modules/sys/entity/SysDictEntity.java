@@ -11,6 +11,8 @@ package com.nis.modules.sys.entity;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -23,6 +25,7 @@ import java.io.Serializable;
  */
 @Data
 @TableName("sys_dict")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SysDictEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 

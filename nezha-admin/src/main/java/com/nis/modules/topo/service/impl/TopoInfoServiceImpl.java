@@ -2,6 +2,8 @@ package com.nis.modules.topo.service.impl;
 
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.modules.sys.dao.SysDictDao;
+import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.topo.dao.TopoInfoDao;
 import com.nis.modules.topo.entity.TopoInfoEntity;
 import com.nis.modules.topo.service.TopoInfoService;
@@ -25,6 +27,9 @@ public class TopoInfoServiceImpl extends ServiceImpl<TopoInfoDao, TopoInfoEntity
 	@Autowired
 	private TopoInfoDao topoInfoDao;
 	
+	@Autowired
+	private SysDictDao sysDictDao;
+	
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<TopoInfoEntity> queryTopoInfoList(Map<String, Object> params) {
@@ -41,5 +46,13 @@ public class TopoInfoServiceImpl extends ServiceImpl<TopoInfoDao, TopoInfoEntity
     	TopoInfoEntity topoInfo = topoInfoDao.queryTopoInfoById(id);
     	return topoInfo;
     }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<SysDictEntity> queryNodeImgList() {
+    	List<SysDictEntity> sysDictList = sysDictDao.queryNodeImgList();
+		return sysDictList;
+    }
+    
 
 }
