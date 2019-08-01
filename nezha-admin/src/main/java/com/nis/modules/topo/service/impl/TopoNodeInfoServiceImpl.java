@@ -18,6 +18,12 @@ import org.springframework.stereotype.Service;
 public class TopoNodeInfoServiceImpl extends ServiceImpl<TopoNodeInfoDao, TopoNodeInfoEntity> implements TopoNodeInfoService {
 	@Autowired
 	private TopoNodeInfoDao topoNodeInfoDao;
+	
+	@Override
+    public void delete(Long id) {
+		topoNodeInfoDao.delete(id);
+
+    }
 
 
 }

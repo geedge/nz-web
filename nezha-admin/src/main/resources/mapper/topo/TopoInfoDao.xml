@@ -109,5 +109,4 @@
 		LEFT JOIN topo_line_info tli ON tli.topo_id=ti.id
 		WHERE ti.id=#{id} AND tli.del_flag=0 AND ti.del_flag=0
 	</select>
-
 </mapper>

@@ -20,5 +20,5 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface TopoNodeInfoDao extends BaseMapper<TopoNodeInfoEntity> {
-
+	public void delete(Long id);
 }

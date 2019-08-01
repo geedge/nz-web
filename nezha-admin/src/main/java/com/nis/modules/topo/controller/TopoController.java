@@ -1,19 +1,26 @@
 package com.nis.modules.topo.controller;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.modules.sys.controller.AbstractController;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.topo.entity.TopoInfoEntity;
+import com.nis.modules.topo.entity.TopoNodeInfoEntity;
 import com.nis.modules.topo.service.TopoInfoService;
+import com.nis.modules.topo.service.TopoLineInfoService;
+import com.nis.modules.topo.service.TopoNodeInfoService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -32,9 +39,13 @@ import io.swagger.annotations.ApiOperation;
 @Api(tags="拓扑图模块")
 @RestController
 @RequestMapping("/topo")
-public class TopoController {
+public class TopoController extends AbstractController{
     @Autowired
     private TopoInfoService topoInfoService;
+    @Autowired
+    private TopoNodeInfoService topoNodeInfoService;
+    @Autowired
+    private TopoLineInfoService topoLineInfoService;
 
     /**
      * 
@@ -80,10 +91,38 @@ public class TopoController {
     	@ApiImplicitParam(paramType="query", name = "id", value = "拓扑图id", required = true, dataType = "long", defaultValue="")
     })
     @RequestMapping("/detail")
-    public R detail(Long id){
+    public R detail(@RequestParam("id") Long id){
     	ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
     	TopoInfoEntity topoInfo = topoInfoService.queryTopoInfoById(id);
     	return R.ok().put("data", topoInfo);
     }
     
+	@ApiOperation(httpMethod = "POST", value = "拓扑图节点新增")
+	@RequestMapping("/saveNode")
+//	@RequiresPermissions("topo:toponodeinfo:save")
+	public R saveNode(@RequestBody TopoNodeInfoEntity topoNodeInfoEntity) {
+	    topoNodeInfoEntity.setOperator(getUserId());
+	    topoNodeInfoEntity.setOpTime(new Date());
+	    topoNodeInfoService.save(topoNodeInfoEntity);
+	    return R.ok();
+	}
+    
+	@ApiOperation(httpMethod = "PUT", value = " 拓扑图节点修改")
+	@RequestMapping("/updateNode")
+//	@RequiresPermissions("topo:toponodeinfo:update")
+	public R updateNode(@RequestBody TopoNodeInfoEntity topoNodeInfoEntity) {
+		ValidateUtils.is(topoNodeInfoEntity.getId()).notNull(RCode.NOT_NULL_ERROR);
+		topoNodeInfoService.updateById(topoNodeInfoEntity);
+		return R.ok();
+	}
+
+	@ApiOperation(httpMethod = "DELETE", value = " 拓扑图节点删除")
+    @RequestMapping("/deleteNode")
+//    @RequiresPermissions("topo:toponodeinfo:delete")
+    public R deleteNode(@RequestParam("id") Long id){
+		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
+    	topoNodeInfoService.delete(id);
+        return R.ok();
+    }
+	
 }
