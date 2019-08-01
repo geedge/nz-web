@@ -17,5 +17,5 @@ import com.nis.modules.topo.entity.TopoLineInfoEntity;
 
  */
 public interface TopoLineInfoService extends IService<TopoLineInfoEntity> {
-
+	void delete(Long id);
 }

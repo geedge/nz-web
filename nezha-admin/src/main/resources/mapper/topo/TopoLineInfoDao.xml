@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.topo.dao.TopoLineInfoDao">
+
+   <sql id="topo_line_info_columns">
+		id,
+		src,
+		desc,
+		style,
+		text,
+		top0_id
+	</sql>
+	
+	<update id="delete" parameterType="long">
+		update topo_line_info set del_flag = 1 where id = #{id}
+	</update>
+
+</mapper>

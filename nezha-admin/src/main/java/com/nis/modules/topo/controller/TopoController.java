@@ -17,6 +17,7 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.sys.controller.AbstractController;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.topo.entity.TopoInfoEntity;
+import com.nis.modules.topo.entity.TopoLineInfoEntity;
 import com.nis.modules.topo.entity.TopoNodeInfoEntity;
 import com.nis.modules.topo.service.TopoInfoService;
 import com.nis.modules.topo.service.TopoLineInfoService;
@@ -124,5 +125,33 @@ public class TopoController extends AbstractController{
     	topoNodeInfoService.delete(id);
         return R.ok();
     }
+	
+	@ApiOperation(httpMethod = "POST", value = " 拓扑图连线新增")
+	@RequestMapping("/saveLine")
+//	@RequiresPermissions("topo:topolineinfo:save")
+	public R saveLine(@RequestBody TopoLineInfoEntity topoLineInfoEntity) {
+		topoLineInfoEntity.setOperator(getUserId());
+		topoLineInfoEntity.setOpTime(new Date());
+		topoLineInfoService.save(topoLineInfoEntity);
+		return R.ok();
+	}
+	
+	@ApiOperation(httpMethod = "PUT", value = " 拓扑图连线修改")
+	@RequestMapping("/updateLine")
+//	@RequiresPermissions("topo:topolineinfo:update")
+	public R updateLine(@RequestBody TopoLineInfoEntity topoLineInfoEntity) {
+		ValidateUtils.is(topoLineInfoEntity.getId()).notNull(RCode.NOT_NULL_ERROR);
+		topoLineInfoService.updateById(topoLineInfoEntity);
+		return R.ok();
+	}
+	
+	@ApiOperation(httpMethod = "DELETE", value = " 拓扑图连线删除")
+	@RequestMapping("/deleteLine")
+//    @RequiresPermissions("topo:topolineinfo:delete")
+	public R deleteLine(@RequestParam("id") Long id){
+		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
+		topoLineInfoService.delete(id);
+		return R.ok();
+	}
 	
 }
