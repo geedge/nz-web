@@ -15,6 +15,7 @@ import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,11 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+
+        // 获取当前业务系统 ID
+        Long systemId = ShiroUtils.getCurrSystemId();
+        params.put("systemId", systemId);
+
         // 1.  groupId 存在  以 group 关联 为主
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
         if (params.get("groupId") != null) {
@@ -95,6 +101,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
         handlerEntity(nodeInfoEntity);
         // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
+        nodeInfoEntity.setPassword(new String(Base64.getDecoder().decode(nodeInfoEntity.getPassword())));
         return nodeInfoEntity;
     }
 
@@ -110,11 +117,11 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         }
         // 3.得到此节点所在的所有业务系统
         List<SystemInfoEntity> sysList = new ArrayList<>();
-        List<SystemNodeRelEntity> list = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", nodeInfoEntity.getUuid()).eq("del_flag", 0));
+        List<SystemNodeRelEntity> list = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
         for (SystemNodeRelEntity entity : list) {
             sysList.add(systemInfoService.getById(entity.getSystemId()));
         }
-        nodeInfoEntity.setSystemInfos(sysList);
+        nodeInfoEntity.setSystemInfo(sysList);
     }
 
     // ip 是否重复校验
@@ -123,7 +130,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         if (uuid == null) {// 添加
             return getCount("ip", ip);
         } else {//修改
-            NodeInfoEntity nodeInfo = detail(uuid);
+            NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
             if (ip.equals(nodeInfo.getIp())) {// IP 地址未改变
                 return true;
             } else {// IP 地址发生改变
@@ -138,7 +145,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         if (uuid == null) {// 添加
             return getCount("name", name);
         } else {// 修改
-            NodeInfoEntity nodeInfo = detail(uuid);
+            NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
             if (name.equals(nodeInfo.getName())) {// name 未发生改变
                 return true;
             } else {
@@ -153,15 +160,12 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void changeState(Long[] uuids, String state) {
         nodeInfoDao.changeState(uuids, state);
         if ("3".equals(state)) { // 删除节点
-            NodeGroupRelEntity nodeGroup = new NodeGroupRelEntity();
-            nodeGroup.setDelFlag("1");
-            SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity();
-            nodeRelEntity.setDelFlag("1");
             for (Long uuid : uuids) {
                 // 1. 逻辑删除 和 节点组 之间的关系
-                nodeGroupRelDao.update(nodeGroup, new UpdateWrapper<NodeGroupRelEntity>().eq("uuid", uuid));
-                // 2. 逻辑删除 和 业务修通 之间的关系
-                systemNodeRelService.update(nodeRelEntity, new UpdateWrapper<SystemNodeRelEntity>().eq("uuid", uuid));
+                nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", uuid));
+
+                // 2. 逻辑删除 和 业务系统 之间的关系
+                systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", uuid));
             }
         }
     }
@@ -170,15 +174,32 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
-        if (ipCheck(null, nodeInfoEntity.getIp()) && nodeNameCheck(null, nodeInfoEntity.getName())) {
-            //2. IP地址转换 IP整数
-            nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-            //3. 密码加密 base64
-            nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-            nodeInfoEntity.setOperator(1L);
-            nodeInfoEntity.setOpTime(new Date());
-            //4. 入库
-            nodeInfoDao.save(nodeInfoEntity);
+        if (ipCheck(null, nodeInfoEntity.getIp())) {
+            if (nodeNameCheck(null, nodeInfoEntity.getName())) {
+                //2. IP地址转换 IP整数
+                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+                //3. 密码加密 base64
+                byte[] bytes = nodeInfoEntity.getPassword().getBytes();
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOpTime(new Date());
+
+                //4. 校验可用机柜
+                if (nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
+
+                    // 查询该机柜的可选起始位置
+                    List<Integer> starts = checkPosition(nodeInfoEntity);
+
+                    if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
+                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                    }
+                }
+
+                //5. 入库
+                nodeInfoDao.save(nodeInfoEntity);
+            } else {
+                throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+            }
         } else {
             throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
         }
@@ -189,22 +210,46 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void updateNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
         if (ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
-            if(nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())){
+            if (nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
                 //2. IP地址转换 IP整数
                 nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
                 //3. 密码加密 base64
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
                 nodeInfoEntity.setOperator(1L);
                 nodeInfoEntity.setOpTime(new Date());
-                //4. 入库
-                update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>()
-                        .eq("uuid", nodeInfoEntity.getUuid()));
-            }else{
+
+                //4. 校验可用机柜
+                if (nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
+
+                    // 查询该机柜的可选起始位置
+                    List<Integer> starts = checkPosition(nodeInfoEntity);
+
+                    if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
+                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                    }
+                }
+
+                //5. 入库
+                update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+            } else {
                 throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
             }
         } else {
             throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);// IP地址重复
         }
+    }
+
+    // 添加修改时根据 指定的USize获取可用位置的集合
+    public List<Integer> checkPosition(NodeInfoEntity nodeInfoEntity) {
+        List<AvailCabinetEntity> availCabinetEntities = this.selectCab(nodeInfoEntity.getUuid(), nodeInfoEntity.getuSize());
+        for (AvailCabinetEntity entity : availCabinetEntities) {
+            for (NodeCabinetEntity cab : entity.getCabinets()) {
+                if (cab.getId() - nodeInfoEntity.getCabinetId() == 0) {
+                    return cab.getStarts();
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -220,7 +265,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         List<AvailCabinetEntity> retAvailCabs = new ArrayList<>();
 
         // 1.0 得到所有机房
-        List<NodeRoomEntity> nodeRooms = nodeRoomService.list(new QueryWrapper<NodeRoomEntity>().eq("del_flag", 0));
+        List<NodeRoomEntity> nodeRooms = nodeRoomService.list();
 
 
         Long cabinetId = null;
@@ -236,7 +281,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             availCab.setRoomName(nodeRoom.getName());
 
             // 1.1 查询每个机房下所有的机柜
-            List<NodeCabinetEntity> nodeCabinets = nodeCabinetService.list(new QueryWrapper<NodeCabinetEntity>().eq("room_id", nodeRoom.getId()).eq("del_flag", 0));
+            List<NodeCabinetEntity> nodeCabinets = nodeCabinetService.list(new QueryWrapper<NodeCabinetEntity>().eq("room_id", nodeRoom.getId()));
 
             // 2.0 遍历机柜 得到下面的所有节点
             for (NodeCabinetEntity cab : nodeCabinets) {
@@ -370,12 +415,12 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         }
         return result;
     }
-    
+
     @Override
-	public PageUtils queryPageBySystemId(Map<String, Object> params) {
-		IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
-		List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.queryNodeBySystemId(page, (Long)params.get("id"));
-		page.setRecords(queryNodeBySystemId);
-		return new PageUtils(page);
-	}
+    public PageUtils queryPageBySystemId(Map<String, Object> params) {
+        IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
+        List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.queryNodeBySystemId(page, (Long) params.get("id"));
+        page.setRecords(queryNodeBySystemId);
+        return new PageUtils(page);
+    }
 }

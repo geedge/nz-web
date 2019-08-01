@@ -63,7 +63,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         if (ShiroUtils.isGlobal()) {// global 权限 看到所有的节点组信息
             List<SystemNodeGroupEntity> list = new ArrayList<>();
             // 1。 得到系统业务集合
-            List<SystemInfoEntity> systemInfoList = systemInfoService.list(new QueryWrapper<SystemInfoEntity>().eq("del_flag", 0));
+            List<SystemInfoEntity> systemInfoList = systemInfoService.list();
             // 2. 根据系统业务集合得到包含的节点组集合
             for (SystemInfoEntity item : systemInfoList) {
                 List<SystemNodeGroupEntity> sysNodeGroupsBySystemId = getSysNodeGroupsBySystemId(item);
@@ -88,7 +88,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 entity.setAllowAss("0");
             }
             //2.2 能否增加子节点组 0不能，1可以  只要跟自己没有直接关联的节点就可以
-            if (nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId()).eq("del_flag", 0)) < 1) {//此节点组下没有关联的节点
+            if (nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId())) < 1) {//此节点组下没有关联的节点
                 entity.setAllowSub("1");
             } else {
                 entity.setAllowSub("0");
@@ -104,10 +104,8 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         NodeGroupInfoEntity nodegroup = this.getById(id);
         // 2.根据得到的pid 查到上级对象
         NodeGroupInfoEntity parentNodeGroup = this.getById(nodegroup.getPid());
-        if (parentNodeGroup == null) { // 有特殊的父级对象没有  例如父级ID为0的对象 因为没有ID为0的元素
-            nodegroup.setPname("");
-        } else {
-            // 3.将上级的name 赋值给返回对象
+        // 3.将上级的name 赋值给返回对象
+        if (parentNodeGroup != null) { // 有特殊的父级对象没有  例如父级ID为0的对象 因为没有ID为0 的元素
             nodegroup.setPname(parentNodeGroup.getName());
         }
         return nodegroup;
@@ -116,18 +114,18 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo) {
-        if (ShiroUtils.isGlobal()) {
-            if (nodegroupInfo.getSystemId() == null) {
-                nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());
-            }
-        } else {
-            nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
-        }
-        NodeGroupInfoEntity parentEntity = getById(nodegroupInfo.getPid());
-        nodegroupInfo.setOperator(1l);
-        nodegroupInfo.setOpTime(new Date());
-        nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
         if (groupNameCheck(null, nodegroupInfo.getName(), nodegroupInfo.getPid())) {
+            if (ShiroUtils.isGlobal()) {
+                if (nodegroupInfo.getSystemId() == null) {
+                    nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());
+                }
+            } else {
+                nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
+            }
+            NodeGroupInfoEntity parentEntity = this.getById(nodegroupInfo.getPid());
+            nodegroupInfo.setOperator(1l);
+            nodegroupInfo.setOpTime(new Date());
+            nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
             save(nodegroupInfo);
         } else {
             throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);//节点组名称重复
@@ -167,22 +165,17 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
+        // 1. 删除 此节点组 和  其 子节点组  逻辑删除
         NodeGroupInfoEntity nodegroupInfo = getById(id);
-        // 1. 删除当前对象  为删除 逻辑删除
-        nodegroupInfo.setDelFlag("1");
-        nodegroupInfoDao.update(nodegroupInfo, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", id));
-        // 2. 删除子节点组  其下所有的节点组
-        List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().eq("del_flag", 0).like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
-        for (NodeGroupInfoEntity entity : list) {
-            entity.setDelFlag("1");
-            nodegroupInfoDao.update(entity, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", entity.getId()));
-        }
-        // 3. 删除自身和包含节点组 关联节点
+        List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
         list.add(nodegroupInfo);
-        NodeGroupRelEntity nodeGroupRel = new NodeGroupRelEntity();
         for (NodeGroupInfoEntity entity : list) {
-            nodeGroupRel.setDelFlag("1");
-            nodeGroupRelDao.update(nodeGroupRel, new UpdateWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId()));
+            nodegroupInfoDao.deleteById(entity.getId());
+        }
+
+        // 2. 删除自身和包含节点组 关联节点
+        for (NodeGroupInfoEntity entity : list) {
+            nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId()));
         }
     }
 
@@ -208,7 +201,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeRel(Long id, Long[] uuids) {
         for (Long uuid : uuids) {
-            int count = nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id).eq("uuid", uuid).eq("del_flag", 0));
+            int count = nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id).eq("uuid", uuid));
             if (count > 0) {
                 continue;  // 重复跳过
             }
@@ -267,7 +260,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      * @return
      */
     public boolean getCount(String name, Long pid) {
-        int count = count(new QueryWrapper<NodeGroupInfoEntity>().eq("pid", pid).eq("name", name).eq("del_flag", 0));
+        int count = count(new QueryWrapper<NodeGroupInfoEntity>().eq("pid", pid).eq("name", name));
         if (count > 0) {
             return false;
         }

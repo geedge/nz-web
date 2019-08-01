@@ -49,6 +49,7 @@ public class NodeGroupInfoEntity implements Serializable {
     /**
      * 是否删除，1：删除，0：未删除，默认：0
      */
+    @TableLogic
     private String delFlag;
     /**
      * 操作人id

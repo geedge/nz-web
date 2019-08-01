@@ -1,10 +1,7 @@
 package com.nis.modules.node.entity;
 
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.util.Date;
@@ -43,6 +40,7 @@ public class SystemNodeRelEntity {
     /**
      * 删除标识  0：正常   1：删除
      */
+    @TableLogic
     private String delFlag;
 
     /**

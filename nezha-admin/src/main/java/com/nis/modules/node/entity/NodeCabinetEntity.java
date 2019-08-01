@@ -1,8 +1,6 @@
 package com.nis.modules.node.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -18,13 +16,14 @@ import lombok.Data;
  */
 @Data
 @TableName("node_cabinet")
+@KeySequence("seq_node_cabinet")
 public class NodeCabinetEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
      * 机柜ID
      */
-    @TableId
+    @TableId(type = IdType.INPUT)
     private Long id;
     /**
      * 机柜名称
@@ -59,6 +58,12 @@ public class NodeCabinetEntity implements Serializable {
      */
     private Date opTime;
 
+    /**
+     * 是否删除，1：删除，0：未删除，默认：0
+     */
+    @TableLogic
+    private String delFlag;
+
     //机房名称
     @TableField(exist = false)
     private String roomName;
@@ -70,4 +75,6 @@ public class NodeCabinetEntity implements Serializable {
     //可用位置的起始下标
     @TableField(exist = false)
     private List<Integer> starts;
+
+
 }

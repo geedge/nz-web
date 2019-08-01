@@ -106,7 +106,7 @@ public class NodeInfoEntity implements Serializable {
 
     //所在业务系统
     @TableField(exist = false)
-    private List<SystemInfoEntity> systemInfos;
+    private List<SystemInfoEntity> systemInfo;
 
     //设备标签名称，与sys_dict code关联，type:node-type
     @TableField(exist = false)
@@ -283,12 +283,12 @@ public class NodeInfoEntity implements Serializable {
         this.cabinetInfo = cabinetInfo;
     }
 
-    public List<SystemInfoEntity> getSystemInfos() {
-        return systemInfos;
+    public List<SystemInfoEntity> getSystemInfo() {
+        return systemInfo;
     }
 
-    public void setSystemInfos(List<SystemInfoEntity> systemInfos) {
-        this.systemInfos = systemInfos;
+    public void setSystemInfo(List<SystemInfoEntity> systemInfo) {
+        this.systemInfo = systemInfo;
     }
 
     public String getTagName() {
@@ -326,7 +326,7 @@ public class NodeInfoEntity implements Serializable {
                 ", opTime=" + opTime +
                 ", roomName='" + roomName + '\'' +
                 ", cabinetInfo=" + cabinetInfo +
-                ", systemInfos=" + systemInfos +
+                ", systemInfo=" + systemInfo +
                 ", tagName='" + tagName + '\'' +
                 '}';
     }

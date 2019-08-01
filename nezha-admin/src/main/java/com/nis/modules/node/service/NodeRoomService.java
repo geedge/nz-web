@@ -25,5 +25,7 @@ public interface NodeRoomService extends IService<NodeRoomEntity> {
     void delete(Long id);
 
     void updateNodeRoom(NodeRoomEntity nodeRoom);
+
+    void roomSizeCheck(Long id, Integer roomRows, Integer roomCols);
 }
 

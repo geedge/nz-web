@@ -22,7 +22,7 @@
         (
             SELECT b.name,b.host_name,b.ip,b.uuid,b.type FROM system_node_rel a
             LEFT JOIN node_info b ON a.uuid = b.uuid
-            WHERE a.system_id = #{params.systemId}
+            WHERE a.system_id = #{params.systemId} AND a.del_flag = 0 AND b.state != 3
 
             <if test="params.ip != null and params.ip != ''">
                 AND b.ip LIKE CONCAT('%', #{params.ip}, '%')
@@ -34,7 +34,7 @@
         (
             SELECT d.uuid AS i FROM node_group_rel c
             LEFT JOIN node_info d ON c.uuid = d.uuid
-            WHERE c.del_flag = 0 AND c.group_id = #{params.groupId}
+            WHERE c.del_flag = 0 AND d.state != 3 AND c.group_id = #{params.groupId}
         ) t1 ON t.uuid = t1.i
 
         WHERE t1.i IS NULL

@@ -24,7 +24,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/room")
-@Api(tags="机房node-room")
+@Api(tags = "机房node-room")
 public class NodeRoomController {
 
     @Autowired
@@ -54,7 +54,6 @@ public class NodeRoomController {
     }
 
 
-
     @ApiOperation("机房修改")
     @RequestMapping(value = "/update", method = RequestMethod.POST)
     public R update(@RequestBody NodeRoomEntity nodeRoom) {
@@ -63,14 +62,12 @@ public class NodeRoomController {
     }
 
 
-
-
     @ApiOperation("机房删除")
     @ApiImplicitParam(name = "id", value = "id", required = true, paramType = "query", dataType = "Long")
     @RequestMapping(value = "/delete", method = RequestMethod.DELETE)
     public R delete(@RequestParam(value = "id") Long id) {
         nodeRoomService.delete(id);
-        return null;
+        return R.ok();
     }
 
     @ApiOperation("机房名称校验")
@@ -85,4 +82,26 @@ public class NodeRoomController {
         }
         return R.error(RCode.NODEROOM_NAME_DUPLICATE);// 机房名称重复
     }
+
+
+    /**
+     * 机房修改时行列校验，行、列数不能小于已被机柜占用的数
+     *
+     * @param id       R
+     * @param roomRows R
+     * @param roomCols R
+     * @return
+     */
+    @ApiOperation("机房修改时行列校验")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "id", required = true, paramType = "query", dataType = "Long"),
+            @ApiImplicitParam(name = "roomRows", value = "roomRows", required = true, paramType = "query", dataType = "Long"),
+            @ApiImplicitParam(name = "roomCols", value = "roomCols", required = true, paramType = "query", dataType = "Long")
+    })
+    @RequestMapping(value = "/roomSizeCheck", method = RequestMethod.GET)
+    public R roomSizeCheck(@RequestParam("id") Long id, @RequestParam("roomRows") Integer roomRows, @RequestParam("roomCols") Integer roomCols) {
+        nodeRoomService.roomSizeCheck(id, roomRows, roomCols);
+        return R.ok();
+    }
+
 }

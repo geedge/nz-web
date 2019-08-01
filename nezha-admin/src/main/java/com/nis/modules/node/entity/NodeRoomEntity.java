@@ -1,9 +1,6 @@
 package com.nis.modules.node.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -58,6 +55,7 @@ public class NodeRoomEntity implements Serializable {
 	/**
 	 * 是否删除，1：删除，0：未删除，默认：0
 	 */
+	@TableLogic
 	private String delFlag;
 
 	public NodeRoomEntity(Long id, String name, Integer roomRows, Integer roomCols, Long addr, String remarks, Long operator, Date opTime) {
