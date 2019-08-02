@@ -57,27 +57,34 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
             if(mapping.getId()==null){
                 this.save(mapping);
             }else{
-                this.update(mapping,new UpdateWrapper<DeteTypeMetaMappingEntity>()
-                        .set(mapping.getDelFlag()!=null,"del_flag",mapping.getDelFlag())
-                        .eq("id",mapping.getId()));
+                UpdateWrapper<DeteTypeMetaMappingEntity> updateWrapper = new UpdateWrapper<>();
+                updateWrapper.set("operator",ShiroUtils.getUserId());
+                updateWrapper.set("op_time",new Date());
+                updateWrapper.set(mapping.getDelFlag()!=null,"del_flag",mapping.getDelFlag());
+                updateWrapper.eq("id",mapping.getId());
+                this.update(mapping,updateWrapper);
             }
         }
     }
 
     @Override
-    public R deleteDic(String type) {
-            boolean used=this.checkTypeUsed(type);
-            if(used){
+    public R deleteDic(String ... types) {
+            if(checkTypeUsed(types)){
                 return R.error(RCode.DICT_TYPE_USED);
             }else{
-                this.update(new UpdateWrapper<DeteTypeMetaMappingEntity>().set("del_flag", Constant.DELFLAG_TRUE).eq("type",type));
+                UpdateWrapper<DeteTypeMetaMappingEntity> updateWrapper = new UpdateWrapper<>();
+                updateWrapper.set("del_flag", Constant.DELFLAG_TRUE);
+                updateWrapper.set("operator",ShiroUtils.getUserId());
+                updateWrapper.set("op_time",new Date());
+                updateWrapper.in("type",types);
+                this.update(updateWrapper);
                 return R.ok();
             }
 
     }
 
-    private boolean checkTypeUsed(String type) {
-        List<DeteTypeMetaEntity> list = deteTypeMetaService.list(new QueryWrapper<DeteTypeMetaEntity>().eq("dic_type", type));
+    private boolean checkTypeUsed(String ... type) {
+        List<DeteTypeMetaEntity> list = deteTypeMetaService.list(new QueryWrapper<DeteTypeMetaEntity>().in("dic_type", type));
         return list!=null&&list.size()>0;
     }
 }

@@ -73,6 +73,10 @@ public enum RCode {
 	DICT_MAPPINGS_ISNULL(301013,"dict_mappings_isnull"),//监测类别字典数据为空
 	DICT_TYPE_USED(301014,"DICT_TYPE_USED"),//监测类别字典已经被使用，不允许删除
 
+	SET_NAME_ISNULL(302001,"set_name_isnull"),//监测设置名称为空
+	SET_NAME_EXISTS(302002,"set_name_exists"),//监测设置名称已经存在
+	SET_TYPE_ISNULL(302003,"set_type_isnull"),//监测设置所属类别为空
+
 	MISSION_ERROR(400000, "mission_error"), //40xxxx，任务类通用错误
 
 

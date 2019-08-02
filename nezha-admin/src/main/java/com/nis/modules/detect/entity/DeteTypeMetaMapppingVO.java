@@ -2,7 +2,6 @@ package com.nis.modules.detect.entity;
 
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.List;
 @Data
 public class DeteTypeMetaMapppingVO {

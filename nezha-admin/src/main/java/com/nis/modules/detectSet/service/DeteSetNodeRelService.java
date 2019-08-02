@@ -20,5 +20,7 @@ public interface DeteSetNodeRelService extends IService<DeteSetNodeRelEntity> {
     PageUtils queryPage(Map<String, Object> params);
     
     List<DeteSetNodeRelEntity> queryBySystemId(PermissionInfoEntity entity);
+
+    void deleteBySetId(Long id);
 }
 

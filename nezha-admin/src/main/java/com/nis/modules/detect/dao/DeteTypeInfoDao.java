@@ -2,11 +2,9 @@ package com.nis.modules.detect.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.detect.entity.DeteTypeInfoEntity;
-import com.nis.modules.detect.entity.DeteTypeMetaEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.util.List;
 import java.util.Map;
 
 @Mapper

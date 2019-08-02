@@ -93,7 +93,7 @@ public abstract class SQLUtils {
     * @Author  rui
     * @Date   2019/7/31
     * @Param  key ：字段的类型 dataLenth 字段长度，
-     *@Param  decimal类型默认及最大长度65 整数类型 mysql默认及最大长度20 postgresql默认及最大32 oracle默认及最大38
+     *@Param  decimal类型默认及最大长度65 整数类型 mysql默认及最大长度20 postgresql默认及最大64 oracle默认及最大38
      * @Param  limit 只对decimal类型生效，默认2
     * @Return
     * @Exception

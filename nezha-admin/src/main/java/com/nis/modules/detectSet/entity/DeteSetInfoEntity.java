@@ -1,15 +1,15 @@
 package com.nis.modules.detectSet.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+import com.nis.modules.detect.entity.DeteTypeInfoEntity;
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
+import java.util.List;
 
 /**
  * 监测设置信息表
@@ -69,11 +69,29 @@ public class DeteSetInfoEntity implements Serializable {
 	 * 操作时间
 	 */
 	private Date opTime;
-	
+
+
 	/**
 	 * 权限记录
 	 */
 	@TableField(exist=false)
 	private PermissionInfoEntity permission;
+	/**
+	 * 节点组id
+	 * */
+	@TableField(exist=false)
+	private Long[] nodeGroupIds;
+	/**
+	 * 节点seqId
+	 * */
+	@TableField(exist=false)
+	private Long[] nodeIds;
+
+	@TableField(exist=false)
+	private DeteTypeInfoEntity type;
+	@TableField(exist=false)
+	private List<NodeGroupInfoEntity> nodeGroups;
+	@TableField(exist=false)
+	private List<NodeInfoEntity> nodes;
 
 }

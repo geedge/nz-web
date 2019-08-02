@@ -1,18 +1,22 @@
 package com.nis.modules.detectSet.service.impl;
 
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.detectSet.dao.DeteSetNodeRelDao;
 import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
 import com.nis.modules.detectSet.service.DeteSetNodeRelService;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 
 @Service("deteSetNodeRelService")
@@ -33,5 +37,15 @@ public class DeteSetNodeRelServiceImpl extends ServiceImpl<DeteSetNodeRelDao, De
 		List<DeteSetNodeRelEntity> queryBySystemId = baseMapper.queryBySystemId(entity);
 		return queryBySystemId;
 	}
-    
+
+    @Override
+    public void deleteBySetId(Long setId) {
+
+        UpdateWrapper<DeteSetNodeRelEntity> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.set("del_flag", Constant.DELFLAG_TRUE);
+        updateWrapper.set("operator",ShiroUtils.getUserId());
+        updateWrapper.set("op_time",new Date());
+        updateWrapper.eq("set_id",setId);
+        this.update(updateWrapper);
+    }
 }

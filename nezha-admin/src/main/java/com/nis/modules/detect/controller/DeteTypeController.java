@@ -15,7 +15,6 @@ import com.nis.modules.detect.service.DeteTypeParamService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,12 +84,9 @@ public class DeteTypeController {
     @DeleteMapping(value = "/delete", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     @ApiOperation(value = "删除监测类别")
-    public R delete(@RequestParam Long id) {
-        DeteTypeInfoEntity deteTypeInfoEntity = new DeteTypeInfoEntity();
-        deteTypeInfoEntity.setId(id);
-        deteTypeInfoEntity.setDelFlag("1");
+    public R delete(@RequestParam Long... ids) {
 
-        deteTypeInfoService.deleteEntity(deteTypeInfoEntity);
+        deteTypeInfoService.deleteEntity(ids);
         return R.ok();
     }
 
@@ -159,7 +155,7 @@ public class DeteTypeController {
     @DeleteMapping(value = "/deleteDic", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     @ApiOperation(value = "删除监测类别字典")
-    public R deleteDic(@RequestParam String type) {
-        return deteTypeMetaMappingService.deleteDic(type);
+    public R deleteDic(@RequestParam String ... types) {
+        return deteTypeMetaMappingService.deleteDic(types);
     }
 }

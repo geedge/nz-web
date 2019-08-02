@@ -1,12 +1,14 @@
 package com.nis.modules.detectSet.dao;
 
-import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
-import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeInfoEntity;
+import com.nis.modules.sys.entity.PermissionInfoEntity;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
-import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 监测设置信息表
@@ -18,4 +20,17 @@ import org.apache.ibatis.annotations.Mapper;
 public interface DeteSetInfoDao extends BaseMapper<DeteSetInfoEntity> {
 	
 	List<DeteSetInfoEntity> queryByPermission(PermissionInfoEntity entity);
+
+    List<DeteSetInfoEntity> queryList(@Param("name") String name, @Param("typeId") Long typeId
+            , @Param("start") Integer start, @Param("pageSize") Integer pageSize, @Param("user") Long userId
+            , @Param("system") Long system,@Param("sidx") String sidx,@Param("order") String order);
+
+    int queryCount(@Param("name") String name, @Param("typeId") Long typeId
+            , @Param("start") Integer start, @Param("pageSize") Integer pageSize, @Param("user") Long userId
+            , @Param("system") Long system, @Param("sidx") String sidx,@Param("order") String order);
+    List<NodeGroupInfoEntity> queryNodeGroups(@Param("setId")Long id);
+
+    List<NodeInfoEntity> queryNodes(@Param("setId")Long id);
+
+    DeteSetInfoEntity queryById(@Param("id")Long id);
 }

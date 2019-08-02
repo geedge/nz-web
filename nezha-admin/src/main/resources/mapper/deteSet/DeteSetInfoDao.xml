@@ -21,6 +21,20 @@
         <result property="permission.relId" column="pm_rel_id"/>
     </resultMap>
 
+    <resultMap type="com.nis.modules.detectSet.entity.DeteSetInfoEntity" id="deteSetTypeInfo">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="typeId" column="type_id"/>
+        <result property="buildIn" column="build_in"/>
+        <result property="params" column="params"/>
+        <result property="viewLevel" column="view_level"/>
+        <result property="state" column="state"/>
+        <result property="remark" column="remark"/>
+        <result property="i18nCode" column="i18n_code"/>
+        <result property="operator" column="operator"/>
+        <association property="type" select="com.nis.modules.detect.dao.DeteTypeInfoDao.selectById" column="type_id"></association>
+    </resultMap>
+
 	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="deteSetInfoMap">
 		SELECT dsi.*, pmi.id as "pm_id", pmi.type as "pm_type", pmi.type_id as "pm_type_id", 
 			   pmi.view_level as "pm_view_level", pmi.rel_id as "pm_rel_id"
@@ -29,5 +43,57 @@
 		WHERE pmi.type=#{type} AND pmi.rel_id=#{relId} AND dsi.view_level=#{viewLevel}
 			  AND pmi.del_flag=0 AND dsi.state!=1
 	</select>
+
+    <select id="queryList" parameterType="java.util.Map" resultMap="deteSetTypeInfo">
+        select dsi.* from  dete_set_info dsi where dsi.state !='1'
+        <if test="name != null">
+            and dsi.name = #{name}
+        </if>
+        <if test="typeId != null">
+            and dsi.type_id= #{typeId}
+        </if>
+        and ( (dsi.view_level='1' and dsi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
+        or (dsi.view_level='2' and dsi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
+        or (dsi.view_level='3') )
+        <if test="sidx != null">
+            order by #{sidx}
+
+            <if test="order != null">
+                #{order}
+            </if>
+        </if>
+
+        limit #{start},#{pageSize}
+
+
+    </select>
+
+    <select id="queryCount" parameterType="java.util.Map" resultType="Integer">
+        select count(1) from (
+        select dsi.* from  dete_set_info dsi where dsi.state !='1'
+        <if test="name != null">
+            and dsi.name = #{name}
+        </if>
+        <if test="typeId != null">
+            and dsi.type_id= #{typeId}
+        </if>
+        and ( (dsi.view_level='1' and dsi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
+        or (dsi.view_level='2' and dsi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
+        or (dsi.view_level='3') )
+        ) t
+    </select>
+
+    <select id="queryNodeGroups" resultType="nodeGroupInfoEntity">
+        select ngi.*  from nodegroup_info ngi  join dete_set_node_rel snr
+        on ngi.id=snr.rel_id and snr.type=2 and snr.set_id=#{setId} and ngi.del_flag='0' and snr.del_flag='0'
+    </select>
+
+    <select id="queryNodes" resultType="nodeInfoEntity">
+        select ni.* from node_info ni join dete_set_node_rel snr on ni.id=snr.rel_id and snr.type=1 and snr.set_id=#{setId} and ni.state!='3' and snr.del_flag='0';
+    </select>
+
+    <select id="queryById" resultMap="deteSetTypeInfo">
+        select *  from dete_set_info where id=#{id} and state !='1'
+    </select>
 
 </mapper>

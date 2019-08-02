@@ -1,13 +1,10 @@
 package com.nis.modules.detectSet.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
 
 /**
  * 监测信息节点关系表
@@ -42,6 +39,7 @@ public class DeteSetNodeRelEntity implements Serializable {
 	/**
 	 * 是否删除，1：删除，0：未删除，默认：0
 	 */
+	@TableLogic
 	private String delFlag;
 	/**
 	 * 

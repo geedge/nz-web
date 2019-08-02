@@ -15,6 +15,7 @@ import com.nis.modules.detect.service.DeteTypeInfoService;
 import com.nis.modules.detect.service.DeteTypeMetaMappingService;
 import com.nis.modules.detect.service.DeteTypeMetaService;
 import com.nis.modules.detect.service.DeteTypeParamService;
+import com.nis.modules.detectSet.service.DeteSetInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,8 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     private DeteTypeParamService deteTypeParamService;
     @Autowired
     private DeteTypeMetaMappingService deteTypeMetaMappingService;
+    @Autowired
+    private DeteSetInfoService deteSetInfoService;
 
     private SQLUtils sqlUtils;
     @Override
@@ -44,7 +47,6 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                 new QueryWrapper<DeteTypeInfoEntity>()
                         .like(StringUtils.isNotBlank(deteTypeName), "name", deteTypeName)
         );
-
         return new PageUtils(page);
     }
 
@@ -272,24 +274,41 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteEntity(DeteTypeInfoEntity deteTypeInfoEntity) {
-        DeteTypeInfoEntity oldType = this.getById(deteTypeInfoEntity.getId());
+    public void deleteEntity(Long... ids) {
+        Long userId = ShiroUtils.getUserId();
+        Date date=new Date();
+        //drop对应的表
+        for (Long id :ids){
+            DeteTypeInfoEntity oldType = this.getById(id);
+            if(oldType!=null&& StringUtils.isNotBlank(oldType.getTableName())){
+                this.dropTable(oldType.getTableName());
+            }
+
+        }
         //删除detectType
         this.update(new UpdateWrapper<DeteTypeInfoEntity>()
-                .eq("id", deteTypeInfoEntity.getId())
-                .set("del_flag", Constant.DELFLAG_TRUE));
+                .in("id", ids)
+                .set("del_flag", Constant.DELFLAG_TRUE)
+                .set("operator",userId)
+                .set("op_time",date));
         //删除detectTypeMeta
         deteTypeMetaService.update(new UpdateWrapper<DeteTypeMetaEntity>()
-                .eq("type_id", deteTypeInfoEntity.getId())
-                .set("del_flag", Constant.DELFLAG_TRUE));
+                .in("type_id", ids)
+                .set("del_flag", Constant.DELFLAG_TRUE)
+                .set("operator",userId)
+                .set("op_time",date));
         //删除detectTypeParam
         deteTypeParamService.update(new UpdateWrapper<DeteTypeParamEntity>()
-                .eq("type_id", deteTypeInfoEntity.getId())
-                .set("del_flag", Constant.DELFLAG_TRUE));
+                .in("type_id", ids)
+                .set("del_flag", Constant.DELFLAG_TRUE)
+                .set("operator",userId)
+                .set("op_time",date));
         //删除detectSetInfo 相关
+        for(Long id:ids){
+            deteSetInfoService.deleteByTypeId(id);
+        }
 
-        //drop对应的表
-        this.getBaseMapper().dropTable(oldType.getTableName());
+
     }
 
 

@@ -1,12 +1,11 @@
 package com.nis.modules.detectSet.dao;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
-
-import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 监测信息节点关系表

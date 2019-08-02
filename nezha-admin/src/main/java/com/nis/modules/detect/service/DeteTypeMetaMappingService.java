@@ -15,5 +15,5 @@ public interface DeteTypeMetaMappingService extends DeteTypeCommonService<DeteTy
 
     void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO);
 
-    R deleteDic(String type);
+    R deleteDic(String ... types);
 }

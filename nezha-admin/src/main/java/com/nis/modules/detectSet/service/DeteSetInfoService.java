@@ -20,5 +20,17 @@ public interface DeteSetInfoService extends IService<DeteSetInfoEntity> {
     PageUtils queryPage(Map<String, Object> params);
     
     List<DeteSetInfoEntity> queryByPermission(PermissionInfoEntity entity);
+
+    boolean checkNameExists(String name, Long setId);
+
+    void saveEntity(DeteSetInfoEntity deteSetInfo);
+
+    void updateEntity(DeteSetInfoEntity deteSetInfo);
+
+    void changeStateByIds(Long[] ids, String state);
+
+    void deleteByTypeId(Long typeId);
+
+    DeteSetInfoEntity queryDetail(Long id);
 }
 

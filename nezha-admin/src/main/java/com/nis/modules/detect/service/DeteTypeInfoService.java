@@ -21,7 +21,7 @@ public interface DeteTypeInfoService extends DeteTypeCommonService<DeteTypeInfoE
 
     void validatePassDate(DeteTypeInfoEntity deteTypeInfo);
 
-    void deleteEntity(DeteTypeInfoEntity id);
+    void deleteEntity(Long... id);
 
 
 }
