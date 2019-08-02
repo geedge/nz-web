@@ -78,7 +78,47 @@ public enum RCode {
 	SET_TYPE_ISNULL(302003,"set_type_isnull"),//监测设置所属类别为空
 
 	MISSION_ERROR(400000, "mission_error"), //40xxxx，任务类通用错误
-
+	MISSION_TYPE_ISNULL(400001,"mission_type_isnull"),   // 任务类型为空
+	MISSION_NAME_ISNULL(400002,"mission_name_isnull"),   //任务名称不能为空
+	MISSION_PARAM_ISNULL(400003,"mission_param_isnull"), //任务参数不能为空
+	MISSION_PARAM_ERROR(400004,"mission_param_error"),   //参数格式错误或部分缺失
+	MISSION_ID_ISNULL(400005,"mission_id_isnull"),   //任务id为空
+	MISSION_GROUPNODE_ISNULL(400006,"mission_groupnode_isnull"),  //任务节点组信息为空
+	MISSION_FILEPUSH_FILE_ISNULL(400101,"mission_filepush_file_isnull"),  //文件推送文件为空
+	MISSION_FILEPUSH_DESTPATH_ISNULL(400102,"mission_filepush_destpath_isnull"), // 文件推送路径为空
+	MISSION_FILEPUSH_PASSWORD_HANDLE_ERROR(400103,"mission_filepush_password_handle_error"), //文件推送密码处理错误
+	MISSION_FILEPUSH_FILE_UPLOAD_ERROR(400104,"mission_filepush_file_upload_error"), //文件推送上传文件错误
+	MISSION_FILEPUSH_MD5_ERROR(400105,"mission_filepush_md5_error"), // 文件推送md5处理错误
+	MISSION_FILEPUSH_OUTSIZE_ERROR(400106,"mission_filepush_outsize_error"),  // 上传文件超过限制
+	MISSION_EXECUTE_INSTRUCT_COMMANDENNAME_ISNULL(400201,"mission_execute_instruct_killprocess_commandenname_isnull"), // 指令具体任务类型不能为空
+	MISSION_EXECUTE_INSTRUCT_KILLPROCESS_PIDFILE_ISNULL(400202,"mission_execute_instruct_killprocess_pidfile_isnull"),  //  停止进程不能为空 
+	MISSION_EXECUTE_INSTRUCT_KILLPROCESS_LOOPTIME_ERROR(400203,"mission_execute_instruct_killprocess_looptime_error"),  // 周期结束时间小于当前时间
+	MISSION_EXECUTE_INSTRUCT_BACKUP_FILE_ISNULL(400301,"mission_execute_instruct_backup_file_isnull"),   //备份文件不能为空
+	MISSION_EXECUTE_INSTRUCT_BACKUP_PATH_ISNULL(400302,"mission_execute_instruct_backup_path_isnull"),   //备份路径不能为空
+	MISSION_EXECUTE_INSTRUCT_BACKUP_LOOPTIME_ERROR(400303,"mission_execute_instruct_backup_looptime_error"),  // 周期结束时间小于当前时间
+	MISSION_EXECUTE_INSTRUCT_UPDATE_SOURCE_ISNULL(400401,"mission_execute_instruct_update_source_isnull"),   //源路径不能为空
+	MISSION_EXECUTE_INSTRUCT_UPDATE_COVER_ISNULL(400402,"mission_execute_instruct_update_cover_isnull"),   //覆盖路径不能为空
+	MISSION_EXECUTE_INSTRUCT_UPDATE_LOOPTIME_ERROR(400403,"mission_execute_instruct_update_looptime_error"),  // 周期结束时间小于当前时间
+	MISSION_EXECUTE_INSTRUCT_START_EXECCMD_ISNULL(400501,"mission_execute_instruct_start_execcmd_isnull"),   // 执行命令不能为空
+	MISSION_EXECUTE_INSTRUCT_START_EXECRESULT_ISNULL(400502,"mission_execute_instruct_start_execresult_isnull"), // 执行结果不能为空
+	MISSION_EXECUTE_INSTRUCT_START_RETURNPATH_ISNULL(400503,"mission_execute_instruct_start_returnpath_isnull"), // 回执文件不能为空
+	MISSION_EXECUTE_INSTRUCT_START_LOOPTIME_ERROR(400504,"mission_execute_instruct_start_looptime_error"), // 周期结束时间小于当前时间
+	MISSION_EXECUTE_INSTRUCT_RECOVER_SOURCE_ISNULL(400601,"mission_execute_instruct_recover_source_isnull"),   //源路径不能为空
+	MISSION_EXECUTE_INSTRUCT_RECOVER_COVER_ISNULL(400602,"mission_execute_instruct_recover_cover_isnull"),   //覆盖路径不能为空
+	MISSION_EXECUTE_INSTRUCT_RECOVER_LOOPTIME_ERROR(400603,"mission_execute_instruct_recover_looptime_error"),  // 周期结束时间小于当前时间
+	MISSION_EXECUTE_INSTRUCT_SINGLEEXEC_EXECCMD_ISNULL(400701,"mission_execute_instruct_start_execcmd_isnull"),   // 执行命令不能为空
+	MISSION_EXECUTE_INSTRUCT_SINGLEEXEC_RETURNPATH_ISNULL(400702,"mission_execute_instruct_start_returnpath_isnull"), // 回执文件不能为空
+	MISSION_EXECUTE_INSTRUCT_SINGLEEXEC_LOOPTIME_ERROR(400703,"mission_execute_instruct_start_looptime_error"), // 周期结束时间小于当前时间
+	MISSION_UPGRADE_UPLOADFILE_ISNULL(400801,"mission_upgrade_uploadfile_isnull"),  // 升级部署任务上传文件为空
+	MISSION_UPGRADE_UPLOADFILE_OUTSIZE(400802,"mission_upgrade_uploadfile_outsize"), //升级部署任务上传文件过大
+	MISSION_UPGRADE_PASSWORD_HANDLE_ERROR(400803,"mission_upgrade_password_handle_error"), // 升级部署任务密码处理错误
+	MISSION_UPGRADE_FILE_UPLOAD_ERROR(400804,"mission_upgrade_file_upload_error"),  // 升级部署任务文件上传错误
+	MISSION_UPGRADE_MD5_ERROR(400805,"mission_upgrade_md5_error"),   // 升级部署任务md5加密错误
+	MISSION_UPGRADE_COVER_ISNULL(400806,"mission_upgrade_cover_isnull"),  // 升级部署任务覆盖路径为空
+	MISSION_UPGRADE_BACKUP_PATH_ISNULL(400807,"mission_upgrade_backup_path_isnull"),  // 备份路径为空
+	MISSION_UPGRADE_BACKUPTO_ISNULL(400808,"mission_upgrade_backupto_isnull"),  // 升级部署任务备份源路径为空
+	MISSION_UPGRADE_STARTUPFILE_ISNULL(400809,"mission_upgrade_startupfile_isnull"),// 升级部署任务启动文件或命令为空
+	MISSION_UPGRADE_PIDFILE_ISNULL(400810,"mission_upgrade_pidfile_isnull"),// 升级部署任务PID文件为空
 
 	DASHBOARD_ERROR(500000, "dashboard_error"), //50xxxx，仪表盘通用错误
 	DASHBOARD_ID_NULL(500001,"dashboard_id_null"),  //仪表盘id为空

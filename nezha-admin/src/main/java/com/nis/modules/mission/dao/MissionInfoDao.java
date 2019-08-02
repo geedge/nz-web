@@ -12,25 +12,20 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ibatis.annotations.Mapper;
-import org.springframework.data.repository.query.Param;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 任务信息表
  * 
- * @author hkx
+ * @author th
  * @email ${email}
  * @date 2019-07-18 10:37:19
  */
 @Mapper
 public interface MissionInfoDao extends BaseMapper<MissionInfoEntity> {
 	
-	//IPage<MissionInfoEntity> queryPageMission(IPage<MissionInfoEntity> page,Map<String, Object> params);
-	//List<MissionInfoEntity> queryPageMission(Page page,Map<String, Object> params);
-	
-	//IPage<MissionInfoEntity> queryAllMission(@Param("ew") Wrapper<MissionInfoEntity> userWrapper,IPage<MissionInfoEntity> page);
-	
-	//根据id获取任务信息详情
-	//MissionInfoEntity getMissionById(Integer id);
+	// 查询当前用户可查看任务详情列表
+	Page<MissionInfoEntity> selectMissionInfoList(Page page,@Param("missionInfo") MissionInfoEntity missionInfoEntity);
 	
 	List<MissionInfoEntity> queryByPermission(PermissionInfoEntity entity);
 	

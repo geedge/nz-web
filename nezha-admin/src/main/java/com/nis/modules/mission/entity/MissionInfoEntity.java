@@ -4,19 +4,20 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
-import org.springframework.data.annotation.Transient;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.Data;
 
 /**
  * 任务信息表
  * 
- * @author hkx
+ * @author th
  * @email ${email}
  * @date 2019-07-18 10:37:19
  */
@@ -80,12 +81,6 @@ public class MissionInfoEntity implements Serializable {
 	@TableField(exist=false)
 	private Integer[] stateDesc;
 	
-	/**
-	 * 查看人    组名或业务系统名称
-	 */
-	@TableField(exist=false)
-	private String viewer;
-	
 	//关联节点组列表
 	@TableField(exist=false)
 	private List<MissionNodeRelEntity> mnrList;
@@ -96,7 +91,7 @@ public class MissionInfoEntity implements Serializable {
 	
 	//节点uuid
 	@TableField(exist=false)
-	private List<String> nodeIds;
+	private List<Long> nodeIds;
 	
 	/**
 	 * 权限记录
@@ -104,4 +99,18 @@ public class MissionInfoEntity implements Serializable {
 	@TableField(exist=false)
 	private PermissionInfoEntity permission;
 
+	@TableField(exist=false)
+	private SysUserEntity user;
+	
+	@TableField(exist=false)
+	private String sidx;
+	
+	@TableField(exist=false)
+	private String order;
+	
+	/*@TableField(exist=false)
+	private List<ParamForFilePush> paramForFilePushs;*/
+	
+	@TableField(exist=false)
+	private String commandEnname;   // 具体任务名称  只有指令执行和升级部署有值
 }

@@ -8,12 +8,16 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
@@ -36,7 +40,7 @@ import io.swagger.annotations.ApiOperation;
  * 
  * @ClassName:MissionController
  * @Description:任务模块
- * @author hkx
+ * @author th
  * @date 2019年7月18日
  */
 @Api(tags="任务模块")
@@ -68,53 +72,21 @@ public class MissionController {
     @RequestMapping("/list")
    /* @RequiresPermissions("mission:missioninfo:list")*/
     public R list(Integer page,Integer limit,String sidx,String order,String isLoop,String type,String name){
-    	//单独校验的方式：
-		//如下面的写法就是校验usergroupId非空、page非空且最大值30
-		/*try {
-			ValidateUtils.check(params.get("usergroupId")).notNull(RCode.ERROR)
-						.and(params.get("page")).notNull(RCode.ERROR)
-						.and(Integer.parseInt((String) params.get("page"))).max(30, RCode.ERROR);
-		} catch (ParamsException e) {
-			return R.error(e.getMessage());
-		}*/
-        //PageUtils page = missionInfoService.queryPage(params);
-    	
-    	Map<String, Object> params=new HashMap<String, Object>();
-    	/*params.put("page", "1");
-    	params.put("limit", "10");*/
-    	//ValidateUtils.check(page).notNull()
-    	/*if(page!=null) {
-    		params.put("page", page);
-    	}
+        Page queryPage=new Page();
     	if(limit!=null) {
-    		params.put("limit", limit);
+    		queryPage.setSize(limit);
     	}
-    	if(StringUtils.isNotBlank(sidx)) {
-    		params.put("sidx", sidx);
-    	}
-    	if(StringUtils.isNotBlank(order)) {
-    		params.put("order", order);
-    	}
-    	if(StringUtils.isNotBlank(isLoop)) {
-    		params.put("isLoop", isLoop);
-    	}
-    	if(StringUtils.isNotBlank(type)) {
-    		params.put("type", type);
-    	}
-    	if(StringUtils.isNotBlank(name)) {
-    		params.put("name", name);
-    	}*/
-    	/*params.put("page", page);
-    	params.put("limit", limit);*/
-    	params.put("sidx", sidx);
-    	params.put("order", order);
-    	params.put("isLoop", isLoop);
-    	params.put("type", type);
-    	params.put("name", name);
-    	
-    	
-    	PageUtils Ipage = missionInfoService.queryPage(params);
-    	//PageUtils Ipage = missionInfoService.queryPageList(params);
+        if(page!=null) {
+        	queryPage.setCurrent(page);
+        }
+        MissionInfoEntity missionInfoEntity = new MissionInfoEntity();
+        missionInfoEntity.setSidx(sidx);
+        missionInfoEntity.setOrder(order);
+        missionInfoEntity.setIsLoop(isLoop);
+        missionInfoEntity.setType(type);
+        missionInfoEntity.setName(name);
+        
+    	PageUtils Ipage = missionInfoService.queryPage(queryPage,missionInfoEntity);
         return R.ok().put("page", Ipage);
     }
     
@@ -131,11 +103,8 @@ public class MissionController {
     @RequestMapping(value="/detail",method=RequestMethod.GET)
     //@RequiresPermissions("mission:missioninfo:list")
     public R detail(@RequestParam Integer id){
-    	//单独校验的方式：
-		//如下面的写法就是校验usergroupId非空、page非空且最大值30
 		ValidateUtils.check(id).notNull(RCode.ERROR);
 		
-        //PageUtils page = missionInfoService.queryPage(params);
     	MissionInfoEntity missionInfoEntity = missionInfoService.getMissionById(id);
         return R.ok().put("data", missionInfoEntity);
     }
@@ -144,12 +113,13 @@ public class MissionController {
     /**
      * 保存
      */
-    @RequestMapping("/save")
-    @RequiresPermissions("mission:missioninfo:save")
-    public R save(@RequestBody MissionInfoEntity missionInfo){
-    	
-    	
-		missionInfoService.save(missionInfo);
+    @PostMapping("/save")
+    /*@RequiresPermissions("mission:missioninfo:save")*/
+    @ApiOperation(httpMethod="POST",value="新增任务", notes="任务各项属性")
+    public R save(MissionInfoEntity missionInfo,MultipartFile[] files){
+    	// 验证处理参数
+    	missionInfoService.validateMissionInfoData(missionInfo,files);
+		missionInfoService.saveMission(missionInfo);
 
         return R.ok();
     }
@@ -169,24 +139,19 @@ public class MissionController {
    
 
     /**
-     * 修改
+     * 任务仅能修改名称和备注
      */
-    @RequestMapping("/update")
-    @RequiresPermissions("mission:missioninfo:update")
+    @PutMapping("/update")
+    /*@RequiresPermissions("mission:missioninfo:update")*/
+    @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
     public R update(@RequestBody MissionInfoEntity missionInfo){
-		missionInfoService.updateById(missionInfo);
-
-        return R.ok();
-    }
-
-    /**
-     * 删除
-     */
-    @RequestMapping("/delete")
-    @RequiresPermissions("mission:missioninfo:delete")
-    public R delete(@RequestBody Long[] ids){
-		missionInfoService.removeByIds(Arrays.asList(ids));
-
+    	ValidateUtils.is(missionInfo.getId()).notNull(RCode.MISSION_ID_ISNULL);
+    	ValidateUtils.is(missionInfo.getName()).notNull(RCode.MISSION_NAME_ISNULL);
+    	MissionInfoEntity updateMission =new MissionInfoEntity();
+    	updateMission.setId(missionInfo.getId());
+    	updateMission.setName(missionInfo.getName());
+    	updateMission.setRemark(missionInfo.getRemark());
+		missionInfoService.updateById(updateMission);
         return R.ok();
     }
 

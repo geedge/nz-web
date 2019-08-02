@@ -136,4 +136,19 @@ public class Constant {
     
     public static final Integer DETESET_NODE_RELTYPE_NODE = 1;
     public static final Integer DETESET_NODE_RELTYPE_NODEGROUP = 2;
+    
+    //mission result state
+    public static final String MISSION_RESULT_SUCCESS = "1";  //成功
+    public static final String MISSION_RESULT_FAIL = "2";  //失败
+    public static final String MISSION_RESULT_TIMEOUT = "3";  //超时
+    
+    // mission loop
+    public static final String MISSION_LOOP_TRUE = "1";   //周期任务
+    public static final String MISSION_LOOP_false = "0";   //周期任务
+    
+    public static final String STR_PARAM_SEPRATOR=";";
+    
+    // mission node rel 
+    public static final String MISSION_NODE_REL_TYPE_GROUP="1";
+    public static final String MISSION_NODE_REL_TYPE_NODE="2";
 }

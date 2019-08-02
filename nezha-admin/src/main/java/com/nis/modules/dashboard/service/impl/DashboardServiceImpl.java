@@ -39,7 +39,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		for (DashboardEntity dashboardEntity : dashboardEntitys) {
 			String[] userSqls=null;
 			switch(ChartType.getChartNameByTypeId(Integer.valueOf(dashboardEntity.getChartType()))) {
-			case Statistical:
+			case STATISTICAL:
 				ChartStatisticalEntity chartStatisticalEntity = JSON.parseObject(dashboardEntity.getData(), ChartStatisticalEntity.class);
 				userSqls = chartStatisticalEntity.getUserSqls();
 				List<List<ChartSeriesEntity>> seriess=new ArrayList<List<ChartSeriesEntity>>();
@@ -53,7 +53,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				String chartStatisticalEntityData = JSON.toJSONString(chartStatisticalEntity);
 				dashboardEntity.setData(chartStatisticalEntityData);
 				break;
-			case Single:
+			case SINGLE:
 				ChartSingleEntity chartSingleEntity = JSON.parseObject(dashboardEntity.getData(), ChartSingleEntity.class);
 				userSqls = chartSingleEntity.getUserSqls();
 				List<ChartSeriesEntity> chartSingleSeries = baseMapper.selectResultData(userSqls[0]);
@@ -62,7 +62,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				String chartSingleEntityData = JSON.toJSONString(chartSingleEntity);
 				dashboardEntity.setData(chartSingleEntityData);
 				break;
-			case Table:
+			case TABLE:
 				ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
 				userSqls = chartTableEntity.getUserSqls();
 				List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls[0]);
@@ -102,15 +102,15 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		String[] userSqls = null;
 		String data = dashboard.getData();
 		switch(ChartType.getChartNameByTypeId(Integer.valueOf(dashboard.getChartType()))) {
-		case Statistical:
+		case STATISTICAL:
 			ChartStatisticalEntity chartStatisticalEntity = JSON.parseObject(data,ChartStatisticalEntity.class);
 			userSqls = chartStatisticalEntity.getUserSqls();
 			break;
-		case Single:
+		case SINGLE:
 			ChartSingleEntity chartSingleEntity = JSON.parseObject(data,ChartSingleEntity.class);
 			userSqls = chartSingleEntity.getUserSqls();
 			break;
-		case Table:
+		case TABLE:
 			ChartTableEntity chartTableEntity = JSON.parseObject(data,ChartTableEntity.class);
 			userSqls = chartTableEntity.getUserSqls();
 			break;

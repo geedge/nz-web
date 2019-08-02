@@ -38,59 +38,31 @@
         <result property="delFlag" column="del_flag"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
-        <collection property="">
-        
-        </collection>
     </resultMap>
     
     
     <!-- 任务列表查询 -->
-	<select id="queryAllMission" resultMap="missionInfoMap">
-		select mi.*,mr.desc as state_desc from mission_info mi
-			left Join mission_result mr on mi.id=mr.mission_id
-		<where>
-			${ew.sqlSegment}
-		</where>
-	</select>
-
-	<!-- 任务列表分页查询 -->
-	<select id="queryPageMission" resultMap="missionInfoMap">
-		select mi.*,mr.desc as state_desc from mission_info mi
-			left Join mission_result mr on mi.id=mr.mission_id
-		where mi.del_flag=0
-		<if test="isLoop!=null and isLoop!=''">
-			and mi.is_loop=#{isLoop}
+	<select id="selectMissionInfoList" resultMap="missionInfoMap">
+		select mi.* from mission_info mi 
+		LEFT JOIN permission_info pi on mi.id=pi.type_id 
+		where pi.type=4 and ((pi.view_level = 2 and pi.rel_id= #{missionInfo.user.currSystemId})  or (pi.view_level=1 and pi.rel_id in (
+			<foreach collection="missionInfo.user.usergroups" item="item"  open="" close="" separator=",">
+				#{item.id}
+			</foreach>
+		)) or pi.view_level=3 )
+		<if test="missionInfo.isLoop != null ">
+			    AND mi.is_loop=#{missionInfo.isLoop}
 		</if>
-		<if test="type!=null and type!=''">
-			and mi.type=#{type}
+		<if test="missionInfo.type != null ">
+			    AND mi.type=#{missionInfo.type}
 		</if>
-		<if test="name!=null and name!=''">
-			and mi.name=#{name}
+		<if test="missionInfo.name != null ">
+			    AND mi.=#{missionInfo.name}
 		</if>
-		<!-- <if test="name != null and name != ''">
-			AND a.name LIKE 
-				<if test="dbName == 'oracle'">'%'||#{name}||'%'</if>
-				<if test="dbName == 'mssql'">'%'+#{name}+'%'</if>
-				<if test="dbName == 'mysql'">concat('%',#{name},'%')</if>
-				<if test="dbName == 'postgre'">concat('%',#{name},'%')</if>
-		</if> -->
-		<choose>
-			<when test="sidx !=null and sidx != '' and order!=null and order!=''">
-				ORDER BY #{sidx} #{order}
-			</when>
-			<otherwise>
-				ORDER BY mi.op_time DESC
-			</otherwise>
-		</choose>
-	</select>
-	
-	
-	<!-- 任务详情获取 -->
-	<select id="getMissionById" resultMap="missionInfoUnio">
-		select mi.*,mr.desc as state_desc from mission_info mi
-			left Join mission_result mr on mi.id=mr.mission_id
-			left Join mission_node_rel mnr on mi.id=mnr.mission_id
-		where mi.id=#{id}
+		and mi.del_flag=0 and pi.del_flag=0
+		<if test="missionInfo.sidx != null ">
+			order by mi.#{missionInfo.sidx} #{missionInfo.order}
+		</if>
 	</select>
 
 	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="missionInfoMap">
