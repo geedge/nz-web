@@ -276,7 +276,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 
 	@Override
 	public boolean checkName(UserGroupEntity entity) {
-		List<UserGroupEntity> list = this.list(new QueryWrapper<UserGroupEntity>().eq(true, "name", entity.getName()));
+		List<UserGroupEntity> list = this.list(new QueryWrapper<UserGroupEntity>().eq(true, "name", entity.getName()).eq(true, "del_flag", Constant.DELFLAG_FALSE));
 		boolean dumpFlag = true; //是否名称重复，true为重复
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复

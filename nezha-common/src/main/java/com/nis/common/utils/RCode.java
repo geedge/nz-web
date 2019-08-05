@@ -30,6 +30,7 @@ public enum RCode {
 
 	SYS_USERGROUP_DUPLICATENAME(104001, "usergroup name duplicate error"), //用户组名称重复
 	
+	SYS_I18N_DUPLICATE(105001, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
 
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 

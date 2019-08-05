@@ -99,7 +99,9 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 
 	@Override
 	public boolean checkName(SystemInfoEntity systemInfo) {
-		List<SystemInfoEntity> list = this.list(new QueryWrapper<SystemInfoEntity>().eq(true, "name", systemInfo.getName()));
+		List<SystemInfoEntity> list = this.list(new QueryWrapper<SystemInfoEntity>()
+														.eq(true, "name", systemInfo.getName())
+														.eq(true, "del_flag", Constant.DELFLAG_FALSE));
 		boolean dumpFlag = true; //是否名称重复，true为重复
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
