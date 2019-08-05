@@ -218,6 +218,9 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					MultipartFile uploadFile = files[i];
 					ValidateUtils.is(uploadFile.getOriginalFilename()).notNull(RCode.MISSION_FILEPUSH_FILE_ISNULL);
 					ValidateUtils.is(paramForFilePush.getDestPath()).notNull(RCode.MISSION_FILEPUSH_DESTPATH_ISNULL);
+					if(CommonUtil.isNull(paramForFilePush.getIsCover())) {
+						paramForFilePush.setIsCover("0");
+					}
 					//处理文件推送中密码 
 					if (paramForFilePush.getPw() != null && paramForFilePush.getPw().trim().length() > 0) {// 密码加密保存
 						try {
@@ -695,6 +698,17 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 						if(CommonUtil.isNull(paramForUpgrade.getMaxWaitTime())) {
 							paramForUpgrade.setMaxWaitTime("3");
+						}
+						if (paramForUpgrade.getExecParamsTmpStr() != null && paramForUpgrade.getExecParamsTmpStr().trim().length() > 0) {
+							// 将\r,\n,\t字符替换为空
+							String execParamsTmpStr = paramForUpgrade.getExecParamsTmpStr().trim();
+							execParamsTmpStr = execParamsTmpStr.replaceAll("[\n,\r,\t]", "");
+							if (execParamsTmpStr.contains(Constant.STR_PARAM_SEPRATOR)) {
+								paramForUpgrade.setExecParams(execParamsTmpStr.split(Constant.STR_PARAM_SEPRATOR));
+							} else {
+								paramForUpgrade.setExecParams(new String[] { execParamsTmpStr });
+							}
+							paramForUpgrade.setExecParamsTmpStr(null);
 						}
 						if (paramForUpgrade.getDeleteTmpStr() != null && paramForUpgrade.getDeleteTmpStr().trim().length() > 0) {
 							// 将\r,\n,\t字符替换为空
