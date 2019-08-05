@@ -56,7 +56,7 @@ public class SystemInfoController extends AbstractController {
 	
 	@RequestMapping(value = "save", method = RequestMethod.POST)
 	@ApiImplicitParams({
-        @ApiImplicitParam(paramType="query", name = "name", value = "拓扑图id", required = true),
+        @ApiImplicitParam(paramType="query", name = "name", value = "用户组名", required = true),
         @ApiImplicitParam(paramType="query", name = "remarks", value = "备注", required = false),
         @ApiImplicitParam(paramType="query", name = "usergroupIds", value = "用户组id", required = false, dataType="Long", allowMultiple=true)
     })
