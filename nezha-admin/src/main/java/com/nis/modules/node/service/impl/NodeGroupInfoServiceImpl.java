@@ -66,18 +66,18 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             List<SystemInfoEntity> systemInfoList = systemInfoService.list();
             // 2. 根据系统业务集合得到包含的节点组集合
             for (SystemInfoEntity item : systemInfoList) {
-                List<SystemNodeGroupEntity> sysNodeGroupsBySystemId = getSysNodeGroupsBySystemId(item);
+                List<SystemNodeGroupEntity> sysNodeGroupsBySystemId = queryBySystemId(item);
                 list.addAll(sysNodeGroupsBySystemId);
             }
             return list;
         } else { // 其他权限登录 只能看到自己权限下的节点组信息
             SystemInfoEntity systemInfoEntity = systemInfoService.getById(ShiroUtils.getCurrSystemId());
-            return getSysNodeGroupsBySystemId(systemInfoEntity);
+            return queryBySystemId(systemInfoEntity);
         }
     }
 
     //根据传入的系统权限角色查询角色包含的节点组信息
-    public List<SystemNodeGroupEntity> getSysNodeGroupsBySystemId(SystemInfoEntity systemInfo) {
+    public List<SystemNodeGroupEntity> queryBySystemId(SystemInfoEntity systemInfo) {
         List<SystemNodeGroupEntity> list = new ArrayList<>();
         List<NodeGroupInfoEntity> nodegroupInfoList = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("system_id", systemInfo.getId()));
         for (NodeGroupInfoEntity entity : nodegroupInfoList) {
@@ -149,7 +149,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         if (nodeGroup.getName().equals(nodegroupInfo.getName())) {// 名称没有发生改变
             nodegroupInfoDao.update(nodegroupInfo, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", nodegroupInfo.getId()));
         } else {
-            if (getCount(nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
+            if (checkNameExists(nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
                 nodegroupInfoDao.update(nodegroupInfo, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", nodegroupInfo.getId()));
             } else {
                 throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);// 节点组名称重复
@@ -241,13 +241,13 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     public boolean groupNameCheck(Long id, String name, Long pid) {
         if (id == null) {// 添加
-            return getCount(name, pid);
+            return checkNameExists(name, pid);
         } else {// 修改
             NodeGroupInfoEntity nodegroupInfo = getById(id);
             if (name.equals(nodegroupInfo.getName())) {
                 return true;
             } else {
-                return getCount(name, pid);
+                return checkNameExists(name, pid);
             }
         }
     }
@@ -259,11 +259,8 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      * @param pid
      * @return
      */
-    public boolean getCount(String name, Long pid) {
+    public boolean checkNameExists(String name, Long pid) {
         int count = count(new QueryWrapper<NodeGroupInfoEntity>().eq("pid", pid).eq("name", name));
-        if (count > 0) {
-            return false;
-        }
-        return true;
+        return count <= 0;
     }
 }

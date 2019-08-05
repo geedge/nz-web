@@ -128,13 +128,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Override
     public boolean ipCheck(Long uuid, String ip) {
         if (uuid == null) {// 添加
-            return getCount("ip", ip);
+            return checkFieldExists("ip", ip);
         } else {//修改
             NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
             if (ip.equals(nodeInfo.getIp())) {// IP 地址未改变
                 return true;
             } else {// IP 地址发生改变
-                return getCount("ip", ip);
+                return checkFieldExists("ip", ip);
             }
         }
     }
@@ -143,13 +143,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Override
     public boolean nodeNameCheck(Long uuid, String name) {
         if (uuid == null) {// 添加
-            return getCount("name", name);
+            return checkFieldExists("name", name);
         } else {// 修改
             NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
             if (name.equals(nodeInfo.getName())) {// name 未发生改变
                 return true;
             } else {
-                return getCount("name", name);
+                return checkFieldExists("name", name);
             }
         }
     }
@@ -379,12 +379,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
      * @param value  该列的值
      * @return
      */
-    public boolean getCount(String column, String value) {
+    public boolean checkFieldExists(String column, String value) {
         int count = count(new QueryWrapper<NodeInfoEntity>().eq(column, value).ne("state", 3));// 名称校验不考虑删除的节点名
-        if (count > 0) {//不是唯一的  已经存在
-            return false;
-        }
-        return true;
+        return count <= 0;
     }
 
 

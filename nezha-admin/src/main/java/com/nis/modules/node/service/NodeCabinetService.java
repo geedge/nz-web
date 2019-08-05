@@ -31,7 +31,7 @@ public interface NodeCabinetService extends IService<NodeCabinetEntity> {
 
     void updateNodeCabinet(NodeCabinetEntity nodeCabinet);
 
-    void delete(Long id);
+    void delete(Long[] ids);
 
     // 校验U位数量是否可用
     boolean cabUbitCheck(Long id, Integer ubit);

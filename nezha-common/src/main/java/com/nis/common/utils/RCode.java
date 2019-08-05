@@ -34,24 +34,24 @@ public enum RCode {
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 
 	NODE_IPADDRESS_FORMAT(201001, "ipaddress_format_error"),// ip 地址不合法 格式错误
-	NODE_IPADDRESS_DUPLICATE(201002, "duplicate_ipaddress_error"), // IP 地址重复
-	NODE_NAME_DUPLICATE(201003, "duplicate_name_error"), // name 名称  重复
+	NODE_IPADDRESS_DUPLICATE(201002, "ipaddress_duplicate_error"), // IP 地址重复
+	NODE_NAME_DUPLICATE(201003, "name_duplicate_error"), // name 名称  重复
 	NODE_USTART_OCCUPIED(201004, "ustart_occupied_error"), // 节点 U 位已被占用 或 不存在
 
-	NODEGROUP_NAME_DUPLICATE(202001, "duplicate_groupname_error"), // name 节点组 名称  重复
+	NODEGROUP_NAME_DUPLICATE(202001, "groupname_duplicate_error"), // name 节点组 名称  重复
 
-	NODEROOM_NAME_DUPLICATE(203001, "duplicate_roomname_error"),// 机房名称重复
+	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),// 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"), // 机房行号已被占用
 	NODEROOM_COL_OCCUPIED(203003,"col_occupied_error"), // 机房列号已被占用
 	NODEROOM_EXISTS_CABINET(203004,"cabinet_exists_error"), // 机房下存在机柜 错误
 	NODEROOM_POSITION_OCCUPIED(203005,"position_occupied_error"), // 机房该行列被占用 机柜无法使用此位置
 
-	NODECABINET_NAME_DUPLICATE(204001, "duplicate_cabinetname_error"), // 机柜名称重复
-	NODECABINET_ROW_INCORRECT(204002,"row_cannot_zero_error"),   // 行值不能为0 零
-	NODECABINET_COL_NCORRECT(204003,"col_cannot_zero_error"),    // 列值不能为0 零
-	NODECABINET_ROW_MAXNUM(204004,"row_exceed_maxnum_error"),    // 行超过机房最大值
-	NODECABINET_COL_MAXNUM(204005,"col_exceed_maxnum_error"),    // 列超过机房最大值
-	NODECABINET_NODES_EXISTS(204006,"nodes_exists_error"),       // 机柜存在关联节点
+	NODECABINET_NAME_DUPLICATE(204001, "cabinetname_duplicate_error"), // 机柜名称重复
+	NODECABINET_ROW_INCORRECT(204002,"rownumber_incorrect_error"),   // 行值不能为0 零
+	NODECABINET_COL_NCORRECT(204003,"colnumber_incorrect_error"),    // 列值不能为0 零
+	NODECABINET_ROW_MAXNUM(204004,"rownumber_maxnum_error"),    // 行超过机房最大值
+	NODECABINET_COL_MAXNUM(204005,"colnumber_maxnum_error"),    // 列超过机房最大值
+	NODECABINET_NODES_EXISTS(204006,"related_nodes_error"),       // 机柜存在关联节点
 	NODECABINET_UBIT_OCCUPIED(204007,"ubit_occupied_error"),       // U位中存在节点 U位修改值小了
 
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误

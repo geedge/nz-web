@@ -22,7 +22,7 @@ public interface NodeRoomService extends IService<NodeRoomEntity> {
 
     boolean roomNameCheck(Long id, String name);
 
-    void delete(Long id);
+    void delete(Long[] ids);
 
     void updateNodeRoom(NodeRoomEntity nodeRoom);
 

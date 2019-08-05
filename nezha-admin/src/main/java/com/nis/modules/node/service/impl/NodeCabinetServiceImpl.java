@@ -144,17 +144,20 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     /**
      * 删除
      *
-     * @param id R
+     * @param ids R
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-       // 1. 判断是否关联这节点
-        List<NodeInfoEntity> list = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
-        if (list.size() > 0) {
-            throw new NZException(RCode.NODECABINET_NODES_EXISTS); // 存在关联节点 不可以删除
-        } else {
-            nodeCabinetDao.deleteById(id);
+    public void delete(Long[] ids) {
+        for (Long id : ids) {
+            // 1. 判断是否存在关联节点
+            List<NodeInfoEntity> list = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
+            NodeCabinetEntity cabinet = this.getById(id);
+            if (list != null && list.size() > 0) {
+                throw new NZException(cabinet.getName() + " related nodes , not deletable " , 204006);
+            }
+            // 2. 进行逻辑删除
+            this.removeById(id);
         }
     }
 
@@ -171,13 +174,15 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         List<NodeInfoEntity> list = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne(
                 "state", 3).orderByDesc("cabinet_start"));
 
-        Integer occPosition = list.get(0).getCabinetStart() + list.get(0).getuSize() - 1;
+        Integer occPosition = null;
 
-        // 2. 判断是否可用
-        if (ubit < occPosition) {
-            return false;
+        if (list != null && list.size() > 0) {
+            occPosition = list.get(0).getCabinetStart() + list.get(0).getuSize() - 1;
+        }else{
+            return true;
         }
-        return true;
+
+        return ubit >= occPosition;
     }
 
 
@@ -277,26 +282,23 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Override
     public boolean cabNameCheck(Long id, String name, Long roomId) {
         if (id == null) { // 添加
-            return getCount(name, roomId);
+            return checkNameExists(name, roomId);
         } else { // 修改
             NodeCabinetEntity nodeCabinet = this.getById(id);
             if (name.equals(nodeCabinet.getName())) {
                 return true;
             } else {
-                return getCount(name, roomId);
+                return checkNameExists(name, roomId);
             }
         }
     }
 
 
-    public boolean getCount(String name, Long roomId) {
+    public boolean checkNameExists(String name, Long roomId) {
         int count = this.count(new QueryWrapper<NodeCabinetEntity>()
                 .eq("room_id", roomId)
                 .eq("name", name));
-        if (count > 0) {
-            return false;
-        }
-        return true;
+        return count <= 0;
     }
 
     /**

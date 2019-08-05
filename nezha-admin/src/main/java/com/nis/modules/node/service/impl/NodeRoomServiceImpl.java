@@ -89,17 +89,20 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     /**
      * 机房删除   删除时需要校验是否存在关联的机柜
      *
-     * @param id R
+     * @param ids R
      */
     @Override
-    public void delete(Long id) {
+    public void delete(Long[] ids) {
         // 1. 校验是否存在关联的机柜信息
-        List<NodeCabinetEntity> nodeCabinets = nodeCabinetDao.selectList(new QueryWrapper<NodeCabinetEntity>().eq("room_id", id));
-        if (nodeCabinets.size() > 0) {
-            throw new NZException(RCode.NODEROOM_EXISTS_CABINET);// 机房下存在机柜 不可以删除
+        for (Long id : ids) {
+            List<NodeCabinetEntity> nodeCabinets = nodeCabinetDao.selectList(new QueryWrapper<NodeCabinetEntity>().eq("room_id", id));
+            if (nodeCabinets != null && nodeCabinets.size() > 0) {
+                NodeRoomEntity nodeRoom = this.getById(id);
+                throw new NZException(nodeRoom.getName() + " related cabinets , not deletable " , 203004); // 机房下存在机柜信息
+            }
+            // 2. 进行逻辑删除
+            nodeRoomDao.deleteById(id);
         }
-        // 2 . 进行逻辑删除
-        nodeRoomDao.deleteById(id);
     }
 
 
@@ -113,13 +116,13 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Override
     public boolean roomNameCheck(Long id, String name) {
         if (id == null) { // 新增
-            return getCount(name);
+            return checkNameExists(name);
         } else { // 修改
             NodeRoomEntity nodeRoom = getById(id);
             if (name.equals(nodeRoom.getName())) { // 修改时未发生改变
                 return true;
             } else {
-                return getCount(name);
+                return checkNameExists(name);
             }
         }
     }
@@ -147,12 +150,9 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         }
     }
 
-    public boolean getCount(String name) {
+    public boolean checkNameExists(String name) {
         int count = this.count(new QueryWrapper<NodeRoomEntity>().eq("name", name));// 获取目前非删除的名称个数
-        if (count > 0) {
-            return false;
-        }
-        return true;
+        return count <= 0;
     }
 
 

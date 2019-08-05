@@ -31,15 +31,14 @@ public class NodeRoomController {
     private NodeRoomService nodeRoomService;
 
     @ApiOperation("机房列表查询")
-    @RequestMapping(value = "/list", method = RequestMethod.GET)
+    @GetMapping("/list")
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = nodeRoomService.queryPage(params);
         return R.ok().put("page", page);
     }
 
     @ApiOperation("机房详情查询")
-    @ApiImplicitParam(name = "id", value = "id", required = true, paramType = "query", dataType = "Long")
-    @RequestMapping(value = "/detail", method = RequestMethod.GET)
+    @GetMapping("/detail")
     public R detail(@RequestParam("id") Long id) {
         NodeRoomEntity nodeRoom = nodeRoomService.detail(id);
         return R.ok(nodeRoom);
@@ -47,7 +46,7 @@ public class NodeRoomController {
 
 
     @ApiOperation("机房新增")
-    @RequestMapping(value = "/save", method = RequestMethod.POST)
+    @PostMapping("/save")
     public R save(@RequestBody NodeRoomEntity nodeRoom) {
         nodeRoomService.saveNodeRoom(nodeRoom);
         return R.ok();
@@ -55,7 +54,7 @@ public class NodeRoomController {
 
 
     @ApiOperation("机房修改")
-    @RequestMapping(value = "/update", method = RequestMethod.POST)
+    @PutMapping("/update")
     public R update(@RequestBody NodeRoomEntity nodeRoom) {
         nodeRoomService.updateNodeRoom(nodeRoom);
         return R.ok();
@@ -63,19 +62,14 @@ public class NodeRoomController {
 
 
     @ApiOperation("机房删除")
-    @ApiImplicitParam(name = "id", value = "id", required = true, paramType = "query", dataType = "Long")
-    @RequestMapping(value = "/delete", method = RequestMethod.DELETE)
-    public R delete(@RequestParam(value = "id") Long id) {
-        nodeRoomService.delete(id);
+    @DeleteMapping("/delete")
+    public R delete(@RequestParam(value = "ids") Long[] ids) {
+        nodeRoomService.delete(ids);
         return R.ok();
     }
 
     @ApiOperation("机房名称校验")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "id", value = "id", paramType = "query", dataType = "Long"),
-            @ApiImplicitParam(name = "name", value = "name", required = true, paramType = "query", dataType = "String")
-    })
-    @RequestMapping(value = "/roomNameCheck", method = RequestMethod.GET)
+    @GetMapping("/roomNameCheck")
     public R roomNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam("name") String name) {
         if (nodeRoomService.roomNameCheck(id, name)) {
             return R.ok();
@@ -83,22 +77,8 @@ public class NodeRoomController {
         return R.error(RCode.NODEROOM_NAME_DUPLICATE);// 机房名称重复
     }
 
-
-    /**
-     * 机房修改时行列校验，行、列数不能小于已被机柜占用的数
-     *
-     * @param id       R
-     * @param roomRows R
-     * @param roomCols R
-     * @return
-     */
     @ApiOperation("机房修改时行列校验")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "id", value = "id", required = true, paramType = "query", dataType = "Long"),
-            @ApiImplicitParam(name = "roomRows", value = "roomRows", required = true, paramType = "query", dataType = "Long"),
-            @ApiImplicitParam(name = "roomCols", value = "roomCols", required = true, paramType = "query", dataType = "Long")
-    })
-    @RequestMapping(value = "/roomSizeCheck", method = RequestMethod.GET)
+    @GetMapping("/roomSizeCheck")
     public R roomSizeCheck(@RequestParam("id") Long id, @RequestParam("roomRows") Integer roomRows, @RequestParam("roomCols") Integer roomCols) {
         nodeRoomService.roomSizeCheck(id, roomRows, roomCols);
         return R.ok();
