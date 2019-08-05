@@ -28,6 +28,8 @@ public enum RCode {
 	SYS_USER_DELADMIN(103004, "del_admin_error"), //系统管理员不能删除
 	SYS_USER_CANNOTDEL(103005, "cannot_del_user_error"), //当前用户不能删除
 
+	SYS_USERGROUP_DUPLICATENAME(104001, "usergroup name duplicate error"), //用户组名称重复
+	
 
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 

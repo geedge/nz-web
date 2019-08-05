@@ -70,8 +70,11 @@
 			   pmi.view_level as pm_view_level, pmi.rel_id as pm_rel_id 
 		FROM mission_info mi
 		LEFT JOIN permission_info pmi ON pmi.type_id=mi.id
-		WHERE pmi.type=#{type} AND pmi.rel_id=#{relId} AND mi.view_level=#{viewLevel}
-			  AND pmi.del_flag=0 AND mi.del_flag=0
+		WHERE pmi.type=#{type} AND mi.view_level=#{viewLevel} AND pmi.del_flag=0 
+			  AND mi.del_flag=0 AND pmi.rel_id IN 
+			  <foreach collection="relIds" item="relId" index="no" open="(" separator="," close=")">
+	              #{relId}
+	          </foreach>
 	</select>
 
 </mapper>

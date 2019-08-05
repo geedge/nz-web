@@ -28,6 +28,8 @@ import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.service.SystemUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.topo.entity.TopoInfoEntity;
+import com.nis.modules.topo.service.TopoInfoService;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -62,6 +64,8 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	private DeteSetNodeRelService deteSetNodeService;
 	@Autowired
 	private MissionInfoService missionService;
+	@Autowired
+	private TopoInfoService topoService;
 	
 	@Override
 	public List<SystemInfoEntity> querySystemInfosByUserId(Long userId) {
@@ -122,7 +126,16 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 				sysUsergroupService.save(su);
 			}
 		}
-		//TODO 新增拓扑图，暂时不写，等玉霞提交代码
+		//新增拓扑图
+		TopoInfoEntity topo = new TopoInfoEntity();
+		topo.setName(systemInfo.getName());
+		topo.setHeight(Constant.TOPO_DEFAULT_HEIGHT);
+		topo.setWidth(Constant.TOPO_DEFAULT_WIDTH);
+		topo.setOperator(ShiroUtils.getUserId());
+		topo.setOpTime(systemInfo.getUpdateDate());
+		topo.setSystemId(systemInfo.getId());
+		topo.setStyle("");
+		topoService.save(topo);
 		return true;
 	}
 	
@@ -169,34 +182,50 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	}
 	
 	@Transactional(rollbackFor = Exception.class)
-	public boolean delete(Long id) {
+	public boolean delete(List<Long> ids) {
 		/**解除与节点、用户组、节点组、监测设置、任务、拓扑的关联*/
 		Date now = new Date();
 		//等待删除的permission记录
 		List<PermissionInfoEntity> waitingDeletePermissions = new ArrayList<>();
 		//解除节点关联
 		UpdateWrapper<SystemNodeRelEntity> sysNodeWrapper = new UpdateWrapper<>();
-		sysNodeWrapper.eq(true, "system_id", id);
+		sysNodeWrapper.in(true, "system_id", ids);
+		sysNodeWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
 		sysNodeWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
 		sysNodeWrapper.set(true, "operator", ShiroUtils.getUserId());
 		sysNodeWrapper.set(true, "op_time", now);
 		sysNodeService.update(sysNodeWrapper);
 		
-		//解除用户组
-		//TODO
+		//解除用户组关联
+		UpdateWrapper<SystemUsergroupEntity> sugWrapper = new UpdateWrapper<>();
+		sugWrapper.in(true, "system_id", ids);
+		sugWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
+		sugWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
+		sugWrapper.set(true, "operator", ShiroUtils.getUserId());
+		sugWrapper.set(true, "op_time", now);
+		sysUsergroupService.update(sugWrapper);
 		
 		//删除节点组
 		UpdateWrapper<NodeGroupInfoEntity> nodegroupWrapper = new UpdateWrapper<>();
-		nodegroupWrapper.eq(true, "system_id", id);
+		nodegroupWrapper.in(true, "system_id", ids);
+		nodegroupWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
 		nodegroupWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
 		nodegroupWrapper.set(true, "operator", ShiroUtils.getUserId());
 		nodegroupWrapper.set(true, "op_time", now);
 		nodegroupService.update(nodegroupWrapper);
 		
+		//删除拓扑
+		UpdateWrapper<TopoInfoEntity> tpWrapper = new UpdateWrapper<>();
+		tpWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
+		tpWrapper.in(true, "system_id", ids);
+		tpWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
+		tpWrapper.set(true, "operator", ShiroUtils.getUserId());
+		tpWrapper.set(true, "op_time", now);
+		
 		//删除监测设置，系统内可见的设置解除关联并删除，全体可见和组内可见的设置不处理
 		PermissionInfoEntity pi = new PermissionInfoEntity();
 		pi.setType(Constant.PM_TYPE_DETESET);
-		pi.setRelId(id);
+		pi.setRelIds(ids);
 		pi.setViewLevel(Constant.VIEWLEVEL_SYS);
 		List<DeteSetInfoEntity> dsByPermission = deteSetService.queryByPermission(pi);
 		if (dsByPermission != null && dsByPermission.size() > 0) {
@@ -234,6 +263,15 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		
 		//删除permission_info记录
 		permissionService.updateBatchById(waitingDeletePermissions);
+			
+		//删除systemInfo
+		UpdateWrapper<SystemInfoEntity> siWrapper = new UpdateWrapper<>();
+		siWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
+		siWrapper.in(true, "id", ids);
+		siWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
+		siWrapper.set(true, "update_by", ShiroUtils.getUserId());
+		siWrapper.set(true, "update_date", now);
+		update(siWrapper);
 		
 		return true;
 	}
@@ -272,6 +310,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	}
 	
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public boolean deleteNodeRel(SystemInfoEntity entity) {
 		Date now = new Date();
 		/*

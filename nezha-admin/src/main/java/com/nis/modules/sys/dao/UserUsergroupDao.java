@@ -1,0 +1,17 @@
+package com.nis.modules.sys.dao;
+
+import com.nis.modules.sys.entity.UserUsergroupEntity;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+
+/**
+ * 
+ * 
+ * @author song
+ * @email 
+ * @date 2019-08-01 14:56:46
+ */
+@Mapper
+public interface UserUsergroupDao extends BaseMapper<UserUsergroupEntity> {
+	
+}

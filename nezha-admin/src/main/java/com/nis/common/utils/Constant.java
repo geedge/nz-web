@@ -151,4 +151,8 @@ public class Constant {
     // mission node rel 
     public static final String MISSION_NODE_REL_TYPE_GROUP="1";
     public static final String MISSION_NODE_REL_TYPE_NODE="2";
+    
+    //topo图默认宽高
+    public static final Integer TOPO_DEFAULT_HEIGHT = 1600;
+    public static final Integer TOPO_DEFAULT_WIDTH = 1600;
 }

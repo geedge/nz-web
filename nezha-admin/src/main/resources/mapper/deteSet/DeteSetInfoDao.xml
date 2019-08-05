@@ -40,8 +40,11 @@
 			   pmi.view_level as "pm_view_level", pmi.rel_id as "pm_rel_id"
 		FROM dete_set_info dsi
 		LEFT JOIN permission_info pmi ON pmi.type_id=dsi.id
-		WHERE pmi.type=#{type} AND pmi.rel_id=#{relId} AND dsi.view_level=#{viewLevel}
-			  AND pmi.del_flag=0 AND dsi.state!=1
+		WHERE pmi.type=#{type} AND dsi.view_level=#{viewLevel} AND pmi.del_flag=0 
+			  AND dsi.state!=1 AND pmi.rel_id IN 
+			  <foreach collection="relIds" item="relId" index="no" open="(" separator="," close=")">
+	              #{relId}
+	          </foreach>
 	</select>
 
     <select id="queryList" parameterType="java.util.Map" resultMap="deteSetTypeInfo">

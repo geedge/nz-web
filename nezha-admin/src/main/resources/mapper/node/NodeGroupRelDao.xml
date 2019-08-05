@@ -17,8 +17,8 @@
 
     <update id="deleteNodeRel">
         UPDATE node_group_rel SET del_flag = '1' WHERE group_id = #{id} AND uuid IN
-        <foreach collection="uuids" item="uuids" index="no" open="(" separator="," close=")">
-            #{uuids}
+        <foreach collection="uuids" item="uuid" index="no" open="(" separator="," close=")">
+            #{uuid}
         </foreach>
     </update>
 

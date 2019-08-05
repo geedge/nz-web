@@ -45,4 +45,5 @@ public class UserGroupEntity2 implements Serializable {
 	
 	@TableField(exist = false)
 	private List<SystemInfoEntity> systems;
+
 }

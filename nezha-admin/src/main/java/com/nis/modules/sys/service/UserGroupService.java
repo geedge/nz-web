@@ -22,5 +22,11 @@ public interface UserGroupService extends IService<UserGroupEntity> {
     List<UserGroupEntity> queryByUser(Long userId);
 
 	UserGroupEntity2 queryDetail(Long id);
+
+	boolean update(UserGroupEntity userGroup);
+
+	boolean delete(List<Long> asList);
+	
+	boolean checkName(UserGroupEntity entity);
 }
 

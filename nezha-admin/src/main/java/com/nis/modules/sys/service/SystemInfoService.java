@@ -30,7 +30,7 @@ public interface SystemInfoService extends IService<SystemInfoEntity> {
 
 	boolean checkName(SystemInfoEntity systemInfo);
 
-	boolean delete(Long id);
+	boolean delete(List<Long> ids);
 
 	boolean saveNodeRel(SystemInfoEntity entity);
 

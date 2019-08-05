@@ -2,12 +2,14 @@ package com.nis.modules.sys.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 系统用户组
@@ -43,4 +45,10 @@ public class UserGroupEntity implements Serializable {
 	private Date opTime;
 	
 	private String delFlag;
+	
+	@TableField(exist = false)
+	private List<Long> userIds;
+	
+	@TableField(exist = false)
+	private List<Long> systemIds;
 }

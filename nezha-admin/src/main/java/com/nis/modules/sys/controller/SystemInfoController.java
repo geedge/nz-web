@@ -1,10 +1,12 @@
 package com.nis.modules.sys.controller;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,9 +23,13 @@ import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
+@Api(tags="业务系统")
 @RestController
 @RequestMapping("/system")
 public class SystemInfoController extends AbstractController {
@@ -49,6 +55,11 @@ public class SystemInfoController extends AbstractController {
 	}
 	
 	@RequestMapping(value = "save", method = RequestMethod.POST)
+	@ApiImplicitParams({
+        @ApiImplicitParam(paramType="query", name = "name", value = "拓扑图id", required = true),
+        @ApiImplicitParam(paramType="query", name = "remarks", value = "备注", required = false),
+        @ApiImplicitParam(paramType="query", name = "usergroupIds", value = "用户组id", required = false, dataType="Long", allowMultiple=true)
+    })
 	@ApiOperation(httpMethod = "POST", response = R.class, value = "保存业务系统")
 	public R save(@ApiParam SystemInfoEntity systemInfo){
 		//global限制
@@ -101,15 +112,16 @@ public class SystemInfoController extends AbstractController {
 	
 	@RequestMapping(value = "delete", method = RequestMethod.DELETE)
 	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "删除业务系统")
-	public R delete(@ApiParam @RequestParam Long id){
-		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
+	public R delete(@ApiParam @RequestBody Long[] ids){
+		ValidateUtils.is(ids).notNull(RCode.NOT_NULL_ERROR);
+		List<Long> asList = Arrays.asList(ids);
 		if (!ShiroUtils.isGlobal()) {//global限制
 			return R.error(RCode.NO_PERMISSION_ERROR);
 		}
-		if (id == Constant.GLOBAL_ID) {//不能删除global
+		if (asList.contains(Constant.GLOBAL_ID)) {//不能删除global
 			return R.error(RCode.SYS_SYS_DELGLOBAL);
 		}
-		systemInfoService.delete(id);
+		systemInfoService.delete(asList);
 		return R.ok();
 	}
 	
@@ -170,7 +182,6 @@ public class SystemInfoController extends AbstractController {
 		//校验名称重复
 		SystemInfoEntity queryParam = new SystemInfoEntity();
 		Object object = params.get("id");
-		System.out.println(object.toString());
 		if (object != null && !StringUtils.isEmpty(object.toString())) {
 			queryParam.setId(Long.valueOf((String)object));
 		}

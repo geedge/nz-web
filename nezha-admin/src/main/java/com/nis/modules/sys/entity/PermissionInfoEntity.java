@@ -44,4 +44,8 @@ public class PermissionInfoEntity implements Serializable {
 	@JsonIgnore
 	@TableField(exist = false)
 	private String queryColumn;
+	
+	@JsonIgnore
+	@TableField(exist = false)
+	private List<Long> relIds;
 }
