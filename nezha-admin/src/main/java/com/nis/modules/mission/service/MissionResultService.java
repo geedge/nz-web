@@ -1,7 +1,9 @@
 package com.nis.modules.mission.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.entity.MissionResultEntity;
 
 import java.util.Map;
@@ -14,7 +16,7 @@ import java.util.Map;
  * @date 2019-07-18 10:37:19
  */
 public interface MissionResultService extends IService<MissionResultEntity> {
-
-    PageUtils queryPage(Map<String, Object> params);
+    
+    PageUtils queryPage(Page page,Integer missionId);
 }
 

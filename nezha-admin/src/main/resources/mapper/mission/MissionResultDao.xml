@@ -13,7 +13,16 @@
         <result property="cycle" column="cycle"/>
         <result property="file" column="file"/>
         <result property="opTime" column="op_time"/>
+        <association property="nodeInfoEntity" javaType="com.nis.modules.node.entity.NodeInfoEntity" columnPrefix="node_">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="ip" property="ip"/>
+            <result column="uuid" property="uuid"/>
+        </association>
     </resultMap>
 
-
+	<select id="selectMissionResultInfoList" resultMap="missionResultMap">
+		select mr.*,ni.uuid node_uuid,ni.ip node_ip,ni.name node_name from mission_result mr left join node_info ni on mr.uuid=ni.uuid
+		where mr.mission_id=#{id}
+	</select>
 </mapper>

@@ -95,6 +95,7 @@ public enum RCode {
 	MISSION_PARAM_ISNULL(400003,"mission_param_isnull"), //任务参数不能为空
 	MISSION_PARAM_ERROR(400004,"mission_param_error"),   //参数格式错误或部分缺失
 	MISSION_ID_ISNULL(400005,"mission_id_isnull"),   //任务id为空
+	MISSION_STATE_ISNULL(400006,"mission_state_isnull"),   //任务状态为空
 	MISSION_GROUPNODE_ISNULL(400006,"mission_groupnode_isnull"),  //任务节点组信息为空
 	MISSION_FILEPUSH_FILE_ISNULL(400101,"mission_filepush_file_isnull"),  //文件推送文件为空
 	MISSION_FILEPUSH_DESTPATH_ISNULL(400102,"mission_filepush_destpath_isnull"), // 文件推送路径为空

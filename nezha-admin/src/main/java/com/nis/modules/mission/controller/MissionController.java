@@ -25,6 +25,7 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.service.MissionInfoService;
+import com.nis.modules.mission.service.MissionResultService;
 import com.nis.modules.mission.utils.ApiJsonObject;
 import com.nis.modules.mission.utils.ApiJsonProperty;
 import com.nis.modules.sys.entity.SystemInfoEntity;
@@ -49,7 +50,9 @@ import io.swagger.annotations.ApiOperation;
 public class MissionController {
     @Autowired
     private MissionInfoService missionInfoService;
-
+    @Autowired
+    private MissionResultService missionResultService;
+    
     /**
      * 
     * @Title: list 
@@ -99,14 +102,34 @@ public class MissionController {
     * @return R    返回类型
     * @throws
      */
-    @ApiOperation(value="获取详情查询", notes="根据url的id来获取用户详细信息")
+    @ApiOperation(value="获取详情查询", notes="根据url的id来获取任务详细信息")
     @RequestMapping(value="/detail",method=RequestMethod.GET)
     //@RequiresPermissions("mission:missioninfo:list")
     public R detail(@RequestParam Integer id){
-		ValidateUtils.check(id).notNull(RCode.ERROR);
+		ValidateUtils.check(id).notNull(RCode.MISSION_ID_ISNULL);
 		
     	MissionInfoEntity missionInfoEntity = missionInfoService.getMissionById(id);
         return R.ok().put("data", missionInfoEntity);
+    }
+    
+    /**
+     * 任务结果查询
+     * @param id
+     * @return
+     */
+    @ApiOperation(value="获取任务结果", notes="根据url的id来获取任务结果")
+    @RequestMapping(value="/result",method=RequestMethod.GET)
+    public R result(Integer page,Integer limit,Integer id) {
+    	ValidateUtils.check(id).notNull(RCode.MISSION_ID_ISNULL);
+    	 Page queryPage=new Page();
+     	if(limit!=null) {
+     		queryPage.setSize(limit);
+     	}
+         if(page!=null) {
+         	queryPage.setCurrent(page);
+         }
+        PageUtils missionResults = missionResultService.queryPage(queryPage,id);
+        return R.ok().put("page", missionResults);
     }
     
     
@@ -143,7 +166,7 @@ public class MissionController {
      */
     @PutMapping("/update")
     /*@RequiresPermissions("mission:missioninfo:update")*/
-    @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
+    @ApiOperation(httpMethod="PUT",value="修改任务名称备注", notes="任务名称备注")
     public R update(@RequestBody MissionInfoEntity missionInfo){
     	ValidateUtils.is(missionInfo.getId()).notNull(RCode.MISSION_ID_ISNULL);
     	ValidateUtils.is(missionInfo.getName()).notNull(RCode.MISSION_NAME_ISNULL);
@@ -155,4 +178,21 @@ public class MissionController {
         return R.ok();
     }
 
+    /**
+     * 周期任务停用启用
+     */
+    @PutMapping("/loopStateChange")
+    /*@RequiresPermissions("mission:missioninfo:update")*/
+    @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
+    public R loopStateChange(@RequestBody MissionInfoEntity missionInfo){
+    	ValidateUtils.is(missionInfo.getId()).notNull(RCode.MISSION_ID_ISNULL);
+    	ValidateUtils.is(missionInfo.getState()).notNull(RCode.MISSION_STATE_ISNULL);
+    	//修改任务状态信息  后续添加dc相关逻辑
+    	MissionInfoEntity updateMission =new MissionInfoEntity();
+    	updateMission.setId(missionInfo.getId());
+    	updateMission.setState(missionInfo.getState());
+		missionInfoService.updateById(updateMission);
+        return R.ok();
+    }
+    
 }

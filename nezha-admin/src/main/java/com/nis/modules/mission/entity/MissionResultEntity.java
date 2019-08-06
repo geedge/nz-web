@@ -1,10 +1,13 @@
 package com.nis.modules.mission.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.node.entity.NodeInfoEntity;
 
 import java.io.Serializable;
 import java.util.Date;
+
 import lombok.Data;
 
 /**
@@ -52,5 +55,8 @@ public class MissionResultEntity implements Serializable {
 	 * 操作时间
 	 */
 	private Date opTime;
+	
+	@TableField(exist=false)
+	private NodeInfoEntity nodeInfoEntity;
 
 }
