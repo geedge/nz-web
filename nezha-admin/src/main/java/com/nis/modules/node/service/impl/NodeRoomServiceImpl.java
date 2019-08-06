@@ -18,6 +18,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -100,9 +101,9 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
                 NodeRoomEntity nodeRoom = this.getById(id);
                 throw new NZException(nodeRoom.getName() + " related cabinets , not deletable " , 203004); // 机房下存在机柜信息
             }
-            // 2. 进行逻辑删除
-            nodeRoomDao.deleteById(id);
         }
+        // 2. 进行逻辑删除
+        this.removeByIds(Arrays.asList(ids));
     }
 
 

@@ -156,9 +156,9 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
             if (list != null && list.size() > 0) {
                 throw new NZException(cabinet.getName() + " related nodes , not deletable " , 204006);
             }
-            // 2. 进行逻辑删除
-            this.removeById(id);
         }
+        // 2. 进行逻辑删除
+        this.removeByIds(Arrays.asList(ids));
     }
 
 
@@ -313,11 +313,11 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         NodeRoomEntity nodeRoom = nodeRoomService.getById(nodeCabinet.getRoomId());
 
         // 参数不合理  输入的机房行列小于1
-        ValidateUtils.check(nodeCabinet.getRoomRow()).min(1, RCode.NODECABINET_ROW_INCORRECT);
-        ValidateUtils.check(nodeCabinet.getRoomCol()).min(1, RCode.NODECABINET_COL_NCORRECT);
+        ValidateUtils.is(nodeCabinet.getRoomRow()).min(1, RCode.NODECABINET_ROW_INCORRECT);
+        ValidateUtils.is(nodeCabinet.getRoomCol()).min(1, RCode.NODECABINET_COL_NCORRECT);
 
         // 输入的行列超过机房最大行列数
-        ValidateUtils.check(nodeCabinet.getRoomRow()).max(nodeRoom.getRoomRows(), RCode.NODECABINET_ROW_MAXNUM);
-        ValidateUtils.check(nodeCabinet.getRoomCol()).max(nodeRoom.getRoomCols(), RCode.NODECABINET_COL_MAXNUM);
+        ValidateUtils.is(nodeCabinet.getRoomRow()).max(nodeRoom.getRoomRows(), RCode.NODECABINET_ROW_MAXNUM);
+        ValidateUtils.is(nodeCabinet.getRoomCol()).max(nodeRoom.getRoomCols(), RCode.NODECABINET_COL_MAXNUM);
     }
 }

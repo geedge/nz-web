@@ -38,22 +38,31 @@ public enum RCode {
 	NODE_IPADDRESS_DUPLICATE(201002, "ipaddress_duplicate_error"), // IP 地址重复
 	NODE_NAME_DUPLICATE(201003, "name_duplicate_error"), // name 名称  重复
 	NODE_USTART_OCCUPIED(201004, "ustart_occupied_error"), // 节点 U 位已被占用 或 不存在
+	NODE_IPADDRESS_ISNULL(201005, "node_ipaddress_isNull"),// ip 地址为null
+	NODE_TYPE_ISNULL(201006, "node_type_isNull"),// type 类型 为null
+	NODE_NAME_ISNULL(201007, "node_name_isNull"),// name 为null
+	NODE_TAG_ISNULL(201008, "node_tag_isNull"),// tag 为null
 
 	NODEGROUP_NAME_DUPLICATE(202001, "groupname_duplicate_error"), // name 节点组 名称  重复
+	NODEGROUP_NAME_ISNULL(202002, "group_name_isNull"), // name  为 null
+	NODEGROUP_PID_ISNULL(202003, "group_parentId_isNull"), // pid  为 null
 
 	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),// 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"), // 机房行号已被占用
 	NODEROOM_COL_OCCUPIED(203003,"col_occupied_error"), // 机房列号已被占用
 	NODEROOM_EXISTS_CABINET(203004,"cabinet_exists_error"), // 机房下存在机柜 错误
 	NODEROOM_POSITION_OCCUPIED(203005,"position_occupied_error"), // 机房该行列被占用 机柜无法使用此位置
+	NODEROOM_NAME_ISNULL(203006,"room_name_isNull"), // 机房name 为null
+	NODEROOM_ROWS_ISNULL(203007,"room_rows_isNull"), // 机房 rows 为null
+	NODEROOM_COLS_ISNULL(203008,"room_cols_isNull"), // 机房 cols 为null
 
 	NODECABINET_NAME_DUPLICATE(204001, "cabinetname_duplicate_error"), // 机柜名称重复
-	NODECABINET_ROW_INCORRECT(204002,"rownumber_incorrect_error"),   // 行值不能为0 零
-	NODECABINET_COL_NCORRECT(204003,"colnumber_incorrect_error"),    // 列值不能为0 零
-	NODECABINET_ROW_MAXNUM(204004,"rownumber_maxnum_error"),    // 行超过机房最大值
-	NODECABINET_COL_MAXNUM(204005,"colnumber_maxnum_error"),    // 列超过机房最大值
-	NODECABINET_NODES_EXISTS(204006,"related_nodes_error"),       // 机柜存在关联节点
-	NODECABINET_UBIT_OCCUPIED(204007,"ubit_occupied_error"),       // U位中存在节点 U位修改值小了
+	NODECABINET_ROW_INCORRECT(204002,"rownumber_incorrect_error"),     // 行值不能为0 零
+	NODECABINET_COL_NCORRECT(204003,"colnumber_incorrect_error"),      // 列值不能为0 零
+	NODECABINET_ROW_MAXNUM(204004,"rownumber_maxnum_error"),     // 行超过机房最大值
+	NODECABINET_COL_MAXNUM(204005,"colnumber_maxnum_error"),     // 列超过机房最大值
+	NODECABINET_NODES_EXISTS(204006,"related_nodes_error"),      // 机柜存在关联节点
+	NODECABINET_UBIT_OCCUPIED(204007,"ubit_occupied_error"),     // U位中存在节点 U位修改值小了
 
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误
 	/**

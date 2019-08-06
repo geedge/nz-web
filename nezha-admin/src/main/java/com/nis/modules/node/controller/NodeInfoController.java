@@ -8,8 +8,6 @@ import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.node.service.NodeInfoService;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -50,7 +48,11 @@ public class NodeInfoController {
     @ApiOperation("节点新增")
     @PostMapping("/save")
     public R save(@RequestBody NodeInfoEntity nodeInfoEntity) {
-        ValidateUtils.check(nodeInfoEntity.getIp()).ip(RCode.NODE_IPADDRESS_FORMAT);
+        ValidateUtils.is(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
+                    .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
+                    .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
+                    .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
+
         nodeInfoService.saveNodeInfo(nodeInfoEntity);
         return R.ok();
     }
@@ -58,7 +60,11 @@ public class NodeInfoController {
     @ApiOperation("节点修改")
     @PutMapping("/update")
     public R update(@RequestBody NodeInfoEntity nodeInfoEntity) {
-        ValidateUtils.check(nodeInfoEntity.getIp()).ip(RCode.NODE_IPADDRESS_FORMAT);
+        ValidateUtils.is(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
+                .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
+                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
+                .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
+
         nodeInfoService.updateNodeInfo(nodeInfoEntity);
         return R.ok();
     }
@@ -67,7 +73,8 @@ public class NodeInfoController {
     @ApiOperation("IP地址校验")
     @GetMapping("/ipCheck")
     public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip") String ip) {
-        ValidateUtils.check(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
+        ValidateUtils.is(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
+
         if (nodeInfoService.ipCheck(uuid, ip)) {
             return R.ok();
         }

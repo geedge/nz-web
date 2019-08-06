@@ -1,5 +1,6 @@
 package com.nis.modules.node.controller;
 
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -52,6 +53,9 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组新增")
     @PostMapping("/save")
     public R save(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
+        ValidateUtils.is(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL)
+                    .and(nodegroupInfo.getPid()).notNull();
+
         nodegroupInfoService.saveNodeGroupInfo(nodegroupInfo);
         return R.ok();
     }
@@ -66,6 +70,8 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组修改")
     @PutMapping("/update")
     public R update(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
+        ValidateUtils.is(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
+
         nodegroupInfoService.updateNodeGroupInfo(nodegroupInfo);
         return R.ok();
     }

@@ -1,5 +1,6 @@
 package com.nis.modules.node.controller;
 
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -48,6 +49,10 @@ public class NodeRoomController {
     @ApiOperation("机房新增")
     @PostMapping("/save")
     public R save(@RequestBody NodeRoomEntity nodeRoom) {
+        ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
+                 .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
+                 .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL);
+
         nodeRoomService.saveNodeRoom(nodeRoom);
         return R.ok();
     }
@@ -56,6 +61,10 @@ public class NodeRoomController {
     @ApiOperation("机房修改")
     @PutMapping("/update")
     public R update(@RequestBody NodeRoomEntity nodeRoom) {
+        ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
+                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
+                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL);
+
         nodeRoomService.updateNodeRoom(nodeRoom);
         return R.ok();
     }
