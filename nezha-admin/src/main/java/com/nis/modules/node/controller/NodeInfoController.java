@@ -41,17 +41,20 @@ public class NodeInfoController {
     @ApiOperation("节点详情查询")
     @GetMapping("/detail")
     public R detail(@RequestParam("uuid") Long uuid) {
+        ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
+
         NodeInfoEntity nodeInfoDetail = nodeInfoService.detail(uuid);
-        return R.ok().put("data", nodeInfoDetail);
+        return R.ok(nodeInfoDetail);
     }
 
     @ApiOperation("节点新增")
     @PostMapping("/save")
     public R save(@RequestBody NodeInfoEntity nodeInfoEntity) {
-        ValidateUtils.is(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
-                    .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
-                    .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
-                    .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
+        ValidateUtils.is(nodeInfoEntity).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
+                .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
+                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
+                .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
 
         nodeInfoService.saveNodeInfo(nodeInfoEntity);
         return R.ok();
@@ -60,7 +63,8 @@ public class NodeInfoController {
     @ApiOperation("节点修改")
     @PutMapping("/update")
     public R update(@RequestBody NodeInfoEntity nodeInfoEntity) {
-        ValidateUtils.is(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
+        ValidateUtils.is(nodeInfoEntity).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
                 .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
                 .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
                 .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
@@ -73,7 +77,7 @@ public class NodeInfoController {
     @ApiOperation("IP地址校验")
     @GetMapping("/ipCheck")
     public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip") String ip) {
-        ValidateUtils.is(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
+        ValidateUtils.is(ip).notNull(RCode.NODE_IPADDRESS_ISNULL).and(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
 
         if (nodeInfoService.ipCheck(uuid, ip)) {
             return R.ok();
@@ -84,6 +88,8 @@ public class NodeInfoController {
     @ApiOperation("name唯一校验")
     @GetMapping("/nodeNameCheck")
     public R nodeNameCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "name") String name) {
+        ValidateUtils.is(name).notNull(RCode.NODE_NAME_ISNULL);
+
         if (nodeInfoService.nodeNameCheck(uuid, name)) {
             return R.ok();
         }
@@ -93,6 +99,8 @@ public class NodeInfoController {
     @ApiOperation("节点状态变更")
     @PutMapping("/changeState")
     public R changeState(@RequestParam("uuids") Long[] uuids, @RequestParam("state") String state) {
+        ValidateUtils.is(uuids).notNull(RCode.NODE_UUID_ISNULL).and(state).notNull(RCode.NODE_STATE_ISNULL);
+
         nodeInfoService.changeState(uuids, state);
         return R.ok();
     }
@@ -100,6 +108,8 @@ public class NodeInfoController {
     @ApiOperation("查询可用机柜")
     @GetMapping("/selectCab")
     public R selectCab(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam("uSize") Integer uSize) {
+        ValidateUtils.is(uSize).notNull(RCode.NODE_USIZE_ISNULL);
+
         List<AvailCabinetEntity> availCabinetEntities = nodeInfoService.selectCab(uuid, uSize);
         Map<String, List<AvailCabinetEntity>> map = new HashMap();
         map.put("list", availCabinetEntities);

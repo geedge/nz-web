@@ -18,7 +18,23 @@
 	        <result property="name" column="name"/>
         </collection>
     </resultMap>
-    
+
+
+	<!-- 节点组列表时使用 -->
+	<resultMap type="com.nis.modules.sys.entity.SystemInfoEntity" id="systemWithNodegroup">
+		<result property="id" column="id"/>
+		<result property="name" column="name"/>
+
+		<!-- 一对多 节点组 -->
+		<collection property="nodegroups" column="id" select="queryNgBySysId" ofType="com.nis.modules.node.entity.NodeGroupInfoEntity">
+			<id property="id" column="id"/>
+			<result property="name" column="name"/>
+			<result property="pid" column="pid"/>
+		</collection>
+	</resultMap>
+
+
+
 	<select id="querySystemInfosByUserId" resultType="systemInfoEntity">
 		SELECT si.id,si.name 
 		FROM system_info si
@@ -56,5 +72,20 @@
 		LEFT JOIN system_usergroup_rel sur ON sur.system_id=si.id
 		LEFT JOIN user_group ug ON ug.id=sur.usergroup_id
 		WHERE si.id=#{id} AND si.del_flag=0 AND sur.del_flag=0 AND ug.del_flag=0
+	</select>
+
+
+
+	<!-- 节点组列表查询 -->
+	<select id="querySystemInfosWithNodeGroup" resultMap="systemWithNodegroup">
+		SELECT si.* FROM system_info si
+		<if test="id != null and id != ''">
+			WHERE si.id = #{id}
+		</if>
+	</select>
+
+	<!-- 系统一对多节点组 查询使用 -->
+	<select id="queryNgBySysId" resultType="com.nis.modules.node.entity.NodeGroupInfoEntity">
+		SELECT ng.id,ng.name,ng.pid  FROM nodegroup_info ng WHERE ng.system_id = #{id}
 	</select>
 </mapper>

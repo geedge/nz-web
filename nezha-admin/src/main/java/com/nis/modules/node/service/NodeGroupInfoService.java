@@ -3,7 +3,7 @@ package com.nis.modules.node.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
-import com.nis.modules.node.entity.SystemNodeGroupEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
 
-    List<SystemNodeGroupEntity> getSysNodeGroups();
+    List<SystemInfoEntity> getSysNodeGroups();
 
     NodeGroupInfoEntity detail(Integer id);
 

@@ -8,22 +8,19 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
-import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeGroupInfoDao;
+import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
-import com.nis.modules.node.entity.SystemNodeGroupEntity;
 import com.nis.modules.node.service.NodeGroupInfoService;
-import com.nis.modules.node.service.SystemNodeRelService;
+import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
-import com.nis.modules.sys.service.impl.SystemInfoServiceImpl;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +33,6 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Autowired
     private NodeGroupInfoDao nodegroupInfoDao;
 
-    // 业务系统service
-    @Autowired
-    private SystemInfoServiceImpl systemInfoService;
-
     // 节点组 节点 关联 service
     @Autowired
     private NodeGroupRelServiceImpl nodeGroupRelService;
@@ -48,9 +41,8 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Autowired
     private NodeGroupRelDao nodeGroupRelDao;
 
-    //  业务系统 节点 关联 关系
     @Autowired
-    private SystemNodeRelService systemNodeRelService;
+    private SystemInfoDao systemInfoDao;
 
     /**
      * 涉及权限   global下列出所有业务系统和其下节点组，普通业务系统只列出自身的节点组；
@@ -58,30 +50,23 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      * @return
      */
     @Override
-    public List<SystemNodeGroupEntity> getSysNodeGroups() {
+    public List<SystemInfoEntity> getSysNodeGroups() {
         // 进行权限判断
         if (ShiroUtils.isGlobal()) {// global 权限 看到所有的节点组信息
-            List<SystemNodeGroupEntity> list = new ArrayList<>();
-            // 1。 得到系统业务集合
-            List<SystemInfoEntity> systemInfoList = systemInfoService.list();
-            // 2. 根据系统业务集合得到包含的节点组集合
-            for (SystemInfoEntity item : systemInfoList) {
-                List<SystemNodeGroupEntity> sysNodeGroupsBySystemId = queryBySystemId(item);
-                list.addAll(sysNodeGroupsBySystemId);
+            List<SystemInfoEntity> systemInfoEntities = systemInfoDao.querySystemInfosWithNodeGroup(null);
+            for (SystemInfoEntity systemInfoEntity : systemInfoEntities) {
+                handleEntity(systemInfoEntity.getNodegroups());
             }
-            return list;
+            return systemInfoEntities;
         } else { // 其他权限登录 只能看到自己权限下的节点组信息
-            SystemInfoEntity systemInfoEntity = systemInfoService.getById(ShiroUtils.getCurrSystemId());
-            return queryBySystemId(systemInfoEntity);
+            List<SystemInfoEntity> systemInfoEntities = systemInfoDao.querySystemInfosWithNodeGroup(ShiroUtils.getCurrSystemId());
+            handleEntity(systemInfoEntities.get(0).getNodegroups());
+            return systemInfoEntities;
         }
     }
 
-    //根据传入的系统权限角色查询角色包含的节点组信息
-    public List<SystemNodeGroupEntity> queryBySystemId(SystemInfoEntity systemInfo) {
-        List<SystemNodeGroupEntity> list = new ArrayList<>();
-        List<NodeGroupInfoEntity> nodegroupInfoList = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("system_id", systemInfo.getId()));
-        for (NodeGroupInfoEntity entity : nodegroupInfoList) {
-            // 2.1 能否分配节点 0不能，1可以     必须是叶子节点才能分配节点
+    public void handleEntity(List<NodeGroupInfoEntity> nodegroups) {
+        for (NodeGroupInfoEntity entity : nodegroups) {
             if (this.count(new QueryWrapper<NodeGroupInfoEntity>().eq("pid", entity.getId())) < 1) {//证明自己是叶子节点
                 entity.setAllowAss("1");
             } else {
@@ -94,8 +79,6 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 entity.setAllowSub("0");
             }
         }
-        list.add(new SystemNodeGroupEntity(systemInfo.getId(), systemInfo.getName(), nodegroupInfoList));
-        return list;
     }
 
     @Override

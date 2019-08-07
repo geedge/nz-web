@@ -41,6 +41,8 @@ public class NodeRoomController {
     @ApiOperation("机房详情查询")
     @GetMapping("/detail")
     public R detail(@RequestParam("id") Long id) {
+        ValidateUtils.is(id).notNull(RCode.NODEROOM_ID_ISNULL);
+
         NodeRoomEntity nodeRoom = nodeRoomService.detail(id);
         return R.ok(nodeRoom);
     }
@@ -50,8 +52,9 @@ public class NodeRoomController {
     @PostMapping("/save")
     public R save(@RequestBody NodeRoomEntity nodeRoom) {
         ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
-                 .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
-                 .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL);
+                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
+                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL)
+                .and(nodeRoom.getAddr()).notNull(RCode.NODEROOM_ADDR_ISNULL);
 
         nodeRoomService.saveNodeRoom(nodeRoom);
         return R.ok();
@@ -63,7 +66,8 @@ public class NodeRoomController {
     public R update(@RequestBody NodeRoomEntity nodeRoom) {
         ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
                 .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
-                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL);
+                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL)
+                .and(nodeRoom.getAddr()).notNull(RCode.NODEROOM_ADDR_ISNULL);
 
         nodeRoomService.updateNodeRoom(nodeRoom);
         return R.ok();
@@ -73,6 +77,8 @@ public class NodeRoomController {
     @ApiOperation("机房删除")
     @DeleteMapping("/delete")
     public R delete(@RequestParam(value = "ids") Long[] ids) {
+        ValidateUtils.is(ids).notNull(RCode.NODEROOM_ID_ISNULL);
+
         nodeRoomService.delete(ids);
         return R.ok();
     }
@@ -80,6 +86,8 @@ public class NodeRoomController {
     @ApiOperation("机房名称校验")
     @GetMapping("/roomNameCheck")
     public R roomNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam("name") String name) {
+        ValidateUtils.is(name).notNull(RCode.NODEROOM_NAME_ISNULL);
+
         if (nodeRoomService.roomNameCheck(id, name)) {
             return R.ok();
         }
@@ -89,6 +97,10 @@ public class NodeRoomController {
     @ApiOperation("机房修改时行列校验")
     @GetMapping("/roomSizeCheck")
     public R roomSizeCheck(@RequestParam("id") Long id, @RequestParam("roomRows") Integer roomRows, @RequestParam("roomCols") Integer roomCols) {
+        ValidateUtils.is(id).notNull(RCode.NODEROOM_ID_ISNULL)
+                .and(roomRows).notNull(RCode.NODEROOM_ROWS_ISNULL)
+                .and(roomCols).notNull(RCode.NODEROOM_COLS_ISNULL);
+
         nodeRoomService.roomSizeCheck(id, roomRows, roomCols);
         return R.ok();
     }

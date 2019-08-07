@@ -1,7 +1,6 @@
 package com.nis.modules.node.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -313,8 +312,10 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         NodeRoomEntity nodeRoom = nodeRoomService.getById(nodeCabinet.getRoomId());
 
         // 参数不合理  输入的机房行列小于1
-        ValidateUtils.is(nodeCabinet.getRoomRow()).min(1, RCode.NODECABINET_ROW_INCORRECT);
-        ValidateUtils.is(nodeCabinet.getRoomCol()).min(1, RCode.NODECABINET_COL_NCORRECT);
+        ValidateUtils.is(nodeCabinet.getRoomRow()).notNull(RCode.NODECABINET_ROW_ISNULL)
+                .and(nodeCabinet.getRoomRow()).min(1, RCode.NODECABINET_ROW_INCORRECT);
+        ValidateUtils.is(nodeCabinet.getRoomCol()).notNull(RCode.NODECABINET_COL_ISNULL)
+                .and(nodeCabinet.getRoomCol()).min(1, RCode.NODECABINET_COL_NCORRECT);
 
         // 输入的行列超过机房最大行列数
         ValidateUtils.is(nodeCabinet.getRoomRow()).max(nodeRoom.getRoomRows(), RCode.NODECABINET_ROW_MAXNUM);

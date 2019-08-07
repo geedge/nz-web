@@ -31,4 +31,7 @@ public interface NodeInfoDao extends BaseMapper<NodeInfoEntity> {
     List<NodeInfoEntity> selectListByGroups(IPage<NodeInfoEntity> page, @Param("params") Map<String, Object> params, @Param("groupdIds") Long[] groupdIds);
 
     List<NodeInfoEntity> queryNodeBySystemId(IPage page, @Param("id") Long id);
+
+    // 查询详情
+    NodeInfoEntity detail(@Param("uuid")Long uuid);
 }

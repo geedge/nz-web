@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nis.common.smartvalidate.ann.NotNull;
 import com.nis.common.utils.RCode;
 
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -88,4 +89,11 @@ public class SystemInfoEntity implements Serializable {
 	@JsonIgnore
 	@TableField(exist=false)
 	private List<Long> uuids;
+
+
+	/**
+	 * 关联的节点组
+	 */
+	@TableField(exist = false)
+	private List<NodeGroupInfoEntity> nodegroups;
 }

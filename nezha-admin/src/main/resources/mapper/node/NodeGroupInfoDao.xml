@@ -25,7 +25,11 @@
             WHERE snr.system_id = #{params.systemId} AND snr.del_flag = 0 AND ni.state != 3
 
             <if test="params.ip != null and params.ip != ''">
-                AND ni.ip LIKE CONCAT('%', #{params.ip}, '%')
+                AND ni.ip LIKE
+
+                <if test="_databaseId == 'oracle'">'%'||#{params.ip}||'%'</if>
+                <if test="_databaseId == 'mysql'">CONCAT('%', #{params.ip}, '%')</if>
+                <if test="_databaseId == 'postgresql'">CONCAT('%', #{params.ip}, '%')</if>
             </if>
         ) t
 

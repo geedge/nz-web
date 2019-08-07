@@ -13,10 +13,9 @@ import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.entity.*;
 import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
-import com.nis.modules.sys.entity.SystemInfoEntity;
-import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,10 +42,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Autowired
     private NodeRoomService nodeRoomService;
 
-    // 业务系统service
-    @Autowired
-    private SystemInfoService systemInfoService;
-
     // 业务系统 节点 关联 关系
     @Autowired
     private SystemNodeRelService systemNodeRelService;
@@ -64,7 +59,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
         // 1.  groupId 存在  以 group 关联 为主
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
-        if (params.get("groupId") != null) {
+        if (StringUtils.isNotBlank((String) params.get("groupId"))) {
             // 1.1 查询出选中节点组的子节点组的ID
             Long groupId = Long.valueOf(params.get("groupId").toString());
             NodeGroupInfoEntity nodeGroup = nodeGroupInfoService.getOne(new QueryWrapper<NodeGroupInfoEntity>().eq("id", groupId));
@@ -76,18 +71,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 groupdIds[i] = childe.get(i).getId();
             }
             page.setRecords(nodeInfoDao.selectListByGroups(page, params, groupdIds));
-            for (NodeInfoEntity entity : page.getRecords()) {
-                handlerEntity(entity);
-            }
+
             // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
             return new PageUtils(page);
         }
 
         // 2. 节点自身的过滤 包含机房
         page.setRecords(nodeInfoDao.selectListByRoomId(page, params));
-        for (NodeInfoEntity entity : page.getRecords()) {
-            handlerEntity(entity);
-        }
+
         // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
         return new PageUtils(page);
     }
@@ -95,33 +86,11 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     // 节点详情查询
     @Override
     public NodeInfoEntity detail(Long uuid) {
-        NodeInfoEntity nodeInfoEntity = getOne(new QueryWrapper<NodeInfoEntity>()
-                .eq((uuid != null), "uuid", uuid)
-                .ne("state", 3));//state 为3表示删除
+        NodeInfoEntity nodeInfoEntity = nodeInfoDao.detail(uuid);
 
-        handlerEntity(nodeInfoEntity);
         // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
         nodeInfoEntity.setPassword(new String(Base64.getDecoder().decode(nodeInfoEntity.getPassword())));
         return nodeInfoEntity;
-    }
-
-    //处理返回结果  添加 机柜 机房 业务系统相关信息
-    public void handlerEntity(NodeInfoEntity nodeInfoEntity) {
-        if (nodeInfoEntity.getCabinetId() != 0) { // 未指定机柜的节点不需要 补充 机柜机房信息
-            // 1.得到所属机柜
-            NodeCabinetEntity cabinet = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
-            nodeInfoEntity.setCabinetInfo(cabinet);
-            // 2.得到所属机房名称
-            NodeRoomEntity nodeRoom = nodeRoomService.getById(cabinet.getRoomId());
-            nodeInfoEntity.setRoomName(nodeRoom.getName());
-        }
-        // 3.得到此节点所在的所有业务系统
-        List<SystemInfoEntity> sysList = new ArrayList<>();
-        List<SystemNodeRelEntity> list = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
-        for (SystemNodeRelEntity entity : list) {
-            sysList.add(systemInfoService.getById(entity.getSystemId()));
-        }
-        nodeInfoEntity.setSystemInfo(sysList);
     }
 
     // ip 是否重复校验
@@ -176,15 +145,8 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         // 1. 校验 IP NAME 是否唯一
         if (ipCheck(null, nodeInfoEntity.getIp())) {
             if (nodeNameCheck(null, nodeInfoEntity.getName())) {
-                //2. IP地址转换 IP整数
-                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-                //3. 密码加密 base64
-                byte[] bytes = nodeInfoEntity.getPassword().getBytes();
-                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                nodeInfoEntity.setOperator(1L);
-                nodeInfoEntity.setOpTime(new Date());
 
-                //4. 校验可用机柜
+                //2. 校验可用机柜
                 if (nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
 
                     // 查询该机柜的可选起始位置
@@ -194,6 +156,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                     }
                 }
+
+                //3. IP地址转换 IP整数
+                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+                //4. 密码加密 base64
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOpTime(new Date());
 
                 //5. 入库
                 nodeInfoDao.save(nodeInfoEntity);
@@ -211,14 +180,8 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         // 1. 校验 IP NAME 是否唯一
         if (ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
             if (nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
-                //2. IP地址转换 IP整数
-                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-                //3. 密码加密 base64
-                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                nodeInfoEntity.setOperator(1L);
-                nodeInfoEntity.setOpTime(new Date());
 
-                //4. 校验可用机柜
+                //2. 校验可用机柜
                 if (nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
 
                     // 查询该机柜的可选起始位置
@@ -228,6 +191,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                     }
                 }
+
+                //3 IP地址转换 IP整数
+                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+                //4. 密码加密 base64
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOpTime(new Date());
 
                 //5. 入库
                 update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
@@ -393,21 +363,21 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (i == list.size() - 1) state = 2;
             if (state == 0) {
                 if (list.get(i + 1) == list.get(i) + 1) {
-                    result += Integer.toString(list.get(i));
+                    result += list.get(i);
                     result += "-";
                     state = 1;
                 } else {
-                    result += Integer.toString(list.get(i));
+                    result += list.get(i);
                     result += ",";
                 }
             } else if (state == 1) {
                 if (list.get(i + 1) != list.get(i) + 1) {
-                    result += Integer.toString(list.get(i));
+                    result += list.get(i);
                     result += ",";
                     state = 0;
                 }
             } else {
-                result += Integer.toString(list.get(i));
+                result += list.get(i);
             }
         }
         return result;

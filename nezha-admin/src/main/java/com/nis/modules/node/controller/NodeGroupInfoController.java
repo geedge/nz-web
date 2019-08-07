@@ -5,11 +5,9 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
-import com.nis.modules.node.entity.SystemNodeGroupEntity;
 import com.nis.modules.node.service.NodeGroupInfoService;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +25,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/nodegroup")
-@Api(tags="节点组node-group")
+@Api(tags = "节点组node-group")
 class NodeGroupInfoController {
 
     @Autowired
@@ -36,25 +34,28 @@ class NodeGroupInfoController {
     @ApiOperation("节点组列表")
     @GetMapping("/list")
     public R list() {
-        List<SystemNodeGroupEntity> list = nodegroupInfoService.getSysNodeGroups();
-        Map<String, List<SystemNodeGroupEntity>> map = new HashMap();
+        List<SystemInfoEntity> list = nodegroupInfoService.getSysNodeGroups();
+        Map<String, List<SystemInfoEntity>> map = new HashMap();
         map.put("list", list);
-        return R.ok().put("data", map);
+        return R.ok(map);
     }
 
     @ApiOperation(" 节点组详情查询")
     @GetMapping("/detail")
     public R detail(@RequestParam("id") Integer id) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
+
         NodeGroupInfoEntity nodeGroup = nodegroupInfoService.detail(id);
-        return R.ok().put("data", nodeGroup);
+        return R.ok(nodeGroup);
     }
 
 
     @ApiOperation(" 节点组新增")
     @PostMapping("/save")
     public R save(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
-        ValidateUtils.is(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL)
-                    .and(nodegroupInfo.getPid()).notNull();
+        ValidateUtils.is(nodegroupInfo).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL)
+                .and(nodegroupInfo.getPid()).notNull(RCode.NODEGROUP_PID_ISNULL);
 
         nodegroupInfoService.saveNodeGroupInfo(nodegroupInfo);
         return R.ok();
@@ -63,6 +64,8 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组删除")
     @DeleteMapping("/delete")
     public R delete(@RequestParam("id") Long id) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
+
         nodegroupInfoService.delete(id);
         return R.ok();
     }
@@ -70,7 +73,8 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组修改")
     @PutMapping("/update")
     public R update(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
-        ValidateUtils.is(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
+        ValidateUtils.is(nodegroupInfo).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
 
         nodegroupInfoService.updateNodeGroupInfo(nodegroupInfo);
         return R.ok();
@@ -80,6 +84,8 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组名称校验")
     @GetMapping("/groupNameCheck")
     public R groupNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam("name") String name, @RequestParam("pid") Long pid) {
+        ValidateUtils.is(name).notNull(RCode.NODEGROUP_NAME_ISNULL).and(pid).notNull(RCode.NODEGROUP_PID_ISNULL);
+
         if (nodegroupInfoService.groupNameCheck(id, name, pid)) {
             return R.ok();
         }
@@ -89,6 +95,9 @@ class NodeGroupInfoController {
     @ApiOperation(" 节点组移除节点")
     @DeleteMapping("/deleteNodeRel")
     public R deleteNodeRel(@RequestParam(value = "id") Long id, @RequestParam("uuids") Long[] uuids) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
+                .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
+
         nodegroupInfoService.deleteNodeRel(id, uuids);
         return R.ok();
     }
@@ -96,6 +105,9 @@ class NodeGroupInfoController {
     @ApiOperation("节点组分配节点 建立关系")
     @PostMapping("/saveNodeRel")
     public R saveNodeRel(@RequestParam(value = "id") Long id, @RequestParam("uuids") Long[] uuids) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
+                .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
+
         nodegroupInfoService.saveNodeRel(id, uuids);
         return R.ok();
     }
@@ -103,6 +115,10 @@ class NodeGroupInfoController {
     @ApiOperation("可分配节点查询")
     @GetMapping("/assList")
     public R assList(@RequestParam Map<String, Object> params) {
+        ValidateUtils.is(params).notNull(RCode.NOT_NULL_ERROR)
+                .and(params.get("systemId").toString()).notNull(RCode.NODEGROUP_SYSTEMID_ISNULL)
+                .and(params.get("groupId").toString()).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
+
         PageUtils page = nodegroupInfoService.assList(params);
         return R.ok(page);
     }

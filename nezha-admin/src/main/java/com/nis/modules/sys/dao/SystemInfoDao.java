@@ -44,4 +44,11 @@ public interface SystemInfoDao extends BaseMapper<SystemInfoEntity> {
 	 * @return
 	 */
 	SystemInfoEntity detail(Long id);
+
+	/**
+	 * 查询节点组使用
+	 * @param id  业务系统ID
+	 * @return
+	 */
+	List<SystemInfoEntity> querySystemInfosWithNodeGroup(@Param("id") Long id);
 }
