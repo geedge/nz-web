@@ -181,11 +181,11 @@ public class MissionController {
     @PutMapping("/loopStateChange")
     /*@RequiresPermissions("mission:missioninfo:update")*/
     @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
-    public R loopStateChange(@RequestBody Long[] ids,String state){
-    	ValidateUtils.is(ids).notNull(RCode.MISSION_ID_ISNULL);
-    	ValidateUtils.is(state).notNull(RCode.MISSION_STATE_ISNULL);
+    public R loopStateChange(@RequestBody MissionInfoEntity missionInfo){
+    	ValidateUtils.is(missionInfo.getIds()).notNull(RCode.MISSION_ID_ISNULL);
+    	ValidateUtils.is(missionInfo.getState()).notNull(RCode.MISSION_STATE_ISNULL);
     	//验证周期任务启用停用参数是否正确
-    	List<MissionInfoEntity> updateMissions=missionInfoService.validateLoopMissionInfoData(ids,state);
+    	List<MissionInfoEntity> updateMissions=missionInfoService.validateLoopMissionInfoData(missionInfo.getIds(),missionInfo.getState());
 		missionInfoService.updateBatchById(updateMissions);
         return R.ok();
     }

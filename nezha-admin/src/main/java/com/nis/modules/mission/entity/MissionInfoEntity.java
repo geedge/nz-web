@@ -31,6 +31,9 @@ public class MissionInfoEntity implements Serializable {
 	 */
 	@TableId
 	private Long id;
+	
+	@TableField(exist=false)
+	private Long[] ids;
 	/**
 	 * 
 	 */
