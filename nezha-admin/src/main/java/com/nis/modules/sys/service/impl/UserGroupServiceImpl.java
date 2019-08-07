@@ -1,15 +1,5 @@
 package com.nis.modules.sys.service.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.druid.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -18,23 +8,22 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
-import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
-import com.nis.modules.detectSet.service.DeteSetInfoService;
+import com.nis.modules.detect.entity.DeteSetInfoEntity;
+import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.service.MissionInfoService;
 import com.nis.modules.sys.dao.UserGroupDao;
-import com.nis.modules.sys.entity.PermissionInfoEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SystemInfoEntity;
-import com.nis.modules.sys.entity.SystemUsergroupEntity;
-import com.nis.modules.sys.entity.UserGroupEntity;
-import com.nis.modules.sys.entity.UserGroupEntity2;
-import com.nis.modules.sys.entity.UserUsergroupEntity;
+import com.nis.modules.sys.entity.*;
 import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.service.SystemUsergroupService;
 import com.nis.modules.sys.service.UserGroupService;
 import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
 
 
 @Service("userGroupService")
