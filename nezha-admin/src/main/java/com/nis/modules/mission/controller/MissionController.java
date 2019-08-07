@@ -2,6 +2,7 @@ package com.nis.modules.mission.controller;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -162,7 +163,7 @@ public class MissionController {
    
 
     /**
-     * 任务仅能修改名称和备注
+     * 任务仅能修改名称和备注  周期任务可以修改任务运行和暂停
      */
     @PutMapping("/update")
     /*@RequiresPermissions("mission:missioninfo:update")*/
@@ -170,11 +171,7 @@ public class MissionController {
     public R update(@RequestBody MissionInfoEntity missionInfo){
     	ValidateUtils.is(missionInfo.getId()).notNull(RCode.MISSION_ID_ISNULL);
     	ValidateUtils.is(missionInfo.getName()).notNull(RCode.MISSION_NAME_ISNULL);
-    	MissionInfoEntity updateMission =new MissionInfoEntity();
-    	updateMission.setId(missionInfo.getId());
-    	updateMission.setName(missionInfo.getName());
-    	updateMission.setRemark(missionInfo.getRemark());
-		missionInfoService.updateById(updateMission);
+		missionInfoService.updateMission(missionInfo);
         return R.ok();
     }
 
@@ -184,14 +181,12 @@ public class MissionController {
     @PutMapping("/loopStateChange")
     /*@RequiresPermissions("mission:missioninfo:update")*/
     @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
-    public R loopStateChange(@RequestBody MissionInfoEntity missionInfo){
-    	ValidateUtils.is(missionInfo.getId()).notNull(RCode.MISSION_ID_ISNULL);
-    	ValidateUtils.is(missionInfo.getState()).notNull(RCode.MISSION_STATE_ISNULL);
-    	//修改任务状态信息  后续添加dc相关逻辑
-    	MissionInfoEntity updateMission =new MissionInfoEntity();
-    	updateMission.setId(missionInfo.getId());
-    	updateMission.setState(missionInfo.getState());
-		missionInfoService.updateById(updateMission);
+    public R loopStateChange(@RequestBody Long[] ids,String state){
+    	ValidateUtils.is(ids).notNull(RCode.MISSION_ID_ISNULL);
+    	ValidateUtils.is(state).notNull(RCode.MISSION_STATE_ISNULL);
+    	//验证周期任务启用停用参数是否正确
+    	List<MissionInfoEntity> updateMissions=missionInfoService.validateLoopMissionInfoData(ids,state);
+		missionInfoService.updateBatchById(updateMissions);
         return R.ok();
     }
     

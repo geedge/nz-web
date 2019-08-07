@@ -30,5 +30,9 @@ public interface MissionInfoService extends IService<MissionInfoEntity> {
     List<MissionInfoEntity> queryByPermission(PermissionInfoEntity entity);
     
     void saveMission(MissionInfoEntity missionInfoEntity);
+    
+    List<MissionInfoEntity> validateLoopMissionInfoData(Long[] missionIds,String state);
+    
+    void updateMission(MissionInfoEntity missionInfoEntity);
 }
 

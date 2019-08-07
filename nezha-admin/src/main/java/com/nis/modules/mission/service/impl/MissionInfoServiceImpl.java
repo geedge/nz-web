@@ -764,4 +764,48 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 			break;
 		}
 	}
+
+	@Override
+	public List<MissionInfoEntity> validateLoopMissionInfoData(Long[] missionIds, String state) {
+		List<MissionInfoEntity> loopMissions =new ArrayList<MissionInfoEntity>();
+		for(Long missionId : missionIds) {
+			MissionInfoEntity mission = baseMapper.selectById(missionId);
+			// 判断任务是否为周期任务
+			if(mission.getIsLoop().equals(Constant.MISSION_LOOP_FALSE)) {
+				throw new NZException(RCode.MISSION_UNLOOP_MISSION_ERROR);
+			}
+			//已经终止的任务不可修改为运行状态
+			if(state.equals(Constant.MISSION_LOOP_RUN)) {
+				if(mission.getState().equals(Constant.MISSION_LOOP_STOP)) {
+					throw new NZException(RCode.MISSION_LOOP_START_ERROR);
+				}
+			}else {
+				throw new NZException(RCode.MISSION_LOOP_START_ERROR);
+			}
+			mission.setState(state);
+			loopMissions.add(mission);
+		}
+		return loopMissions;
+	}
+
+	@Override
+	public void updateMission(MissionInfoEntity missionInfoEntity) {
+		MissionInfoEntity updateMission =new MissionInfoEntity();
+		String state = missionInfoEntity.getState();
+		if(!CommonUtil.isNull(state)) {
+			MissionInfoEntity mission = baseMapper.selectById(missionInfoEntity.getId());
+			if(mission.getIsLoop().equals(Constant.MISSION_LOOP_TRUE)) {
+				if(!(state.equals(Constant.MISSION_LOOP_RUN)||state.equals(Constant.MISSION_LOOP_SUSPEND))) {
+					throw new NZException(RCode.MISSION_LOOP_STATE_ERROR);
+				}
+				updateMission.setState(state);
+			}else {
+				throw new NZException(RCode.MISSION_UNLOOP_MISSION_ERROR);
+			}
+		}
+		updateMission.setName(missionInfoEntity.getName());
+		updateMission.setId(missionInfoEntity.getId());
+		updateMission.setRemark(missionInfoEntity.getRemark());
+		this.updateById(updateMission);
+	}
 }
