@@ -127,6 +127,7 @@ public class Constant {
     
     //permission type
     public static final String PM_TYPE_DETESET = "2";
+    public static final String PM_TYPE_DETEWARN = "3";
     public static final String PM_TYPE_MISSION = "4";
     
     //view level
@@ -134,25 +135,28 @@ public class Constant {
     public static final String VIEWLEVEL_SYS = "2";
     public static final String VIEWLEVEL_ALL = "3";
     
-    public static final Integer DETESET_NODE_RELTYPE_NODE = 1;
-    public static final Integer DETESET_NODE_RELTYPE_NODEGROUP = 2;
-    
+    public static final Long DETESET_NODE_RELTYPE_NODE = 1L;
+    public static final Long DETESET_NODE_RELTYPE_NODEGROUP = 2L;
+
     //mission result state
     public static final String MISSION_RESULT_SUCCESS = "1";  //成功
     public static final String MISSION_RESULT_FAIL = "2";  //失败
     public static final String MISSION_RESULT_TIMEOUT = "3";  //超时
-    
+
     // mission loop
     public static final String MISSION_LOOP_TRUE = "1";   //周期任务
     public static final String MISSION_LOOP_false = "0";   //周期任务
-    
+
     public static final String STR_PARAM_SEPRATOR=";";
-    
-    // mission node rel 
+
+    // mission node rel
     public static final String MISSION_NODE_REL_TYPE_GROUP="1";
     public static final String MISSION_NODE_REL_TYPE_NODE="2";
-    
+
     //topo图默认宽高
     public static final Integer TOPO_DEFAULT_HEIGHT = 1600;
     public static final Integer TOPO_DEFAULT_WIDTH = 1600;
+
+    public static final String WARN_REL_TYPE="1";
+    public static final String WARN_REL_SET="2";
 }

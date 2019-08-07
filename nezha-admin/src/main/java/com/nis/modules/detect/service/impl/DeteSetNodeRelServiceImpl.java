@@ -1,4 +1,4 @@
-package com.nis.modules.detectSet.service.impl;
+package com.nis.modules.detect.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -7,9 +7,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
-import com.nis.modules.detectSet.dao.DeteSetNodeRelDao;
-import com.nis.modules.detectSet.entity.DeteSetNodeRelEntity;
-import com.nis.modules.detectSet.service.DeteSetNodeRelService;
+import com.nis.modules.detect.dao.DeteSetNodeRelDao;
+import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
+import com.nis.modules.detect.service.DeteSetNodeRelService;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.stereotype.Service;

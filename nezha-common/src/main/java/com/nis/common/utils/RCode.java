@@ -89,6 +89,10 @@ public enum RCode {
 	SET_NAME_EXISTS(302002,"set_name_exists"),//监测设置名称已经存在
 	SET_TYPE_ISNULL(302003,"set_type_isnull"),//监测设置所属类别为空
 
+	WARN_NAME_ISNULL(303001,"warn_name_isnull"),//告警设置名称为空
+	WARN_TYPE_ISNULL(303002,"warn_type_isnull"),//告警设置配置类别为空
+	WARN_NAME_EXISTS(303003,"warn_name_exists"),//告警配置名称已经存在
+
 	MISSION_ERROR(400000, "mission_error"), //40xxxx，任务类通用错误
 	MISSION_TYPE_ISNULL(400001,"mission_type_isnull"),   // 任务类型为空
 	MISSION_NAME_ISNULL(400002,"mission_name_isnull"),   //任务名称不能为空

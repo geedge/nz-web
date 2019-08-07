@@ -1,4 +1,4 @@
-package com.nis.modules.detectSet.entity;
+package com.nis.modules.detect.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;

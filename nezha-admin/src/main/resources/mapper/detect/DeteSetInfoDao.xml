@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.nis.modules.detectSet.dao.DeteSetInfoDao">
+<mapper namespace="com.nis.modules.detect.dao.DeteSetInfoDao">
 
-    <resultMap type="com.nis.modules.detectSet.entity.DeteSetInfoEntity" id="deteSetInfoMap">
+    <resultMap type="com.nis.modules.detect.entity.DeteSetInfoEntity" id="deteSetInfoMap">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="typeId" column="type_id"/>
@@ -21,7 +21,7 @@
         <result property="permission.relId" column="pm_rel_id"/>
     </resultMap>
 
-    <resultMap type="com.nis.modules.detectSet.entity.DeteSetInfoEntity" id="deteSetTypeInfo">
+    <resultMap type="com.nis.modules.detect.entity.DeteSetInfoEntity" id="deteSetTypeInfo">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="typeId" column="type_id"/>
@@ -50,7 +50,10 @@
     <select id="queryList" parameterType="java.util.Map" resultMap="deteSetTypeInfo">
         select dsi.* from  dete_set_info dsi where dsi.state !='1'
         <if test="name != null">
-            and dsi.name = #{name}
+            and dsi.name like
+            <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
+            <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
+            <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
         </if>
         <if test="typeId != null">
             and dsi.type_id= #{typeId}
@@ -75,7 +78,10 @@
         select count(1) from (
         select dsi.* from  dete_set_info dsi where dsi.state !='1'
         <if test="name != null">
-            and dsi.name = #{name}
+            and dsi.name like
+            <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
+            <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
+            <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
         </if>
         <if test="typeId != null">
             and dsi.type_id= #{typeId}

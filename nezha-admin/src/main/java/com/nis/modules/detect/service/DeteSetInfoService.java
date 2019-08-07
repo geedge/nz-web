@@ -1,8 +1,8 @@
-package com.nis.modules.detectSet.service;
+package com.nis.modules.detect.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
+import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 
 import java.util.List;

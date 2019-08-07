@@ -1,7 +1,7 @@
-package com.nis.modules.detectSet.dao;
+package com.nis.modules.detect.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
+import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;

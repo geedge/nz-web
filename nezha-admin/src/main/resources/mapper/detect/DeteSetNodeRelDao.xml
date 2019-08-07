@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.nis.modules.detectSet.dao.DeteSetNodeRelDao">
+<mapper namespace="com.nis.modules.detect.dao.DeteSetNodeRelDao">
 
 	<!-- 可根据自己的需求，是否要使用 -->
-    <resultMap type="com.nis.modules.detectSet.entity.DeteSetNodeRelEntity" id="deteSetNodeRelMap">
+    <resultMap type="com.nis.modules.detect.entity.DeteSetNodeRelEntity" id="deteSetNodeRelMap">
         <result property="id" column="id"/>
         <result property="setId" column="set_id"/>
         <result property="type" column="type"/>

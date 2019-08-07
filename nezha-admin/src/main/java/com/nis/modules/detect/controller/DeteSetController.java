@@ -1,12 +1,12 @@
-package com.nis.modules.detectSet.controller;
+package com.nis.modules.detect.controller;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.detectSet.entity.DeteSetInfoEntity;
-import com.nis.modules.detectSet.service.DeteSetInfoService;
+import com.nis.modules.detect.entity.DeteSetInfoEntity;
+import com.nis.modules.detect.service.DeteSetInfoService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;

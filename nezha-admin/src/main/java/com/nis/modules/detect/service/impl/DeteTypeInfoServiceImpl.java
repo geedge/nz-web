@@ -15,7 +15,7 @@ import com.nis.modules.detect.service.DeteTypeInfoService;
 import com.nis.modules.detect.service.DeteTypeMetaMappingService;
 import com.nis.modules.detect.service.DeteTypeMetaService;
 import com.nis.modules.detect.service.DeteTypeParamService;
-import com.nis.modules.detectSet.service.DeteSetInfoService;
+import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,8 +68,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveEntity(DeteTypeInfoEntity deteTypeInfo) {
-//        Long userId = ShiroUtils.getUserId();//操作员
-        Long userId = 1L;//操作员
+        Long userId = ShiroUtils.getUserId();//操作员
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
@@ -307,7 +306,6 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         for(Long id:ids){
             deteSetInfoService.deleteByTypeId(id);
         }
-
 
     }
 
