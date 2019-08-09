@@ -95,10 +95,10 @@ public class DeteTypeController {
     @ApiOperation(value = "监测类别名称校验")
     public R nameCheck( Long id,@RequestParam String name) {
         boolean nameExists = deteTypeInfoService.checkFieldExists(id, "name", name);
-        if(nameExists){
-            return R.ok("true");
+        if(nameExists){ //名称存在
+            return R.error(RCode.TYPE_NAME_EXISTS);
         }else{
-            return R.ok("false");
+            return R.ok("true");
         }
     }
 

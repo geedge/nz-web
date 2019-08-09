@@ -105,12 +105,12 @@ public class DeteSetController {
 
     @GetMapping("/nameCheck")
     @ResponseBody
-    @ApiOperation(value="监测类别名称校验",notes = "true表示名称存在，不可用；false表示名称不存在，可用")
+    @ApiOperation(value="监测类别名称校验")
     public R nameCheck(@RequestParam String name,Long id){
         if(deteSetInfoService.checkNameExists(name,id)){
-            return R.ok("true");
+            return R.ok(RCode.SET_NAME_EXISTS);
         }else{
-            return R.ok("false");
+            return R.ok("true");
         }
 
     }

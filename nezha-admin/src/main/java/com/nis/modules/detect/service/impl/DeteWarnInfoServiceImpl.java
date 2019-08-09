@@ -14,6 +14,7 @@ import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -35,6 +36,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
     private DeteTypeMetaService deteTypeMetaService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveEntity(DeteWarnInfoEntity deteWarnInfoEntity) {
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();
@@ -108,6 +110,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateEntity(DeteWarnInfoEntity deteWarnInfoEntity) {
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();
@@ -116,7 +119,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
         this.updateById(deteWarnInfoEntity);
     }
 
-
+    @Transactional(rollbackFor = Exception.class)
     public void deleteEntity(Long... ids) {
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();

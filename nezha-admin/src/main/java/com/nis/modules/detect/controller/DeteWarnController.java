@@ -89,12 +89,12 @@ public class DeteWarnController {
     }
     @GetMapping("nameCheck")
     @ResponseBody
-    @ApiOperation(value="名称校验",notes="true 表示名称存在，不可用；false表示名称不存在，可用")
+    @ApiOperation(value="名称校验")
     public R nameCheck(@RequestParam String name,Long id){
         if(deteWarnInfoService.checkNameExists(name,id)){
-            return R.ok("true");
+            return R.ok(RCode.WARN_NAME_EXISTS);
         }else{
-            return R.ok("false");
+            return R.ok("true");
         }
     }
 }

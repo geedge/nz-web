@@ -16,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service("deteTypeMetaMappingService")
 public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeMetaMappingDao, DeteTypeMetaMappingEntity> implements DeteTypeMetaMappingService{
@@ -33,7 +31,29 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
                 new QueryWrapper<DeteTypeMetaMappingEntity>()
                         .like(StringUtils.isNotBlank(type), "type", type)
         );
-        return new PageUtils(page);
+
+        List<DeteTypeMetaMappingEntity> records = page.getRecords();
+        HashMap<String, DeteTypeMetaMapppingVO> metaMappingFilter = new HashMap<>();
+        List<DeteTypeMetaMapppingVO> mappingInfos=new ArrayList<>();
+        for(DeteTypeMetaMappingEntity metaMappingEntity:records){
+            String typeName = metaMappingEntity.getType();
+            if(metaMappingFilter.containsKey(typeName)){
+                DeteTypeMetaMapppingVO deteTypeMetaMapppingVO = metaMappingFilter.get(typeName);
+                List<DeteTypeMetaMappingEntity> mappings = deteTypeMetaMapppingVO.getMappings();
+                mappings.add(metaMappingEntity);
+            }else{
+                DeteTypeMetaMapppingVO deteTypeMetaMapppingVO=new DeteTypeMetaMapppingVO();
+                deteTypeMetaMapppingVO.setType(typeName);
+                List<DeteTypeMetaMappingEntity> list=new ArrayList<DeteTypeMetaMappingEntity>();
+                list.add(metaMappingEntity);
+                deteTypeMetaMapppingVO.setMappings(list);
+                metaMappingFilter.put(typeName,deteTypeMetaMapppingVO);
+                mappingInfos.add(deteTypeMetaMapppingVO);
+            }
+        }
+
+
+        return new PageUtils(mappingInfos,(int)page.getTotal(),(int)page.getSize(),(int)page.getCurrent());
     }
 
     @Override
@@ -43,6 +63,7 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
@@ -68,6 +89,7 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public R deleteDic(String ... types) {
             if(checkTypeUsed(types)){
                 return R.error(RCode.DICT_TYPE_USED);

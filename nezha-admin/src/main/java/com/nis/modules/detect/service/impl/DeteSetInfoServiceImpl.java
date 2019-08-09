@@ -137,6 +137,7 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateEntity(DeteSetInfoEntity deteSetInfo) {
         DeteSetInfoEntity oldSet = this.getById(deteSetInfo.getId());
         Long userId = ShiroUtils.getUserId();
@@ -161,6 +162,7 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void changeStateByIds(Long[] ids, String state) {
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
@@ -192,7 +194,7 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
 
 
     }
-
+    @Transactional(rollbackFor = Exception.class)
     public void deleteByTypeId(Long typeId){
         List<DeteSetInfoEntity> setInfos = this.list(new QueryWrapper<DeteSetInfoEntity>().eq("type_id", typeId));
         Long[] setIds=new Long[setInfos.size()];

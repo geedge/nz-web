@@ -13,6 +13,7 @@ import com.nis.modules.detect.service.DeteSetNodeRelService;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -39,6 +40,7 @@ public class DeteSetNodeRelServiceImpl extends ServiceImpl<DeteSetNodeRelDao, De
 	}
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBySetId(Long setId) {
 
         UpdateWrapper<DeteSetNodeRelEntity> updateWrapper = new UpdateWrapper<>();
