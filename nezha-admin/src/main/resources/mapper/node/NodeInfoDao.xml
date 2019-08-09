@@ -250,7 +250,7 @@
 		SELECT ni.* FROM system_info si
 		LEFT JOIN system_node_rel snr ON si.id=snr.system_id
 		LEFT JOIN node_info ni ON snr.uuid=ni.uuid
-		WHERE si.id=#{id} AND si.del_flag=0 AND snr.del_flag=0 AND ni.state=3
+		WHERE si.id=#{id} AND si.del_flag=0 AND snr.del_flag=0 AND ni.state != 3
 	</select>
 
 
@@ -258,7 +258,7 @@
     <select id="detail" resultMap="nodeinfoWithCabSys">
         SELECT <include refid="node_info_columns"/> FROM node_info ni
         LEFT JOIN node_cabinet nc ON ni.cabinet_id = nc.id
-        WHERE ni.uuid = #{uuid}
+        WHERE ni.uuid = #{uuid} AND ni.state != 3  AND nc.del_flag = 0
     </select>
 
 
@@ -266,6 +266,6 @@
     <select id="querySystemByUuid" resultType="com.nis.modules.sys.entity.SystemInfoEntity">
         SELECT si.id,si.name FROM system_info si
 		LEFT JOIN system_node_rel snr ON si.id = snr.system_id
-		WHERE snr.uuid = #{uuid}
+		WHERE snr.uuid = #{uuid} AND si.del_flag = 0 AND snr.del_flag = 0
     </select>
 </mapper>

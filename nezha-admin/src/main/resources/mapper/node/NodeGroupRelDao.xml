@@ -14,14 +14,6 @@
         <result property="opTime" column="op_time"/>
     </resultMap>
 
-
-    <update id="deleteNodeRel">
-        UPDATE node_group_rel SET del_flag = '1' WHERE group_id = #{id} AND uuid IN
-        <foreach collection="uuids" item="uuid" index="no" open="(" separator="," close=")">
-            #{uuid}
-        </foreach>
-    </update>
-
 	<select id="queryBySystemId" resultType="nodeGroupRelEntity">
 		select ngr.* 
 		from nodegroup_info ngi

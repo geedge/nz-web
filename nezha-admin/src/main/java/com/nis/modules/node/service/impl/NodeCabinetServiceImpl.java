@@ -16,7 +16,7 @@ import com.nis.modules.node.entity.NodeRoomEntity;
 import com.nis.modules.node.service.NodeCabinetService;
 import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.NodeRoomService;
-import org.apache.commons.lang.StringUtils;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,35 +45,15 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-
-        String name = (String) params.get("name");          // cab name
-        String roomId = (String) params.get("roomId");          // room id
-
-        IPage<NodeCabinetEntity> page = this.page(
-                new Query<NodeCabinetEntity>().getPage(params),
-                new QueryWrapper<NodeCabinetEntity>()
-                        .like(StringUtils.isNotBlank(name), "name", name)
-                        .eq(StringUtils.isNotBlank(roomId), "room_id", roomId)
-        );
-
-        for (NodeCabinetEntity entity : page.getRecords()) {
-            NodeRoomEntity noderoom = nodeRoomService.getById(entity.getRoomId());
-            entity.setRoomName(noderoom.getName());
-        }
-
+        IPage<NodeCabinetEntity> page = new Query<NodeCabinetEntity>().getPage(params);
+        List<NodeCabinetEntity> list = nodeCabinetDao.queryPage(page, params);
+        page.setRecords(list);
         return new PageUtils(page);
     }
 
     @Override
     public NodeCabinetEntity detail(Long id) {
-        // 1. 查询自身
-        NodeCabinetEntity nodeCabinet = this.getById(id);
-        // 2. 查询关联的机房名称
-        NodeRoomEntity nodeRoom = nodeRoomService.getById(nodeCabinet.getRoomId());
-        nodeCabinet.setRoomName(nodeRoom.getName());
-        // 3. 查询关联的节点信息
-        List<NodeInfoEntity> nodeInfos = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
-        nodeCabinet.setNodes(nodeInfos);
+        NodeCabinetEntity nodeCabinet = nodeCabinetDao.detail(id);
         return nodeCabinet;
     }
 
@@ -93,7 +73,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
                     .eq("room_row", nodeCabinet.getRoomRow())
                     .eq("room_col", nodeCabinet.getRoomCol()));
             if (cab == null) { // 所选机房行列未占用
-                nodeCabinet.setOperator(0l);
+                nodeCabinet.setOperator(ShiroUtils.getCurrSystemId());
                 nodeCabinet.setOpTime(new Date());
                 this.save(nodeCabinet);
             } else {
@@ -123,11 +103,12 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
             if (cab == null || nodeCabinet.getId() - cab.getId() == 0) { // 机房行列未被占用 或 修改时没有改变行列
 
                 // 4. U位是否可用校验
-                if(this.cabUbitCheck(nodeCabinet.getId(),nodeCabinet.getUbit())){
+                if (this.cabUbitCheck(nodeCabinet.getId(), nodeCabinet.getUbit())) {
+                    nodeCabinet.setOperator(ShiroUtils.getCurrSystemId());
                     nodeCabinet.setOpTime(new Date());
                     this.updateById(nodeCabinet);
-                }else{
-                    throw  new NZException(RCode.NODECABINET_UBIT_OCCUPIED); // 机柜U位被占用 修改U位小了
+                } else {
+                    throw new NZException(RCode.NODECABINET_UBIT_OCCUPIED); // 机柜U位被占用 修改U位小了
                 }
 
             } else {
@@ -150,10 +131,10 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     public void delete(Long[] ids) {
         for (Long id : ids) {
             // 1. 判断是否存在关联节点
-            List<NodeInfoEntity> list = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
+            int count = nodeInfoService.count(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
             NodeCabinetEntity cabinet = this.getById(id);
-            if (list != null && list.size() > 0) {
-                throw new NZException(cabinet.getName() + " related nodes , not deletable " , 204006);
+            if (count > 0) {
+                throw new NZException(cabinet.getName() + " related nodes , not deletable ", 204006);
             }
         }
         // 2. 进行逻辑删除
@@ -177,7 +158,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
 
         if (list != null && list.size() > 0) {
             occPosition = list.get(0).getCabinetStart() + list.get(0).getuSize() - 1;
-        }else{
+        } else {
             return true;
         }
 

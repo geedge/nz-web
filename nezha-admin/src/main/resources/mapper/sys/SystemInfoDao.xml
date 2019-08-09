@@ -78,14 +78,14 @@
 
 	<!-- 节点组列表查询 -->
 	<select id="querySystemInfosWithNodeGroup" resultMap="systemWithNodegroup">
-		SELECT si.* FROM system_info si
+		SELECT si.* FROM system_info si WHERE si.del_flag = 0
 		<if test="id != null and id != ''">
-			WHERE si.id = #{id}
+			AND si.id = #{id}
 		</if>
 	</select>
 
 	<!-- 系统一对多节点组 查询使用 -->
 	<select id="queryNgBySysId" resultType="com.nis.modules.node.entity.NodeGroupInfoEntity">
-		SELECT ng.id,ng.name,ng.pid  FROM nodegroup_info ng WHERE ng.system_id = #{id}
+		SELECT ng.id,ng.name,ng.pid  FROM nodegroup_info ng WHERE ng.system_id = #{id} AND ng.del_flag = 0
 	</select>
 </mapper>

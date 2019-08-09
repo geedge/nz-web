@@ -14,6 +14,7 @@ import com.nis.modules.node.entity.NodeCabinetEntity;
 import com.nis.modules.node.entity.NodeRoomEntity;
 import com.nis.modules.node.service.NodeCabinetService;
 import com.nis.modules.node.service.NodeRoomService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,9 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Autowired
     private NodeCabinetDao nodeCabinetDao;
 
-    // 机房 dao
+    // 机柜 service
     @Autowired
-    private NodeRoomDao nodeRoomDao;
+    private NodeCabinetService nodeCabinetService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -60,7 +61,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Override
     public void saveNodeRoom(NodeRoomEntity nodeRoom) {
         if (roomNameCheck(null, nodeRoom.getName())) { // 名称唯一校验
-            nodeRoom.setOperator(0l);
+            nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
             nodeRoom.setOpTime(new Date());
             this.save(nodeRoom);
         } else {
@@ -76,10 +77,13 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Override
     public void updateNodeRoom(NodeRoomEntity nodeRoom) {
         if (roomNameCheck(nodeRoom.getId(), nodeRoom.getName())) { // 名称唯一校验
-            nodeRoom.setOpTime(new Date());
 
             // 修改前校验机房的大小是否可用
             roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
+
+
+            nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
+            nodeRoom.setOpTime(new Date());
 
             this.updateById(nodeRoom);
         } else {
@@ -96,8 +100,8 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     public void delete(Long[] ids) {
         // 1. 校验是否存在关联的机柜信息
         for (Long id : ids) {
-            List<NodeCabinetEntity> nodeCabinets = nodeCabinetDao.selectList(new QueryWrapper<NodeCabinetEntity>().eq("room_id", id));
-            if (nodeCabinets != null && nodeCabinets.size() > 0) {
+            int count = nodeCabinetService.count(new QueryWrapper<NodeCabinetEntity>().eq("room_id", id));
+            if (count > 0) {
                 NodeRoomEntity nodeRoom = this.getById(id);
                 throw new NZException(nodeRoom.getName() + " related cabinets , not deletable " , 203004); // 机房下存在机柜信息
             }

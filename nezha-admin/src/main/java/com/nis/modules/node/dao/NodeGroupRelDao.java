@@ -19,8 +19,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NodeGroupRelDao extends BaseMapper<NodeGroupRelEntity> {
 
-    void deleteNodeRel(@Param("id") Long id, @Param("uuids") Long[] uuids);
-    
     List<NodeGroupRelEntity> queryBySystemId(Long id);
 
 }

@@ -1,7 +1,6 @@
 package com.nis.modules.node.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -21,9 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service("nodeGroupInfoService")
@@ -106,7 +107,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
             }
             NodeGroupInfoEntity parentEntity = this.getById(nodegroupInfo.getPid());
-            nodegroupInfo.setOperator(1l);
+            nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
             nodegroupInfo.setOpTime(new Date());
             nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
             save(nodegroupInfo);
@@ -128,12 +129,13 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     public void updateNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo) {
         // 1. 根据当前的ID查到当前数据库对象
         NodeGroupInfoEntity nodeGroup = getById(nodegroupInfo.getId());
+        nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
         // 2. 做名称校验
         if (nodeGroup.getName().equals(nodegroupInfo.getName())) {// 名称没有发生改变
-            nodegroupInfoDao.update(nodegroupInfo, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", nodegroupInfo.getId()));
+            nodegroupInfoDao.updateById(nodegroupInfo);
         } else {
             if (checkNameExists(nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
-                nodegroupInfoDao.update(nodegroupInfo, new UpdateWrapper<NodeGroupInfoEntity>().eq("id", nodegroupInfo.getId()));
+                nodegroupInfoDao.updateById(nodegroupInfo);
             } else {
                 throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);// 节点组名称重复
             }
@@ -148,18 +150,17 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
-        // 1. 删除 此节点组 和  其 子节点组  逻辑删除
+        // 1. 查询此节点组和包含的子节点组
         NodeGroupInfoEntity nodegroupInfo = getById(id);
         List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
         list.add(nodegroupInfo);
-        for (NodeGroupInfoEntity entity : list) {
-            nodegroupInfoDao.deleteById(entity.getId());
-        }
 
-        // 2. 删除自身和包含节点组 关联节点
-        for (NodeGroupInfoEntity entity : list) {
-            nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", entity.getId()));
-        }
+        // 2. 删除自身 和 子节点组
+        List<Long> ids = list.stream().map(NodeGroupInfoEntity::getId).collect(Collectors.toList());
+        nodegroupInfoDao.deleteBatchIds(ids);
+
+        // 3. 删除关联节点
+        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("group_id",ids));
     }
 
     /**
@@ -171,7 +172,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteNodeRel(Long id, Long[] uuids) {
-        nodeGroupRelDao.deleteNodeRel(id, uuids);
+        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid",uuids).eq("group_id", id));
     }
 
     /**
@@ -183,14 +184,19 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeRel(Long id, Long[] uuids) {
+
+        List<NodeGroupRelEntity> list = new ArrayList<>();
+
         for (Long uuid : uuids) {
             int count = nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id).eq("uuid", uuid));
             if (count > 0) {
                 continue;  // 重复跳过
             }
-            // 在此处 进行添加
-            nodeGroupRelService.save(new NodeGroupRelEntity(id, uuid, 0L, new Date()));
+            list.add(new NodeGroupRelEntity(id, uuid, ShiroUtils.getCurrSystemId(),  new Date()));
         }
+
+        // 在此处添加
+        nodeGroupRelService.saveBatch(list);
     }
 
     /**

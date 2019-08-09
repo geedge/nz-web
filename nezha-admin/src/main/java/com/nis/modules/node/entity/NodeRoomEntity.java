@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -58,17 +60,10 @@ public class NodeRoomEntity implements Serializable {
 	@TableLogic
 	private String delFlag;
 
-	public NodeRoomEntity(Long id, String name, Integer roomRows, Integer roomCols, Long addr, String remarks, Long operator, Date opTime) {
-		this.id = id;
-		this.name = name;
-		this.roomRows = roomRows;
-		this.roomCols = roomCols;
-		this.addr = addr;
-		this.remarks = remarks;
-		this.operator = operator;
-		this.opTime = opTime;
-	}
 
-	public NodeRoomEntity() {
-	}
+	/**
+	 * 机房关联的机柜信息
+	 */
+	@TableField(exist = false)
+	private List<NodeCabinetEntity> cabinets;
 }

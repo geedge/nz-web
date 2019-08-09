@@ -10,6 +10,7 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
+import com.nis.modules.node.dao.NodeRoomDao;
 import com.nis.modules.node.entity.*;
 import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
@@ -49,6 +50,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     // 节点组service
     @Autowired
     private NodeGroupInfoService nodeGroupInfoService;
+
+    @Autowired
+    private NodeRoomDao nodeRoomDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -129,13 +133,12 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void changeState(Long[] uuids, String state) {
         nodeInfoDao.changeState(uuids, state);
         if ("3".equals(state)) { // 删除节点
-            for (Long uuid : uuids) {
-                // 1. 逻辑删除 和 节点组 之间的关系
-                nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", uuid));
 
-                // 2. 逻辑删除 和 业务系统 之间的关系
-                systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", uuid));
-            }
+            // 1. 逻辑删除 和 节点组 之间的关系
+            nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid", uuids));
+
+            // 2. 逻辑删除 和 业务系统 之间的关系
+            systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().in("uuid",uuids));
         }
     }
 
@@ -147,7 +150,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (nodeNameCheck(null, nodeInfoEntity.getName())) {
 
                 //2. 校验可用机柜
-                if (nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
+                if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
 
                     // 查询该机柜的可选起始位置
                     List<Integer> starts = checkPosition(nodeInfoEntity);
@@ -161,7 +164,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
                 //4. 密码加密 base64
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
                 nodeInfoEntity.setOpTime(new Date());
 
                 //5. 入库
@@ -182,7 +185,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
 
                 //2. 校验可用机柜
-                if (nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
+                if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
 
                     // 查询该机柜的可选起始位置
                     List<Integer> starts = checkPosition(nodeInfoEntity);
@@ -196,7 +199,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
                 //4. 密码加密 base64
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                nodeInfoEntity.setOperator(1L);
+                nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
                 nodeInfoEntity.setOpTime(new Date());
 
                 //5. 入库
@@ -234,9 +237,29 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         //定义返回集合
         List<AvailCabinetEntity> retAvailCabs = new ArrayList<>();
 
-        // 1.0 得到所有机房
-        List<NodeRoomEntity> nodeRooms = nodeRoomService.list();
+        // 1.0 得到所有机房  有机柜的机房
+        List<NodeRoomEntity> nodeRooms = nodeRoomDao.queryRoomCabinets();
 
+        // 所有包含节点的机房
+        List<NodeRoomEntity> list = nodeRoomDao.queryRoomsNodes();
+
+        Map<Long, List<NodeInfoEntity>> map = new HashMap<>();
+        for (NodeRoomEntity entity : list) { // 占用节点的机房集合
+            if (entity != null && entity.getCabinets() != null && entity.getCabinets().size() > 0) {// 找到占用节点的机柜信息
+                for (NodeCabinetEntity cab : entity.getCabinets()) {
+                    map.put(cab.getId(), cab.getNodes());
+                }
+            }
+        }
+
+        for (NodeRoomEntity entity : nodeRooms) {
+            for (NodeCabinetEntity cab : entity.getCabinets()) {
+                List<NodeInfoEntity> nodeInfoEntities = map.get(cab.getId());
+                if (nodeInfoEntities != null && nodeInfoEntities.size() > 0) {// 该机柜中存在节点
+                    cab.setNodes(nodeInfoEntities);
+                }
+            }
+        }
 
         Long cabinetId = null;
         if (uuid != null) { // 修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
@@ -251,13 +274,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             availCab.setRoomName(nodeRoom.getName());
 
             // 1.1 查询每个机房下所有的机柜
-            List<NodeCabinetEntity> nodeCabinets = nodeCabinetService.list(new QueryWrapper<NodeCabinetEntity>().eq("room_id", nodeRoom.getId()));
+            List<NodeCabinetEntity> nodeCabinets = nodeRoom.getCabinets();
 
             // 2.0 遍历机柜 得到下面的所有节点
             for (NodeCabinetEntity cab : nodeCabinets) {
 
                 // 2.1 得到每个机柜下包含的节点信息
-                List<NodeInfoEntity> nodeInfos = this.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", cab.getId()).ne("state", 3));
+                List<NodeInfoEntity> nodeInfos = cab.getNodes();
                 // 2.2 获取当前机柜的全部位置
                 Integer[] allPosition = new Integer[cab.getUbit()];
                 for (int i = 0; i < allPosition.length; i++) {
@@ -293,7 +316,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 List<Integer> freePosition = new ArrayList<>(Arrays.asList(allPosition));
                 freePosition.removeAll(occList); // freePosition 为剩余的位置 例如 1,2,3,4,(5,6,) 7,8,(9),10
                 // 4.0 在此处处理一下可用位置
-                String convertStr = convertStr(freePosition);// 处理之后的格式  '1-4,7,10'
+                String convertStr = this.convertStr(freePosition);// 处理之后的格式  '1-4,7,10'
                 //5.0  拿到处理好的格式之后进行判断U位规格
                 String[] handleArr = convertStr.split(",");  //   格式例如 [ "1-4" , "7"  , "10"]
 
