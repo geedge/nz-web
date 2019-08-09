@@ -16,14 +16,12 @@ import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -145,15 +143,21 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     public void delete(Long id) {
         // 1. 查询此节点组和包含的子节点组
         NodeGroupInfoEntity nodegroupInfo = getById(id);
+        if (nodegroupInfo == null) { // 没有查询到数据
+            throw new NZException(RCode.ERROR);
+        }
         List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
         list.add(nodegroupInfo);
 
+        Long[] ids = new Long[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            ids[i] = list.get(i).getId();
+        }
         // 2. 删除自身 和 子节点组
-        List<Long> ids = list.stream().map(NodeGroupInfoEntity::getId).collect(Collectors.toList());
-        nodegroupInfoDao.deleteBatchIds(ids);
+        nodegroupInfoDao.deleteBatchIds(Arrays.asList(ids));
 
         // 3. 删除关联节点
-        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("group_id",ids));
+        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("group_id", ids));
     }
 
     /**
@@ -165,7 +169,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteNodeRel(Long id, Long[] uuids) {
-        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid",uuids).eq("group_id", id));
+        nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid", uuids).eq("group_id", id));
     }
 
     /**
@@ -185,7 +189,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             if (count > 0) {
                 continue;  // 重复跳过
             }
-            list.add(new NodeGroupRelEntity(id, uuid, ShiroUtils.getCurrSystemId(),  new Date()));
+            list.add(new NodeGroupRelEntity(id, uuid, ShiroUtils.getCurrSystemId(), new Date()));
         }
 
         // 在此处添加

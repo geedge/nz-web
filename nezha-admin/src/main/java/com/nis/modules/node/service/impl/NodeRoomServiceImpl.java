@@ -120,16 +120,15 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
      */
     @Override
     public boolean roomNameCheck(Long id, String name) {
-        if (id == null) { // 新增
-            return checkNameExists(name);
-        } else { // 修改
-            NodeRoomEntity nodeRoom = getById(id);
-            if (name.equals(nodeRoom.getName())) { // 修改时未发生改变
-                return true;
-            } else {
-                return checkNameExists(name);
-            }
+        List<NodeRoomEntity> list = this.list(new QueryWrapper<NodeRoomEntity>().in(id != null, "id", id).eq("name", name));
+        boolean flag = false;
+
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+            flag = true;
         }
+        return flag;
     }
 
     /**
@@ -154,11 +153,5 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
             }
         }
     }
-
-    public boolean checkNameExists(String name) {
-        int count = this.count(new QueryWrapper<NodeRoomEntity>().eq("name", name));// 获取目前非删除的名称个数
-        return count <= 0;
-    }
-
 
 }

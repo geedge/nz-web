@@ -87,38 +87,34 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         NodeInfoEntity nodeInfoEntity = nodeInfoDao.detail(uuid);
 
         // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
-        nodeInfoEntity.setPassword(new String(Base64.getDecoder().decode(nodeInfoEntity.getPassword())));
+
+        if(nodeInfoEntity != null){
+            nodeInfoEntity.setPassword(new String(Base64.getDecoder().decode(nodeInfoEntity.getPassword())));
+        }
         return nodeInfoEntity;
     }
 
     // ip 是否重复校验
     @Override
     public boolean ipCheck(Long uuid, String ip) {
-        if (uuid == null) {// 添加
-            return checkFieldExists("ip", ip);
-        } else {//修改
-            NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
-            if (ip.equals(nodeInfo.getIp())) {// IP 地址未改变
-                return true;
-            } else {// IP 地址发生改变
-                return checkFieldExists("ip", ip);
-            }
-        }
+        return checkFieldExist(uuid, "ip", ip);
     }
 
     // 名称是否重复校验
     @Override
     public boolean nodeNameCheck(Long uuid, String name) {
-        if (uuid == null) {// 添加
-            return checkFieldExists("name", name);
-        } else {// 修改
-            NodeInfoEntity nodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
-            if (name.equals(nodeInfo.getName())) {// name 未发生改变
-                return true;
-            } else {
-                return checkFieldExists("name", name);
-            }
+        return checkFieldExist(uuid, "name", name);
+    }
+
+    public boolean checkFieldExist(Long uuid, String column, String colValue) {
+        List<NodeInfoEntity> list = this.list(new QueryWrapper<NodeInfoEntity>().eq(uuid != null, "uuid", uuid).eq(
+                column, colValue).ne("state", 3));
+        boolean flag = false;
+
+        if (list == null || list.size() == 0 || (list != null && list.size() == 1 && list.get(0).getUuid() == uuid)) {
+            flag = true;
         }
+        return true;
     }
 
     // 节点状态变更 (上线/下线/删除)
@@ -359,18 +355,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
         return retAvailCabs;
     }
-
-
-    /**
-     * @param column 查询的列
-     * @param value  该列的值
-     * @return
-     */
-    public boolean checkFieldExists(String column, String value) {
-        int count = count(new QueryWrapper<NodeInfoEntity>().eq(column, value).ne("state", 3));// 名称校验不考虑删除的节点名
-        return count <= 0;
-    }
-
 
     //判断是否连续的  并用字符串的形式返回
     public String convertStr(List<Integer> list) {
