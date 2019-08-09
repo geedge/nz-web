@@ -22,4 +22,7 @@ import java.util.Map;
 public interface NodeGroupInfoDao extends BaseMapper<NodeGroupInfoEntity> {
 
     List<NodeInfoEntity> assList(IPage<NodeInfoEntity> page, @Param("params") Map<String, Object> params);
+
+    // 节点组详情查询
+    NodeGroupInfoEntity detail(Integer id);
 }

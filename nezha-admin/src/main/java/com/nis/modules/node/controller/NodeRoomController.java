@@ -52,8 +52,8 @@ public class NodeRoomController {
     @PostMapping("/save")
     public R save(@RequestBody NodeRoomEntity nodeRoom) {
         ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
-                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
-                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL)
+                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL).min(1,RCode.NODEROOM_ROWS_MINNUM)
+                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL).min(1,RCode.NODEROOM_COLS_MINNUM)
                 .and(nodeRoom.getAddr()).notNull(RCode.NODEROOM_ADDR_ISNULL);
 
         nodeRoomService.saveNodeRoom(nodeRoom);
@@ -65,8 +65,8 @@ public class NodeRoomController {
     @PutMapping("/update")
     public R update(@RequestBody NodeRoomEntity nodeRoom) {
         ValidateUtils.is(nodeRoom.getName()).notNull(RCode.NODEROOM_NAME_ISNULL)
-                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL)
-                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL)
+                .and(nodeRoom.getRoomRows()).notNull(RCode.NODEROOM_ROWS_ISNULL).min(1,RCode.NODEROOM_ROWS_MINNUM)
+                .and(nodeRoom.getRoomCols()).notNull(RCode.NODEROOM_COLS_ISNULL).min(1,RCode.NODEROOM_COLS_MINNUM)
                 .and(nodeRoom.getAddr()).notNull(RCode.NODEROOM_ADDR_ISNULL);
 
         nodeRoomService.updateNodeRoom(nodeRoom);

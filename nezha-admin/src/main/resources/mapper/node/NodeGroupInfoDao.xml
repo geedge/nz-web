@@ -43,4 +43,10 @@
 
         WHERE t1.i IS NULL
     </select>
+
+    <!-- 节点组详情查询 -->
+    <select id="detail" resultType="com.nis.modules.node.entity.NodeGroupInfoEntity">
+        SELECT ni.*,(SELECT NAME FROM nodegroup_info WHERE id = ni.pid) AS pname FROM nodegroup_info ni WHERE ni.id =
+         #{id} AND ni.del_flag = 0
+    </select>
 </mapper>

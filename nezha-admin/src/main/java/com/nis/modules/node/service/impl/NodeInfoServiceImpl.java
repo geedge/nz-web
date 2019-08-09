@@ -12,7 +12,9 @@ import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.dao.NodeRoomDao;
 import com.nis.modules.node.entity.*;
-import com.nis.modules.node.service.*;
+import com.nis.modules.node.service.NodeGroupInfoService;
+import com.nis.modules.node.service.NodeInfoService;
+import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -34,14 +36,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     // 节点 节点组 关联 关系
     @Autowired
     private NodeGroupRelDao nodeGroupRelDao;
-
-    // 机柜service
-    @Autowired
-    private NodeCabinetService nodeCabinetService;
-
-    // 机房service
-    @Autowired
-    private NodeRoomService nodeRoomService;
 
     // 业务系统 节点 关联 关系
     @Autowired
@@ -289,7 +283,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
                 List<Integer> occList = new ArrayList<>(); // 记录的是整个机柜下 节点所占用的位置
 
-                if (cabinetId == cab.getId()) { // 修改时节点的所属的机柜  应还回节点
+                if (cabinetId != null && cabinetId - cab.getId() == 0) { // 修改时节点的所属的机柜  应还回节点
 
                     // 2.3 根据得到的节点信息 得到占用的位置
                     for (NodeInfoEntity nodeInfo : nodeInfos) {

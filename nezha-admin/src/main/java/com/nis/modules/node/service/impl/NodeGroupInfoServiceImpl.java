@@ -84,14 +84,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
     @Override
     public NodeGroupInfoEntity detail(Integer id) {
-        // 1.根据ID查到自己
-        NodeGroupInfoEntity nodegroup = this.getById(id);
-        // 2.根据得到的pid 查到上级对象
-        NodeGroupInfoEntity parentNodeGroup = this.getById(nodegroup.getPid());
-        // 3.将上级的name 赋值给返回对象
-        if (parentNodeGroup != null) { // 有特殊的父级对象没有  例如父级ID为0的对象 因为没有ID为0 的元素
-            nodegroup.setPname(parentNodeGroup.getName());
-        }
+        NodeGroupInfoEntity nodegroup = nodegroupInfoDao.detail(id);
         return nodegroup;
     }
 
