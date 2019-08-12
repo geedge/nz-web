@@ -8,6 +8,12 @@
 
 package com.nis.common.utils;
 
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
+
+import org.apache.ibatis.mapping.DatabaseIdProvider;
+
 /**
  * 常量
  *
@@ -65,6 +71,27 @@ public class Constant {
         public int getValue() {
             return value;
         }
+    }
+    
+    /**
+     * 当前数据库类型
+     */
+    public static final String DB_TYPE;
+    
+    public static final String ORACLE = "oracle";
+    public static final String MYSQL = "mysql";
+    public static final String POSTGRESQL = "postgresql";
+    
+    static {
+    	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
+        DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
+        String databaseId = null;
+		try {
+			databaseId = databaseIdProvider.getDatabaseId(dataSource);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		DB_TYPE = databaseId;
     }
     
     /**

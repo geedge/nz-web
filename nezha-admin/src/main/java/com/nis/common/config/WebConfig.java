@@ -8,6 +8,7 @@
 
 package com.nis.common.config;
 
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.SQLUtils;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
@@ -58,19 +59,15 @@ public class WebConfig implements WebMvcConfigurer {
     }
     @Bean
     public SQLUtils getSqlUtils() throws SQLException {
-        DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
-        DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
-        String databaseId = databaseIdProvider.getDatabaseId(dataSource);
-        switch (databaseId){
-            case "mysql":
+        switch (Constant.DB_TYPE){
+            case Constant.MYSQL:
                 return new MysqlHelper();
-            case "postgresql":
+            case Constant.POSTGRESQL:
                 return new PostgresqlHelper();
-            case "oracle":
+            case Constant.ORACLE:
                 return new OracleHelper();
             default:
                 return new MysqlHelper();
         }
-
     }
 }

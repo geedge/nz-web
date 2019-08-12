@@ -1,13 +1,11 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.common.config;
 
+import java.sql.SQLException;
+
+import javax.sql.DataSource;
+
+import org.apache.ibatis.mapping.DatabaseIdProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +13,7 @@ import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
 import com.baomidou.mybatisplus.core.injector.ISqlInjector;
 import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
 import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
+import com.nis.common.utils.Constant;
 
 /**
  * mybatis-plus配置
@@ -23,7 +22,7 @@ import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
  */
 @Configuration
 public class MybatisPlusConfig {
-
+	
     /**
      * 分页插件
      */
@@ -48,10 +47,30 @@ public class MybatisPlusConfig {
      *
      */
     static class SeqKeyGenerator implements IKeyGenerator {
+    	@Autowired
+    	DatabaseIdProvider databaseIdProvider;
+    	@Autowired
+    	DataSource dataSource;
+    	
 		@Override
 		public String executeSql(String incrementerName) {
-			return String.format("select seq_nextval('%s')", incrementerName);
+	        String databaseId = null;
+			try {
+				databaseId = databaseIdProvider.getDatabaseId(dataSource);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			
+			switch (databaseId){
+	            case Constant.MYSQL:
+	                return String.format("select seq_nextval('%s')", incrementerName);
+	            case Constant.POSTGRESQL:
+	                return String.format("select seq_nextval('%s')", incrementerName);
+	            case Constant.ORACLE:
+	                return String.format("select %s.nextval from dual", incrementerName);
+	            default:
+	                return String.format("select seq_nextval('%s')", incrementerName);
+	        }
 		}
     }
-    
 }
