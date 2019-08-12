@@ -60,7 +60,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
 
     @Override
     public void saveNodeRoom(NodeRoomEntity nodeRoom) {
-        if (roomNameCheck(null, nodeRoom.getName())) { // 名称唯一校验
+        if (this.roomNameCheck(null, nodeRoom.getName())) { // 名称唯一校验
             nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
             nodeRoom.setOpTime(new Date());
             this.save(nodeRoom);
@@ -76,10 +76,10 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
      */
     @Override
     public void updateNodeRoom(NodeRoomEntity nodeRoom) {
-        if (roomNameCheck(nodeRoom.getId(), nodeRoom.getName())) { // 名称唯一校验
+        if (this.roomNameCheck(nodeRoom.getId(), nodeRoom.getName())) { // 名称唯一校验
 
             // 修改前校验机房的大小是否可用
-            roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
+            this.roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
 
 
             nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
@@ -120,7 +120,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
      */
     @Override
     public boolean roomNameCheck(Long id, String name) {
-        List<NodeRoomEntity> list = this.list(new QueryWrapper<NodeRoomEntity>().in(id != null, "id", id).eq("name", name));
+        List<NodeRoomEntity> list = this.list(new QueryWrapper<NodeRoomEntity>().eq("name", name));
         boolean flag = false;
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复

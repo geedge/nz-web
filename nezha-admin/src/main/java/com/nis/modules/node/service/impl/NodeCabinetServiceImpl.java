@@ -62,7 +62,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeCabinet(NodeCabinetEntity nodeCabinet) {
         // 1. 校验参数
-        checkParams(nodeCabinet);
+        this.checkParams(nodeCabinet);
 
         // 2. 验证机柜名称是否可用
         if (this.cabNameCheck(null, nodeCabinet.getName(), nodeCabinet.getRoomId())) {
@@ -89,7 +89,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Transactional(rollbackFor = Exception.class)
     public void updateNodeCabinet(NodeCabinetEntity nodeCabinet) {
         // 1. 校验参数
-        checkParams(nodeCabinet);
+        this.checkParams(nodeCabinet);
 
         // 2. 验证机柜名称是否可用
         if (this.cabNameCheck(nodeCabinet.getId(), nodeCabinet.getName(), nodeCabinet.getRoomId())) {
@@ -132,8 +132,8 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         for (Long id : ids) {
             // 1. 判断是否存在关联节点
             int count = nodeInfoService.count(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne("state", 3));
-            NodeCabinetEntity cabinet = this.getById(id);
             if (count > 0) {
+                NodeCabinetEntity cabinet = this.getById(id);
                 throw new NZException(cabinet.getName() + " related nodes , not deletable ", 204006);
             }
         }
@@ -261,24 +261,15 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
      */
     @Override
     public boolean cabNameCheck(Long id, String name, Long roomId) {
-        if (id == null) { // 添加
-            return checkNameExists(name, roomId);
-        } else { // 修改
-            NodeCabinetEntity nodeCabinet = this.getById(id);
-            if (name.equals(nodeCabinet.getName())) {
-                return true;
-            } else {
-                return checkNameExists(name, roomId);
-            }
+        List<NodeCabinetEntity> list = this.list(new QueryWrapper<NodeCabinetEntity>().eq("name", name).eq("room_id", roomId));
+        boolean flag = false;
+
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+            flag = true;
         }
-    }
-
-
-    public boolean checkNameExists(String name, Long roomId) {
-        int count = this.count(new QueryWrapper<NodeCabinetEntity>()
-                .eq("room_id", roomId)
-                .eq("name", name));
-        return count <= 0;
+        return flag;
     }
 
     /**

@@ -61,6 +61,11 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             // 1.1 查询出选中节点组的子节点组的ID
             Long groupId = Long.valueOf(params.get("groupId").toString());
             NodeGroupInfoEntity nodeGroup = nodeGroupInfoService.getOne(new QueryWrapper<NodeGroupInfoEntity>().eq("id", groupId));
+
+            if(nodeGroup == null){
+                throw new NZException(RCode.NODE_ERROR);
+            }
+
             // 1.2 获取包含的子节点组
             List<NodeGroupInfoEntity> childe = nodeGroupInfoService.list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodeGroup.getPids() + nodeGroup.getId()));
             childe.add(nodeGroup);
@@ -107,14 +112,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     }
 
     public boolean checkFieldExist(Long uuid, String column, String colValue) {
-        List<NodeInfoEntity> list = this.list(new QueryWrapper<NodeInfoEntity>().eq(uuid != null, "uuid", uuid).eq(
-                column, colValue).ne("state", 3));
+        List<NodeInfoEntity> list = this.list(new QueryWrapper<NodeInfoEntity>().eq(column, colValue).ne("state", 3));
         boolean flag = false;
 
         if (list == null || list.size() == 0 || (list != null && list.size() == 1 && list.get(0).getUuid() == uuid)) {
             flag = true;
         }
-        return true;
+        return flag;
     }
 
     // 节点状态变更 (上线/下线/删除)
@@ -136,14 +140,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
-        if (ipCheck(null, nodeInfoEntity.getIp())) {
-            if (nodeNameCheck(null, nodeInfoEntity.getName())) {
+        if (this.ipCheck(null, nodeInfoEntity.getIp())) {
+            if (this.nodeNameCheck(null, nodeInfoEntity.getName())) {
 
                 //2. 校验可用机柜
                 if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
 
                     // 查询该机柜的可选起始位置
-                    List<Integer> starts = checkPosition(nodeInfoEntity);
+                    List<Integer> starts = this.checkPosition(nodeInfoEntity);
 
                     if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
@@ -171,14 +175,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Transactional(rollbackFor = Exception.class)
     public void updateNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
-        if (ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
-            if (nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
+        if (this.ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
+            if (this.nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
 
                 //2. 校验可用机柜
                 if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
 
                     // 查询该机柜的可选起始位置
-                    List<Integer> starts = checkPosition(nodeInfoEntity);
+                    List<Integer> starts = this.checkPosition(nodeInfoEntity);
 
                     if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置

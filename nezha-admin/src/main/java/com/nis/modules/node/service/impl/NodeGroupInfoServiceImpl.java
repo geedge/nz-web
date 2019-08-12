@@ -9,6 +9,7 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeGroupInfoDao;
 import com.nis.modules.node.dao.NodeGroupRelDao;
+import com.nis.modules.node.entity.NodeCabinetEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
@@ -16,13 +17,11 @@ import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service("nodeGroupInfoService")
@@ -89,7 +88,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo) {
-        if (groupNameCheck(null, nodegroupInfo.getName(), nodegroupInfo.getPid())) {
+        if (this.groupNameCheck(null, nodegroupInfo.getName(), nodegroupInfo.getPid())) {
             if (ShiroUtils.isGlobal()) {
                 if (nodegroupInfo.getSystemId() == null) {
                     nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());
@@ -101,7 +100,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
             nodegroupInfo.setOpTime(new Date());
             nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
-            save(nodegroupInfo);
+            this.save(nodegroupInfo);
         } else {
             throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);//节点组名称重复
         }
@@ -121,11 +120,12 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         // 1. 根据当前的ID查到当前数据库对象
         NodeGroupInfoEntity nodeGroup = getById(nodegroupInfo.getId());
         nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
+        nodegroupInfo.setOpTime(new Date());
         // 2. 做名称校验
         if (nodeGroup.getName().equals(nodegroupInfo.getName())) {// 名称没有发生改变
             nodegroupInfoDao.updateById(nodegroupInfo);
         } else {
-            if (checkNameExists(nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
+            if (this.groupNameCheck(nodegroupInfo.getId(),nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
                 nodegroupInfoDao.updateById(nodegroupInfo);
             } else {
                 throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);// 节点组名称重复
@@ -144,7 +144,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         // 1. 查询此节点组和包含的子节点组
         NodeGroupInfoEntity nodegroupInfo = getById(id);
         if (nodegroupInfo == null) { // 没有查询到数据
-            throw new NZException(RCode.ERROR);
+            throw new NZException(RCode.NODE_ERROR);
         }
         List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
         list.add(nodegroupInfo);
@@ -226,27 +226,14 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      */
     @Override
     public boolean groupNameCheck(Long id, String name, Long pid) {
-        if (id == null) {// 添加
-            return checkNameExists(name, pid);
-        } else {// 修改
-            NodeGroupInfoEntity nodegroupInfo = getById(id);
-            if (name.equals(nodegroupInfo.getName())) {
-                return true;
-            } else {
-                return checkNameExists(name, pid);
-            }
-        }
-    }
+        List<NodeGroupInfoEntity> list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", pid));
+        boolean flag = false;
 
-    /**
-     * pid下的名称 是否重复判断
-     *
-     * @param name
-     * @param pid
-     * @return
-     */
-    public boolean checkNameExists(String name, Long pid) {
-        int count = count(new QueryWrapper<NodeGroupInfoEntity>().eq("pid", pid).eq("name", name));
-        return count <= 0;
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+            flag = true;
+        }
+        return flag;
     }
 }
