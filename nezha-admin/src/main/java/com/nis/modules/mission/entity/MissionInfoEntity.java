@@ -1,8 +1,12 @@
 package com.nis.modules.mission.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 
@@ -23,13 +27,14 @@ import lombok.Data;
  */
 @Data
 @TableName("mission_info")
+@KeySequence(value="seq_mission_info")
 public class MissionInfoEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 
 	 */
-	@TableId
+	@TableId(type= IdType.INPUT)
 	private Long id;
 	
 	@TableField(exist=false)
@@ -95,6 +100,14 @@ public class MissionInfoEntity implements Serializable {
 	//节点uuid
 	@TableField(exist=false)
 	private List<Long> nodeIds;
+	
+	//节点组
+	@TableField(exist=false)
+	private List<NodeGroupInfoEntity> nodeGroups;
+	
+	//节点
+	@TableField(exist=false)
+	private List<NodeInfoEntity> nodes;
 	
 	/**
 	 * 权限记录

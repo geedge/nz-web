@@ -7,6 +7,8 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -16,9 +18,10 @@ import lombok.Data;
 
 @Data
 @TableName("dashboard")
+@KeySequence(value="seq_dashboard")
 public class DashboardEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
-	@TableId
+	@TableId(type= IdType.INPUT)
 	private Long id;
 	private String name;
 	@NotBlank(message="业务系统ID不能为空")

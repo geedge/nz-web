@@ -87,4 +87,6 @@ public class ParamForUpgrade implements Serializable{
 	 * 推送文件的MD5值
 	 */
 	private String md5Value;
+	
+	private Long version;  // 用于逆向任务标识  储存被逆向任务的id  只有逆向任务此属性有值
 }

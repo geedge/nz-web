@@ -1,5 +1,7 @@
 package com.nis.modules.mission.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -16,13 +18,14 @@ import lombok.Data;
  */
 @Data
 @TableName("mission_node_rel")
+@KeySequence(value="seq_mission_node_rel")
 public class MissionNodeRelEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 
 	 */
-	@TableId
+	@TableId(type= IdType.INPUT)
 	private Long id;
 	/**
 	 * 任务id

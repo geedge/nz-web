@@ -119,6 +119,8 @@ public enum RCode {
 	MISSION_GROUPNODE_ISNULL(400009,"mission_groupnode_isnull"),  //任务节点组信息为空
 	MISSION_LOOP_START_ERROR(400010,"mission_loop_start_error"), //启动周期任务错误 已终止任务不能启动 
 	MISSION_LOOP_STATE_ERROR(400011,"mission_loop_state_error"), //状态码错误
+	MISSION_NODEINFO_ERROR(400012,"mission_nodeinfo_error"),   //节点或节点组有效性错误
+	MISSION_NODE_NET_ERROR(400013,"mission_node_net_error"),   //网元不可下发任务
 	MISSION_FILEPUSH_FILE_ISNULL(400101,"mission_filepush_file_isnull"),  //文件推送文件为空
 	MISSION_FILEPUSH_DESTPATH_ISNULL(400102,"mission_filepush_destpath_isnull"), // 文件推送路径为空
 	MISSION_FILEPUSH_PASSWORD_HANDLE_ERROR(400103,"mission_filepush_password_handle_error"), //文件推送密码处理错误
@@ -154,6 +156,11 @@ public enum RCode {
 	MISSION_UPGRADE_BACKUPTO_ISNULL(400808,"mission_upgrade_backupto_isnull"),  // 升级部署任务备份源路径为空
 	MISSION_UPGRADE_STARTUPFILE_ISNULL(400809,"mission_upgrade_startupfile_isnull"),// 升级部署任务启动文件或命令为空
 	MISSION_UPGRADE_PIDFILE_ISNULL(400810,"mission_upgrade_pidfile_isnull"),// 升级部署任务PID文件为空
+	MISSION_UPGRADE_BACKUP_NULL(400811,"mission_upgrade_backup_null"), //任务没有备份不可以创建逆向任务
+	MISSION_UPGRADE_NOT_FINISH(400812,"mission_upgrade_not_finish"), //任务没有完成不可以创建逆向任务
+	MISSION_UPGRADE_NOT_REVERSED_ERROR(400813,"mission_upgrade_not_reversed_error"),  //逆向任务不可以再逆向
+	MISSION_UPGRADE_TYPE_ERROR(400814,"mission_upgrade_type_error"),  //非升级部署任务 不能创建逆向
+	
 
 	DASHBOARD_ERROR(500000, "dashboard_error"), //50xxxx，仪表盘通用错误
 	DASHBOARD_ID_NULL(500001,"dashboard_id_null"),  //仪表盘id为空

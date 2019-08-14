@@ -34,5 +34,9 @@ public interface MissionInfoService extends IService<MissionInfoEntity> {
     List<MissionInfoEntity> validateLoopMissionInfoData(Long[] missionIds,String state);
     
     void updateMission(MissionInfoEntity missionInfoEntity);
+    
+    MissionInfoEntity getConverseMissionById(Long id);
+    
+    void checkNodeGroupOrNodeCorrect(List<Long> nodeGroupIds,List<Long> nodeIds);
 }
 

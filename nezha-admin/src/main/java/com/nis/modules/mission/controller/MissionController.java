@@ -190,4 +190,21 @@ public class MissionController {
         return R.ok();
     }
     
+    
+    /**
+     * 
+    * @Title: detail   
+    * @Description: 获取逆向任务详情
+    * @param @param id   任务id
+    * @return R    返回类型
+    * @throws
+     */
+    @ApiOperation(value="获取逆向任务详情", notes="根据url的id来获取任务详细信息")
+    @RequestMapping(value="/converse",method=RequestMethod.GET)
+    //@RequiresPermissions("mission:missioninfo:list")
+    public R converse(@RequestParam Long id){
+		ValidateUtils.check(id).notNull(RCode.MISSION_ID_ISNULL);
+    	MissionInfoEntity missionInfoEntity = missionInfoService.getConverseMissionById(id);
+        return R.ok().put("data", missionInfoEntity);
+    }
 }

@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -41,9 +43,12 @@ import com.nis.modules.mission.service.MissionNodeRelService;
 import com.nis.modules.mission.utils.DESUtil;
 import com.nis.modules.mission.utils.FileUtil;
 import com.nis.modules.mission.utils.MD5Util;
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 
@@ -64,6 +69,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	private Environment en;
 	@Autowired
 	private MissionNodeRelService missionNodeRelService;
+	@Autowired
+	private PermissionInfoService permissionInfoService;
 	
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -165,11 +172,23 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 
 	@Override
 	public void saveMission(MissionInfoEntity missionInfoEntity) {
+		missionInfoEntity.setOperator(ShiroUtils.getUserId());
+		missionInfoEntity.setOpTime(new Date());
 		baseMapper.insert(missionInfoEntity);
 		//添加任务与节点之间的关系
 		List<MissionNodeRelEntity> missionNodeRelEntitys=new ArrayList<MissionNodeRelEntity>();
 		List<Long> nodeIds = missionInfoEntity.getNodeIds();
 		List<Long> nodeGroupIds = missionInfoEntity.getNodeGroupIds();
+		//添加权限相关设置信息
+		List<PermissionInfoEntity> permissionInfoEntitys = new ArrayList<PermissionInfoEntity>();
+		Long relId = null;
+		boolean permissionFlag=false;
+		if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())) {
+			permissionFlag=true;
+		} else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
+			relId = ShiroUtils.getCurrSystemId();
+			permissionFlag=true;
+		}
 		if(null!=nodeIds&&nodeIds.size()>0) {
 			for(Long nodeId : nodeIds) {
 				MissionNodeRelEntity missionNodeRelEntity=new MissionNodeRelEntity();
@@ -189,7 +208,58 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				missionNodeRelEntitys.add(missionNodeRelEntity);
 			}
 		}
+		
+		if(null!=nodeGroupIds&&nodeGroupIds.size()>0 && permissionFlag) {
+			for(Long nodeGroupId : nodeGroupIds) {
+				PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
+				permissionInfoEntity.setType(Constant.PM_TYPE_MISSION);
+				permissionInfoEntity.setTypeId(missionInfoEntity.getId());
+				permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
+				if(null == relId) {
+					relId = nodeGroupId;
+				}
+				permissionInfoEntity.setRelId(relId);
+				permissionInfoEntitys.add(permissionInfoEntity);
+			}
+		}
 		missionNodeRelService.saveBatch(missionNodeRelEntitys);
+		permissionInfoService.saveBatch(permissionInfoEntitys);
+	}
+	
+	/**
+	 * 传入节点组或者节点信息 验证是否有效
+	 */
+	@Override
+	public void checkNodeGroupOrNodeCorrect(List<Long> nodeGroupIds,List<Long> nodeIds) {
+		if(null != nodeIds && nodeIds.size()>0) {
+			//查询所有节点是否存在以及是否满足条件
+			MissionDto nodeDto = baseMapper.checkNodeCorrect(nodeGroupIds,nodeIds);
+			if(null != nodeDto.getTotal() && nodeDto.getTotal() != nodeIds.size()) {
+				throw new NZException(RCode.MISSION_NODEINFO_ERROR);
+			}else if(null != nodeDto.getNnc() && nodeDto.getNnc()>0 ) {
+				// 所选节点组下存在网元
+				throw new NZException(RCode.MISSION_NODE_NET_ERROR);
+			}
+			//如果节点全部满足条件 去除节点所在节点组的信息
+			MissionDto removeGroupDto = baseMapper.selectNodeGroupOrNodeForCheck(nodeGroupIds,nodeIds);
+			List<Long> queryNodeGroupIds = removeGroupDto.getNodeGroupIds();
+			if(null != queryNodeGroupIds && queryNodeGroupIds.size()>0) {
+				nodeGroupIds.removeAll(queryNodeGroupIds);
+			}
+		}
+		if(null != nodeGroupIds && nodeGroupIds.size()>0) {
+			MissionDto groupDto = baseMapper.checkNodeGroupCorrect(nodeGroupIds);
+			if(null != groupDto.getDgnic() || groupDto.getDgnic() != nodeGroupIds.size()) {
+				// 总数不对应 存在无效的节点组
+				throw new NZException(RCode.MISSION_NODEINFO_ERROR);
+			}else if(null != groupDto.getNgnnc() && groupDto.getNgnnc()>0) {
+				// 存在节点组下无节点
+				throw new NZException(RCode.MISSION_NODEINFO_ERROR);
+			}else if(null != groupDto.getNnc() && groupDto.getNnc()>0 ) {
+				// 所选节点组下存在网元
+				throw new NZException(RCode.MISSION_NODE_NET_ERROR);
+			}
+		}
 	}
 	
 	/**
@@ -201,6 +271,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		ValidateUtils.is(missionInfoEntity.getName()).notNull(RCode.MISSION_NAME_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getParam()).notNull(RCode.MISSION_PARAM_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getNodeGroupIds()).notNull(RCode.MISSION_GROUPNODE_ISNULL);
+		//验证保存节点 节点组是否有效
+		checkNodeGroupOrNodeCorrect(missionInfoEntity.getNodeGroupIds(),missionInfoEntity.getNodeIds());
 		switch(MissionType.getMissionNameByTypeId(Integer.valueOf(missionInfoEntity.getType()))) {
 		case FILE_PUSH:
 			List<ParamForFilePush> paramForFilePushs = JSON.parseArray(missionInfoEntity.getParam(), ParamForFilePush.class);
@@ -807,5 +879,44 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		updateMission.setId(missionInfoEntity.getId());
 		updateMission.setRemark(missionInfoEntity.getRemark());
 		this.updateById(updateMission);
+	}
+
+	/**
+	 * 检查选中的任务是否符合逆向任务的条件：是否升级部署+非逆向任务+是否任务完成+是否有备份（从大到小判断，先任务类型，再完成，再备份）
+	 */
+	@Override
+	public MissionInfoEntity getConverseMissionById(Long id) {
+		MissionInfoEntity mission = baseMapper.selectById(id);
+		Long missionId = mission.getId();
+		if(mission.getType().equals(MissionType.UGPRADE.getMissionTypeId())) {
+			//当前任务类型为升级部署
+			ParamForUpgrade paramForUpgrade = JSON.parseObject(mission.getParam(), ParamForUpgrade.class);
+			Long version = paramForUpgrade.getVersion();
+			if(null != version) {
+				MissionResultEntity missionResult = missionResultDao.selectById(missionId);
+				if(null != missionResult) {
+					List<Backup> backups = paramForUpgrade.getBackups();
+					if(null == backups || backups.size()<=0) {
+						throw new NZException(RCode.MISSION_UPGRADE_BACKUP_NULL);
+					}
+				}else {
+					throw new NZException(RCode.MISSION_UPGRADE_NOT_FINISH);
+				}
+			}else {
+				throw new NZException(RCode.MISSION_UPGRADE_NOT_REVERSED_ERROR);
+			}
+		}else {
+			throw new NZException(RCode.MISSION_UPGRADE_TYPE_ERROR);
+		}
+		
+		// 通过以上校验 任务可以新建逆向任务 查询任务信息 用于界面展示
+		// 校验节点组有效性  补全系统名称、节点组名称信息   补全用户组信息
+		List<NodeGroupInfoEntity> nodeGroupInfoEntitys = baseMapper.selectNodeGroupByMissionid(missionId);
+		List<NodeInfoEntity> nodeInfoEntitys = baseMapper.selectNodeByMissionid(missionId);
+		// 查询任务的具体属性
+		MissionInfoEntity missionInfoEntity = baseMapper.selectById(missionId);
+		missionInfoEntity.setNodeGroups(nodeGroupInfoEntitys);
+		missionInfoEntity.setNodes(nodeInfoEntitys);
+		return missionInfoEntity;
 	}
 }
