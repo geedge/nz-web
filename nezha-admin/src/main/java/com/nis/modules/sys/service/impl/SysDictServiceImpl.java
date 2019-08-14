@@ -15,12 +15,13 @@ import com.nis.common.utils.Query;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
-
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -37,9 +38,24 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
             new QueryWrapper<SysDictEntity>()
                 .like(StringUtils.isNotBlank(name),"name", name)
                 .eq(StringUtils.isNotBlank(type), "type", type)
+                .eq("del_flag", Constant.DELFLAG_FALSE)
         );
 
         return new PageUtils(page);
     }
+
+	@Override
+	public List<SysDictEntity> queryList(Map<String, Object> params) {
+		String name = (String)params.get("name");
+        String type = (String)params.get("type");
+        
+        QueryWrapper<SysDictEntity> wrapper = new QueryWrapper<>();
+        wrapper.eq(StringUtils.isNotBlank(name), "name", name)
+        		.eq(StringUtils.isNotBlank(type), "type", type)
+        		.eq("del_flag", Constant.DELFLAG_FALSE);
+        List<SysDictEntity> list = this.list(wrapper);
+        
+		return list;
+	}
 
 }

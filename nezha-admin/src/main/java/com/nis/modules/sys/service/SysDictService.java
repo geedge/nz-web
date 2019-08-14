@@ -13,6 +13,7 @@ import com.nis.modules.sys.entity.SysDictEntity;
 
 import com.nis.common.utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,5 +24,7 @@ import java.util.Map;
 public interface SysDictService extends IService<SysDictEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+    
+    List<SysDictEntity> queryList(Map<String, Object> params);
 }
 

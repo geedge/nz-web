@@ -8,8 +8,10 @@
 
 package com.nis.modules.sys.controller;
 
+import com.alibaba.druid.util.StringUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.validator.ValidatorUtils;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -19,7 +21,14 @@ import org.springframework.web.bind.annotation.*;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -27,6 +36,7 @@ import java.util.Map;
  *
 
  */
+@Api(tags="系统字典")
 @RestController
 @RequestMapping("sys/dict")
 public class SysDictController {
@@ -45,6 +55,26 @@ public class SysDictController {
         return re;
     }
 
+    /**
+     * 不分页
+     * @return
+     */
+    @RequestMapping("/all")
+    @ApiOperation(httpMethod = "GET", value = "业务系统列表查询")
+    @ApiImplicitParams({
+        @ApiImplicitParam(paramType="query", name = "name", value = "名称", required = false),
+        @ApiImplicitParam(paramType="query", name = "type", value = "类别", required = false)
+    })
+    public R all(@ApiParam(hidden=true) @RequestParam Map<String, Object> params) {
+    	String type = (String) params.get("type");
+    	String name = (String) params.get("name");
+    	if (StringUtils.isEmpty(type) && StringUtils.isEmpty(name)) {
+    		return R.error(RCode.NOT_NULL_ERROR);
+    	}
+    	List<SysDictEntity> queryList = sysDictService.queryList(params);
+    	
+    	return R.ok(queryList);
+    }
 
     /**
      * 信息
