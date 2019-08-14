@@ -16,7 +16,7 @@ import com.nis.modules.sys.entity.UserGroupEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.service.UserGroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 
@@ -77,7 +77,6 @@ public class SysLoginController extends AbstractController {
 		if(!captcha.equalsIgnoreCase(kaptcha)){
 			return R.error(RCode.SYS_LOGIN_CAPTCHA);
 		}
-		
 		try{
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, password);
