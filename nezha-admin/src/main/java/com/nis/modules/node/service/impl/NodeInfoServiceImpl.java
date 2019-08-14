@@ -446,6 +446,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public PageUtils queryPageBySystemId(Map<String, Object> params) {
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
         List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.queryNodeBySystemId(page, (Long) params.get("id"));
+        this.getTagName(queryNodeBySystemId);
         page.setRecords(queryNodeBySystemId);
         return new PageUtils(page);
     }
