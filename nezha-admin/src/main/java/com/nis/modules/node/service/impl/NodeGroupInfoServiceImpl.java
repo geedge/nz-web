@@ -9,11 +9,11 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeGroupInfoDao;
 import com.nis.modules.node.dao.NodeGroupRelDao;
-import com.nis.modules.node.entity.NodeCabinetEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.node.service.NodeGroupInfoService;
+import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -41,6 +41,9 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
     @Autowired
     private SystemInfoDao systemInfoDao;
+
+    @Autowired
+    private NodeInfoService nodeInfoService;
 
     /**
      * 涉及权限   global下列出所有业务系统和其下节点组，普通业务系统只列出自身的节点组；
@@ -97,9 +100,14 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
             }
             NodeGroupInfoEntity parentEntity = this.getById(nodegroupInfo.getPid());
+            // 添加顶级的时候没有上级
+            if (parentEntity == null) {
+                nodegroupInfo.setPids(nodegroupInfo.getPid() + ",");
+            } else {
+                nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
+            }
             nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
             nodegroupInfo.setOpTime(new Date());
-            nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
             this.save(nodegroupInfo);
         } else {
             throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);//节点组名称重复
@@ -184,16 +192,20 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
         List<NodeGroupRelEntity> list = new ArrayList<>();
 
+        Date now = new Date();
+        Long systemId = ShiroUtils.getCurrSystemId();
         for (Long uuid : uuids) {
             int count = nodeGroupRelService.count(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id).eq("uuid", uuid));
             if (count > 0) {
                 continue;  // 重复跳过
             }
-            list.add(new NodeGroupRelEntity(id, uuid, ShiroUtils.getCurrSystemId(), new Date()));
+            list.add(new NodeGroupRelEntity(id, uuid, systemId, now));
         }
 
         // 在此处添加
-        nodeGroupRelService.saveBatch(list);
+        if (list != null && list.size() > 0) {
+            nodeGroupRelService.saveBatch(list);
+        }
     }
 
     /**
@@ -212,7 +224,10 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     public PageUtils assList(Map<String, Object> params) {
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
         List<NodeInfoEntity> assNodeList = baseMapper.assList(page, params);
-        // 此处暂未做 国际化 字典处理
+
+        // 获取tagName
+        nodeInfoService.getTagName(assNodeList);
+
         page.setRecords(assNodeList);
         return new PageUtils(page);
     }

@@ -39,10 +39,6 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Autowired
     private NodeCabinetDao nodeCabinetDao;
 
-    // 机柜 service
-    @Autowired
-    private NodeCabinetService nodeCabinetService;
-
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<NodeCabinetEntity> page = new Query<NodeCabinetEntity>().getPage(params);
@@ -178,7 +174,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         Integer roomRow = null;
         Integer roomCol = null;
         if (id != null) { // 修改的情况  需要将位置加入现有位置中
-            NodeCabinetEntity cab = nodeCabinetService.getById(id);
+            NodeCabinetEntity cab = this.getById(id);
             roomId = cab.getRoomId();
             roomRow = cab.getRoomRow();
             roomCol = cab.getRoomCol();
@@ -203,7 +199,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
             for (int i = 1; i <= roomRows; i++) {
 
                 // 根据 机房ID 和 机房行号 得到有多少列在被占用
-                int count = nodeCabinetService.count(new QueryWrapper<NodeCabinetEntity>().eq("room_id", entity.getId()).eq(
+                int count = this.count(new QueryWrapper<NodeCabinetEntity>().eq("room_id", entity.getId()).eq(
                         "room_row", i));
 
                 if (id != null && roomId == entity.getId() && roomRow - i == 0) {  // 修改的机柜 在这个机房中 在这一行中

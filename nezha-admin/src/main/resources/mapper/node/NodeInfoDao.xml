@@ -75,6 +75,7 @@
         INSERT INTO node_info(
             id,
             name,
+            host_name,
             ip,
             ip_long,
             uuid,
@@ -91,11 +92,16 @@
             operator,
             op_time
         )VALUES(
-            seq_nextval('seq_node_info_id'),
+            <if test="_databaseId == 'oracle'">SEQ_NODE_INFO.NEXTVAL,</if>
+            <if test="_databaseId == 'mysql'">seq_nextval('seq_node_info'),</if>
+            <if test="_databaseId == 'postgresql'">nextval(''),</if>
             #{name},
+            #{hostName},
             #{ip},
             #{ipLong},
-            seq_nextval('seq_node_info_uuid'),
+            <if test="_databaseId == 'oracle'">SEQ_NODE_INFO.CURRVAL,</if>
+            <if test="_databaseId == 'mysql'">seq_currval('seq_node_info'),</if>
+            <if test="_databaseId == 'postgresql'">currval(''),</if>
             #{type},
             #{tag},
             #{userName},
@@ -258,7 +264,7 @@
     <select id="detail" resultMap="nodeinfoWithCabSys">
         SELECT <include refid="node_info_columns"/> FROM node_info ni
         LEFT JOIN node_cabinet nc ON ni.cabinet_id = nc.id
-        WHERE ni.uuid = #{uuid} AND ni.state != 3  AND nc.del_flag = 0
+        WHERE ni.uuid = #{uuid} AND ni.state != 3
     </select>
 
 

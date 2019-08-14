@@ -16,6 +16,8 @@ import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.node.util.IpCovert;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -48,6 +50,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Autowired
     private NodeRoomDao nodeRoomDao;
 
+    // 字典service
+    @Autowired
+    private SysDictService sysDictService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 
@@ -73,17 +79,48 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             for (int i = 0; i < childe.size(); i++) {
                 groupdIds[i] = childe.get(i).getId();
             }
-            page.setRecords(nodeInfoDao.selectListByGroups(page, params, groupdIds));
-
-            // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
+            List<NodeInfoEntity> nodeInfoEntities = nodeInfoDao.selectListByGroups(page, params, groupdIds);
+            // 1.3 获取 tagName 的值
+            getTagName(nodeInfoEntities);
+            page.setRecords(nodeInfoEntities);
             return new PageUtils(page);
         }
 
         // 2. 节点自身的过滤 包含机房
-        page.setRecords(nodeInfoDao.selectListByRoomId(page, params));
-
-        // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
+        List<NodeInfoEntity> nodeInfoEntities = nodeInfoDao.selectListByRoomId(page, params);
+        // 获取 tagName 的值
+        getTagName(nodeInfoEntities);
+        page.setRecords(nodeInfoEntities);
         return new PageUtils(page);
+    }
+
+    public void getTagName(List<NodeInfoEntity> nodeInfoEntities) {
+        Map<String, Object> map = new HashMap();
+        map.put("type", "serverTag"); // 节点类型为 server
+        List<SysDictEntity> serverTags = sysDictService.queryList(map);
+
+        map.put("type", "netTag"); // 节点类型为 Net
+        List<SysDictEntity> netTags = sysDictService.queryList(map);
+
+        for (NodeInfoEntity nodeInfo : nodeInfoEntities) {
+            if ("1".equals(nodeInfo.getType())) {
+                for (SysDictEntity entity : serverTags) {
+                    if (nodeInfo.getTag().equals(entity.getCode())) {
+                        nodeInfo.setTagName(entity.getValue());
+                        break;
+                    }
+                }
+            } else if ("2".equals(nodeInfo.getType())) {
+                for (SysDictEntity entity : netTags) {
+                    if (nodeInfo.getTag().equals(entity.getCode())) {
+                        nodeInfo.setTagName(entity.getValue());
+                        break;
+                    }
+                }
+            } else {
+                throw new NZException(RCode.NODE_TYPE_NOTFOUND);
+            }
+        }
     }
 
     // 节点详情查询
@@ -91,9 +128,26 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public NodeInfoEntity detail(Long uuid) {
         NodeInfoEntity nodeInfoEntity = nodeInfoDao.detail(uuid);
 
-        // 此处缺少功能  tag tagName tag 从字典表中获取 tagName 为国际化翻译之后的值     szd
+        String tag = nodeInfoEntity.getTag();
+        Map<String, Object> map = new HashMap();
 
-        if(nodeInfoEntity != null){
+        if ("1".equals(nodeInfoEntity.getType())) {
+            map.put("type", "serverTag"); // 节点类型为 server
+        } else if ("2".equals(nodeInfoEntity.getType())) {
+            map.put("type", "netTag");    // 节点类型为 Net
+        } else {
+            throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到
+        }
+
+        List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
+        for (SysDictEntity entity : sysDictEntities) {
+            if (tag.equals(entity.getCode())) {
+                nodeInfoEntity.setTagName(entity.getValue());
+                break;
+            }
+        }
+
+        if (nodeInfoEntity != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
             nodeInfoEntity.setPassword(new String(Base64.getDecoder().decode(nodeInfoEntity.getPassword())));
         }
         return nodeInfoEntity;
@@ -132,7 +186,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid", uuids));
 
             // 2. 逻辑删除 和 业务系统 之间的关系
-            systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().in("uuid",uuids));
+            systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().in("uuid", uuids));
         }
     }
 
