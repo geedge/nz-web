@@ -34,6 +34,18 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
         return new PageUtils(page);
     }
 
+    public String queryValue(String code, String lang) {
+    	QueryWrapper<SysI18nEntity> wrapper = new QueryWrapper<SysI18nEntity>();
+    	wrapper.eq("code", code);
+    	wrapper.eq("lang", lang);
+    	List<SysI18nEntity> selectList = baseMapper.selectList(wrapper);
+    	try {
+			return selectList.get(0).getValue();
+		} catch (Exception e) {
+			return code;
+		}
+    }
+    
 	@Override
 	public boolean check(SysI18nEntity sysI18n) {
 		boolean dumpFlag = true; //记录是否重复(code+lang)，true为重复
