@@ -204,7 +204,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                     // 查询该机柜的可选起始位置
                     List<Integer> starts = this.checkPosition(nodeInfoEntity);
 
-                    if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
+                    if (starts != null && starts.size() > 0 && !starts.contains(nodeInfoEntity.getCabinetStart())) {
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                     }
                 }
@@ -247,7 +247,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 //3 IP地址转换 IP整数
                 nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
                 //4. 密码加密 base64
-                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
+                    nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+                }
                 nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
                 nodeInfoEntity.setOpTime(new Date());
 
@@ -383,7 +385,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                                 availPostion.add(str); // 输入的U位大小符合这个范围段
                             }
                         }
-                        continue;
                     }
 
                     // 6.1 此处对可用的范围段做出相应的处理  availPostion中记录的是范围段   多个返回段  6-10   13-17 .... 这种
