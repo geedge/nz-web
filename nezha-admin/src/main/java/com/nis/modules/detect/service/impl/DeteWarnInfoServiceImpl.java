@@ -2,15 +2,20 @@ package com.nis.modules.detect.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
 import com.nis.modules.detect.dao.DeteWarnInfoDao;
+import com.nis.modules.detect.dao.DeteWarnRelDao;
 import com.nis.modules.detect.entity.*;
 import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.UserGroupEntity;
+import com.nis.modules.sys.entity.UserUsergroupEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
+import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,8 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
     @Autowired
     private DeteWarnRelService deteWarnRelService;
     @Autowired
+    private DeteWarnRelDao deteWarnRelDao;
+    @Autowired
     private PermissionInfoService permissionInfoService;
     @Autowired
     private DeteTypeInfoService deteTypeInfoService;
@@ -34,6 +41,9 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
     private DeteSetInfoService deteSetInfoService;
     @Autowired
     private DeteTypeMetaService deteTypeMetaService;
+
+    @Autowired
+    private UserUsergroupService userUsergroupService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -151,32 +161,61 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        Integer curpage = 1;
-        Integer pageSize = 10;
         Long typeId = null;
         Long setId = null;
         try {
-            curpage = Integer.parseInt((String) params.get("page"));
-            pageSize = Integer.parseInt((String) params.get("limit"));
             typeId = Long.parseLong((String) params.get("typeId"));
             setId = Long.parseLong((String) params.get("setId"));
         } catch (Exception e) {
             //do nothing
         }
         String name = (String) params.get("name");
-        String sidx = (String) params.get("sidx");
-        String order = (String) params.get("order");
-        int start = (curpage - 1) * pageSize;
-        Long userId = ShiroUtils.getUserId();
-        Long currSystemId = ShiroUtils.getCurrSystemId();
+        IPage<DeteWarnInfoEntity> page = new Query<DeteWarnInfoEntity>().getPage(params);
+        Integer isGlobal=0;
+        if(ShiroUtils.isGlobal()){
+            isGlobal=1;
+            page=this.getBaseMapper().queryList(page,typeId,setId,name,isGlobal,null,null);
+        }else{
+            Long userId = ShiroUtils.getUserId();
+            Long currSystemId = ShiroUtils.getCurrSystemId();
 
-        List<DeteWarnInfoEntity> list = this.baseMapper.queryList(typeId, setId, name, userId, currSystemId, sidx, order, start, pageSize);
+            //view_level=2 系统内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = new QueryWrapper<>();
+            permissionInfoVL2QueryWrapper.eq("type",Constant.PM_TYPE_DETEWARN);
+            permissionInfoVL2QueryWrapper.eq("view_level",'2');
+            permissionInfoVL2QueryWrapper.eq("rel_id",currSystemId);
+            List<PermissionInfoEntity> permissionInfoVL2 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
+            PermissionInfoEntity sysPermissionInfo=permissionInfoVL2!=null&&permissionInfoVL2.size()>0?permissionInfoVL2.get(0):null;
+            //view_level=3 用户组内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL3QueryWrapper = new QueryWrapper<>();
+            permissionInfoVL3QueryWrapper.eq("type",Constant.PM_TYPE_DETEWARN);
+            permissionInfoVL3QueryWrapper.eq("view_level",'1');
+
+            //查询当前用户所在用户组
+            QueryWrapper<UserUsergroupEntity> userUsergroupQueryWrapper = new QueryWrapper<>();
+            userUsergroupQueryWrapper.eq("user_id",userId);
+            List<UserUsergroupEntity> userUserGroupList = userUsergroupService.list(userUsergroupQueryWrapper);
+            Long[] groupIds=new Long[userUserGroupList.size()];
+            for(int i=0;i<userUserGroupList.size();i++){
+                groupIds[i]=userUserGroupList.get(i).getGroupId();
+            }
+
+            permissionInfoVL3QueryWrapper.in("rel_id",groupIds);
+            List<PermissionInfoEntity> permissionInfoVL3 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
+
+            page=this.getBaseMapper().queryList(page,typeId,setId,name,isGlobal,sysPermissionInfo,permissionInfoVL3);
+
+        }
+
+
+        List<DeteWarnInfoEntity> list = page.getRecords();
         for (DeteWarnInfoEntity warnInfo : list) {
-            if (Constant.WARN_REL_TYPE.equals(warnInfo.getRelType())) {
-                DeteTypeInfoEntity deteTypeInfoEntity = deteTypeInfoService.getById(Long.parseLong(warnInfo.getRelIds()));
+            DeteWarnRelEntity deteWarnRelEntity = deteWarnRelDao.queryWarnRel(warnInfo.getId());
+            if (Constant.WARN_REL_TYPE.equals(deteWarnRelEntity.getRelType())) {
+                DeteTypeInfoEntity deteTypeInfoEntity = deteTypeInfoService.getById(deteWarnRelEntity.getRelIds());
                 warnInfo.setDeteType(deteTypeInfoEntity);
             } else {
-                String[] split = warnInfo.getRelIds().split(",");
+                String[] split = deteWarnRelEntity.getRelIds().split(",");
                 Long[] ids = new Long[split.length];
                 for (int i = 0; i < split.length; i++) {
                     ids[i] = Long.parseLong(split[i]);
@@ -190,8 +229,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
             }
         }
 
-        int count = this.baseMapper.queryCount(typeId, setId, name, userId, currSystemId);
-        return new PageUtils(list, count, pageSize, curpage);
+        return new PageUtils(page);
     }
 
     @Override
@@ -219,10 +257,25 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
                 warnInfo.setDeteType(deteTypeInfoEntity);
             }
         }
-
         DeteTypeMetaEntity meta = deteTypeMetaService.getById(warnInfo.getMetaId());
         warnInfo.setMeta(meta);
 
         return warnInfo;
+    }
+
+    @Override
+    public void deleteByTypeId(Long typeId) {
+
+        List<DeteWarnRelEntity> warnRels=deteWarnRelService.queryByTypeId(typeId);
+        if(warnRels!=null&& warnRels.size()>0){
+            Long[] warnIds=new Long[warnRels.size()];
+            for(int i=0;i<warnRels.size();i++){
+                DeteWarnRelEntity warnRel=warnRels.get(i);
+                warnIds[i]=warnRel.getWarnId();
+            }
+
+            deleteEntity(warnIds);
+        }
+
     }
 }

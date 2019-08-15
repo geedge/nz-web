@@ -251,4 +251,22 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         }
         return flag;
     }
+
+    /**
+    * @Description 校验节点组是否属于当前业务系统
+    * @Author  rui
+    * @Date   2019/8/13
+    * @Param
+    * @Return
+    * @Exception
+    */
+    public boolean isCurrentSystem(Long [] ids){
+        Long currSystemId = ShiroUtils.getCurrSystemId();
+        QueryWrapper<NodeGroupInfoEntity> nodeGroupInfoQueryWrapper=new QueryWrapper<NodeGroupInfoEntity>();
+        nodeGroupInfoQueryWrapper.in("id",ids);
+        nodeGroupInfoQueryWrapper.ne("system_id",currSystemId);
+        List<NodeGroupInfoEntity> list = this.list(nodeGroupInfoQueryWrapper);
+
+        return list==null||list.size()<1;
+    }
 }

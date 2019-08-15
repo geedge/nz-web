@@ -36,4 +36,7 @@ public class DeteWarnRelEntity {
      * 操作时间
      */
     private Date opTime;
+
+    @TableField(exist = false)
+    private String relIds;
 }

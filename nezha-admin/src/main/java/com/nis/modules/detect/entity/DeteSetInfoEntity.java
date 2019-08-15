@@ -89,9 +89,17 @@ public class DeteSetInfoEntity implements Serializable {
 
 	@TableField(exist=false)
 	private DeteTypeInfoEntity type;
+
 	@TableField(exist=false)
 	private List<NodeGroupInfoEntity> nodeGroups;
+
 	@TableField(exist=false)
 	private List<NodeInfoEntity> nodes;
+
+	@TableField(exist=false)
+	private Long[] viewerId;
+
+	@TableField(exist=false)
+	private List viewer;
 
 }

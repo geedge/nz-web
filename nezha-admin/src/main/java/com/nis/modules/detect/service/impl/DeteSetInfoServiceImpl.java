@@ -2,21 +2,26 @@ package com.nis.modules.detect.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.detect.entity.DeteTypeInfoEntity;
-import com.nis.modules.detect.service.DeteTypeInfoService;
+import com.nis.common.utils.Query;
 import com.nis.modules.detect.dao.DeteSetInfoDao;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
+import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.detect.service.DeteSetNodeRelService;
+import com.nis.modules.detect.service.DeteTypeInfoService;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.entity.UserGroupEntity;
+import com.nis.modules.sys.entity.UserUsergroupEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
+import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,31 +42,57 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
     private PermissionInfoService permissionInfoService;
     @Autowired
     private DeteTypeInfoService deteTypeInfoService;
+    @Autowired
+    private UserUsergroupService userUsergroupService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        Integer curpage=1;
-        Integer pageSize=10;
-        try{
-            curpage=Integer.parseInt((String)params.get("page"));
-            pageSize=Integer.parseInt((String)params.get("limit"));
-        }catch (Exception e){
-            //do nothing
-        }
+        IPage<DeteSetInfoEntity> page = new Query<DeteSetInfoEntity>().getPage(params);
         String name=(String)params.get("name");
         String typeIdStr=(String)params.get("typeId");
-        String sidx=(String)params.get("sidx");
-        String order=(String)params.get("order");
         Long typeId=null;
         if(StringUtils.isNotBlank(typeIdStr)){
             typeId=Long.parseLong(typeIdStr);
         }
+        Integer isGlobal=0; //是否是global业务系统 0：不是 1 是
+        if(ShiroUtils.isGlobal()){
+            isGlobal=1;
+            page=this.getBaseMapper().queryList(page,name,typeId,isGlobal,null,null);
+        }else{
+            Long userId = ShiroUtils.getUserId();
+            Long currSystemId = ShiroUtils.getCurrSystemId();
 
-        int start=(curpage-1)*pageSize;
-        Long userId = ShiroUtils.getUserId();
-        Long currSystemId = ShiroUtils.getCurrSystemId();
-        List<DeteSetInfoEntity> list=this.getBaseMapper().queryList(name,typeId,start,pageSize,userId,currSystemId,sidx,order);
-        int count =this.getBaseMapper().queryCount(name,typeId,start,pageSize,userId,currSystemId,sidx,order);
-        return new PageUtils(list,count,pageSize,curpage);
+            //view_level=2 系统内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = new QueryWrapper<>();
+            permissionInfoVL2QueryWrapper.eq("type",Constant.PM_TYPE_DETESET);
+            permissionInfoVL2QueryWrapper.eq("view_level",'2');
+            permissionInfoVL2QueryWrapper.eq("rel_id",currSystemId);
+            List<PermissionInfoEntity> permissionInfoVL2 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
+            PermissionInfoEntity sysPermissionInfo=permissionInfoVL2!=null&&permissionInfoVL2.size()>0?permissionInfoVL2.get(0):null;
+            //view_level=3 用户组内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL3QueryWrapper = new QueryWrapper<>();
+            permissionInfoVL3QueryWrapper.eq("type",Constant.PM_TYPE_DETESET);
+            permissionInfoVL3QueryWrapper.eq("view_level",'1');
+
+            //查询当前用户所在用户组
+            QueryWrapper<UserUsergroupEntity> userUsergroupQueryWrapper = new QueryWrapper<>();
+            userUsergroupQueryWrapper.eq("user_id",userId);
+            List<UserUsergroupEntity> userUserGroupList = userUsergroupService.list(userUsergroupQueryWrapper);
+            Long[] groupIds=new Long[userUserGroupList.size()];
+            for(int i=0;i<userUserGroupList.size();i++){
+                groupIds[i]=userUserGroupList.get(i).getGroupId();
+            }
+
+            permissionInfoVL3QueryWrapper.in("rel_id",groupIds);
+            List<PermissionInfoEntity> permissionInfoVL3 = permissionInfoService.list(permissionInfoVL3QueryWrapper);
+
+            page=this.getBaseMapper().queryList(page,name,typeId,isGlobal,sysPermissionInfo,permissionInfoVL3);
+        }
+
+        List<DeteSetInfoEntity> list = page.getRecords();
+        for(DeteSetInfoEntity setInfo:list){
+            setViewer(setInfo);
+        }
+        return new PageUtils(page);
     }
 
 	@Override
@@ -100,13 +131,13 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
         //维护权限表 无限制则不维护权限表
         switch (deteSetInfo.getViewLevel()){//1:用户组，2：系统内全部人员，3：无限制，默认2
             case Constant.VIEWLEVEL_UG:
-                List<UserGroupEntity> usergroups = ShiroUtils.getUserEntity().getUsergroups();
-                for(UserGroupEntity userGroup:usergroups){
+                Long[] usergroupIds = deteSetInfo.getViewerId();
+                for(Long userGroupId:usergroupIds){
                     PermissionInfoEntity permissionInfoEntity=new PermissionInfoEntity();
                     permissionInfoEntity.setType(Constant.PM_TYPE_DETESET);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
                     permissionInfoEntity.setTypeId(setId);
                     permissionInfoEntity.setViewLevel(deteSetInfo.getViewLevel());
-                    permissionInfoEntity.setRelId(userGroup.getId());
+                    permissionInfoEntity.setRelId(userGroupId);
                     permissionInfoEntity.setOperator(userId);
                     permissionInfoEntity.setOpTime(date);
 
@@ -207,20 +238,43 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
 
     @Override
     public DeteSetInfoEntity queryDetail(Long id) {
-        DeteSetInfoEntity deteSetInfoEntity = this.getBaseMapper().selectById(id);
+        QueryWrapper<DeteSetInfoEntity> setInfoQueryWrapper = new QueryWrapper<>();
+        setInfoQueryWrapper.eq("id",id);
+        setInfoQueryWrapper.ne("state",Constant.DELFLAG_TRUE);
+        DeteSetInfoEntity deteSetInfoEntity = this.getBaseMapper().selectOne(setInfoQueryWrapper);
+        if(deteSetInfoEntity!=null){
+            DeteTypeInfoEntity deteTypeInfoEntity = deteTypeInfoService.queryDetail(deteSetInfoEntity.getTypeId());
 
-        DeteTypeInfoEntity deteTypeInfoEntity = deteTypeInfoService.queryDetail(deteSetInfoEntity.getTypeId());
+            deteSetInfoEntity.setType(deteTypeInfoEntity);
 
-        deteSetInfoEntity.setType(deteTypeInfoEntity);
+            List<NodeGroupInfoEntity> nodeGroups=this.baseMapper.queryNodeGroups(id);
 
-        List<NodeGroupInfoEntity> nodeGroups=this.baseMapper.queryNodeGroups(id);
+            List<NodeInfoEntity> nodes=this.baseMapper.queryNodes(id);
 
-        List<NodeInfoEntity> nodes=this.baseMapper.queryNodes(id);
+            deteSetInfoEntity.setNodeGroups(nodeGroups);
+            deteSetInfoEntity.setNodes(nodes);
 
-        deteSetInfoEntity.setNodeGroups(nodeGroups);
-        deteSetInfoEntity.setNodes(nodes);
+            setViewer(deteSetInfoEntity);
+        }
+
 
         return deteSetInfoEntity;
+    }
+
+    @Override
+    public boolean checkTypeExists(Long typeId) {
+        DeteTypeInfoEntity typeInfo = deteTypeInfoService.getById(typeId);
+        return typeInfo!=null;
+    }
+
+    private void setViewer(DeteSetInfoEntity deteSetInfoEntity) {
+        if(Constant.VIEWLEVEL_UG.equals(deteSetInfoEntity.getViewLevel())){
+            List<UserGroupEntity> userGroups=this.getBaseMapper().queryUserGroup(deteSetInfoEntity.getId());
+            deteSetInfoEntity.setViewer(userGroups);
+        }else if(Constant.VIEWLEVEL_SYS.equals(deteSetInfoEntity.getViewLevel())){
+            List<SystemInfoEntity> system=this.getBaseMapper().querySystem(deteSetInfoEntity.getId());
+            deteSetInfoEntity.setViewer(system);
+        }
     }
 
     private  List<DeteSetNodeRelEntity> buildRels(DeteSetInfoEntity deteSetInfo, Long userId, Date date) {

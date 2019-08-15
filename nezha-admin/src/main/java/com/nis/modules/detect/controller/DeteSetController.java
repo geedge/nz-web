@@ -7,6 +7,8 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.service.DeteSetInfoService;
+import com.nis.modules.node.service.NodeGroupInfoService;
+import com.nis.modules.node.service.SystemNodeRelService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,10 @@ import java.util.Map;
 public class DeteSetController {
     @Autowired
     private DeteSetInfoService deteSetInfoService;
+    @Autowired
+    private NodeGroupInfoService nodeGroupInfoService;
+    @Autowired
+    private SystemNodeRelService systemNodeRelService;
 
     /**
      * 列表
@@ -68,7 +74,15 @@ public class DeteSetController {
         if(deteSetInfoService.checkNameExists(deteSetInfo.getName(),null)){
             throw new NZException(RCode.SET_NAME_EXISTS);
         }
-
+        if(deteSetInfo.getNodeGroupIds()!=null && !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
+            throw new NZException(RCode.SET_NODEGROUP_ISNOT_CURRENTSYSTEM);
+        }
+        if(deteSetInfo.getNodeIds()!=null&& !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
+            throw new NZException(RCode.SET_NODE_ISNOT_CURRENTSYSTEM);
+        }
+        if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){
+            throw new NZException(RCode.SET_TYPE_NOTEXISTS);
+        }
         deteSetInfoService.saveEntity(deteSetInfo);
 
         return R.ok();
@@ -86,7 +100,15 @@ public class DeteSetController {
         if(deteSetInfoService.checkNameExists(deteSetInfo.getName(),deteSetInfo.getId())){
             throw new NZException(RCode.SET_NAME_EXISTS);
         }
-
+        if(deteSetInfo.getNodeGroupIds()!=null && !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
+            throw new NZException(RCode.SET_NODEGROUP_ISNOT_CURRENTSYSTEM);
+        }
+        if(deteSetInfo.getNodeIds()!=null&& !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
+            throw new NZException(RCode.SET_NODE_ISNOT_CURRENTSYSTEM);
+        }
+        if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){
+            throw new NZException(RCode.SET_TYPE_NOTEXISTS);
+        }
         deteSetInfoService.updateEntity(deteSetInfo);
         return R.ok();
     }
@@ -108,7 +130,7 @@ public class DeteSetController {
     @ApiOperation(value="监测类别名称校验")
     public R nameCheck(@RequestParam String name,Long id){
         if(deteSetInfoService.checkNameExists(name,id)){
-            return R.ok(RCode.SET_NAME_EXISTS);
+            return R.error(RCode.SET_NAME_EXISTS);
         }else{
             return R.ok("true");
         }

@@ -32,5 +32,7 @@ public interface DeteSetInfoService extends IService<DeteSetInfoEntity> {
     void deleteByTypeId(Long typeId);
 
     DeteSetInfoEntity queryDetail(Long id);
+
+    boolean checkTypeExists(Long typeId);
 }
 

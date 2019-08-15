@@ -18,4 +18,6 @@ public interface DeteWarnInfoService extends IService<DeteWarnInfoEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     DeteWarnInfoEntity queryDetail(Long id);
+
+    void deleteByTypeId(Long typeId);
 }

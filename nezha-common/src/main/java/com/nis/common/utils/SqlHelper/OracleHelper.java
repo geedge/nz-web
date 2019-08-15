@@ -146,14 +146,15 @@ public class OracleHelper extends SQLUtils {
     public String modifyFields(String tableName, Map<String, String> fields) {
         StringBuilder sb=new StringBuilder();
         Set<Map.Entry<String, String>> entries = fields.entrySet();
+        sb.append("begin ");
         for(Map.Entry<String, String> entry:entries){
-            sb.append("ALTER TABLE "+QUOTE+tableName+QUOTE);
+            sb.append("Execute immediate 'ALTER TABLE "+QUOTE+tableName+QUOTE);
             String fieldName=entry.getKey();
             String restrict=entry.getValue();
 
-            sb.append("modify("+QUOTE+fieldName+QUOTE+" "+restrict+");");
+            sb.append(" modify("+QUOTE+fieldName+QUOTE+" "+restrict+")';");
         }
-
+        sb.append("end;");
         log.debug("modify fields SQL--> "+sb.toString());
         return sb.toString();
     }

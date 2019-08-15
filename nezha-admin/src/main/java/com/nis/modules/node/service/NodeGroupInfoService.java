@@ -33,5 +33,7 @@ public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
     void saveNodeRel(Long id, Long[] uuids);
 
     PageUtils assList(Map<String, Object> params);
+
+    boolean isCurrentSystem(Long [] ids);
 }
 

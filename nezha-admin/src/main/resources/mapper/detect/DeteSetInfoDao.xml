@@ -35,62 +35,36 @@
         <association property="type" select="com.nis.modules.detect.dao.DeteTypeInfoDao.selectById" column="type_id"></association>
     </resultMap>
 
-	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="deteSetInfoMap">
-		SELECT dsi.*, pmi.id as "pm_id", pmi.type as "pm_type", pmi.type_id as "pm_type_id", 
-			   pmi.view_level as "pm_view_level", pmi.rel_id as "pm_rel_id"
-		FROM dete_set_info dsi
-		LEFT JOIN permission_info pmi ON pmi.type_id=dsi.id
-		WHERE pmi.type=#{type} AND dsi.view_level=#{viewLevel} AND pmi.del_flag=0 
-			  AND dsi.state!=1 AND pmi.rel_id IN 
-			  <foreach collection="relIds" item="relId" index="no" open="(" separator="," close=")">
-	              #{relId}
-	          </foreach>
-	</select>
-
     <select id="queryList" parameterType="java.util.Map" resultMap="deteSetTypeInfo">
-        select dsi.* from  dete_set_info dsi where dsi.state !='1'
-        <if test="name != null">
-            and dsi.name like
-            <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
-            <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
-            <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
-        </if>
-        <if test="typeId != null">
-            and dsi.type_id= #{typeId}
-        </if>
-        and ( (dsi.view_level='1' and dsi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
-        or (dsi.view_level='2' and dsi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
-        or (dsi.view_level='3') )
-        <if test="sidx != null">
-            order by #{sidx}
-
-            <if test="order != null">
-                #{order}
+            select dsi.* from dete_set_info dsi where
+            1=1
+            <if test="isGlobal == 0">
+            and (dsi.view_level='3'
+            or (dsi.view_level='2' and dsi.id=#{sysPermissionInfo.typeId})
+            or(dsi.view_level='1' and dsi.id in (
+                <if test="permissionInfoVL3 !=null and permissionInfoVL3.size>0 ">
+                    <foreach collection="permissionInfoVL3" item="pmi" open="" close="" separator=",">
+                        #{pmi.typeId}
+                    </foreach>
+                </if>
+                <if test="permissionInfoVL3 ==null or permissionInfoVL3.size == 0 " >
+                    -1
+                </if>
+            )))
             </if>
-        </if>
+            <if test="name != null and name != ''">
+                and dsi.name like
+                <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
+                <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
+                <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
+            </if>
 
-        limit #{start},#{pageSize}
-
-
+            <if test="typeId != null">
+                and dsi.type_id=#{typeId}
+            </if>
+            and dsi.state!='1'
     </select>
 
-    <select id="queryCount" parameterType="java.util.Map" resultType="Integer">
-        select count(1) from (
-        select dsi.* from  dete_set_info dsi where dsi.state !='1'
-        <if test="name != null">
-            and dsi.name like
-            <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
-            <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
-            <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
-        </if>
-        <if test="typeId != null">
-            and dsi.type_id= #{typeId}
-        </if>
-        and ( (dsi.view_level='1' and dsi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
-        or (dsi.view_level='2' and dsi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
-        or (dsi.view_level='3') )
-        ) t
-    </select>
 
     <select id="queryNodeGroups" resultType="nodeGroupInfoEntity">
         select ngi.*  from nodegroup_info ngi  join dete_set_node_rel snr
@@ -98,11 +72,20 @@
     </select>
 
     <select id="queryNodes" resultType="nodeInfoEntity">
-        select ni.* from node_info ni join dete_set_node_rel snr on ni.id=snr.rel_id and snr.type=1 and snr.set_id=#{setId} and ni.state!='3' and snr.del_flag='0';
+        select ni.* from node_info ni join dete_set_node_rel snr on ni.id=snr.rel_id and snr.type=1 and snr.set_id=#{setId} and ni.state!='3' and snr.del_flag='0'
     </select>
 
     <select id="queryById" resultMap="deteSetTypeInfo">
         select *  from dete_set_info where id=#{id} and state !='1'
     </select>
+
+    <select id="queryUserGroup" resultType="userGroupEntity">
+        select * from user_group where id in (select rel_id from permission_info where type='2' and view_level=1 and type_id=#{setId} and del_flag='0') and del_flag='0'
+    </select>
+
+    <select id="querySystem" resultType="systemInfoEntity">
+        select * from system_info where id in (select rel_id from permission_info where type='2' and view_level=2 and type_id=#{setId} and del_flag='0') and del_flag='0'
+    </select>
+
 
 </mapper>

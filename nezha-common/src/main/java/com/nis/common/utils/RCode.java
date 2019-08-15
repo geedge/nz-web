@@ -99,10 +99,14 @@ public enum RCode {
 	DICT_TYPE_ISNULL(301012,"dict_type_isnull"),//监测类别字典类别名称为空
 	DICT_MAPPINGS_ISNULL(301013,"dict_mappings_isnull"),//监测类别字典数据为空
 	DICT_TYPE_USED(301014,"DICT_TYPE_USED"),//监测类别字典已经被使用，不允许删除
+	METAMAPPING_TYPE_EXISTS(301015,"metamapping_type_exists"),//监测类别元数据字典表类型存在
 
 	SET_NAME_ISNULL(302001,"set_name_isnull"),//监测设置名称为空
 	SET_NAME_EXISTS(302002,"set_name_exists"),//监测设置名称已经存在
 	SET_TYPE_ISNULL(302003,"set_type_isnull"),//监测设置所属类别为空
+	SET_NODEGROUP_ISNOT_CURRENTSYSTEM(302004,"set_nodegroup_is_not_current_system"),
+	SET_NODE_ISNOT_CURRENTSYSTEM(302005,"set_node_isnot_currentsystem"),
+	SET_TYPE_NOTEXISTS(302006,"SET_TYPE_NOTEXISTS"),//监测设置所选监测类别不存在
 
 	WARN_NAME_ISNULL(303001,"warn_name_isnull"),//告警设置名称为空
 	WARN_TYPE_ISNULL(303002,"warn_type_isnull"),//告警设置配置类别为空

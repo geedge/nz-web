@@ -67,13 +67,17 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
     public void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
-
+        String oldTypeName=null;
         List<DeteTypeMetaMappingEntity> mappings = deteTypeMetaMapppingVO.getMappings();
-
         for(DeteTypeMetaMappingEntity mapping:mappings){
-            mapping.setType(deteTypeMetaMapppingVO.getType());
-            mapping.setOperator(userId);
-            mapping.setOpTime(date);
+            if(mapping.getId()!=null){
+                DeteTypeMetaMappingEntity oldMapping = this.getById(mapping.getId());
+                oldTypeName=oldMapping.getType();
+            }
+            break;
+        }
+        for(DeteTypeMetaMappingEntity mapping:mappings){
+            mapping.setType(oldTypeName); //type不允许修改
 
             if(mapping.getId()==null){
                 this.save(mapping);
@@ -107,6 +111,14 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
 
     private boolean checkTypeUsed(String ... type) {
         List<DeteTypeMetaEntity> list = deteTypeMetaService.list(new QueryWrapper<DeteTypeMetaEntity>().in("dic_type", type));
+        return list!=null&&list.size()>0;
+    }
+
+    @Override
+    public boolean checkMetaMappingTypeExists(String type) {
+        QueryWrapper<DeteTypeMetaMappingEntity> deteTypeMetaMappingQueryWrapper = new QueryWrapper<>();
+        deteTypeMetaMappingQueryWrapper.eq("type",type);
+        List<DeteTypeMetaMappingEntity> list = this.list(deteTypeMetaMappingQueryWrapper);
         return list!=null&&list.size()>0;
     }
 }

@@ -8,5 +8,5 @@ import com.nis.modules.node.entity.SystemNodeRelEntity;
  * @author shizhendong
  */
 public interface SystemNodeRelService extends IService<SystemNodeRelEntity> {
-
+    boolean isCurrentSystem(Long [] nodeIds);
 }

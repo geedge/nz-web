@@ -11,11 +11,7 @@ import com.nis.modules.detect.dao.DeteTypeInfoDao;
 import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaEntity;
 import com.nis.modules.detect.entity.DeteTypeParamEntity;
-import com.nis.modules.detect.service.DeteTypeInfoService;
-import com.nis.modules.detect.service.DeteTypeMetaMappingService;
-import com.nis.modules.detect.service.DeteTypeMetaService;
-import com.nis.modules.detect.service.DeteTypeParamService;
-import com.nis.modules.detect.service.DeteSetInfoService;
+import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +32,8 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
     private DeteTypeMetaMappingService deteTypeMetaMappingService;
     @Autowired
     private DeteSetInfoService deteSetInfoService;
+    @Autowired
+    private DeteWarnInfoService deteWarnInfoService;
 
     private SQLUtils sqlUtils;
     @Override
@@ -279,7 +277,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         //drop对应的表
         for (Long id :ids){
             DeteTypeInfoEntity oldType = this.getById(id);
-            if(oldType!=null&& StringUtils.isNotBlank(oldType.getTableName())){
+            if(oldType!=null&& StringUtils.isNotBlank(oldType.getTableName())&&checkTablesExists(oldType.getTableName())){
                 this.dropTable(oldType.getTableName());
             }
 
@@ -305,6 +303,10 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         //删除detectSetInfo 相关
         for(Long id:ids){
             deteSetInfoService.deleteByTypeId(id);
+        }
+        //删除deteWarnInfo相关
+        for(Long id:ids){
+            deteWarnInfoService.deleteByTypeId(id);
         }
 
     }

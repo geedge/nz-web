@@ -33,7 +33,7 @@ public class DeteWarnInfoEntity {
     /**
      *告警模式，1、单台，2、汇总
      * */
-    private String mode;
+    private String warnMode;
     /**
      * 统计方式
      *1:avg2:count3:sum4:min5:max，默认：1
@@ -56,7 +56,7 @@ public class DeteWarnInfoEntity {
     /**
      *告警级别，1:normal，2:info，3:warning，4:error，默认：3
      * */
-    private String level;
+    private String warnLevel;
     /**
      *回调方式，0:无，1：shell，2：http，默认：0
      * */
@@ -99,11 +99,6 @@ public class DeteWarnInfoEntity {
     @TableField(exist = false)
     private Long[] deteSetIds;
 
-    @TableField(exist = false)
-    private String relType;
-
-    @TableField(exist = false)
-    private String relIds;
 
 
 }

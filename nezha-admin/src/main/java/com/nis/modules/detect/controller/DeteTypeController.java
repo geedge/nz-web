@@ -1,5 +1,6 @@
 package com.nis.modules.detect.controller;
 
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
@@ -116,7 +117,9 @@ public class DeteTypeController {
     public R saveDic(@RequestBody DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
         ValidateUtils.is(deteTypeMetaMapppingVO.getType()).notNull(RCode.DICT_TYPE_ISNULL);
         ValidateUtils.is(deteTypeMetaMapppingVO.getMappings()).notNull(RCode.DICT_MAPPINGS_ISNULL);
-
+        if(deteTypeMetaMappingService.checkMetaMappingTypeExists(deteTypeMetaMapppingVO.getType())){
+            throw new NZException(RCode.METAMAPPING_TYPE_EXISTS);
+        }
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
 
@@ -157,5 +160,16 @@ public class DeteTypeController {
     @ApiOperation(value = "删除监测类别字典")
     public R deleteDic(@RequestParam String ... types) {
         return deteTypeMetaMappingService.deleteDic(types);
+    }
+
+    @GetMapping(value="/dicNameCheck")
+    @ResponseBody
+    @ApiOperation(value="元数据字典type校验")
+    public R dicNameCheck(String type){
+        if(deteTypeMetaMappingService.checkMetaMappingTypeExists(type)){
+            return R.error(RCode.METAMAPPING_TYPE_EXISTS);
+        }else{
+            return R.ok("true");
+        }
     }
 }

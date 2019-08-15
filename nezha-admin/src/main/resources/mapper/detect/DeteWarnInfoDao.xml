@@ -20,66 +20,41 @@
         <result property="delFlag" column="del_flag"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
-        <result property="relType" column="rel_type"/>
-        <result property="relIds" column="rel_ids"/>
         <association property="meta" column="meta_id" select="com.nis.modules.detect.dao.DeteTypeMetaDao.selectById" javaType="deteTypeMetaEntity" />
     </resultMap>
-
     <select id="queryList" resultMap="deteWarnInfoEntity">
-        select dwi.*,dwr.rel_type,
-        <if test="_databaseId == 'oracle'">WM_CONCAT(dwr.rel_id) rel_ids</if>
-        <if test="_databaseId == 'mysql'">GROUP_CONCAT(dwr.rel_id) rel_ids </if>
-        <if test="_databaseId == 'postgresql'">string_agg(dwr.rel_id,',') rel_ids</if>
-        from dete_warn_info dwi,dete_warn_rel dwr where dwi.del_flag='0' and dwr.del_flag='0' and dwi.id=dwr.warn_id
+        select dwi.* from dete_warn_info dwi  where
+        1=1
+        <if test="isGlobal==0">
+        and (dwi.view_level='3'
+        or (dwi.view_level='2' and dwi.id=#{sysPermissionInfo.typeId})
+        or(dwi.view_level='1' and dwi.id in (
+        <if test="permissionInfoVL3 !=null and permissionInfoVL3.size>0 ">
+            <foreach collection="permissionInfoVL3" item="pmi" open="" close="" separator=",">
+                #{pmi.typeId}
+            </foreach>
+        </if>
+        <if test="permissionInfoVL3 ==null or permissionInfoVL3.size == 0 " >
+            -1
+        </if>
+        )))
+        </if>
         <if test="name !=null and name != ''">
             and dwi.name like
             <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
             <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
             <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
         </if>
-        <if test="typeId != null and setId == null">
-            and dwr.rel_type='1' and dwr.rel_id=#{typeId}
-        </if>
-        <if test="setId != null">
-            and dwr.rel_type='2' and dwr.rel_id=#{setId}
-        </if>
-        and ( (dwi.view_level='1' and dwi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
-        or (dwi.view_level='2' and dwi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
-        or (dwi.view_level='3') ) group by dwi.id
-        <if test="sidx != null">
-            order by #{sidx}
-
-            <if test="order != null">
-                #{order}
-            </if>
-        </if>
-
-        limit #{start},#{pageSize}
-    </select>
-
-    <select id="queryCount" resultType="Integer">
-        select count(1) from (
-        select dwi.*,dwr.rel_type,
-        <if test="_databaseId == 'oracle'">WM_CONCAT(dwr.rel_id) rel_ids</if>
-        <if test="_databaseId == 'mysql'">GROUP_CONCAT(dwr.rel_id) rel_ids </if>
-        <if test="_databaseId == 'postgresql'">string_agg(dwr.rel_id,',') rel_ids</if>
-        from dete_warn_info dwi,dete_warn_rel dwr where dwi.del_flag='0' and dwr.del_flag='0' and dwi.id=dwr.warn_id
-        <if test="name !=null and name != ''">
-            and dwi.name like
-            <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
-            <if test="_databaseId == 'mysql'">concat('%',#{name},'%')</if>
-            <if test="_databaseId == 'postgresql'">concat('%',#{name},'%')</if>
-        </if>
-        <if test="typeId != null and setId == null">
-            and dwr.rel_type='1' and dwr.rel_id=#{typeId}
-        </if>
-        <if test="setId != null">
-            and dwr.rel_type='2' and dwr.rel_id=#{setId}
-        </if>
-        and ( (dwi.view_level='1' and dwi.id in(select pmi.type_id from permission_info pmi, (SELECT ug.group_id FROM user_usergroup ug WHERE ug.user_id = #{user}) uug where pmi.view_level='1' and pmi.type='2' and pmi.rel_id=uug.group_id))
-        or (dwi.view_level='2' and dwi.id in (select pmi.type_id from permission_info pmi where pmi.view_level='2' and pmi.rel_id=#{system}))
-        or (dwi.view_level='3') ) group by dwi.id) t
-
+        and dwi.del_flag='0'
+        AND EXISTS ( SELECT * from  dete_warn_rel dwr WHERE dwr.del_flag = '0'
+                        AND dwi.id = dwr.warn_id
+                        <if test="typeId != null and setId == null">
+                            and dwr.rel_type='1' and dwr.rel_id=#{typeId}
+                        </if>
+                        <if test="setId != null">
+                            and dwr.rel_type='2' and dwr.rel_id=#{setId}
+                        </if>
+                    )
     </select>
 
 
