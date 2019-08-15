@@ -60,6 +60,9 @@ public class NodeRoomEntity implements Serializable {
 	@TableLogic
 	private String delFlag;
 
+	// 位置名称
+	@TableField(exist = false)
+	private String addrName;
 
 	/**
 	 * 机房关联的机柜信息

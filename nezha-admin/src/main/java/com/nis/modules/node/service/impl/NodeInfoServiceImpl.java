@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -81,7 +82,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             }
             List<NodeInfoEntity> nodeInfoEntities = nodeInfoDao.selectListByGroups(page, params, groupdIds);
             // 1.3 获取 tagName 的值
-            getTagName(nodeInfoEntities);
+            this.getTagName(nodeInfoEntities);
             page.setRecords(nodeInfoEntities);
             return new PageUtils(page);
         }
@@ -89,7 +90,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         // 2. 节点自身的过滤 包含机房
         List<NodeInfoEntity> nodeInfoEntities = nodeInfoDao.selectListByRoomId(page, params);
         // 获取 tagName 的值
-        getTagName(nodeInfoEntities);
+        this.getTagName(nodeInfoEntities);
         page.setRecords(nodeInfoEntities);
         return new PageUtils(page);
     }
@@ -103,14 +104,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         List<SysDictEntity> netTags = sysDictService.queryList(map);
 
         for (NodeInfoEntity nodeInfo : nodeInfoEntities) {
-            if ("1".equals(nodeInfo.getType())) {
+            if (Constant.NODE_SERVER_TYPE.equals(nodeInfo.getType())) { // 节点类型为 server
                 for (SysDictEntity entity : serverTags) {
                     if (nodeInfo.getTag().equals(entity.getCode())) {
                         nodeInfo.setTagName(entity.getValue());
                         break;
                     }
                 }
-            } else if ("2".equals(nodeInfo.getType())) {
+            } else if (Constant.NODE_NET_TYPE.equals(nodeInfo.getType())) { // 节点类型为 net
                 for (SysDictEntity entity : netTags) {
                     if (nodeInfo.getTag().equals(entity.getCode())) {
                         nodeInfo.setTagName(entity.getValue());
@@ -131,9 +132,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         String tag = nodeInfoEntity.getTag();
         Map<String, Object> map = new HashMap();
 
-        if ("1".equals(nodeInfoEntity.getType())) {
+        if (Constant.NODE_SERVER_TYPE.equals(nodeInfoEntity.getType())) {
             map.put("type", "serverTag"); // 节点类型为 server
-        } else if ("2".equals(nodeInfoEntity.getType())) {
+        } else if (Constant.NODE_NET_TYPE.equals(nodeInfoEntity.getType())) {
             map.put("type", "netTag");    // 节点类型为 Net
         } else {
             throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到

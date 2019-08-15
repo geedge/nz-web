@@ -191,4 +191,8 @@ public class Constant {
     public static final String WARN_REL_TYPE="1";
     public static final String WARN_REL_SET="2";
 
+    // 节点类型
+    public static final String NODE_SERVER_TYPE = "1";  // server
+    public static final String NODE_NET_TYPE = "2";     // net
+
 }

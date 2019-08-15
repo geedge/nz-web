@@ -1,7 +1,6 @@
 package com.nis.modules.node.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -14,15 +13,14 @@ import com.nis.modules.node.entity.NodeCabinetEntity;
 import com.nis.modules.node.entity.NodeRoomEntity;
 import com.nis.modules.node.service.NodeCabinetService;
 import com.nis.modules.node.service.NodeRoomService;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service("nodeRoomService")
@@ -36,6 +34,10 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Autowired
     private NodeCabinetService nodeCabinetService;
 
+    // 字典service
+    @Autowired
+    private SysDictService sysDictService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 
@@ -48,12 +50,35 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
                         .like(StringUtils.isNotBlank(name), "name", name)
                         .eq(StringUtils.isNotBlank(area), "area", area)
         );
+        // 查询地区名称
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "addr");
+        List<SysDictEntity> sysDictes = sysDictService.queryList(map);
+        for (NodeRoomEntity room : page.getRecords()) {
+            for (SysDictEntity dict : sysDictes) {
+                if (room.getAddr().toString().equals(dict.getCode())) {
+                    room.setAddrName(dict.getValue());
+                    break;
+                }
+            }
+        }
         return new PageUtils(page);
     }
 
     @Override
     public NodeRoomEntity detail(Long id) {
         NodeRoomEntity nodeRoom = this.getById(id);
+
+        // 查询地区名称
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "addr");
+        List<SysDictEntity> sysDictes = sysDictService.queryList(map);
+        for (SysDictEntity entity : sysDictes) {
+            if(entity.getCode().equals(nodeRoom.getAddr().toString())){
+                nodeRoom.setAddrName(entity.getValue());
+                break;
+            }
+        }
         return nodeRoom;
     }
 
