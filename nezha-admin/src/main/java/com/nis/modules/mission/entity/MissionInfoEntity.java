@@ -129,4 +129,7 @@ public class MissionInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private String commandEnname;   // 具体任务名称  只有指令执行和升级部署有值
+	
+	@TableField(exist=false)
+	private Integer commandType;   // 具体任务名称对应类型
 }

@@ -377,7 +377,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						ValidateUtils.is(pidFile).notNull(RCode.MISSION_EXECUTE_INSTRUCT_KILLPROCESS_PIDFILE_ISNULL);
 					}
 					missionDto.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto.setCommandType(missionExecuteType.getType());
+					missionDto.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto.getMissionLoopEntity();
@@ -427,7 +427,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 					}
 					missionDto2.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto2.setCommandType(missionExecuteType.getType());
+					missionDto2.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto2.getMissionLoopEntity();
@@ -464,7 +464,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 					}
 					missionDto3.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto3.setCommandType(missionExecuteType.getType());
+					missionDto3.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto3.getMissionLoopEntity();
@@ -504,7 +504,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 					}
 					missionDto4.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto4.setCommandType(missionExecuteType.getType());
+					missionDto4.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto4.getMissionLoopEntity();
@@ -541,7 +541,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 					}
 					missionDto5.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto5.setCommandType(missionExecuteType.getType());
+					missionDto5.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto5.getMissionLoopEntity();
@@ -571,7 +571,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 					}
 					missionDto6.setCommandEnname(missionInfoEntity.getCommandEnname());
-					missionDto6.setCommandType(missionExecuteType.getType());
+					missionDto6.setCommandType(missionInfoEntity.getCommandType());
 					// 判断停用任务是否为周期任务
 					if((Constant.MISSION_LOOP_TRUE).equals(missionInfoEntity.getIsLoop())) {
 						MissionLoopEntity missionLoopEntity = missionDto6.getMissionLoopEntity();
@@ -915,6 +915,14 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		List<NodeInfoEntity> nodeInfoEntitys = baseMapper.selectNodeByMissionid(missionId);
 		// 查询任务的具体属性
 		MissionInfoEntity missionInfoEntity = baseMapper.selectById(missionId);
+		//没有备份的任务指令要移除
+		List<ParamForUpgrade> paramForUpgrades = JSON.parseArray(missionInfoEntity.getParam(), ParamForUpgrade.class);
+		for(int i=0; i<paramForUpgrades.size();i++) {
+			List<Backup> backups = paramForUpgrades.get(i).getBackups();
+			if(null == backups ||CommonUtil.isNull(backups)) {
+				paramForUpgrades.remove(i);
+			}
+		}
 		missionInfoEntity.setNodeGroups(nodeGroupInfoEntitys);
 		missionInfoEntity.setNodes(nodeInfoEntitys);
 		return missionInfoEntity;
