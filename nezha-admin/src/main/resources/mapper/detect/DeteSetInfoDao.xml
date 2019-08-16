@@ -87,5 +87,16 @@
         select * from system_info where id in (select rel_id from permission_info where type='2' and view_level=2 and type_id=#{setId} and del_flag='0') and del_flag='0'
     </select>
 
+	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="deteSetInfoMap">
+		SELECT dsi.*, pmi.id as "pm_id", pmi.type as "pm_type", pmi.type_id as "pm_type_id", 
+			   pmi.view_level as "pm_view_level", pmi.rel_id as "pm_rel_id"
+		FROM dete_set_info dsi
+		LEFT JOIN permission_info pmi ON pmi.type_id=dsi.id
+		WHERE pmi.type=#{type} AND dsi.view_level=#{viewLevel} AND pmi.del_flag=0 
+			  AND dsi.state!=1 AND pmi.rel_id IN 
+			  <foreach collection="relIds" item="relId" index="no" open="(" separator="," close=")">
+	              #{relId}
+	          </foreach>
+	</select>
 
 </mapper>

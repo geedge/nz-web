@@ -6,21 +6,13 @@ import com.nis.modules.node.dao.SystemNodeRelDao;
 import com.nis.modules.node.entity.SystemNodeRelEntity;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
-import java.util.Date;
-import java.util.List;
-
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service("systemNodeRelService")
 public class SystemNodeRelServiceImpl extends ServiceImpl<SystemNodeRelDao, SystemNodeRelEntity> implements SystemNodeRelService {
-
-	@Override
-	public boolean delete(List<SystemNodeRelEntity> oldSysNodeRel) {
-		baseMapper.deleteByIds(oldSysNodeRel, ShiroUtils.getUserId(), new Date());
-		return true;
-	}
 
     @Override
     public boolean isCurrentSystem(Long[] nodeIds) {

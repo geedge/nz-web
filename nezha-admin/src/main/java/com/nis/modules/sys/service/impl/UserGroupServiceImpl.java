@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -45,7 +46,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
     	IPage<UserGroupEntity2> page = new Query<UserGroupEntity2>().getPage(params);
     	List<UserGroupEntity2> list = baseMapper.list(page);
     	String systemIdStr = (String) params.get("systemId");
-    	if (list != null && list.size() > 0 && !StringUtils.isEmpty(systemIdStr)) {
+    	if (!CommonUtil.isNull(list) && !StringUtils.isEmpty(systemIdStr)) {
     		Long systemId = Long.valueOf(systemIdStr);
     		Iterator<UserGroupEntity2> it = list.iterator();
     		while (it.hasNext()) {
@@ -95,7 +96,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		baseMapper.insert(entity);
 		
 		List<Long> userIds = entity.getUserIds();
-		if (userIds != null && userIds.size() > 0) {
+		if (!CommonUtil.isNull(userIds)) {
 			List<UserUsergroupEntity> uugs = new ArrayList<>();
 			for (Long userId : userIds) {
 				UserUsergroupEntity uug = new UserUsergroupEntity();
@@ -109,7 +110,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		}
 		
 		List<Long> systemIds = entity.getSystemIds();
-		if (systemIds != null && systemIds.size() > 0) {
+		if (!CommonUtil.isNull(systemIds)) {
 			List<SystemUsergroupEntity> sugs = new ArrayList<>();
 			for (Long systemId : systemIds) {
 				SystemUsergroupEntity sug = new SystemUsergroupEntity();
@@ -167,7 +168,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		//加新
 		List<Long> systemIds = userGroup.getSystemIds();
 		List<Long> userIds = userGroup.getUserIds();
-		if (systemIds != null && systemIds.size() > 0) {
+		if (!CommonUtil.isNull(systemIds)) {
 			List<SystemUsergroupEntity> newSugs = new ArrayList<>();
 			for (Long systemId : systemIds) {
 				SystemUsergroupEntity newSug = new SystemUsergroupEntity();
@@ -179,7 +180,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 			}
 			systemUsergroupService.saveBatch(newSugs);
 		}
-		if (userIds != null && userIds.size() > 0) {
+		if (!CommonUtil.isNull(userIds)) {
 			List<UserUsergroupEntity> newUugs = new ArrayList<>();
 			for (Long userId : userIds) {
 				UserUsergroupEntity newUug = new UserUsergroupEntity();
@@ -236,7 +237,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		pi.setRelIds(ids);
 		pi.setViewLevel(Constant.VIEWLEVEL_UG);
 		List<DeteSetInfoEntity> dsByPermission = deteSetService.queryByPermission(pi);
-		if (dsByPermission != null && dsByPermission.size() > 0) {
+		if (!CommonUtil.isNull(dsByPermission)) {
 			for (DeteSetInfoEntity ds : dsByPermission) {
 				PermissionInfoEntity waitingDelete = ds.getPermission();
 				waitingDelete.setDelFlag(Constant.DELFLAG_TRUE);
@@ -248,7 +249,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		//--任务
 		pi.setType(Constant.PM_TYPE_MISSION);
 		List<MissionInfoEntity> msByPermission = missionService.queryByPermission(pi);
-		if (msByPermission != null && msByPermission.size() > 0) {
+		if (!CommonUtil.isNull(msByPermission)) {
 			for (MissionInfoEntity ds : msByPermission) {
 				PermissionInfoEntity waitingDelete = ds.getPermission();
 				waitingDelete.setDelFlag(Constant.DELFLAG_TRUE);
@@ -258,7 +259,9 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 			}
 		}
 		//--删除permission
-		permissionService.updateBatchById(waitingDeletePermissions);
+		if (!CommonUtil.isNull(waitingDeletePermissions)) {
+			permissionService.updateBatchById(waitingDeletePermissions);
+		}
 		
 		return true;
 	}
@@ -269,7 +272,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		boolean dumpFlag = true; //是否名称重复，true为重复
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-		if ((list == null || list.size() == 0) ||
+		if (CommonUtil.isNull(list) ||
 				(list != null && list.size() == 1 && list.get(0).getId() == entity.getId())) {
 			dumpFlag = false;
 		}

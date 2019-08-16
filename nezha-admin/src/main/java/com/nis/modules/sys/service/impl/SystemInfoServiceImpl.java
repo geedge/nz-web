@@ -34,7 +34,6 @@ import com.nis.modules.topo.service.TopoInfoService;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -77,13 +76,12 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		Long usergroupId = (Long)params.get("usergroupId");
+		String usergroupIdStr = (String)params.get("usergroupId");
 		Long id = (Long)params.get("id");
 		SystemInfoEntity se = new SystemInfoEntity();
 		IPage<SystemInfoEntity> page = new Query<SystemInfoEntity>().getPage(params);
-		//用于新增/修改用户组页展示业务系统时有usergroupId
-		if (usergroupId != null) {
-			se.setUsergroupId(usergroupId);
+		if (!StringUtils.isEmpty(usergroupIdStr)) {
+			se.setUsergroupId(Long.valueOf(usergroupIdStr));
 		}
 		if (id != null) {
 			se.setId(id);
@@ -163,7 +161,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		sugQuery.eq(true, "system_id", systemInfo.getId());
 		sugQuery.eq(true, "del_flag", Constant.DELFLAG_FALSE);
 		List<SystemUsergroupEntity> oldSystemUsergroups = sysUsergroupService.list(sugQuery);
-		if (oldSystemUsergroups != null && oldSystemUsergroups.size() > 0) {
+		if (!CommonUtil.isNull(oldSystemUsergroups)) {
 			for (SystemUsergroupEntity suEntity : oldSystemUsergroups) {
 				suEntity.setDelFlag(Constant.DELFLAG_TRUE);
 				suEntity.setOperator(systemInfo.getUpdateBy());
@@ -173,7 +171,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		}
 		//新增新纪录
 		List<Integer> usergroupIds = systemInfo.getUsergroupIds();
-		if (usergroupIds != null && usergroupIds.size() > 0) {
+		if (!CommonUtil.isNull(usergroupIds)) {
 			for (Integer ugId : usergroupIds) {
 				SystemUsergroupEntity su = new SystemUsergroupEntity();
 				su.setUsergroupId(Long.valueOf(ugId.toString()));
@@ -267,9 +265,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		}
 		
 		//删除permission_info记录
-		if (!CommonUtil.isNull(waitingDeletePermissions)) {
-			permissionService.updateBatchById(waitingDeletePermissions);
-		}
+		permissionService.updateBatchById(waitingDeletePermissions);
 			
 		//删除systemInfo
 		UpdateWrapper<SystemInfoEntity> siWrapper = new UpdateWrapper<>();
@@ -297,8 +293,6 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 			//保存sys-node
 			List<SystemNodeRelEntity> toSaveSysNodeRel = new ArrayList<>();
 			for (Long uuid : uuids) {
-				/*遍历已有的关联与uuids对比，记录重复则continue，并将重复的记录从已有关联中移除，
-				这样已有的关联oldSysNodeRel最后剩下的是应该被删掉的记录，对其进行删除*/
 				if (!checkDuplicate(oldSysNodeRel, entity.getId(), uuid)) {
 					continue;
 				}
@@ -308,14 +302,11 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 				snr.setSystemId(entity.getId());
 				snr.setOperator(ShiroUtils.getUserId());
 				snr.setOpTime(now);
-				toSaveSysNodeRel.add(snr);//新关联
+				toSaveSysNodeRel.add(snr);
 			}
 			
 			if (toSaveSysNodeRel.size() > 0) {
-				sysNodeService.saveBatch(toSaveSysNodeRel);//保存新关联
-			}
-			if (oldSysNodeRel.size() > 0) {
-				sysNodeService.delete(oldSysNodeRel);//删除
+				sysNodeService.saveBatch(toSaveSysNodeRel);
 			}
 		}
 		return true;
@@ -332,15 +323,18 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		
 		//system_node_rel
 		UpdateWrapper<SystemNodeRelEntity> sysNodeWrapper = new UpdateWrapper<>();
-		sysNodeWrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
-		sysNodeWrapper.eq(true, "system_id", entity.getId());
-		sysNodeWrapper.in(true, "uuid", entity.getUuids());
-		sysNodeWrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
+		sysNodeWrapper.eq("del_flag", Constant.DELFLAG_FALSE);
+		sysNodeWrapper.eq("system_id", entity.getId());
+		sysNodeWrapper.in("uuid", entity.getUuids());
+		sysNodeWrapper.set("del_flag", Constant.DELFLAG_TRUE);
+		sysNodeWrapper.set("operator", ShiroUtils.getUserId());
+		sysNodeWrapper.set("opTime", now);
+		
 		sysNodeService.update(sysNodeWrapper);
 		
 		//node_group_rel
 		List<NodeGroupRelEntity> queryBySystemId = nodeGroupRelService.queryBySystemId(entity.getId());
-		if (queryBySystemId != null && queryBySystemId.size() > 0) {
+		if (!CommonUtil.isNull(queryBySystemId)) {
 			for (NodeGroupRelEntity en : queryBySystemId) {
 				if (!entity.getUuids().contains(en.getUuid())) {
 					continue;
@@ -360,7 +354,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		queryParam.setQueryColumn(Constant.DETESET_NODE_RELTYPE_NODE + "");
 		queryParam.setUuids(entity.getUuids());
 		List<DeteSetNodeRelEntity> queryBySystemId2 = deteSetNodeService.queryBySystemId(queryParam);
-		if (queryBySystemId2 != null && queryBySystemId2.size() > 0) {
+		if (!CommonUtil.isNull(queryBySystemId2)) {
 			for (DeteSetNodeRelEntity en : queryBySystemId2) {
 				en.setDelFlag(Constant.DELFLAG_TRUE);
 				en.setOperator(ShiroUtils.getUserId());
@@ -380,12 +374,9 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	 */
 	private boolean checkDuplicate(List<SystemNodeRelEntity> oldSysNodeRel, Long systemId, Long uuid) {
 		boolean flag = true;
-		Iterator<SystemNodeRelEntity> it = oldSysNodeRel.iterator();
-		while(it.hasNext()) {
-			SystemNodeRelEntity o = it.next();
+		for (SystemNodeRelEntity o : oldSysNodeRel) {
 			if (o.getUuid() == uuid && o.getSystemId() == systemId) {
 				flag = false;
-				it.remove();//命中的移除
 				break;
 			}
 		}
