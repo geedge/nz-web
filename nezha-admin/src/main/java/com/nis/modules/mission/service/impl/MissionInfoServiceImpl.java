@@ -177,6 +177,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	}
 
 	@Override
+	@Transactional(readOnly = false)
 	public void saveMission(MissionInfoEntity missionInfoEntity) {
 		logger.info("start save missionInfo");
 		missionInfoEntity.setOperator(ShiroUtils.getUserId());
@@ -885,6 +886,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	}
 
 	@Override
+	@Transactional(readOnly = false)
 	public void updateMission(MissionInfoEntity missionInfoEntity) {
 		logger.info("updateMission info :"+JSON.toJSONString(missionInfoEntity));
 		MissionInfoEntity updateMission =new MissionInfoEntity();
