@@ -8,10 +8,12 @@ import com.nis.modules.detect.dao.DeteTypeMetaMappingDao;
 import com.nis.modules.detect.entity.DeteTypeMetaEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaMappingEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaMapppingVO;
-import com.nis.modules.detect.service.DeteTypeMetaMappingService;
-import com.nis.modules.detect.service.DeteTypeMetaService;
+import com.nis.modules.detect.service.DeteMetaMappingService;
+import com.nis.modules.detect.service.DeteMetaService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,9 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service("deteTypeMetaMappingService")
-public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeMetaMappingDao, DeteTypeMetaMappingEntity> implements DeteTypeMetaMappingService{
+public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMetaMappingDao, DeteTypeMetaMappingEntity> implements DeteMetaMappingService {
+    private Logger log= LoggerFactory.getLogger(DeteMetaMappingServiceImpl.class);
     @Autowired
-    private DeteTypeMetaService deteTypeMetaService;
+    private DeteMetaService deteTypeMetaService;
     @Override
     public PageUtils queryMetaMappingPage(Map<String, Object> params) {
         String type = (String) params.get("type");
@@ -60,13 +63,12 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
     @Transactional(rollbackFor = Exception.class)
     public void saveDicts(List<DeteTypeMetaMappingEntity> mappings) {
         this.saveBatch(mappings);
+        log.info("save detect type meta mapping info success! size[{}]",mappings.size());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
-        Long userId = ShiroUtils.getUserId();
-        Date date=new Date();
         String oldTypeName=null;
         List<DeteTypeMetaMappingEntity> mappings = deteTypeMetaMapppingVO.getMappings();
         for(DeteTypeMetaMappingEntity mapping:mappings){
@@ -76,11 +78,14 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
             }
             break;
         }
+        int saveCount=0;
+        int updateCount=0;
         for(DeteTypeMetaMappingEntity mapping:mappings){
             mapping.setType(oldTypeName); //type不允许修改
 
             if(mapping.getId()==null){
                 this.save(mapping);
+                saveCount++;
             }else{
                 UpdateWrapper<DeteTypeMetaMappingEntity> updateWrapper = new UpdateWrapper<>();
                 updateWrapper.set("operator",ShiroUtils.getUserId());
@@ -88,8 +93,11 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
                 updateWrapper.set(mapping.getDelFlag()!=null,"del_flag",mapping.getDelFlag());
                 updateWrapper.eq("id",mapping.getId());
                 this.update(mapping,updateWrapper);
+                updateCount++;
             }
         }
+        log.info("update deteTypeMetaMapping success! new[{}] , update[{}]"+saveCount,updateCount);
+
     }
 
     @Override
@@ -104,6 +112,7 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
                 updateWrapper.set("op_time",new Date());
                 updateWrapper.in("type",types);
                 this.update(updateWrapper);
+                log.info("delete deteTypeMetaMapping {} success!",Arrays.asList(types));
                 return R.ok();
             }
 
@@ -116,9 +125,6 @@ public class DeteTypeMetaMappingServiceImpl extends DeteTypeCommonServiceImpl<De
 
     @Override
     public boolean checkMetaMappingTypeExists(String type) {
-        QueryWrapper<DeteTypeMetaMappingEntity> deteTypeMetaMappingQueryWrapper = new QueryWrapper<>();
-        deteTypeMetaMappingQueryWrapper.eq("type",type);
-        List<DeteTypeMetaMappingEntity> list = this.list(deteTypeMetaMappingQueryWrapper);
-        return list!=null&&list.size()>0;
+        return checkFieldExists(null,"type",type);
     }
 }

@@ -3,7 +3,6 @@ package com.nis.modules.detect.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -19,11 +18,12 @@ import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.entity.UserGroupEntity;
-import com.nis.modules.sys.entity.UserUsergroupEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,8 @@ import java.util.Map;
 
 
 @Service("deteSetInfoService")
-public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetInfoEntity> implements DeteSetInfoService {
+public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao, DeteSetInfoEntity> implements DeteSetInfoService {
+    private Logger log= LoggerFactory.getLogger(DeteSetInfoServiceImpl.class);
     @Autowired
     private DeteSetNodeRelService deteSetNodeRelService;
     @Autowired
@@ -57,35 +58,21 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
         if(ShiroUtils.isGlobal()){
             isGlobal=1;
             page=this.getBaseMapper().queryList(page,name,typeId,isGlobal,null,null);
+            log.info("global system query... size[{}]",page.getRecords()==null?null:page.getRecords().size());
         }else{
             Long userId = ShiroUtils.getUserId();
             Long currSystemId = ShiroUtils.getCurrSystemId();
 
             //view_level=2 系统内可见
-            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = new QueryWrapper<>();
-            permissionInfoVL2QueryWrapper.eq("type",Constant.PM_TYPE_DETESET);
-            permissionInfoVL2QueryWrapper.eq("view_level",'2');
-            permissionInfoVL2QueryWrapper.eq("rel_id",currSystemId);
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = getPermissionInfoVL2QueryWrapper(Constant.PM_TYPE_DETESET,currSystemId);
             List<PermissionInfoEntity> permissionInfoVL2 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
             PermissionInfoEntity sysPermissionInfo=permissionInfoVL2!=null&&permissionInfoVL2.size()>0?permissionInfoVL2.get(0):null;
-            //view_level=3 用户组内可见
-            QueryWrapper<PermissionInfoEntity> permissionInfoVL3QueryWrapper = new QueryWrapper<>();
-            permissionInfoVL3QueryWrapper.eq("type",Constant.PM_TYPE_DETESET);
-            permissionInfoVL3QueryWrapper.eq("view_level",'1');
+            //view_level=1 用户组内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL1QueryWrapper = getPermissionInfoVL1QueryWrapper(Constant.PM_TYPE_DETESET,userId);
+            List<PermissionInfoEntity> permissionInfoVL1 = permissionInfoService.list(permissionInfoVL1QueryWrapper);
 
-            //查询当前用户所在用户组
-            QueryWrapper<UserUsergroupEntity> userUsergroupQueryWrapper = new QueryWrapper<>();
-            userUsergroupQueryWrapper.eq("user_id",userId);
-            List<UserUsergroupEntity> userUserGroupList = userUsergroupService.list(userUsergroupQueryWrapper);
-            Long[] groupIds=new Long[userUserGroupList.size()];
-            for(int i=0;i<userUserGroupList.size();i++){
-                groupIds[i]=userUserGroupList.get(i).getGroupId();
-            }
-
-            permissionInfoVL3QueryWrapper.in("rel_id",groupIds);
-            List<PermissionInfoEntity> permissionInfoVL3 = permissionInfoService.list(permissionInfoVL3QueryWrapper);
-
-            page=this.getBaseMapper().queryList(page,name,typeId,isGlobal,sysPermissionInfo,permissionInfoVL3);
+            page=this.getBaseMapper().queryList(page,name,typeId,isGlobal,sysPermissionInfo,permissionInfoVL1);
+            log.info("#{} system query... size[{}]",currSystemId, page.getRecords()==null?null:page.getRecords().size());
         }
 
         List<DeteSetInfoEntity> list = page.getRecords();
@@ -95,18 +82,35 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
         return new PageUtils(page);
     }
 
+    public List<Long> queryAllowedSetIds(){
+        List<Long> allowedSetIds=null;
+        Integer isGlobal=0; //是否是global业务系统 0：不是 1 是
+        if(ShiroUtils.isGlobal()){
+            isGlobal=1;
+            allowedSetIds = this.getBaseMapper().queryAllowedIds(isGlobal, null, null);
+        }else{
+            Long userId = ShiroUtils.getUserId();
+            Long currSystemId = ShiroUtils.getCurrSystemId();
+
+            //view_level=2 系统内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = getPermissionInfoVL2QueryWrapper(Constant.PM_TYPE_DETESET,currSystemId);
+            List<PermissionInfoEntity> permissionInfoVL2 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
+            PermissionInfoEntity sysPermissionInfo=permissionInfoVL2!=null&&permissionInfoVL2.size()>0?permissionInfoVL2.get(0):null;
+            //view_level=1 用户组内可见
+            QueryWrapper<PermissionInfoEntity> permissionInfoVL1QueryWrapper = getPermissionInfoVL1QueryWrapper(Constant.PM_TYPE_DETESET,userId);
+            List<PermissionInfoEntity> permissionInfoVL1 = permissionInfoService.list(permissionInfoVL1QueryWrapper);
+            allowedSetIds=this.getBaseMapper().queryAllowedIds(isGlobal,sysPermissionInfo,permissionInfoVL1);
+        }
+        return allowedSetIds;
+    }
+
 	@Override
 	public List<DeteSetInfoEntity> queryByPermission(PermissionInfoEntity entity) {
 		List<DeteSetInfoEntity> queryByPermission = baseMapper.queryByPermission(entity);
 		return queryByPermission;
 	}
 
-    @Override
-    public boolean checkNameExists(String name, Long setId) {
-        List<DeteSetInfoEntity> sets = this.baseMapper.selectList(new QueryWrapper<DeteSetInfoEntity>().eq("name", name).ne(setId != null, "id", setId));
 
-        return sets!=null&&sets.size()>0;
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -163,6 +167,7 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
         if(permissionInfos.size()>0){
             permissionInfoService.saveBatch(permissionInfos);
         }
+        log.info("save deteSetInfo success! setId[{}],viewLevel[{}],viewer[{}]",deteSetInfo.getId(),deteSetInfo.getViewLevel(),deteSetInfo.getViewerId());
     }
 
 
@@ -223,7 +228,7 @@ public class DeteSetInfoServiceImpl extends ServiceImpl<DeteSetInfoDao, DeteSetI
             permissionInfoService.update(permissionUpdateWrapper);
         }
 
-
+        log.info("change deteSetInfo state to [{}],is delete [{}]",state,"1".equals(state));
     }
     @Transactional(rollbackFor = Exception.class)
     public void deleteByTypeId(Long typeId){

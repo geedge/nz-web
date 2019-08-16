@@ -13,5 +13,5 @@ import java.util.Map;
 @Mapper
 public interface DeteWarnInfoDao extends BaseMapper<DeteWarnInfoEntity> {
 
-    IPage<DeteWarnInfoEntity> queryList(IPage<DeteWarnInfoEntity> page,@Param("typeId") Long typeId,@Param("setId") Long setId,@Param("name") String name,@Param("isGlobal") Integer isGlobal, PermissionInfoEntity sysPermissionInfo, List<PermissionInfoEntity> permissionInfoVL3);
+    IPage<DeteWarnInfoEntity> queryList(IPage<DeteWarnInfoEntity> page,@Param("typeId") Long typeId,@Param("setId") Long setId,@Param("name") String name,@Param("allowedSetIds")Long[] allowedSetIds);
 }

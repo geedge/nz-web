@@ -15,6 +15,8 @@ public class DeteTypeMetaEntity implements Serializable {
     private Long id;
     //显示名称
     private String name; //显示名称，唯一索引
+    //数据库字段名称
+    private String fieldName; //数据库字段名称，不需要用户填写，使用name值去除特殊字符
     //类别id
     private Long typeId;
     //字段分类
@@ -33,8 +35,7 @@ public class DeteTypeMetaEntity implements Serializable {
     private String unit;
     //字典类型
     private String dicType; //与DETE_TYPE_META_MAPPING表的type关联
-    //数据库字段名称
-    private String fieldName; //数据库字段名称，不需要用户填写，使用name值去除特殊字符
+
     //国际化code
     private String i18nCode; //name 的国际化 code，不为空时name显示翻译后的内容，为空直接显示
     //备注
@@ -48,4 +49,9 @@ public class DeteTypeMetaEntity implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date opTime;
 
+
+    @Override
+    public String toString() {
+        return "fieldName="+fieldName;
+    }
 }

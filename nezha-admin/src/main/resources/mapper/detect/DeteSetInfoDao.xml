@@ -35,19 +35,19 @@
         <association property="type" select="com.nis.modules.detect.dao.DeteTypeInfoDao.selectById" column="type_id"></association>
     </resultMap>
 
-    <select id="queryList" parameterType="java.util.Map" resultMap="deteSetTypeInfo">
+    <select id="queryList"  resultMap="deteSetTypeInfo">
             select dsi.* from dete_set_info dsi where
             1=1
             <if test="isGlobal == 0">
             and (dsi.view_level='3'
             or (dsi.view_level='2' and dsi.id=#{sysPermissionInfo.typeId})
             or(dsi.view_level='1' and dsi.id in (
-                <if test="permissionInfoVL3 !=null and permissionInfoVL3.size>0 ">
-                    <foreach collection="permissionInfoVL3" item="pmi" open="" close="" separator=",">
+                <if test="permissionInfoVL1 !=null and permissionInfoVL1.size>0 ">
+                    <foreach collection="permissionInfoVL1" item="pmi" open="" close="" separator=",">
                         #{pmi.typeId}
                     </foreach>
                 </if>
-                <if test="permissionInfoVL3 ==null or permissionInfoVL3.size == 0 " >
+                <if test="permissionInfoVL1 ==null or permissionInfoVL1.size == 0 " >
                     -1
                 </if>
             )))
@@ -64,7 +64,26 @@
             </if>
             and dsi.state!='1'
     </select>
-
+    <select id="queryAllowedIds"  resultType="java.lang.Long">
+        select dsi.id from dete_set_info dsi where
+        1=1
+        <if test="isGlobal == 0">
+            and (dsi.view_level='3'
+            or (dsi.view_level='2' and dsi.id=#{sysPermissionInfo.typeId})
+            or(dsi.view_level='1' and dsi.id in (
+            <if test="permissionInfoVL1 !=null and permissionInfoVL1.size>0 ">
+                <foreach collection="permissionInfoVL1" item="pmi" open="" close="" separator=",">
+                    #{pmi.typeId}
+                </foreach>
+            </if>
+            <if test="permissionInfoVL1 ==null or permissionInfoVL1.size == 0 " >
+                -1
+            </if>
+            )))
+        </if>
+        
+        and dsi.state!='1'
+    </select>
 
     <select id="queryNodeGroups" resultType="nodeGroupInfoEntity">
         select ngi.*  from nodegroup_info ngi  join dete_set_node_rel snr

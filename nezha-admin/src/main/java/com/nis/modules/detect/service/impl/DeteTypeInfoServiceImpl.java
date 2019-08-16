@@ -14,6 +14,8 @@ import com.nis.modules.detect.entity.DeteTypeParamEntity;
 import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -23,13 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service("deteTypeInfoService")
-public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeInfoDao, DeteTypeInfoEntity> implements DeteTypeInfoService, ApplicationRunner {
+public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoDao, DeteTypeInfoEntity> implements DeteTypeInfoService, ApplicationRunner {
+    private Logger log= LoggerFactory.getLogger(DeteTypeInfoServiceImpl.class);
     @Autowired
-    private DeteTypeMetaService deteTypeMetaService;
+    private DeteMetaService deteTypeMetaService;
     @Autowired
-    private DeteTypeParamService deteTypeParamService;
+    private DeteParamService deteTypeParamService;
     @Autowired
-    private DeteTypeMetaMappingService deteTypeMetaMappingService;
+    private DeteMetaMappingService deteTypeMetaMappingService;
     @Autowired
     private DeteSetInfoService deteSetInfoService;
     @Autowired
@@ -59,7 +62,6 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
         List<DeteTypeParamEntity> deteTypeParams = deteTypeParamService.list(new QueryWrapper<DeteTypeParamEntity>().eq("type_id", deteTypeInfo.getId()));
         deteTypeInfo.setDeteTypeParams(deteTypeParams);
-
         return deteTypeInfo;
     }
 
@@ -108,6 +110,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
 
 
         createTable(deteTypeInfo);
+        log.info("create table [{}]",deteTypeInfo.getTableName());
         //为避免在DDL语句发出时会自动commit，故将所有的数据操作放在DDL后
         this.save(deteTypeInfo);
 
@@ -120,6 +123,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
             deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
         }
         deteTypeParamService.saveBatch(deteTypeParams);
+        log.info("save detectType success! typeId [{}]",deteTypeInfo.getId());
     }
 
     @Override
@@ -176,7 +180,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
         }
 
         this.judgeTableFields(metaUpdateList, metaAddList, metaDelList, indexAddList, indexDelList);
-
+        log.info("modify field{},add field{},delete field{},add index{},delete index{}",metaUpdateList,metaAddList,metaDelList,indexAddList,indexDelList);
         //处理添加索引
         if (indexAddList.size() > 0) {
             Map<String, String[]> map = new HashMap<String, String[]>();
@@ -266,6 +270,7 @@ public class DeteTypeInfoServiceImpl extends DeteTypeCommonServiceImpl<DeteTypeI
                 }
             }
         }
+        log.info("deteType update success!");
     }
 
 

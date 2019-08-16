@@ -10,9 +10,9 @@ import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaMappingEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaMapppingVO;
 import com.nis.modules.detect.service.DeteTypeInfoService;
-import com.nis.modules.detect.service.DeteTypeMetaMappingService;
-import com.nis.modules.detect.service.DeteTypeMetaService;
-import com.nis.modules.detect.service.DeteTypeParamService;
+import com.nis.modules.detect.service.DeteMetaMappingService;
+import com.nis.modules.detect.service.DeteMetaService;
+import com.nis.modules.detect.service.DeteParamService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -34,11 +34,11 @@ public class DeteTypeController {
     @Autowired
     private DeteTypeInfoService deteTypeInfoService;
     @Autowired
-    private DeteTypeMetaService deteTypeMetaService;
+    private DeteMetaService deteTypeMetaService;
     @Autowired
-    private DeteTypeParamService deteTypeParamService;
+    private DeteParamService deteTypeParamService;
     @Autowired
-    private DeteTypeMetaMappingService deteTypeMetaMappingService;
+    private DeteMetaMappingService deteTypeMetaMappingService;
 
     private Logger log = LoggerFactory.getLogger(DeteTypeController.class);
 
@@ -95,7 +95,7 @@ public class DeteTypeController {
     @ResponseBody
     @ApiOperation(value = "监测类别名称校验")
     public R nameCheck( Long id,@RequestParam String name) {
-        boolean nameExists = deteTypeInfoService.checkFieldExists(id, "name", name);
+        boolean nameExists = deteTypeInfoService.checkNameExists(name,id);
         if(nameExists){ //名称存在
             return R.error(RCode.TYPE_NAME_EXISTS);
         }else{

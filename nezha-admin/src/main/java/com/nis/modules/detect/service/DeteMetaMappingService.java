@@ -8,7 +8,7 @@ import com.nis.modules.detect.entity.DeteTypeMetaMapppingVO;
 import java.util.List;
 import java.util.Map;
 
-public interface DeteTypeMetaMappingService extends DeteTypeCommonService<DeteTypeMetaMappingEntity> {
+public interface DeteMetaMappingService extends DeteCommonService<DeteTypeMetaMappingEntity> {
     PageUtils queryMetaMappingPage(Map<String, Object> params);
 
     void saveDicts(List<DeteTypeMetaMappingEntity> mappings);

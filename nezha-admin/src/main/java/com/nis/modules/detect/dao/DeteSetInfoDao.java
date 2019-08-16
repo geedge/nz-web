@@ -36,4 +36,5 @@ public interface DeteSetInfoDao extends BaseMapper<DeteSetInfoEntity> {
 
 
     IPage<DeteSetInfoEntity> queryList(IPage<DeteSetInfoEntity> page, @Param("name") String name, @Param("typeId") Long typeId,@Param("isGlobal") Integer isGlobal, @Param("sysPermissionInfo")PermissionInfoEntity syspermissionInfo,@Param("permissionInfoVL3") List<PermissionInfoEntity> permissionInfoVL3);
+    List<Long> queryAllowedIds(@Param("isGlobal") Integer isGlobal, @Param("sysPermissionInfo")PermissionInfoEntity syspermissionInfo,@Param("permissionInfoVL1") List<PermissionInfoEntity> permissionInfoVL1);
 }

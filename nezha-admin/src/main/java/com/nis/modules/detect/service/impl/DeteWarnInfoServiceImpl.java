@@ -3,7 +3,6 @@ package com.nis.modules.detect.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -11,12 +10,11 @@ import com.nis.modules.detect.dao.DeteWarnInfoDao;
 import com.nis.modules.detect.dao.DeteWarnRelDao;
 import com.nis.modules.detect.entity.*;
 import com.nis.modules.detect.service.*;
-import com.nis.modules.sys.entity.PermissionInfoEntity;
-import com.nis.modules.sys.entity.UserGroupEntity;
-import com.nis.modules.sys.entity.UserUsergroupEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +26,8 @@ import java.util.Map;
 
 
 @Service("deteWarnInfoService")
-public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWarnInfoEntity> implements DeteWarnInfoService {
+public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoDao, DeteWarnInfoEntity> implements DeteWarnInfoService {
+    private Logger log= LoggerFactory.getLogger(DeteWarnInfoServiceImpl.class);
     @Autowired
     private DeteWarnRelService deteWarnRelService;
     @Autowired
@@ -40,7 +39,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
     @Autowired
     private DeteSetInfoService deteSetInfoService;
     @Autowired
-    private DeteTypeMetaService deteTypeMetaService;
+    private DeteMetaService deteTypeMetaService;
 
     @Autowired
     private UserUsergroupService userUsergroupService;
@@ -81,42 +80,6 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
         }
 
         deteWarnRelService.saveBatch(deteWarnRelEntities);
-        //维护权限表 无限制则不维护权限表
-        List<PermissionInfoEntity> permissionInfos = new ArrayList<PermissionInfoEntity>();
-        switch (deteWarnInfoEntity.getViewLevel()) {//1:用户组，2：系统内全部人员，3：无限制，默认2
-            case Constant.VIEWLEVEL_UG:
-                List<UserGroupEntity> usergroups = ShiroUtils.getUserEntity().getUsergroups();
-                for (UserGroupEntity userGroup : usergroups) {
-                    PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
-                    permissionInfoEntity.setType(Constant.PM_TYPE_DETEWARN);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
-                    permissionInfoEntity.setTypeId(deteWarnInfoEntity.getId());
-                    permissionInfoEntity.setViewLevel(deteWarnInfoEntity.getViewLevel());
-                    permissionInfoEntity.setRelId(userGroup.getId());
-                    permissionInfoEntity.setOperator(userId);
-                    permissionInfoEntity.setOpTime(date);
-
-                    permissionInfos.add(permissionInfoEntity);
-                }
-                break;
-            case Constant.VIEWLEVEL_SYS:
-                Long currSystemId = ShiroUtils.getCurrSystemId();
-                PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
-                permissionInfoEntity.setType(Constant.PM_TYPE_DETEWARN);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
-                permissionInfoEntity.setTypeId(deteWarnInfoEntity.getId());
-                permissionInfoEntity.setViewLevel(deteWarnInfoEntity.getViewLevel());
-                permissionInfoEntity.setRelId(currSystemId);
-                permissionInfoEntity.setOperator(userId);
-                permissionInfoEntity.setOpTime(date);
-
-                permissionInfos.add(permissionInfoEntity);
-                break;
-            case Constant.VIEWLEVEL_ALL:
-
-                break;
-        }
-        if (permissionInfos.size() > 0) {
-            permissionInfoService.saveBatch(permissionInfos);
-        }
     }
 
     @Override
@@ -141,26 +104,14 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
         warnInfoUpdateWrapper.in("id", ids);
         this.update(warnInfoUpdateWrapper);
 
-        //处理权限表
-        UpdateWrapper<PermissionInfoEntity> permissionUpdateWrapper = new UpdateWrapper<>();
-        permissionUpdateWrapper.set("operator", userId);
-        permissionUpdateWrapper.set("op_time", date);
-        permissionUpdateWrapper.set("del_flag", Constant.DELFLAG_TRUE);
-        permissionUpdateWrapper.eq("type", Constant.PM_TYPE_DETEWARN);
-        permissionUpdateWrapper.in("type_id", ids);
-    }
-
-    @Override
-    public boolean checkNameExists(String name, Long id) {
-        QueryWrapper<DeteWarnInfoEntity> warnInfoQueryWrapper = new QueryWrapper<>();
-        warnInfoQueryWrapper.ne(id != null, "id", id);
-        warnInfoQueryWrapper.eq("name", name);
-        List<DeteWarnInfoEntity> list = this.list(warnInfoQueryWrapper);
-        return list != null && list.size() > 0;
     }
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        List<Long> queryAllowedSetIds = deteSetInfoService.queryAllowedSetIds();
+        log.debug("allowed setInfo id{}",queryAllowedSetIds);
+        Long[] allowedSetIds=new Long[queryAllowedSetIds.size()];
+        allowedSetIds=queryAllowedSetIds.toArray(allowedSetIds);
         Long typeId = null;
         Long setId = null;
         try {
@@ -171,41 +122,7 @@ public class DeteWarnInfoServiceImpl extends ServiceImpl<DeteWarnInfoDao, DeteWa
         }
         String name = (String) params.get("name");
         IPage<DeteWarnInfoEntity> page = new Query<DeteWarnInfoEntity>().getPage(params);
-        Integer isGlobal=0;
-        if(ShiroUtils.isGlobal()){
-            isGlobal=1;
-            page=this.getBaseMapper().queryList(page,typeId,setId,name,isGlobal,null,null);
-        }else{
-            Long userId = ShiroUtils.getUserId();
-            Long currSystemId = ShiroUtils.getCurrSystemId();
-
-            //view_level=2 系统内可见
-            QueryWrapper<PermissionInfoEntity> permissionInfoVL2QueryWrapper = new QueryWrapper<>();
-            permissionInfoVL2QueryWrapper.eq("type",Constant.PM_TYPE_DETEWARN);
-            permissionInfoVL2QueryWrapper.eq("view_level",'2');
-            permissionInfoVL2QueryWrapper.eq("rel_id",currSystemId);
-            List<PermissionInfoEntity> permissionInfoVL2 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
-            PermissionInfoEntity sysPermissionInfo=permissionInfoVL2!=null&&permissionInfoVL2.size()>0?permissionInfoVL2.get(0):null;
-            //view_level=3 用户组内可见
-            QueryWrapper<PermissionInfoEntity> permissionInfoVL3QueryWrapper = new QueryWrapper<>();
-            permissionInfoVL3QueryWrapper.eq("type",Constant.PM_TYPE_DETEWARN);
-            permissionInfoVL3QueryWrapper.eq("view_level",'1');
-
-            //查询当前用户所在用户组
-            QueryWrapper<UserUsergroupEntity> userUsergroupQueryWrapper = new QueryWrapper<>();
-            userUsergroupQueryWrapper.eq("user_id",userId);
-            List<UserUsergroupEntity> userUserGroupList = userUsergroupService.list(userUsergroupQueryWrapper);
-            Long[] groupIds=new Long[userUserGroupList.size()];
-            for(int i=0;i<userUserGroupList.size();i++){
-                groupIds[i]=userUserGroupList.get(i).getGroupId();
-            }
-
-            permissionInfoVL3QueryWrapper.in("rel_id",groupIds);
-            List<PermissionInfoEntity> permissionInfoVL3 = permissionInfoService.list(permissionInfoVL2QueryWrapper);
-
-            page=this.getBaseMapper().queryList(page,typeId,setId,name,isGlobal,sysPermissionInfo,permissionInfoVL3);
-
-        }
+        page=this.getBaseMapper().queryList(page,typeId,setId,name,allowedSetIds);
 
 
         List<DeteWarnInfoEntity> list = page.getRecords();

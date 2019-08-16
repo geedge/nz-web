@@ -5,17 +5,14 @@ import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 
 import java.util.Map;
 
-public interface DeteTypeInfoService extends DeteTypeCommonService<DeteTypeInfoEntity>  {
+public interface DeteTypeInfoService extends DeteCommonService<DeteTypeInfoEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     DeteTypeInfoEntity queryDetail(Long id);
 
-
     void saveEntity(DeteTypeInfoEntity deteTypeInfo);
 
     void updateEntity(DeteTypeInfoEntity deteTypeInfo);
-
-
 
     boolean checkTablesExists(String tableName);
 

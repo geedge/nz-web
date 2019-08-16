@@ -25,20 +25,6 @@
     <select id="queryList" resultMap="deteWarnInfoEntity">
         select dwi.* from dete_warn_info dwi  where
         1=1
-        <if test="isGlobal==0">
-        and (dwi.view_level='3'
-        or (dwi.view_level='2' and dwi.id=#{sysPermissionInfo.typeId})
-        or(dwi.view_level='1' and dwi.id in (
-        <if test="permissionInfoVL3 !=null and permissionInfoVL3.size>0 ">
-            <foreach collection="permissionInfoVL3" item="pmi" open="" close="" separator=",">
-                #{pmi.typeId}
-            </foreach>
-        </if>
-        <if test="permissionInfoVL3 ==null or permissionInfoVL3.size == 0 " >
-            -1
-        </if>
-        )))
-        </if>
         <if test="name !=null and name != ''">
             and dwi.name like
             <if test="_databaseId == 'oracle'">'%'||#{name}||'%'</if>
@@ -48,6 +34,16 @@
         and dwi.del_flag='0'
         AND EXISTS ( SELECT * from  dete_warn_rel dwr WHERE dwr.del_flag = '0'
                         AND dwi.id = dwr.warn_id
+                        and (dwr.rel_type='1' or dwr.rel_type='2' and dwr.rel_id in (
+                        <if test="allowedSetIds != null and allowedSetIds.length gt 0">
+                            <foreach collection="allowedSetIds" open="" close="" separator="," item="setId">
+                                #{setId}
+                            </foreach>
+                        </if>
+                        <if test="allowedSetIds == null or allowedSetIds.length == 0">
+                            -1
+                        </if>
+                         ))
                         <if test="typeId != null and setId == null">
                             and dwr.rel_type='1' and dwr.rel_id=#{typeId}
                         </if>

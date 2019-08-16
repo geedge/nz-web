@@ -3,7 +3,6 @@ package com.nis.modules.detect.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -21,7 +20,7 @@ import java.util.Map;
 
 
 @Service("deteSetNodeRelService")
-public class DeteSetNodeRelServiceImpl extends ServiceImpl<DeteSetNodeRelDao, DeteSetNodeRelEntity> implements DeteSetNodeRelService {
+public class DeteSetNodeRelServiceImpl extends DeteCommonServiceImpl<DeteSetNodeRelDao, DeteSetNodeRelEntity> implements DeteSetNodeRelService {
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
