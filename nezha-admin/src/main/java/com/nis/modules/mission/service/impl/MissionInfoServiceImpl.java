@@ -1,5 +1,7 @@
 package com.nis.modules.mission.service.impl;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -59,6 +61,7 @@ import com.nis.modules.mission.entity.ParamForUpgrade;
 
 @Service("missionInfoService")
 public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionInfoEntity> implements MissionInfoService {
+	private final static Logger logger=LoggerFactory.getLogger(MissionInfoServiceImpl.class);
 	@Autowired
 	private MissionInfoDao missionInfoDao;
 	@Autowired
@@ -78,9 +81,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
     	//获取当前用户信息
     	SysUserEntity user = ShiroUtils.getUserEntity();
     	entity.setUser(user);
-    	
+    	logger.info(" user info is "+user);
+    	if(ShiroUtils.isGlobal()) {
+    		entity.setIsGlobal(1);
+    	}
     	IPage<MissionInfoEntity> page = baseMapper.selectMissionInfoList(queryPage,entity);
-
+    	logger.info(" query page content :"+JSON.toJSONString(page));
         //获取MissionInfoEntity 列表
         List<MissionInfoEntity> list=page.getRecords();
         //遍历查询任务执行情况
@@ -172,9 +178,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 
 	@Override
 	public void saveMission(MissionInfoEntity missionInfoEntity) {
+		logger.info("start save missionInfo");
 		missionInfoEntity.setOperator(ShiroUtils.getUserId());
 		missionInfoEntity.setOpTime(new Date());
+		logger.info("save missionInfo content :"+JSON.toJSONString(missionInfoEntity));
 		baseMapper.insert(missionInfoEntity);
+		logger.info(" save missionInfo success");
 		//添加任务与节点之间的关系
 		List<MissionNodeRelEntity> missionNodeRelEntitys=new ArrayList<MissionNodeRelEntity>();
 		List<Long> nodeIds = missionInfoEntity.getNodeIds();
@@ -183,6 +192,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		List<PermissionInfoEntity> permissionInfoEntitys = new ArrayList<PermissionInfoEntity>();
 		Long relId = null;
 		boolean permissionFlag=false;
+		logger.info("start save node missionInfo and permissionInfo data");
 		if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())) {
 			permissionFlag=true;
 		} else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
@@ -222,6 +232,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				permissionInfoEntitys.add(permissionInfoEntity);
 			}
 		}
+		logger.info("missionNodeRelEntitys :"+JSON.toJSONString(missionNodeRelEntitys));
+		logger.info("permissionInfoEntitys :"+JSON.toJSONString(permissionInfoEntitys));
 		missionNodeRelService.saveBatch(missionNodeRelEntitys);
 		permissionInfoService.saveBatch(permissionInfoEntitys);
 	}
@@ -231,7 +243,9 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	 */
 	@Override
 	public void checkNodeGroupOrNodeCorrect(List<Long> nodeGroupIds,List<Long> nodeIds) {
+		logger.info("check Node Or NodeGroup correct");
 		if(null != nodeIds && nodeIds.size()>0) {
+			logger.info("node info :"+JSON.toJSONString(nodeIds));
 			//查询所有节点是否存在以及是否满足条件
 			MissionDto nodeDto = baseMapper.checkNodeCorrect(nodeGroupIds,nodeIds);
 			if(null != nodeDto.getTotal() && nodeDto.getTotal() != nodeIds.size()) {
@@ -248,6 +262,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 			}
 		}
 		if(null != nodeGroupIds && nodeGroupIds.size()>0) {
+			logger.info("nodeGroup info :"+JSON.toJSONString(nodeGroupIds));
 			MissionDto groupDto = baseMapper.checkNodeGroupCorrect(nodeGroupIds);
 			if(null != groupDto.getDgnic() || groupDto.getDgnic() != nodeGroupIds.size()) {
 				// 总数不对应 存在无效的节点组
@@ -267,6 +282,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	 */
 	@Override
 	public void validateMissionInfoData(MissionInfoEntity missionInfoEntity,MultipartFile[] files) {
+		logger.info("validate missionInfo content :"+JSON.toJSONString(missionInfoEntity));
 		ValidateUtils.is(missionInfoEntity.getType()).notNull(RCode.MISSION_TYPE_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getName()).notNull(RCode.MISSION_NAME_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getParam()).notNull(RCode.MISSION_PARAM_ISNULL);
@@ -280,6 +296,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				throw new NZException(RCode.MISSION_FILEPUSH_FILE_ISNULL);
 			}
 			if(null!=paramForFilePushs&&paramForFilePushs.size()>0) {
+				logger.info("mission_file_push start file upload");
 				// 记录文件单个大小 记录日志  记录总大小 判断是否超过限制
 				long onefile = 0l;
 				long sum = 0l;
@@ -345,8 +362,10 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					paramForFilePush.setMd5Value(fileMd5);
 					paramForFilePush.setUpFileName(upFileName);
 				}
+				logger.info("mission_file_push finish file upload");
 				//如果超出100M文件大小 则将已上传文件删除
 				if(outSizeFlag) {
+					logger.info("mission_file_push outsize start delete file");
 					for(int j = 0; j<removeFiles.length;j++) {
 						File file = removeFiles[j];
 						if(file.exists()) {
@@ -598,6 +617,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					if(null==files || files.length<=0) {
 						throw new NZException(RCode.MISSION_UPGRADE_UPLOADFILE_ISNULL);
 					}
+					logger.info("UPGRADE_AGENT file upload start");
 					MultipartFile uploadFile = files[0];
 					long size = uploadFile.getSize();
 					//判断上传文件的总大小是否超出
@@ -639,7 +659,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				        	e.printStackTrace();
 				        	throw new NZException(RCode.MISSION_UPGRADE_FILE_UPLOAD_ERROR);
 				        }
-					
+					 logger.info("UPGRADE_AGENT file upload finish");
 					String fileMd5=null;
 					try {
 						fileMd5 = MD5Util.getFileMD5String(dest);
@@ -707,6 +727,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					File[] removeFiles=new File[paramForUpgrades.size()];
 					boolean outSizeFlag=false;
 					uu:for(int i=0;i<paramForUpgrades.size();i++) {
+						logger.info("UPGRADE_SERVER or UPGRADE_OTHER file upload start");
 						ParamForUpgrade paramForUpgrade = paramForUpgrades.get(i);
 						MultipartFile file = files[i];
 						ValidateUtils.is(file.getOriginalFilename()).notNull(RCode.MISSION_UPGRADE_UPLOADFILE_ISNULL);
@@ -744,7 +765,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					        	e.printStackTrace();
 					        	throw new NZException(RCode.MISSION_UPGRADE_FILE_UPLOAD_ERROR);
 					        }
-						
+						 logger.info("UPGRADE_SERVER or UPGRADE_OTHER file upload finish");
 						String upgradeFileMd5=null;
 						try {
 							upgradeFileMd5 = MD5Util.getFileMD5String(upgradeDest);
@@ -819,6 +840,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					upgradeDto.setCommandEnname(missionInfoEntity.getCommandEnname());
 					//如果超出100M文件大小 则将已上传文件删除
 					if(outSizeFlag) {
+						logger.info("UPGRADE_SERVER or UPGRADE_OTHER outsize delete file");
 						for(int j = 0; j<removeFiles.length;j++) {
 							File file = removeFiles[j];
 							if(file.exists()) {
@@ -839,6 +861,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 
 	@Override
 	public List<MissionInfoEntity> validateLoopMissionInfoData(Long[] missionIds, String state) {
+		logger.info("validateLoopMissionInfoData content missionId:"+missionIds);
 		List<MissionInfoEntity> loopMissions =new ArrayList<MissionInfoEntity>();
 		for(Long missionId : missionIds) {
 			MissionInfoEntity mission = baseMapper.selectById(missionId);
@@ -857,11 +880,13 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 			mission.setState(state);
 			loopMissions.add(mission);
 		}
+		logger.info("result loopMissions :"+JSON.toJSONString(loopMissions));
 		return loopMissions;
 	}
 
 	@Override
 	public void updateMission(MissionInfoEntity missionInfoEntity) {
+		logger.info("updateMission info :"+JSON.toJSONString(missionInfoEntity));
 		MissionInfoEntity updateMission =new MissionInfoEntity();
 		String state = missionInfoEntity.getState();
 		if(!CommonUtil.isNull(state)) {
@@ -886,6 +911,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	 */
 	@Override
 	public MissionInfoEntity getConverseMissionById(Long id) {
+		logger.info("ConverseMissionById is :"+id);
 		MissionInfoEntity mission = baseMapper.selectById(id);
 		Long missionId = mission.getId();
 		if(mission.getType().equals(MissionType.UGPRADE.getMissionTypeId())) {
@@ -912,9 +938,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		// 通过以上校验 任务可以新建逆向任务 查询任务信息 用于界面展示
 		// 校验节点组有效性  补全系统名称、节点组名称信息   补全用户组信息
 		List<NodeGroupInfoEntity> nodeGroupInfoEntitys = baseMapper.selectNodeGroupByMissionid(missionId);
+		logger.info("query nodeGroups content :"+JSON.toJSONString(nodeGroupInfoEntitys));
 		List<NodeInfoEntity> nodeInfoEntitys = baseMapper.selectNodeByMissionid(missionId);
+		logger.info("query nodes content :"+JSON.toJSONString(nodeInfoEntitys));
 		// 查询任务的具体属性
 		MissionInfoEntity missionInfoEntity = baseMapper.selectById(missionId);
+		logger.info("query mission info :"+JSON.toJSONString(missionInfoEntity));
 		//没有备份的任务指令要移除
 		List<ParamForUpgrade> paramForUpgrades = JSON.parseArray(missionInfoEntity.getParam(), ParamForUpgrade.class);
 		for(int i=0; i<paramForUpgrades.size();i++) {
@@ -925,6 +954,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		}
 		missionInfoEntity.setNodeGroups(nodeGroupInfoEntitys);
 		missionInfoEntity.setNodes(nodeInfoEntitys);
+		logger.info("result mission content :"+missionInfoEntity);
 		return missionInfoEntity;
 	}
 }

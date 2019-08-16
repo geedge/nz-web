@@ -46,13 +46,16 @@
 		SELECT mi.*
 		FROM mission_info mi
 		INNER JOIN permission_info p
-		WHERE (mi.view_level='3'
+		WHERE 
+		<if test="isGlobal==null">
+		(mi.view_level='3'
 		    OR (mi.view_level='2' AND p.type=4 AND p.type_id=mi.id AND p.rel_id=#{missionInfo.user.currSystemId})
 		    OR (mi.view_level='1' AND p.type=4 AND p.type_id=mi.id AND p.rel_id in
 			<foreach collection="missionInfo.user.usergroups" item="item"  open="" close="" separator=",">
 				#{item.id}
 			</foreach>    
 		))
+		</if>
 		<if test="missionInfo.isLoop != null ">
 			    AND mi.is_loop=#{missionInfo.isLoop}
 		</if>

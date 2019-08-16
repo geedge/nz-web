@@ -132,4 +132,7 @@ public class MissionInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private Integer commandType;   // 具体任务名称对应类型
+	
+	@TableField(exist=false)
+	private Integer isGlobal;
 }

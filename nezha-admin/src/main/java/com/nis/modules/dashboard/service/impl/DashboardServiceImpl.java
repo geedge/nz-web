@@ -3,6 +3,8 @@ package com.nis.modules.dashboard.service.impl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
@@ -25,11 +27,12 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 
 @Service("dashboardService")
 public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEntity> implements DashboardService{
-
+	private final static Logger logger=LoggerFactory.getLogger(DashboardServiceImpl.class);
 	@Override
 	public List<DashboardEntity> queryAllDashboards() {
 		// 获取当前用户的所在系统信息
 		Long currSystemId = ShiroUtils.getCurrSystemId();
+		logger.info("systemID is "+currSystemId);
 		// 根据查询出来的信息 获取用户sql语句
 		// 根据sql语句查询数据信息
 		// 组装数据返回前端
@@ -52,6 +55,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				chartStatisticalEntity.setSeries(series);
 				String chartStatisticalEntityData = JSON.toJSONString(chartStatisticalEntity);
 				dashboardEntity.setData(chartStatisticalEntityData);
+				logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
 				break;
 			case SINGLE:
 				ChartSingleEntity chartSingleEntity = JSON.parseObject(dashboardEntity.getData(), ChartSingleEntity.class);
@@ -61,6 +65,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				chartSingleEntity.setSeries(singleResult);
 				String chartSingleEntityData = JSON.toJSONString(chartSingleEntity);
 				dashboardEntity.setData(chartSingleEntityData);
+				logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
 				break;
 			case TABLE:
 				ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
@@ -70,6 +75,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				chartTableEntity.setSeries(tableResult);
 				String chartTableEntityData = JSON.toJSONString(chartTableEntity);
 				dashboardEntity.setData(chartTableEntityData);
+				logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
 				break;
 			default:
 				break;
@@ -117,6 +123,8 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		default:
 			break;
 		}
+		logger.info("userSql content is"+ userSqls);
+		logger.info("start validate  userSql");
 		ValidateUtils.is(userSqls).notNull(RCode.DASHBOARD_USERSQL_NULL);
 		try {
 			for (String userSql : userSqls) {
