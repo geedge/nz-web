@@ -135,4 +135,7 @@ public class MissionInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private Integer isGlobal;
+	
+	@TableField(exist=false)
+	private Integer[] viewerId;
 }

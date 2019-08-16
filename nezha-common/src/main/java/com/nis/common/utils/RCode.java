@@ -29,6 +29,7 @@ public enum RCode {
 	SYS_USER_CANNOTDEL(103005, "cannot_del_user_error"), //当前用户不能删除
 
 	SYS_USERGROUP_DUPLICATENAME(104001, "usergroup name duplicate error"), //用户组名称重复
+	SYS_USERGROUP_MATCH_ERROR(104002,"sys_usergroup_match_error"),   //用户与用户组不匹配
 	
 	SYS_I18N_DUPLICATE(105001, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
 
@@ -121,7 +122,7 @@ public enum RCode {
 	MISSION_STATE_ISNULL(400006,"mission_state_isnull"),   //任务状态为空
 	MISSION_STATE_ERROR(400007,"mission_state_error"),   //任务状态错误
 	MISSION_UNLOOP_MISSION_ERROR(40008,"mission_unloop_mission_error"), //非周期任务
-	MISSION_GROUPNODE_ISNULL(400009,"mission_groupnode_isnull"),  //任务节点组信息为空
+	MISSION_GROUPNODE_OR_NODE_ISNULL(400009,"mission_groupnode_or_node_isnull"),  //任务节点组或节点信息为空
 	MISSION_LOOP_START_ERROR(400010,"mission_loop_start_error"), //启动周期任务错误 已终止任务不能启动 
 	MISSION_LOOP_STATE_ERROR(400011,"mission_loop_state_error"), //状态码错误
 	MISSION_NODEINFO_ERROR(400012,"mission_nodeinfo_error"),   //节点或节点组有效性错误

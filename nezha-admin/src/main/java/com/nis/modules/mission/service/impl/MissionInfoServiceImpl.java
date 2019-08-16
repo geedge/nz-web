@@ -48,6 +48,7 @@ import com.nis.modules.mission.utils.MD5Util;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.dao.UserUsergroupDao;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
@@ -74,6 +75,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	private MissionNodeRelService missionNodeRelService;
 	@Autowired
 	private PermissionInfoService permissionInfoService;
+	@Autowired
+	private UserUsergroupDao userUsergroupDao;
 	
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -220,15 +223,29 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 			}
 		}
 		
-		if(null!=nodeGroupIds&&nodeGroupIds.size()>0 && permissionFlag) {
-			for(Long nodeGroupId : nodeGroupIds) {
+		if(permissionFlag) {
+			if(null!=missionInfoEntity.getViewerId()&&missionInfoEntity.getViewerId().length>0) {
+				//验证前台传递的用户组信息是否跟当前用户所在用户组信息一致
+				Integer count = userUsergroupDao.checkUserGroupCorrect(ShiroUtils.getUserId(), missionInfoEntity.getViewerId());
+				if(count!=missionInfoEntity.getViewerId().length) {
+					throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
+				}
+				for(Integer viewId : missionInfoEntity.getViewerId()) {
+					PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
+					permissionInfoEntity.setType(Constant.PM_TYPE_MISSION);
+					permissionInfoEntity.setTypeId(missionInfoEntity.getId());
+					permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
+					if(null == relId) {
+						relId = viewId.longValue();
+					}
+					permissionInfoEntity.setRelId(relId);
+					permissionInfoEntitys.add(permissionInfoEntity);
+				}
+			}else {
 				PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
 				permissionInfoEntity.setType(Constant.PM_TYPE_MISSION);
 				permissionInfoEntity.setTypeId(missionInfoEntity.getId());
 				permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
-				if(null == relId) {
-					relId = nodeGroupId;
-				}
 				permissionInfoEntity.setRelId(relId);
 				permissionInfoEntitys.add(permissionInfoEntity);
 			}
@@ -255,12 +272,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				// 所选节点组下存在网元
 				throw new NZException(RCode.MISSION_NODE_NET_ERROR);
 			}
-			//如果节点全部满足条件 去除节点所在节点组的信息
+		/*	//如果节点全部满足条件 去除节点所在节点组的信息
 			MissionDto removeGroupDto = baseMapper.selectNodeGroupOrNodeForCheck(nodeGroupIds,nodeIds);
 			List<Long> queryNodeGroupIds = removeGroupDto.getNodeGroupIds();
 			if(null != queryNodeGroupIds && queryNodeGroupIds.size()>0) {
 				nodeGroupIds.removeAll(queryNodeGroupIds);
-			}
+			}*/
 		}
 		if(null != nodeGroupIds && nodeGroupIds.size()>0) {
 			logger.info("nodeGroup info :"+JSON.toJSONString(nodeGroupIds));
@@ -287,7 +304,10 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		ValidateUtils.is(missionInfoEntity.getType()).notNull(RCode.MISSION_TYPE_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getName()).notNull(RCode.MISSION_NAME_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getParam()).notNull(RCode.MISSION_PARAM_ISNULL);
-		ValidateUtils.is(missionInfoEntity.getNodeGroupIds()).notNull(RCode.MISSION_GROUPNODE_ISNULL);
+		if(null == missionInfoEntity.getNodeGroupIds() && missionInfoEntity.getNodeGroupIds().size()<=0&&
+				null==missionInfoEntity.getNodeIds() && missionInfoEntity.getNodeIds().size()<=0) {
+			throw new NZException(RCode.MISSION_GROUPNODE_OR_NODE_ISNULL);
+		}
 		//验证保存节点 节点组是否有效
 		checkNodeGroupOrNodeCorrect(missionInfoEntity.getNodeGroupIds(),missionInfoEntity.getNodeIds());
 		switch(MissionType.getMissionNameByTypeId(Integer.valueOf(missionInfoEntity.getType()))) {
