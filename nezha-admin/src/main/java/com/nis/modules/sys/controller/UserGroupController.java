@@ -68,7 +68,7 @@ public class UserGroupController {
      */
     @RequestMapping("/save")
     @ApiOperation(httpMethod = "POST", value = "新增用户组")
-    public R save(@ApiParam @RequestBody UserGroupEntity userGroup){
+    public R save(@RequestBody UserGroupEntity userGroup){
     	ValidateUtils.is(userGroup.getName()).notNull();
     	if (userGroupService.checkName(userGroup)) {
     		return R.error(RCode.SYS_USERGROUP_DUPLICATENAME);

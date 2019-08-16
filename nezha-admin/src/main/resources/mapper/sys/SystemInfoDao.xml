@@ -42,6 +42,7 @@
 		LEFT JOIN user_usergroup uu ON uu.group_id=sur.usergroup_id
 		WHERE uu.user_id=#{userId} and si.del_flag=0
 		GROUP BY si.id, si.name
+		ORDER BY si.id asc
 	</select>
 	
 	<select id="list" resultType="systemInfoEntity">

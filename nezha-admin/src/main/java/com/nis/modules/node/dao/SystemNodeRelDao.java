@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.node.entity.SystemNodeRelEntity;
 
+import java.util.Date;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -19,5 +20,7 @@ import org.springframework.stereotype.Repository;
 @Mapper
 @Repository
 public interface SystemNodeRelDao extends BaseMapper<SystemNodeRelEntity> {
+
+	void deleteByIds(@Param("oldSysNodeRel")List<SystemNodeRelEntity> oldSysNodeRel, @Param("operator")Long userId, @Param("opTime")Date date);
 
 }

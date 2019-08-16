@@ -55,13 +55,8 @@ public class SystemInfoController extends AbstractController {
 	}
 	
 	@RequestMapping(value = "save", method = RequestMethod.POST)
-	@ApiImplicitParams({
-        @ApiImplicitParam(paramType="query", name = "name", value = "用户组名", required = true),
-        @ApiImplicitParam(paramType="query", name = "remarks", value = "备注", required = false),
-        @ApiImplicitParam(paramType="query", name = "usergroupIds", value = "用户组id", required = false, dataType="Long", allowMultiple=true)
-    })
 	@ApiOperation(httpMethod = "POST", response = R.class, value = "保存业务系统")
-	public R save(@ApiParam SystemInfoEntity systemInfo){
+	public R save(@RequestBody SystemInfoEntity systemInfo){
 		//global限制
 		if (!ShiroUtils.isGlobal()) {
 			return R.error(RCode.NO_PERMISSION_ERROR);
@@ -87,7 +82,7 @@ public class SystemInfoController extends AbstractController {
 	
 	@RequestMapping(value = "update", method = RequestMethod.PUT)
 	@ApiOperation(httpMethod = "PUT", response = R.class, value = "修改业务系统")
-	public R update(@ApiParam SystemInfoEntity systemInfo){
+	public R update(@RequestBody SystemInfoEntity systemInfo){
 		//global限制
 		if (!ShiroUtils.isGlobal()) {
 			return R.error(RCode.NO_PERMISSION_ERROR);

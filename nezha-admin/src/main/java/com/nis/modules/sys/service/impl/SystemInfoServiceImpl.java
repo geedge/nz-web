@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -33,6 +34,7 @@ import com.nis.modules.topo.service.TopoInfoService;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -75,12 +77,13 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		String usergroupIdStr = (String)params.get("usergroupId");
+		Long usergroupId = (Long)params.get("usergroupId");
 		Long id = (Long)params.get("id");
 		SystemInfoEntity se = new SystemInfoEntity();
 		IPage<SystemInfoEntity> page = new Query<SystemInfoEntity>().getPage(params);
-		if (!StringUtils.isEmpty(usergroupIdStr)) {
-			se.setUsergroupId(Long.valueOf(usergroupIdStr));
+		//用于新增/修改用户组页展示业务系统时有usergroupId
+		if (usergroupId != null) {
+			se.setUsergroupId(usergroupId);
 		}
 		if (id != null) {
 			se.setId(id);
@@ -230,7 +233,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		pi.setRelIds(ids);
 		pi.setViewLevel(Constant.VIEWLEVEL_SYS);
 		List<DeteSetInfoEntity> dsByPermission = deteSetService.queryByPermission(pi);
-		if (dsByPermission != null && dsByPermission.size() > 0) {
+		if (!CommonUtil.isNull(dsByPermission)) {
 			for (DeteSetInfoEntity ds : dsByPermission) {
 				PermissionInfoEntity waitingDelete = ds.getPermission();
 				waitingDelete.setDelFlag(Constant.DELFLAG_TRUE);
@@ -248,7 +251,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		//删除任务
 		pi.setType(Constant.PM_TYPE_MISSION);
 		List<MissionInfoEntity> msByPermission = missionService.queryByPermission(pi);
-		if (msByPermission != null && msByPermission.size() > 0) {
+		if (!CommonUtil.isNull(msByPermission)) {
 			for (MissionInfoEntity ds : msByPermission) {
 				PermissionInfoEntity waitingDelete = ds.getPermission();
 				waitingDelete.setDelFlag(Constant.DELFLAG_TRUE);
@@ -264,7 +267,9 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		}
 		
 		//删除permission_info记录
-		permissionService.updateBatchById(waitingDeletePermissions);
+		if (!CommonUtil.isNull(waitingDeletePermissions)) {
+			permissionService.updateBatchById(waitingDeletePermissions);
+		}
 			
 		//删除systemInfo
 		UpdateWrapper<SystemInfoEntity> siWrapper = new UpdateWrapper<>();
@@ -292,6 +297,8 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 			//保存sys-node
 			List<SystemNodeRelEntity> toSaveSysNodeRel = new ArrayList<>();
 			for (Long uuid : uuids) {
+				/*遍历已有的关联与uuids对比，记录重复则continue，并将重复的记录从已有关联中移除，
+				这样已有的关联oldSysNodeRel最后剩下的是应该被删掉的记录，对其进行删除*/
 				if (!checkDuplicate(oldSysNodeRel, entity.getId(), uuid)) {
 					continue;
 				}
@@ -301,11 +308,14 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 				snr.setSystemId(entity.getId());
 				snr.setOperator(ShiroUtils.getUserId());
 				snr.setOpTime(now);
-				toSaveSysNodeRel.add(snr);
+				toSaveSysNodeRel.add(snr);//新关联
 			}
 			
 			if (toSaveSysNodeRel.size() > 0) {
-				sysNodeService.saveBatch(toSaveSysNodeRel);
+				sysNodeService.saveBatch(toSaveSysNodeRel);//保存新关联
+			}
+			if (oldSysNodeRel.size() > 0) {
+				sysNodeService.delete(oldSysNodeRel);//删除
 			}
 		}
 		return true;
@@ -370,9 +380,12 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	 */
 	private boolean checkDuplicate(List<SystemNodeRelEntity> oldSysNodeRel, Long systemId, Long uuid) {
 		boolean flag = true;
-		for (SystemNodeRelEntity o : oldSysNodeRel) {
+		Iterator<SystemNodeRelEntity> it = oldSysNodeRel.iterator();
+		while(it.hasNext()) {
+			SystemNodeRelEntity o = it.next();
 			if (o.getUuid() == uuid && o.getSystemId() == systemId) {
 				flag = false;
+				it.remove();//命中的移除
 				break;
 			}
 		}
