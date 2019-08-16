@@ -46,8 +46,8 @@
 		SELECT mi.*
 		FROM mission_info mi
 		INNER JOIN permission_info p
-		WHERE 
-		<if test="isGlobal==null">
+		WHERE 1=1
+		<if test="missionInfo.isGlobal==null">
 		(mi.view_level='3'
 		    OR (mi.view_level='2' AND p.type=4 AND p.type_id=mi.id AND p.rel_id=#{missionInfo.user.currSystemId})
 		    OR (mi.view_level='1' AND p.type=4 AND p.type_id=mi.id AND p.rel_id in
@@ -65,7 +65,7 @@
 		<if test="missionInfo.name != null ">
 			    AND mi.=#{missionInfo.name}
 		</if>
-		and mi.del_flag=0 and pi.del_flag=0
+		and mi.del_flag=0 and p.del_flag=0
 		GROUP BY mi.id
 		<if test="missionInfo.sidx != null ">
 			order by mi.#{missionInfo.sidx} #{missionInfo.order}
