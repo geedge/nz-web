@@ -15,6 +15,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface UserUsergroupDao extends BaseMapper<UserUsergroupEntity> {
 	//验证用户和用户组信息是否一致
-	Integer checkUserGroupCorrect(@Param("userId")Long userId,@Param("userGroupIds")Integer[] userGroupIds);
+	Integer checkUserGroupCorrect(@Param("userId")Long userId,@Param("userGroupIds")Long[] userGroupIds);
 
 }

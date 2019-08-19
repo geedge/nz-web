@@ -16,7 +16,7 @@
 	<select id="checkUserGroupCorrect" resultType="java.lang.Integer">
 		select count(1) from sys_user u left join user_usergroup uug on u.user_id=uug.user_id
 		left join user_group ug on uug.group_id=ug.id
-		where u.user_id=#{userId} and ug.del_flag=0 and ug.id in 
+		where u.user_id=#{userId} and ug.del_flag=0 and uug.del_flag=0 and ug.id in 
 		<foreach collection="userGroupIds" item="userGroupId" open="(" separator="," close=")">
             #{userGroupId}
         </foreach>

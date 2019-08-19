@@ -196,11 +196,13 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		List<PermissionInfoEntity> permissionInfoEntitys = new ArrayList<PermissionInfoEntity>();
 		Long relId = null;
 		boolean permissionFlag=false;
+		boolean systemFlag=false;
 		logger.info("start save node missionInfo and permissionInfo data");
 		if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())) {
 			permissionFlag=true;
 		} else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
 			relId = ShiroUtils.getCurrSystemId();
+			systemFlag=true;
 			permissionFlag=true;
 		}
 		if(null!=nodeIds&&nodeIds.size()>0) {
@@ -212,7 +214,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				missionNodeRelEntity.setOpTime(new Date());
 				missionNodeRelEntitys.add(missionNodeRelEntity);
 			}
-		}else if(null!=nodeGroupIds&&nodeGroupIds.size()>0) {
+		}
+		if(null!=nodeGroupIds&&nodeGroupIds.size()>0) {
 			for(Long nodeGroupId : nodeGroupIds) {
 				MissionNodeRelEntity missionNodeRelEntity=new MissionNodeRelEntity();
 				missionNodeRelEntity.setMissionId(missionInfoEntity.getId());
@@ -230,12 +233,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				if(count!=missionInfoEntity.getViewerId().length) {
 					throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
 				}
-				for(Integer viewId : missionInfoEntity.getViewerId()) {
+				for(Long viewId : missionInfoEntity.getViewerId()) {
 					PermissionInfoEntity permissionInfoEntity = new PermissionInfoEntity();
 					permissionInfoEntity.setType(Constant.PM_TYPE_MISSION);
 					permissionInfoEntity.setTypeId(missionInfoEntity.getId());
 					permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
-					if(null == relId) {
+					if(!systemFlag) {
 						relId = viewId.longValue();
 					}
 					permissionInfoEntity.setRelId(relId);

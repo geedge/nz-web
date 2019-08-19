@@ -137,5 +137,5 @@ public class MissionInfoEntity implements Serializable {
 	private Integer isGlobal;
 	
 	@TableField(exist=false)
-	private Integer[] viewerId;
+	private Long[] viewerId;
 }
