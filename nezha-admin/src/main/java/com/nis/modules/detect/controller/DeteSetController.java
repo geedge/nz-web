@@ -2,6 +2,7 @@ package com.nis.modules.detect.controller;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -9,6 +10,8 @@ import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
+import com.nis.modules.sys.service.UserUsergroupService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,8 @@ public class DeteSetController {
     private NodeGroupInfoService nodeGroupInfoService;
     @Autowired
     private SystemNodeRelService systemNodeRelService;
+    @Autowired
+    private UserUsergroupService userUsergroupService;
 
     /**
      * 列表
@@ -83,6 +88,10 @@ public class DeteSetController {
         if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){
             throw new NZException(RCode.SET_TYPE_NOTEXISTS);
         }
+
+        if(Constant.VIEWLEVEL_UG.equals(deteSetInfo.getViewLevel())&&!userUsergroupService.checkUserGroupCorrect(ShiroUtils.getUserId(),deteSetInfo.getViewerId())){
+            throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
+        }
         deteSetInfoService.saveEntity(deteSetInfo);
 
         return R.ok();
@@ -108,6 +117,10 @@ public class DeteSetController {
         }
         if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){
             throw new NZException(RCode.SET_TYPE_NOTEXISTS);
+        }
+
+        if(Constant.VIEWLEVEL_UG.equals(deteSetInfo.getViewLevel())&&!userUsergroupService.checkUserGroupCorrect(ShiroUtils.getUserId(),deteSetInfo.getViewerId())){
+            throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
         }
         deteSetInfoService.updateEntity(deteSetInfo);
         return R.ok();

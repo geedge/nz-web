@@ -16,5 +16,6 @@ import java.util.Map;
 public interface UserUsergroupService extends IService<UserUsergroupEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+    boolean checkUserGroupCorrect(Long userId,Long[] userGroupIds);
 }
 

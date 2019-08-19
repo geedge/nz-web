@@ -26,4 +26,9 @@ public class UserUsergroupServiceImpl extends ServiceImpl<UserUsergroupDao, User
         return new PageUtils(page);
     }
 
+    public boolean checkUserGroupCorrect(Long userId,Long[] userGroupIds){
+        Integer count=this.getBaseMapper().checkUserGroupCorrect(userId,userGroupIds);
+        return userGroupIds.length==count.intValue();
+    }
+
 }
