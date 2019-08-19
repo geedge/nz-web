@@ -29,7 +29,7 @@ public class UserUsergroupServiceImpl extends ServiceImpl<UserUsergroupDao, User
     }
 
     public boolean checkUserGroupCorrect(Long userId,Long[] userGroupIds){
-        if(userGroupIds==null&&userGroupIds.length<1){
+        if(userGroupIds==null||userGroupIds.length<1){
             throw new NZException(RCode.SYS_USERGROUPLIST_ISNULL);
         }
         Integer count=this.getBaseMapper().checkUserGroupCorrect(userId,userGroupIds);
