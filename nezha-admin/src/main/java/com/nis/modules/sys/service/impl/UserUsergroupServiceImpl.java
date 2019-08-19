@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.RCode;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -27,6 +29,9 @@ public class UserUsergroupServiceImpl extends ServiceImpl<UserUsergroupDao, User
     }
 
     public boolean checkUserGroupCorrect(Long userId,Long[] userGroupIds){
+        if(userGroupIds==null&&userGroupIds.length<1){
+            throw new NZException(RCode.SYS_USERGROUPLIST_ISNULL);
+        }
         Integer count=this.getBaseMapper().checkUserGroupCorrect(userId,userGroupIds);
         return userGroupIds.length==count.intValue();
     }

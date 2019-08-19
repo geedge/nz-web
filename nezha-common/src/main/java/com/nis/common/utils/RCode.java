@@ -30,7 +30,8 @@ public enum RCode {
 
 	SYS_USERGROUP_DUPLICATENAME(104001, "usergroup name duplicate error"), //用户组名称重复
 	SYS_USERGROUP_MATCH_ERROR(104002,"sys_usergroup_match_error"),   //用户与用户组不匹配
-	
+	SYS_USERGROUPLIST_ISNULL(104003,"SYS_USERGROUPLIST_ISNULL"),//选择的用户组列表为空
+
 	SYS_I18N_DUPLICATE(105001, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
 
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
