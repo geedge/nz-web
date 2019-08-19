@@ -26,7 +26,34 @@
         nc.name AS cab_name
     </sql>
 
+    <!-- 节点关联机柜 -->
+    <resultMap type="com.nis.modules.node.entity.NodeInfoEntity" id="nodeinfoWithCab">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="hostName" column="host_name"/>
+        <result property="ip" column="ip"/>
+        <result property="ipLong" column="ip_long"/>
+        <result property="uuid" column="uuid"/>
+        <result property="type" column="type"/>
+        <result property="tag" column="tag"/>
+        <result property="userName" column="user_name"/>
+        <result property="password" column="password"/>
+        <result property="state" column="state"/>
+        <result property="cabinetId" column="cabinet_id"/>
+        <result property="uSize" column="u_size"/>
+        <result property="cabinetStart" column="cabinet_start"/>
+        <result property="snmpPort" column="snmp_port"/>
+        <result property="snmpCommunity" column="snmp_community"/>
+        <result property="remark" column="remark"/>
+        <result property="operator" column="operator"/>
+        <result property="opTime" column="op_time"/>
 
+        <!-- 一对一  关联机柜 -->
+        <result property="cabinetInfo.id" column="cab_id"/>
+        <result property="cabinetInfo.name" column="cab_name"/>
+    </resultMap>
+
+    <!-- 节点关联机柜和业务系统 -->
     <resultMap type="com.nis.modules.node.entity.NodeInfoEntity" id="nodeinfoWithCabSys">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
@@ -120,7 +147,7 @@
 
 
     <!--  查询机房下所包含的所有节点  包含节点自身的过滤条件  -->
-    <select id="selectListByRoomId" resultMap="nodeinfoWithCabSys">
+    <select id="selectListByRoomId" resultMap="nodeinfoWithCab">
 
     <if test="params.systemId != null and params.systemId != '' and params.systemId != 1">
         SELECT tempni.* FROM (
@@ -183,7 +210,7 @@
 
     </select>
 
-    <select id="selectListByGroups" resultMap="nodeinfoWithCabSys">
+    <select id="selectListByGroups" resultMap="nodeinfoWithCab">
 
     <if test="params.systemId != null and params.systemId != '' and params.systemId != 1">
         SELECT tempni.*  FROM

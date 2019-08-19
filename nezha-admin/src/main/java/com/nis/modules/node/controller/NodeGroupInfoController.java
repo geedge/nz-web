@@ -42,7 +42,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组详情查询")
     @GetMapping("/detail")
-    public R detail(@RequestParam("id") Integer id) {
+    public R detail(@RequestParam("id") Long id) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
 
         NodeGroupInfoEntity nodeGroup = nodegroupInfoService.detail(id);

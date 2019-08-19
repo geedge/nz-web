@@ -83,7 +83,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     }
 
     @Override
-    public NodeGroupInfoEntity detail(Integer id) {
+    public NodeGroupInfoEntity detail(Long id) {
         NodeGroupInfoEntity nodegroup = nodegroupInfoDao.detail(id);
         return nodegroup;
     }

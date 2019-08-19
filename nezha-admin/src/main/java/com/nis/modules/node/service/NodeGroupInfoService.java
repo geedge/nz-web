@@ -18,7 +18,7 @@ public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
 
     List<SystemInfoEntity> getSysNodeGroups();
 
-    NodeGroupInfoEntity detail(Integer id);
+    NodeGroupInfoEntity detail(Long id);
 
     void saveNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo);
 
