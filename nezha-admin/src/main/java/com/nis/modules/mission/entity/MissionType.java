@@ -2,8 +2,8 @@ package com.nis.modules.mission.entity;
 
 public enum MissionType{
 	FILE_PUSH(1,"FilePush"),
-	EXECUTE_INSTRUCT(4,"ExecuteInstruct"),
-	UGPRADE(6,"Ugprade");
+	EXECUTE_INSTRUCT(2,"ExecuteInstruct"),
+	UGPRADE(3,"Ugprade");
 	
 	private int missionTypeId;
 	private String missionTypeName;

@@ -87,7 +87,7 @@
 	<select id="checkNodeGroupCorrect" resultType="com.nis.modules.mission.entity.MissionDto">
 		select count(DISTINCT ngi.id) dgnic,
 		count(case when ni.uuid is null then 1 end) ngnnc,
-		count(case when ni.state = 2 then 1 end) nnc
+		count(case when ni.type = 2 then 1 end) nnc
 		from nodegroup_info ngi left join node_group_rel ngr on ngi.id = ngr.group_id
 		left join node_info ni on ngr.uuid=ni.uuid
 		where  ngi.del_flag=0 and ngi.id in 
@@ -97,7 +97,7 @@
 	</select>
 	<select id="checkNodeCorrect" resultType="com.nis.modules.mission.entity.MissionDto">
 		select count(1) total,
-		count(case when ni.state = 2 then 1 end) nnc
+		count(case when ni.type = 2 then 1 end) nnc
 		from node_info ni 
 		where 
  		ni.id in 

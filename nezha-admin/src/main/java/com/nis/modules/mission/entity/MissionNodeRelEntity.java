@@ -47,5 +47,8 @@ public class MissionNodeRelEntity implements Serializable {
 	 * 操作时间
 	 */
 	private Date opTime;
-
+	/**
+	 * 
+	 */
+	private Long operator;
 }

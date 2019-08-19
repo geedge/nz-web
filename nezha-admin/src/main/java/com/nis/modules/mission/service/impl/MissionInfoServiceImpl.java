@@ -210,6 +210,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				missionNodeRelEntity.setType(Constant.MISSION_NODE_REL_TYPE_NODE);
 				missionNodeRelEntity.setRelId(nodeId);
 				missionNodeRelEntity.setOpTime(new Date());
+				missionNodeRelEntity.setOperator(ShiroUtils.getUserId());
 				missionNodeRelEntitys.add(missionNodeRelEntity);
 			}
 		}
@@ -220,6 +221,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				missionNodeRelEntity.setType(Constant.MISSION_NODE_REL_TYPE_GROUP);
 				missionNodeRelEntity.setRelId(nodeGroupId);
 				missionNodeRelEntity.setOpTime(new Date());
+				missionNodeRelEntity.setOperator(ShiroUtils.getUserId());
 				missionNodeRelEntitys.add(missionNodeRelEntity);
 			}
 		}
@@ -237,6 +239,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					permissionInfoEntity.setTypeId(missionInfoEntity.getId());
 					permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
 					permissionInfoEntity.setRelId(viewId);
+					permissionInfoEntity.setOperator(ShiroUtils.getUserId());
+					permissionInfoEntity.setOpTime(new Date());
 					permissionInfoEntitys.add(permissionInfoEntity);
 				}
 			}else {
@@ -245,6 +249,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 				permissionInfoEntity.setTypeId(missionInfoEntity.getId());
 				permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
 				permissionInfoEntity.setRelId(relId);
+				permissionInfoEntity.setOperator(ShiroUtils.getUserId());
+				permissionInfoEntity.setOpTime(new Date());
 				permissionInfoEntitys.add(permissionInfoEntity);
 			}
 		}
@@ -280,7 +286,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		if(null != nodeGroupIds && nodeGroupIds.size()>0) {
 			logger.info("nodeGroup info :"+JSON.toJSONString(nodeGroupIds));
 			MissionDto groupDto = baseMapper.checkNodeGroupCorrect(nodeGroupIds);
-			if(null != groupDto.getDgnic() || groupDto.getDgnic() != nodeGroupIds.size()) {
+			if(null != groupDto.getDgnic() && groupDto.getDgnic() != nodeGroupIds.size()) {
 				// 总数不对应 存在无效的节点组
 				throw new NZException(RCode.MISSION_NODEINFO_ERROR);
 			}else if(null != groupDto.getNgnnc() && groupDto.getNgnnc()>0) {
@@ -302,6 +308,9 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		ValidateUtils.is(missionInfoEntity.getType()).notNull(RCode.MISSION_TYPE_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getName()).notNull(RCode.MISSION_NAME_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getParam()).notNull(RCode.MISSION_PARAM_ISNULL);
+		if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
+			ValidateUtils.is(missionInfoEntity.getViewerId()).notNull(RCode.MISSION_GROUPNODE_OR_NODE_ISNULL);
+		}
 		if(null == missionInfoEntity.getNodeGroupIds() && missionInfoEntity.getNodeGroupIds().size()<=0&&
 				null==missionInfoEntity.getNodeIds() && missionInfoEntity.getNodeIds().size()<=0) {
 			throw new NZException(RCode.MISSION_GROUPNODE_OR_NODE_ISNULL);
@@ -923,6 +932,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		updateMission.setName(missionInfoEntity.getName());
 		updateMission.setId(missionInfoEntity.getId());
 		updateMission.setRemark(missionInfoEntity.getRemark());
+		updateMission.setOperator(ShiroUtils.getUserId());
+		updateMission.setOpTime(new Date());
 		this.updateById(updateMission);
 	}
 
@@ -968,7 +979,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		logger.info("query mission info :"+JSON.toJSONString(missionInfoEntity));
 		//没有备份的任务指令要移除
 		List<ParamForUpgrade> paramForUpgrades = JSON.parseArray(missionInfoEntity.getParam(), ParamForUpgrade.class);
-		for(int i=0; i<paramForUpgrades.size();i++) {
+		for(int i=paramForUpgrades.size()-1; i>=0;i--) {
 			List<Backup> backups = paramForUpgrades.get(i).getBackups();
 			if(null == backups ||CommonUtil.isNull(backups)) {
 				paramForUpgrades.remove(i);

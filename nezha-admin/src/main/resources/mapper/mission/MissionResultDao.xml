@@ -13,6 +13,7 @@
         <result property="cycle" column="cycle"/>
         <result property="file" column="file"/>
         <result property="opTime" column="op_time"/>
+        <result property="operator" column="operator"/>
         <association property="nodeInfoEntity" javaType="com.nis.modules.node.entity.NodeInfoEntity" columnPrefix="node_">
             <id column="id" property="id"/>
             <result column="name" property="name"/>

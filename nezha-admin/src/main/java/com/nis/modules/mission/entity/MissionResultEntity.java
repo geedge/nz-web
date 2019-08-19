@@ -55,6 +55,10 @@ public class MissionResultEntity implements Serializable {
 	 * 操作时间
 	 */
 	private Date opTime;
+	/**
+	 * 
+	 */
+	private Long operator;
 	
 	@TableField(exist=false)
 	private NodeInfoEntity nodeInfoEntity;
