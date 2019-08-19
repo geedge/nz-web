@@ -196,13 +196,11 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		List<PermissionInfoEntity> permissionInfoEntitys = new ArrayList<PermissionInfoEntity>();
 		Long relId = null;
 		boolean permissionFlag=false;
-		boolean systemFlag=false;
 		logger.info("start save node missionInfo and permissionInfo data");
 		if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())) {
 			permissionFlag=true;
 		} else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
 			relId = ShiroUtils.getCurrSystemId();
-			systemFlag=true;
 			permissionFlag=true;
 		}
 		if(null!=nodeIds&&nodeIds.size()>0) {
@@ -238,10 +236,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 					permissionInfoEntity.setType(Constant.PM_TYPE_MISSION);
 					permissionInfoEntity.setTypeId(missionInfoEntity.getId());
 					permissionInfoEntity.setViewLevel(missionInfoEntity.getViewLevel());
-					if(!systemFlag) {
-						relId = viewId.longValue();
-					}
-					permissionInfoEntity.setRelId(relId);
+					permissionInfoEntity.setRelId(viewId);
 					permissionInfoEntitys.add(permissionInfoEntity);
 				}
 			}else {
@@ -939,11 +934,13 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		logger.info("ConverseMissionById is :"+id);
 		MissionInfoEntity mission = baseMapper.selectById(id);
 		Long missionId = mission.getId();
-		if(mission.getType().equals(MissionType.UGPRADE.getMissionTypeId())) {
+		if(Integer.valueOf(mission.getType()).equals(MissionType.UGPRADE.getMissionTypeId())) {
 			//当前任务类型为升级部署
-			ParamForUpgrade paramForUpgrade = JSON.parseObject(mission.getParam(), ParamForUpgrade.class);
+			MissionDto upgradeDto = JSON.parseObject(mission.getParam(), MissionDto.class);
+			List<ParamForUpgrade> paramForUpgrades = upgradeDto.getParamForUpgrades();
+			ParamForUpgrade paramForUpgrade = paramForUpgrades.get(0);
 			Long version = paramForUpgrade.getVersion();
-			if(null != version) {
+			if(null == version) {
 				MissionResultEntity missionResult = missionResultDao.selectById(missionId);
 				if(null != missionResult) {
 					List<Backup> backups = paramForUpgrade.getBackups();
