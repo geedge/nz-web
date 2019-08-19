@@ -10,9 +10,8 @@ import com.nis.modules.detect.dao.DeteSetInfoDao;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
 import com.nis.modules.detect.entity.DeteTypeInfoEntity;
-import com.nis.modules.detect.service.DeteSetInfoService;
-import com.nis.modules.detect.service.DeteSetNodeRelService;
-import com.nis.modules.detect.service.DeteTypeInfoService;
+import com.nis.modules.detect.entity.DeteWarnRelEntity;
+import com.nis.modules.detect.service.*;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
@@ -45,6 +44,10 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     private DeteTypeInfoService deteTypeInfoService;
     @Autowired
     private UserUsergroupService userUsergroupService;
+    @Autowired
+    private DeteWarnRelService warnRelService;
+    @Autowired
+    private DeteWarnInfoService deteWarnInfoService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<DeteSetInfoEntity> page = new Query<DeteSetInfoEntity>().getPage(params);
@@ -82,6 +85,14 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         return new PageUtils(page);
     }
 
+    /**
+    * @Description 查询当前用户可见的所有监测设置的id
+    * @Author  rui
+    * @Date   2019/8/19
+    * @Param
+    * @Return
+    * @Exception
+    */
     public List<Long> queryAllowedSetIds(){
         List<Long> allowedSetIds=null;
         Integer isGlobal=0; //是否是global业务系统 0：不是 1 是
@@ -125,7 +136,6 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         //保存setInfo
         this.save(deteSetInfo);
 
-        Long setId=deteSetInfo.getId();
 
         List<PermissionInfoEntity> permissionInfos=new ArrayList<PermissionInfoEntity>();
         //维护set_node_rel
@@ -133,58 +143,20 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         deteSetNodeRelService.saveBatch(setNodeRels);
 
         //维护权限表 无限制则不维护权限表
-        switch (deteSetInfo.getViewLevel()){//1:用户组，2：系统内全部人员，3：无限制，默认2
-            case Constant.VIEWLEVEL_UG:
-                Long[] usergroupIds = deteSetInfo.getViewerId();
-                for(Long userGroupId:usergroupIds){
-                    PermissionInfoEntity permissionInfoEntity=new PermissionInfoEntity();
-                    permissionInfoEntity.setType(Constant.PM_TYPE_DETESET);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
-                    permissionInfoEntity.setTypeId(setId);
-                    permissionInfoEntity.setViewLevel(deteSetInfo.getViewLevel());
-                    permissionInfoEntity.setRelId(userGroupId);
-                    permissionInfoEntity.setOperator(userId);
-                    permissionInfoEntity.setOpTime(date);
-
-                    permissionInfos.add(permissionInfoEntity);
-                }
-                break;
-            case Constant.VIEWLEVEL_SYS:
-                Long currSystemId = ShiroUtils.getCurrSystemId();
-                PermissionInfoEntity permissionInfoEntity=new PermissionInfoEntity();
-                permissionInfoEntity.setType(Constant.PM_TYPE_DETESET);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
-                permissionInfoEntity.setTypeId(setId);
-                permissionInfoEntity.setViewLevel(deteSetInfo.getViewLevel());
-                permissionInfoEntity.setRelId(currSystemId);
-                permissionInfoEntity.setOperator(userId);
-                permissionInfoEntity.setOpTime(date);
-
-                permissionInfos.add(permissionInfoEntity);
-                break;
-            case Constant.VIEWLEVEL_ALL:
-
-                break;
-        }
-        if(permissionInfos.size()>0){
-            permissionInfoService.saveBatch(permissionInfos);
-        }
+        buildPermissionInfoRel(deteSetInfo, userId, date);
         log.info("save deteSetInfo success! setId[{}],viewLevel[{}],viewer[{}]",deteSetInfo.getId(),deteSetInfo.getViewLevel(),deteSetInfo.getViewerId());
     }
+
 
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateEntity(DeteSetInfoEntity deteSetInfo) {
-        DeteSetInfoEntity oldSet = this.getById(deteSetInfo.getId());
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
         deteSetInfo.setOperator(userId);
         deteSetInfo.setOpTime(date);
-        if(oldSet!=null&&oldSet.getViewLevel()!=null){
-            deteSetInfo.setViewLevel(oldSet.getViewLevel());
-        }else{
-            deteSetInfo.setViewLevel(Constant.VIEWLEVEL_SYS);
-        }
 
         this.updateById(deteSetInfo);
 
@@ -194,6 +166,17 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         //添加新的关系
         List<DeteSetNodeRelEntity> setNodeRels = buildRels(deteSetInfo, userId, date);
         deteSetNodeRelService.saveBatch(setNodeRels);
+
+        //删除之前建立的权限关系
+        UpdateWrapper<PermissionInfoEntity> permissionInfoUpdateWrapper = new UpdateWrapper<PermissionInfoEntity>();
+        permissionInfoUpdateWrapper.set("operator",userId);
+        permissionInfoUpdateWrapper.set("op_time",date);
+        permissionInfoUpdateWrapper.set("del_flag",Constant.DELFLAG_TRUE);
+        permissionInfoUpdateWrapper.eq("type",Constant.PM_TYPE_DETESET);
+        permissionInfoUpdateWrapper.eq("type_id",deteSetInfo.getId());
+        permissionInfoService.update(permissionInfoUpdateWrapper);
+        //添加新的权限信息
+        buildPermissionInfoRel(deteSetInfo,userId,date);
 
     }
 
@@ -226,6 +209,22 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
             permissionUpdateWrapper.eq("type",Constant.PM_TYPE_DETESET);//1、dete_type,2、dete_set,3、dete_warn,4、mission
             permissionUpdateWrapper.in("type_id",ids);
             permissionInfoService.update(permissionUpdateWrapper);
+
+            //删除告警信息
+            QueryWrapper<DeteWarnRelEntity> deteWarnRelQueryWrapper = new QueryWrapper<>();
+            deteWarnRelQueryWrapper.eq("rel_type",Constant.WARN_REL_SET);
+            deteWarnRelQueryWrapper.in("rel_id",ids);
+
+            List<DeteWarnRelEntity> deteWarnRels = warnRelService.list(deteWarnRelQueryWrapper);
+            if(deteWarnRels!=null&&deteWarnRels.size()>0){
+                Long[] warnIds=new Long[deteWarnRels.size()];
+                for(int i=0;i<deteWarnRels.size();i++){
+                    DeteWarnRelEntity warnRelEntity=deteWarnRels.get(i);
+                    warnIds[i]=warnRelEntity.getWarnId();
+                }
+                deteWarnInfoService.deleteEntity(warnIds);
+            }
+
         }
 
         log.info("change deteSetInfo state to [{}],is delete [{}]",state,"1".equals(state));
@@ -239,6 +238,7 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
             setIds[i]=deteSetInfoEntity.getId();
         }
         this.changeStateByIds(setIds,Constant.DELFLAG_TRUE );
+
     }
 
     @Override
@@ -308,6 +308,43 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
 
         return setNodeRels;
     }
+    private void buildPermissionInfoRel(DeteSetInfoEntity deteSetInfo, Long userId, Date date) {
+        Long setId =deteSetInfo.getId() ;
+        List<PermissionInfoEntity> permissionInfos =new ArrayList<PermissionInfoEntity>();
+        switch (deteSetInfo.getViewLevel()){//1:用户组，2：系统内全部人员，3：无限制，默认2
+            case Constant.VIEWLEVEL_UG:
+                Long[] usergroupIds = deteSetInfo.getViewerId();
+                for(Long userGroupId:usergroupIds){
+                    PermissionInfoEntity permissionInfoEntity=new PermissionInfoEntity();
+                    permissionInfoEntity.setType(Constant.PM_TYPE_DETESET);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
+                    permissionInfoEntity.setTypeId(setId);
+                    permissionInfoEntity.setViewLevel(deteSetInfo.getViewLevel());
+                    permissionInfoEntity.setRelId(userGroupId);
+                    permissionInfoEntity.setOperator(userId);
+                    permissionInfoEntity.setOpTime(date);
 
+                    permissionInfos.add(permissionInfoEntity);
+                }
+                break;
+            case Constant.VIEWLEVEL_SYS:
+                Long currSystemId = ShiroUtils.getCurrSystemId();
+                PermissionInfoEntity permissionInfoEntity=new PermissionInfoEntity();
+                permissionInfoEntity.setType(Constant.PM_TYPE_DETESET);//'1、dete_type,2、dete_set,3、dete_warn,4、mission'
+                permissionInfoEntity.setTypeId(setId);
+                permissionInfoEntity.setViewLevel(deteSetInfo.getViewLevel());
+                permissionInfoEntity.setRelId(currSystemId);
+                permissionInfoEntity.setOperator(userId);
+                permissionInfoEntity.setOpTime(date);
+
+                permissionInfos.add(permissionInfoEntity);
+                break;
+            case Constant.VIEWLEVEL_ALL:
+
+                break;
+        }
+        if(permissionInfos.size()>0){
+            permissionInfoService.saveBatch(permissionInfos);
+        }
+    }
 
 }

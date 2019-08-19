@@ -97,13 +97,19 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();
 
-        UpdateWrapper<DeteWarnInfoEntity> warnInfoUpdateWrapper = new UpdateWrapper<>();
+        UpdateWrapper<DeteWarnInfoEntity> warnInfoUpdateWrapper = new UpdateWrapper<DeteWarnInfoEntity>();
         warnInfoUpdateWrapper.set("operator", userId);
         warnInfoUpdateWrapper.set("op_time", date);
         warnInfoUpdateWrapper.set("del_flag", Constant.DELFLAG_TRUE);
         warnInfoUpdateWrapper.in("id", ids);
         this.update(warnInfoUpdateWrapper);
 
+        UpdateWrapper<DeteWarnRelEntity> warnRelUpdateWrapper = new UpdateWrapper<DeteWarnRelEntity>();
+        warnRelUpdateWrapper.set("operator", userId);
+        warnRelUpdateWrapper.set("op_time", date);
+        warnRelUpdateWrapper.set("del_flag", Constant.DELFLAG_TRUE);
+        warnRelUpdateWrapper.in("warn_id", ids);
+        deteWarnRelService.update(warnRelUpdateWrapper);
     }
 
     @Override
