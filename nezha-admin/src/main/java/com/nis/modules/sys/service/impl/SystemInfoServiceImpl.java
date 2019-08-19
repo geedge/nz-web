@@ -37,6 +37,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service("systemInfoService")
 public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfoEntity> implements SystemInfoService {
 
+	private final static Logger logger = LoggerFactory.getLogger(SystemInfoServiceImpl.class);
+	
 	@Autowired
 	private SystemUsergroupService sysUsergroupService;
 	@Autowired
@@ -115,19 +119,26 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	
 	@Transactional(rollbackFor = Exception.class)
 	public boolean save(SystemInfoEntity systemInfo) {
+		logger.info("新增systemInfo...");
 		//新增system
 		baseMapper.insert(systemInfo);
 		//新增system-usergroup记录
 		List<Integer> usergroupIds = systemInfo.getUsergroupIds();
 		if (usergroupIds != null && usergroupIds.size() > 0) {
+			List<SystemUsergroupEntity> toSave = new ArrayList<>();
+			StringBuilder log = new StringBuilder("保存system-usergroup：");
 			for (Integer uid : usergroupIds) {
 				SystemUsergroupEntity su = new SystemUsergroupEntity();
 				su.setSystemId(systemInfo.getId());
 				su.setUsergroupId(Long.valueOf(uid.toString()));
 				su.setOpTime(systemInfo.getUpdateDate());
 				su.setOperator(systemInfo.getUpdateBy());
-				sysUsergroupService.save(su);
+				toSave.add(su);
+				
+				log.append("system:" + systemInfo.getId() + ",usergroup:" + uid + "; ");
 			}
+			logger.info(log.toString());
+			sysUsergroupService.saveBatch(toSave);
 		}
 		//新增拓扑图
 		TopoInfoEntity topo = new TopoInfoEntity();
@@ -144,6 +155,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	
 	@Transactional(rollbackFor = Exception.class)
 	public boolean updateById(SystemInfoEntity systemInfo) {
+		logger.info("update systemInfo...");
 		//修改system
 		baseMapper.updateById(systemInfo);
 		
@@ -162,24 +174,34 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		sugQuery.eq(true, "del_flag", Constant.DELFLAG_FALSE);
 		List<SystemUsergroupEntity> oldSystemUsergroups = sysUsergroupService.list(sugQuery);
 		if (!CommonUtil.isNull(oldSystemUsergroups)) {
+			StringBuilder log = new StringBuilder("删除旧system-usergroup：");
 			for (SystemUsergroupEntity suEntity : oldSystemUsergroups) {
 				suEntity.setDelFlag(Constant.DELFLAG_TRUE);
 				suEntity.setOperator(systemInfo.getUpdateBy());
 				suEntity.setOpTime(systemInfo.getUpdateDate());
+				
+				log.append(suEntity.getId() + "; ");
 			}
+			logger.info(log.toString());
 			sysUsergroupService.updateBatchById(oldSystemUsergroups);
 		}
 		//新增新纪录
 		List<Integer> usergroupIds = systemInfo.getUsergroupIds();
 		if (!CommonUtil.isNull(usergroupIds)) {
+			List<SystemUsergroupEntity> toSave = new ArrayList<>();
+			StringBuilder log = new StringBuilder("增加新system-usergroup：");
 			for (Integer ugId : usergroupIds) {
 				SystemUsergroupEntity su = new SystemUsergroupEntity();
 				su.setUsergroupId(Long.valueOf(ugId.toString()));
 				su.setOperator(systemInfo.getUpdateBy());
 				su.setOpTime(systemInfo.getUpdateDate());
 				su.setSystemId(systemInfo.getId());
-				sysUsergroupService.save(su);
+				toSave.add(su);
+				
+				log.append("system:" + systemInfo.getId() + ",Usergroup:" + ugId + "; ");
 			}
+			logger.info(log.toString());
+			sysUsergroupService.saveBatch(toSave);
 		}
 		return true;
 	}
@@ -265,7 +287,9 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		}
 		
 		//删除permission_info记录
-		permissionService.updateBatchById(waitingDeletePermissions);
+		if (!CommonUtil.isNull(waitingDeletePermissions)) {
+			permissionService.updateBatchById(waitingDeletePermissions);
+		}
 			
 		//删除systemInfo
 		UpdateWrapper<SystemInfoEntity> siWrapper = new UpdateWrapper<>();
