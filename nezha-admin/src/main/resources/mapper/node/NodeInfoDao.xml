@@ -23,7 +23,10 @@
 
         <!-- 关联机柜 -->
         nc.id AS cab_id ,
-        nc.name AS cab_name
+        nc.name AS cab_name,
+
+        <!-- 关联机房 -->
+        nr.name AS room_name
     </sql>
 
     <!-- 节点关联机柜 -->
@@ -47,6 +50,9 @@
         <result property="remark" column="remark"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
+
+        <!-- 关联机房名称 -->
+        <result property="roomName" column="room_name"/>
 
         <!-- 一对一  关联机柜 -->
         <result property="cabinetInfo.id" column="cab_id"/>
@@ -74,6 +80,9 @@
         <result property="remark" column="remark"/>
         <result property="operator" column="operator"/>
         <result property="opTime" column="op_time"/>
+
+        <!-- 关联机房名称 -->
+        <result property="roomName" column="room_name"/>
 
         <!-- 一对一  关联机柜 -->
         <result property="cabinetInfo.id" column="cab_id"/>
@@ -142,6 +151,14 @@
             #{operator},
             #{opTime}
         )
+
+        <selectKey keyProperty="uuid" order="AFTER" resultType="java.lang.Long">
+            SELECT
+                <if test="_databaseId == 'oracle'">SEQ_NODE_INFO.CURRVAL</if>
+                <if test="_databaseId == 'mysql'">seq_currval('seq_node_info')</if>
+                <if test="_databaseId == 'postgresql'">currval('')</if>
+            AS uuid
+        </selectKey>
     </insert>
 
 
@@ -158,6 +175,7 @@
             FROM node_info ni
 
             LEFT JOIN node_cabinet nc ON ni.cabinet_id = nc.id
+            LEFT JOIN node_room nr ON nc.room_id = nr.id
 
             WHERE ni.state != 3
             <if test="params.roomId != null and params.roomId != ''">
@@ -228,6 +246,7 @@
             ) ni
 
             LEFT JOIN node_cabinet nc ON ni.cabinet_id = nc.id
+            LEFT JOIN node_room nr ON nc.room_id = nr.id
 
             WHERE ni.state != 3
 
@@ -291,6 +310,7 @@
     <select id="detail" resultMap="nodeinfoWithCabSys">
         SELECT <include refid="node_info_columns"/> FROM node_info ni
         LEFT JOIN node_cabinet nc ON ni.cabinet_id = nc.id
+        LEFT JOIN node_room nr on nc.room_id = nr.id
         WHERE ni.uuid = #{uuid} AND ni.state != 3
     </select>
 

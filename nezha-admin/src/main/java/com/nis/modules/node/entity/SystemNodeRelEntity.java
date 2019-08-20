@@ -2,6 +2,7 @@ package com.nis.modules.node.entity;
 
 
 import com.baomidou.mybatisplus.annotation.*;
+import jdk.nashorn.internal.objects.annotations.Constructor;
 import lombok.Data;
 
 import java.util.Date;
@@ -48,5 +49,13 @@ public class SystemNodeRelEntity {
      */
     private Date opTime;
 
+    public SystemNodeRelEntity() {
+    }
 
+    public SystemNodeRelEntity(Long systemId, Long uuid, Long operator, Date opTime) {
+        this.systemId = systemId;
+        this.uuid = uuid;
+        this.operator = operator;
+        this.opTime = opTime;
+    }
 }

@@ -18,6 +18,7 @@ import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -69,7 +70,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             Long groupId = Long.valueOf(params.get("groupId").toString());
             NodeGroupInfoEntity nodeGroup = nodeGroupInfoService.getOne(new QueryWrapper<NodeGroupInfoEntity>().eq("id", groupId));
 
-            if(nodeGroup == null){
+            if (nodeGroup == null) {
                 throw new NZException(RCode.NODE_ERROR);
             }
 
@@ -194,37 +195,102 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeInfo(NodeInfoEntity nodeInfoEntity) {
-        // 1. 校验 IP NAME 是否唯一
-        if (this.ipCheck(null, nodeInfoEntity.getIp())) {
-            if (this.nodeNameCheck(null, nodeInfoEntity.getName())) {
+        if (ShiroUtils.isGlobal()) {
+            // 校验IP
+            if (this.ipCheck(null, nodeInfoEntity.getIp())) {
 
-                //2. 校验可用机柜
-                if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
+                // 正常入库流程
+                saveNode(nodeInfoEntity);
 
-                    // 查询该机柜的可选起始位置
-                    List<Integer> starts = this.checkPosition(nodeInfoEntity);
-
-                    if (starts != null && starts.size() > 0 && !starts.contains(nodeInfoEntity.getCabinetStart())) {
-                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
-                    }
+                // 校验是否已经存在关联关系
+                SystemNodeRelEntity entity = systemNodeRelService.getOne(new QueryWrapper<SystemNodeRelEntity>().eq(
+                        "system_id",
+                        Constant.GLOBAL_ID).eq("uuid", nodeInfoEntity.getUuid()));
+                if (entity != null) {
+                    throw new NZException(RCode.NODE_SYSTEM_REL_EXISTS);  // 节点和业务系统已经关联
                 }
 
-                //3. IP地址转换 IP整数
-                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-                //4. 密码加密 base64
-                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
-                nodeInfoEntity.setOpTime(new Date());
-
-                //5. 入库
-                nodeInfoDao.save(nodeInfoEntity);
+                // 维护系统中间表  只维护global
+                SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(Constant.GLOBAL_ID, nodeInfoEntity.getUuid(), Constant.GLOBAL_ID, new Date());
+                systemNodeRelService.save(nodeRelEntity);
             } else {
-                throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+                // ip 已存在 抛异常
+                throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
             }
         } else {
-            throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
+            // 校验IP
+            if (this.ipCheck(null, nodeInfoEntity.getIp())) {
+
+                // 正常入库流程
+                saveNode(nodeInfoEntity);
+
+                Long systemId = ShiroUtils.getCurrSystemId();
+                // 校验是否已经存在关联关系
+                SystemNodeRelEntity entity = systemNodeRelService.getOne(new QueryWrapper<SystemNodeRelEntity>().eq(
+                        "system_id", systemId).eq("uuid", nodeInfoEntity.getUuid()));
+                if (entity != null) {
+                    throw new NZException(RCode.NODE_SYSTEM_REL_EXISTS);  // 节点和业务系统已经关联
+                }
+                // 维护系统中间表   维护global 和 自身业务系统 关系
+                List<SystemNodeRelEntity> list = new ArrayList<>();
+
+                Date date = new Date();
+                SystemNodeRelEntity currSystem = new SystemNodeRelEntity(systemId, nodeInfoEntity.getUuid(), systemId
+                        , date);
+                SystemNodeRelEntity global = new SystemNodeRelEntity(Constant.GLOBAL_ID, nodeInfoEntity.getUuid(), systemId, date);
+                list.add(currSystem);
+                list.add(global);
+                systemNodeRelService.saveBatch(list);
+            } else {
+
+                // 如果此节点和自身业务系统存在关系 则不让添加
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()));
+                List<SystemNodeRelEntity> systemInfo = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", node.getUuid()));
+                for (SystemNodeRelEntity entity : systemInfo) {
+                    if (entity.getSystemId() - ShiroUtils.getCurrSystemId() == 0) {
+                        throw new NZException(RCode.NODE_SYSTEM_REL_EXISTS); // 节点和业务系统已经关联
+                    }
+                }
+                // ip已经存在 和自身没有关联 则建立关联
+                SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(ShiroUtils.getCurrSystemId(), node.getUuid(),
+                        ShiroUtils.getCurrSystemId(), new Date());
+                systemNodeRelService.save(nodeRelEntity);
+            }
         }
     }
+
+    // 添加节点正常操作  名称校验 机柜校验 密码加密 入库 并返回当前的UUID序列值
+    @Transactional(rollbackFor = Exception.class)
+    public void saveNode(NodeInfoEntity nodeInfoEntity) {
+        if (this.nodeNameCheck(null, nodeInfoEntity.getName())) {
+
+            //2. 校验可用机柜
+            if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
+
+                // 查询该机柜的可选起始位置
+                List<Integer> starts = this.checkPosition(nodeInfoEntity);
+                if (starts == null) {
+                    throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+                if (starts.size() > 0 && !starts.contains(nodeInfoEntity.getCabinetStart())) {
+                    throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+            }
+
+            //3. IP地址转换 IP整数
+            nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+            //4. 密码加密 base64
+            nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+            nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
+            nodeInfoEntity.setOpTime(new Date());
+
+            //5. 入库
+            nodeInfoDao.save(nodeInfoEntity);
+        } else {
+            throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+        }
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -238,6 +304,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
                     // 查询该机柜的可选起始位置
                     List<Integer> starts = this.checkPosition(nodeInfoEntity);
+
+                    if (starts == null) {
+                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                    }
 
                     if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
@@ -327,6 +397,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             // 1.1 查询每个机房下所有的机柜
             List<NodeCabinetEntity> nodeCabinets = nodeRoom.getCabinets();
 
+            // 机柜占满节点 没有可用位置
+            List<NodeCabinetEntity> fullList = new ArrayList<>();
+
             // 2.0 遍历机柜 得到下面的所有节点
             for (NodeCabinetEntity cab : nodeCabinets) {
 
@@ -401,16 +474,31 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                             }
                         }
                     }
-                    // 此处的endList 为开始下标了
-                    cab.setStarts(endList);
+                    if (endList != null && endList.size() > 0) {
+                        // 此处的endList 为开始下标了
+                        cab.setStarts(endList);
+                    } else {
+                        // 该机柜没有可用位置
+                        fullList.add(cab);
+                    }
                 } else {
-                    //这种情况就是用户输入的U位是1  可以把所有的位置都返回  都可以选择 如果存在可用位置的情况下  如果不存在返回 Null 合理
-                    cab.setStarts(freePosition);
+                    if (freePosition != null && freePosition.size() > 0) {
+                        //这种情况就是用户输入的U位是1  可以把所有的位置都返回  都可以选择 如果存在可用位置的情况下  如果不存在返回 Null 合理
+                        cab.setStarts(freePosition);
+                    } else {
+                        // 该机柜没有可用位置
+                        fullList.add(cab);
+                    }
                 }
             }
-
+            // 如果机柜中不存在可用位置信息 则不返回该机柜
+            nodeCabinets.removeAll(fullList);
             availCab.setCabinets(nodeCabinets);
-            retAvailCabs.add(availCab);
+
+            // 如果机房下所有机柜都不含可用位置 则不反悔此机房
+            if (availCab.getCabinets() != null && availCab.getCabinets().size() > 0) {
+                retAvailCabs.add(availCab);
+            }
         }
 
         return retAvailCabs;

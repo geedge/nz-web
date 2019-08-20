@@ -74,7 +74,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         map.put("name", "addr");
         List<SysDictEntity> sysDictes = sysDictService.queryList(map);
         for (SysDictEntity entity : sysDictes) {
-            if(entity.getCode().equals(nodeRoom.getAddr().toString())){
+            if (entity.getCode().equals(nodeRoom.getAddr().toString())) {
                 nodeRoom.setAddrName(entity.getValue());
                 break;
             }
@@ -128,7 +128,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
             int count = nodeCabinetService.count(new QueryWrapper<NodeCabinetEntity>().eq("room_id", id));
             if (count > 0) {
                 NodeRoomEntity nodeRoom = this.getById(id);
-                throw new NZException(nodeRoom.getName() + " related cabinets , not deletable " , 203004); // 机房下存在机柜信息
+                throw new NZException(nodeRoom.getName() + " related cabinets , not deletable ", 203004); // 机房下存在机柜信息
             }
         }
         // 2. 进行逻辑删除
@@ -166,14 +166,20 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
      */
     @Override
     public void roomSizeCheck(Long id, Integer roomRows, Integer roomCols) {
+        NodeRoomEntity room = this.getById(id);
+
+        if (room == null) {
+            throw new NZException(RCode.NODEROOM_NOT_EXISTS);
+        }
+
         // 1. 根据当前的 roomId 拿到机柜的最大行列数
-        Map<String, Integer> map = nodeCabinetDao.getCabMaxRowCol(id);
-        // 2. 进行判断是否可修改
-        if (map != null) {
-            if (roomRows < map.get("maxRows")) {
+        NodeCabinetEntity cab = nodeCabinetDao.getCabMaxRowCol(id);
+
+        if (cab != null && cab.getMaxRows() != null && cab.getMaxCols() != null) {
+            if (roomRows < cab.getMaxRows()) {
                 throw new NZException(RCode.NODEROOM_ROW_OCCUPIED); // 输入行小于已使用的行
             }
-            if (roomCols < map.get("maxCols")) {
+            if (roomCols < cab.getMaxCols()) {
                 throw new NZException(RCode.NODEROOM_COL_OCCUPIED); // 输入列小于已使用的列
             }
         }

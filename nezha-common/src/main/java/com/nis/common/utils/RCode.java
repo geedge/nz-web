@@ -48,6 +48,7 @@ public enum RCode {
 	NODE_STATE_ISNULL(201010, "node_state_isNull"),                // 节点状态不能为空
 	NODE_USIZE_ISNULL(201011, "node_usize_isNull"),                // 节点U位规格不能为空
 	NODE_TYPE_NOTFOUND(201012, "node_type_notfound"),               // 节点类型未找到
+	NODE_SYSTEM_REL_EXISTS(201013, "node_system_rel_exists"),       // 节点和业务系统已经关联
 
 	NODEGROUP_NAME_DUPLICATE(202001, "groupname_duplicate_error"), // 节点组名称不能重复
 	NODEGROUP_NAME_ISNULL(202002, "group_name_isNull"),            // 节点组名称不能为空
@@ -67,6 +68,7 @@ public enum RCode {
 	NODEROOM_ID_ISNULL(203010,"room_id_isNull"),                   // 机房 id 不能为空
 	NODEROOM_ROWS_MINNUM(203011,"room_rows_minnum"),               // 机房行数最小值为1
 	NODEROOM_COLS_MINNUM(203012,"room_cols_minnum"),               // 机房列数最小值为1
+	NODEROOM_NOT_EXISTS(203013,"noderoom_not_exists"),             // 机房不存在
 
 	NODECABINET_NAME_DUPLICATE(204001, "cabinetname_duplicate_error"), // 机柜名称重复
 	NODECABINET_ROW_INCORRECT(204002,"rownumber_incorrect_error"),     // 行值不能小于1行

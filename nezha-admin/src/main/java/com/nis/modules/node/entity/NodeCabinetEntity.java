@@ -76,5 +76,9 @@ public class NodeCabinetEntity implements Serializable {
     @TableField(exist = false)
     private List<Integer> starts;
 
+    @TableField(exist = false)
+    private Integer maxRows;
 
+    @TableField(exist = false)
+    private Integer maxCols;
 }
