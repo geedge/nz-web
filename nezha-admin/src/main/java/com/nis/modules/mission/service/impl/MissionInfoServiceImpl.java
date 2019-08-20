@@ -225,6 +225,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		boolean permissionFlag=false;
 		logger.info("start save node missionInfo and permissionInfo data");
 		if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())) {
+			ValidateUtils.is(missionInfoEntity.getViewerId()).notNull(RCode.MISSION_VIEWERID_ISNULL);
 			permissionFlag=true;
 		} else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
 			relId = ShiroUtils.getCurrSystemId();
@@ -284,7 +285,9 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		logger.info("missionNodeRelEntitys :"+JSON.toJSONString(missionNodeRelEntitys));
 		logger.info("permissionInfoEntitys :"+JSON.toJSONString(permissionInfoEntitys));
 		missionNodeRelService.saveBatch(missionNodeRelEntitys);
-		permissionInfoService.saveBatch(permissionInfoEntitys);
+		if(null!=permissionInfoEntitys && permissionInfoEntitys.size()>0) {
+			permissionInfoService.saveBatch(permissionInfoEntitys);
+		}
 	}
 	
 	/**
@@ -335,11 +338,12 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		ValidateUtils.is(missionInfoEntity.getType()).notNull(RCode.MISSION_TYPE_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getName()).notNull(RCode.MISSION_NAME_ISNULL);
 		ValidateUtils.is(missionInfoEntity.getParam()).notNull(RCode.MISSION_PARAM_ISNULL);
+		ValidateUtils.is(missionInfoEntity.getViewLevel()).notNull(RCode.MISSION_STATE_ISNULL);
 		if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())) {
 			ValidateUtils.is(missionInfoEntity.getViewerId()).notNull(RCode.MISSION_GROUPNODE_OR_NODE_ISNULL);
 		}
-		if(null == missionInfoEntity.getNodeGroupIds() && missionInfoEntity.getNodeGroupIds().size()<=0&&
-				null==missionInfoEntity.getNodeIds() && missionInfoEntity.getNodeIds().size()<=0) {
+		if((null == missionInfoEntity.getNodeGroupIds() || missionInfoEntity.getNodeGroupIds().size()<=0)&&
+				(null==missionInfoEntity.getNodeIds() || missionInfoEntity.getNodeIds().size()<=0)) {
 			throw new NZException(RCode.MISSION_GROUPNODE_OR_NODE_ISNULL);
 		}
 		//验证保存节点 节点组是否有效

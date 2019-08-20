@@ -128,6 +128,7 @@ public enum RCode {
 	MISSION_LOOP_STATE_ERROR(400011,"mission_loop_state_error"), //状态码错误
 	MISSION_NODEINFO_ERROR(400012,"mission_nodeinfo_error"),   //节点或节点组有效性错误
 	MISSION_NODE_NET_ERROR(400013,"mission_node_net_error"),   //网元不可下发任务
+	MISSION_VIEWERID_ISNULL(400014,"mission_viewerid_isnull"),  //类型为组内查看用户组信息不能为空
 	MISSION_FILEPUSH_FILE_ISNULL(400101,"mission_filepush_file_isnull"),  //文件推送文件为空
 	MISSION_FILEPUSH_DESTPATH_ISNULL(400102,"mission_filepush_destpath_isnull"), // 文件推送路径为空
 	MISSION_FILEPUSH_PASSWORD_HANDLE_ERROR(400103,"mission_filepush_password_handle_error"), //文件推送密码处理错误
