@@ -975,16 +975,21 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	public MissionInfoEntity getConverseMissionById(Long id) {
 		logger.info("ConverseMissionById is :"+id);
 		MissionInfoEntity mission = baseMapper.selectById(id);
+		logger.info("query mission info :"+JSON.toJSONString(mission));
 		Long missionId = mission.getId();
+		MissionDto upgradeDto = null;
+		List<ParamForUpgrade> paramForUpgrades =null;
 		if(Integer.valueOf(mission.getType()).equals(MissionType.UGPRADE.getMissionTypeId())) {
 			//当前任务类型为升级部署
-			MissionDto upgradeDto = JSON.parseObject(mission.getParam(), MissionDto.class);
-			List<ParamForUpgrade> paramForUpgrades = upgradeDto.getParamForUpgrades();
+			upgradeDto = JSON.parseObject(mission.getParam(), MissionDto.class);
+			logger.info("query MissionDto info :"+JSON.toJSONString(upgradeDto));
+			paramForUpgrades = upgradeDto.getParamForUpgrades();
 			ParamForUpgrade paramForUpgrade = paramForUpgrades.get(0);
 			Long version = paramForUpgrade.getVersion();
 			if(null == version) {
-				MissionResultEntity missionResult = missionResultDao.selectById(missionId);
-				if(null != missionResult) {
+				List<MissionResultEntity> missionResults = missionResultDao.selectList(new QueryWrapper<MissionResultEntity>()
+		        		.eq("mission_id", id));
+				if(null != missionResults && missionResults.size()>0) {
 					List<Backup> backups = paramForUpgrade.getBackups();
 					if(null == backups || backups.size()<=0) {
 						throw new NZException(RCode.MISSION_UPGRADE_BACKUP_NULL);
@@ -1005,20 +1010,16 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 		logger.info("query nodeGroups content :"+JSON.toJSONString(nodeGroupInfoEntitys));
 		List<NodeInfoEntity> nodeInfoEntitys = baseMapper.selectNodeByMissionid(missionId);
 		logger.info("query nodes content :"+JSON.toJSONString(nodeInfoEntitys));
-		// 查询任务的具体属性
-		MissionInfoEntity missionInfoEntity = baseMapper.selectById(missionId);
-		logger.info("query mission info :"+JSON.toJSONString(missionInfoEntity));
 		//没有备份的任务指令要移除
-		List<ParamForUpgrade> paramForUpgrades = JSON.parseArray(missionInfoEntity.getParam(), ParamForUpgrade.class);
 		for(int i=paramForUpgrades.size()-1; i>=0;i--) {
 			List<Backup> backups = paramForUpgrades.get(i).getBackups();
 			if(null == backups ||CommonUtil.isNull(backups)) {
 				paramForUpgrades.remove(i);
 			}
 		}
-		missionInfoEntity.setNodeGroups(nodeGroupInfoEntitys);
-		missionInfoEntity.setNodes(nodeInfoEntitys);
-		logger.info("result mission content :"+missionInfoEntity);
-		return missionInfoEntity;
+		mission.setNodeGroups(nodeGroupInfoEntitys);
+		mission.setNodes(nodeInfoEntitys);
+		logger.info("result mission content :"+mission);
+		return mission;
 	}
 }
