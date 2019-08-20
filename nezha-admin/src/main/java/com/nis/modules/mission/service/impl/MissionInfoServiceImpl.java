@@ -30,6 +30,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.RCode;
 import com.nis.modules.mission.dao.MissionInfoDao;
+import com.nis.modules.mission.dao.MissionNodeRelDao;
 import com.nis.modules.mission.dao.MissionResultDao;
 import com.nis.modules.mission.entity.Backup;
 import com.nis.modules.mission.entity.MissionDto;
@@ -45,12 +46,15 @@ import com.nis.modules.mission.service.MissionNodeRelService;
 import com.nis.modules.mission.utils.DESUtil;
 import com.nis.modules.mission.utils.FileUtil;
 import com.nis.modules.mission.utils.MD5Util;
+import com.nis.modules.node.entity.NodeCabinetEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.dao.UserUsergroupDao;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
+import com.nis.modules.sys.entity.UserGroupEntity;
 import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
@@ -77,6 +81,8 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 	private PermissionInfoService permissionInfoService;
 	@Autowired
 	private UserUsergroupDao userUsergroupDao;
+	@Autowired
+	private MissionNodeRelDao missionNodeRelDao;
 	
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -123,6 +129,15 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
         	res[2]=timeOut;
         	missionInfoEntity.setStateDesc(res);
         	
+        	//查询任务查看用户组或者系统信息
+        	if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())){
+                List<UserGroupEntity> userGroups=this.getBaseMapper().selectUserGroup(missionInfoEntity.getId());
+                missionInfoEntity.setViewer(userGroups);
+            }else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())){
+                List<SystemInfoEntity> system=this.getBaseMapper().selectSystem(missionInfoEntity.getId());
+                missionInfoEntity.setViewer(system);
+            }
+        	
         	//根据用户id获取用户名
         	missionInfoEntity.setOperator(ShiroUtils.getUserId());
         }
@@ -164,9 +179,21 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
     	missionInfoEntity.setStateDesc(res);
     	
     	//查询节点组
-    	
+    	List<NodeGroupInfoEntity> nodeGroups = missionNodeRelDao.selectNodeGroupEntityByMissionid(missionInfoEntity.getId());
     	//查询节点
+    	List<NodeInfoEntity> nodes = missionNodeRelDao.selectNodeEntityByMissionid(missionInfoEntity.getId());
     	
+    	//查询任务查看用户组或者系统信息
+    	if(Constant.VIEWLEVEL_UG.equals(missionInfoEntity.getViewLevel())){
+            List<UserGroupEntity> userGroups=this.getBaseMapper().selectUserGroup(missionInfoEntity.getId());
+            missionInfoEntity.setViewer(userGroups);
+        }else if(Constant.VIEWLEVEL_SYS.equals(missionInfoEntity.getViewLevel())){
+            List<SystemInfoEntity> system=this.getBaseMapper().selectSystem(missionInfoEntity.getId());
+            missionInfoEntity.setViewer(system);
+        }
+    	
+    	missionInfoEntity.setNodeGroups(nodeGroups);
+    	missionInfoEntity.setNodes(nodes);
     	//根据用户id获取用户名
     	missionInfoEntity.setOperator(ShiroUtils.getUserId());
     	

@@ -14,5 +14,17 @@
         <result property="operator" column="operator"/>
     </resultMap>
 
-
+	<select id="selectNodeGroupEntityByMissionid" parameterType="java.lang.Long" resultType="com.nis.modules.node.entity.NodeGroupInfoEntity">
+		select ni.* from 
+		mission_node_rel mnr,nodegroup_info ni
+		where mnr.del_flag=0 and  mnr.type=1 and mnr.mission_id=#{missionId}
+		and ni.del_flag=0 and ni.id=mnr.rel_id
+	</select>
+	
+	<select id="selectNodeEntityByMissionid" parameterType="java.lang.Long" resultType="com.nis.modules.node.entity.NodeGroupInfoEntity">
+		select ni.* from 
+		mission_node_rel mnr,node_info ni
+		where mnr.del_flag=0 and  mnr.type=2 and mnr.mission_id=#{missionId}
+		and ni.id=mnr.rel_id and ni.state=1
+	</select>
 </mapper>

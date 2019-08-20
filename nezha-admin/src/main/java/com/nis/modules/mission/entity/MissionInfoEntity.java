@@ -138,4 +138,7 @@ public class MissionInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private Long[] viewerId;
+	
+	@TableField(exist=false)
+	private List viewer;
 }

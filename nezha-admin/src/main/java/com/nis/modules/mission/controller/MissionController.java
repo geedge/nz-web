@@ -180,7 +180,7 @@ public class MissionController {
      */
     @PutMapping("/loopStateChange")
     /*@RequiresPermissions("mission:missioninfo:update")*/
-    @ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
+    @ApiOperation(httpMethod="PUT",value="修改任务周期状态", notes="任务周期")
     public R loopStateChange(@RequestBody MissionInfoEntity missionInfo){
     	ValidateUtils.is(missionInfo.getIds()).notNull(RCode.MISSION_ID_ISNULL);
     	ValidateUtils.is(missionInfo.getState()).notNull(RCode.MISSION_STATE_ISNULL);

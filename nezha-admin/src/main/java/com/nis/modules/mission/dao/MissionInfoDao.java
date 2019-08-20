@@ -5,6 +5,8 @@ import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
+import com.nis.modules.sys.entity.UserGroupEntity;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -38,7 +40,12 @@ public interface MissionInfoDao extends BaseMapper<MissionInfoEntity> {
 	
 	MissionDto selectNodeGroupOrNodeForCheck(@Param("nodeGroupIds")List nodeGroupIds,@Param("nodeIds")List nodeIds);
 	
-	List<NodeGroupInfoEntity> selectNodeGroupByMissionid(Long missionId);
+	List<NodeGroupInfoEntity> selectNodeGroupByMissionid(@Param("missionId")Long missionId);
 	
-	List<NodeInfoEntity> selectNodeByMissionid(Long missionId);
+	List<NodeInfoEntity> selectNodeByMissionid(@Param("missionId")Long missionId);
+	
+	List<UserGroupEntity> selectUserGroup(@Param("missionId")Long missionId);
+	
+	List<SystemInfoEntity> selectSystem(@Param("missionId")Long missionId);
+	
 }
