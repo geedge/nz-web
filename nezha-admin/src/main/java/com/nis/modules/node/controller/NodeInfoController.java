@@ -79,10 +79,7 @@ public class NodeInfoController {
     public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip") String ip) {
         ValidateUtils.is(ip).notNull(RCode.NODE_IPADDRESS_ISNULL).and(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
 
-        if (nodeInfoService.ipCheck(uuid, ip)) {
-            return R.ok();
-        }
-        return R.error(RCode.NODE_IPADDRESS_DUPLICATE);//地址重复
+        return nodeInfoService.ipCheck(uuid, ip);
     }
 
     @ApiOperation("name唯一校验")

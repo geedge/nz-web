@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.dao.NodeRoomDao;
@@ -18,7 +15,6 @@ import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SysDictEntity;
-import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -155,10 +151,24 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         return nodeInfoEntity;
     }
 
-    // ip 是否重复校验
+    //  IP校验，分三种情况：1.校验不通过；2.校验通过；3.ip已在其他业务系统里存在，此时返回node实体，询问用户是否关联；
     @Override
-    public boolean ipCheck(Long uuid, String ip) {
-        return checkFieldExist(uuid, "ip", ip);
+    public R ipCheck(Long uuid, String ip) {
+        if (ShiroUtils.isGlobal()) {
+            if (checkFieldExist(uuid, "ip", ip)) {  // 通过
+                return R.ok();
+            } else {                                         // 不通过
+                return R.error(RCode.NODE_IPADDRESS_DUPLICATE);
+            }
+        } else {
+            if (checkFieldExist(uuid, "ip", ip)) {   // 通过
+                return R.ok();
+            } else {                                          // 其他业务系统已存在 返回详情
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", ip));
+                NodeInfoEntity nodeDetail = this.detail(node.getUuid());
+                return R.ok(nodeDetail);
+            }
+        }
     }
 
     // 名称是否重复校验
@@ -197,7 +207,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void saveNodeInfo(NodeInfoEntity nodeInfoEntity) {
         if (ShiroUtils.isGlobal()) {
             // 校验IP
-            if (this.ipCheck(null, nodeInfoEntity.getIp())) {
+            if (this.checkFieldExist(null, "ip", nodeInfoEntity.getIp())) {
 
                 // 正常入库流程
                 saveNode(nodeInfoEntity);
@@ -219,7 +229,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             }
         } else {
             // 校验IP
-            if (this.ipCheck(null, nodeInfoEntity.getIp())) {
+            if (this.checkFieldExist(null, "ip", nodeInfoEntity.getIp())) {
 
                 // 正常入库流程
                 saveNode(nodeInfoEntity);
@@ -296,7 +306,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Transactional(rollbackFor = Exception.class)
     public void updateNodeInfo(NodeInfoEntity nodeInfoEntity) {
         // 1. 校验 IP NAME 是否唯一
-        if (this.ipCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getIp())) {
+        if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
             if (this.nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
 
                 //2. 校验可用机柜

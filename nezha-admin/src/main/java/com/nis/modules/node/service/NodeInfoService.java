@@ -2,6 +2,7 @@ package com.nis.modules.node.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 
@@ -20,7 +21,7 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
     NodeInfoEntity detail(Long uuid);
 
     // ip 是否重复校验
-    boolean ipCheck(Long uuid, String ip);
+    R ipCheck(Long uuid, String ip);
 
     // 名称是否重复校验
     boolean nodeNameCheck(Long uuid, String name);
