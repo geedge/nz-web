@@ -164,7 +164,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
                 }
 
                 if (deteTypeMetaEntity.getId() != null) {
-                    if ("1".equals(deteTypeMetaEntity.getDelFlag())) {
+                    if (Constant.DELFLAG_TRUE.equals(deteTypeMetaEntity.getDelFlag())) {
                         metaDelList.add(deteTypeMetaEntity);
                     } else {
                         metaUpdateList.add(deteTypeMetaEntity);

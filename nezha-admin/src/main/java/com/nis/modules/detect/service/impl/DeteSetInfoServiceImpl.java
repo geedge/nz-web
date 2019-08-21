@@ -167,16 +167,21 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         List<DeteSetNodeRelEntity> setNodeRels = buildRels(deteSetInfo, userId, date);
         deteSetNodeRelService.saveBatch(setNodeRels);
 
-        //删除之前建立的权限关系
-        UpdateWrapper<PermissionInfoEntity> permissionInfoUpdateWrapper = new UpdateWrapper<PermissionInfoEntity>();
-        permissionInfoUpdateWrapper.set("operator",userId);
-        permissionInfoUpdateWrapper.set("op_time",date);
-        permissionInfoUpdateWrapper.set("del_flag",Constant.DELFLAG_TRUE);
-        permissionInfoUpdateWrapper.eq("type",Constant.PM_TYPE_DETESET);
-        permissionInfoUpdateWrapper.eq("type_id",deteSetInfo.getId());
-        permissionInfoService.update(permissionInfoUpdateWrapper);
-        //添加新的权限信息
-        buildPermissionInfoRel(deteSetInfo,userId,date);
+        //viewLevel 不允许修改，viewer可以修改，用于用户组变化时
+        DeteSetInfoEntity oldSet = this.getById(deteSetInfo.getId());
+        deteSetInfo.setViewLevel(oldSet.getViewLevel());
+        if(Constant.VIEWLEVEL_UG.equals(oldSet.getViewLevel())){
+            //删除之前建立的权限关系
+            UpdateWrapper<PermissionInfoEntity> permissionInfoUpdateWrapper = new UpdateWrapper<PermissionInfoEntity>();
+            permissionInfoUpdateWrapper.set("operator",userId);
+            permissionInfoUpdateWrapper.set("op_time",date);
+            permissionInfoUpdateWrapper.set("del_flag",Constant.DELFLAG_TRUE);
+            permissionInfoUpdateWrapper.eq("type",Constant.PM_TYPE_DETESET);
+            permissionInfoUpdateWrapper.eq("type_id",deteSetInfo.getId());
+            permissionInfoService.update(permissionInfoUpdateWrapper);
+            //添加新的权限信息
+            buildPermissionInfoRel(deteSetInfo,userId,date);
+        }
 
     }
 
