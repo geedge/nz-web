@@ -17,6 +17,7 @@ import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.Subject;
 
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 
 /**
  * Shiro工具类
@@ -49,8 +50,12 @@ public class ShiroUtils {
 		return getUserEntity().getUserId();
 	}
 	
+	public static SystemInfoEntity getCurrSystem() {
+		return getUserEntity().getCurrSystem();
+	}
+	
 	public static Long getCurrSystemId() {
-		Long currSystemId = getUserEntity().getCurrSystemId();
+		Long currSystemId = getCurrSystem().getId();
 		return currSystemId;
 	}
 	

@@ -128,8 +128,8 @@ public class SysLoginController extends AbstractController {
 				for (SystemInfoEntity systemInfoEntity : systemInfosByUserId) {
 					if (systemInfoEntity.getId().longValue() == systemId.longValue()) {
 						flag = true;
-						//设置为当前systemId
-						getUser().setCurrSystemId(systemInfoEntity.getId());
+						//设置为当前system
+						getUser().setCurrSystem(systemInfoEntity);
 						break;
 					}
 				}

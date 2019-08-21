@@ -13,6 +13,7 @@
        folder instead of downloading all of them to reduce the load. -->
   <link rel="stylesheet" href="${request.contextPath}/statics/css/all-skins.min.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/main.css">
+  <link rel="stylesheet" href="${request.contextPath}/statics/css/index.css">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
   <!--[if lt IE 9]>
@@ -41,7 +42,14 @@
       <div class="navbar-custom-menu">
         <ul class="nav navbar-nav">
 		  <li><a href="javascript:;" @click="updatePassword"><i class="fa fa-lock"></i> &nbsp;修改密码</a></li>
-          <li><a href="logout"><i class="fa fa-sign-out"></i> &nbsp;退出系统</a></li>
+          <li>
+          	<a href="javascript:;" @click="toChangeSystem" id="changeSystemButton"><i class="fa fa-exchange"></i> &nbsp;{{currSystem.name}}</a>
+          	<!-- 选择业务系统 -->
+			<div class="system-items">
+			  <div class="system-item" @click="changeSystem(system.id)" v-show="changeSystemShow" v-for="system in systems">{{system.name}}</div>
+			</div>
+          </li>
+          <li><a href="logout"><i class="fa fa-sign-out"></i> &nbsp;退出</a></li>
 		</ul>
       </div>
     </nav>
@@ -117,7 +125,7 @@
 	</div>
 	</form>
 </div>
-
+          
 </div>
 <!-- ./wrapper -->
 

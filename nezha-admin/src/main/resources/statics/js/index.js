@@ -40,10 +40,14 @@ var vm = new Vue({
 	data:{
 		user:{},
 		menuList:{},
+		currSystem: {}, //当前业务系统
+		systems:{}, //用户可切换的业务系统列表
 		main:"main.html",
 		password:'',
 		newPassword:'',
-        navTitle:"控制台"
+        navTitle:"控制台",
+        changeSystemShow: false, //是否显示业务系统列表
+        systemBoxWidth: null //业务系统列表dom的宽度
 	},
 	methods: {
 		getMenuList: function (event) {
@@ -54,6 +58,17 @@ var vm = new Vue({
 		getUser: function(){
 			$.getJSON("sys/user/info?_"+$.now(), function(r){
 				vm.user = r.user;
+			});
+		},
+		getCurrSystem: function() {
+			$.getJSON("system/detail", function(r){
+				console.info(r)
+				vm.currSystem = r.data;
+			});
+		},
+		getSystems: function() {
+			$.getJSON("system/listByUser?_"+$.now(), function(r){
+				vm.systems = r.data;
 			});
 		},
 		updatePassword: function(){
@@ -86,6 +101,24 @@ var vm = new Vue({
 	            }
 			});
 		},
+		toChangeSystem: function(event) {
+			var width = $("#changeSystemButton").css("width");
+			var height = $("#changeSystemButton").css("height");
+			$(".system-items").css("width", width);
+			$(".system-items").css("top", height);
+			vm.changeSystemShow = !(vm.changeSystemShow); 
+		},
+		changeSystem: function(systemId) {
+			$.getJSON("system/changeSystem?id=" + systemId, function(r){
+				if (r.code == '200') {
+					vm.currSystem = r.data;
+					layer.alert("切换成功");
+					vm.changeSystemShow = false;
+				} else {
+					alert(r.msg);
+				}
+			});
+		},
         donate: function () {
             layer.open({
                 type: 2,
@@ -100,6 +133,8 @@ var vm = new Vue({
 	created: function(){
 		this.getMenuList();
 		this.getUser();
+		this.getSystems();
+		this.getCurrSystem();
 	},
 	updated: function(){
 		//路由

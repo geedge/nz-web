@@ -26,7 +26,7 @@ public class SystemIdAspect {
 	@Around("systemIdCheck()")
 	public Object check(ProceedingJoinPoint point) throws Throwable {
 		SysUserEntity user = ShiroUtils.getUserEntity();
-		if (user != null && (user.getCurrSystemId() == null || user.getCurrSystemId() < 1l)) {
+		if (user != null && (user.getCurrSystem() == null || user.getCurrSystem().getId() < 1l)) {
 			ShiroUtils.logout();
 		}
 		Object result = point.proceed();

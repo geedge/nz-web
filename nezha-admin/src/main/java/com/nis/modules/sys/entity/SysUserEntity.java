@@ -79,7 +79,7 @@ public class SysUserEntity implements Serializable {
 	 * 当前系统id
 	 */
 	@TableField(exist=false)
-	private Long currSystemId;
+	private SystemInfoEntity currSystem;
 
 	/**
 	 * 创建时间

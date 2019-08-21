@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -48,8 +49,10 @@ public class SystemInfoController extends AbstractController {
 	
 	@RequestMapping(value = "detail", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", value = "业务系统详情查询")
-	public R detail(@ApiParam @RequestParam Long id) {
-		ValidateUtils.is(id).notNull(RCode.NOT_NULL_ERROR);
+	public R detail(Long id) {
+		if (id == null) {
+			return R.ok(ShiroUtils.getCurrSystem());
+		}
 		SystemInfoEntity queryDetail = systemInfoService.queryDetail(id);
 		return R.ok(queryDetail);
 	}
@@ -216,21 +219,23 @@ public class SystemInfoController extends AbstractController {
 	public R changeSystem(@ApiParam @RequestParam Long id){
 		ValidateUtils.is(id).notNull();
 		Long userId = getUserId();
+		SystemInfoEntity newSystem = null;
 		//检查是否有可用的业务系统
 		List<SystemInfoEntity> systemInfosByUserId = systemInfoService.querySystemInfosByUserId(userId);
-		if (systemInfosByUserId == null || systemInfosByUserId.size() == 0) {
+		if (CommonUtil.isNull(systemInfosByUserId)) {
 			return R.error(RCode.SYS_LOGIN_SELECTSYS);
 		} else {
 			boolean flag = false;
 			for (SystemInfoEntity si : systemInfosByUserId) {
 				if (si.getId() == id) {
+					newSystem = si;
 					flag = true;
 					break;
 				}
 			}
 			if (flag) {
-				ShiroUtils.getUserEntity().setCurrSystemId(id);
-				return R.ok();
+				ShiroUtils.getUserEntity().setCurrSystem(newSystem);
+				return R.ok(newSystem);
 			} else {
 				return R.error(RCode.SYS_LOGIN_SELECTSYS);
 			}
