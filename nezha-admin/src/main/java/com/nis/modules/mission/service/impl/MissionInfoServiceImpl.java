@@ -820,11 +820,19 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						File upgradeDest = new File(upgradePath + upgradeUpFileName);
 						 try {
 							    file.transferTo(upgradeDest);
+							    onefile=file.getSize();
+							    sum=sum+onefile;
+							    removeFiles[i]=upgradeDest;
 					        } catch (Exception e) {
 					        	e.printStackTrace();
 					        	throw new NZException(RCode.MISSION_UPGRADE_FILE_UPLOAD_ERROR);
 					        }
-						 logger.info("UPGRADE_SERVER or UPGRADE_OTHER file upload finish");
+						logger.info("UPGRADE_SERVER or UPGRADE_OTHER file upload finish");
+						//判断上传文件的总大小是否超出
+						if(sum>104857600) {
+							outSizeFlag=true;
+							break uu;
+						}
 						String upgradeFileMd5=null;
 						try {
 							upgradeFileMd5 = MD5Util.getFileMD5String(upgradeDest);
