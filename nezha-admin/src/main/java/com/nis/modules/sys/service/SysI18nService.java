@@ -20,8 +20,6 @@ public interface SysI18nService extends IService<SysI18nEntity> {
 
 	boolean check(SysI18nEntity sysI18n);
 
-	boolean delete(List<Long> asList);
-	
 	String queryValue(String code, String lang);
 }
 

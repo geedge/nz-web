@@ -49,6 +49,14 @@ public class SysI18nController {
         return R.ok().put("page", page);
     }
 
+    @RequestMapping(value = "detail", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", value = "国际化详情")
+    public R detail(Long id) {
+    	ValidateUtils.is(id).notNull();
+    	SysI18nEntity byId = sysI18nService.getById(id);
+    	return R.ok(byId);
+    }
+    
     /**
      * 保存
      */
@@ -86,6 +94,8 @@ public class SysI18nController {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
 	    	sysI18n.setOpTime(new Date());
 			sysI18nService.updateById(sysI18n);
+			// TODO 刷新缓存
+			
 			return R.ok();
     	}
     }
@@ -97,7 +107,8 @@ public class SysI18nController {
 	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "删除国际化信息")
     public R delete(@ApiParam @RequestBody Long[] ids){
     	ValidateUtils.is(ids).notNull();
-		sysI18nService.delete(Arrays.asList(ids));
+    	sysI18nService.removeByIds(Arrays.asList(ids));
+		//sysI18nService.delete(Arrays.asList(ids));
 		return R.ok();
     }
 

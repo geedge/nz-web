@@ -26,5 +26,7 @@ public interface SysDictService extends IService<SysDictEntity> {
     PageUtils queryPage(Map<String, Object> params);
     
     List<SysDictEntity> queryList(Map<String, Object> params);
+
+	boolean delete(List<Long> asList);
 }
 

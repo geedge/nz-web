@@ -28,6 +28,7 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
                 new Query<SysI18nEntity>().getPage(params),
                 new QueryWrapper<SysI18nEntity>()
                 	.like(!StringUtils.isEmpty((String)params.get("code")), "code", (String)params.get("code"))
+                	.eq(!StringUtils.isEmpty((String)params.get("lang")), "lang", (String)params.get("lang"))
                 	.like(!StringUtils.isEmpty((String)params.get("value")), "value", (String)params.get("value"))
         );
 
@@ -60,15 +61,4 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 		}
 		return dumpFlag;
 	}
-
-	@Override
-	public boolean delete(List<Long> asList) {
-		UpdateWrapper<SysI18nEntity> wrapper = new UpdateWrapper<>();
-		wrapper.in(true, "id", asList);
-		wrapper.eq(true, "del_flag", Constant.DELFLAG_FALSE);
-		wrapper.set(true, "del_flag", Constant.DELFLAG_TRUE);
-		update(wrapper);
-		return true;
-	}
-
 }

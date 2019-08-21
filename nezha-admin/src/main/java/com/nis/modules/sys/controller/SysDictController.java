@@ -9,6 +9,7 @@
 package com.nis.modules.sys.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -28,6 +29,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +41,7 @@ import java.util.Map;
 @Api(tags="系统字典")
 @RestController
 @RequestMapping("sys/dict")
-public class SysDictController {
+public class SysDictController extends AbstractController {
     @Autowired
     private SysDictService sysDictService;
 
@@ -95,7 +97,9 @@ public class SysDictController {
     public R save(@RequestBody SysDictEntity dict){
         //校验类型
         ValidatorUtils.validateEntity(dict);
-
+        dict.setOperator(getUserId());
+        dict.setOpTime(new Date());
+        
         sysDictService.save(dict);
 
         return R.ok();
@@ -109,7 +113,9 @@ public class SysDictController {
     public R update(@RequestBody SysDictEntity dict){
         //校验类型
         ValidatorUtils.validateEntity(dict);
-
+        dict.setOperator(getUserId());
+        dict.setOpTime(new Date());
+        
         sysDictService.updateById(dict);
 
         return R.ok();
@@ -121,7 +127,8 @@ public class SysDictController {
     @RequestMapping("/delete")
     @RequiresPermissions("sys:dict:delete")
     public R delete(@RequestBody Long[] ids){
-        sysDictService.removeByIds(Arrays.asList(ids));
+    	ValidateUtils.is(ids).notNull();
+        sysDictService.delete(Arrays.asList(ids));
 
         return R.ok();
     }

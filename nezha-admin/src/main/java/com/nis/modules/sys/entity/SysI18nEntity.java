@@ -3,6 +3,7 @@ package com.nis.modules.sys.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.KeySequence;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -55,6 +56,7 @@ public class SysI18nEntity implements Serializable {
 	@JsonIgnore
 	private Date opTime;
 	@JsonIgnore
+	@TableLogic
 	private String delFlag;
 
 }
