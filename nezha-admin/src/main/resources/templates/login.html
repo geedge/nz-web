@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>人人权限系统</title>
+  <title>NEZHA</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/bootstrap.min.css">
@@ -12,6 +12,7 @@
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
   <link rel="stylesheet" href="${request.contextPath}/statics/css/all-skins.min.css">
+  <link rel="stylesheet" href="${request.contextPath}/statics/plugins/select2/4.0/select2.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/main.css">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -19,15 +20,23 @@
   <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
   <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
   <![endif]-->
+  <style>
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+	top: 4px;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 28px;
+  }
+  </style>
 </head>
 <body class="hold-transition login-page">
 <div class="login-box" id="rrapp" v-cloak>
   <div class="login-logo">
-    <b>人人权限系统</b>
+    <b>NEZHA</b>
   </div>
   <!-- /.login-logo -->
-  <div class="login-box-body">
-      <p class="login-box-msg">管理员登录</p>
+  <div class="login-box-body" v-show="showLogin">
+      <p class="login-box-msg">登录</p>
       <div v-if="error" class="alert alert-danger alert-dismissible">
         <h4 style="margin-bottom: 0px;"><i class="fa fa-exclamation-triangle"></i> {{errorMsg}}</h4>
       </div>
@@ -64,6 +73,28 @@
 
   </div>
   <!-- /.login-box-body -->
+  
+  <div class="login-box-body" v-show="!showLogin">
+  	<p class="login-box-msg">选择业务系统</p>
+    <div class="form-group has-feedback">
+      <select id="seleSys">
+      	<option v-for="system in systems" :value="system.id">{{system.name}}</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="col-xs-4">
+        <div class="checkbox icheck">
+        </div>
+      </div>
+      <div class="col-xs-4">
+        <button type="button" class="btn btn-primary btn-block btn-flat" @click="selectSys">确定</button>
+      </div>
+      <div class="col-xs-4">
+        <button type="button" class="btn btn-primary btn-block btn-flat" @click="cancelSelect">取消</button>
+      </div>
+    </div>
+  </div>
+  
 </div>
 <!-- /.login-box -->
 
@@ -73,8 +104,12 @@
 <script src="${request.contextPath}/statics/libs/jquery.slimscroll.min.js"></script>
 <script src="${request.contextPath}/statics/libs/fastclick.min.js"></script>
 <script src="${request.contextPath}/statics/plugins/layer/layer.js"></script>
+<script src="${request.contextPath}/statics/plugins/select2/4.0/select2.js"></script>
 <script src="${request.contextPath}/statics/libs/app.js"></script>
 <script type="text/javascript">
+$(function(){
+	$("#seleSys").select2();
+});
 var vm = new Vue({
 	el:'#rrapp',
 	data:{
@@ -83,7 +118,9 @@ var vm = new Vue({
 		captcha: '',
 		error: false,
 		errorMsg: '',
-		src: 'captcha.jpg'
+		src: 'captcha.jpg',
+		showLogin: true,
+		systems: []
 	},
 	beforeCreate: function(){
 		if(self != top){
@@ -103,17 +140,8 @@ var vm = new Vue({
 			    dataType: "json",
 			    success: function(result){
 					if(result.code == 200){//登录成功，选择业务系统
-						var systems = result.data;
-						layer.open({
-							area: ['400px', '400px'],
-							shade: 0,
-							title: '选择业务系统',
-							type: 1,
-							fixed: false,
-							maxmin: false,
-							content: getSeleSysDom(systems)
-						});
-						//parent.location.href ='index.html';
+						vm.systems = result.data;
+						vm.showLogin = false;
 					}else{
 						vm.error = true;
 						vm.errorMsg = result.msg;
@@ -122,36 +150,31 @@ var vm = new Vue({
 					}
 				}
 			});
+		},
+		selectSys: function() {
+			if (!$("#seleSys").val()) {
+				layer.alert("请选择业务系统");
+			} else {
+				$.ajax({
+					type: "GET",
+				    url: "setSystem?systemId=" + $("#seleSys").val(),
+				    dataType: "json",
+				    success: function(result){
+				    	if (result.code == 200) {
+				    		location.href = 'index.html';
+				    	} else {
+				    		layer.alert(result.msg);
+				    	}
+				    }
+				});
+			}
+		},
+		cancelSelect: function() {
+			$.get("logout");
+			vm.showLogin = true;
 		}
 	}
 });
-
-function getSeleSysDom(systems) {
-	var contents = "<select id='seleSys'>";
-	
-	for (var i = 0; i < systems.length; i++) {
-		contents += ("<option value='" + systems[i].id + "'>" + systems[i].name + "</option>");
-	}
-	contents += "</select><br/><button type='button' onclick='seleSys()'>进入系统</button>";
-	return contents;
-}
-
-function seleSys() {
-	if (!$("#seleSys").val()) {
-		alert("请选择业务系统");
-	} else {
-		$.ajax({
-			type: "GET",
-		    url: "setSystem?systemId=" + $("#seleSys").val(),
-		    dataType: "json",
-		    success: function(result){
-		    	if (result.code == 200) {
-		    		parent.location.href = 'index.html';
-		    	}
-		    }
-		});
-	}
-}
 </script>
 </body>
 </html>

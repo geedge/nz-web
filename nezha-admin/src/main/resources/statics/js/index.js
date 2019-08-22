@@ -62,7 +62,6 @@ var vm = new Vue({
 		},
 		getCurrSystem: function() {
 			$.getJSON("system/detail", function(r){
-				console.info(r)
 				vm.currSystem = r.data;
 			});
 		},
@@ -111,9 +110,7 @@ var vm = new Vue({
 		changeSystem: function(systemId) {
 			$.getJSON("system/changeSystem?id=" + systemId, function(r){
 				if (r.code == '200') {
-					vm.currSystem = r.data;
-					layer.alert("切换成功");
-					vm.changeSystemShow = false;
+					location.reload();
 				} else {
 					alert(r.msg);
 				}
