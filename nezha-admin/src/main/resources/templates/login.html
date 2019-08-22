@@ -141,11 +141,13 @@ var vm = new Vue({
 			    success: function(result){
 					if(result.code == 200){//登录成功，选择业务系统
 						vm.systems = result.data;
+						vm.errorMsg = "";
+						vm.error = false;
 						vm.showLogin = false;
 					}else{
 						vm.error = true;
 						vm.errorMsg = result.msg;
-						
+						vm.captcha = "";
 						vm.refreshCode();
 					}
 				}
@@ -171,6 +173,8 @@ var vm = new Vue({
 		},
 		cancelSelect: function() {
 			$.get("logout");
+			vm.refreshCode();
+			vm.captcha = "";
 			vm.showLogin = true;
 		}
 	}
