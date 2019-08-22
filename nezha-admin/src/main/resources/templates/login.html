@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="${request.contextPath}/statics/css/bootstrap.min.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/font-awesome.min.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/AdminLTE.min.css">
+  <link rel="stylesheet" href="${request.contextPath}/statics/libs/vue-multiselect.min.css">
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
   <link rel="stylesheet" href="${request.contextPath}/statics/css/all-skins.min.css">
-  <link rel="stylesheet" href="${request.contextPath}/statics/plugins/select2/4.0/select2.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/main.css">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -29,7 +29,7 @@
   }
   </style>
 </head>
-<body class="hold-transition login-page">
+<body class="hold-transition login-page" style="min-height: 650px;">
 <div class="login-box" id="rrapp" v-cloak>
   <div class="login-logo">
     <b>NEZHA</b>
@@ -77,9 +77,7 @@
   <div class="login-box-body" v-show="!showLogin">
   	<p class="login-box-msg">选择业务系统</p>
     <div class="form-group has-feedback">
-      <select id="seleSys">
-      	<option v-for="system in systems" :value="system.id">{{system.name}}</option>
-      </select>
+      <multiselect v-model="selectedSystem" :options="systems" label="name" placeholder="请选择"></multiselect>
     </div>
     <div class="row">
       <div class="col-xs-4">
@@ -100,16 +98,16 @@
 
 <script src="${request.contextPath}/statics/libs/jquery.min.js"></script>
 <script src="${request.contextPath}/statics/libs/vue.min.js"></script>
+<script src="${request.contextPath}/statics/libs/vue-multiselect.min.js"></script>
 <script src="${request.contextPath}/statics/libs/bootstrap.min.js"></script>
 <script src="${request.contextPath}/statics/libs/jquery.slimscroll.min.js"></script>
 <script src="${request.contextPath}/statics/libs/fastclick.min.js"></script>
 <script src="${request.contextPath}/statics/plugins/layer/layer.js"></script>
-<script src="${request.contextPath}/statics/plugins/select2/4.0/select2.js"></script>
 <script src="${request.contextPath}/statics/libs/app.js"></script>
 <script type="text/javascript">
-$(function(){
-	$("#seleSys").select2();
-});
+//注册select组件
+Vue.component('multiselect', window.VueMultiselect.default);
+
 var vm = new Vue({
 	el:'#rrapp',
 	data:{
@@ -120,7 +118,8 @@ var vm = new Vue({
 		errorMsg: '',
 		src: 'captcha.jpg',
 		showLogin: true,
-		systems: []
+		systems: [],
+		selectedSystem: null
 	},
 	beforeCreate: function(){
 		if(self != top){
@@ -154,12 +153,12 @@ var vm = new Vue({
 			});
 		},
 		selectSys: function() {
-			if (!$("#seleSys").val()) {
+			if (!vm.selectedSystem.id) {
 				layer.alert("请选择业务系统");
 			} else {
 				$.ajax({
 					type: "GET",
-				    url: "setSystem?systemId=" + $("#seleSys").val(),
+				    url: "setSystem?systemId=" + vm.selectedSystem.id,
 				    dataType: "json",
 				    success: function(result){
 				    	if (result.code == 200) {

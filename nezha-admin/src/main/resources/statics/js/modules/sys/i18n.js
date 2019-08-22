@@ -34,14 +34,9 @@ $(function () {
         	$("#jqGrid").closest(".ui-jqgrid-bdiv").css({ "overflow-x" : "hidden" }); 
         }
     });
-    //**注意：select2会将select元素重新渲染，vue的v-model会失效，需要手动处理
-    $(".form-select2").change(function(){
-    	vm.i18n.lang = $(this).val();
-    });
-    $(".q-select2").change(function(){
-    	vm.q.lang = $(this).val();
-    });
 });
+//注册select组件
+Vue.component('multiselect', window.VueMultiselect.default);
 
 var vm = new Vue({
 	el:'#rrapp',
@@ -52,8 +47,14 @@ var vm = new Vue({
 		},
 		showList: true,
 		title: null,
-		i18n: {},
-		langList: {}
+		i18n: {
+			code: null,
+			lang: null,
+			value: null,
+			remark: null,
+			id: null
+		},
+		langList: []
 	},
 	methods: {
 		query: function () {
@@ -61,13 +62,17 @@ var vm = new Vue({
 		},
 		getLangList: function(event) {
 			$.getJSON(baseURL + "sys/dict/all?type=lang&_"+$.now(), function(r){
-				vm.langList = r.data;
+				var langList = [];
+				for (var i = 0; i < r.data.length; i++) {
+					langList.push(r.data[i].value);
+				}
+				vm.langList = langList;
 			});
 		},
 		add: function(){
 			vm.showList = false;
 			vm.title = "新增";
-			vm.i18n = {};
+			vm.i18n = {code:null,lang:null,value:null,remark:null,id:null};
 		},
 		update: function () {
 			var id = getSelectedRow();
@@ -81,7 +86,6 @@ var vm = new Vue({
 		getInfo: function(id){
 			$.get(baseURL + "sys/i18n/detail?id="+id, function(r){
                 vm.i18n = r.data;
-                $(".form-select2").val([vm.i18n.lang]).trigger("change");
             });
 		},
 		del: function (event) {
