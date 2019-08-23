@@ -150,19 +150,22 @@ var vm = new Vue({
 		},
 		login: function (event) {
 			var flag = true;
+			var errMsg = "";
 			if (!vm.$v.username.required) {
-				vm.errorMsg = "用户名不能为空";
+				errMsg = errMsg + "用户名 "
 				flag = false;
 			}
 			if (!vm.$v.password.required) {
-				vm.errorMsg = "密码不能为空";
+				errMsg = errMsg + "密码 "
 				flag = false;
 			}
 			if (!vm.$v.captcha.required) {
-				vm.errorMsg = "验证码不能为空";
+				errMsg = errMsg + "验证码 ";
 				flag = false;
 			}
 			if (!flag) {
+				errMsg = errMsg + "不能为空";
+				vm.errorMsg = errMsg;
 				vm.error = true;
 				return;
 			}
