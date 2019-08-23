@@ -37,6 +37,10 @@ $(function () {
 });
 //注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
+//引用vuelidate组件
+Vue.use(window.vuelidate.default);
+//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
+var required = window.validators.required;
 
 var vm = new Vue({
 	el:'#rrapp',
@@ -48,14 +52,27 @@ var vm = new Vue({
 		showList: true,
 		title: null,
 		i18n: {
-			code: null,
-			lang: null,
-			value: null,
-			remark: null,
+			code: "",
+			lang: "",
+			value: "",
+			remark: "",
 			id: null
 		},
 		langList: []
 	},
+	validations: { //定义校验规则
+		i18n: {
+			code: {
+				required
+			},
+			lang: {
+				required
+			},
+			value: {
+				required
+			}
+		}
+	}, 
 	methods: {
 		query: function () {
 			vm.reload();
@@ -70,11 +87,13 @@ var vm = new Vue({
 			});
 		},
 		add: function(){
+			vm.$v.i18n.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.title = "新增";
 			vm.i18n = {code:null,lang:null,value:null,remark:null,id:null};
 		},
 		update: function () {
+			vm.$v.i18n.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
 			var id = getSelectedRow();
 			if(id == null){
 				return ;
@@ -93,7 +112,6 @@ var vm = new Vue({
 			if(ids == null){
 				return ;
 			}
-			
 			confirm('确定要删除选中的记录？', function(){
 				$.ajax({
 					type: "DELETE",
@@ -113,6 +131,9 @@ var vm = new Vue({
 			});
 		},
 		saveOrUpdate: function (event) {
+			if (!vm.validate()) { //在下方定义的validate方法
+				return;
+			}
 			var url = vm.i18n.id == null ? "sys/i18n/save" : "sys/i18n/update";
 			$.ajax({
 				type: vm.i18n.id == null ? "POST" : "PUT",
@@ -137,6 +158,10 @@ var vm = new Vue({
                 postData:{'code': vm.q.code, 'lang': vm.q.lang},
                 page:page
             }).trigger("reloadGrid");
+		},
+		validate: function () {
+			vm.$v.i18n.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
+			return !vm.$v.i18n.$error;
 		}
 	},
 	created: function(){

@@ -99,6 +99,8 @@
 <script src="${request.contextPath}/statics/libs/jquery.min.js"></script>
 <script src="${request.contextPath}/statics/libs/vue.min.js"></script>
 <script src="${request.contextPath}/statics/libs/vue-multiselect.min.js"></script>
+<script src="${request.contextPath}/statics/libs/vuelidate.min.js"></script>
+<script src="${request.contextPath}/statics/libs/validators.min.js"></script>
 <script src="${request.contextPath}/statics/libs/bootstrap.min.js"></script>
 <script src="${request.contextPath}/statics/libs/jquery.slimscroll.min.js"></script>
 <script src="${request.contextPath}/statics/libs/fastclick.min.js"></script>
@@ -107,6 +109,11 @@
 <script type="text/javascript">
 //注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
+//引用vuelidate组件
+Vue.use(window.vuelidate.default);
+//引用校验规则
+var required = window.validators.required;
+var minLength = window.validators.minLength;
 
 var vm = new Vue({
 	el:'#rrapp',
@@ -121,6 +128,17 @@ var vm = new Vue({
 		systems: [],
 		selectedSystem: null
 	},
+	validations: {
+		username: {
+			required
+		},
+		password: {
+			required
+		},
+		captcha: {
+			required
+		}
+	}, 
 	beforeCreate: function(){
 		if(self != top){
 			top.location.href = self.location.href;
@@ -131,6 +149,23 @@ var vm = new Vue({
 			this.src = "captcha.jpg?t=" + $.now();
 		},
 		login: function (event) {
+			var flag = true;
+			if (!vm.$v.username.required) {
+				vm.errorMsg = "用户名不能为空";
+				flag = false;
+			}
+			if (!vm.$v.password.required) {
+				vm.errorMsg = "密码不能为空";
+				flag = false;
+			}
+			if (!vm.$v.captcha.required) {
+				vm.errorMsg = "验证码不能为空";
+				flag = false;
+			}
+			if (!flag) {
+				vm.error = true;
+				return;
+			}
 			var data = "username="+vm.username+"&password="+vm.password+"&captcha="+vm.captcha;
 			$.ajax({
 				type: "POST",
