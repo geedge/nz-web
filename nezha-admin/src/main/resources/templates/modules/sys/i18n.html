@@ -39,7 +39,7 @@
 			<div class="form-group">
 			   	<div class="col-sm-2 control-label">语言</div>
 			   	<div class="col-sm-10">
-					<multiselect v-model="$v.i18n.lang.$model" :options="langList" placeholder="请选择语言" :class="{'form-control--error': $v.i18n.lang.$dirty && !$v.i18n.lang.$error}"></multiselect>
+					<multiselect v-model="$v.i18n.lang.$model" :options="langList" placeholder="请选择语言" :class="{'form-control--error': $v.i18n.lang.$dirty && $v.i18n.lang.$error}"></multiselect>
 			    	<span class="required-symbol">*</span>
 			    	<div class="form-control_error-msg" v-if="$v.i18n.lang.$dirty && !$v.i18n.lang.required">必选项</div>
 			    </div>
@@ -47,7 +47,7 @@
 			<div class="form-group">
 			   	<div class="col-sm-2 control-label">VALUE</div>
 			   	<div class="col-sm-10">
-			        <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.value.$dirty && !$v.i18n.value.required}" v-model.trim="$v.i18n.value.$model"/>
+			        <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.value.$dirty && $v.i18n.value.$error}" v-model.trim="$v.i18n.value.$model"/>
 			        <span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if="$v.i18n.value.$dirty && !$v.i18n.value.required">必填项</div>
 			    </div>
