@@ -19,10 +19,10 @@ $(function () {
         multiselect: true,
         pager: "#jqGridPager",
         jsonReader : {
-            root: "page.list",
-            page: "page.currPage",
-            total: "page.totalPage",
-            records: "page.totalCount"
+            root: "data.list",
+            page: "data.currPage",
+            total: "data.totalPage",
+            records: "data.totalCount"
         },
         prmNames : {
             page:"page", 
@@ -39,8 +39,33 @@ $(function () {
 Vue.component('multiselect', window.VueMultiselect.default);
 //引用vuelidate组件
 Vue.use(window.vuelidate.default);
-//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
+//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-builtin-validators
 var required = window.validators.required;
+var helpers = window.validators.helpers;//引入自定义校验规则助手 helpers
+//自定义规则，校验i18n的lang+code组合不能重复;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.i18n)
+var checkI18n = function(value, i18n) {
+	if (helpers.req(i18n.lang) && value) {
+		var params = "?lang=" + i18n.lang + "&code=" + value;
+		if (i18n.id) {
+			params = params + "&id=" + i18n.id;
+		}
+		var flag = true;
+		$.ajax({
+			type: "get",
+			url: baseURL + "sys/i18n/check" + params,
+			async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+			dataType: "json",
+			success: function(r){
+				if (r.code != 200) {
+					flag = false;
+				}
+			}
+		});
+		return flag;
+	} else {
+		return true;
+	}
+}
 
 var vm = new Vue({
 	el:'#rrapp',
@@ -63,7 +88,8 @@ var vm = new Vue({
 	validations: { //定义校验规则
 		i18n: {
 			code: {
-				required
+				required,
+				checkI18n
 			},
 			lang: {
 				required
@@ -77,7 +103,7 @@ var vm = new Vue({
 		query: function () {
 			vm.reload();
 		},
-		getLangList: function(event) {
+		getLangList: function(event) { //查字典获取语言种类
 			$.getJSON(baseURL + "sys/dict/all?type=lang&_"+$.now(), function(r){
 				var langList = [];
 				for (var i = 0; i < r.data.length; i++) {
@@ -159,7 +185,7 @@ var vm = new Vue({
                 page:page
             }).trigger("reloadGrid");
 		},
-		validate: function () {
+		validate: function () {//提交时的校验
 			vm.$v.i18n.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
 			return !vm.$v.i18n.$error;
 		}

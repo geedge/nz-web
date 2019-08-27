@@ -46,7 +46,7 @@ public class SysI18nController {
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = sysI18nService.queryPage(params);
 
-        return R.ok().put("page", page);
+        return R.ok(page);
     }
 
     @RequestMapping(value = "detail", method = RequestMethod.GET)
@@ -112,4 +112,21 @@ public class SysI18nController {
 		return R.ok();
     }
 
+    /**
+     * 重复校验，lang+code的组合不能重复
+     * @param params
+     * @return
+     */
+    @RequestMapping(value = "check", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", response = R.class, value = "校验重复记录")
+    public R check(SysI18nEntity sysI18n) {
+    	ValidateUtils.is(sysI18n.getCode()).notNull()
+    				.and(sysI18n.getLang()).notNull();
+    	boolean flag = sysI18nService.check(sysI18n);
+    	if (flag) {
+    		return R.error(RCode.SYS_I18N_DUPLICATE);
+    	} else {
+    		return R.ok();
+    	}
+    }
 }
