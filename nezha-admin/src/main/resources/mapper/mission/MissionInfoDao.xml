@@ -67,7 +67,7 @@
 		</if>
 		and mi.del_flag=0 and p.del_flag=0
 		GROUP BY mi.id
-		<if test="missionInfo.sidx != null ">
+		<if test="missionInfo.sidx != null and  missionInfo.sidx != ''">
 			order by mi.#{missionInfo.sidx} #{missionInfo.order}
 		</if>
 	</select>
