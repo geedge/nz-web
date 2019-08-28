@@ -82,7 +82,7 @@ public class DeteWarnController {
     @DeleteMapping("/delete")
     @ResponseBody
     @ApiOperation("删除告警配置")
-    public R delete(@RequestParam Long ... ids){
+    public R delete(@RequestBody Long ... ids){
 
         deteWarnInfoService.deleteEntity(ids);
         return R.ok();

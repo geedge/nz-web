@@ -85,7 +85,7 @@ public class DeteTypeController {
     @DeleteMapping(value = "/delete", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     @ApiOperation(value = "删除监测类别")
-    public R delete(@RequestParam Long... ids) {
+    public R delete(@RequestBody Long... ids) {
 
         deteTypeInfoService.deleteEntity(ids);
         return R.ok();
@@ -158,7 +158,7 @@ public class DeteTypeController {
     @DeleteMapping(value = "/deleteDic", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     @ApiOperation(value = "删除监测类别字典")
-    public R deleteDic(@RequestParam String ... types) {
+    public R deleteDic(@RequestBody String ... types) {
         return deteTypeMetaMappingService.deleteDic(types);
     }
 
