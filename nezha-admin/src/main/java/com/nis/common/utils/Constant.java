@@ -195,4 +195,8 @@ public class Constant {
     public static final String NODE_SERVER_TYPE = "1";  // server
     public static final String NODE_NET_TYPE = "2";     // net
 
+    // 节点组 分配节点/添加子节点组
+    public static final String NODEGROUP_REFUSE= "0"; // 不可以
+    public static final String NODEGROUP_ALLOW = "1"; // 可以
+
 }

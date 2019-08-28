@@ -1,5 +1,6 @@
 package com.nis.modules.node.controller;
 
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -115,9 +116,13 @@ class NodeGroupInfoController {
     @ApiOperation("可分配节点查询")
     @GetMapping("/assList")
     public R assList(@RequestParam Map<String, Object> params) {
-        ValidateUtils.is(params).notNull(RCode.NOT_NULL_ERROR)
-                .and(params.get("systemId").toString()).notNull(RCode.NODEGROUP_SYSTEMID_ISNULL)
-                .and(params.get("groupId").toString()).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
+        ValidateUtils.is(params).notNull(RCode.NOT_NULL_ERROR);
+        if(params.get("systemId") == null){
+            throw new NZException(RCode.NODEGROUP_SYSTEMID_ISNULL);
+        }
+        if(params.get("groupId") == null){
+            throw new NZException(RCode.NODEGROUP_GROUPID_ISNULL);
+        }
 
         PageUtils page = nodegroupInfoService.assList(params);
         return R.ok(page);

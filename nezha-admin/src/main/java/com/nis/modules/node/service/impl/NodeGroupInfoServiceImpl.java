@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -99,6 +100,30 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             } else {
                 nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
             }
+
+            // 校验父级节点组是否可以添加子节点组
+            NodeGroupInfoEntity parentNodeGroup = null;
+            List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
+            for (SystemInfoEntity entity : sysNodeGroups) {
+                for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
+                    if (nodegroupInfo.getPid() - nodeGroupInfo.getId() == 0) {
+                        parentNodeGroup = nodeGroupInfo;
+                        break;
+                    }
+                }
+                if (parentNodeGroup != null) {
+                    break;
+                }
+            }
+
+            if (parentNodeGroup == null) {
+                throw new NZException(RCode.NODE_ERROR);
+            }
+
+            if (Constant.NODEGROUP_REFUSE.equals(parentNodeGroup.getAllowSub())) { // 该父节点不可添加子节点组
+                throw new NZException(RCode.NODEGROUP_ADD_REFUSE);
+            }
+
             NodeGroupInfoEntity parentEntity = this.getById(nodegroupInfo.getPid());
             // 添加顶级的时候没有上级
             if (parentEntity == null) {
@@ -133,7 +158,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         if (nodeGroup.getName().equals(nodegroupInfo.getName())) {// 名称没有发生改变
             nodegroupInfoDao.updateById(nodegroupInfo);
         } else {
-            if (this.groupNameCheck(nodegroupInfo.getId(),nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
+            if (this.groupNameCheck(nodegroupInfo.getId(), nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
                 nodegroupInfoDao.updateById(nodegroupInfo);
             } else {
                 throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);// 节点组名称重复
@@ -190,6 +215,25 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeRel(Long id, Long[] uuids) {
 
+        List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
+        NodeGroupInfoEntity nodeGroup = null;
+        for (SystemInfoEntity entity : sysNodeGroups) {
+            for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
+                if (id - nodeGroupInfo.getId() == 0) {
+                    nodeGroup = nodeGroupInfo;
+                }
+            }
+            if (nodeGroup != null) {
+                break;
+            }
+        }
+        if (nodeGroup == null) {
+            throw new NZException(RCode.NODE_ERROR);
+        }
+        if (Constant.NODEGROUP_REFUSE.equals(nodeGroup.getAllowAss())) { // 节点组不可以分配节点
+            throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
+        }
+
         List<NodeGroupRelEntity> list = new ArrayList<>();
 
         Date now = new Date();
@@ -222,6 +266,28 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      */
     @Override
     public PageUtils assList(Map<String, Object> params) {
+        Integer groupId = Integer.valueOf(params.get("groupId").toString());
+        NodeGroupInfoEntity nodeGroup = null;
+
+        List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
+        for (SystemInfoEntity entity : sysNodeGroups) {
+            for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
+                if (groupId - nodeGroupInfo.getId() == 0) {
+                    nodeGroup = nodeGroupInfo;
+                    break;
+                }
+            }
+            if (nodeGroup != null) {
+                break;
+            }
+        }
+        if (nodeGroup == null) {
+            throw new NZException(RCode.NODE_ERROR);
+        }
+        if (Constant.NODEGROUP_REFUSE.equals(nodeGroup.getAllowAss())) { // 节点组不可以分配节点
+            throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
+        }
+
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
         List<NodeInfoEntity> assNodeList = baseMapper.assList(page, params);
 
@@ -253,20 +319,20 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     }
 
     /**
-    * @Description 校验节点组是否属于当前业务系统
-    * @Author  rui
-    * @Date   2019/8/13
-    * @Param
-    * @Return
-    * @Exception
-    */
-    public boolean isCurrentSystem(Long [] ids){
+     * @Description 校验节点组是否属于当前业务系统
+     * @Author rui
+     * @Date 2019/8/13
+     * @Param
+     * @Return
+     * @Exception
+     */
+    public boolean isCurrentSystem(Long[] ids) {
         Long currSystemId = ShiroUtils.getCurrSystemId();
-        QueryWrapper<NodeGroupInfoEntity> nodeGroupInfoQueryWrapper=new QueryWrapper<NodeGroupInfoEntity>();
-        nodeGroupInfoQueryWrapper.in("id",ids);
-        nodeGroupInfoQueryWrapper.ne("system_id",currSystemId);
+        QueryWrapper<NodeGroupInfoEntity> nodeGroupInfoQueryWrapper = new QueryWrapper<NodeGroupInfoEntity>();
+        nodeGroupInfoQueryWrapper.in("id", ids);
+        nodeGroupInfoQueryWrapper.ne("system_id", currSystemId);
         List<NodeGroupInfoEntity> list = this.list(nodeGroupInfoQueryWrapper);
 
-        return list==null||list.size()<1;
+        return list == null || list.size() < 1;
     }
 }

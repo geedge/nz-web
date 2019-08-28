@@ -55,6 +55,8 @@ public enum RCode {
 	NODEGROUP_PID_ISNULL(202003, "group_parentId_isNull"),         // 节点组上级ID不能为空
 	NODEGROUP_GROUPID_ISNULL(202004, "group_id_isNull"),           // 节点组ID不能为空
 	NODEGROUP_SYSTEMID_ISNULL(202005, "group_systemId_isNull"),    // 系统ID不能为空
+	NODEGROUP_ADD_REFUSE(202006, "nodegroup_add_refuse"),          // 节点组不可以添加子节点组
+	NODEGROUP_ASSIG_REFUSE(202007, "nodegroup_assig_refuse"),       // 节点组不可以分配节点
 
 	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),   // 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"),            // 机房行号已被占用
