@@ -48,14 +48,14 @@
         <input type="password" class="form-control" v-model="password" placeholder="密码">
         <span class="glyphicon glyphicon-lock form-control-feedback"></span>
       </div>
-      <div class="form-group has-feedback">
+      <!-- <div class="form-group has-feedback">
         <input type="text" class="form-control" v-model="captcha" @keyup.enter="login" placeholder="验证码">
         <span class="glyphicon glyphicon-warning-sign form-control-feedback"></span>
       </div>
       <div class="form-group has-feedback">
         <img alt="如果看不清楚，请单击图片刷新！" class="pointer" :src="src" @click="refreshCode">
         &nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:;" @click="refreshCode">点击刷新</a>
-      </div>
+      </div> -->
       
       
       <div class="row">
@@ -133,10 +133,10 @@ var vm = new Vue({
 		},
 		password: {
 			required
-		},
+		}/* ,
 		captcha: {
 			required
-		}
+		} */
 	}, 
 	beforeCreate: function(){
 		if(self != top){
@@ -158,17 +158,17 @@ var vm = new Vue({
 				errMsg = errMsg + "密码 "
 				flag = false;
 			}
-			if (!vm.$v.captcha.required) {
+			/* if (!vm.$v.captcha.required) {
 				errMsg = errMsg + "验证码 ";
 				flag = false;
-			}
+			} */
 			if (!flag) {
 				errMsg = errMsg + "不能为空";
 				vm.errorMsg = errMsg;
 				vm.error = true;
 				return;
 			}
-			var data = "username="+vm.username+"&password="+vm.password+"&captcha="+vm.captcha;
+			var data = "username="+vm.username+"&password="+vm.password/* +"&captcha="+vm.captcha */;
 			$.ajax({
 				type: "POST",
 			    url: "sys/login",
@@ -184,7 +184,7 @@ var vm = new Vue({
 						vm.error = true;
 						vm.errorMsg = result.msg;
 						vm.captcha = "";
-						vm.refreshCode();
+						//vm.refreshCode();
 					}
 				}
 			});
@@ -209,8 +209,8 @@ var vm = new Vue({
 		},
 		cancelSelect: function() {
 			$.get("logout");
-			vm.refreshCode();
-			vm.captcha = "";
+			//vm.refreshCode();
+			//vm.captcha = "";
 			vm.showLogin = true;
 		}
 	}
