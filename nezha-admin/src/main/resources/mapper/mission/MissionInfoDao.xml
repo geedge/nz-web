@@ -56,20 +56,20 @@
 			</foreach>    
 		))
 		</if>
-		<if test="missionInfo.isLoop != null ">
+		<if test="missionInfo.isLoop != null and missionInfo.isLoop !=''">
 			    AND mi.is_loop=#{missionInfo.isLoop}
 		</if>
-		<if test="missionInfo.type != null ">
+		<if test="missionInfo.type != null and missionInfo.type !=''">
 			    AND mi.type=#{missionInfo.type}
 		</if>
-		<if test="missionInfo.name != null ">
-			    AND mi.=#{missionInfo.name}
+		<if test="missionInfo.name != null and missionInfo.name !=''">
+			    AND mi.name  like 
+			    <if test="_databaseId == 'oracle'">'%'||#{missionInfo.name}||'%'</if>
+                <if test="_databaseId == 'mysql'">concat('%',#{missionInfo.name},'%')</if>
+                <if test="_databaseId == 'postgresql'">concat('%',#{missionInfo.name},'%')</if>
 		</if>
 		and mi.del_flag=0 and p.del_flag=0
 		GROUP BY mi.id
-		<if test="missionInfo.sidx != null and  missionInfo.sidx != ''">
-			order by mi.#{missionInfo.sidx} #{missionInfo.order}
-		</if>
 	</select>
 
 	<select id="queryByPermission" parameterType="permissionInfoEntity" resultMap="missionInfoMap">

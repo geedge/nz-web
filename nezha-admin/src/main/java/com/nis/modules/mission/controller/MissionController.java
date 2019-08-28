@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -82,6 +83,14 @@ public class MissionController {
     	}
         if(page!=null) {
         	queryPage.setCurrent(page);
+        }
+        if(!CommonUtil.isNull(order) && !CommonUtil.isNull(sidx)) {
+        	if(order.equalsIgnoreCase("asc")) {
+        		queryPage.setAsc(sidx);
+        	}
+        	if(order.equalsIgnoreCase("desc")) {
+        		queryPage.setDesc(sidx);
+        	}
         }
         MissionInfoEntity missionInfoEntity = new MissionInfoEntity();
         missionInfoEntity.setSidx(sidx);
