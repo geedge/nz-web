@@ -48,7 +48,7 @@ public class DashboardController extends AbstractController {
 	@ApiOperation(httpMethod="DELETE",value="删除仪表盘信息", notes="仪表盘ID")
 	@RequiresPermissions("dashboard:dashboard:delete")
 	@ResponseBody
-	public R delete(@RequestBody Long id) {
+	public R delete(@RequestParam Long id) {
 		ValidateUtils.is(id).notNull(RCode.DASHBOARD_ID_NULL);
 		dashboardService.removeDashboardById(id);
 		return R.ok();
