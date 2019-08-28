@@ -141,7 +141,7 @@ public class SystemInfoController extends AbstractController {
 	 */
 	@RequestMapping(value = "saveNodeRel", method = RequestMethod.POST)
 	@ApiOperation(httpMethod = "POST", response = R.class, value = "分配节点")
-	public R saveNodeRel(@ApiParam SystemInfoEntity entity){
+	public R saveNodeRel(@ApiParam @RequestBody SystemInfoEntity entity){
 		if (!ShiroUtils.isGlobal()) {
 			entity.setId(ShiroUtils.getCurrSystemId());
 		}
@@ -157,7 +157,7 @@ public class SystemInfoController extends AbstractController {
 	 */
 	@RequestMapping(value = "deleteNodeRel", method = RequestMethod.DELETE)
 	@ApiOperation(httpMethod = "DELETE", response = R.class, value = "移除节点")
-	public R deleteNodeRel(@ApiParam SystemInfoEntity entity){
+	public R deleteNodeRel(@ApiParam @RequestBody SystemInfoEntity entity){
 		if (!ShiroUtils.isGlobal()) {
 			entity.setId(ShiroUtils.getCurrSystemId());
 		}

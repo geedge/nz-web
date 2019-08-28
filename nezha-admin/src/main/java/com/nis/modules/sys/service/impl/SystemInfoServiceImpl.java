@@ -352,7 +352,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		sysNodeWrapper.in("uuid", entity.getUuids());
 		sysNodeWrapper.set("del_flag", Constant.DELFLAG_TRUE);
 		sysNodeWrapper.set("operator", ShiroUtils.getUserId());
-		sysNodeWrapper.set("opTime", now);
+		sysNodeWrapper.set("op_time", now);
 		
 		sysNodeService.update(sysNodeWrapper);
 		

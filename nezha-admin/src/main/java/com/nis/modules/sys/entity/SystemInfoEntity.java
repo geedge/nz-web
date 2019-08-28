@@ -86,7 +86,6 @@ public class SystemInfoEntity implements Serializable {
 	@TableField(exist=false)
 	private Long usergroupId;
 	
-	@JsonIgnore
 	@TableField(exist=false)
 	private List<Long> uuids;
 
