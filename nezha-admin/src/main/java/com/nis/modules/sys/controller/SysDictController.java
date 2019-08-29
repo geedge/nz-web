@@ -116,7 +116,7 @@ public class SysDictController extends AbstractController {
         dict.setOperator(getUserId());
         dict.setOpTime(new Date());
         
-        sysDictService.updateById(dict);
+        sysDictService.update(dict);
 
         return R.ok();
     }

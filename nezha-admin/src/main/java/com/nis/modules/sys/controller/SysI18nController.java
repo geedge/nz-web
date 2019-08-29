@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.modules.sys.entity.SysI18nEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
@@ -20,6 +21,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -37,7 +40,9 @@ import com.nis.common.utils.RCode;
 public class SysI18nController {
     @Autowired
     private SysI18nService sysI18nService;
-
+    @Autowired
+    private SysDictService dictService;
+    
     /**
      * 列表
      */
@@ -66,8 +71,11 @@ public class SysI18nController {
     	ValidateUtils.is(sysI18n.getCode()).notNull()
     				 .and(sysI18n.getLang()).notNull()
     				 .and(sysI18n.getValue()).notNull();
-    	boolean flag = sysI18nService.check(sysI18n); //检查是否重复，true为重复
-    	if (flag) {
+    	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
+    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+    	}
+    	
+    	if (sysI18nService.check(sysI18n)) { //检查是否重复，true为重复
     		return R.error(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		sysI18n.setOperator(ShiroUtils.getUserId());
@@ -77,7 +85,7 @@ public class SysI18nController {
     	}
     }
 
-    /**
+	/**
      * 修改
      */
     @RequestMapping(value = "update", method = RequestMethod.PUT)
@@ -87,8 +95,10 @@ public class SysI18nController {
 					 .and(sysI18n.getLang()).notNull()
 					 .and(sysI18n.getValue()).notNull()
 					 .and(sysI18n.getId()).notNull();
-    	boolean flag = sysI18nService.check(sysI18n); //检查是否重复，true为重复
-    	if (flag) {
+    	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
+    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+    	}
+    	if (sysI18nService.check(sysI18n)) { //检查是否重复，true为重复
     		return R.error(RCode.SYS_I18N_DUPLICATE);
     	} else {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
@@ -108,7 +118,6 @@ public class SysI18nController {
     public R delete(@ApiParam @RequestBody Long[] ids){
     	ValidateUtils.is(ids).notNull();
     	sysI18nService.removeByIds(Arrays.asList(ids));
-		//sysI18nService.delete(Arrays.asList(ids));
 		return R.ok();
     }
 
@@ -119,14 +128,46 @@ public class SysI18nController {
      */
     @RequestMapping(value = "check", method = RequestMethod.GET)
     @ApiOperation(httpMethod = "GET", response = R.class, value = "校验重复记录")
-    public R check(SysI18nEntity sysI18n) {
+    public R check(@RequestBody SysI18nEntity sysI18n) {
     	ValidateUtils.is(sysI18n.getCode()).notNull()
     				.and(sysI18n.getLang()).notNull();
-    	boolean flag = sysI18nService.check(sysI18n);
-    	if (flag) {
+    	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
+    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+    	}
+    	if (sysI18nService.check(sysI18n)) {
     		return R.error(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		return R.ok();
     	}
+    }
+    
+    @RequestMapping(value = "getLangList", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", response = R.class, value = "获取语言列表")
+    public R getLangList() {
+    	if (CommonUtil.isNull(Constant.langList)) {
+			dictService.updateLangCache();
+		}
+    	return R.ok(Constant.langList);
+    }
+    
+    /**
+     * 校验lang是否合法
+     * @param lang
+     * @return
+     */
+    private boolean checkLang(String lang) {
+		if (CommonUtil.isNull(Constant.langList)) {
+			dictService.updateLangCache();
+		}
+		boolean contains = Constant.langList.contains(lang);
+		return contains;
+	}
+    
+    public static void main(String[] args) {
+    	String lang = "rzhu";
+		String reg = "^[z][h]$|^[c][n]$|^[r][u]$";
+		ValidateUtils.is(lang).regex(reg);
+		
+				
     }
 }

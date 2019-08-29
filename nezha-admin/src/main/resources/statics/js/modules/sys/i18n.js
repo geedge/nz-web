@@ -104,10 +104,10 @@ var vm = new Vue({
 			vm.reload();
 		},
 		getLangList: function(event) { //查字典获取语言种类
-			$.getJSON(baseURL + "sys/dict/all?type=lang&_"+$.now(), function(r){
+			$.getJSON(baseURL + "sys/i18n/getLangList", function(r){
 				var langList = [];
 				for (var i = 0; i < r.data.length; i++) {
-					langList.push(r.data[i].value);
+					langList.push(r.data[i]);
 				}
 				vm.langList = langList;
 			});

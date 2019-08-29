@@ -9,6 +9,8 @@
 package com.nis.common.utils;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -93,6 +95,16 @@ public class Constant {
 		}
 		DB_TYPE = databaseId;
     }
+    
+    /**
+     * 支持的语言
+     */
+    public static List<String> langList = new ArrayList<>();
+    
+    /**
+     * 字典中语言的名称和类型
+     */
+    public static final String DICT_NAME_LANG = "lang";
     
     /**
      * 定时任务状态
@@ -198,5 +210,9 @@ public class Constant {
     // 节点组 分配节点/添加子节点组
     public static final String NODEGROUP_REFUSE= "0"; // 不可以
     public static final String NODEGROUP_ALLOW = "1"; // 可以
+    
+    // system built_in 0非内置，1内置
+    public static final Integer SYSTEM_BUILDIN_YES = 1; // 内置
+    public static final Integer SYSTEM_BUILDIN_NO = 0; // 非内置
 
 }

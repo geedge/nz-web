@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,6 +73,40 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		wrapper.set("operator", ShiroUtils.getUserId());
 		wrapper.set("op_time", new Date());
 		return update(wrapper);
+	}
+	
+	@Override
+	public boolean save(SysDictEntity dict) {
+		super.save(dict);
+		if (dict.getType().equals(Constant.DICT_NAME_LANG)) {
+			updateLangCache();
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean update(SysDictEntity dict) {
+		SysDictEntity old = getById(dict.getId());
+		boolean langUpdate = false;
+		//若更新了语言，刷新语言缓存
+		if (dict.getType().equals(Constant.DICT_NAME_LANG) && !old.getValue().equals(dict.getValue())) {
+			langUpdate = true;
+		}
+		updateById(dict);
+		if (langUpdate) {
+			updateLangCache();
+		}
+		return true;
+	}
+
+	public void updateLangCache() {
+		Constant.langList.clear();
+		HashMap<String, Object> params = new HashMap<>();
+		params.put("type", Constant.DICT_NAME_LANG);
+		List<SysDictEntity> queryList = queryList(params);
+		for (SysDictEntity d : queryList) {
+			Constant.langList.add(d.getValue());
+		}
 	}
 
 }

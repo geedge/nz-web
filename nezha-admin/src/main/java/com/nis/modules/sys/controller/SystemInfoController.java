@@ -93,6 +93,11 @@ public class SystemInfoController extends AbstractController {
 		
 		ValidateUtils.is(systemInfo.getName()).notNull(RCode.SYS_SYS_NULLNAME)
 				.and(systemInfo.getId()).notNull(RCode.NOT_NULL_ERROR);
+		//校验是否是内置系统，内置系统不让改
+		SystemInfoEntity old = systemInfoService.queryDetail(systemInfo.getId());
+		if (Constant.SYSTEM_BUILDIN_YES == old.getBuiltIn()) {
+			return R.error(RCode.SYS_SYS_BUILTIN);
+		}
 		//校验名称重复
 		if (systemInfoService.checkName(systemInfo)) {
 			return R.error(RCode.SYS_SYS_DUPLICATENAME);

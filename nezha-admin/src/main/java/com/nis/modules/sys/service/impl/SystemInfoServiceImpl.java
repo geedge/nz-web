@@ -11,8 +11,12 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
+import com.nis.modules.detect.entity.DeteWarnInfoEntity;
+import com.nis.modules.detect.entity.DeteWarnRelEntity;
 import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.detect.service.DeteSetNodeRelService;
+import com.nis.modules.detect.service.DeteWarnInfoService;
+import com.nis.modules.detect.service.DeteWarnRelService;
 import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.service.MissionInfoService;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
@@ -65,6 +69,10 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	private PermissionInfoService permissionService;
 	@Autowired
 	private DeteSetInfoService deteSetService;
+	@Autowired
+	private DeteWarnRelService deteWarnRelService;
+	@Autowired
+	private DeteWarnInfoService deteWarnInfoService;
 	@Autowired
 	private DeteSetNodeRelService deteSetNodeService;
 	@Autowired
@@ -155,7 +163,19 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	
 	@Transactional(rollbackFor = Exception.class)
 	public boolean updateById(SystemInfoEntity systemInfo) {
+		Date now = new Date();
 		logger.info("update systemInfo...");
+		//topo改名
+		SystemInfoEntity old = baseMapper.selectById(systemInfo.getId());
+		if (!old.getName().equals(systemInfo.getName())) {
+			UpdateWrapper<TopoInfoEntity> tiWrapper = new UpdateWrapper<>();
+			tiWrapper.eq("del_flag", Constant.DELFLAG_FALSE);
+			tiWrapper.eq("system_id", systemInfo.getId());
+			tiWrapper.set("name", systemInfo.getName());
+			tiWrapper.set("operator", ShiroUtils.getUserId());
+			tiWrapper.set("op_time", now);
+			topoService.update(tiWrapper);
+		}
 		//修改system
 		baseMapper.updateById(systemInfo);
 		
@@ -208,7 +228,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	
 	@Transactional(rollbackFor = Exception.class)
 	public boolean delete(List<Long> ids) {
-		/**解除与节点、用户组、节点组、监测设置、任务、拓扑的关联*/
+		/**解除与节点、用户组、节点组、监测设置、告警、任务、拓扑的关联*/
 		Date now = new Date();
 		//等待删除的permission记录
 		List<PermissionInfoEntity> waitingDeletePermissions = new ArrayList<>();
@@ -254,7 +274,13 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		pi.setViewLevel(Constant.VIEWLEVEL_SYS);
 		List<DeteSetInfoEntity> dsByPermission = deteSetService.queryByPermission(pi);
 		if (!CommonUtil.isNull(dsByPermission)) {
-			for (DeteSetInfoEntity ds : dsByPermission) {
+			Long[] setIds = new Long[50];
+			for (int i = 0; i < dsByPermission.size(); i++) {
+				setIds[i] = dsByPermission.get(i).getId();
+			//List<Long> setIds = new ArrayList<>();
+			/*for (DeteSetInfoEntity ds : dsByPermission) {
+				setIds.add(ds.getId());
+				
 				PermissionInfoEntity waitingDelete = ds.getPermission();
 				waitingDelete.setDelFlag(Constant.DELFLAG_TRUE);
 				waitingDelete.setOperator(ShiroUtils.getUserId());
@@ -263,9 +289,29 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 				
 				ds.setState(Constant.DELFLAG_TRUE);
 				ds.setOperator(ShiroUtils.getUserId());
-				ds.setOpTime(now);
+				ds.setOpTime(now);*/
 			}
-			deteSetService.updateBatchById(dsByPermission);
+			deteSetService.changeStateByIds(setIds, "1");
+			//删除set
+			//deteSetService.updateBatchById(dsByPermission);
+			//删除warn
+			/*QueryWrapper<DeteWarnRelEntity> dwrQuery = new QueryWrapper<>();
+			dwrQuery.eq("rel_type", Constant.WARN_REL_SET);
+			dwrQuery.in("rel_id", setIds);
+			List<DeteWarnRelEntity> warnRelList = deteWarnRelService.list(dwrQuery);
+			if (!CommonUtil.isNull(warnRelList)) {
+				List<Long> warnIds = new ArrayList<>();
+				for (DeteWarnRelEntity dwr : warnRelList) {
+					warnIds.add(dwr.getWarnId());
+				}
+				UpdateWrapper<DeteWarnInfoEntity> dwiWrapper = new UpdateWrapper<>();
+				dwiWrapper.in("id", warnIds);
+				dwiWrapper.eq("del_flag", Constant.DELFLAG_FALSE);
+				dwiWrapper.set("del_flag", Constant.DELFLAG_TRUE);
+				dwiWrapper.set("operator", ShiroUtils.getUserId());
+				dwiWrapper.set("op_time", now);
+				deteWarnInfoService.update(dwiWrapper);
+			}*/
 		}
 		
 		//删除任务

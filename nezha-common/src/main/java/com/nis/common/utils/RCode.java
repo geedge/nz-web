@@ -21,6 +21,7 @@ public enum RCode {
 	SYS_SYS_NULLNAME(102001, "systemname_null_error"), //业务系统名称不能为空
 	SYS_SYS_DUPLICATENAME(102002, "systemname_duplicate_error"), //业务系统名称重复
 	SYS_SYS_DELGLOBAL(102003, "delete global error"), //不能删除global业务系统
+	SYS_SYS_BUILTIN(102004, "not allow to update"), //不能删除global业务系统
 
 	SYS_MENU_SYSMENUDEL(103001, "sysmenu_del_error"), //系统菜单，不能删除
 	SYS_MENU_DELSUB(103002, "del_sub_first_error"), //请先删除子菜单或按钮
@@ -33,7 +34,8 @@ public enum RCode {
 	SYS_USERGROUPLIST_ISNULL(104003,"SYS_USERGROUPLIST_ISNULL"),//选择的用户组列表为空
 
 	SYS_I18N_DUPLICATE(105001, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
-
+	SYS_I18N_NOSUCHLANG(105002, "no such lang"), //不合法的lang
+	
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 
 	NODE_IPADDRESS_FORMAT(201001, "ipaddress_format_error"),       // ip 地址不合法 格式错误
@@ -188,8 +190,8 @@ public enum RCode {
 	GRAPH_ERROR(600000, "graph_error"), //60xxxx，图形类通用错误
 
 
-	NOT_NULL_ERROR(990, "not_null_error"), //not null错误
-	NOT_NUMBER_ERROR(991, "not_number_error"), //not number错误
+	NOT_NULL_ERROR(990, "not null error"), //not null错误
+	NOT_NUMBER_ERROR(991, "not number error"), //not number错误
 	NO_PERMISSION_ERROR(998, "no permission error"), //无权限错误
 	ERROR(999, "error"); //通用错误/未知错误
 

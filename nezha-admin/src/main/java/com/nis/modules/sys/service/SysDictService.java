@@ -28,5 +28,10 @@ public interface SysDictService extends IService<SysDictEntity> {
     List<SysDictEntity> queryList(Map<String, Object> params);
 
 	boolean delete(List<Long> asList);
+	
+	boolean update(SysDictEntity dict);
+	
+	void updateLangCache();
+	
 }
 
