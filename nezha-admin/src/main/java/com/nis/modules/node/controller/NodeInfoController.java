@@ -40,7 +40,7 @@ public class NodeInfoController {
 
     @ApiOperation("节点详情查询")
     @GetMapping("/detail")
-    public R detail(@RequestParam("uuid") Long uuid) {
+    public R detail(@RequestParam(value = "uuid",required = false) Long uuid) {
         ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
 
         NodeInfoEntity nodeInfoDetail = nodeInfoService.detail(uuid);
@@ -76,7 +76,7 @@ public class NodeInfoController {
 
     @ApiOperation("IP地址校验")
     @GetMapping("/ipCheck")
-    public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip") String ip) {
+    public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip",required = false) String ip) {
         ValidateUtils.is(ip).notNull(RCode.NODE_IPADDRESS_ISNULL).and(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
 
         return nodeInfoService.ipCheck(uuid, ip);
@@ -84,7 +84,7 @@ public class NodeInfoController {
 
     @ApiOperation("name唯一校验")
     @GetMapping("/nodeNameCheck")
-    public R nodeNameCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "name") String name) {
+    public R nodeNameCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "name",required = false) String name) {
         ValidateUtils.is(name).notNull(RCode.NODE_NAME_ISNULL);
 
         if (nodeInfoService.nodeNameCheck(uuid, name)) {
@@ -95,7 +95,7 @@ public class NodeInfoController {
 
     @ApiOperation("节点状态变更")
     @PutMapping("/changeState")
-    public R changeState(@RequestParam("uuids") Long[] uuids, @RequestParam("state") String state) {
+    public R changeState(@RequestParam(value = "uuids",required = false) Long[] uuids, @RequestParam(value = "state",required = false) String state) {
         ValidateUtils.is(uuids).notNull(RCode.NODE_UUID_ISNULL).and(state).notNull(RCode.NODE_STATE_ISNULL);
 
         nodeInfoService.changeState(uuids, state);
@@ -104,7 +104,7 @@ public class NodeInfoController {
 
     @ApiOperation("查询可用机柜")
     @GetMapping("/selectCab")
-    public R selectCab(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam("uSize") Integer uSize) {
+    public R selectCab(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "uSize",required = false) Integer uSize) {
         ValidateUtils.is(uSize).notNull(RCode.NODE_USIZE_ISNULL);
 
         List<AvailCabinetEntity> availCabinetEntities = nodeInfoService.selectCab(uuid, uSize);

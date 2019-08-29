@@ -40,15 +40,24 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-
-        String name = (String) params.get("name");    // room  name
-        String addr = (String) params.get("addr");    // room addr
+        String name = null;
+        String addr = null;
+        if (params != null && params.size() > 0) {
+            name = (String) params.get("name");    // room  name
+            addr = (String) params.get("addr");    // room addr
+            if (addr != null && StringUtils.isNotBlank(addr)) {
+                // 校验传入地址是否存在
+                NodeRoomEntity roomEntity = new NodeRoomEntity();
+                roomEntity.setAddr(Long.valueOf(addr));
+                this.checkAddrExist(roomEntity);
+            }
+        }
 
         IPage<NodeRoomEntity> page = this.page(
                 new Query<NodeRoomEntity>().getPage(params),
                 new QueryWrapper<NodeRoomEntity>()
-                        .like(StringUtils.isNotBlank(name), "name", name)
-                        .eq(StringUtils.isNotBlank(addr), "addr", addr)
+                        .like(name != null, "name", name)
+                        .eq(addr != null && StringUtils.isNotBlank(addr), "addr", addr)
         );
         // 查询地区名称
         Map<String, Object> map = new HashMap<>();
@@ -98,7 +107,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         }
     }
 
-    public void checkAddrExist(NodeRoomEntity nodeRoom){
+    public void checkAddrExist(NodeRoomEntity nodeRoom) {
         // 校验地区是否存在
         Map<String, Object> map = new HashMap<>();
         map.put("name", "addr");
@@ -109,8 +118,8 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
                 flag = true;
             }
         }
-        if(!flag){
-            throw new NZException(RCode.NODEROOM_ADDR_NOTFOUND);
+        if (!flag) {
+            throw new NZException(RCode.NODEROOM_ADDR_NOTFOUND); // 位置未找到
         }
     }
 

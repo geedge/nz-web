@@ -10,6 +10,7 @@ import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,7 +44,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组详情查询")
     @GetMapping("/detail")
-    public R detail(@RequestParam("id") Long id) {
+    public R detail(@RequestParam(value = "id", required = false) Long id) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
 
         NodeGroupInfoEntity nodeGroup = nodegroupInfoService.detail(id);
@@ -64,7 +65,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组删除")
     @DeleteMapping("/delete")
-    public R delete(@RequestParam("id") Long id) {
+    public R delete(@RequestParam(value = "id", required = false) Long id) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
 
         nodegroupInfoService.delete(id);
@@ -76,7 +77,17 @@ class NodeGroupInfoController {
     public R update(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
         ValidateUtils.is(nodegroupInfo).notNull(RCode.NOT_NULL_ERROR)
                 .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
-
+        if (nodegroupInfo != null) {
+            if (nodegroupInfo.getSystemId() != null) {
+                throw new NZException(RCode.NODEGROUP_SYSTEMID_NOT_MODIFIED);
+            }
+            if (nodegroupInfo.getPid() != null) {
+                throw new NZException(RCode.NODEGROUP_PARENTID_NOT_MODIFIED);
+            }
+            if (nodegroupInfo.getPids() != null || StringUtils.isNotBlank(nodegroupInfo.getPids())) {
+                throw new NZException(RCode.NODEGROUP_PARENTIDS_NOT_MODIFIED);
+            }
+        }
         nodegroupInfoService.updateNodeGroupInfo(nodegroupInfo);
         return R.ok();
     }
@@ -84,7 +95,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组名称校验")
     @GetMapping("/groupNameCheck")
-    public R groupNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam("name") String name, @RequestParam("pid") Long pid) {
+    public R groupNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "name", required = false) String name, @RequestParam(value = "pid", required = false) Long pid) {
         ValidateUtils.is(name).notNull(RCode.NODEGROUP_NAME_ISNULL).and(pid).notNull(RCode.NODEGROUP_PID_ISNULL);
 
         if (nodegroupInfoService.groupNameCheck(id, name, pid)) {
@@ -95,7 +106,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组移除节点")
     @DeleteMapping("/deleteNodeRel")
-    public R deleteNodeRel(@RequestParam(value = "id") Long id, @RequestParam("uuids") Long[] uuids) {
+    public R deleteNodeRel(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "uuids", required = false) Long[] uuids) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
                 .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
 
@@ -105,7 +116,7 @@ class NodeGroupInfoController {
 
     @ApiOperation("节点组分配节点 建立关系")
     @PostMapping("/saveNodeRel")
-    public R saveNodeRel(@RequestParam(value = "id") Long id, @RequestParam("uuids") Long[] uuids) {
+    public R saveNodeRel(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "uuids", required = false) Long[] uuids) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
                 .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
 
@@ -117,10 +128,10 @@ class NodeGroupInfoController {
     @GetMapping("/assList")
     public R assList(@RequestParam Map<String, Object> params) {
         ValidateUtils.is(params).notNull(RCode.NOT_NULL_ERROR);
-        if(params.get("systemId") == null){
+        if (params.get("systemId") == null || StringUtils.isBlank(params.get("systemId").toString())) {
             throw new NZException(RCode.NODEGROUP_SYSTEMID_ISNULL);
         }
-        if(params.get("groupId") == null){
+        if (params.get("groupId") == null || StringUtils.isBlank(params.get("groupId").toString())) {
             throw new NZException(RCode.NODEGROUP_GROUPID_ISNULL);
         }
 

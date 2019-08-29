@@ -146,7 +146,13 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
      */
     @Override
     public boolean cabUbitCheck(Long id, Integer ubit) {
-        // 1. 根据机柜ID得到其中节点最大存放位置
+        // 1. 校验机柜是否存在
+        NodeCabinetEntity cab = this.getById(id);
+        if (cab == null) {
+            throw new NZException(RCode.NODECABINET_NOT_EXISTS);
+        }
+
+        // 2. 根据机柜ID得到其中节点最大存放位置
         List<NodeInfoEntity> list = nodeInfoService.list(new QueryWrapper<NodeInfoEntity>().eq("cabinet_id", id).ne(
                 "state", 3).orderByDesc("cabinet_start"));
 
@@ -175,6 +181,9 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         Integer roomCol = null;
         if (id != null) { // 修改的情况  需要将位置加入现有位置中
             NodeCabinetEntity cab = this.getById(id);
+            if(cab == null){
+                throw new NZException(RCode.NODECABINET_NOT_EXISTS);// 机柜不存在异常
+            }
             roomId = cab.getRoomId();
             roomRow = cab.getRoomRow();
             roomCol = cab.getRoomCol();
@@ -257,6 +266,13 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
      */
     @Override
     public boolean cabNameCheck(Long id, String name, Long roomId) {
+
+        // 校验机房是否存在
+        NodeRoomEntity nodeRoom = nodeRoomService.getById(roomId);
+        if (nodeRoom == null) {
+            throw new NZException(RCode.NODEROOM_NOT_EXISTS);
+        }
+
         List<NodeCabinetEntity> list = this.list(new QueryWrapper<NodeCabinetEntity>().eq("name", name).eq("room_id", roomId));
         boolean flag = false;
 
@@ -278,6 +294,10 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     public void checkParams(NodeCabinetEntity nodeCabinet) {
 
         NodeRoomEntity nodeRoom = nodeRoomService.getById(nodeCabinet.getRoomId());
+        // 增加机房校验
+        if (nodeRoom == null) {
+            throw new NZException(RCode.NODEROOM_NOT_EXISTS);
+        }
 
         // 参数不合理  输入的机房行列小于1
         ValidateUtils.is(nodeCabinet.getRoomRow()).notNull(RCode.NODECABINET_ROW_ISNULL)

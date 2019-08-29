@@ -17,6 +17,7 @@ import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.sun.org.apache.xalan.internal.lib.NodeInfo;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,8 +126,14 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Override
     public NodeInfoEntity detail(Long uuid) {
         NodeInfoEntity nodeInfoEntity = nodeInfoDao.detail(uuid);
+        if (nodeInfoEntity == null) {
+            throw new NZException(RCode.NODE_NOT_EXISTS);
+        }
 
         String tag = nodeInfoEntity.getTag();
+        if (tag == null || StringUtils.isBlank(tag)) {
+            throw new NZException(RCode.NODE_TAG_ISNULL);
+        }
         Map<String, Object> map = new HashMap();
 
         if (Constant.NODE_SERVER_TYPE.equals(nodeInfoEntity.getType())) {
@@ -287,6 +294,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 }
             }
 
+            // 校验节点类型和节点标签
+            this.checkTypeAndTag(nodeInfoEntity);
+
             //3. IP地址转换 IP整数
             nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
             //4. 密码加密 base64
@@ -298,6 +308,32 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             nodeInfoDao.save(nodeInfoEntity);
         } else {
             throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+        }
+    }
+
+    // 校验节点类型和节点标签
+    public void checkTypeAndTag(NodeInfoEntity nodeInfoEntity) {
+        Map<String, Object> map = new HashMap();
+
+        if (Constant.NODE_SERVER_TYPE.equals(nodeInfoEntity.getType())) {
+            map.put("type", "serverTag"); // 节点类型为 server
+        } else if (Constant.NODE_NET_TYPE.equals(nodeInfoEntity.getType())) {
+            map.put("type", "netTag");    // 节点类型为 Net
+        } else {
+            throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到
+        }
+
+        // 得到相应的tag 集合
+        List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
+        boolean flag = false;
+        for (SysDictEntity entity : sysDictEntities) {
+            if (entity.getCode().equals(nodeInfoEntity.getTag())) {
+                flag = true;
+                break;
+            }
+        }
+        if (!flag) {
+            throw new NZException(RCode.NODE_TAG_NOTFOUND); // 节点标签未找到
         }
     }
 
@@ -323,6 +359,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                     }
                 }
+
+                // 校验节点类型和标签是否正确
+                this.checkTypeAndTag(nodeInfoEntity);
 
                 //3 IP地址转换 IP整数
                 nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
@@ -394,7 +433,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
         Long cabinetId = null;
         if (uuid != null) { // 修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
-            NodeInfoEntity updateNodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid));
+            NodeInfoEntity updateNodeInfo = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid).ne("state", 3));
+            if (updateNodeInfo == null) {
+                throw new NZException(RCode.NODE_NOT_EXISTS); // 节点不存在
+            }
             cabinetId = updateNodeInfo.getCabinetId();
         }
 

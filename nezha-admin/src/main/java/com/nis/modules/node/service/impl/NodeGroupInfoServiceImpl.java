@@ -152,6 +152,9 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     public void updateNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo) {
         // 1. 根据当前的ID查到当前数据库对象
         NodeGroupInfoEntity nodeGroup = getById(nodegroupInfo.getId());
+        if (nodeGroup == null) {
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
+        }
         nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
         nodegroupInfo.setOpTime(new Date());
         // 2. 做名称校验
@@ -202,6 +205,10 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteNodeRel(Long id, Long[] uuids) {
+        NodeGroupInfoEntity nodeGroup = this.getById(id);
+        if (nodeGroup == null) {
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
+        }
         nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid", uuids).eq("group_id", id));
     }
 
@@ -228,10 +235,18 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             }
         }
         if (nodeGroup == null) {
-            throw new NZException(RCode.NODE_ERROR);
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
         }
         if (Constant.NODEGROUP_REFUSE.equals(nodeGroup.getAllowAss())) { // 节点组不可以分配节点
             throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
+        }
+
+        // 校验节点有效性
+        for (Long uuid : uuids) {
+            NodeInfoEntity nodeInfo = nodeInfoService.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid).ne("state", 3));
+            if (nodeInfo == null) {
+                throw new NZException("Nodes with UUID " + uuid + " do not exist", 201014); // 节点无效 不存在的节点
+            }
         }
 
         List<NodeGroupRelEntity> list = new ArrayList<>();
@@ -282,7 +297,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             }
         }
         if (nodeGroup == null) {
-            throw new NZException(RCode.NODE_ERROR);
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
         }
         if (Constant.NODEGROUP_REFUSE.equals(nodeGroup.getAllowAss())) { // 节点组不可以分配节点
             throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
@@ -307,6 +322,11 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      */
     @Override
     public boolean groupNameCheck(Long id, String name, Long pid) {
+        NodeGroupInfoEntity parentNodeGroup = this.getById(pid);
+        if (parentNodeGroup == null) {
+            throw new NZException(RCode.NODEGROUP_PARENT_NOT_EXISTS); // 节点组父级不存在
+        }
+
         List<NodeGroupInfoEntity> list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", pid));
         boolean flag = false;
 
