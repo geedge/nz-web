@@ -71,6 +71,7 @@ public enum RCode {
 	NODEROOM_ROWS_MINNUM(203011,"room_rows_minnum"),               // 机房行数最小值为1
 	NODEROOM_COLS_MINNUM(203012,"room_cols_minnum"),               // 机房列数最小值为1
 	NODEROOM_NOT_EXISTS(203013,"noderoom_not_exists"),             // 机房不存在
+	NODEROOM_ADDR_NOTFOUND(203014,"noderoom_addr_notfound"),       // 机房地区不存在
 
 	NODECABINET_NAME_DUPLICATE(204001, "cabinetname_duplicate_error"), // 机柜名称重复
 	NODECABINET_ROW_INCORRECT(204002,"rownumber_incorrect_error"),     // 行值不能小于1行

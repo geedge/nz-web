@@ -42,13 +42,13 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     public PageUtils queryPage(Map<String, Object> params) {
 
         String name = (String) params.get("name");    // room  name
-        String area = (String) params.get("area");    // room area
+        String addr = (String) params.get("addr");    // room addr
 
         IPage<NodeRoomEntity> page = this.page(
                 new Query<NodeRoomEntity>().getPage(params),
                 new QueryWrapper<NodeRoomEntity>()
                         .like(StringUtils.isNotBlank(name), "name", name)
-                        .eq(StringUtils.isNotBlank(area), "area", area)
+                        .eq(StringUtils.isNotBlank(addr), "addr", addr)
         );
         // 查询地区名称
         Map<String, Object> map = new HashMap<>();
@@ -86,11 +86,31 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     @Override
     public void saveNodeRoom(NodeRoomEntity nodeRoom) {
         if (this.roomNameCheck(null, nodeRoom.getName())) { // 名称唯一校验
+
+            // 校验地区是否存在
+            this.checkAddrExist(nodeRoom);
+
             nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
             nodeRoom.setOpTime(new Date());
             this.save(nodeRoom);
         } else {
             throw new NZException(RCode.NODEROOM_NAME_DUPLICATE);// 名称重复异常
+        }
+    }
+
+    public void checkAddrExist(NodeRoomEntity nodeRoom){
+        // 校验地区是否存在
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", "addr");
+        List<SysDictEntity> sysDictes = sysDictService.queryList(map);
+        boolean flag = false;
+        for (SysDictEntity entity : sysDictes) {
+            if (Long.valueOf(entity.getCode()) - nodeRoom.getAddr() == 0) {
+                flag = true;
+            }
+        }
+        if(!flag){
+            throw new NZException(RCode.NODEROOM_ADDR_NOTFOUND);
         }
     }
 
@@ -106,6 +126,8 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
             // 修改前校验机房的大小是否可用
             this.roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
 
+            // 校验地区是否存在
+            this.checkAddrExist(nodeRoom);
 
             nodeRoom.setOperator(ShiroUtils.getCurrSystemId());
             nodeRoom.setOpTime(new Date());
