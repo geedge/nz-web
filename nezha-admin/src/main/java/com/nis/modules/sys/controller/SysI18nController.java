@@ -128,7 +128,7 @@ public class SysI18nController {
      */
     @RequestMapping(value = "check", method = RequestMethod.GET)
     @ApiOperation(httpMethod = "GET", response = R.class, value = "校验重复记录")
-    public R check(@RequestBody SysI18nEntity sysI18n) {
+    public R check(SysI18nEntity sysI18n) {
     	ValidateUtils.is(sysI18n.getCode()).notNull()
     				.and(sysI18n.getLang()).notNull();
     	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
@@ -162,12 +162,4 @@ public class SysI18nController {
 		boolean contains = Constant.langList.contains(lang);
 		return contains;
 	}
-    
-    public static void main(String[] args) {
-    	String lang = "rzhu";
-		String reg = "^[z][h]$|^[c][n]$|^[r][u]$";
-		ValidateUtils.is(lang).regex(reg);
-		
-				
-    }
 }
