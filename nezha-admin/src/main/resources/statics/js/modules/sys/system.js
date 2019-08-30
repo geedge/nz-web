@@ -67,6 +67,30 @@ Vue.use(window.vuelidate.default);
 //引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-builtin-validators
 var required = window.validators.required;
 var helpers = window.validators.helpers;//引入自定义校验规则助手 helpers
+//自定义规则，校验业务系统名称不能重复;
+var checkName = function(value, system) {
+	if (helpers.req(system.name) && helpers.req(value)) {
+		var params = "?name=" + system.name;
+		if (system.id) {
+			params = params + "&id=" + system.id;
+		}
+		var flag = true;
+		$.ajax({
+			type: "get",
+			url: baseURL + "system/nameCheck" + params,
+			async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+			dataType: "json",
+			success: function(r){
+				if (r.code != 200) {
+					flag = false;
+				}
+			}
+		});
+		return flag;
+	} else {
+		return true;
+	}
+}
 
 var vm = new Vue({
 	el:'#rrapp',
@@ -85,7 +109,8 @@ var vm = new Vue({
 	validations: { //定义校验规则
 		system: {
 			name: {
-				required
+				required,
+				checkName
 			}
 		}
 	}, 

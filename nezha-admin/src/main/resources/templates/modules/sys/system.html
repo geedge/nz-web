@@ -25,6 +25,7 @@
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.system.name.$dirty && $v.system.name.$error}" v-model.trim="$v.system.name.$model"/>
 			        <span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.required">必填项</div>
+			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.checkName">重复的记录</div>
 			    </div>
 			</div>
 			<div class="form-group">
