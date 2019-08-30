@@ -44,7 +44,7 @@ var required = window.validators.required;
 var helpers = window.validators.helpers;//引入自定义校验规则助手 helpers
 //自定义规则，校验i18n的lang+code组合不能重复;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.i18n)
 var checkI18n = function(value, i18n) {
-	if (helpers.req(i18n.lang) && value) {
+	if (helpers.req(i18n.lang) && helpers.req(value)) {
 		var params = "?lang=" + i18n.lang + "&code=" + value;
 		if (i18n.id) {
 			params = params + "&id=" + i18n.id;

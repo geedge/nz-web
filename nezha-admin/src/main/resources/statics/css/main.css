@@ -33,11 +33,6 @@ html { overflow-x:hidden; }
 .pointer{cursor: pointer;}
 
 .ml-10 { margin-left:0 !important; }
-@media (min-width: 768px) {
-	.ml-10 { margin-left:10px !important; }
-	.col-sm-10 {width: 70%;padding-left: 0px;}
-	.col-sm-2 {width: 24%;}
-}
 tbody > tr > th {font-weight: normal; }
 .panel .table { margin:0 0; }
 .panel .pagination { margin:0; }
@@ -66,7 +61,7 @@ tbody > tr > th {font-weight: normal; }
     display: inline-block;
     position: absolute;
     top: 7px;
-    left: 338px;
+    left: 370px;
 }
 .multiselect {
 	border-radius: 4px;
@@ -97,4 +92,15 @@ tbody > tr > th {font-weight: normal; }
 }
 .multiselect__tags>span>.multiselect__single {
 	color: #999999;
+}
+.form-cbx {
+	display: inline-block;
+	width: 33%;
+}
+.form-cbx>span {
+	width: 67%;
+	display: inline-block;
+	white-space: nowrap;
+	overflow: hidden; 
+	text-overflow: ellipsis;
 }

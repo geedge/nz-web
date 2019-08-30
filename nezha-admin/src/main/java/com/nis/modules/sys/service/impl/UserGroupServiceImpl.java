@@ -46,6 +46,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
     	IPage<UserGroupEntity2> page = new Query<UserGroupEntity2>().getPage(params);
     	List<UserGroupEntity2> list = baseMapper.list(page);
     	String systemIdStr = (String) params.get("systemId");
+    	Integer totalCount = null;
     	if (!CommonUtil.isNull(list) && !StringUtils.isEmpty(systemIdStr)) {
     		Long systemId = Long.valueOf(systemIdStr);
     		Iterator<UserGroupEntity2> it = list.iterator();
@@ -67,8 +68,12 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
     				it.remove();
     			}
     		}
+    		totalCount = list.size();
     	}
     	page.setRecords(list);
+    	if (totalCount != null) {
+    		page.setTotal(totalCount);
+    	}
         return new PageUtils(page);
     }
 

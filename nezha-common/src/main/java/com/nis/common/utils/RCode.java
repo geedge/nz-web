@@ -21,7 +21,7 @@ public enum RCode {
 	SYS_SYS_NULLNAME(102001, "systemname_null_error"), //业务系统名称不能为空
 	SYS_SYS_DUPLICATENAME(102002, "systemname_duplicate_error"), //业务系统名称重复
 	SYS_SYS_DELGLOBAL(102003, "delete global error"), //不能删除global业务系统
-	SYS_SYS_BUILTIN(102004, "not allow to update"), //不能删除global业务系统
+	SYS_SYS_BUILTIN(102004, "not allow to update"), //不能操作内置系统
 
 	SYS_MENU_SYSMENUDEL(103001, "sysmenu_del_error"), //系统菜单，不能删除
 	SYS_MENU_DELSUB(103002, "del_sub_first_error"), //请先删除子菜单或按钮

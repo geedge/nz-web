@@ -49,7 +49,7 @@ public class UserGroupController {
     @ApiOperation(httpMethod = "GET", value = "用户组列表查询")
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = userGroupService.queryPage(params);
-        return R.ok().put("page", page);
+        return R.ok(page);
     }
 
 

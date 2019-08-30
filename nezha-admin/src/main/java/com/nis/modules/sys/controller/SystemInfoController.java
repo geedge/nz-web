@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
@@ -123,6 +125,12 @@ public class SystemInfoController extends AbstractController {
 		}
 		if (asList.contains(Constant.GLOBAL_ID)) {//不能删除global
 			return R.error(RCode.SYS_SYS_DELGLOBAL);
+		}
+		Collection<SystemInfoEntity> listByIds = systemInfoService.listByIds(Arrays.asList(ids));
+		for (SystemInfoEntity s : listByIds) {
+			if (Constant.SYSTEM_BUILDIN_YES == s.getBuiltIn()) {
+				return R.error(RCode.SYS_SYS_BUILTIN);
+			}
 		}
 		systemInfoService.delete(asList);
 		return R.ok();

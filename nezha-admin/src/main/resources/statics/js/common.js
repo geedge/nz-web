@@ -63,6 +63,13 @@ function getSelectedRow() {
     return selectedIDs[0];
 }
 
+//获取当前选中行的属性
+function getParam(name) {
+	var id = getSelectedRow();
+	var rowDatas = $("#jqGrid").getRowData(id);
+	return rowDatas[name];
+}
+
 //选择多条记录
 function getSelectedRows() {
     var grid = $("#jqGrid");
