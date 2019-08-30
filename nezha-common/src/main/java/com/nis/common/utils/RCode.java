@@ -135,15 +135,16 @@ public enum RCode {
 	MISSION_PARAM_ISNULL(400003,"mission_param_isnull"), //任务参数不能为空
 	MISSION_PARAM_ERROR(400004,"mission_param_error"),   //参数格式错误或部分缺失
 	MISSION_ID_ISNULL(400005,"mission_id_isnull"),   //任务id为空
-	MISSION_STATE_ISNULL(400006,"mission_state_isnull"),   //任务状态为空
+	MISSION_STATE_ISNULL(400006,"mission_state_isnull"),   //任务状态为空	
 	MISSION_STATE_ERROR(400007,"mission_state_error"),   //任务状态错误
 	MISSION_UNLOOP_MISSION_ERROR(40008,"mission_unloop_mission_error"), //非周期任务
 	MISSION_GROUPNODE_OR_NODE_ISNULL(400009,"mission_groupnode_or_node_isnull"),  //任务节点组或节点信息为空
-	MISSION_LOOP_START_ERROR(400010,"mission_loop_start_error"), //启动周期任务错误 已终止任务不能启动 
+	MISSION_LOOP_START_OR_STOP_ERROR(400010,"mission_loop_start_or_stop_error"), //启动周期任务错误 已终止任务不能启动或暂停 
 	MISSION_LOOP_STATE_ERROR(400011,"mission_loop_state_error"), //状态码错误
 	MISSION_NODEINFO_ERROR(400012,"mission_nodeinfo_error"),   //节点或节点组有效性错误
 	MISSION_NODE_NET_ERROR(400013,"mission_node_net_error"),   //网元不可下发任务
 	MISSION_VIEWERID_ISNULL(400014,"mission_viewerid_isnull"),  //类型为组内查看用户组信息不能为空
+	MISSION_TYPE_ERROR(400015,"mission_type_error"),     //任务类型错误
 	MISSION_FILEPUSH_FILE_ISNULL(400101,"mission_filepush_file_isnull"),  //文件推送文件为空
 	MISSION_FILEPUSH_DESTPATH_ISNULL(400102,"mission_filepush_destpath_isnull"), // 文件推送路径为空
 	MISSION_FILEPUSH_PASSWORD_HANDLE_ERROR(400103,"mission_filepush_password_handle_error"), //文件推送密码处理错误
