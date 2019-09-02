@@ -6,7 +6,7 @@
 	<resultMap type="com.nis.modules.sys.entity.SystemInfoEntity" id="systemWithUsergroup">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
-        <result property="builtIn" column="built_in"/>
+        <result property="buildIn" column="build_in"/>
         <result property="createBy" column="create_by"/>
         <result property="createDate" column="create_date"/>
         <result property="updateBy" column="update_by"/>
@@ -46,7 +46,7 @@
 	</select>
 	
 	<select id="list" resultType="systemInfoEntity">
-		SELECT si.id, si.name, si.built_in, si.remarks, si.del_flag, si.create_date, si.update_date
+		SELECT si.id, si.name, si.build_in, si.remarks, si.del_flag, si.create_date, si.update_date
 		FROM system_info si
 		<if test="sys.usergroupId != null and sys.usergroupId != ''">
 			LEFT JOIN system_usergroup_rel sur ON sur.system_id=si.id
@@ -62,7 +62,7 @@
 	</select>
 	
 	<select id="detail" resultMap="systemWithUsergroup">
-		SELECT si.id, si.name, si.built_in, si.remarks, si.del_flag, si.create_date
+		SELECT si.id, si.name, si.build_in, si.remarks, si.del_flag, si.create_date
 		FROM system_info si
 		WHERE si.id=#{id} AND si.del_flag=0
 	</select>
