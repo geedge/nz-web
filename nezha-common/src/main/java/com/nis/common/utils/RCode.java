@@ -53,6 +53,10 @@ public enum RCode {
 	NODE_SYSTEM_REL_EXISTS(201013, "node_system_rel_exists"),       // 节点和业务系统已经关联
 	NODE_NOT_EXISTS(201014, "node_not_exists"),                     // 节点不存在
 	NODE_TAG_NOTFOUND(201015, "node_tag_notfound"),                 // 节点标签未找到
+	NODE_USIZE_NOTTRUE(201016, "node_usize_value_nottrue"),         // 节点U位不正确
+	NODE_USTART_ISNULL(201017, "node_ustart_isnull"),               // 节点起始位置不能为空
+	NODE_SERVER_CANNOT_HAVE_SNMPPORT(201018, "server_cannot_have_snmpport"), // 节点类型为server时没有snmpport值
+	NODE_SERVER_CANNOT_HAVE_SNMPCOMMUNITY(201019, "server_cannot_have_snmpcommunity"), // 节点类型为server时没有snmpcommunity值
 
 	NODEGROUP_NAME_DUPLICATE(202001, "groupname_duplicate_error"), // 节点组名称不能重复
 	NODEGROUP_NAME_ISNULL(202002, "group_name_isNull"),            // 节点组名称不能为空
@@ -66,6 +70,7 @@ public enum RCode {
 	NODEGROUP_SYSTEMID_NOT_MODIFIED(202010, "nodegroup_systemid_not_modified"), // 节点组SYSTEMiD 不许修改
 	NODEGROUP_PARENTID_NOT_MODIFIED(202011, "nodegroup_parentid_not_modified"), // 节点组pid不许修改
 	NODEGROUP_PARENTIDS_NOT_MODIFIED(202012, "nodegroup_parentids_not_modified"), // 节点组pidS不许修改
+	NODEGROUP_PARENT_SYSTEM_NOT_EQUALS(202013, "nodegroup_parent_system_not_equals"), // 父级级节点组系统ID不同
 
 	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),   // 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"),            // 机房行号已被占用
@@ -95,6 +100,8 @@ public enum RCode {
 	NODECABINET_ROW_ISNULL(204011,"cabinet_row_isNull"),               //机柜行号不能为空
 	NODECABINET_COL_ISNULL(204012,"cabinet_col_isNull"),               //机柜列号不能为空
 	NODECABINET_NOT_EXISTS(204013,"nodecabinet_not_exists"),           //机柜不存在
+	NODECABINET_NOT_HAVE_POSITION(204014,"nodecabinet_not_have_position"), // 机柜没有位置存在
+	NODECABINET_UBIT_MINNUM(204015,"nodecabinet_ubit_minnum"),           // 机柜UBIT最小值为1
 
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误
 	VIEWLEVEL_INVALID(300001,"viewlevel_invalid"),

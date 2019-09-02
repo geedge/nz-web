@@ -204,8 +204,12 @@ public class Constant {
     public static final String WARN_REL_SET="2";
 
     // 节点类型
-    public static final String NODE_SERVER_TYPE = "1";  // server
-    public static final String NODE_NET_TYPE = "2";     // net
+    public static final String NODE_TYPE_SERVER = "1";  // server
+    public static final String NODE_TYPE_NET = "2";     // net
+
+    // 数据字典定义nodeTag type 类型为server net
+    public static final String DICT_NODE_TYPE_SERVER = "server";
+    public static final String DICT_NODE_TYPE_NET = "net";
 
     // 节点组 分配节点/添加子节点组
     public static final String NODEGROUP_REFUSE= "0"; // 不可以
@@ -220,4 +224,6 @@ public class Constant {
     public static final String DETE_DETEMETHOD_SNMP="2"; //snmp
     public static final String DETE_DETEMETHOD_INNER="3"; //内置
 
+    // 顶级节点组PID
+    public static final Long NODEGROUP_TOP_PID = 0L;
 }

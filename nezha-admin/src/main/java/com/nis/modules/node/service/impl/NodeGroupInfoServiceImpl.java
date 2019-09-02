@@ -17,6 +17,7 @@ import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
+import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -101,36 +102,44 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
             }
 
-            // 校验父级节点组是否可以添加子节点组
-            NodeGroupInfoEntity parentNodeGroup = null;
-            List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
-            for (SystemInfoEntity entity : sysNodeGroups) {
-                for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
-                    if (nodegroupInfo.getPid() - nodeGroupInfo.getId() == 0) {
-                        parentNodeGroup = nodeGroupInfo;
+
+            if (Constant.NODEGROUP_TOP_PID.equals(nodegroupInfo.getPid())) { // 如果添加的是顶级节点组
+                // 顶级节点组 pid为 0,
+                nodegroupInfo.setPids(nodegroupInfo.getPid() + ",");
+            } else {
+                // 校验父级节点组是否可以添加子节点组
+                NodeGroupInfoEntity parentNodeGroup = null;
+                List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
+                for (SystemInfoEntity entity : sysNodeGroups) {
+                    for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
+                        if (nodegroupInfo.getPid() - nodeGroupInfo.getId() == 0) {
+                            parentNodeGroup = nodeGroupInfo;
+                            break;
+                        }
+                    }
+                    if (parentNodeGroup != null) {
                         break;
                     }
                 }
-                if (parentNodeGroup != null) {
-                    break;
+
+                if (parentNodeGroup == null) {
+                    throw new NZException(RCode.NODEGROUP_PARENT_NOT_EXISTS); // 上级节点组不存在
                 }
+
+                if (Constant.NODEGROUP_REFUSE.equals(parentNodeGroup.getAllowSub())) { // 该父节点不可添加子节点组
+                    throw new NZException(RCode.NODEGROUP_ADD_REFUSE);
+                }
+
+                // 校验添加的节点组和父级节点组系统一致性
+                if (!parentNodeGroup.getSystemId().equals(nodegroupInfo.getSystemId())) {
+                    throw new NZException(RCode.NODEGROUP_PARENT_SYSTEM_NOT_EQUALS); // 父子级systemId保持一致
+                }
+
+                // 非顶级节点组情况下 pids的赋值
+                NodeGroupInfoEntity parentGroup = this.getById(nodegroupInfo.getPid());
+                nodegroupInfo.setPids(parentGroup.getPids() + nodegroupInfo.getPid() + ",");
             }
 
-            if (parentNodeGroup == null) {
-                throw new NZException(RCode.NODE_ERROR);
-            }
-
-            if (Constant.NODEGROUP_REFUSE.equals(parentNodeGroup.getAllowSub())) { // 该父节点不可添加子节点组
-                throw new NZException(RCode.NODEGROUP_ADD_REFUSE);
-            }
-
-            NodeGroupInfoEntity parentEntity = this.getById(nodegroupInfo.getPid());
-            // 添加顶级的时候没有上级
-            if (parentEntity == null) {
-                nodegroupInfo.setPids(nodegroupInfo.getPid() + ",");
-            } else {
-                nodegroupInfo.setPids(parentEntity.getPids() + nodegroupInfo.getPid() + ",");
-            }
             nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
             nodegroupInfo.setOpTime(new Date());
             this.save(nodegroupInfo);
@@ -180,7 +189,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         // 1. 查询此节点组和包含的子节点组
         NodeGroupInfoEntity nodegroupInfo = getById(id);
         if (nodegroupInfo == null) { // 没有查询到数据
-            throw new NZException(RCode.NODE_ERROR);
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
         }
         List<NodeGroupInfoEntity> list = list(new QueryWrapper<NodeGroupInfoEntity>().like("pids", nodegroupInfo.getPids() + nodegroupInfo.getId()));
         list.add(nodegroupInfo);
@@ -242,10 +251,20 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         }
 
         // 校验节点有效性
+        NodeGroupInfoEntity group = this.getById(id);
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", group.getSystemId());
+        List<NodeInfoEntity> nodes = (List<NodeInfoEntity>) nodeInfoService.queryPageBySystemId(map).getList();
         for (Long uuid : uuids) {
-            NodeInfoEntity nodeInfo = nodeInfoService.getOne(new QueryWrapper<NodeInfoEntity>().eq("uuid", uuid).ne("state", 3));
-            if (nodeInfo == null) {
-                throw new NZException("Nodes with UUID " + uuid + " do not exist", 201014); // 节点无效 不存在的节点
+            boolean flag = false;
+            for (NodeInfoEntity node : nodes) {
+                if (uuid.equals(node.getUuid())) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag) {
+                throw new NZException("Nodes with UUID " + uuid + " do not exist group's system", 201014);
             }
         }
 
@@ -322,12 +341,21 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      */
     @Override
     public boolean groupNameCheck(Long id, String name, Long pid) {
-        NodeGroupInfoEntity parentNodeGroup = this.getById(pid);
-        if (parentNodeGroup == null) {
-            throw new NZException(RCode.NODEGROUP_PARENT_NOT_EXISTS); // 节点组父级不存在
+
+        List<NodeGroupInfoEntity> list = null;
+
+        // 顶级的情况下
+        if (Constant.NODEGROUP_TOP_PID.equals(pid)) {
+            list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", Constant.NODEGROUP_TOP_PID));
+        } else {
+            // 非顶级情况
+            NodeGroupInfoEntity parentNodeGroup = this.getById(pid);
+            if (parentNodeGroup == null) {
+                throw new NZException(RCode.NODEGROUP_PARENT_NOT_EXISTS); // 节点组父级不存在
+            }
+            list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", pid));
         }
 
-        List<NodeGroupInfoEntity> list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", pid));
         boolean flag = false;
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复

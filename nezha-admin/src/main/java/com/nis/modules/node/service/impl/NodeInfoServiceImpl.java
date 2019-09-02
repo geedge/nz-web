@@ -10,6 +10,7 @@ import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.dao.NodeRoomDao;
 import com.nis.modules.node.entity.*;
+import com.nis.modules.node.service.NodeCabinetService;
 import com.nis.modules.node.service.NodeGroupInfoService;
 import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
@@ -53,6 +54,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Autowired
     private SysDictService sysDictService;
 
+    // 机柜service
+    @Autowired
+    private NodeCabinetService nodeCabinetService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 
@@ -68,7 +73,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             NodeGroupInfoEntity nodeGroup = nodeGroupInfoService.getOne(new QueryWrapper<NodeGroupInfoEntity>().eq("id", groupId));
 
             if (nodeGroup == null) {
-                throw new NZException(RCode.NODE_ERROR);
+                throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
             }
 
             // 1.2 获取包含的子节点组
@@ -95,29 +100,29 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     public void getTagName(List<NodeInfoEntity> nodeInfoEntities) {
         Map<String, Object> map = new HashMap();
-        map.put("type", "serverTag"); // 节点类型为 server
+        map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
         List<SysDictEntity> serverTags = sysDictService.queryList(map);
 
-        map.put("type", "netTag"); // 节点类型为 Net
+        map.put("type", Constant.DICT_NODE_TYPE_NET); // 节点类型为 Net
         List<SysDictEntity> netTags = sysDictService.queryList(map);
 
         for (NodeInfoEntity nodeInfo : nodeInfoEntities) {
-            if (Constant.NODE_SERVER_TYPE.equals(nodeInfo.getType())) { // 节点类型为 server
+            if (Constant.NODE_TYPE_SERVER.equals(nodeInfo.getType())) { // 节点类型为 server
                 for (SysDictEntity entity : serverTags) {
-                    if (nodeInfo.getTag().equals(entity.getCode())) {
+                    if (entity.getCode().equals(nodeInfo.getTag())) {
                         nodeInfo.setTagName(entity.getValue());
                         break;
                     }
                 }
-            } else if (Constant.NODE_NET_TYPE.equals(nodeInfo.getType())) { // 节点类型为 net
+            } else if (Constant.NODE_TYPE_NET.equals(nodeInfo.getType())) { // 节点类型为 net
                 for (SysDictEntity entity : netTags) {
-                    if (nodeInfo.getTag().equals(entity.getCode())) {
+                    if (entity.getCode().equals(nodeInfo.getTag())) {
                         nodeInfo.setTagName(entity.getValue());
                         break;
                     }
                 }
             } else {
-                throw new NZException(RCode.NODE_TYPE_NOTFOUND);
+                throw new NZException("Nodes with UUID " + nodeInfo.getUuid() + " type not found", 201012);
             }
         }
     }
@@ -131,24 +136,29 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         }
 
         String tag = nodeInfoEntity.getTag();
-        if (tag == null || StringUtils.isBlank(tag)) {
-            throw new NZException(RCode.NODE_TAG_ISNULL);
-        }
         Map<String, Object> map = new HashMap();
 
-        if (Constant.NODE_SERVER_TYPE.equals(nodeInfoEntity.getType())) {
-            map.put("type", "serverTag"); // 节点类型为 server
-        } else if (Constant.NODE_NET_TYPE.equals(nodeInfoEntity.getType())) {
-            map.put("type", "netTag");    // 节点类型为 Net
+        if (Constant.NODE_TYPE_SERVER.equals(nodeInfoEntity.getType())) {
+            map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
+        } else if (Constant.NODE_TYPE_NET.equals(nodeInfoEntity.getType())) {
+            map.put("type", Constant.DICT_NODE_TYPE_NET);    // 节点类型为 Net
         } else {
             throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到
         }
 
-        List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
-        for (SysDictEntity entity : sysDictEntities) {
-            if (tag.equals(entity.getCode())) {
-                nodeInfoEntity.setTagName(entity.getValue());
-                break;
+        // tag 值不是必须的 ,在tag值存在的时候进行校验
+        if (tag != null && StringUtils.isNotBlank(tag)) {
+            List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
+            boolean flag = false;
+            for (SysDictEntity entity : sysDictEntities) {
+                if (tag.equals(entity.getCode())) {
+                    nodeInfoEntity.setTagName(entity.getValue());
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag) {
+                throw new NZException(RCode.NODE_TAG_NOTFOUND);
             }
         }
 
@@ -284,13 +294,25 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             //2. 校验可用机柜
             if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) {  // 指定了机柜的情况
 
+                NodeCabinetEntity cab = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
+                if (cab == null) {
+                    throw new NZException(RCode.NODECABINET_NOT_EXISTS);
+                }
+
                 // 查询该机柜的可选起始位置
                 List<Integer> starts = this.checkPosition(nodeInfoEntity);
                 if (starts == null) {
-                    throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                    throw new NZException(RCode.NODECABINET_NOT_HAVE_POSITION); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+                if (nodeInfoEntity.getCabinetStart() == null) {
+                    throw new NZException(RCode.NODE_USTART_ISNULL);
                 }
                 if (starts.size() > 0 && !starts.contains(nodeInfoEntity.getCabinetStart())) {
                     throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+            }else{ // 没有指定机柜的情况 不可以填写起始位置
+                if(nodeInfoEntity.getCabinetStart() != null){
+                    throw new NZException(RCode.NODECABINET_ID_ISNULL); // 指定机柜起始位置,需要指定机柜ID
                 }
             }
 
@@ -299,8 +321,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
             //3. IP地址转换 IP整数
             nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-            //4. 密码加密 base64
-            nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+            if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
+                //4. 密码加密 base64
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+            }
             nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
             nodeInfoEntity.setOpTime(new Date());
 
@@ -315,25 +339,40 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void checkTypeAndTag(NodeInfoEntity nodeInfoEntity) {
         Map<String, Object> map = new HashMap();
 
-        if (Constant.NODE_SERVER_TYPE.equals(nodeInfoEntity.getType())) {
-            map.put("type", "serverTag"); // 节点类型为 server
-        } else if (Constant.NODE_NET_TYPE.equals(nodeInfoEntity.getType())) {
-            map.put("type", "netTag");    // 节点类型为 Net
+        if (Constant.NODE_TYPE_SERVER.equals(nodeInfoEntity.getType())) {
+            map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
+            if (nodeInfoEntity.getSnmpPort() != null) {
+                throw new NZException(RCode.NODE_SERVER_CANNOT_HAVE_SNMPPORT);
+            }
+            if (nodeInfoEntity.getSnmpCommunity() != null) {
+                throw new NZException(RCode.NODE_SERVER_CANNOT_HAVE_SNMPCOMMUNITY);
+            }
+        } else if (Constant.NODE_TYPE_NET.equals(nodeInfoEntity.getType())) {
+            map.put("type", Constant.DICT_NODE_TYPE_NET);    // 节点类型为 Net
+            if (nodeInfoEntity.getSnmpPort() == null) {
+                nodeInfoEntity.setSnmpPort(161);
+            }
+            if (StringUtils.isBlank(nodeInfoEntity.getSnmpCommunity())) {
+                nodeInfoEntity.setSnmpCommunity("public");
+            }
         } else {
             throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到
         }
 
-        // 得到相应的tag 集合
-        List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
-        boolean flag = false;
-        for (SysDictEntity entity : sysDictEntities) {
-            if (entity.getCode().equals(nodeInfoEntity.getTag())) {
-                flag = true;
-                break;
+        // 如果存在tag则校验tag是否存在
+        if (nodeInfoEntity.getTag() != null && StringUtils.isNotBlank(nodeInfoEntity.getTag())) {
+            // 得到相应的tag 集合
+            List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
+            boolean flag = false;
+            for (SysDictEntity entity : sysDictEntities) {
+                if (entity.getCode().equals(nodeInfoEntity.getTag())) {
+                    flag = true;
+                    break;
+                }
             }
-        }
-        if (!flag) {
-            throw new NZException(RCode.NODE_TAG_NOTFOUND); // 节点标签未找到
+            if (!flag) {
+                throw new NZException(RCode.NODE_TAG_NOTFOUND); // 节点标签未找到
+            }
         }
     }
 
@@ -348,13 +387,20 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 //2. 校验可用机柜
                 if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
 
+                    NodeCabinetEntity cab = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
+                    if (cab == null) {
+                        throw new NZException(RCode.NODECABINET_NOT_EXISTS);
+                    }
+
                     // 查询该机柜的可选起始位置
                     List<Integer> starts = this.checkPosition(nodeInfoEntity);
 
                     if (starts == null) {
-                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                        throw new NZException(RCode.NODECABINET_NOT_HAVE_POSITION); // 所选机柜 U位已被占用 或 不存在该位置
                     }
-
+                    if (nodeInfoEntity.getCabinetStart() == null) {
+                        throw new NZException(RCode.NODE_USTART_ISNULL);
+                    }
                     if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
                         throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                     }
@@ -384,13 +430,17 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     // 添加修改时根据 指定的USize获取可用位置的集合
     public List<Integer> checkPosition(NodeInfoEntity nodeInfoEntity) {
-        List<AvailCabinetEntity> availCabinetEntities = this.selectCab(nodeInfoEntity.getUuid(), nodeInfoEntity.getuSize());
-        for (AvailCabinetEntity entity : availCabinetEntities) {
-            for (NodeCabinetEntity cab : entity.getCabinets()) {
-                if (cab.getId() - nodeInfoEntity.getCabinetId() == 0) {
-                    return cab.getStarts();
+        if (nodeInfoEntity.getuSize() != null && nodeInfoEntity.getuSize() > 0) { // 指定机柜 且 指定U位正确情况下
+            List<AvailCabinetEntity> availCabinetEntities = this.selectCab(nodeInfoEntity.getUuid(), nodeInfoEntity.getuSize());
+            for (AvailCabinetEntity entity : availCabinetEntities) {
+                for (NodeCabinetEntity cab : entity.getCabinets()) {
+                    if (cab.getId() - nodeInfoEntity.getCabinetId() == 0) {
+                        return cab.getStarts();
+                    }
                 }
             }
+        } else {
+            throw new NZException(RCode.NODE_USIZE_NOTTRUE); // U位不正确
         }
         return null;
     }

@@ -1,5 +1,6 @@
 package com.nis.modules.node.controller;
 
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -40,7 +41,7 @@ public class NodeInfoController {
 
     @ApiOperation("节点详情查询")
     @GetMapping("/detail")
-    public R detail(@RequestParam(value = "uuid",required = false) Long uuid) {
+    public R detail(Long uuid) {
         ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
 
         NodeInfoEntity nodeInfoDetail = nodeInfoService.detail(uuid);
@@ -53,8 +54,7 @@ public class NodeInfoController {
         ValidateUtils.is(nodeInfoEntity).notNull(RCode.NOT_NULL_ERROR)
                 .and(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
                 .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
-                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
-                .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
+                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL);
 
         nodeInfoService.saveNodeInfo(nodeInfoEntity);
         return R.ok();
@@ -64,10 +64,10 @@ public class NodeInfoController {
     @PutMapping("/update")
     public R update(@RequestBody NodeInfoEntity nodeInfoEntity) {
         ValidateUtils.is(nodeInfoEntity).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodeInfoEntity.getUuid()).notNull(RCode.NODE_UUID_ISNULL)
                 .and(nodeInfoEntity.getIp()).notNull(RCode.NODE_IPADDRESS_ISNULL).ip(RCode.NODE_IPADDRESS_FORMAT)
                 .and(nodeInfoEntity.getName()).notNull(RCode.NODE_NAME_ISNULL)
-                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL)
-                .and(nodeInfoEntity.getTag()).notNull(RCode.NODE_TAG_ISNULL);
+                .and(nodeInfoEntity.getType()).notNull(RCode.NODE_TYPE_ISNULL);
 
         nodeInfoService.updateNodeInfo(nodeInfoEntity);
         return R.ok();
@@ -76,7 +76,7 @@ public class NodeInfoController {
 
     @ApiOperation("IP地址校验")
     @GetMapping("/ipCheck")
-    public R ipCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "ip",required = false) String ip) {
+    public R ipCheck(Long uuid, String ip) {
         ValidateUtils.is(ip).notNull(RCode.NODE_IPADDRESS_ISNULL).and(ip).ip(RCode.NODE_IPADDRESS_FORMAT);
 
         return nodeInfoService.ipCheck(uuid, ip);
@@ -84,7 +84,7 @@ public class NodeInfoController {
 
     @ApiOperation("name唯一校验")
     @GetMapping("/nodeNameCheck")
-    public R nodeNameCheck(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "name",required = false) String name) {
+    public R nodeNameCheck(Long uuid, String name) {
         ValidateUtils.is(name).notNull(RCode.NODE_NAME_ISNULL);
 
         if (nodeInfoService.nodeNameCheck(uuid, name)) {
@@ -95,7 +95,7 @@ public class NodeInfoController {
 
     @ApiOperation("节点状态变更")
     @PutMapping("/changeState")
-    public R changeState(@RequestParam(value = "uuids",required = false) Long[] uuids, @RequestParam(value = "state",required = false) String state) {
+    public R changeState(Long[] uuids, String state) {
         ValidateUtils.is(uuids).notNull(RCode.NODE_UUID_ISNULL).and(state).notNull(RCode.NODE_STATE_ISNULL);
 
         nodeInfoService.changeState(uuids, state);
@@ -104,8 +104,11 @@ public class NodeInfoController {
 
     @ApiOperation("查询可用机柜")
     @GetMapping("/selectCab")
-    public R selectCab(@RequestParam(value = "uuid", required = false) Long uuid, @RequestParam(value = "uSize",required = false) Integer uSize) {
+    public R selectCab(Long uuid, Integer uSize) {
         ValidateUtils.is(uSize).notNull(RCode.NODE_USIZE_ISNULL);
+        if (uSize < 1) {
+            throw new NZException(RCode.NODE_USIZE_NOTTRUE); // u位大小值不正确
+        }
 
         List<AvailCabinetEntity> availCabinetEntities = nodeInfoService.selectCab(uuid, uSize);
         Map<String, List<AvailCabinetEntity>> map = new HashMap();

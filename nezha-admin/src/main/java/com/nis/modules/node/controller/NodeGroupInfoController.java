@@ -44,7 +44,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组详情查询")
     @GetMapping("/detail")
-    public R detail(@RequestParam(value = "id", required = false) Long id) {
+    public R detail(Long id) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
 
         NodeGroupInfoEntity nodeGroup = nodegroupInfoService.detail(id);
@@ -65,7 +65,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组删除")
     @DeleteMapping("/delete")
-    public R delete(@RequestParam(value = "id", required = false) Long id) {
+    public R delete(Long id) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL);
 
         nodegroupInfoService.delete(id);
@@ -95,7 +95,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组名称校验")
     @GetMapping("/groupNameCheck")
-    public R groupNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "name", required = false) String name, @RequestParam(value = "pid", required = false) Long pid) {
+    public R groupNameCheck(Long id, String name, Long pid) {
         ValidateUtils.is(name).notNull(RCode.NODEGROUP_NAME_ISNULL).and(pid).notNull(RCode.NODEGROUP_PID_ISNULL);
 
         if (nodegroupInfoService.groupNameCheck(id, name, pid)) {
@@ -106,7 +106,7 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组移除节点")
     @DeleteMapping("/deleteNodeRel")
-    public R deleteNodeRel(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "uuids", required = false) Long[] uuids) {
+    public R deleteNodeRel(Long id, Long[] uuids) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
                 .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
 
@@ -116,7 +116,7 @@ class NodeGroupInfoController {
 
     @ApiOperation("节点组分配节点 建立关系")
     @PostMapping("/saveNodeRel")
-    public R saveNodeRel(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "uuids", required = false) Long[] uuids) {
+    public R saveNodeRel(Long id, Long[] uuids) {
         ValidateUtils.is(id).notNull(RCode.NODEGROUP_GROUPID_ISNULL)
                 .and(uuids).notNull(RCode.NODE_UUID_ISNULL);
 

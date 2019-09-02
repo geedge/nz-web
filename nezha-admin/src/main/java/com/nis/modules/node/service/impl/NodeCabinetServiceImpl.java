@@ -50,6 +50,9 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Override
     public NodeCabinetEntity detail(Long id) {
         NodeCabinetEntity nodeCabinet = nodeCabinetDao.detail(id);
+        if(nodeCabinet == null){
+            throw new NZException(RCode.NODECABINET_NOT_EXISTS);
+        }
         return nodeCabinet;
     }
 

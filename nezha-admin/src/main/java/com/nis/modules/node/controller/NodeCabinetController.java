@@ -40,7 +40,7 @@ public class NodeCabinetController {
 
     @ApiOperation("机柜详情查询")
     @GetMapping(value = "/detail")
-    public R detail(@RequestParam(value = "id",required = false) Long id) {
+    public R detail(Long id) {
         ValidateUtils.is(id).notNull(RCode.NODECABINET_ID_ISNULL);
 
         NodeCabinetEntity detail = nodeCabinetService.detail(id);
@@ -53,7 +53,7 @@ public class NodeCabinetController {
         ValidateUtils.is(nodeCabinet).notNull(RCode.NOT_NULL_ERROR)
                 .and(nodeCabinet.getName()).notNull(RCode.NODECABINET_NAME_ISNULL)
                 .and(nodeCabinet.getRoomId()).notNull(RCode.NODEROOM_ID_ISNULL)
-                .and(nodeCabinet.getUbit()).notNull(RCode.NODECABINET_UBIT_ISNULL);
+                .and(nodeCabinet.getUbit()).notNull(RCode.NODECABINET_UBIT_ISNULL).min(1, RCode.NODECABINET_UBIT_MINNUM);
 
         nodeCabinetService.saveNodeCabinet(nodeCabinet);
         return R.ok();
@@ -63,9 +63,10 @@ public class NodeCabinetController {
     @PutMapping("/update")
     public R update(@RequestBody NodeCabinetEntity nodeCabinet) {
         ValidateUtils.is(nodeCabinet).notNull(RCode.NOT_NULL_ERROR)
+                .and(nodeCabinet.getId()).notNull(RCode.NODECABINET_ID_ISNULL)
                 .and(nodeCabinet.getName()).notNull(RCode.NODECABINET_NAME_ISNULL)
                 .and(nodeCabinet.getRoomId()).notNull(RCode.NODEROOM_ID_ISNULL)
-                .and(nodeCabinet.getUbit()).notNull(RCode.NODECABINET_UBIT_ISNULL);
+                .and(nodeCabinet.getUbit()).notNull(RCode.NODECABINET_UBIT_ISNULL).min(1, RCode.NODECABINET_UBIT_MINNUM);
 
         nodeCabinetService.updateNodeCabinet(nodeCabinet);
         return R.ok();
@@ -73,7 +74,7 @@ public class NodeCabinetController {
 
     @ApiOperation("机柜删除")
     @DeleteMapping("/delete")
-    public R delete(@RequestParam(value = "ids",required = false) Long[] ids) {
+    public R delete(Long[] ids) {
         ValidateUtils.is(ids).notNull(RCode.NODECABINET_ID_ISNULL);
 
         nodeCabinetService.delete(ids);
@@ -82,7 +83,7 @@ public class NodeCabinetController {
 
     @ApiOperation("机柜名称校验")
     @GetMapping("/cabNameCheck")
-    public R cabNameCheck(@RequestParam(value = "id", required = false) Long id, @RequestParam(value = "name",required = false) String name, @RequestParam(value = "roomId",required = false) Long roomId) {
+    public R cabNameCheck(Long id, String name, Long roomId) {
         ValidateUtils.is(name).notNull(RCode.NODECABINET_NAME_ISNULL)
                 .and(roomId).notNull(RCode.NODEROOM_ID_ISNULL);
 
@@ -95,9 +96,9 @@ public class NodeCabinetController {
 
     @ApiOperation("校验U位数量是否可用")
     @GetMapping("/cabUbitCheck")
-    public R cabUbitCheck(@RequestParam(value = "id",required = false) Long id, @RequestParam(value = "ubit",required = false) Integer ubit) {
+    public R cabUbitCheck(Long id, Integer ubit) {
         ValidateUtils.is(id).notNull(RCode.NODECABINET_ID_ISNULL)
-                .and(ubit).notNull(RCode.NODECABINET_UBIT_ISNULL);
+                .and(ubit).notNull(RCode.NODECABINET_UBIT_ISNULL).min(1, RCode.NODECABINET_UBIT_MINNUM);
 
         if (nodeCabinetService.cabUbitCheck(id, ubit)) {
             return R.ok();
@@ -108,7 +109,7 @@ public class NodeCabinetController {
 
     @ApiOperation("查询机柜下可选的机房及行号列号")
     @GetMapping("/optionalRoom")
-    public R optionalRoom(@RequestParam(value = "id", required = false) Long id) {
+    public R optionalRoom(Long id) {
         List<AvailCabinetEntity> availCabinetEntities = nodeCabinetService.optionalRoom(id);
         Map map = new HashMap();
         map.put("list", availCabinetEntities);

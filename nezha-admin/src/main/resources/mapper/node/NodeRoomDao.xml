@@ -19,6 +19,7 @@
             <id property="id" column="cabId"/>
             <result property="ubit" column="cabUbit"/>
             <result property="name" column="cabName"/>
+            <result property="roomId" column="room_id"/>
             <!-- 机柜中包含的节点列表 -->
             <collection property="nodes" ofType="com.nis.modules.node.entity.NodeInfoEntity">
                 <result property="uuid" column="uuid"/>
@@ -30,7 +31,7 @@
 
     <!-- 查询机房列表 包含 机柜 以及 机柜包含的节点信息 -->
     <select id="queryRoomsNodes" resultMap="roomWithCabsNodes">
-        SELECT nr.*,nc.id AS cabId,nc.name AS cabName,nc.ubit AS cabUbit,ni.uuid,ni.u_size,ni.cabinet_start
+        SELECT nr.*,nc.id AS cabId,nc.name AS cabName,nc.ubit AS cabUbit,nc.room_id,ni.uuid,ni.u_size,ni.cabinet_start
         FROM node_room nr
         LEFT JOIN node_cabinet nc ON nc.room_id=nr.id
         LEFT JOIN node_info ni ON nc.id=ni.cabinet_id
@@ -40,7 +41,7 @@
 
     <!-- 查询所有存在机柜的机房列表 并含有机柜列表 -->
     <select id="queryRoomCabinets" resultMap="roomWithCabsNodes">
-        SELECT nr.*,nc.id AS cabId,nc.name AS cabName,nc.ubit AS cabUbit FROM node_room nr
+        SELECT nr.*,nc.id AS cabId,nc.name AS cabName,nc.ubit AS cabUbit,nc.room_id FROM node_room nr
         LEFT JOIN node_cabinet nc ON nr.id = nc.room_id
         WHERE nr.del_flag = 0 AND nc.del_flag = 0
     </select>

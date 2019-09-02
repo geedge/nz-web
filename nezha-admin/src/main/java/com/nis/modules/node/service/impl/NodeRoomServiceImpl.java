@@ -56,8 +56,8 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         IPage<NodeRoomEntity> page = this.page(
                 new Query<NodeRoomEntity>().getPage(params),
                 new QueryWrapper<NodeRoomEntity>()
-                        .like(name != null, "name", name)
-                        .eq(addr != null && StringUtils.isNotBlank(addr), "addr", addr)
+                        .like(StringUtils.isNotBlank(name), "name", name)
+                        .eq(StringUtils.isNotBlank(addr), "addr", addr)
         );
         // 查询地区名称
         Map<String, Object> map = new HashMap<>();
@@ -78,6 +78,12 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
     public NodeRoomEntity detail(Long id) {
         NodeRoomEntity nodeRoom = this.getById(id);
 
+        if (nodeRoom == null) {
+            throw new NZException(RCode.NODEROOM_NOT_EXISTS);
+        }
+        if(nodeRoom.getAddr() == null){
+            throw new NZException(RCode.NODEROOM_ADDR_ISNULL);
+        }
         // 查询地区名称
         Map<String, Object> map = new HashMap<>();
         map.put("name", "addr");
