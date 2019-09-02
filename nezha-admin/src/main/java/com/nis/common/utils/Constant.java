@@ -211,8 +211,8 @@ public class Constant {
     public static final String NODEGROUP_REFUSE= "0"; // 不可以
     public static final String NODEGROUP_ALLOW = "1"; // 可以
     
-    // system built_in 0非内置，1内置
-    public static final Integer SYSTEM_BUILDIN_YES = 1; // 内置
-    public static final Integer SYSTEM_BUILDIN_NO = 0; // 非内置
+    // system built_in 2非内置，1内置
+    public static final String SYSTEM_BUILDIN_YES = "1"; // 内置
+    public static final String SYSTEM_BUILDIN_NO = "2"; // 非内置
 
 }

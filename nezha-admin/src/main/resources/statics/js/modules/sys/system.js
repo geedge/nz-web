@@ -7,7 +7,7 @@ $(function () {
             { label: '名称', name: 'name', sortable: false },
 			{ label: '创建时间', name: 'createDate', sortable: false },
 			{ label: '备注', name: 'remarks', width: 80 },
-			{ label: '是否内置', name: 'builtIn', hidden: true }
+			{ label: '是否内置', name: 'buildIn', hidden: true }
         ],
 		viewrecords: true,
         height: 385,
@@ -33,12 +33,12 @@ $(function () {
         	//隐藏grid底部滚动条
         	$("#jqGrid").closest(".ui-jqgrid-bdiv").css({ "overflow-x" : "hidden" }); 
         	
-	        /*builtin=1的记录禁用复选框*/
+	        /*buildin=1的记录禁用复选框*/
 	        //1.先将对应记录的checkbox设为disabled
         	var dataRows = $("#jqGrid").find(".jqgrow");
         	$.each(dataRows, function(index) {
-        		var builtIn = $(this).find("td").get(6);//builtIn字段所在列
-        		if ($(builtIn).text() == "1") {
+        		var buildIn = $(this).find("td").get(6);//buildIn字段所在列
+        		if ($(buildIn).text() == "1") {
         			$(this).find("input[type=checkbox]").attr("disabled", "disabled");
         		}
         	});
@@ -119,11 +119,10 @@ var vm = new Vue({
 			vm.$v.system.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.title = "新增";
-			vm.system = {code:null,lang:null,value:null,remark:null,id:null};
+			vm.system = {name:null,remarks:null,id:null,usergroupIds:[],usergroups: []};
 		},
 		update: function () {
 			vm.$v.system.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
-			var builtIn = getParam('builtIn');
 			var id = getSelectedRow();
 			if(id == null){
 				return ;
@@ -142,7 +141,7 @@ var vm = new Vue({
             });
 		},
 		getAllUsergroups: function(id) {
-			$.get(baseURL + "sys/usergroup/list", function(r){
+			$.get(baseURL + "sys/usergroup/list?limit=999", function(r){
                 vm.usergroups = r.data.list;
             });
 		},

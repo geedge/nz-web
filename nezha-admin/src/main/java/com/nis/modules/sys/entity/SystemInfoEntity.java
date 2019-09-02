@@ -40,9 +40,9 @@ public class SystemInfoEntity implements Serializable {
 	private String name;
 
 	/**
-	 * 是否内置 1：内置，0：非内置
+	 * 是否内置 1：内置，2：非内置
 	 */
-	private Integer builtIn;
+	private String buildIn;
 
 	/**
 	 * 创建人

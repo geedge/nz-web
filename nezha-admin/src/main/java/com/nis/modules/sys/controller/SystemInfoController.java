@@ -97,7 +97,7 @@ public class SystemInfoController extends AbstractController {
 				.and(systemInfo.getId()).notNull(RCode.NOT_NULL_ERROR);
 		//校验是否是内置系统，内置系统不让改
 		SystemInfoEntity old = systemInfoService.queryDetail(systemInfo.getId());
-		if (Constant.SYSTEM_BUILDIN_YES == old.getBuiltIn()) {
+		if (Constant.SYSTEM_BUILDIN_YES.equals(old.getBuildIn())) {
 			return R.error(RCode.SYS_SYS_BUILTIN);
 		}
 		//校验名称重复
@@ -128,7 +128,7 @@ public class SystemInfoController extends AbstractController {
 		}
 		Collection<SystemInfoEntity> listByIds = systemInfoService.listByIds(Arrays.asList(ids));
 		for (SystemInfoEntity s : listByIds) {
-			if (Constant.SYSTEM_BUILDIN_YES == s.getBuiltIn()) {
+			if (Constant.SYSTEM_BUILDIN_YES.equals(s.getBuildIn())) {
 				return R.error(RCode.SYS_SYS_BUILTIN);
 			}
 		}
