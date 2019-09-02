@@ -298,22 +298,22 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         DeteTypeInfoEntity deteTypeInfo = deteTypeInfoService.getById(deteSetInfoEntity.getTypeId());
         if(Constant.DETE_DETEMETHOD_SNMP.equals(deteTypeInfo.getMethod())){//snmp 监测，节点类型为网元
             for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
-                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_NET_TYPE)){
+                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_NET)){
                     return false;
                 }
             }
 
-            if(!this.nodeIsValide(Constant.NODE_NET_TYPE,deteSetInfoEntity.getNodeIds())){
+            if(!this.nodeIsValide(Constant.NODE_TYPE_NET,deteSetInfoEntity.getNodeIds())){
                 return false;
             }
         }else{ //节点类型为服务器
             for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
-                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_SERVER_TYPE)){
+                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_SERVER)){
                     return false;
                 }
             }
 
-            if(!this.nodeIsValide(Constant.NODE_SERVER_TYPE,deteSetInfoEntity.getNodeIds())){
+            if(!this.nodeIsValide(Constant.NODE_TYPE_SERVER,deteSetInfoEntity.getNodeIds())){
                 return false;
             }
         }
