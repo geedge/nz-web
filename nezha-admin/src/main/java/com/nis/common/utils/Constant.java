@@ -215,4 +215,9 @@ public class Constant {
     public static final String SYSTEM_BUILDIN_YES = "1"; // 内置
     public static final String SYSTEM_BUILDIN_NO = "2"; // 非内置
 
+    //监测类别 监测方式
+    public static final String DETE_DETEMETHOD_SCRIPT="1"; //脚本
+    public static final String DETE_DETEMETHOD_SNMP="2"; //snmp
+    public static final String DETE_DETEMETHOD_INNER="3"; //内置
+
 }

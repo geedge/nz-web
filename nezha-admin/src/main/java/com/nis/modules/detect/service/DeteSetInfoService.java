@@ -30,8 +30,12 @@ public interface DeteSetInfoService extends DeteCommonService<DeteSetInfoEntity>
 
     DeteSetInfoEntity queryDetail(Long id);
 
-    boolean checkTypeExists(Long typeId);
-
     List<Long> queryAllowedSetIds();
+
+    boolean checkDeteSetExsits(Long[]  ids);
+
+    boolean isBuildIn(DeteSetInfoEntity deteSetInfoEntity);
+
+    boolean nodeOrNodeGroupValide(DeteSetInfoEntity deteSetInfoEntity);
 }
 

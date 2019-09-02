@@ -20,5 +20,5 @@ import org.springframework.stereotype.Repository;
 public interface NodeGroupRelDao extends BaseMapper<NodeGroupRelEntity> {
 
     List<NodeGroupRelEntity> queryBySystemId(Long id);
-
+    Integer queryCountByGroupId(Long nodeGroupId,String nodeType);
 }

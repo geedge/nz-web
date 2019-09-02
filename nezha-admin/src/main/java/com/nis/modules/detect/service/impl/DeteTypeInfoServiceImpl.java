@@ -8,12 +8,14 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.common.utils.SqlHelper.KeywordsType;
 import com.nis.modules.detect.dao.DeteTypeInfoDao;
+import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.entity.DeteTypeMetaEntity;
 import com.nis.modules.detect.entity.DeteTypeParamEntity;
 import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.impl.auth.NTLMEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +74,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
-
+        deteTypeInfo.setBuildIn(Constant.SYSTEM_BUILDIN_NO);
 
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
 
@@ -137,6 +139,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
         deteTypeInfo.setTableName(old.getTableName());
+        deteTypeInfo.setBuildIn(old.getBuildIn());//buildIn 字段不允许修改
 
         //需要修改表字段
         List<DeteTypeMetaEntity> metaUpdateList = new ArrayList<DeteTypeMetaEntity>();
@@ -236,14 +239,27 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
 
         this.updateById(deteTypeInfo);
         for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
+
             if (deteTypeMetaEntity.getId() != null) {
                 if (deteTypeMetaEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())) {
                     deteTypeMetaService.removeById(deteTypeMetaEntity.getId());
                 } else {
+                    if(deteTypeMetaService.checkNameExists(deteTypeMetaEntity)){
+                        throw new NZException(RCode.META_NAME_EXISTS);
+                    }
+                    if(deteTypeMetaService.checkFieldNameExists(deteTypeMetaEntity)){
+                        throw new NZException(RCode.META_FIELDNAME_EXISTS);
+                    }
                     deteTypeMetaService.updateById(deteTypeMetaEntity);
                 }
             } else {
                 deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
+                if(deteTypeMetaService.checkNameExists(deteTypeMetaEntity)){
+                    throw new NZException(RCode.META_NAME_EXISTS);
+                }
+                if(deteTypeMetaService.checkFieldNameExists(deteTypeMetaEntity)){
+                    throw new NZException(RCode.META_FIELDNAME_EXISTS);
+                }
                 deteTypeMetaService.save(deteTypeMetaEntity);
             }
         }
@@ -251,12 +267,16 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         if (deteTypeParams != null && deteTypeParams.size() > 0) {
             for (int i = 0; i < deteTypeParams.size(); i++) {
                 DeteTypeParamEntity deteTypeParamEntity = deteTypeParams.get(i);
+
                 deteTypeParamEntity.setOperator(userId);
                 deteTypeParamEntity.setOpTime(date);
                 deteTypeParamEntity.setParamIndex(i);
                 if (deteTypeParamEntity.getId() == null) {
 
                     deteTypeParamEntity.setTypeId(deteTypeInfo.getId());
+                }
+                if(deteTypeParamService.checkNameExists(deteTypeParamEntity)){
+                    throw new NZException(RCode.PARAM_NAME_EXISTS);
                 }
                 if (deteTypeParamEntity.getId() != null) {
                     if (deteTypeParamEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())) {
@@ -413,12 +433,71 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
     }
 
 
+    /**
+    * @Description 校验监测类别下是否已经存在监测设置
+    * @Author  rui
+    * @Date   2019/8/30
+    * @Param
+    * @Return
+    * @Exception
+    */
     public boolean checkDetectSetConfigExists(Long id) {
         int count = this.getBaseMapper().checkDetectSetConfigExists(id);
         return count > 0;
     }
 
 
+    /**
+    * @Description 校验监测方式合法性
+    * @Author  rui
+    * @Date   2019/8/30
+    * @Param
+    * @Return
+    * @Exception
+    */
+    public boolean checkDeteMethodIsValide(DeteTypeInfoEntity deteTypeInfo){
+
+        return checkFieldIsValide(DIC_DETEMETHOD,deteTypeInfo.getMethod());
+    }
+
+    /**
+    * @Description 校验监测类别元数据字段类型合法性
+    * @Author  rui
+    * @Date   2019/8/30
+    * @Param
+    * @Return
+    * @Exception
+    */
+    public boolean checkFieldTypeIsValide(DeteTypeInfoEntity deteTypeInfo){
+        for (DeteTypeMetaEntity deteTypeMetaEntity:deteTypeInfo.getDeteTypeMetas()){
+            if(!deteTypeMetaService.checkFieldTypeIsValide(deteTypeMetaEntity)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+    * @Description 校验监测类别元数据数据类型合法性
+    * @Author  rui
+    * @Date   2019/8/30
+    * @Param
+    * @Return
+    * @Exception
+    */
+    public boolean checkDataTypeIsValide(DeteTypeInfoEntity deteTypeInfo){
+        for (DeteTypeMetaEntity deteTypeMetaEntity:deteTypeInfo.getDeteTypeMetas()){
+            if(!deteTypeMetaService.checkDataTypeIsValide(deteTypeMetaEntity)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isBuildIn(DeteTypeInfoEntity deteTypeInfoEntity){
+        DeteTypeInfoEntity oldType = this.getById(deteTypeInfoEntity.getId());
+        return Constant.SYSTEM_BUILDIN_YES.equals(oldType.getBuildIn());
+    }
     /**
      * @Description校验前段传递的数据
      * @Author rui
@@ -430,6 +509,21 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
     public void validatePassDate(DeteTypeInfoEntity deteTypeInfo) {
         ValidateUtils.is(deteTypeInfo).notNull(RCode.DETE_ERROR);
 
+        if(!checkDeteMethodIsValide(deteTypeInfo)){
+            throw new NZException(RCode.TYPE_METHOD_INVALID);
+        }
+
+        if(!checkFieldTypeIsValide(deteTypeInfo)){
+            throw new NZException(RCode.META_FIELDTYPE_INVALID);
+        }
+
+        if(!checkDataTypeIsValide(deteTypeInfo)){
+            throw new NZException(RCode.META_DATATYPE_INVALID);
+        }
+
+        if(!checkViewLevelValide(deteTypeInfo.getViewLevel())){
+            throw new NZException(RCode.VIEWLEVEL_INVALID);
+        }
         ValidateUtils.is(deteTypeInfo.getName()).notNull(RCode.TYPE_NAME_ISNULL);
         boolean typeNameExists = this.checkFieldExists(deteTypeInfo.getId(), "name", deteTypeInfo.getName());
         if (typeNameExists) {

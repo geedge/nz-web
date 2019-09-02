@@ -97,6 +97,8 @@ public enum RCode {
 	NODECABINET_NOT_EXISTS(204013,"nodecabinet_not_exists"),           //机柜不存在
 
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误
+	VIEWLEVEL_INVALID(300001,"viewlevel_invalid"),
+	BUILDIN_CONFIG(300002,"BUILDIN_CONFIG"),//内置配置，不允许修改
 	/**
 	 * 301xxx 监测类别相关异常
 	 * 302xxx 监测设置相关异常
@@ -117,6 +119,10 @@ public enum RCode {
 	DICT_MAPPINGS_ISNULL(301013,"dict_mappings_isnull"),//监测类别字典数据为空
 	DICT_TYPE_USED(301014,"DICT_TYPE_USED"),//监测类别字典已经被使用，不允许删除
 	METAMAPPING_TYPE_EXISTS(301015,"metamapping_type_exists"),//监测类别元数据字典表类型存在
+	METAMAPPING_TYPE_INVALID(301016,"metamapping_type_invalid"),//修改的监测类别元数据无效
+	META_FIELDTYPE_INVALID(301017,"meta_fieldtype_invalid"),//修改的监测类别元数据无效
+	META_DATATYPE_INVALID(301018,"meta_datatype_invalid"),//修改的监测类别元数据无效
+	TYPE_METHOD_INVALID(301019,"type_method_invalid"), //监测方式无效
 
 	SET_NAME_ISNULL(302001,"set_name_isnull"),//监测设置名称为空
 	SET_NAME_EXISTS(302002,"set_name_exists"),//监测设置名称已经存在
@@ -124,10 +130,21 @@ public enum RCode {
 	SET_NODEGROUP_ISNOT_CURRENTSYSTEM(302004,"set_nodegroup_is_not_current_system"),
 	SET_NODE_ISNOT_CURRENTSYSTEM(302005,"set_node_isnot_currentsystem"),
 	SET_TYPE_NOTEXISTS(302006,"SET_TYPE_NOTEXISTS"),//监测设置所选监测类别不存在
+	VALIDE_NODE_NOTEXISTS(302007,"vilide_node_notexists"),//监测设置所选节点组符合条件的节点为空
+	SET_NODE_INVALIDE(302008,"SET_NODE_INVALIDE"),//监测设置所选节点/节点不符合条件
 
 	WARN_NAME_ISNULL(303001,"warn_name_isnull"),//告警设置名称为空
 	WARN_TYPE_ISNULL(303002,"warn_type_isnull"),//告警设置配置类别为空
 	WARN_NAME_EXISTS(303003,"warn_name_exists"),//告警配置名称已经存在
+	WARN_TRIGGERTYPE_INVALID(303004,"warn_triggertype_invalid"), //告警触发方式不合法
+	WARN_WARNMODE_INVALID(303005,"warn_warnmode_invalid"),//告警模式不合法
+	WARN_STATTYPE_INVALID(303006,"warn_stattype_invalid"),//告警统计方式不合法
+	WARN_SYMBOL_INVALID(303007,"warn_symbol_invalid"),//告警比较符不合法
+	WARN_WARNLEVEL_INVALID(303008,"warn_warnlevel_invalid"),//告警级别不合法
+	WARN_CALLBACKTYPE_INVALID(303009,"warn_callbacktype_invalid"),//告警回调方式不合法
+	WARN_CALLBACKCONTENT_ISNULL(303010,"warn_callbackcontent_isnull"),//告警回调方式为 1|2 时，不能为空
+	WARN_TYPE_NOTEXISTS(303011,"warn_type_notexists"), //告警配置监测类别不存在
+	WARN_SET_NOTEXISTS(303012,"warn_set_notexists"), //告警配置监测类别不存在
 
 	MISSION_ERROR(400000, "mission_error"), //40xxxx，任务类通用错误
 	MISSION_TYPE_ISNULL(400001,"mission_type_isnull"),   // 任务类型为空

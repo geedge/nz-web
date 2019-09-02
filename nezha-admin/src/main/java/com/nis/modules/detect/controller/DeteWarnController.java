@@ -6,6 +6,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.detect.entity.DeteWarnInfoEntity;
+import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.detect.service.DeteWarnInfoService;
 import com.nis.modules.sys.service.PermissionInfoService;
 import io.swagger.annotations.Api;
@@ -22,6 +23,8 @@ import java.util.Map;
 public class DeteWarnController {
     @Autowired
     private DeteWarnInfoService deteWarnInfoService;
+    @Autowired
+    private DeteSetInfoService deteSetInfoService;
     @Autowired
     private PermissionInfoService permissionInfoService;
 
@@ -57,9 +60,43 @@ public class DeteWarnController {
     public R save(@RequestBody DeteWarnInfoEntity deteWarnInfoEntity) {
         ValidateUtils.is(deteWarnInfoEntity.getName()).notNull(RCode.WARN_NAME_ISNULL);
         ValidateUtils.is(deteWarnInfoEntity.getDeteTypeId()).notNull(RCode.WARN_TYPE_ISNULL);
-        if(deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),null)){
+        if(!deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),null)){
             throw new NZException(RCode.WARN_NAME_EXISTS);
         }
+        if(!deteWarnInfoService.checkTriggerTypeIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_TRIGGERTYPE_INVALID);
+        }
+        if(!deteWarnInfoService.checkWarnModeIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_WARNMODE_INVALID);
+        }
+        if(!deteWarnInfoService.checkStatTypeIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_STATTYPE_INVALID);
+        }
+        if(!deteWarnInfoService.checkSymbolIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_SYMBOL_INVALID);
+        }
+        if(!deteWarnInfoService.checkWarnLevelIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_WARNLEVEL_INVALID);
+        }
+        if(!deteWarnInfoService.checkCallbackTypeIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_CALLBACKTYPE_INVALID);
+        }
+        if(!deteWarnInfoService.checkCallbackContentIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_CALLBACKCONTENT_ISNULL);
+        }
+        if(!deteWarnInfoService.checkViewLevelValide(deteWarnInfoEntity.getViewLevel())){
+            throw new NZException(RCode.VIEWLEVEL_INVALID);
+        }
+
+        if(!deteWarnInfoService.checkTypeExists(deteWarnInfoEntity.getDeteTypeId())){
+            throw new NZException(RCode.WARN_TYPE_NOTEXISTS);
+        }
+
+        if(!deteSetInfoService.checkDeteSetExsits(deteWarnInfoEntity.getDeteSetIds())){
+            throw new NZException(RCode.WARN_SET_NOTEXISTS);
+        }
+
+
         deteWarnInfoService.saveEntity(deteWarnInfoEntity);
         return R.ok();
     }

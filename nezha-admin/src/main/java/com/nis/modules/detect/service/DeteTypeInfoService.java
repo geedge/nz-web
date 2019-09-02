@@ -20,5 +20,8 @@ public interface DeteTypeInfoService extends DeteCommonService<DeteTypeInfoEntit
 
     void deleteEntity(Long... id);
 
+    boolean checkDeteMethodIsValide(DeteTypeInfoEntity deteTypeInfo);
+
+    boolean isBuildIn(DeteTypeInfoEntity deteTypeInfoEntity);
 
 }

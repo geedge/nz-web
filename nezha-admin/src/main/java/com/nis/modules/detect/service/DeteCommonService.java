@@ -7,7 +7,7 @@ public interface DeteCommonService<T> extends IService<T>{
     String formatString(String tableName);
 
     boolean checkNameExists(String name,Long id);
-
-
-
+    boolean checkFieldIsValide(String type,String code);
+    boolean checkViewLevelValide(String code);
+    boolean checkTypeExists(Long typeId);
 }

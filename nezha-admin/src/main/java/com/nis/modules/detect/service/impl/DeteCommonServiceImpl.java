@@ -7,19 +7,41 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
+import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.service.DeteCommonService;
+import com.nis.modules.detect.service.DeteTypeInfoService;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
+import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.UserUsergroupEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.UserUsergroupService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 
-import java.util.List;
+import java.util.*;
 
-public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImpl<M ,T> implements DeteCommonService<T> {
+public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImpl<M ,T> implements DeteCommonService<T> , ApplicationRunner {
 
     @Autowired
     private UserUsergroupService userUsergroupService;
+    @Autowired
+    private SysDictService sysDictService;
+    @Autowired
+    private DeteTypeInfoService deteTypeInfoService;
 
+    public static Map<String,Set<String>> sysDic=new HashMap<String, Set<String>>();
+
+    protected final String DIC_VIEWLEVEL="viewLevel";
+    protected final String DIC_DETEMETHOD="dtmethond";
+    protected final String DIC_FIELDTYPE="fieldType";
+    protected final String DIC_DATATYPE="dataType";
+    protected final String DIC_TRIGGERTYPE="triggerType";
+    protected final String DIC_WARNMODE="warnMode";
+    protected final String DIC_STATTYPE="statType";
+    protected final String DIC_SYMBOL="symbol";
+    protected final String DIC_WARNLEVEL="warnLevel";
+    protected final String DIC_CALLBACKTYPE="callbackType";
     /**
     * @Description 查询表字段是否存在相同的值 不检查自身（update时）
     * @Author  rui
@@ -96,4 +118,45 @@ public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImp
     public boolean checkNameExists(String name,Long id){
         return checkFieldExists(id,"name",name);
     }
+
+    public boolean checkFieldIsValide(String type,String code){
+
+        return sysDic.get(type).contains(code);
+    }
+
+    /**
+    * @Description 校验viewLevel合法性
+    * @Author  rui
+    * @Date
+    * @Param  [code]
+    * @Return boolean
+    * @Exception
+    */
+    public boolean checkViewLevelValide(String code){
+        return checkFieldIsValide(DIC_VIEWLEVEL,code);
+    }
+
+    @Override
+    public boolean checkTypeExists(Long typeId) {
+        DeteTypeInfoEntity typeInfo = deteTypeInfoService.getById(typeId);
+        return typeInfo!=null;
+    }
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        if(sysDic.size()!=0){
+            return ;
+        }
+        List<SysDictEntity> sysDics = sysDictService.list();
+        for (SysDictEntity sysDicEntity:sysDics){
+            String type=sysDicEntity.getType();
+            String code=sysDicEntity.getCode();
+            Set<String> codes = sysDic.get(type);
+            if(codes==null){
+                codes=new HashSet<String>();
+            }
+            codes.add(code);
+            sysDic.put(type,codes);
+        }
+    }
+
 }

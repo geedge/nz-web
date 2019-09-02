@@ -3,6 +3,7 @@ package com.nis.modules.detect.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.detect.dao.DeteTypeMetaMappingDao;
 import com.nis.modules.detect.entity.DeteTypeMetaEntity;
@@ -71,10 +72,20 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
     public void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
         String oldTypeName=null;
         List<DeteTypeMetaMappingEntity> mappings = deteTypeMetaMapppingVO.getMappings();
-        for(DeteTypeMetaMappingEntity mapping:mappings){
+        for(int i=0;i<mappings.size();i++){
+            DeteTypeMetaMappingEntity mapping=mappings.get(i);
             if(mapping.getId()!=null){
                 DeteTypeMetaMappingEntity oldMapping = this.getById(mapping.getId());
-                oldTypeName=oldMapping.getType();
+                if(oldMapping==null){
+                    if(i != mappings.size()-1){
+                        continue;
+                    }else{
+                        throw new NZException(RCode.METAMAPPING_TYPE_INVALID);
+                    }
+                }else{
+                    oldTypeName=oldMapping.getType();
+                }
+
             }
             break;
         }

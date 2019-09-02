@@ -13,6 +13,7 @@ import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.service.PermissionInfoService;
 import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -201,4 +202,37 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
         }
 
     }
+
+    public boolean checkTriggerTypeIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_TRIGGERTYPE,deteWarnInfoEntity.getTriggerType());
+    }
+
+    public boolean checkWarnModeIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_WARNMODE,deteWarnInfoEntity.getWarnMode());
+    }
+
+    public boolean checkStatTypeIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_STATTYPE,deteWarnInfoEntity.getStatType());
+    }
+
+    public boolean checkSymbolIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_SYMBOL,deteWarnInfoEntity.getSymbol());
+    }
+
+    public boolean checkWarnLevelIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_WARNLEVEL,deteWarnInfoEntity.getWarnLevel());
+    }
+
+    public boolean checkCallbackTypeIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        return checkFieldIsValide(DIC_CALLBACKTYPE,deteWarnInfoEntity.getCallbackType());
+    }
+
+    public boolean checkCallbackContentIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
+        if(deteWarnInfoEntity.getCallbackType()!=null&& !"0".equals(deteWarnInfoEntity.getCallbackType())){
+            return StringUtils.isNotBlank(deteWarnInfoEntity.getCallbackContent());
+        }else{
+            return true;
+        }
+    }
+
 }

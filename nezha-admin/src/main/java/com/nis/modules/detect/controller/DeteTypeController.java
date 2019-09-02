@@ -77,6 +77,9 @@ public class DeteTypeController {
     @ResponseBody
     @ApiOperation(value = "更新监测类别")
     public R update(@RequestBody DeteTypeInfoEntity deteTypeInfo) {
+        if(deteTypeInfoService.isBuildIn(deteTypeInfo)){ //内置配置，不允许修改
+            throw new NZException(RCode.BUILDIN_CONFIG);
+        }
         deteTypeInfoService.validatePassDate(deteTypeInfo);
         deteTypeInfoService.updateEntity(deteTypeInfo);
         return R.ok();

@@ -92,6 +92,14 @@ public class DeteSetController {
         if(Constant.VIEWLEVEL_UG.equals(deteSetInfo.getViewLevel())&&!userUsergroupService.checkUserGroupCorrect(ShiroUtils.getUserId(),deteSetInfo.getViewerId())){
             throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
         }
+
+        if(!deteSetInfoService.checkViewLevelValide(deteSetInfo.getViewLevel())){
+            throw new NZException(RCode.VIEWLEVEL_INVALID);
+        }
+
+        if(!deteSetInfoService.nodeOrNodeGroupValide(deteSetInfo)){
+            throw new NZException(RCode.SET_NODE_INVALIDE);
+        }
         deteSetInfoService.saveEntity(deteSetInfo);
 
         return R.ok();
@@ -104,6 +112,9 @@ public class DeteSetController {
     @ResponseBody
     @ApiOperation("修改监测设置")
     public R update(@RequestBody DeteSetInfoEntity deteSetInfo){
+        if(deteSetInfoService.isBuildIn(deteSetInfo)){
+            throw new NZException(RCode.BUILDIN_CONFIG);
+        }
         ValidateUtils.is(deteSetInfo.getName()).notNull(RCode.SET_NAME_ISNULL);
         ValidateUtils.is(deteSetInfo.getTypeId()).notNull(RCode.SET_TYPE_ISNULL);
         if(deteSetInfoService.checkNameExists(deteSetInfo.getName(),deteSetInfo.getId())){
@@ -121,6 +132,9 @@ public class DeteSetController {
 
         if(Constant.VIEWLEVEL_UG.equals(deteSetInfo.getViewLevel())&&!userUsergroupService.checkUserGroupCorrect(ShiroUtils.getUserId(),deteSetInfo.getViewerId())){
             throw new NZException(RCode.SYS_USERGROUP_MATCH_ERROR);
+        }
+        if(!deteSetInfoService.nodeOrNodeGroupValide(deteSetInfo)){
+            throw new NZException(RCode.SET_NODE_INVALIDE);
         }
         deteSetInfoService.updateEntity(deteSetInfo);
         return R.ok();

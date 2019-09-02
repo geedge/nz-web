@@ -3,9 +3,11 @@ package com.nis.modules.detect.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
 import com.nis.modules.detect.dao.DeteSetInfoDao;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
@@ -14,6 +16,8 @@ import com.nis.modules.detect.entity.DeteWarnRelEntity;
 import com.nis.modules.detect.service.*;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
+import com.nis.modules.node.service.NodeGroupRelService;
+import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.entity.UserGroupEntity;
@@ -48,6 +52,10 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     private DeteWarnRelService warnRelService;
     @Autowired
     private DeteWarnInfoService deteWarnInfoService;
+    @Autowired
+    private NodeGroupRelService nodeGroupRelService;
+    @Autowired
+    private NodeInfoService nodeInfoService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<DeteSetInfoEntity> page = new Query<DeteSetInfoEntity>().getPage(params);
@@ -133,6 +141,7 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         Date date=new Date();
         deteSetInfo.setOperator(userId);
         deteSetInfo.setOpTime(date);
+        deteSetInfo.setBuildIn(Constant.SYSTEM_BUILDIN_NO);
         //保存setInfo
         this.save(deteSetInfo);
 
@@ -153,11 +162,13 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateEntity(DeteSetInfoEntity deteSetInfo) {
+        DeteSetInfoEntity oldSet = this.getById(deteSetInfo.getId());
+        deteSetInfo.setViewLevel(oldSet.getViewLevel());
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
         deteSetInfo.setOperator(userId);
         deteSetInfo.setOpTime(date);
-
+        deteSetInfo.setBuildIn(oldSet.getBuildIn());
         this.updateById(deteSetInfo);
 
         //删除以前已经建立的关系
@@ -168,8 +179,7 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         deteSetNodeRelService.saveBatch(setNodeRels);
 
         //viewLevel 不允许修改，viewer可以修改，用于用户组变化时
-        DeteSetInfoEntity oldSet = this.getById(deteSetInfo.getId());
-        deteSetInfo.setViewLevel(oldSet.getViewLevel());
+
         if(Constant.VIEWLEVEL_UG.equals(oldSet.getViewLevel())){
             //删除之前建立的权限关系
             UpdateWrapper<PermissionInfoEntity> permissionInfoUpdateWrapper = new UpdateWrapper<PermissionInfoEntity>();
@@ -271,10 +281,78 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         return deteSetInfoEntity;
     }
 
-    @Override
-    public boolean checkTypeExists(Long typeId) {
-        DeteTypeInfoEntity typeInfo = deteTypeInfoService.getById(typeId);
-        return typeInfo!=null;
+    public boolean checkDeteSetExsits(Long[]  ids){
+        QueryWrapper<DeteSetInfoEntity> deteSetInfoQueryWrapper = new QueryWrapper<>();
+        deteSetInfoQueryWrapper.in("id", ids);
+        List<DeteSetInfoEntity> list = this.list(deteSetInfoQueryWrapper);
+
+        return list!=null&&list.size()==ids.length;
+    }
+
+    public boolean isBuildIn(DeteSetInfoEntity deteSetInfoEntity){
+        DeteSetInfoEntity oldSet = this.getById(deteSetInfoEntity.getId());
+        return Constant.SYSTEM_BUILDIN_YES.equals(oldSet.getBuildIn());
+    }
+
+    public boolean nodeOrNodeGroupValide(DeteSetInfoEntity deteSetInfoEntity){
+        DeteTypeInfoEntity deteTypeInfo = deteTypeInfoService.getById(deteSetInfoEntity.getTypeId());
+        if(Constant.DETE_DETEMETHOD_SNMP.equals(deteTypeInfo.getMethod())){//snmp 监测，节点类型为网元
+            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
+                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_NET_TYPE)){
+                    return false;
+                }
+            }
+
+            if(!this.nodeIsValide(Constant.NODE_NET_TYPE,deteSetInfoEntity.getNodeIds())){
+                return false;
+            }
+        }else{ //节点类型为服务器
+            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
+                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_SERVER_TYPE)){
+                    return false;
+                }
+            }
+
+            if(!this.nodeIsValide(Constant.NODE_SERVER_TYPE,deteSetInfoEntity.getNodeIds())){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+    * @Description 校验节点组内的节点是否全部是网元/服务器
+    * @Author  rui
+    * @Date   2019/9/2
+    * @Param
+    * @Return
+    * @Exception
+    */
+    private boolean nodeGroupIsPurely(Long nodeGroupId,String nodeType){
+        Integer total = nodeGroupRelService.queryCount(nodeGroupId, null); //节点组下 节点的个数
+        Integer typeCount=nodeGroupRelService.queryCount(nodeGroupId,nodeType);
+        if(total ==0|| typeCount==0){
+            throw new NZException(RCode.VALIDE_NODE_NOTEXISTS);
+        }
+        return total-typeCount ==0;
+    }
+
+    /**
+    * @Description 校验所选节点是否都是网元/服务器
+    * @Author  rui
+    * @Date   2019/9/2
+    * @Param
+    * @Return
+    * @Exception
+    */
+    private boolean nodeIsValide(String nodeType,Long ... nodeUUID){
+        QueryWrapper<NodeInfoEntity> nodeInfoQueryWrapper =new  QueryWrapper<NodeInfoEntity>();
+        nodeInfoQueryWrapper.eq("type",nodeType);
+        nodeInfoQueryWrapper.in("uuid",nodeUUID);
+
+        int count = nodeInfoService.count(nodeInfoQueryWrapper);
+
+        return nodeUUID.length-count==0;
     }
 
     private void setViewer(DeteSetInfoEntity deteSetInfoEntity) {

@@ -20,4 +20,19 @@
 		left join node_group_rel ngr on ngr.group_id=ngi.id
 		where ngi.del_flag=0 and ngr.del_flag=0 and ngi.system_id=#{id}
 	</select>
+
+    <select id="queryCountByGroupId" resultType="integer">
+        SELECT
+            count( 1 )
+        FROM
+            `node_group_rel` ngr
+            LEFT JOIN node_info ni ON ngr.uuid = ni.uuid
+        WHERE
+            ngr.del_flag = '0'
+            AND ni.state = '1'
+            AND ngr.group_id = #{nodeGroupId}
+            <if test="nodeType != null and nodeType != ''">
+                and ni.type=#{nodeType}
+            </if>
+    </select>
 </mapper>
