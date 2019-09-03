@@ -31,12 +31,18 @@
 			<div class="form-group">
 			   	<div class="col-sm-2 control-label">用户组</div>
 			   	<div class="col-sm-9">
-			   		<template v-for="ug in usergroups">
+			   		<!-- <template v-for="ug in usergroups">
 				    	<span class="form-cbx">
 				    		<input v-model="system.usergroupIds" type="checkbox" :value="ug.id"/>
 				    		<span :title="ug.name">{{ug.name}}</span>
 				    	</span>
-			    	</template>
+			    	</template> -->
+			    	<template>
+					  <div style="margin: 15px 0;"></div>
+					  <el-checkbox-group v-model="checkedUsergroups" @change="handleCheckedUsergroupsChange">
+					    <el-checkbox v-for="usergroup in usergroups" :label="usergroup" :key="usergroup">{{usergroup.name}}</el-checkbox>
+					  </el-checkbox-group>
+					</template>
 			    </div>
 			</div>
 			<div class="form-group">

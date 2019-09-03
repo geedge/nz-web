@@ -104,7 +104,9 @@ var vm = new Vue({
 			usergroupIds: [],
 			usergroups: []
 		},
-		usergroups: []
+		usergroups: [],
+		checkedUsergroups:[],
+		checkAll:false
 	},
 	validations: { //定义校验规则
 		system: {
@@ -115,6 +117,10 @@ var vm = new Vue({
 		}
 	}, 
 	methods: {
+		handleCheckedUsergroupsChange(value) {
+			let checkedCount = value.length;
+			this.checkAll = checkedCount === this.usergroups.length;
+		},
 		add: function(){
 			vm.$v.system.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
