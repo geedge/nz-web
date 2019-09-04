@@ -199,7 +199,11 @@ var vm = new Vue({
 				    dataType: "json",
 				    success: function(result){
 				    	if (result.code == 200) {
-				    		location.href = 'index.html';
+				    		var param = "";
+				    		if (result.msg) {
+				    			var param = "?_lang=" + result.msg;
+				    		}
+				    		location.href = 'index.html' + param;
 				    	} else {
 				    		layer.alert(result.msg);
 				    	}

@@ -21,5 +21,7 @@ public interface SysI18nService extends IService<SysI18nEntity> {
 	boolean check(SysI18nEntity sysI18n);
 
 	String queryValue(String code, String lang);
+	
+	List<SysI18nEntity> queryAll();
 }
 

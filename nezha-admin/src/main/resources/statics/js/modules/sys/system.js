@@ -95,6 +95,7 @@ var checkName = function(value, system) {
 var vm = new Vue({
 	el:'#rrapp',
 	data:{
+		test: true,
 		showList: true,
 		title: null,
 		system: {
@@ -104,23 +105,37 @@ var vm = new Vue({
 			usergroupIds: [],
 			usergroups: []
 		},
-		usergroups: [],
-		checkedUsergroups:[],
-		checkAll:false
+		usergroups: []
 	},
-	validations: { //定义校验规则
+	validations: function(){
+		if (this.test) {
+			console.info(1)
+			return {
+	    	  system: {
+	  			name: {
+	  				required
+	  			}
+	  		}
+	      }
+	    } else {
+	    	console.info(2)
+	      return {
+	    	  system: {
+	  			name: {
+	  			}
+	  		}
+	      }
+	    }
+	},
+		/*{ //定义校验规则
 		system: {
 			name: {
 				required,
 				checkName
 			}
 		}
-	}, 
+	}, */
 	methods: {
-		handleCheckedUsergroupsChange(value) {
-			let checkedCount = value.length;
-			this.checkAll = checkedCount === this.usergroups.length;
-		},
 		add: function(){
 			vm.$v.system.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;

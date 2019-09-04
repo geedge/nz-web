@@ -105,7 +105,10 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		params.put("type", Constant.DICT_NAME_LANG);
 		List<SysDictEntity> queryList = queryList(params);
 		for (SysDictEntity d : queryList) {
-			Constant.langList.add(d.getValue());
+			Map<String, String> lang = new HashMap<>();
+			lang.put("name", d.getRemark());
+			lang.put("value", d.getValue());
+			Constant.langList.add(lang);
 		}
 	}
 

@@ -1,13 +1,14 @@
+<script>
 $(function () {
     $("#jqGrid").jqGrid({
         url: baseURL + 'sys/i18n/list',
         datatype: "json",
         colModel: [		
-            { label: 'ID', name: 'id', width: 30, key: true },
-            { label: 'CODE', name: 'code', sortable: false, width: 60 },
-			{ label: '语言', name: 'lang', sortable: false, width: 60 },
-			{ label: 'VALUE', name: 'value', width: 100 },
-			{ label: '备注', name: 'remark', width: 80 }
+            { label: 'ID', name: 'id', width: 30, key: true, hidden: true },
+            { label: 'Code', name: 'code', sortable: false, width: 60 },
+			{ label: '<@spring.message "common.language"/>', name: 'lang', sortable: false, width: 60 },
+			{ label: 'Value', name: 'value', width: 100 },
+			{ label: '<@spring.message "common.remark"/>', name: 'remark', width: 80 }
         ],
 		viewrecords: true,
         height: 385,
@@ -185,6 +186,11 @@ var vm = new Vue({
                 page:page
             }).trigger("reloadGrid");
 		},
+		refresh: function () {
+			$.get(baseURL + "sys/i18n/clearCache", function(r){
+				parent.location.reload();
+            });
+		},
 		validate: function () {//提交时的校验
 			vm.$v.i18n.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
 			return !vm.$v.i18n.$error;
@@ -194,3 +200,4 @@ var vm = new Vue({
 		this.getLangList();
 	}
 });
+</script>

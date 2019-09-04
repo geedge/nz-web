@@ -11,6 +11,7 @@ package com.nis.common.utils;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -22,6 +23,7 @@ import org.apache.ibatis.mapping.DatabaseIdProvider;
 
  */
 public class Constant {
+	
 	/** 超级管理员ID */
 	public static final int SUPER_ADMIN = 1;
     /** 数据权限过滤 */
@@ -97,9 +99,9 @@ public class Constant {
     }
     
     /**
-     * 支持的语言
+     * 支持的语言 [{"name":"简体中文","value":"zh"},...]
      */
-    public static List<String> langList = new ArrayList<>();
+    public static List<Map<String, String>> langList = new ArrayList<>();
     
     /**
      * 字典中语言的名称和类型

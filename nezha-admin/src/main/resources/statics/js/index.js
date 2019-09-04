@@ -47,7 +47,10 @@ var vm = new Vue({
 		newPassword:'',
         navTitle:"控制台",
         changeSystemShow: false, //是否显示业务系统列表
-        systemBoxWidth: null //业务系统列表dom的宽度
+        changeLangShow: false, //是否显示语言列表
+        systemBoxWidth: null, //业务系统列表dom的宽度
+        langList: [],
+        currLang: {}
 	},
 	methods: {
 		getMenuList: function (event) {
@@ -101,11 +104,17 @@ var vm = new Vue({
 			});
 		},
 		toChangeSystem: function(event) {
-			var width = $("#changeSystemButton").css("width");
-			var height = $("#changeSystemButton").css("height");
-			$(".system-items").css("width", width);
-			$(".system-items").css("top", height);
 			vm.changeSystemShow = !(vm.changeSystemShow); 
+			vm.changeLangShow = false;
+		},
+		toChangeLang: function() {
+			vm.changeLangShow = !(vm.changeLangShow); 
+			vm.changeSystemShow = false;
+		},
+		getLangList: function(event) { //查字典获取语言种类
+			$.getJSON("sys/i18n/getLangList2", function(r){
+				vm.langList = r.data;
+			});
 		},
 		changeSystem: function(systemId) {
 			$.getJSON("system/changeSystem?id=" + systemId, function(r){
@@ -113,6 +122,16 @@ var vm = new Vue({
 					location.reload();
 				} else {
 					alert(r.msg);
+				}
+			});
+		},
+		changeLang: function(lang) {
+			location.href = "?_lang=" + lang;
+		},
+		getCurrLang: function() {
+			$.getJSON("sys/i18n/getCurrLang", function(r){
+				if (r.code == '200') {
+					vm.currLang = r.data;
 				}
 			});
 		},
@@ -132,6 +151,8 @@ var vm = new Vue({
 		this.getUser();
 		this.getSystems();
 		this.getCurrSystem();
+		this.getLangList();
+		this.getCurrLang();
 	},
 	updated: function(){
 		//路由

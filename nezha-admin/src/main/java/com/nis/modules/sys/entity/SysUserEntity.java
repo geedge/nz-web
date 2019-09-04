@@ -70,6 +70,11 @@ public class SysUserEntity implements Serializable {
 	private Integer status;
 	
 	/**
+	 * 语言
+	 */
+	private String lang;
+	
+	/**
 	 * 角色ID列表
 	 */
 	@TableField(exist=false)

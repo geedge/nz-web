@@ -35,6 +35,12 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
         return new PageUtils(page);
     }
 
+    public List<SysI18nEntity> queryAll() {
+    	QueryWrapper<SysI18nEntity> qw = new QueryWrapper<>();
+    	List<SysI18nEntity> list = list(qw);
+    	return list;
+    }
+    
     public String queryValue(String code, String lang) {
     	QueryWrapper<SysI18nEntity> wrapper = new QueryWrapper<SysI18nEntity>();
     	wrapper.eq("code", code);

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<#import "/spring.ftl" as spring>
 <html>
 <head>
 <title>国际化管理</title>
@@ -9,16 +10,16 @@
 	<div v-show="showList">
 		<div class="grid-btn">
 			<div class="form-group col-sm-2">
-				<input type="text" class="form-control" v-model="q.code" @keyup.enter="query" placeholder="code">
+				<input type="text" class="form-control" v-model="q.code" @keyup.enter="query" placeholder="Code">
 			</div>
 			<div class="form-group col-sm-2">
-				<multiselect v-model="q.lang" :options="langList" placeholder="请选择语言"></multiselect>
+				<multiselect v-model="q.lang" :options="langList" placeholder="<@spring.message 'common.language'/>"></multiselect>
 			</div>
-			<a class="btn btn-default" @click="query">查询</a>
-			
-			<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-			<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
-			<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+			<a class="btn btn-success" @click="refresh" title="<@spring.message 'sys.i18n.refresh'/>"><i class="fa fa-refresh"></i></a>
 		</div>
 	    <table id="jqGrid"></table>
 	    <div id="jqGridPager"></div>
@@ -28,45 +29,46 @@
 		<div class="panel-heading">{{title}}</div>
 		<form class="form-horizontal">
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">CODE</div>
+			   	<div class="col-sm-2 control-label">Code</div>
 			   	<div class="col-sm-9">
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.code.$dirty && $v.i18n.code.$error}" v-model.trim="$v.i18n.code.$model"/>
 			        <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.required">必填项</div>
+			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.required"><@spring.message 'validate.common.required'/></div>
 			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.checkI18n">重复的记录</div>
 			    </div>
 			</div>
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">语言</div>
+			   	<div class="col-sm-2 control-label"><@spring.message "common.language"/></div>
 			   	<div class="col-sm-9">
-					<multiselect v-model="$v.i18n.lang.$model" :options="langList" placeholder="请选择语言" :class="{'form-control--error': $v.i18n.lang.$dirty && $v.i18n.lang.$error}"></multiselect>
+					<multiselect v-model="$v.i18n.lang.$model" :options="langList" placeholder="<@spring.message 'common.pleaseSelect'/>" :class="{'form-control--error': $v.i18n.lang.$dirty && $v.i18n.lang.$error}"></multiselect>
 			    	<span class="required-symbol">*</span>
-			    	<div class="form-control_error-msg" v-if="$v.i18n.lang.$dirty && !$v.i18n.lang.required">必选项</div>
+			    	<div class="form-control_error-msg" v-if="$v.i18n.lang.$dirty && !$v.i18n.lang.required"><@spring.message 'validate.common.required'/></div>
 			    </div>
 			</div>
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">VALUE</div>
+			   	<div class="col-sm-2 control-label">Value</div>
 			   	<div class="col-sm-9">
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.value.$dirty && $v.i18n.value.$error}" v-model.trim="$v.i18n.value.$model"/>
 			        <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="$v.i18n.value.$dirty && !$v.i18n.value.required">必填项</div>
+			        <div class="form-control_error-msg" v-if="$v.i18n.value.$dirty && !$v.i18n.value.required"><@spring.message 'validate.common.required'/></div>
 			    </div>
 			</div>
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">备注</div>
+			   	<div class="col-sm-2 control-label"><@spring.message "common.remark"/></div>
 			   	<div class="col-sm-9">
 			      <input type="text" class="form-control" v-model="i18n.remark"/>
 			    </div>
 			</div>
-			<div class="form-group">
-				<div class="col-sm-2 control-label"></div> 
-				<input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-				&nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+			<div class="form-group form-group_opbox">
+				<div>
+					<button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+					<div style="display:inline-block;width:10px;"></div>
+					<button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+				</div> 
 			</div>
 		</form>
 	</div>
 </div>
-
-<script src="${request.contextPath}/statics/js/modules/sys/i18n.js?_${.now?long}"></script>
+<#include "/js/modules/sys/i18n.js">
 </body>
 </html>

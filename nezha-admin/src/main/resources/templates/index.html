@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<#import "/spring.ftl" as spring>
 <html>
 <head>
   <meta charset="utf-8">
@@ -39,18 +40,25 @@
       <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
         <span class="sr-only">Toggle navigation</span>
       </a>
-	  <div style="float:left;color:#fff;padding:15px 10px;">欢迎 {{user.username}}</div>
+	  <div style="float:left;color:#fff;padding:15px 10px;"><@spring.message "common.welcome"/> {{user.username}}</div>
       <div class="navbar-custom-menu">
         <ul class="nav navbar-nav">
-		  <li><a href="javascript:;" @click="updatePassword"><i class="fa fa-lock"></i> &nbsp;修改密码</a></li>
+		  <li><a href="javascript:;" @click="updatePassword"><i class="fa fa-lock"></i> &nbsp;<@spring.message "sys.updatePwd"/></a></li>
           <li>
-          	<a href="javascript:;" @click="toChangeSystem" id="changeSystemButton"><i class="fa fa-exchange"></i> &nbsp;{{currSystem.name}}</a>
-          	<!-- 选择业务系统 -->
-			<div class="system-items">
-			  <div class="system-item" @click="changeSystem(system.id)" v-show="changeSystemShow" v-for="system in systems">{{system.name}}</div>
+          	<a class="navbar-nav_lang" href="javascript:;" @click="toChangeLang"><i class="fa fa-globe"></i>&nbsp;{{currLang.name}}</a>
+          	<!-- 选择语言 -->
+			<div class="banner-dropdown-items">
+			  <div class="banner-dropdown-item" @click="changeLang(lang.value)" v-show="changeLangShow" v-for="lang in langList">{{lang.name}}</div>
 			</div>
           </li>
-          <li><a href="logout"><i class="fa fa-sign-out"></i> &nbsp;退出</a></li>
+          <li>
+          	<a class="navbar-nav_system" href="javascript:;" @click="toChangeSystem"><i class="fa fa-exchange"></i> &nbsp;{{currSystem.name}}</a>
+          	<!-- 选择业务系统 -->
+			<div class="banner-dropdown-items">
+			  <div class="banner-dropdown-item" @click="changeSystem(system.id)" v-show="changeSystemShow" v-for="system in systems">{{system.name}}</div>
+			</div>
+          </li>
+          <li><a href="logout"><i class="fa fa-sign-out"></i> &nbsp;<@spring.message "sys.logout"/></a></li>
 		</ul>
       </div>
     </nav>
@@ -79,7 +87,7 @@
     <!-- Content Header (Page header) -->
     <section class="content-header">
       <ol class="breadcrumb" id="nav_title" style="position:static;float:none;">
-        <li class="active"><i class="fa fa-home" style="font-size:20px;position:relative;top:2px;left:-3px;"></i> &nbsp; 首页</li>
+        <li class="active"><i class="fa fa-home" style="font-size:20px;position:relative;top:2px;left:-3px;"></i> &nbsp; <@spring.message "common.home"/></li>
         <li class="active">{{navTitle}}</li>
       </ol>
     </section>
@@ -91,13 +99,13 @@
     <!-- /.content -->
   </div>
   <!-- /.content-wrapper -->
-
+<!-- 
   <footer class="main-footer">
     <div class="pull-right hidden-xs">
       Version 4.0.0
     </div>
     Copyright &copy; 2019 <a href="https://www.nezha.io" target="_blank">nezha.io</a> All Rights Reserved
-  </footer>
+  </footer> -->
 
   <!-- Add the sidebar's background. This div must be placed
        immediately after the control sidebar -->

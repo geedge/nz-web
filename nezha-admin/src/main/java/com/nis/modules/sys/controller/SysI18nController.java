@@ -1,15 +1,23 @@
 package com.nis.modules.sys.controller;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.util.WebUtils;
 
 import com.nis.modules.sys.entity.SysI18nEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -20,6 +28,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
+import com.nis.common.config.I18nConfig;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
@@ -38,10 +47,15 @@ import com.nis.common.utils.RCode;
 @RestController
 @RequestMapping("sys/i18n")
 public class SysI18nController {
+	
+	@Autowired
+	private Environment env;
     @Autowired
     private SysI18nService sysI18nService;
     @Autowired
     private SysDictService dictService;
+    @Autowired
+    private I18nConfig i18nConfig;
     
     /**
      * 列表
@@ -81,6 +95,8 @@ public class SysI18nController {
     		sysI18n.setOperator(ShiroUtils.getUserId());
     		sysI18n.setOpTime(new Date());
     		sysI18nService.save(sysI18n);
+    		//刷新缓存
+    		i18nConfig.reload();
     		return R.ok();
     	}
     }
@@ -104,8 +120,8 @@ public class SysI18nController {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
 	    	sysI18n.setOpTime(new Date());
 			sysI18nService.updateById(sysI18n);
-			// TODO 刷新缓存
-			
+			//刷新缓存
+			i18nConfig.reload();
 			return R.ok();
     	}
     }
@@ -118,6 +134,8 @@ public class SysI18nController {
     public R delete(@ApiParam @RequestBody Long[] ids){
     	ValidateUtils.is(ids).notNull();
     	sysI18nService.removeByIds(Arrays.asList(ids));
+    	//刷新缓存
+    	i18nConfig.reload();
 		return R.ok();
     }
 
@@ -141,25 +159,79 @@ public class SysI18nController {
     	}
     }
     
+    /**
+     * 语言列表 ["zh","cn",...]
+     * @return
+     */
     @RequestMapping(value = "getLangList", method = RequestMethod.GET)
     @ApiOperation(httpMethod = "GET", response = R.class, value = "获取语言列表")
     public R getLangList() {
     	if (CommonUtil.isNull(Constant.langList)) {
 			dictService.updateLangCache();
 		}
-    	return R.ok(Constant.langList);
+    	List<String> langList = new ArrayList<>();
+    	for (Map<String, String> l : Constant.langList){
+    		langList.add(l.get("value"));
+    	}
+    	return R.ok(langList);
     }
     
     /**
-     * 校验lang是否合法
-     * @param lang
+     * 语言列表2 [{"name":"简体中文","value":"zh"},...]
      * @return
+     */
+    @RequestMapping(value = "getLangList2", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", response = R.class, value = "获取语言列表2")
+    public R getLangList2() {
+    	if (CommonUtil.isNull(Constant.langList)) {
+			dictService.updateLangCache();
+		}
+    	return R.ok(Constant.langList);
+    }
+    
+    @RequestMapping(value = "getCurrLang", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", response = R.class, value = "获取当前语言")
+    public R getCurrLang(HttpServletRequest request) {
+    	//从session中获取lang
+    	Locale locale = (Locale) WebUtils.getSessionAttribute(request, SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
+    	if (locale == null) {
+    		String defaultLang = env.getProperty("default.locale", "en_US");
+            String[] split = defaultLang.split("_");
+            locale = new Locale(split[0], split[1]);
+    	}
+    	String lang = locale.getLanguage();
+    	if (CommonUtil.isNull(Constant.langList)) {
+			dictService.updateLangCache();
+		}
+    	for (Map<String, String> l : Constant.langList){
+    		if (l.get("value").equals(lang)) {
+    			return R.ok(l);
+    		}
+    	}
+    	return R.error();
+    }
+    
+    @RequestMapping(value = "clearCache", method = RequestMethod.GET)
+    @ApiOperation(httpMethod = "GET", response = R.class, value = "清除i18n缓存")
+    public R clearCache() {
+    	i18nConfig.reload();
+    	return R.ok();
+    }
+    
+    /**
+     * 校验语种是否合法
+     * @param lang
+     * @return true:合法  false:不合法
      */
     private boolean checkLang(String lang) {
 		if (CommonUtil.isNull(Constant.langList)) {
 			dictService.updateLangCache();
 		}
-		boolean contains = Constant.langList.contains(lang);
-		return contains;
+		for (Map<String, String> l : Constant.langList) {
+			if (l.get("value").equals(lang)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

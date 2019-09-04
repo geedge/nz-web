@@ -65,13 +65,15 @@ tbody > tr > th {font-weight: normal; }
 }
 .multiselect {
 	border-radius: 4px;
-	width: calc(90% - 2px);
 	border-radius: 4px;
 	border: 1px solid #ccc;
-	box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+}
+.form-horizontal .multiselect {
+	width: calc(90% - 2px);
 }
 .multiselect__tags {
 	border: none;
+	box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
 }
 .form-control--error {
 	border: 1px solid #f57f6c;
@@ -97,10 +99,16 @@ tbody > tr > th {font-weight: normal; }
 	display: inline-block;
 	width: 33%;
 }
-.form-cbx>span {
+.form-cbx > span {
 	width: 67%;
 	display: inline-block;
 	white-space: nowrap;
 	overflow: hidden; 
 	text-overflow: ellipsis;
+}
+.form-group_opbox {
+	text-align: center;
+}
+.form-group_opbox > div {
+	display: inline-block;
 }

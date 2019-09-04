@@ -16,6 +16,7 @@ import com.nis.modules.sys.entity.UserGroupEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.service.UserGroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -134,7 +135,8 @@ public class SysLoginController extends AbstractController {
 					}
 				}
 				if (flag) {
-					return R.ok();
+					String lang = CommonUtil.isNull(getUser().getLang()) ? "" : getUser().getLang();
+					return R.ok(lang);
 				} else {
 					return R.error(RCode.SYS_LOGIN_SELECTSYS);
 				}
