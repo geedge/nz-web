@@ -1,0 +1,488 @@
+$(function () {
+    $("#jqGrid").jqGrid({
+        url: baseURL + '/deteType/list',
+        datatype: "json",
+        colModel: [
+            {label: 'ID', name: 'id', width: 30, key: true},
+            {label: '名称', name: 'name', sortable: false, width: 60},
+            {
+                label: '监控方式',
+                name: 'method',
+                sortable: false,
+                width: 60,
+                formatter: function (value, options, rowData) {
+                    return vm.deteMethodsArr[value - 1];
+
+
+                }
+            },
+            {label: '监控间隔', name: 'deteInterval', sortable: false, width: 100},
+            {label: '备注', name: 'remark', sortable: false, width: 80}
+        ],
+        viewrecords: true,
+        height: 385,
+        rowNum: 10,
+        rowList: [10, 30, 50],
+        rownumbers: true,
+        rownumWidth: 25,
+        autowidth: true,
+        multiselect: true,
+        pager: "#jqGridPager",
+        jsonReader: {
+            root: "data.list",
+            page: "data.currPage",
+            total: "data.totalPage",
+            records: "data.totalCount"
+        },
+        prmNames: {
+            page: "page",
+            rows: "limit",
+            order: "order"
+        },
+        gridComplete: function () {
+            //隐藏grid底部滚动条
+            $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+        }
+    });
+});
+
+var steps = ['监测类别', '监测类别元数据', '监测类别参数'];
+
+/*自定义校验规则*/
+var nameRepeat = function (name, deteType) {
+
+    if (helpers.req(name) && helpers.req(deteType)) {
+        var params = "?name=" + name;
+        if (deteType.id) {
+            params += "&id=" + deteType.id;
+        }
+        var flag = false;
+        $.ajax({
+            type: "get",
+            url: baseURL + "/deteType/nameCheck" + params,
+            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            dataType: "json",
+            success: function (r) {
+                if (r.code != 200) {
+                    flag = true;
+                }
+            }
+        });
+        return flag;
+    } else {
+        return false;
+    }
+
+}
+
+var metaNameRepeat = function (name, deteMeta) {
+    if (helpers.req(name) && helpers.req(deteMeta)) {
+        for (var i = 0; i < vm.deteType.deteTypeMetas.length; i++) {
+            var tempName = vm.deteType.deteTypeMetas[i].name;
+            //console.info(name + "..." + deteMeta.name)
+            console.info(tempName)
+            /*if (name == tempName) {//排除自己
+                if (name == tempName) {
+                    console.log(1);
+                    return true;
+                } else {
+                    console.log(2);
+                    return false;
+                }
+            } else {
+                console.log(3);
+                return false;
+            }*/
+        }
+    } else {
+        console.log(4);
+        return false;
+    }
+    return true;
+}
+var vm = new Vue({
+    el: '#deteType',
+    data: {
+        yes: true,
+        no: false,
+        deteType: {
+            id: null,
+            name: '',
+            viewLevel: 2,
+            method: 1,
+            deteInterval: 60,
+            content: '',
+            i18nCode: '',
+            remark: '',
+            deteTypeMetas: [
+                {
+                    id: null,
+                    name: '',
+                    fieldType: null,
+                    dataType: null,
+                    dataLenth: null,
+                    oid: '',
+                    unit: '',
+                    dicType: '',
+                    remark: '',
+                    index: null
+                }
+            ],
+            deteTypeParams: [
+                {
+                    id: null,
+                    name: '',
+                    defVal: '',
+                    remark: ''
+                }
+            ]
+        },
+        params: {
+            name: ''
+        },
+        showList: true,
+        title: 'title',
+        curStep: 0,
+        metaCount: 1,
+        paramCount: 1,
+        deteMethods: [],//监测方式对象数组，getDeteMethod()中初始化,用于表单
+        deteMethod: {}, //接收监测方式对象，在watch中对method 参数赋值
+        deteMethodsArr: [], //监测方式数组，getDeteMethod()中初始化,用于列表展示
+        fieldTypes: [],//字段类型数组
+        fieldType: [],
+        dataTypes: [],//数据类型数组
+        dataType: [], //数据类型对象
+        dicTypes: [] //mapping type数组
+    },
+    validations: function () {
+        if (this.deteType.method == 2) {//snmp 监测
+            return { //定义校验规则
+                deteType: {
+                    name: {
+                        required,
+                        nameRepeat
+                    },
+                    method: {},
+                    deteInterval: {
+                        integer
+                    },
+                    content: {},
+                    i18nCode: {required},
+                    remark: {},
+                    deteTypeMetas: {
+                        $each: {
+                            name: {
+                                required,
+                                metaNameRepeat
+                            },
+                            fieldType: {
+                                required
+                            },
+                            dataType: {
+                                required
+                            },
+                            dataLenth: {
+                                required,
+                                integer
+                            },
+                            oid: {
+                                required
+                            },
+                            unit: {
+                                required
+                            },
+                            dicType: {},
+                            index: {}
+                        }
+                    },
+                    deteTypeParams: {
+                        $each: {
+                            name: {
+                                required
+                            },
+                            defVal: {
+                                required
+                            },
+                            remark: ''
+                        }
+                    }
+                }
+            }
+        } else {
+            return { //定义校验规则
+                deteType: {
+
+                    name: {
+                        required,
+                        nameRepeat
+                    },
+                    method: {},
+                    deteInterval: {
+                        integer
+                    },
+                    content: {},
+                    i18nCode: {required},
+                    remark: {},
+                    deteTypeMetas: {
+                        $each: {
+                            name: {
+                                required,
+                                metaNameRepeat
+                            },
+                            fieldType: {
+                                required
+                            },
+                            dataType: {
+                                required
+                            },
+                            dataLenth: {
+                                required,
+                                integer
+                            },
+                            oid: {},
+                            unit: {required},
+                            dicType: {},
+                            index: {}
+                        }
+                    },
+                    deteTypeParams: {
+                        $each: {
+                            name: {
+                                required
+                            },
+                            defVal: {
+                                required
+                            },
+                            remark: ''
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    created: function () {
+        // this.nameCheckFunc = _.debounce(this.nameCheck, 500);
+        this.getDeteMethod();
+        this.getFieldTypes();
+        this.getDataTypes();
+        this.getDicTypes();
+        this.init();
+
+    },
+    methods: {
+        init: function () {
+            var step = this.curStep;
+            this.title = steps[step];
+        },
+        query: function () {
+            vm.showList = true;
+            var page = $("#jqGrid").jqGrid('getGridParam', 'page');
+            $("#jqGrid").jqGrid('setGridParam', {
+                postData: {'name': vm.params.name},
+                page: page
+            }).trigger("reloadGrid");
+        },
+        reload: function () {
+            vm.query();
+        },
+        add: function () {
+            vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
+            vm.showList = false;
+        },
+        update: function () {
+            vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
+            var id = getSelectedRow();
+            if (id == null) {
+                return;
+            }
+            vm.showList = false;
+            vm.getInfo(id);
+
+
+        },
+        getInfo: function (id) {
+            $.get(baseURL + "deteType/detail?id=" + id, function (r) {
+                vm.deteType = r.data;
+                vm.formatDeteTypeToObject();
+                console.log(vm.deteType);
+            });
+        },
+        saveOrUpdate: function () {
+            if (!vm.validate()) { //在下方定义的validate方法
+                return;
+            }
+
+            var url = vm.deteType.id == null ? "deteType/save" : "deteType/update";
+            var method = vm.deteType.id == null ? "POST" : "PUT";
+
+            //处理json数据
+            vm.formatDeteTypeToSimple();
+
+
+            $.ajax({
+                type: method,
+                url: baseURL + url,
+                contentType: "application/json",
+                data: JSON.stringify(vm.deteType),
+                success: function (r) {
+                    if (r.code === 200) {
+                        alert('操作成功', function (index) {
+                            vm.reload();
+                        });
+                    } else {
+                        alert(r.msg);
+                    }
+                }
+            });
+
+
+        },
+        del: function (event) {
+
+        },
+        validate: function () {//提交时的校验
+            vm.$v.deteType.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
+            return !vm.$v.deteType.$error;
+        },
+        nameCheck: function (name) {
+            if (name == null || name == "") {
+                return false;
+            }
+            axios.get(baseURL + '/deteType/nameCheck?name=' + name + "&id=" + vm.deteType.id)
+                .then(function (response) {
+                    var code = response.data.code;
+                    if ("200" == code) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                })
+
+        },
+        getDeteMethod: function () {
+            $.getJSON(baseURL + "sys/dict/all?type=dtmethond&_" + $.now(), function (r) {
+                var deteMethods = [];
+                var deteMethodsArr = [];
+                for (var i = 0; i < r.data.length; i++) {
+                    var m = {"code": r.data[i].code, "value": r.data[i].value}
+                    deteMethods.push(m);
+                    deteMethodsArr.push(r.data[i].value);
+                    if ("1" == r.data[i].code) { //默认为脚本
+                        vm.deteMethod = m;
+
+                    }
+                }
+                vm.deteMethods = deteMethods;
+                vm.deteMethodsArr = deteMethodsArr;
+            });
+        },
+        getFieldTypes: function () {
+            $.getJSON(baseURL + "sys/dict/all?type=fieldType&_" + $.now(), function (r) {
+                for (var i = 0; i < r.data.length; i++) {
+                    var m = {"code": r.data[i].code, "value": r.data[i].value}
+                    vm.fieldTypes.push(m);
+                }
+            });
+        },
+        getDataTypes: function () {
+            $.getJSON(baseURL + "sys/dict/all?type=dataType&_" + $.now(), function (r) {
+                for (var i = 0; i < r.data.length; i++) {
+                    var m = {"code": r.data[i].code, "value": r.data[i].value}
+                    vm.dataTypes.push(m);
+                }
+            });
+        },
+        getDicTypes: function () {
+            $.getJSON(baseURL + "deteType/dicList?limit=999&_" + $.now(), function (r) {
+                for (var i = 0; i < r.data.list.length; i++) {
+                    vm.dicTypes.push(r.data.list[i].type)
+                }
+            });
+        },
+        preStep: function () {
+            if (this.curStep > 0) {
+                this.curStep -= 1;
+            } else {
+                this.curStep = 0;
+            }
+        },
+        nextStep: function () {
+            if (this.curStep < steps.length - 1) {
+                this.curStep += 1;
+            } else {
+                this.curStep = steps.length - 1;
+            }
+        },
+        addMetaView: function () {
+            var mata = {
+                id: null,
+                name: '',
+                fieldType: null,
+                dataType: null,
+                dataLenth: null,
+                oid: '',
+                unit: '',
+                dicType: '',
+                remark: '',
+            }
+
+
+            Vue.set(this.deteType.deteTypeMetas, this.metaCount, mata);
+            this.paramCount += 1;
+        },
+        delMetaView: function (index) {
+            Vue.delete(this.deteType.deteTypeMetas, index);
+            this.paramCount -= 1;
+        },
+        addParamView: function () {
+            var param = {
+                id: null,
+                name: '',
+                defVal: '',
+                remark: ''
+            }
+
+
+            Vue.set(this.deteType.deteTypeParams, this.metaCount, param);
+            this.metaCount += 1;
+        },
+        delParamView: function (index) {
+            Vue.delete(this.deteType.deteTypeParams, index);
+            this.metaCount -= 1;
+        },
+        formatDeteTypeToSimple: function () {
+            $.each(vm.deteType.deteTypeMetas, function (i, v) {
+                vm.deteType.deteTypeMetas[i].fieldType = v.fieldType.code;
+                vm.deteType.deteTypeMetas[i].dataType = v.dataType.code;
+            });
+        },
+        formatDeteTypeToObject: function () {
+            $.each(vm.deteType.deteTypeMetas, function (index, value) {
+                for (var i = 0; i < vm.fieldTypes.length; i++) {
+                    if (vm.fieldTypes[i].code == value.fieldType) {
+                        vm.deteType.deteTypeMetas[index].fieldType = vm.fieldTypes[i];
+                    }
+                }
+
+                for (var i = 0; i < vm.dataTypes.length; i++) {
+                    if (vm.dataTypes[i].code == value.dataType) {
+                        vm.deteType.deteTypeMetas[index].dataType = vm.dataTypes[i];
+                    }
+                }
+            });
+        }
+    },
+    watch: {
+        // "deteType.name": function () {
+        //     this.nameCheckFunc();
+        // },
+        deteMethod: function () {
+            this.deteType.method = this.deteMethod.code;
+        },
+        curStep: function () {
+            this.title = steps[this.curStep]
+        }
+
+    }
+});

@@ -80,7 +80,8 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
 
         if(deteTypeMetas!=null&&deteTypeMetas.size()>0){
             Set<String> fieldNameFilter = new HashSet<String>();
-            for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
+            for (int i=0;i< deteTypeMetas.size();i++) {
+                DeteTypeMetaEntity deteTypeMetaEntity =deteTypeMetas.get(i);
                 //field_name字段默认为 f_元数据名称去除特殊字符
                 String fieldName = ("f_" + this.formatString(deteTypeMetaEntity.getName())).toUpperCase();
                 //防止处理后的字段名称重复
@@ -93,6 +94,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
                 deteTypeMetaEntity.setTypeId(deteTypeInfo.getId());
                 deteTypeMetaEntity.setOperator(userId);
                 deteTypeMetaEntity.setOpTime(date);
+                deteTypeMetaEntity.setSort(i);
             }
         }
 
