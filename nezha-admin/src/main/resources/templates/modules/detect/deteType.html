@@ -29,10 +29,10 @@
                 <div class="form-group">
                     <div class="col-sm-2 control-label">监测类别名称:</div>
                     <div class="col-sm-9">
-                        <input type="text" class="form-control" :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| $v.deteType.name.nameRepeat}" v-model.trim="$v.deteType.name.$model"/>
+                        <input type="text" class="form-control" :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| !$v.deteType.name.nameRepeat}" v-model.trim="$v.deteType.name.$model"/>
                         <span class="required-symbol">*</span>
                         <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.required">必填项</div>
-                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && $v.deteType.name.nameRepeat">名字已存在</div>
+                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat">名字已存在</div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -72,19 +72,17 @@
                     </div>
                 </div>
             </div> <!--deteTypeView end-->
-
             <!--    deteTypeMetaView start-->
             <div id="deteTypeMetaView" v-show="curStep == 1" v-model="deteType.deteTypeMetas">
                 <div v-for="item ,index in deteType.deteTypeMetas">
-                    <div class="panel panel-default" style="position:relative">
+                    <div class="panel panel-default" style="position:relative" v-show="item.delFlag=='0'">
                         <div class="form-group">
                             <div class="col-sm-2 control-label">名称:</div>
-                            <div class="col-sm-9">
-                                <input type="text"  class="form-control"  :class="{'form-control--error': ($v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required) || $v.deteType.deteTypeMetas.$each[index].name.metaNameRepeat}"  v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model" value="{{item.name}}"/>
+                            <div class="col-sm-9"><!--v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model"-->
+                                <input type="text"  class="form-control" @input="metaNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required)|| validation.meta[index] }"  v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model" value="{{item.name}}"/>
                                 <span class="required-symbol">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required">必填项</div>
-                                <div class="form-control_error-msg" v-if="$v.deteType.deteTypeMetas.$each[index].name.$dirty && $v.deteType.deteTypeMetas.$each[index].name.metaNameRepeat">名称重复</div>
-                                <!--<pre>{{$v.deteType.deteTypeMetas.$each[index].name}}</pre>-->
+                                <div class="form-control_error-msg" v-if="$v.deteType.deteTypeMetas.$each[index].name.$dirty && validation.meta[index]">名称重复</div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -146,7 +144,6 @@
                         </div>
                     </div>
                 </div>
-<!--                <pre>{{$data}}</pre>-->
                 <div class="form-group">
                     <a id="metaPlus" class="btn btn-small" @click="addMetaView"><i class="glyphicon glyphicon-plus"></i>添加元数据</a>
                 </div>
@@ -156,13 +153,14 @@
             <!--deteTypeParam start-->
             <div id="deteTypeParamView" v-show="curStep == 2" v-model="deteType.deteTypeMetas">
                 <div v-for="item ,index in deteType.deteTypeParams">
-                    <div class="panel panel-default" style="position:relative">
+                    <div class="panel panel-default" style="position:relative" v-show="item.delFlag == '0'">
                         <div class="form-group">
                             <div class="col-sm-2 control-label">名称:</div>
                             <div class="col-sm-9">
-                                <input type="text"  class="form-control" :class="{'form-control--error': ($v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required)}"  v-model.trim="$v.deteType.deteTypeParams.$each[index].name.$model" value="{{item.name}}"/>
+                                <input type="text"  class="form-control" @input="paramNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required)|| validation.param[index]}"  v-model.trim="$v.deteType.deteTypeParams.$each[index].name.$model" value="{{item.name}}"/>
                                 <span class="required-symbol">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required">必填项</div>
+                                <div class="form-control_error-msg" v-if="$v.deteType.deteTypeParams.$each[index].name.$dirty && validation.param[index]">名称重复</div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -185,7 +183,6 @@
                         </div>
                     </div>
                 </div>
-                <!--                <pre>{{$data}}</pre>-->
                 <div class="form-group">
                     <a id="paramPlus" class="btn btn-small" @click="addParamView"><i class="glyphicon glyphicon-plus"></i>添加参数</a>
                 </div>

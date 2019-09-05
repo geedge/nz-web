@@ -50,13 +50,12 @@ var steps = ['监测类别', '监测类别元数据', '监测类别参数'];
 
 /*自定义校验规则*/
 var nameRepeat = function (name, deteType) {
-
     if (helpers.req(name) && helpers.req(deteType)) {
         var params = "?name=" + name;
         if (deteType.id) {
             params += "&id=" + deteType.id;
         }
-        var flag = false;
+        var flag = true;
         $.ajax({
             type: "get",
             url: baseURL + "/deteType/nameCheck" + params,
@@ -64,42 +63,19 @@ var nameRepeat = function (name, deteType) {
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
-                    flag = true;
+                    flag = false;
                 }
             }
         });
+        console.log("typeName repeat validate:"+flag)
         return flag;
     } else {
-        return false;
+        console.log("typeName repeat validate2:"+false)
+        return true;
     }
 
 }
 
-var metaNameRepeat = function (name, deteMeta) {
-    if (helpers.req(name) && helpers.req(deteMeta)) {
-        for (var i = 0; i < vm.deteType.deteTypeMetas.length; i++) {
-            var tempName = vm.deteType.deteTypeMetas[i].name;
-            //console.info(name + "..." + deteMeta.name)
-            console.info(tempName)
-            /*if (name == tempName) {//排除自己
-                if (name == tempName) {
-                    console.log(1);
-                    return true;
-                } else {
-                    console.log(2);
-                    return false;
-                }
-            } else {
-                console.log(3);
-                return false;
-            }*/
-        }
-    } else {
-        console.log(4);
-        return false;
-    }
-    return true;
-}
 var vm = new Vue({
     el: '#deteType',
     data: {
@@ -125,7 +101,7 @@ var vm = new Vue({
                     unit: '',
                     dicType: '',
                     remark: '',
-                    index: null
+                    delFlag:'0'
                 }
             ],
             deteTypeParams: [
@@ -152,7 +128,11 @@ var vm = new Vue({
         fieldType: [],
         dataTypes: [],//数据类型数组
         dataType: [], //数据类型对象
-        dicTypes: [] //mapping type数组
+        dicTypes: [],//mapping type数组
+        validation: {
+            meta: [false],
+            param: [false]
+        }
     },
     validations: function () {
         if (this.deteType.method == 2) {//snmp 监测
@@ -172,8 +152,8 @@ var vm = new Vue({
                     deteTypeMetas: {
                         $each: {
                             name: {
-                                required,
-                                metaNameRepeat
+                                required/*,
+                                metaNameRepeat*/
                             },
                             fieldType: {
                                 required
@@ -203,7 +183,8 @@ var vm = new Vue({
                             defVal: {
                                 required
                             },
-                            remark: ''
+                            remark: '',
+                            delFlag:'0'
                         }
                     }
                 }
@@ -226,8 +207,8 @@ var vm = new Vue({
                     deteTypeMetas: {
                         $each: {
                             name: {
-                                required,
-                                metaNameRepeat
+                                required/*,
+                                metaNameRepeat*/
                             },
                             fieldType: {
                                 required
@@ -241,8 +222,7 @@ var vm = new Vue({
                             },
                             oid: {},
                             unit: {required},
-                            dicType: {},
-                            index: {}
+                            dicType: {}
                         }
                     },
                     deteTypeParams: {
@@ -287,29 +267,67 @@ var vm = new Vue({
             vm.query();
         },
         add: function () {
-            vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
+            // vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             vm.showList = false;
+            vm.curStep=0;
+            var deteType=  {
+                id: null,
+                    name: '',
+                    viewLevel: 2,
+                    method: 1,
+                    deteInterval: 60,
+                    content: '',
+                    i18nCode: '',
+                    remark: '',
+                    deteTypeMetas: [
+                    {
+                        id: null,
+                        name: '',
+                        fieldType: null,
+                        dataType: null,
+                        dataLenth: null,
+                        oid: '',
+                        unit: '',
+                        dicType: '',
+                        remark: '',
+                        delFlag:'0'
+                    }
+                ],
+                    deteTypeParams: [
+                    {
+                        id: null,
+                        name: '',
+                        defVal: '',
+                        remark: ''
+                    }
+                ]
+            }
+
+            vm.deteType=deteType;
         },
         update: function () {
-            vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
+            // vm.$v.deteType.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             var id = getSelectedRow();
             if (id == null) {
                 return;
             }
             vm.showList = false;
+            vm.curStep=0;
             vm.getInfo(id);
 
 
         },
         getInfo: function (id) {
             $.get(baseURL + "deteType/detail?id=" + id, function (r) {
-                vm.deteType = r.data;
+                vm.deteType=r.data;
+                vm.metaCount=r.data.deteTypeMetas.length;
+                vm.paramCount=r.data.deteTypeParams.length;
                 vm.formatDeteTypeToObject();
-                console.log(vm.deteType);
             });
         },
         saveOrUpdate: function () {
-            if (!vm.validate()) { //在下方定义的validate方法
+
+            if (vm.validate()) { //在下方定义的validate方法
                 return;
             }
 
@@ -339,11 +357,55 @@ var vm = new Vue({
 
         },
         del: function (event) {
+            var ids = getSelectedRows();
+            if(ids == null){
+                return ;
+            }
+            confirm("确认删除吗？",function(){
+                $.ajax({
+                    type: "DELETE",
+                    url: baseURL + "/deteType/delete",
+                    contentType: "application/json",
+                    data: JSON.stringify(ids),
+                    success: function(r){
+                        if(r.code == 200){
+                            alert('操作成功', function(index){
+                                vm.reload();
+                            });
+                        }else{
+                            alert(r.msg);
+                        }
+                    }
+                });
 
+            })
         },
         validate: function () {//提交时的校验
-            vm.$v.deteType.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
-            return !vm.$v.deteType.$error;
+            var metaFlag=false;
+            var paramFlag=false;
+            for(var i=0;i<vm.validation.meta.length;i++){
+                if(vm.validation.meta[i]){
+                    metaFlag=true;
+                    break;
+                }
+            }
+
+            for(var i=0;i<vm.validation.param.length;i++){
+                if(vm.validation.param[i]){
+                    paramFlag=true;
+                    break;
+                }
+            }
+            /*遍历touch 对数组调用touch会栈溢出*/
+            for(var i=0;i<vm.$v.deteType.deteTypeMetas.length;i++){
+
+                vm.$v.deteType.deteTypeMetas.$each[i].$touch();
+            }
+
+            for(var i=0;i<vm.$v.deteType.deteTypeParams.length;i++){
+                vm.$v.deteType.deteTypeParams.$each[i].$touch();
+            }
+            return vm.$v.deteType.$error || metaFlag||paramFlag;
         },
         nameCheck: function (name) {
             if (name == null || name == "") {
@@ -425,31 +487,40 @@ var vm = new Vue({
                 unit: '',
                 dicType: '',
                 remark: '',
+                delFlag:'0'
             }
-
-
             Vue.set(this.deteType.deteTypeMetas, this.metaCount, mata);
-            this.paramCount += 1;
+            this.metaCount += 1;
         },
         delMetaView: function (index) {
-            Vue.delete(this.deteType.deteTypeMetas, index);
-            this.paramCount -= 1;
+            if(this.deteType.deteTypeMetas[index].id == null){
+                Vue.delete(this.deteType.deteTypeMetas, index);
+                this.metaCount -= 1;
+            }else{
+                this.deteType.deteTypeMetas[index].delFlag='1';
+            }
+
         },
         addParamView: function () {
             var param = {
                 id: null,
                 name: '',
                 defVal: '',
-                remark: ''
+                remark: '',
+                delFlag:'0'
             }
 
 
-            Vue.set(this.deteType.deteTypeParams, this.metaCount, param);
-            this.metaCount += 1;
+            Vue.set(this.deteType.deteTypeParams, this.paramCount, param);
+            this.paramCount += 1;
         },
         delParamView: function (index) {
-            Vue.delete(this.deteType.deteTypeParams, index);
-            this.metaCount -= 1;
+            if(this.deteType.deteTypeParams[index].id==null){
+                Vue.delete(this.deteType.deteTypeParams, index);
+                this.paramCount -= 1;
+            }else{
+                this.deteType.deteTypeParams[index].delFlag='1';
+            }
         },
         formatDeteTypeToSimple: function () {
             $.each(vm.deteType.deteTypeMetas, function (i, v) {
@@ -471,12 +542,51 @@ var vm = new Vue({
                     }
                 }
             });
+        },
+        metaNameRepeat: function (index) {
+            var name = vm.deteType.deteTypeMetas[index].name;
+            if(name == null ||name == ""){
+                return ;
+            }
+            var flag=false;
+            for (var i = 0; i < vm.deteType.deteTypeMetas.length; i++) {
+                if (index == i) {
+                    continue;
+                }
+                var tempName = vm.deteType.deteTypeMetas[i].name;
+
+                if (name == tempName) {
+                    flag=true;
+                    vm.validation.meta[index]=flag;
+                    return ;
+                }
+                flag=false;
+            }
+            vm.validation.meta[index]=flag;
+        },
+        paramNameRepeat: function (index) {
+            var name = vm.deteType.deteTypeParams[index].name;
+            if(name == null ||name == ""){
+                return ;
+            }
+            var flag=false;
+            for (var i = 0; i < vm.deteType.deteTypeParams.length; i++) {
+                if (index == i) {
+                    continue;
+                }
+                var tempName = vm.deteType.deteTypeParams[i].name;
+
+                if (name == tempName) {
+                    flag=true;
+                    vm.validation.param[index]=flag;
+                    return ;
+                }
+                flag=false;
+            }
+            vm.validation.param[index]=flag;
         }
     },
     watch: {
-        // "deteType.name": function () {
-        //     this.nameCheckFunc();
-        // },
         deteMethod: function () {
             this.deteType.method = this.deteMethod.code;
         },

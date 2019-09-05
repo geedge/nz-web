@@ -240,8 +240,9 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         }
 
         this.updateById(deteTypeInfo);
-        for (DeteTypeMetaEntity deteTypeMetaEntity : deteTypeMetas) {
-
+        for (int i=0;i< deteTypeMetas.size();i++) {
+            DeteTypeMetaEntity deteTypeMetaEntity=deteTypeMetas.get(i);
+            deteTypeMetaEntity.setSort(i);
             if (deteTypeMetaEntity.getId() != null) {
                 if (deteTypeMetaEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeMetaEntity.getDelFlag())) {
                     deteTypeMetaService.removeById(deteTypeMetaEntity.getId());
