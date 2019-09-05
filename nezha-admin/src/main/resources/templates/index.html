@@ -55,10 +55,10 @@
           	<a class="navbar-nav_system" href="javascript:;" @click="toChangeSystem"><i class="fa fa-exchange"></i> &nbsp;{{currSystem.name}}</a>
           	<!-- 选择业务系统 -->
 			<div class="banner-dropdown-items">
-			  <div class="banner-dropdown-item" @click="changeSystem(system.id)" v-show="changeSystemShow" v-for="system in systems">{{system.name}}</div>
+			  <div class="banner-dropdown-item" @click="changeSystem(system.id)" v-show="changeSystemShow" v-for="system in systems" :title="system.name">{{system.name}}</div>
 			</div>
           </li>
-          <li><a href="logout"><i class="fa fa-sign-out"></i> &nbsp;<@spring.message "sys.logout"/></a></li>
+          <li><a href="javascript:;" @click="logout"><i class="fa fa-sign-out"></i> &nbsp;<@spring.message "sys.logout"/></a></li>
 		</ul>
       </div>
     </nav>
@@ -94,7 +94,7 @@
 
     <!-- Main content -->
     <section class="content" style="background:#fff;">
-      <iframe scrolling="yes" frameborder="0" style="width:100%;min-height:200px;overflow:visible;background:#fff;" :src="main"></iframe>
+      <iframe id="childIframe" scrolling="yes" frameborder="0" style="width:100%;min-height:200px;overflow:visible;background:#fff;" :src="main"></iframe>
     </section>
     <!-- /.content -->
   </div>
@@ -147,6 +147,6 @@
 <script src="${request.contextPath}/statics/libs/bootstrap.min.js"></script>
 <script src="${request.contextPath}/statics/libs/app.js"></script>
 <script src="${request.contextPath}/statics/plugins/layer/layer.js"></script>
-<script src="${request.contextPath}/statics/js/index.js"></script>
+<#include "/js/index.js">
 </body>
 </html>

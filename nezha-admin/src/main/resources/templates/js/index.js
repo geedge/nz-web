@@ -1,3 +1,4 @@
+<script>
 //生成菜单
 var menuItem = Vue.extend({
     name: 'menu-item',
@@ -135,7 +136,7 @@ var vm = new Vue({
 				}
 			});
 		},
-        donate: function () {
+        donate: function() {
             layer.open({
                 type: 2,
                 title: false,
@@ -144,6 +145,10 @@ var vm = new Vue({
                 shadeClose: false,
                 content: ['http://cdn.nezha.io/donate.jpg', 'no']
             });
+        },
+        logout: function() {
+        	$.get("${request.contextPath}/logout");
+        	location.reload();
         }
 	},
 	created: function(){
@@ -174,14 +179,23 @@ function routerList(router, menuList){
 				var url = window.location.hash;
 				
 				//替换iframe的url
-			    vm.main = url.replace('#', '');
+			    //vm.main = url.replace('#', '');
+				goNext(url.replace('#', ''));
 			    
 			    //导航菜单展开
 			    $(".treeview-menu li").removeClass("active");
 			    $("a[href='"+url+"']").parents("li").addClass("active");
 			    
 			    vm.navTitle = $("a[href='"+url+"']").text();
+			    
+			    window.location.hash = url + "?t=" + new Date().getTime();
 			});
 		}
 	}
 }
+
+function goNext(url) {
+    vm.main = url;
+    $("#childIframe")[0].contentWindow.location.reload(true);
+}
+</script>

@@ -112,3 +112,6 @@ tbody > tr > th {font-weight: normal; }
 .form-group_opbox > div {
 	display: inline-block;
 }
+.btn-login {
+	padding: 0 !important;
+}

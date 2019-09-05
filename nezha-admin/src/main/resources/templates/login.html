@@ -36,7 +36,7 @@
   </div>
   <!-- /.login-logo -->
   <div class="login-box-body" v-show="showLogin">
-      <p class="login-box-msg">登录</p>
+      <p class="login-box-msg">Login</p>
       <div v-if="error" class="alert alert-danger alert-dismissible">
         <h4 style="margin-bottom: 0px;"><i class="fa fa-exclamation-triangle"></i> {{errorMsg}}</h4>
       </div>
@@ -59,13 +59,13 @@
       
       
       <div class="row">
-        <div class="col-xs-8">
+        <div class="col-xs-10">
           <div class="checkbox icheck">
           </div>
         </div>
         <!-- /.col -->
-        <div class="col-xs-4">
-          <button type="button" class="btn btn-primary btn-block btn-flat" @click="login">登录</button>
+        <div class="col-xs-2 btn-login">
+          <button type="button" class="btn btn-primary btn-block btn-flat" @click="login"><i class="fa fa-sign-in"></i></button>
         </div>
         <!-- /.col -->
       </div>
@@ -75,9 +75,9 @@
   <!-- /.login-box-body -->
   
   <div class="login-box-body" v-show="!showLogin">
-  	<p class="login-box-msg">选择业务系统</p>
+  	<p class="login-box-msg">System</p>
     <div class="form-group has-feedback">
-      <multiselect v-model="selectedSystem" :options="systems" label="name" placeholder="请选择"></multiselect>
+      <multiselect v-model="selectedSystem" :options="systems" label="name" placeholder="..." :show-labels="false"></multiselect>
     </div>
     <div class="row">
       <div class="col-xs-4">
@@ -85,10 +85,10 @@
         </div>
       </div>
       <div class="col-xs-4">
-        <button type="button" class="btn btn-primary btn-block btn-flat" @click="selectSys">确定</button>
+        <button type="button" class="btn btn-primary btn-block btn-flat" @click="selectSys"><i class="fa fa-check"></i></button>
       </div>
       <div class="col-xs-4">
-        <button type="button" class="btn btn-primary btn-block btn-flat" @click="cancelSelect">取消</button>
+        <button type="button" class="btn btn-primary btn-block btn-flat" @click="cancelSelect"><i class="fa fa-reply"></i></button>
       </div>
     </div>
   </div>
@@ -151,11 +151,11 @@ var vm = new Vue({
 			var flag = true;
 			var errMsg = "";
 			if (!vm.$v.username.required) {
-				errMsg = errMsg + "用户名 "
+				errMsg = errMsg + "Username "
 				flag = false;
 			}
 			if (!vm.$v.password.required) {
-				errMsg = errMsg + "密码 "
+				errMsg = errMsg + "Password "
 				flag = false;
 			}
 			/* if (!vm.$v.captcha.required) {
@@ -163,7 +163,7 @@ var vm = new Vue({
 				flag = false;
 			} */
 			if (!flag) {
-				errMsg = errMsg + "不能为空";
+				errMsg = errMsg + "is/are required.";
 				vm.errorMsg = errMsg;
 				vm.error = true;
 				return;
