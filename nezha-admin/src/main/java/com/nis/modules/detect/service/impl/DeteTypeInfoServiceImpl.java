@@ -283,7 +283,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
                 }
                 if (deteTypeParamEntity.getId() != null) {
                     if (deteTypeParamEntity.getDelFlag() != null && !Constant.DELFLAG_FALSE.equals(deteTypeParamEntity.getDelFlag())) {
-                        deteTypeMetaService.removeById(deteTypeParamEntity.getId());
+                        deteTypeParamService.removeById(deteTypeParamEntity.getId());
                     } else {
                         deteTypeParamService.updateById(deteTypeParamEntity);
                     }
