@@ -32,6 +32,7 @@ public class SQLFilter {
         str = StringUtils.replace(str, ";", "");
         str = StringUtils.replace(str, "\\", "");
 
+        str=toDbField(str);
         //转换成小写
         str = str.toLowerCase();
 
@@ -46,5 +47,17 @@ public class SQLFilter {
         }
 
         return str;
+    }
+    public static String toDbField(String field){
+        StringBuffer sb=new StringBuffer();
+        char[] chars = field.toCharArray();
+        for(int i=0;i<chars.length;i++){
+            Character c=chars[i];
+            if(Character.isUpperCase(c)){
+                sb.append("_");
+            }
+            sb.append(c);
+        }
+        return sb.toString();
     }
 }

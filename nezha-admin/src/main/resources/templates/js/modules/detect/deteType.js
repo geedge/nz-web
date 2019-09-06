@@ -5,7 +5,7 @@ $(function () {
         datatype: "json",
         colModel: [
             {label: 'ID', name: 'id', width: 30, key: true,hidden:true},
-            {label: '<@spring.message "common.name"/>', name: 'name', sortable: false, width: 60},
+            {label: '<@spring.message "common.name"/>', name: 'name', sortable: true, width: 60},
             {
                 label: '<@spring.message "deteType.method"/>',
                 name: 'method',
@@ -16,6 +16,8 @@ $(function () {
                 }
             },
             {label: '<@spring.message "deteType.deteInterval"/>', name: 'deteInterval', sortable: false, width: 100},
+            {label: '<@spring.message "deteType.version"/>', name: 'version', sortable: false, width: 100},
+            {label: '<@spring.message "common.opTime"/>', name: 'opTime', sortable: true, width: 100},
             {label: '<@spring.message "common.remark"/>', name: 'remark', sortable: false, width: 80}
         ],
         viewrecords: true,
