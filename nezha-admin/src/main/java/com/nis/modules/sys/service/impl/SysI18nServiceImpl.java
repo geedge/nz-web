@@ -1,27 +1,44 @@
 package com.nis.modules.sys.service.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.util.WebUtils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 import com.alibaba.druid.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.config.I18nConfig;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
-
 import com.nis.modules.sys.dao.SysI18nDao;
 import com.nis.modules.sys.entity.SysI18nEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysI18nService;
 
 
 @Service("sysI18nService")
 public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> implements SysI18nService {
 
+	@Autowired
+	private Environment env;
+	@Autowired
+    private SysDictService dictService;
+	@Autowired
+    private I18nConfig i18nConfig;
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SysI18nEntity> page = this.page(
@@ -41,16 +58,44 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
     	return list;
     }
     
+    public Locale getLocale() {
+    	HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();
+    	//从session中获取lang
+    	Locale locale = (Locale) WebUtils.getSessionAttribute(request, SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
+    	if (locale == null) {
+    		String defaultLang = env.getProperty("default.locale", "en_US");
+            String[] split = defaultLang.split("_");
+            locale = new Locale(split[0], split[1]);
+    	}
+    	return locale;
+    }
+    
+    /** 
+     * 根据code查询国际化值，自动获取当前语言
+     */
+    public String queryValue(String code) {
+    	return queryValue(code, getLocale());
+    }
+    
     public String queryValue(String code, String lang) {
-    	QueryWrapper<SysI18nEntity> wrapper = new QueryWrapper<SysI18nEntity>();
-    	wrapper.eq("code", code);
-    	wrapper.eq("lang", lang);
-    	List<SysI18nEntity> selectList = baseMapper.selectList(wrapper);
-    	try {
-			return selectList.get(0).getValue();
-		} catch (Exception e) {
-			return code;
+    	return queryValue(code, new Locale(lang));
+    }
+    
+    public String queryValue(String code, Locale locale) {
+    	return i18nConfig.getSourceFromCache(code, locale);
+    }
+    
+    public Map<String, String> getCurrLang() {
+    	String lang = getLocale().getLanguage();
+    	if (CommonUtil.isNull(Constant.langList)) {
+			dictService.updateLangCache();
 		}
+    	for (Map<String, String> l : Constant.langList){
+    		if (l.get("value").equals(lang)) {
+    			return l;
+    		}
+    	}
+    	return null;
     }
     
 	@Override

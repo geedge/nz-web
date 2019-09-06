@@ -5,6 +5,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.modules.sys.entity.SysI18nEntity;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -20,8 +21,16 @@ public interface SysI18nService extends IService<SysI18nEntity> {
 
 	boolean check(SysI18nEntity sysI18n);
 
-	String queryValue(String code, String lang);
+	String queryValue(String code);
+	
+	public String queryValue(String code, String lang);
+	
+	String queryValue(String code, Locale locale);
 	
 	List<SysI18nEntity> queryAll();
+	
+	Map<String, String> getCurrLang();
+	
+	Locale getLocale();
 }
 

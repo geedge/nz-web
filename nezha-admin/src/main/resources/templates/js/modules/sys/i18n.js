@@ -5,10 +5,10 @@ $(function () {
         datatype: "json",
         colModel: [		
             { label: 'ID', name: 'id', width: 30, key: true, hidden: true },
-            { label: 'Code', name: 'code', sortable: false, width: 60 },
+            { label: 'Code', name: 'code', width: 60 },
 			{ label: '<@spring.message "common.language"/>', name: 'lang', sortable: false, width: 60 },
-			{ label: 'Value', name: 'value', width: 100 },
-			{ label: '<@spring.message "common.remark"/>', name: 'remark', width: 80 }
+			{ label: 'Value', name: 'value', width: 100, sortable: false },
+			{ label: '<@spring.message "common.remark"/>', name: 'remark', width: 80, sortable: false }
         ],
 		viewrecords: true,
         height: 385,

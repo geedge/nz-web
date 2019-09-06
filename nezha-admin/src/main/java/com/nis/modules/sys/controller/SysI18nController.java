@@ -4,20 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.i18n.SessionLocaleResolver;
-import org.springframework.web.util.WebUtils;
 
 import com.nis.modules.sys.entity.SysI18nEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -48,8 +44,6 @@ import com.nis.common.utils.RCode;
 @RequestMapping("sys/i18n")
 public class SysI18nController {
 	
-	@Autowired
-	private Environment env;
     @Autowired
     private SysI18nService sysI18nService;
     @Autowired
@@ -64,7 +58,6 @@ public class SysI18nController {
     @ApiOperation(httpMethod = "GET", value = "国际化信息列表")
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = sysI18nService.queryPage(params);
-
         return R.ok(page);
     }
 
@@ -88,7 +81,6 @@ public class SysI18nController {
     	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
     		return R.error(RCode.SYS_I18N_NOSUCHLANG);
     	}
-    	
     	if (sysI18nService.check(sysI18n)) { //检查是否重复，true为重复
     		return R.error(RCode.SYS_I18N_DUPLICATE);
     	} else {
@@ -192,23 +184,7 @@ public class SysI18nController {
     @RequestMapping(value = "getCurrLang", method = RequestMethod.GET)
     @ApiOperation(httpMethod = "GET", response = R.class, value = "获取当前语言")
     public R getCurrLang(HttpServletRequest request) {
-    	//从session中获取lang
-    	Locale locale = (Locale) WebUtils.getSessionAttribute(request, SessionLocaleResolver.LOCALE_SESSION_ATTRIBUTE_NAME);
-    	if (locale == null) {
-    		String defaultLang = env.getProperty("default.locale", "en_US");
-            String[] split = defaultLang.split("_");
-            locale = new Locale(split[0], split[1]);
-    	}
-    	String lang = locale.getLanguage();
-    	if (CommonUtil.isNull(Constant.langList)) {
-			dictService.updateLangCache();
-		}
-    	for (Map<String, String> l : Constant.langList){
-    		if (l.get("value").equals(lang)) {
-    			return R.ok(l);
-    		}
-    	}
-    	return R.error();
+    	return R.ok(sysI18nService.getCurrLang());
     }
     
     @RequestMapping(value = "clearCache", method = RequestMethod.GET)

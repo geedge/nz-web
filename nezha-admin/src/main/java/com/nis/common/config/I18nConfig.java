@@ -38,7 +38,7 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
     /**
      * 国际化缓存 
      */
-    private static final Map<String, Map<String, String>> I18N_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, String>> I18N_CACHE = new HashMap<>();
     /**
      * 初始化
      */
