@@ -73,7 +73,8 @@ var vm = new Vue({
 	data:{
 		q:{
             code: null,
-            lang: null
+            lang: null,
+            value: null
 		},
 		showList: true,
 		title: null,
@@ -182,7 +183,7 @@ var vm = new Vue({
 			vm.showList = true;
 			var page = $("#jqGrid").jqGrid('getGridParam','page');
 			$("#jqGrid").jqGrid('setGridParam',{ 
-                postData:{'code': vm.q.code, 'lang': vm.q.lang},
+                postData:{'code': vm.q.code, 'lang': vm.q.lang, 'value': vm.q.value},
                 page:page
             }).trigger("reloadGrid");
 		},
