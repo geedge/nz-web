@@ -2,6 +2,7 @@ package com.nis.modules.node.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeCabinetEntity;
 import org.apache.commons.logging.impl.AvalonLogger;
@@ -34,6 +35,6 @@ public interface NodeCabinetService extends IService<NodeCabinetEntity> {
     void delete(Long[] ids);
 
     // 校验U位数量是否可用
-    boolean cabUbitCheck(Long id, Integer ubit);
+    R cabUbitCheck(Long id, Integer ubit);
 }
 

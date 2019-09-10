@@ -19,6 +19,9 @@ import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.scripting.xmltags.ForEachSqlNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,16 +96,14 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo) {
-        if (this.groupNameCheck(null, nodegroupInfo.getName(), nodegroupInfo.getPid())) {
-            if (ShiroUtils.isGlobal()) {
-                if (nodegroupInfo.getSystemId() == null) {
-                    nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());
-                }
-            } else {
-                nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
+        if (ShiroUtils.isGlobal()) {
+            if (nodegroupInfo.getSystemId() == null) {
+                nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());
             }
-
-
+        } else {
+            nodegroupInfo.setSystemId(ShiroUtils.getCurrSystemId());// 不是gelob 全选 添加就是当前的
+        }
+        if (this.groupNameCheck(null, nodegroupInfo.getName(), nodegroupInfo.getPid(), nodegroupInfo.getSystemId())) {
             if (Constant.NODEGROUP_TOP_PID.equals(nodegroupInfo.getPid())) { // 如果添加的是顶级节点组
                 // 顶级节点组 pid为 0,
                 nodegroupInfo.setPids(nodegroupInfo.getPid() + ",");
@@ -164,13 +165,23 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         if (nodeGroup == null) {
             throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
         }
+        // 业务系统 父级节点 所有父级节点不润许修改
+        if (nodegroupInfo.getSystemId() != null && !nodeGroup.getSystemId().equals(nodegroupInfo.getSystemId())) {
+            throw new NZException(RCode.NODEGROUP_SYSTEMID_NOT_MODIFIED);
+        }
+        if (nodegroupInfo.getPid() != null && !nodeGroup.getPid().equals(nodegroupInfo.getPid())) {
+            throw new NZException(RCode.NODEGROUP_PARENTID_NOT_MODIFIED);
+        }
+        if (StringUtils.isNotBlank(nodegroupInfo.getPids()) && !nodeGroup.getPids().equals(nodegroupInfo.getPids())) {
+            throw new NZException(RCode.NODEGROUP_PARENTIDS_NOT_MODIFIED);
+        }
         nodegroupInfo.setOperator(ShiroUtils.getCurrSystemId());
         nodegroupInfo.setOpTime(new Date());
         // 2. 做名称校验
         if (nodeGroup.getName().equals(nodegroupInfo.getName())) {// 名称没有发生改变
             nodegroupInfoDao.updateById(nodegroupInfo);
         } else {
-            if (this.groupNameCheck(nodegroupInfo.getId(), nodegroupInfo.getName(), nodeGroup.getPid())) {//  名称不重复
+            if (this.groupNameCheck(nodegroupInfo.getId(), nodegroupInfo.getName(), nodeGroup.getPid(), nodeGroup.getSystemId())) {//  名称不重复
                 nodegroupInfoDao.updateById(nodegroupInfo);
             } else {
                 throw new NZException(RCode.NODEGROUP_NAME_DUPLICATE);// 节点组名称重复
@@ -322,6 +333,18 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
         }
 
+        // 校验业务系统有效性
+        Long systemId = Long.valueOf(params.get("systemId").toString());
+        SystemInfoEntity sysDetail = systemInfoDao.detail(systemId);
+        if (sysDetail == null) {
+            throw new NZException(RCode.SYS_SYS_NOTEXISTS);// 业务系统不存在
+        }
+
+        // 校验自身节点组和填写业务系统是否一致
+        if (!nodeGroup.getSystemId().equals(systemId)) {
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS_THIS_SYSTEM); // 节点组不在这个业务系统中
+        }
+
         IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
         List<NodeInfoEntity> assNodeList = baseMapper.assList(page, params);
 
@@ -340,13 +363,26 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      * @param pid
      */
     @Override
-    public boolean groupNameCheck(Long id, String name, Long pid) {
+    public boolean groupNameCheck(Long id, String name, Long pid, Long systemId) {
 
         List<NodeGroupInfoEntity> list = null;
 
-        // 顶级的情况下
+        // 顶级的情况下 同业务系统顶级名称不可相同,不同业务系统无限制
         if (Constant.NODEGROUP_TOP_PID.equals(pid)) {
+            boolean flag = false;
             list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", Constant.NODEGROUP_TOP_PID));
+            if ((list == null || list.size() == 0)) {
+                flag = true;
+            } else {
+                flag = true;
+                for (NodeGroupInfoEntity entity : list) {
+                    if (entity.getName().equals(name) && entity.getSystemId().equals(systemId) && !entity.getId().equals(id)) { // 名称相等并且系统ID相等
+                        flag = false;
+                        break;
+                    }
+                }
+            }
+            return flag;
         } else {
             // 非顶级情况
             NodeGroupInfoEntity parentNodeGroup = this.getById(pid);
@@ -354,16 +390,15 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
                 throw new NZException(RCode.NODEGROUP_PARENT_NOT_EXISTS); // 节点组父级不存在
             }
             list = this.list(new QueryWrapper<NodeGroupInfoEntity>().eq("name", name).eq("pid", pid));
-        }
+            boolean flag = false;
 
-        boolean flag = false;
-
-        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-        if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId() == id)) {
-            flag = true;
+            //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+            if ((list == null || list.size() == 0) ||
+                    (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+                flag = true;
+            }
+            return flag;
         }
-        return flag;
     }
 
     /**

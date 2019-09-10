@@ -499,9 +499,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             // 1.1 查询每个机房下所有的机柜
             List<NodeCabinetEntity> nodeCabinets = nodeRoom.getCabinets();
 
-            // 机柜占满节点 没有可用位置
-            List<NodeCabinetEntity> fullList = new ArrayList<>();
-
             // 2.0 遍历机柜 得到下面的所有节点
             for (NodeCabinetEntity cab : nodeCabinets) {
 
@@ -576,25 +573,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                             }
                         }
                     }
-                    if (endList != null && endList.size() > 0) {
-                        // 此处的endList 为开始下标了
-                        cab.setStarts(endList);
-                    } else {
-                        // 该机柜没有可用位置
-                        fullList.add(cab);
-                    }
+                    // 此处的endList 为开始下标了
+                    cab.setStarts(endList);
                 } else {
-                    if (freePosition != null && freePosition.size() > 0) {
-                        //这种情况就是用户输入的U位是1  可以把所有的位置都返回  都可以选择 如果存在可用位置的情况下  如果不存在返回 Null 合理
-                        cab.setStarts(freePosition);
-                    } else {
-                        // 该机柜没有可用位置
-                        fullList.add(cab);
-                    }
+                    //这种情况就是用户输入的U位是1  可以把所有的位置都返回  都可以选择 如果存在可用位置的情况下  如果不存在返回 Null 合理
+                    cab.setStarts(freePosition);
                 }
             }
-            // 如果机柜中不存在可用位置信息 则不返回该机柜
-            nodeCabinets.removeAll(fullList);
             availCab.setCabinets(nodeCabinets);
 
             // 如果机房下所有机柜都不含可用位置 则不反悔此机房

@@ -100,10 +100,7 @@ public class NodeCabinetController {
         ValidateUtils.is(id).notNull(RCode.NODECABINET_ID_ISNULL)
                 .and(ubit).notNull(RCode.NODECABINET_UBIT_ISNULL).min(1, RCode.NODECABINET_UBIT_MINNUM);
 
-        if (nodeCabinetService.cabUbitCheck(id, ubit)) {
-            return R.ok();
-        }
-        return R.error(RCode.NODECABINET_UBIT_OCCUPIED); // 机柜U位数量不可用
+        return nodeCabinetService.cabUbitCheck(id, ubit);
     }
 
 

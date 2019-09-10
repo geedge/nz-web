@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<#import "/spring.ftl" as spring>
+<html>
+<head>
+    <title>机柜管理</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="app" v-cloak>
+
+    <!-- 列表  查询 -->
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.cabName" @keyup.enter="query" placeholder="机柜名称">
+            </div>
+
+            <a class="btn btn-default" @click="query">查询</a>
+            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+        </div>
+
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">名称</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model.trim="nodeCabinet.name" @blur="$v.nodeCabinet.name.$touch" class="form-control"
+                           :class="{'form-control--error': $v.nodeCabinet.name.$dirty && !$v.nodeCabinet.name.required}"
+                           placeholder="名称"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeCabinet.name.$dirty && !$v.nodeCabinet.name.required">
+                        必填项
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeCabinet.name.$dirty && !$v.nodeCabinet.name.nameCheck">
+                        名称重复
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">所属机房</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeCabinet.roomId" :options="rooms" label="roomName" :show-labels="false"
+                                 :class="{'form-control--error': $v.nodeCabinet.roomId.$dirty && !$v.nodeCabinet.roomId.required}"
+                                 @close="getRoomRows(),$v.nodeCabinet.roomId.$touch(),$v.nodeCabinet.name.$touch()" placeholder="请选择所属机房"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.roomId.$dirty && !$v.nodeCabinet.roomId.required">必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机房行号</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeCabinet.roomRow" :options="roomRows" label="roomRow" :show-labels="false"
+                                 :class="{'form-control--error': $v.nodeCabinet.roomRow.$dirty && !$v.nodeCabinet.roomRow.required}"
+                                 @close="getRoomCols(),$v.nodeCabinet.roomRow.$touch()" placeholder="请选择机房行号"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.roomRow.$dirty && !$v.nodeCabinet.roomRow.required">必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机房列号</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeCabinet.roomCol" :options="roomCols" :show-labels="false"
+                                 :class="{'form-control--error': $v.nodeCabinet.roomCol.$dirty && !$v.nodeCabinet.roomCol.required}"
+                                 @close="$v.nodeCabinet.roomCol.$touch()" placeholder="请选择机房列号"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.roomCol.$dirty && !$v.nodeCabinet.roomCol.required">必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">U 位</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model="nodeCabinet.ubit" class="form-control"
+                           :class="{'form-control--error': $v.nodeCabinet.ubit.$dirty && !$v.nodeCabinet.ubit.minValue || !$v.nodeCabinet.ubit.integer}"
+                           @blur="$v.nodeCabinet.ubit.$touch" placeholder="U 位"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.ubit.$dirty && !$v.nodeCabinet.ubit.minValue || !$v.nodeCabinet.ubit.integer">
+                        最小值为1的整数
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.ubit.$dirty && !$v.nodeCabinet.ubit.required">必选项
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeCabinet.ubit.$dirty && !$v.nodeCabinet.ubit.cabUbitCheck">节点已占用至{{occUbit}}U
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">描述</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model="nodeCabinet.remarks" class="form-control" placeholder="描述"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+
+        </form>
+    </div>
+
+
+</div>
+
+
+<!--<script src="${request.contextPath}/statics/js/modules/node/nodeCabinet.js"></script>-->
+<#include "/js/modules/node/nodeCabinet.js">
+</body>
+</html>

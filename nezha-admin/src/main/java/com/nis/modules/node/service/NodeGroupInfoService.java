@@ -22,7 +22,7 @@ public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
 
     void saveNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo);
 
-    boolean groupNameCheck(Long id, String name, Long pid);
+    boolean groupNameCheck(Long id, String name, Long pid, Long systemId);
 
     void updateNodeGroupInfo(NodeGroupInfoEntity nodegroupInfo);
 

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<#import "/spring.ftl" as spring>
+<html>
+<head>
+    <title>机房管理</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="app" v-cloak>
+
+    <!-- 列表  查询 -->
+    <div v-show="showList">
+        <div class="grid-btn">
+
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder="机房名称">
+            </div>
+
+            <div class="form-group col-sm-2">
+                <multiselect v-model="q.addr" :options="addrList" label="value" :show-labels="false" placeholder="所属地区"></multiselect>
+            </div>
+
+            <a class="btn btn-default" @click="query">查询</a>
+            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+        </div>
+
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">名称</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model.trim="nodeRoom.name" @blur="$v.nodeRoom.name.$touch" class="form-control"
+                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required}"
+                           placeholder="名称"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required">
+                        必填项
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeRoom.name.$dirty && !$v.nodeRoom.name.nameCheck">
+                        名称重复
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">所属地区</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeRoom.addr" :options="addrList" placeholder="请选择机房地区" label="value"
+                                 :class="{'form-control--error': $v.nodeRoom.addr.$dirty && !$v.nodeRoom.addr.required}"
+                                 @close="$v.nodeRoom.addr.$touch" :show-labels="false"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeRoom.addr.$dirty && !$v.nodeRoom.addr.required">
+                        必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机房行数</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model="nodeRoom.roomRows" class="form-control"
+                           :class="{'form-control--error': $v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.minValue || !$v.nodeRoom.roomRows.integer}"
+                           @blur="$v.nodeRoom.roomRows.$touch" placeholder="机房行数"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.minValue || !$v.nodeRoom.roomRows.integer">
+                        最小值为1的整数
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.required">必选项
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.roomRowsCheck">机柜已占用至{{occRow}}行
+                    </div>
+                   <!-- <div class="form-control_error-msg"
+                         v-if="">机柜已占用至{{}}行
+                    </div>-->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机房列数</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model="nodeRoom.roomCols" class="form-control"
+                           :class="{'form-control--error': $v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.minValue || !$v.nodeRoom.roomCols.integer}"
+                           @blur="$v.nodeRoom.roomCols.$touch" placeholder="机房列数"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.minValue || !$v.nodeRoom.roomCols.integer">
+                        最小值为1的整数
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.required">必选项
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.roomColsCheck">机柜已占用至{{occCol}}列
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">描述</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model="nodeRoom.remarks" class="form-control" placeholder="描述"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+
+
+</div>
+
+
+<!--<script src="${request.contextPath}/statics/js/modules/node/nodeRoom.js"></script>-->
+<#include "/js/modules/node/nodeRoom.js">
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.nis.modules.node.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.node.entity.NodeRoomEntity;
 
 import java.util.Map;
@@ -26,6 +27,6 @@ public interface NodeRoomService extends IService<NodeRoomEntity> {
 
     void updateNodeRoom(NodeRoomEntity nodeRoom);
 
-    void roomSizeCheck(Long id, Integer roomRows, Integer roomCols);
+    R roomSizeCheck(Long id, Integer roomRows, Integer roomCols);
 }
 

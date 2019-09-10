@@ -22,6 +22,7 @@ public enum RCode {
 	SYS_SYS_DUPLICATENAME(102002, "systemname_duplicate_error"), //业务系统名称重复
 	SYS_SYS_DELGLOBAL(102003, "delete global error"), //不能删除global业务系统
 	SYS_SYS_BUILTIN(102004, "not allow to update"), //不能操作内置系统
+	SYS_SYS_NOTEXISTS(102005, "sys sys notexists"), //业务系统不存在
 
 	SYS_MENU_SYSMENUDEL(103001, "sysmenu_del_error"), //系统菜单，不能删除
 	SYS_MENU_DELSUB(103002, "del_sub_first_error"), //请先删除子菜单或按钮
@@ -71,6 +72,7 @@ public enum RCode {
 	NODEGROUP_PARENTID_NOT_MODIFIED(202011, "nodegroup_parentid_not_modified"), // 节点组pid不许修改
 	NODEGROUP_PARENTIDS_NOT_MODIFIED(202012, "nodegroup_parentids_not_modified"), // 节点组pidS不许修改
 	NODEGROUP_PARENT_SYSTEM_NOT_EQUALS(202013, "nodegroup_parent_system_not_equals"), // 父级级节点组系统ID不同
+	NODEGROUP_NOT_EXISTS_THIS_SYSTEM(202014, "nodegroup_not_exists_this_system"),     // 节点组不在这个业务系统中
 
 	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),   // 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"),            // 机房行号已被占用

@@ -77,17 +77,6 @@ class NodeGroupInfoController {
     public R update(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
         ValidateUtils.is(nodegroupInfo).notNull(RCode.NOT_NULL_ERROR)
                 .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
-        if (nodegroupInfo != null) {
-            if (nodegroupInfo.getSystemId() != null) {
-                throw new NZException(RCode.NODEGROUP_SYSTEMID_NOT_MODIFIED);
-            }
-            if (nodegroupInfo.getPid() != null) {
-                throw new NZException(RCode.NODEGROUP_PARENTID_NOT_MODIFIED);
-            }
-            if (nodegroupInfo.getPids() != null || StringUtils.isNotBlank(nodegroupInfo.getPids())) {
-                throw new NZException(RCode.NODEGROUP_PARENTIDS_NOT_MODIFIED);
-            }
-        }
         nodegroupInfoService.updateNodeGroupInfo(nodegroupInfo);
         return R.ok();
     }
@@ -95,10 +84,10 @@ class NodeGroupInfoController {
 
     @ApiOperation(" 节点组名称校验")
     @GetMapping("/groupNameCheck")
-    public R groupNameCheck(Long id, String name, Long pid) {
+    public R groupNameCheck(Long id, String name, Long pid, Long systemId) {
         ValidateUtils.is(name).notNull(RCode.NODEGROUP_NAME_ISNULL).and(pid).notNull(RCode.NODEGROUP_PID_ISNULL);
 
-        if (nodegroupInfoService.groupNameCheck(id, name, pid)) {
+        if (nodegroupInfoService.groupNameCheck(id, name, pid,systemId)) {
             return R.ok();
         }
         return R.error(RCode.NODEGROUP_NAME_DUPLICATE);//节点组名称重复错误

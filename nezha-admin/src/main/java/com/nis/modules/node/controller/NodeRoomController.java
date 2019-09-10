@@ -104,8 +104,7 @@ public class NodeRoomController {
                 .and(roomRows).notNull(RCode.NODEROOM_ROWS_ISNULL)
                 .and(roomCols).notNull(RCode.NODEROOM_COLS_ISNULL);
 
-        nodeRoomService.roomSizeCheck(id, roomRows, roomCols);
-        return R.ok();
+        return nodeRoomService.roomSizeCheck(id, roomRows, roomCols);
     }
 
 }

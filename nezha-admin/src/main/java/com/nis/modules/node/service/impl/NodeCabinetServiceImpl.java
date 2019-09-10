@@ -7,6 +7,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeCabinetDao;
 import com.nis.modules.node.entity.AvailCabinetEntity;
@@ -102,7 +103,8 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
             if (cab == null || nodeCabinet.getId() - cab.getId() == 0) { // 机房行列未被占用 或 修改时没有改变行列
 
                 // 4. U位是否可用校验
-                if (this.cabUbitCheck(nodeCabinet.getId(), nodeCabinet.getUbit())) {
+                R r = this.cabUbitCheck(nodeCabinet.getId(), nodeCabinet.getUbit());
+                if (r.get("code").equals(RCode.SUCCESS.getCode())) {
                     nodeCabinet.setOperator(ShiroUtils.getCurrSystemId());
                     nodeCabinet.setOpTime(new Date());
                     this.updateById(nodeCabinet);
@@ -148,7 +150,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
      * @param ubit R
      */
     @Override
-    public boolean cabUbitCheck(Long id, Integer ubit) {
+    public R cabUbitCheck(Long id, Integer ubit) {
         // 1. 校验机柜是否存在
         NodeCabinetEntity cab = this.getById(id);
         if (cab == null) {
@@ -164,10 +166,14 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         if (list != null && list.size() > 0) {
             occPosition = list.get(0).getCabinetStart() + list.get(0).getuSize() - 1;
         } else {
-            return true;
+            return R.ok();
         }
 
-        return ubit >= occPosition;
+        if(ubit >= occPosition){
+            return R.ok();
+        }else{
+            return R.error(RCode.NODECABINET_UBIT_OCCUPIED).put("data", occPosition);
+        }
     }
 
 

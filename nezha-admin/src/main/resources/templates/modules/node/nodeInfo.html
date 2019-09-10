@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<#import "/spring.ftl" as spring>
+<html>
+<head>
+    <title>节点管理</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="nodeInfoApp" v-cloak>
+
+    <!-- 列表  查询 -->
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
+                       placeholder="节点名称">
+            </div>
+            <div class="form-group col-sm-2">
+                <input type="text" class="form-control" v-model="q.ip" @keyup.enter="query"
+                       placeholder="IP地址">
+            </div>
+
+            <div class="form-group col-sm-2">
+                <multiselect v-model="q.type" :options="nodeTypes" label="name" :show-labels="false"
+                             placeholder="设备类型" @close="getQueryTag"></multiselect>
+            </div>
+
+           <div class="form-group col-sm-2">
+                <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false"
+                             placeholder="设备标签" @open="checkQueryTag"></multiselect>
+            </div>
+
+
+            <div class="form-group col-sm-2">
+                <multiselect v-model="q.state" placeholder="在线状态" :show-labels="false" :options="nodeStates" label="name"></multiselect>
+            </div>
+
+            <a class="btn btn-default" @click="query">查询</a>
+            <a class="btn btn-default" @click="reset">重置</a>
+
+            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            <a class="btn btn-primary" @click="changeState(1)"><i class="fa fa-arrow-up"></i>&nbsp;上线</a>
+            <a class="btn btn-primary" @click="changeState(2)"><i class="fa fa-arrow-down"></i>&nbsp;下线</a>
+
+        </div>
+
+
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+
+    </div>
+
+    <div v-show="!showList" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">名称</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.nodeInfo.name.$dirty && !$v.nodeInfo.name.required}"
+                           v-model.trim="nodeInfo.name" @blur="$v.nodeInfo.name.$touch" placeholder="名称"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.name.$dirty && !$v.nodeInfo.name.required">
+                        必填项
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.name.$dirty && !$v.nodeInfo.name.nameCheck">
+                        名称重复
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">主机名称</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.hostName" placeholder="主机名称"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">IP地址</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required || !$v.nodeInfo.ip.ipAddress}"
+                           v-model.trim="nodeInfo.ip" @blur="$v.nodeInfo.ip.$touch" placeholder="IP地址"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required">必填项
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.ipAddress">
+                        IP地址格式错误
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.ipCheck">
+                        IP地址重复
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">设备类型</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.type" :options="nodeTypes" placeholder="请选择设备类型" label="name"
+                                 :class="{'form-control--error': $v.nodeInfo.type.$dirty && !$v.nodeInfo.type.required}"
+                                 @close="$v.nodeInfo.type.$touch(),getTags()" :show-labels="false"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.type.$dirty && !$v.nodeInfo.type.required">
+                        必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">设备标签</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.tag" :options="nodeTags" placeholder="请选择设备标签"
+                                 label="value" @open="checkNodeType()" :show-labels="false"></multiselect>
+                    <!--<span class="required-symbol">*</span>
+                    :class="{'form-control&#45;&#45;error': $v.nodeInfo.tag.$dirty && !$v.nodeInfo.tag.required}"
+                    @close="$v.nodeInfo.tag.$touch()"
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.tag.$dirty && !$v.nodeInfo.tag.required">必选项
+                        <span class="form-control_error-msg" v-if="$v.nodeInfo.tag.$dirty && !$v.nodeInfo.tag.typeRequired">请先指定设备类型</span>
+                    </div>-->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">节点高度(U)</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.uSize"
+                           :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
+                           @blur="$v.nodeInfo.uSize.$touch" placeholder="节点高度(U)"/>
+                    <span class="required-symbol"
+                          v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
+                        最小值为1的整数
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机房名称</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.nodeRoom" :options="rooms" label="roomName" placeholder="请选择机房"
+                                 @close="getCabinets($event),$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()"
+                                 @open="checkUsize()" :show-labels="false"></multiselect>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机柜名称</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.cabinetId" :options="cabinets" label="name" placeholder="请选择机柜"
+                                 @close="getStarts($event),$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
+                                 @open="checkNodeRoom()" :show-labels="false"></multiselect>
+                    <span class="required-symbol"
+                          v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">机柜起始位置</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.cabinetStart" :options="starts" @blur="$v.nodeInfo.uSize.$touch()"
+                                 placeholder="请选择起始位置" @open="checkCabStart()" :show-labels="false"></multiselect>
+                    <span class="required-symbol"
+                          v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">
+                        必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">在线状态</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="nodeInfo.state" :options="nodeStates" placeholder="请选择在线状态" label="name"
+                                 :class="{'form-control--error': $v.nodeInfo.state.$dirty && !$v.nodeInfo.state.required}"
+                                 @close="$v.nodeInfo.state.$touch" :show-labels="false"></multiselect>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeInfo.state.$dirty && !$v.nodeInfo.state.required">
+                        必选项
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="nodeInfo.type != null && nodeInfo.type.value == 2">
+                <div class="col-sm-2 control-label">snmp端口</div>
+                <div class="col-sm-9">
+                    <input type="text" v-model.trim="nodeInfo.snmpPort" class="form-control"
+                           :class="{'form-control&#45;&#45;error':  $v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric}"
+                           @blur="$v.nodeInfo.snmpPort.$touch" placeholder="snmp端口"/>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric">数字类型
+                    </div>
+                    <!--<span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.required">
+                        必选项
+                    </div>-->
+                </div>
+            </div>
+
+            <div class="form-group" v-if="nodeInfo.type != null && nodeInfo.type.value == 2">
+                <div class="col-sm-2 control-label">snmp团体名称</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.snmpCommunity"
+                           placeholder="snmp团体名"/>
+                    <!--<span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeInfo.snmpCommunity.$dirty && !$v.nodeInfo.snmpCommunity.required">
+                        必选项
+                    </div>-->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">用户名</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.userName" placeholder="用户名"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">密码</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.password" placeholder="密码"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">备注</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeInfo.remark" placeholder="备注"/>
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+
+    </div>
+</div>
+<!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
+<#include "/js/modules/node/nodeInfo.js">
+</body>
+</html>

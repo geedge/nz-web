@@ -30,6 +30,7 @@
 			<id property="id" column="group_id"/>
 			<result property="name" column="group_name"/>
 			<result property="pid" column="group_pid"/>
+			<result property="systemId" column="system_id"/>
 		</collection>
 	</resultMap>
 
@@ -79,7 +80,7 @@
 
 	<!-- 节点组列表查询 -->
 	<select id="querySystemInfosWithNodeGroup" resultMap="systemWithNodegroup">
-		SELECT si.*,ni.id AS group_id , ni.name AS group_name ,ni.pid as group_pid FROM system_info si
+		SELECT si.*,ni.id AS group_id , ni.name AS group_name ,ni.pid as group_pid,ni.system_id FROM system_info si
 		LEFT JOIN nodegroup_info  ni ON si.id = ni.system_id AND ni.del_flag = 0
 		WHERE si.del_flag = 0
 		<if test="id != null and id != ''">

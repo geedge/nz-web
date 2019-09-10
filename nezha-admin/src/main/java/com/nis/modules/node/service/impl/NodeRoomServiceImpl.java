@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.dao.NodeCabinetDao;
 import com.nis.modules.node.dao.NodeRoomDao;
@@ -16,6 +17,7 @@ import com.nis.modules.node.service.NodeRoomService;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.sun.org.apache.bcel.internal.generic.RETURN;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -81,7 +83,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         if (nodeRoom == null) {
             throw new NZException(RCode.NODEROOM_NOT_EXISTS);
         }
-        if(nodeRoom.getAddr() == null){
+        if (nodeRoom.getAddr() == null) {
             throw new NZException(RCode.NODEROOM_ADDR_ISNULL);
         }
         // 查询地区名称
@@ -139,7 +141,10 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
         if (this.roomNameCheck(nodeRoom.getId(), nodeRoom.getName())) { // 名称唯一校验
 
             // 修改前校验机房的大小是否可用
-            this.roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
+            R r = this.roomSizeCheck(nodeRoom.getId(), nodeRoom.getRoomRows(), nodeRoom.getRoomCols());
+            if (!r.get("code").equals(RCode.SUCCESS.getCode())) {
+                throw new NZException(r.get("msg").toString(), Integer.valueOf(r.get("code").toString()));
+            }
 
             // 校验地区是否存在
             this.checkAddrExist(nodeRoom);
@@ -202,7 +207,7 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
      * @return
      */
     @Override
-    public void roomSizeCheck(Long id, Integer roomRows, Integer roomCols) {
+    public R roomSizeCheck(Long id, Integer roomRows, Integer roomCols) {
         NodeRoomEntity room = this.getById(id);
 
         if (room == null) {
@@ -214,12 +219,14 @@ public class NodeRoomServiceImpl extends ServiceImpl<NodeRoomDao, NodeRoomEntity
 
         if (cab != null && cab.getMaxRows() != null && cab.getMaxCols() != null) {
             if (roomRows < cab.getMaxRows()) {
-                throw new NZException(RCode.NODEROOM_ROW_OCCUPIED); // 输入行小于已使用的行
+                return R.error(RCode.NODEROOM_ROW_OCCUPIED).put("data", cab.getMaxRows());
+                //throw new NZException(RCode.NODEROOM_ROW_OCCUPIED); // 输入行小于已使用的行
             }
             if (roomCols < cab.getMaxCols()) {
-                throw new NZException(RCode.NODEROOM_COL_OCCUPIED); // 输入列小于已使用的列
+                // throw new NZException(RCode.NODEROOM_COL_OCCUPIED); // 输入列小于已使用的列
+                return R.error(RCode.NODEROOM_COL_OCCUPIED).put("data", cab.getMaxCols());
             }
         }
+        return R.ok();
     }
-
 }
