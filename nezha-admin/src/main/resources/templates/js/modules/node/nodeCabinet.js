@@ -1,16 +1,16 @@
-<script>
+<script >
 $(function () {
     $("#jqGrid").jqGrid({
         url: baseURL + '/cab/list',
         datatype: "json",
         colModel: [
-            {label: "序号", name: 'id', width: 60, key: true, hidden: true},
-            {label: "机柜名称", name: 'name', width: 60, sortable: false},
-            {label: "所属机房名称", name: 'roomName', width: 60, sortable: false},
-            {label: "所属机房行号", name: 'roomRow', width: 60, sortable: false},
-            {label: "所属机房列号", name: 'roomCol', width: 60, sortable: false},
-            {label: "U位", name: 'ubit', width: 60, sortable: false},
-            {label: "描述", name: 'remarks', width: 60, sortable: false}
+            {label: "ID", name: 'id', width: 60, key: true, hidden: true},
+            {label: "<@spring.message 'common.name'/>", name: 'name', width: 60, sortable: false},
+            {label: "<@spring.message 'node.room.name'/>", name: 'roomName', width: 60, sortable: false},
+            {label: "<@spring.message 'node.cabinet.roomRow'/>", name: 'roomRow', width: 60, sortable: false},
+            {label: "<@spring.message 'node.cabinet.roomCol'/>", name: 'roomCol', width: 60, sortable: false},
+            {label: "<@spring.message 'node.cabinet.uSize'/>", name: 'ubit', width: 60, sortable: false},
+            {label: "<@spring.message 'common.remark'/>", name: 'remarks', width: 60, sortable: false}
         ],
         viewrecords: true,
         height: 385,
@@ -77,33 +77,31 @@ var nameCheck = function (value, nodeCabinet) {
         }
     }
 }
-//
 var cabUbitCheck = function (value, nodeCabinet) {
-    var flag = true;
     if (nodeCabinet.id == null) {
+        return true;
+    }
+    if (helpers.req(value)) {
+        var flag = true;
+        // 进行校验
+        var params = "?id=" + nodeCabinet.id + "&ubit=" + value;
+        $.ajax({
+            type: "GET",
+            url: baseURL + "cab/cabUbitCheck" + params,
+            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            dataType: "json",
+            success: function (r) {
+                if (r.code != 200) {
+                    flag = false;
+                    vm.occUbit = r.data;
+                }
+            }
+        });
         return flag;
     } else {
-        if (helpers.req(value)) {
-            console.log("进入ubit可用校验")
-            // 进行校验
-            var params = "?id=" + nodeCabinet.id + "&ubit=" + value;
-            $.ajax({
-                type: "GET",
-                url: baseURL + "cab/cabUbitCheck" + params,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
-                dataType: "json",
-                success: function (r) {
-                    if (r.code != 200) {
-                        flag = false;
-                        vm.occUbit = r.data;
-                    }
-                }
-            });
-            return flag;
-        } else {
-            return flag;
-        }
+        return true;
     }
+
 }
 
 var data = {
@@ -167,6 +165,10 @@ var vm = new Vue({
                 page: page
             }).trigger("reloadGrid");
         },
+        reset: function () {
+            vm.q.cabName = null;
+            vm.query();
+        },
         getInfo: function (id) {
             $.ajax({
                 type: "GET",
@@ -205,7 +207,7 @@ var vm = new Vue({
         add: function () {
             vm.$v.nodeCabinet.$reset(); // 进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             vm.showList = false;
-            vm.title = "新增";
+            vm.title = "<@spring.message 'common.add'/>";
             vm.nodeCabinet = {
                 id: null,
                 name: null,
@@ -225,7 +227,7 @@ var vm = new Vue({
                 return;
             }
             vm.showList = false;
-            vm.title = "修改";
+            vm.title = "<@spring.message 'common.edit'/>";
             this.getInfo(id);
         },
         del: function () {
@@ -233,7 +235,7 @@ var vm = new Vue({
             if (ids == null) {
                 return;
             }
-            confirm('确定要删除选中的记录？', function () {
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 var form = new FormData();
                 form.append("ids", ids);
                 $.ajax({
@@ -245,7 +247,7 @@ var vm = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert('操作成功', function (index) {
+                            alert("<@spring.message 'common.success'/>", function (index) {
                                 vm.reload();
                             });
                         } else {
@@ -317,7 +319,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.nodeCabinet),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert('操作成功', function (index) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
                             vm.reload();
                         });
                     } else {
@@ -325,6 +327,23 @@ var vm = new Vue({
                     }
                 }
             });
+        },
+        checkRoom: function () {
+            if(vm.nodeCabinet.roomId == null){
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!")
+            }else if(vm.roomRows.length <1 ){
+                vm.roomCols = [];
+                alert("<@spring.message 'node.room.notPosition'/>");
+            }
+        },
+        checkRoomRow:function(){
+            if(vm.nodeCabinet.roomId == null){
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!")
+            }else if(vm.nodeCabinet.roomRow == null && vm.roomRows.length <1){
+                alert("<@spring.message 'node.room.notPosition'/>");
+            }else if(vm.nodeCabinet.roomRow == null && vm.roomRows.length > 0){
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.cabinet.roomRow'/>");
+            }
         },
         validate: function () {
             vm.$v.nodeCabinet.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)

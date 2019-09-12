@@ -1,20 +1,28 @@
-<script>
+<script >
 $(function () {
     $("#jqGrid").jqGrid({
         url: baseURL + '/node/list',
         datatype: "json",
         colModel: [
             {label: "ID", name: 'uuid', width: 60, key: true, hidden: true},
-            {label: "名称", name: 'name', width: 60, sortable: false},
-            {label: "主机名称", name: 'hostName', width: 60, sortable: false},
-            {label: "IP地址", name: 'ip', width: 60, sortable: false},
-            {label: "设备类型", name: 'type', width: 60, sortable: false, formatter: typeFormat},
-            {label: "设备标签", name: 'tagName', width: 60, sortable: false},
-            {label: "节点高度", name: 'uSize', width: 60, sortable: false},
-            {label: "snmp端口", name: 'snmpPort', width: 60, sortable: false},
-            {label: "snmp团体名", name: 'snmpCommunity', width: 60, sortable: false},
-            {label: "在线状态", name: 'state', width: 60, sortable: false, formatter: stateFormat},
-            {label: "备注", name: 'remark', width: 60, sortable: false},
+            {label: '<@spring.message "common.name"/>', name: 'name', width: 60, sortable: false},
+            {label: '<@spring.message "node.hostName"/>', name: 'hostName', width: 60, sortable: false},
+            {label: '<@spring.message "node.ipAddress"/>', name: 'ip', width: 60, sortable: false},
+            {label: '<@spring.message "node.type"/>', name: 'type', width: 60, sortable: false, formatter: typeFormat},
+            {label: '<@spring.message "node.tag"/>', name: 'tagName', width: 60, sortable: false},
+            /*{label: '<@spring.message "node.cabinet.name"/>', name: 'cabinetInfo.name', width: 60, sortable: false},
+            {label: '<@spring.message "node.cabinetStart"/>', name: 'cabinetStart', width: 60, sortable: false},*/
+            {label: '<@spring.message "node.uSize"/>', name: 'uSize', width: 60, sortable: false},
+            {label: '<@spring.message "node.snmpPort"/>', name: 'snmpPort', width: 60, sortable: false},
+            {label: '<@spring.message "node.snmpCommunity"/>', name: 'snmpCommunity', width: 60, sortable: false},
+            {
+                label: '<@spring.message "common.onLineState"/>',
+                name: 'state',
+                width: 60,
+                sortable: false,
+                formatter: stateFormat
+            },
+            {label: '<@spring.message "common.remark"/>', name: 'remark', width: 60, sortable: false},
             {label: "test", name: 'state', width: 60, sortable: false, hidden: true}//此列用作获取状态值
         ],
         viewrecords: true,
@@ -51,7 +59,7 @@ $(function () {
 
     // state值显示转化
     function stateFormat(cellvalue, options, rowObject) {
-        return cellvalue == 1 ? "<font color='green'>上线</font>" : "<font color='red'>下线</font>";
+        return cellvalue == 1 ? "<font color='green'><@spring.message 'common.onLine'/></font>" : "<font color='red'><@spring.message 'common.offLine'/></font>";
     }
 
 });
@@ -110,6 +118,9 @@ var ipCheck = function (value, nodeInfo) {
                 if (r.code != 200) {
                     flag = false;
                 }
+                if (r.data) { // 如果此IP已在其他业务系统存在
+                    // $('form').find('input,select').attr('readonly',true) 或者使用 prop('readonly',true).
+                }
             }
         });
         return flag;
@@ -143,13 +154,13 @@ var sizeRequired = function (value, nodeInfo) {
 
 var data = {
     showList: true,
-    title: "新增",
+    title: "<@spring.message 'common.add'/>",
     nodeList: [],
     q: {
         name: null, type: null, state: null, ip: null, tag: null
     },
-    nodeTypes: [{name: "server", value: "1"}, {name: "net", value: "2"}],
-    nodeStates: [{name: "在线", value: "1"}, {name: "下线", value: "2"}],
+    nodeTypes: [], // 创建实例时从字典中获取
+    nodeStates: [],// 创建实例时从字典中获取
     nodeTags: [{name: null, value: null}],
     queryTags: [],
     rooms: [],
@@ -177,7 +188,8 @@ var data = {
     nodeInfoDto: null,
     room: null,
     cab: null,
-    nodeGroup: null
+    nodeGroup: null,
+    isAdvancedSearch: false
 };
 
 var vue = new Vue({
@@ -237,13 +249,13 @@ var vue = new Vue({
             });
             // 解决下拉框回显问题
             vue.nodeStates.some((item, index) => {
-                if (item.value == vue.nodeInfo.state) {
+                if (item.code == vue.nodeInfo.state) {
                     vue.$set(vue.nodeInfo, 'state', item);
                     return true;
                 }
             });
             vue.nodeTypes.some((item, index) => {
-                if (item.value == vue.nodeInfo.type) {
+                if (item.code == vue.nodeInfo.type) {
                     vue.$set(vue.nodeInfo, 'type', item);
                     return true;
                 }
@@ -284,7 +296,7 @@ var vue = new Vue({
         add: function () {
             vue.$v.nodeInfo.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             vue.showList = false;
-            vue.title = "新增";
+            vue.title = "<@spring.message 'common.add'/>";
             vue.nodeInfo = {
                 id: null,
                 uuid: null,
@@ -316,7 +328,7 @@ var vue = new Vue({
                 return;
             }
             vue.showList = false;
-            vue.title = "修改";
+            vue.title = "<@spring.message 'common.edit'/>";
             this.getInfo(uuid);
         },
         del: function (event) {
@@ -324,7 +336,7 @@ var vue = new Vue({
             if (ids == null) {
                 return;
             }
-            confirm('确定要删除选中的记录？', function () {
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 var form = new FormData();
                 form.append("uuids", ids);
                 form.append("state", "3");
@@ -337,7 +349,7 @@ var vue = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert('操作成功', function (index) {
+                            alert("<@spring.message 'common.success'/>", function (index) {
                                 vue.reload();
                             });
                         } else {
@@ -374,7 +386,7 @@ var vue = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert('操作成功', function (index) {
+                            alert("<@spring.message 'common.success'/>", function (index) {
                                 vue.reload();
                             });
                         } else {
@@ -383,7 +395,7 @@ var vue = new Vue({
                     }
                 });
             } else {
-                alert(flag.name + "   节点已" + (state == 1 ? "上" : "下") + "线");
+                alert(flag.name + "  <@spring.message 'node.already'/>  " + (state == 1 ? "<@spring.message 'common.onLine'/>" : "<@spring.message 'common.offLine'/>"));
             }
         },
         saveOrUpdate: function () {
@@ -397,15 +409,10 @@ var vue = new Vue({
                 url = "node/update";
             }
             vue.nodeInfoDto = JSON.parse(JSON.stringify(vue.nodeInfo));
-            vue.$set(vue.nodeInfoDto, 'type', vue.nodeInfo.type.value);
-            vue.$set(vue.nodeInfoDto, 'tag', vue.nodeInfo.tag == null ? " " : vue.nodeInfo.tag.code);
-            vue.$set(vue.nodeInfoDto, 'state', vue.nodeInfo.state.value);
-            if (vue.nodeInfo.uuid != null && vue.nodeInfo.nodeRoom == null) { // 修改未指定则为0
-                vue.$set(vue.nodeInfoDto, 'cabinetId', 0);
-                vue.$set(vue.nodeInfoDto, 'cabinetStart', 0);
-            } else {
-                vue.$set(vue.nodeInfoDto, 'cabinetId', vue.nodeInfo.cabinetId == null ? null : vue.nodeInfo.cabinetId.id);
-            }
+            vue.$set(vue.nodeInfoDto, 'type', vue.nodeInfo.type.code);
+            vue.$set(vue.nodeInfoDto, 'tag', vue.nodeInfo.tag == null ? null : vue.nodeInfo.tag.code);
+            vue.$set(vue.nodeInfoDto, 'state', vue.nodeInfo.state.code);
+            vue.$set(vue.nodeInfoDto, 'cabinetId', vue.nodeInfo.cabinetId == null ? null : vue.nodeInfo.cabinetId.id);
             $.ajax({
                 type: vue.nodeInfo.uuid == null ? "POST" : "PUT",
                 url: baseURL + url,
@@ -413,7 +420,7 @@ var vue = new Vue({
                 data: JSON.stringify(vue.nodeInfoDto),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert('操作成功', function (index) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
                             vue.reload();
                         });
                     } else {
@@ -429,9 +436,9 @@ var vue = new Vue({
                 postData: {
                     "name": vue.q.name,
                     "ip": vue.q.ip,
-                    "type": vue.q.type == null ? null : vue.q.type.value,
+                    "type": vue.q.type == null ? null : vue.q.type.code,
                     "tag": vue.q.tag == null ? null : vue.q.tag.code,
-                    "state": vue.q.state == null ? null : vue.q.state.value,
+                    "state": vue.q.state == null ? null : vue.q.state.code,
                     "groupId": vue.nodeGroup == null ? null : vue.nodeGroup.id
                 },
                 page: page
@@ -441,7 +448,7 @@ var vue = new Vue({
             // 清空缓存
             vue.nodeInfo.tag = null;
             if (vue.nodeInfo.type != null) {
-                var param = "?type=" + vue.nodeInfo.type.name;
+                var param = "?type=" + vue.nodeInfo.type.value;
                 $.ajax({
                     type: "GET",
                     url: baseURL + "sys/dict/list" + param,
@@ -452,7 +459,7 @@ var vue = new Vue({
                     }
                 });
             }
-            if (vue.nodeInfo.type != null && vue.nodeInfo.type.value == 2) {
+            if (vue.nodeInfo.type != null && vue.nodeInfo.type.code == 2) {
                 vue.nodeInfo.snmpPort = 161;
                 vue.nodeInfo.snmpCommunity = "public";
             } else {
@@ -509,11 +516,10 @@ var vue = new Vue({
             });
         },
         getQueryTag: function () {
-            console.log(vue.q.type)
             vue.queryTags = [];
             vue.q.tag = null;
             if (vue.q.type != null) {
-                var param = "?type=" + vue.q.type.name;
+                var param = "?type=" + vue.q.type.value;
                 $.ajax({
                     type: "GET",
                     url: baseURL + "sys/dict/list" + param,
@@ -526,65 +532,77 @@ var vue = new Vue({
             }
         },
         checkUsize: function () {
-            /*if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
-                alert("请指定节点高度!");
-            }*/
+            if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
+                alert("<@spring.message 'node.pleaseWrite.uSize'/>!");
+            }
         },
         checkNodeRoom: function () {
-            /*if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
-                alert("请指定节点高度!");
+            if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
+                alert("<@spring.message 'node.pleaseWrite.uSize'/>!");
                 return;
             }
             if (vue.nodeInfo.uSize != null && vue.nodeInfo.nodeRoom == null) {
-                alert("请指定机房名称!");
-            }*/
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!");
+            }
         },
         checkCabStart: function () {
             if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
-                alert("请指定节点高度!");
-                return;
+                alert("<@spring.message 'node.pleaseWrite.uSize'/>!");
+            } else if (vue.nodeInfo.nodeRoom == null) {
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!");
+            } else if (vue.nodeInfo.nodeRoom != null && vue.nodeInfo.cabinetId == null) {
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.cabinet.name'/>!");
+            } else if (vue.nodeInfo.nodeRoom != null && vue.nodeInfo.cabinetId != null && vue.starts.length < 1) {
+                // 暂无位置可选
+                alert(vue.nodeInfo.cabinetId.name + "  <@spring.message 'node.notEnough.position'/>!");
             }
-            /*
-            if (vue.nodeInfo.uSize != null && vue.nodeInfo.nodeRoom == null) {
-                alert("请指定机房名称!");
-            }
-            if (vue.nodeInfo.uSize != null && vue.nodeInfo.nodeRoom != null && vue.nodeInfo.cabinetId == null) {
-                alert("请指定机柜名称!");
-            }*/
         },
         checkNodeType: function () {
             if (vue.nodeInfo.type == null) {
-                alert("请选择设备类型!");
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.type'/>!");
             }
         },
         checkQueryTag: function () {
             if (vue.q.type == null) {
-                alert("请选择设备类型!");
+                alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.type'/>!");
             }
         },
         validate: function () {
             vue.$v.nodeInfo.$touch();
             return !vue.$v.nodeInfo.$error;
+        },
+        advancedSearch: function () { //高级搜索
+            this.isAdvancedSearch = !this.isAdvancedSearch;
         }
     },
     created: function () {
+        // 从字典中获取节点类型的集合
+        $.getJSON(baseURL + "sys/dict/all?type=nodeType", function (r) {
+            vue.nodeTypes = r.data;
+        });
+        $.getJSON(baseURL + "sys/dict/all?type=onLineState", function (r) {
+            vue.nodeStates = r.data;
+        });
     },
     watch: {
         "nodeInfo.uSize": function (newValue, oldValue) {
-            console.log("进入uSize监听")
             // 1. 没有填写USize 不处理,返回
             if (newValue == '' || newValue == null) {
-                vue.nodeInfo.cabinetId.starts = vue.starts = [];
+                vue.nodeInfo.cabinetId == null ? null : vue.nodeInfo.cabinetId.starts = [];
+                vue.starts = [];
                 vue.nodeInfo.cabinetStart = null;
                 vue.$v.nodeInfo.uSize.$reset();
-                vue.$v.nodeInfo.cabinetId.$reset();
+                vue.$v.nodeInfo.cabinetId.$reset()
                 vue.$v.nodeInfo.cabinetStart.$reset();
+                if (vue.nodeInfo.nodeRoom == null) { // 既没有指定uSize 当前也没有指定room
+                    vue.rooms = [];
+                }
                 return;
             }
             // 2. 没有选择机房 不处理
-            if (vue.nodeInfo.nodeRoom == null) {
+            /*if (vue.nodeInfo.nodeRoom == null) {
                 return;
-            }
+            }*/
             // 3. 开始处理数据变化  先清空起始位置
             vue.starts = [];
             // 4.重新发起请求
@@ -620,10 +638,11 @@ var vue = new Vue({
                 })
 
                 // 更新cabs starts
-                vue.starts = cab.starts;
+                vue.starts = cab == undefined ? [] : cab.starts;
                 vue.rooms.some(item => {
-                    if (item.roomId == vue.nodeInfo.nodeRoom.roomId) {
+                    if (vue.nodeInfo.nodeRoom != null && item.roomId == vue.nodeInfo.nodeRoom.roomId) {
                         vue.cabinets = item.cabinets;
+                        return true;
                     }
                 });
             }
@@ -633,7 +652,7 @@ var vue = new Vue({
             vue.nodeInfo.cabinetStart = null;
             var flag = false;
             vue.starts.some(item => {
-                if(item == cloneNodeInfo.cabinetStart){
+                if (item == cloneNodeInfo.cabinetStart) {
                     flag = true;
                     return flag;
                 }

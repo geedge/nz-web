@@ -11,8 +11,8 @@ var group_ztree = { // setting
     },
     edit: {
         enable: true,
-        removeTitle: '删除',
-        renameTitle: '修改'
+        removeTitle: "<@spring.message 'common.delete'/>",
+        renameTitle: "<@spring.message 'common.edit'/>"
     },
     data: {
         simpleData: {
@@ -49,7 +49,7 @@ function beforeRemove(treeId, treeNode) {
             data: form,
             success: function (r) {
                 if (r.code == 200) {
-                    alert('操作成功', function (index) {
+                    alert("<@spring.message 'common.success'/>", function (index) {
                         vm.reload();
                         location.reload();
                     });
@@ -76,8 +76,8 @@ function beforeEditName(treeId, treeNode) {
         }
     });
     vm.getParentSystem(treeNode.systemId);
-    open("修改");
-    vm.nodeGroup.parentGroup = treeNode.getParentNode() == null ? {name: '根节点', id: 0} : treeNode.getParentNode();
+    open("<@spring.message 'common.edit'/>");
+    vm.nodeGroup.parentGroup = treeNode.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : treeNode.getParentNode();
     return false;
 }
 
@@ -101,7 +101,8 @@ function addHoverDom(treeId, treeNode) {
     if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0 || treeNode.allowSub == 0) { // 可以让不可添加的按钮隐藏
         return;
     }
-    var addStr = "<span class='button add' id='addBtn_" + treeNode.tId + "' title='添加子节点' onfocus='this.blur();'></span>";
+    // 添加子节点组
+    var addStr = "<span class='button add' id='addBtn_" + treeNode.tId + "' title='<@spring.message 'common.add'/><@spring.message 'nodegroup.child.group'/>' onfocus='this.blur();'></span>";
     sObj.append(addStr);
     var btn = $("#addBtn_" + treeNode.tId);
     if (btn) btn.bind("click", function () {
@@ -120,14 +121,14 @@ function addHoverDom(treeId, treeNode) {
         };
         vm.nodeGroup.parentGroup = treeNode;
         vm.count = 1;
-        open("新增");
+        open("<@spring.message 'common.add'/>");
     });
 }
 
 // 弹出框
 function open(title) {
     layer.open({
-        area: ['800px', '600px'],
+        area: ['600px', '400px'],
         shade: 0,
         title: title,
         type: 1,
@@ -220,7 +221,6 @@ var vm = new Vue({
             if (vm.nodeGroup.id) {
                 vm.nodeGroup.pid = vm.nodeGroup.pids = vm.nodeGroup.systemId = null;
             }
-            console.log(vm.nodeGroup)
             $.ajax({
                 type: vm.nodeGroup.id == null ? "POST" : "PUT",
                 url: baseURL + url,
@@ -228,7 +228,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.nodeGroup),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert('操作成功', function (index) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
                             vm.reload();
                         });
                     } else {
@@ -262,9 +262,9 @@ var vm = new Vue({
                 remark: null,
                 parentGroup: null
             };
-            vm.nodeGroup.parentGroup = {name: '根节点', id: 0};
+            vm.nodeGroup.parentGroup = {name: "<@spring.message 'nodegroup.root.group'/>", id: 0}; // 根节点组
             vm.count = 1;
-            open("新增");
+            open("<@spring.message 'common.add'/>");
         },
         getParentSystem: function (systemId) { // 获取父节点的业务系统
             $.ajax({

@@ -13,17 +13,18 @@
         <div class="grid-btn">
 
             <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder="机房名称">
+                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder="<@spring.message 'node.room.name'/>">
             </div>
 
             <div class="form-group col-sm-2">
-                <multiselect v-model="q.addr" :options="addrList" label="value" :show-labels="false" placeholder="所属地区"></multiselect>
+                <multiselect v-model="q.addr" :options="addrList" label="value" :show-labels="false" placeholder="<@spring.message 'node.room.addr'/>"></multiselect>
             </div>
 
-            <a class="btn btn-default" @click="query">查询</a>
-            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
-            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+            <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+            <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+            <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+            <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
         </div>
 
         <table id="jqGrid"></table>
@@ -36,50 +37,51 @@
         <form class="form-horizontal">
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">名称</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" v-model.trim="nodeRoom.name" @blur="$v.nodeRoom.name.$touch" class="form-control"
                            :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required}"
-                           placeholder="名称"/>
+                           placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required">
-                        必填项
+                        <@spring.message 'validate.common.required'/>
                     </div>
                     <div class="form-control_error-msg" v-if="$v.nodeRoom.name.$dirty && !$v.nodeRoom.name.nameCheck">
-                        名称重复
+                        <@spring.message 'validate.common.name.repeat'/>
                     </div>
                 </div>
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">所属地区</div>
+                <div class="col-sm-2 control-label"><@spring.message 'node.room.name'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeRoom.addr" :options="addrList" placeholder="请选择机房地区" label="value"
+                    <multiselect v-model="nodeRoom.addr" :options="addrList" placeholder="<@spring.message 'common.pleaseSelect'/>" label="value"
                                  :class="{'form-control--error': $v.nodeRoom.addr.$dirty && !$v.nodeRoom.addr.required}"
                                  @close="$v.nodeRoom.addr.$touch" :show-labels="false"></multiselect>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeRoom.addr.$dirty && !$v.nodeRoom.addr.required">
-                        必选项
+                        <@spring.message 'validate.common.required'/>
                     </div>
                 </div>
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">机房行数</div>
+                <div class="col-sm-2 control-label"><@spring.message 'node.room.roomRows'/></div>
                 <div class="col-sm-9">
                     <input type="text" v-model="nodeRoom.roomRows" class="form-control"
                            :class="{'form-control--error': $v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.minValue || !$v.nodeRoom.roomRows.integer}"
-                           @blur="$v.nodeRoom.roomRows.$touch" placeholder="机房行数"/>
+                           @blur="$v.nodeRoom.roomRows.$touch()" placeholder="<@spring.message 'node.room.roomRows'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg"
                          v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.minValue || !$v.nodeRoom.roomRows.integer">
-                        最小值为1的整数
+                        <@spring.message 'validate.common.positiveInteger'/>
                     </div>
                     <div class="form-control_error-msg"
-                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.required">必选项
+                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.required">
+                        <@spring.message 'validate.common.required'/>
                     </div>
                     <div class="form-control_error-msg"
-                         v-if="$v.nodeRoom.roomRows.$dirty && !$v.nodeRoom.roomRows.roomRowsCheck">机柜已占用至{{occRow}}行
+                         v-if="$v.nodeRoom.roomRows.$dirty && $v.nodeRoom.roomRows.minValue && $v.nodeRoom.roomRows.integer && !$v.nodeRoom.roomRows.roomRowsCheck"><@spring.message 'validate.cabinet.occupied'/>{{occRow}}<@spring.message 'node.room.row'/>
                     </div>
                    <!-- <div class="form-control_error-msg"
                          v-if="">机柜已占用至{{}}行
@@ -88,36 +90,39 @@
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">机房列数</div>
+                <div class="col-sm-2 control-label"><@spring.message 'node.room.roomCols'/></div>
                 <div class="col-sm-9">
                     <input type="text" v-model="nodeRoom.roomCols" class="form-control"
                            :class="{'form-control--error': $v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.minValue || !$v.nodeRoom.roomCols.integer}"
-                           @blur="$v.nodeRoom.roomCols.$touch" placeholder="机房列数"/>
+                           @blur="$v.nodeRoom.roomCols.$touch" placeholder="<@spring.message 'node.room.roomCols'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg"
                          v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.minValue || !$v.nodeRoom.roomCols.integer">
-                        最小值为1的整数
+                        <@spring.message 'validate.common.positiveInteger'/>
                     </div>
                     <div class="form-control_error-msg"
-                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.required">必选项
+                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.required">
+                        <@spring.message 'validate.common.required'/>
                     </div>
                     <div class="form-control_error-msg"
-                         v-if="$v.nodeRoom.roomCols.$dirty && !$v.nodeRoom.roomCols.roomColsCheck">机柜已占用至{{occCol}}列
+                         v-if="$v.nodeRoom.roomCols.$dirty && $v.nodeRoom.roomCols.minValue && $v.nodeRoom.roomCols.integer && !$v.nodeRoom.roomCols.roomColsCheck"><@spring.message 'validate.cabinet.occupied'/>{{occCol}}<@spring.message 'node.room.column'/>
                     </div>
                 </div>
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">描述</div>
+                <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
                 <div class="col-sm-9">
-                    <input type="text" v-model="nodeRoom.remarks" class="form-control" placeholder="描述"/>
+                    <input type="text" v-model="nodeRoom.remarks" class="form-control" placeholder="<@spring.message 'common.remark'/>"/>
                 </div>
             </div>
 
-            <div class="form-group">
-                <div class="col-sm-2 control-label"></div>
-                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            <div class="form-group form-group_opbox">
+                <div>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+                </div>
             </div>
         </form>
     </div>

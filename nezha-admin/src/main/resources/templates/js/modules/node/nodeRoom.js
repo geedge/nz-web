@@ -4,12 +4,12 @@ $(function () {
         url: baseURL + '/room/list',
         datatype: "json",
         colModel: [
-            {label: "序号", name: 'id', width: 60, key: true, hidden: true},
-            {label: "机房名称", name: 'name', width: 60, sortable: false},
-            {label: "所属地区", name: 'addrName', width: 60, sortable: false},
-            {label: "机房行数", name: 'roomRows', width: 60, sortable: false},
-            {label: "机房列数", name: 'roomCols', width: 60, sortable: false},
-            {label: "描述", name: 'remarks', width: 60, sortable: false}
+            {label: "ID", name: 'id', width: 60, key: true, hidden: true},
+            {label: "<@spring.message 'node.room.name'/>", name: 'name', width: 60, sortable: false},
+            {label: "<@spring.message 'node.room.addr'/>", name: 'addrName', width: 60, sortable: false},
+            {label: "<@spring.message 'node.room.roomRows'/>", name: 'roomRows', width: 60, sortable: false},
+            {label: "<@spring.message 'node.room.roomCols'/>", name: 'roomCols', width: 60, sortable: false},
+            {label: "<@spring.message 'common.remark'/>", name: 'remarks', width: 60, sortable: false}
         ],
         viewrecords: true,
         height: 385,
@@ -178,7 +178,6 @@ var vm = new Vue({
         reload: function () {
             vm.showList = true;
             var page = $("#jqGrid").jqGrid('getGridParam', 'page');
-            console.log(vm.q.addr)
             $("#jqGrid").jqGrid('setGridParam', {
                 postData: {
                     "name": vm.q.name,
@@ -186,6 +185,10 @@ var vm = new Vue({
                 },
                 page: page
             }).trigger("reloadGrid");
+        },
+        reset:function(){
+            vm.q.name = vm.q.addr = null;
+            vm.query();
         },
         getInfo: function (id) {
             $.ajax({
@@ -212,7 +215,7 @@ var vm = new Vue({
         add: function () {
             vm.$v.nodeRoom.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             vm.showList = false;
-            vm.title = "新增";
+            vm.title = "<@spring.message 'common.add'/>";
             vm.nodeRoom = {
                 id: null,
                 name: null,
@@ -229,7 +232,7 @@ var vm = new Vue({
                 return;
             }
             vm.showList = false;
-            vm.title = "修改";
+            vm.title = "<@spring.message 'common.edit'/>";
             this.getInfo(id);
         },
         saveOrUpdate: function () {
@@ -250,7 +253,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.nodeRoom),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert('操作成功', function (index) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
                             vm.reload();
                         });
                     } else {
@@ -264,7 +267,7 @@ var vm = new Vue({
             if (ids == null) {
                 return;
             }
-            confirm('确定要删除选中的记录？', function () {
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 var form = new FormData();
                 form.append("ids", ids);
                 $.ajax({
@@ -276,7 +279,7 @@ var vm = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert('操作成功', function (index) {
+                            alert("<@spring.message 'common.success'/>", function (index) {
                                 vm.reload();
                             });
                         } else {

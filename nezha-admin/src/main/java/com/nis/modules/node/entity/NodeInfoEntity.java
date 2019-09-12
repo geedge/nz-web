@@ -1,5 +1,6 @@
 package com.nis.modules.node.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SystemInfoEntity;
@@ -47,6 +48,7 @@ public class NodeInfoEntity implements Serializable {
     /**
      * 设备标签，与sys_dict关联
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String tag;
     /**
      * snmpv3 用户名
@@ -63,22 +65,27 @@ public class NodeInfoEntity implements Serializable {
     /**
      * 机柜id
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Long cabinetId;
     /**
      * u位大小
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer uSize;
     /**
      * 机柜起始位置
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer cabinetStart;
     /**
      * snmp默认端口号
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer snmpPort;
     /**
      * snmp团体字
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String snmpCommunity;
     /**
      * 备注

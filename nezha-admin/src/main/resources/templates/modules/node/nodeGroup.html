@@ -10,13 +10,14 @@
 <!-- 节点组 -->
 <div id="app" v-cloak style="float: left;">
 
-    <div class="" style="margin-top:30px;margin-left:26px;width: 300px;height: 100%;background-color: #c4e3f3">
-        <!--background-color: papayawhip-->
-        <div class="" v-for="item in systems">
+    <div class="" style="margin-top:30px;margin-left:20px;width: 280px;height: 100%">
+        <div class="" v-for="item in systems" :key="item.id">
             <div>
-                <div style="float:left"><strong class="col-sm-5 control-label"
-                                                @click="showTree(item)">{{item.name}}</strong></div>
-                <div style="float:right;margin-right: 20px"><a href="#" @click="add(item)">添加根节点组</a></div>
+                <div style="float:left">
+                    <a href="#" title="<@spring.message 'system.system'/>"
+                       class="col-sm-5 control-label" style="font-size: 120%;color: black; text-decoration:none;"
+                       @click="showTree(item)">{{item.name}}</a></div>
+                <div style="float:right;margin-right: 20px"><a href="#" title="<@spring.message 'common.add'/><@spring.message 'nodegroup.root.group'/>" @click="add(item)"><@spring.message 'common.add'/></a></div>
             </div>
             <div class="col-sm-10">
                 <ul :id="item.id" class="ztree"></ul>
@@ -28,94 +29,108 @@
         <div class="panel panel-default">
             <form class="form-horizontal">
                 <div class="form-group">
-                    <div class="col-sm-2 control-label">上级节点组</div>
+                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.parent.group'/></div>
                     <div class="col-sm-9">
                         <input disabled type="text"
                                v-model.trim="nodeGroup.parentGroup.name" class="form-control"
-                               placeholder="上级节点组"/>
+                               placeholder="<@spring.message 'nodegroup.parent.group'/>"/>
                         <span class="required-symbol">*</span>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <div class="col-sm-2 control-label">业务系统</div>
+                    <div class="col-sm-2 control-label"><@spring.message 'system.system'/></div>
                     <div class="col-sm-9">
                         <input disabled type="text" v-model.trim="system.name" class="form-control"
-                               placeholder="业务系统"/>
+                               placeholder="<@spring.message 'system.system'/>"/>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <div class="col-sm-2 control-label">节点组名称</div>
+                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
                     <div class="col-sm-9">
                         <input type="text" v-model.trim="nodeGroup.name" class="form-control"
                                :class="{'form-control--error': $v.nodeGroup.name.$dirty && !$v.nodeGroup.name.required}"
-                               @blur="$v.nodeGroup.name.$touch" placeholder="节点组名称"/>
+                               @blur="$v.nodeGroup.name.$touch" placeholder="<@spring.message 'nodegroup.name'/>"/>
                         <span class="required-symbol">*</span>
                         <div class="form-control_error-msg"
                              v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.required">
-                            必填项
+                            <@spring.message 'validate.common.required'/>
                         </div>
                         <div class="form-control_error-msg"
                              v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.nameCheck">
-                            名称重复
+                            <@spring.message 'validate.common.name.repeat'/>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <div class="col-sm-2 control-label">备注</div>
+                    <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
                     <div class="col-sm-9">
-                        <input type="text" v-model.trim="nodeGroup.remark" class="form-control" placeholder="备注"/>
+                        <input type="text" v-model.trim="nodeGroup.remark" class="form-control"
+                               placeholder="<@spring.message 'common.remark'/>"/>
                     </div>
                 </div>
             </form>
-            <div class="form-group">
-                <input type="button" class="btn btn-warning" @click="saveOrUpdate" value="保存"/>
-                &nbsp;&nbsp;<input type="button" class="btn btn-primary" @click="reload" value="关闭"/>
+            <div class="form-group_opbox" style="margin-bottom: 20px">
+                <div>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"
+                            style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning"
+                            style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- 节点 -->
-<div id="nodeInfoApp" style="float: left;height: 100%;width: 1200px;margin-top: 135px" v-cloak>
+<div id="nodeInfoApp" style="float: left;height: 100%;width: 1200px;margin-top: 100px;margin-left: 50px" v-cloak>
 
     <div class="form-group">
-       <a class="" href="#" style="font-size: 16px;">节点列表</a>
+        <a class="" href="#" style="font-size: 16px;"><@spring.message 'node.list'/></a>
         <a v-if="nodeGroup != null" class="" href="#" style="font-size: 16px;"> {{nodeGroup.name}}</a>
-        <a v-if="nodeGroup != null && nodeGroup.allowAss == 1" class="btn btn-primary" @click="" style="float: right"><i class="fa"></i>&nbsp;分配节点</a>
+        <a v-if="nodeGroup != null && nodeGroup.allowAss == 1" class="btn btn-primary" @click="" style="float: right"><i
+                class="fa"></i>&nbsp;<@spring.message 'nodegroup.assignNode'/></a>
     </div>
 
     <div v-show="showList">
         <div class="grid-btn">
-            <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
-                       placeholder="节点名称">
-            </div>
+
             <div class="form-group col-sm-2">
                 <input type="text" class="form-control" v-model="q.ip" @keyup.enter="query"
-                       placeholder="IP地址">
+                       placeholder="<@spring.message 'node.ipAddress'/>">
             </div>
 
             <div class="form-group col-sm-2">
-                <multiselect v-model="q.type" :options="nodeTypes" label="name" :show-labels="false"
-                             placeholder="设备类型" @close="getQueryTag"></multiselect>
+                <multiselect v-model="q.type" :options="nodeTypes" label="value" :show-labels="false"
+                             placeholder="<@spring.message 'node.type'/>" @close="getQueryTag"></multiselect>
             </div>
 
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false"
-                             placeholder="设备标签" @open="checkQueryTag"></multiselect>
+            <a class="btn btn-default" @click="advancedSearch"><i class="fa"
+                                                                  :class="{'fa-angle-double-down': !isAdvancedSearch, 'fa-angle-double-up': isAdvancedSearch}"></i></a>
+            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i
+                    class="fa fa-search"></i></a>
+            <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>"><i
+                    class="fa fa-refresh"></i></a>
+
+            <div class="grid-btn grid-btn_advanced" v-show="isAdvancedSearch">
+                <div class="form-group col-sm-2">
+                    <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
+                           placeholder="<@spring.message 'common.name'/>">
+                </div>
+
+                <div class="form-group col-sm-2">
+                    <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false"
+                                 placeholder="<@spring.message 'node.tag'/>" @open="checkQueryTag"></multiselect>
+                </div>
+
+                <div class="form-group col-sm-2">
+                    <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>" :show-labels="false" :options="nodeStates"
+                                 label="value"></multiselect>
+                </div>
             </div>
-
-
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.state" placeholder="在线状态" :show-labels="false" :options="nodeStates"
-                             label="name"></multiselect>
-            </div>
-
-            <a class="btn btn-default" @click="query">查询</a>
-            <a class="btn btn-default" @click="reset">重置</a>
         </div>
         <table id="jqGrid"></table>
         <div id="jqGridPager"></div>
