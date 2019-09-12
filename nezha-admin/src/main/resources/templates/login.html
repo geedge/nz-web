@@ -80,15 +80,15 @@
       <multiselect v-model="selectedSystem" :options="systems" label="name" placeholder="..." :show-labels="false"></multiselect>
     </div>
     <div class="row">
-      <div class="col-xs-4">
-        <div class="checkbox icheck">
-        </div>
+      <div class="col-xs-2">
       </div>
       <div class="col-xs-4">
         <button type="button" class="btn btn-primary btn-block btn-flat" @click="selectSys"><i class="fa fa-check"></i></button>
       </div>
       <div class="col-xs-4">
-        <button type="button" class="btn btn-primary btn-block btn-flat" @click="cancelSelect"><i class="fa fa-reply"></i></button>
+        <button type="button" class="btn btn-warning btn-block btn-flat" @click="cancelSelect"><i class="fa fa-reply"></i></button>
+      </div>
+      <div class="col-xs-2">
       </div>
     </div>
   </div>

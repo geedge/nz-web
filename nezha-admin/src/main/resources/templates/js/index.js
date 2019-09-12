@@ -149,6 +149,15 @@ var vm = new Vue({
         logout: function() {
         	$.get("${request.contextPath}/logout");
         	location.reload();
+        },
+        selectableNodes: function (id) {
+        	layer.open({
+				type: 1,
+				area: ['1200px', '500px'],
+				title: "节点分配",
+				content: $("#system-node-rel"),
+				btn: ['确认', '取消']
+			});
         }
 	},
 	created: function(){
@@ -177,7 +186,6 @@ function routerList(router, menuList){
 		}else if(menu.type == 1){
 			router.add('#'+menu.url, function() {
 				var url = window.location.hash;
-				
 				//替换iframe的url
 			    //vm.main = url.replace('#', '');
 				goNext(url.replace('#', ''));
@@ -188,7 +196,7 @@ function routerList(router, menuList){
 			    
 			    vm.navTitle = $("a[href='"+url+"']").text();
 			    
-			    window.location.hash = url + "?t=" + new Date().getTime();
+			    window.location.hash = url + "?_" + new Date().getTime();
 			});
 		}
 	}

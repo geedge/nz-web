@@ -17,8 +17,10 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.Query;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysUserRoleService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 import com.nis.common.utils.PageUtils;
@@ -43,6 +45,8 @@ import java.util.Map;
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
 	@Autowired
 	private SysUserRoleService sysUserRoleService;
+	@Autowired
+	private UserUsergroupService userUsergroupService;
 
 	@Override
 	public List<Long> queryAllMenuId(Long userId) {
@@ -81,6 +85,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		
 		//保存用户与角色关系
 		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIdList());
+		//保存用户与用户组关系
+		userUsergroupService.saveOrUpdate(user.getUserId(), user.getUsergroupIds());
 	}
 
 	@Override
@@ -96,6 +102,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		
 		//保存用户与角色关系
 		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIdList());
+		//保存用户与用户组关系
+		userUsergroupService.saveOrUpdate(user.getUserId(), user.getUsergroupIds());
 	}
 
 
@@ -106,5 +114,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         return this.update(userEntity,
         	new QueryWrapper<SysUserEntity>().eq("user_id", userId).eq("password", password));
     }
+
+	@Override
+	public boolean checkName(SysUserEntity user) {
+		List<SysUserEntity> list = this.list(new QueryWrapper<SysUserEntity>()
+				.eq(true, "username", user.getUsername())
+				.eq(true, "status", 1));
+		boolean dumpFlag = true; //是否名称重复，true为重复
+		
+		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+		if ((list == null || list.size() == 0) ||
+					(list != null && list.size() == 1 && list.get(0).getUserId() == user.getUserId())) {
+			dumpFlag = false;
+		}
+		return dumpFlag;
+	}
 
 }

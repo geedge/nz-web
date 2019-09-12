@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
@@ -27,8 +26,6 @@ import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 
@@ -146,6 +143,19 @@ public class SystemInfoController extends AbstractController {
 		params.put("id", Long.valueOf((String)params.get("id")));
 		
 		PageUtils queryPageBySystemId = nodeInfoService.queryPageBySystemId(params);
+		return R.ok(queryPageBySystemId);
+	}
+	
+	/**
+	 * 分配节点时查询可选节点
+	 */
+	@RequestMapping(value = "selectableNodes", method = RequestMethod.GET)
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "可选节点")
+	public R selectableNodes(@RequestParam Map<String, Object> params){
+		ValidateUtils.is(params.get("id")).notNull(RCode.NOT_NULL_ERROR);
+		params.put("id", Long.valueOf((String)params.get("id")));
+		
+		PageUtils queryPageBySystemId = nodeInfoService.querySelectableNodeBySystemId(params);
 		return R.ok(queryPageBySystemId);
 	}
 	

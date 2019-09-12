@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<#import "/spring.ftl" as spring>
 <html>
 <head>
 <title>业务系统管理</title>
@@ -8,9 +9,10 @@
 <div id="rrapp" v-cloak>
 	<div v-show="showList">
 		<div class="grid-btn">
-			<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-			<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
-			<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+			<!-- <a class="btn btn-primary" @click="nodeRel"><i class="fa fa-trash-o"></i>&nbsp;test</a> -->
 		</div>
 	    <table id="jqGrid"></table>
 	    <div id="jqGridPager"></div>
@@ -20,16 +22,16 @@
 		<div class="panel-heading">{{title}}</div>
 		<form class="form-horizontal">
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">名称</div>
+			   	<div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
 			   	<div class="col-sm-9">
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.system.name.$dirty && $v.system.name.$error}" v-model.trim="$v.system.name.$model"/>
 			        <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.required">必填项</div>
-			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.checkName">重复的记录</div>
+			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="$v.system.name.$dirty && !$v.system.name.checkName"><@spring.message 'validate.common.duplicate'/></div>
 			    </div>
 			</div>
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">用户组</div>
+			   	<div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/></div>
 			   	<div class="col-sm-9">
 			   		<template v-for="ug in usergroups">
 				    	<span class="form-cbx">
@@ -40,20 +42,27 @@
 			    </div>
 			</div>
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">备注</div>
+			   	<div class="col-sm-2 control-label"><@spring.message 'usergroup.nodeNum'/></div>
+			   	<div class="col-sm-9">
+			   		<div class="form-text">&nbsp;{{system.nodeNum ? system.nodeNum : 0}}&nbsp;&nbsp;&nbsp;<span class="iconbtn-danger" @click="nodeRel"><i class="fa fa-edit"></i></span></div>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label"><@spring.message 'common.remark'/></div>
 			   	<div class="col-sm-9">
 			      <input type="text" class="form-control" v-model="system.remarks"/>
 			    </div>
 			</div>
-			<div class="form-group">
-				<div class="col-sm-2 control-label"></div> 
-				<input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-				&nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+			<div class="form-group form-group_opbox">
+				<div>
+					<button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+					<div style="display:inline-block;width:10px;"></div>
+					<button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+				</div> 
 			</div>
 		</form>
 	</div>
 </div>
-
-<script src="${request.contextPath}/statics/js/modules/sys/system.js?_${.now?long}"></script>
+<#include "/js/modules/sys/system.js">
 </body>
 </html>

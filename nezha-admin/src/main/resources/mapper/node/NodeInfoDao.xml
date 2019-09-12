@@ -306,6 +306,15 @@
 		WHERE si.id=#{id} AND si.del_flag=0 AND snr.del_flag=0 AND ni.state != 3
 	</select>
 
+	<select id="querySelectableNodeBySystemId" resultMap="nodeinfoWithCabSys">
+		SELECT ni.* FROM node_info ni
+		WHERE ni.uuid NOT IN (
+			SELECT snr.uuid FROM system_node_rel snr
+			LEFT JOIN system_info si ON si.id=snr.system_id
+			WHERE si.id=#{id} AND si.del_flag=0 AND snr.del_flag=0
+		) AND ni.state != 3
+	</select>
+
 
     <!-- 节点详情查询 -->
     <select id="detail" resultMap="nodeinfoWithCabSys">

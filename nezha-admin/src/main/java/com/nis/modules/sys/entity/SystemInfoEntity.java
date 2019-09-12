@@ -88,7 +88,16 @@ public class SystemInfoEntity implements Serializable {
 	
 	@TableField(exist=false)
 	private List<Long> uuids;
+	
+	@TableField(exist=false)
+	private List<Long> addUuids;
+	
+	@TableField(exist=false)
+	private List<Long> removeUuids;
 
+	@TableField(exist=false)
+	private Integer nodeNum;
+	
 
 	/**
 	 * 关联的节点组

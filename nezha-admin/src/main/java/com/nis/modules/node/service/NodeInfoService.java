@@ -42,5 +42,7 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
     PageUtils queryPageBySystemId(Map<String, Object> params);
 
     public void getTagName(List<NodeInfoEntity> nodeInfoEntities);
+
+	PageUtils querySelectableNodeBySystemId(Map<String, Object> params);
 }
 

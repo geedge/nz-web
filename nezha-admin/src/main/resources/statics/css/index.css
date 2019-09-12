@@ -24,6 +24,21 @@
 	background-color: #41B883;
 	color: white;
 }
+.node-box {
+	height: 28px; 
+	width: 24%; 
+	padding: 3px 0 0 4px; 
+	display: inline-block;
+}
+.node-item {
+	border-radius: 4px;
+	line-height: 24px;
+	text-align: center;
+	color: white;
+}
+.node-item_selected {
+	border: 2px solid #dbc190
+}
 /* .navbar-nav_lang, .navbar-nav_system {
 	width: 100px;
 } */

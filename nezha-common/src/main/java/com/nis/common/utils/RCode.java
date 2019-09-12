@@ -24,11 +24,12 @@ public enum RCode {
 	SYS_SYS_BUILTIN(102004, "not allow to update"), //不能操作内置系统
 	SYS_SYS_NOTEXISTS(102005, "sys sys notexists"), //业务系统不存在
 
-	SYS_MENU_SYSMENUDEL(103001, "sysmenu_del_error"), //系统菜单，不能删除
-	SYS_MENU_DELSUB(103002, "del_sub_first_error"), //请先删除子菜单或按钮
-	SYS_USER_OLDPWD(103003, "user_oldpwd_error"), //原密码不正确
-	SYS_USER_DELADMIN(103004, "del_admin_error"), //系统管理员不能删除
-	SYS_USER_CANNOTDEL(103005, "cannot_del_user_error"), //当前用户不能删除
+	SYS_MENU_SYSMENUDEL(103001, "sysmenu del error"), //系统菜单，不能删除
+	SYS_MENU_DELSUB(103002, "del sub first error"), //请先删除子菜单或按钮
+	SYS_USER_OLDPWD(103003, "user oldpwd error"), //原密码不正确
+	SYS_USER_DELADMIN(103004, "del admin error"), //系统管理员不能删除
+	SYS_USER_CANNOTDEL(103005, "cannot del user error"), //当前用户不能删除
+	SYS_USER_DUPLICATENAME(103006, "user name duplicate error"), //业务系统选择错误
 
 	SYS_USERGROUP_DUPLICATENAME(104001, "usergroup name duplicate error"), //用户组名称重复
 	SYS_USERGROUP_MATCH_ERROR(104002,"sys_usergroup_match_error"),   //用户与用户组不匹配

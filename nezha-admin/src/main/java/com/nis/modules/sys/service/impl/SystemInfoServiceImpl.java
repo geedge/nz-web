@@ -11,12 +11,8 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.detect.entity.DeteSetInfoEntity;
 import com.nis.modules.detect.entity.DeteSetNodeRelEntity;
-import com.nis.modules.detect.entity.DeteWarnInfoEntity;
-import com.nis.modules.detect.entity.DeteWarnRelEntity;
 import com.nis.modules.detect.service.DeteSetInfoService;
 import com.nis.modules.detect.service.DeteSetNodeRelService;
-import com.nis.modules.detect.service.DeteWarnInfoService;
-import com.nis.modules.detect.service.DeteWarnRelService;
 import com.nis.modules.mission.entity.MissionInfoEntity;
 import com.nis.modules.mission.service.MissionInfoService;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
@@ -69,10 +65,6 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	private PermissionInfoService permissionService;
 	@Autowired
 	private DeteSetInfoService deteSetService;
-	@Autowired
-	private DeteWarnRelService deteWarnRelService;
-	@Autowired
-	private DeteWarnInfoService deteWarnInfoService;
 	@Autowired
 	private DeteSetNodeRelService deteSetNodeService;
 	@Autowired
@@ -130,6 +122,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		logger.info("新增systemInfo...");
 		//新增system
 		baseMapper.insert(systemInfo);
+		
 		//新增system-usergroup记录
 		List<Integer> usergroupIds = systemInfo.getUsergroupIds();
 		if (usergroupIds != null && usergroupIds.size() > 0) {
@@ -148,6 +141,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 			logger.info(log.toString());
 			sysUsergroupService.saveBatch(toSave);
 		}
+		
 		//新增拓扑图
 		TopoInfoEntity topo = new TopoInfoEntity();
 		topo.setName(systemInfo.getName());
@@ -158,6 +152,12 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		topo.setSystemId(systemInfo.getId());
 		topo.setStyle("");
 		topoService.save(topo);
+		
+		//新增节点关联
+		if (CommonUtil.isNull(systemInfo.getAddUuids())) {
+			saveNodeRel(systemInfo);
+		}
+		
 		return true;
 	}
 	
@@ -223,6 +223,15 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 			logger.info(log.toString());
 			sysUsergroupService.saveBatch(toSave);
 		}
+		
+		//修改节点关联
+		if (CommonUtil.isNull(systemInfo.getAddUuids())) {
+			saveNodeRel(systemInfo);
+		}
+		if (CommonUtil.isNull(systemInfo.getRemoveUuids())) {
+			deleteNodeRel(systemInfo);
+		}
+		
 		return true;
 	}
 	
@@ -353,7 +362,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 	@Transactional(rollbackFor = Exception.class)
 	public boolean saveNodeRel(SystemInfoEntity entity) {
 		Date now = new Date();
-		List<Long> uuids = entity.getUuids();
+		List<Long> uuids = entity.getAddUuids();
 		if (uuids.size() > 0) {
 			//先查出已有的关联，用于去重
 			List<SystemNodeRelEntity> oldSysNodeRel = sysNodeService.list(
@@ -395,7 +404,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		UpdateWrapper<SystemNodeRelEntity> sysNodeWrapper = new UpdateWrapper<>();
 		sysNodeWrapper.eq("del_flag", Constant.DELFLAG_FALSE);
 		sysNodeWrapper.eq("system_id", entity.getId());
-		sysNodeWrapper.in("uuid", entity.getUuids());
+		sysNodeWrapper.in("uuid", entity.getRemoveUuids());
 		sysNodeWrapper.set("del_flag", Constant.DELFLAG_TRUE);
 		sysNodeWrapper.set("operator", ShiroUtils.getUserId());
 		sysNodeWrapper.set("op_time", now);

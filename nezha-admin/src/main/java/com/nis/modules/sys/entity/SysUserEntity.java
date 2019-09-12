@@ -81,6 +81,12 @@ public class SysUserEntity implements Serializable {
 	private List<Long> roleIdList;
 	
 	/**
+	 * 用户组ID列表
+	 */
+	@TableField(exist=false)
+	private List<Long> usergroupIds;
+	
+	/**
 	 * 当前系统id
 	 */
 	@TableField(exist=false)

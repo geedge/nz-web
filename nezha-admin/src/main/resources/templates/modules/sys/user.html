@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<#import "/spring.ftl" as spring>
 <html>
 <head>
 <title>管理员列表</title>
@@ -11,15 +12,15 @@
 			<div class="form-group col-sm-2">
 				<input type="text" class="form-control" v-model="q.username" @keyup.enter="query" placeholder="用户名">
 			</div>
-			<a class="btn btn-default" @click="query">查询</a>
+			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
 			<#if shiro.hasPermission("sys:user:save")>
-			<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
+			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
 			</#if>
 			<#if shiro.hasPermission("sys:user:update")>
-			<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
+			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
 			</#if>
 			<#if shiro.hasPermission("sys:user:delete")>
-			<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</#if>
 		</div>
 	    <table id="jqGrid"></table>
@@ -30,9 +31,12 @@
 		<div class="panel-heading">{{title}}</div>
 		<form class="form-horizontal">
 			<div class="form-group">
-				<div class="col-sm-2 control-label">用户名</div>
-				<div class="col-sm-10">
-					<input type="text" class="form-control" v-model="user.username" placeholder="登录账号"/>
+				<div class="col-sm-2 control-label"><@spring.message 'user.username'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" :class="{'form-control--error': $v.user.username.$dirty && $v.user.username.$error}" v-model.trim="$v.user.username.$model"/>
+					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="$v.user.username.$dirty && !$v.user.username.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="$v.user.username.$dirty && !$v.user.username.checkName"><@spring.message 'validate.common.duplicate'/></div>
 				</div>
 			</div>
 			<!--<div class="form-group">
@@ -42,38 +46,59 @@
 				</div>
 			</div>-->
 			<div class="form-group">
-				<div class="col-sm-2 control-label">密码</div>
-				<div class="col-sm-10">
-					<input type="text" class="form-control" v-model="user.password" placeholder="密码"/>
+				<div class="col-sm-2 control-label"><@spring.message 'user.password'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control"  :class="{'form-control--error': user.userId == null && $v.user.password.$dirty && $v.user.password.$error}" v-model="$v.user.password.$model"/>
+					<span v-if="user.userId == null" class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="user.userId == null && $v.user.password.$dirty && !$v.user.password.required"><@spring.message 'validate.common.required'/></div>
 				</div>
 			</div>
 			<div class="form-group">
-				<div class="col-sm-2 control-label">邮箱</div>
-				<div class="col-sm-10">
-					<input type="text" class="form-control" v-model="user.email" placeholder="邮箱"/>
+				<div class="col-sm-2 control-label"><@spring.message 'user.email'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" v-model="user.email"/>
+					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="$v.user.email.$dirty && !$v.user.email.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="$v.user.email.$dirty && !$v.user.email.email"><@spring.message 'validate.common.formaterror'/></div>
 				</div>
 			</div>
 			<div class="form-group">
-				<div class="col-sm-2 control-label">角色</div>
-				<div class="col-sm-10">
-					<label v-for="role in roleList" class="checkbox-inline">
-						<input type="checkbox" :value="role.roleId" v-model="user.roleIdList">{{role.roleName}}
-					</label>
+				<div class="col-sm-2 control-label"><@spring.message 'user.role'/></div>
+				<div class="col-sm-9">
+					<template v-for="role in roleList">
+				    	<span class="form-cbx">
+				    		<input v-model="user.roleIdList" type="checkbox" :value="role.roleId"/>
+				    		<span :title="role.roleName">{{role.roleName}}</span>
+				    	</span>
+			    	</template>
 				</div>
 			</div>
 			<div class="form-group">
-				<div class="col-sm-2 control-label">状态</div>
+			   	<div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/></div>
+			   	<div class="col-sm-9">
+			   		<template v-for="ug in usergroups">
+				    	<span class="form-cbx">
+				    		<input v-model="user.usergroupIds" type="checkbox" :value="ug.id"/>
+				    		<span :title="ug.name">{{ug.name}}</span>
+				    	</span>
+			    	</template>
+			    </div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'common.status'/></div>
 				<label class="radio-inline">
-					<input type="radio" name="status" value="0" v-model="user.status"/> 禁用
+					<input type="radio" name="status" value="0" v-model="user.status"/><@spring.message 'common.disabled'/>
 				</label>
 				<label class="radio-inline">
-					<input type="radio" name="status" value="1" v-model="user.status"/> 正常
+					<input type="radio" name="status" value="1" v-model="user.status"/><@spring.message 'common.normal'/>
 				</label>
 			</div>
-			<div class="form-group">
-				<div class="col-sm-2 control-label"></div>
-				<input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-				&nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+			<div class="form-group form-group_opbox">
+				<div>
+					<button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+					<div style="display:inline-block;width:10px;"></div>
+					<button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+				</div> 
 			</div>
 		</form>
 	</div>
@@ -83,7 +108,6 @@
 <!--<div id="deptLayer" style="display: none;padding:10px;">
 	<ul id="deptTree" class="ztree"></ul>
 </div>-->
-
-<script src="${request.contextPath}/statics/js/modules/sys/user.js?_${.now?long}"></script>
+<#include "/js/modules/sys/user.js">
 </body>
 </html>

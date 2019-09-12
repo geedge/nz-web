@@ -14,11 +14,16 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserRoleService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.UserUsergroupService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+
+import io.swagger.annotations.ApiOperation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +41,8 @@ public class SysUserController extends AbstractController {
 	private SysUserService sysUserService;
 	@Autowired
 	private SysUserRoleService sysUserRoleService;
+	@Autowired
+	private UserUsergroupService userUsergroupService;
 	
 	/**
 	 * 所有用户列表
@@ -88,7 +95,10 @@ public class SysUserController extends AbstractController {
 		
 		//获取用户所属的角色列表
 		List<Long> roleIdList = sysUserRoleService.queryRoleIdList(userId);
+		//获取用户所属的用户组列表
+		List<Long> usergroupIds = userUsergroupService.queryByUserId(userId);
 		user.setRoleIdList(roleIdList);
+		user.setUsergroupIds(usergroupIds);
 		
 		return R.ok().put("user", user);
 	}
@@ -100,8 +110,9 @@ public class SysUserController extends AbstractController {
 	@RequestMapping("/save")
 	@RequiresPermissions("sys:user:save")
 	public R save(@RequestBody SysUserEntity user){
-		ValidatorUtils.validateEntity(user, AddGroup.class);
-		
+		ValidateUtils.is(user.getUsername()).notNull()
+						.and(user.getPassword()).notNull()
+						.and(user.getEmail()).notNull().email();
 		sysUserService.saveUser(user);
 		
 		return R.ok();
@@ -114,7 +125,8 @@ public class SysUserController extends AbstractController {
 	@RequestMapping("/update")
 	@RequiresPermissions("sys:user:update")
 	public R update(@RequestBody SysUserEntity user){
-		ValidatorUtils.validateEntity(user, UpdateGroup.class);
+		ValidateUtils.is(user.getUsername()).notNull()
+		.and(user.getEmail()).notNull().email();
 
 		sysUserService.update(user);
 		
@@ -139,5 +151,29 @@ public class SysUserController extends AbstractController {
 		sysUserService.removeByIds(Arrays.asList(userIds));
 		
 		return R.ok();
+	}
+	
+	/**
+	 * 用户名称校验
+	 * @param params
+	 * @return
+	 */
+	@RequestMapping(value = "nameCheck", method = RequestMethod.GET)
+	@ApiOperation(httpMethod = "GET", response = R.class, value = "用户名称校验")
+	public R nameCheck(@RequestParam Map<String, Object> params) {
+		ValidateUtils.is(params.get("name")).notNull();
+		//校验名称重复
+		SysUserEntity queryParam = new SysUserEntity();
+		Object object = params.get("id");
+		if (object != null && !StringUtils.isEmpty(object.toString())) {
+			queryParam.setUserId(Long.valueOf((String)object));
+		}
+		queryParam.setUsername((String)params.get("name"));
+		
+		if (sysUserService.checkName(queryParam)) {
+			return R.error(RCode.SYS_USER_DUPLICATENAME);
+		} else {
+			return R.ok();
+		}
 	}
 }

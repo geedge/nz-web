@@ -11,6 +11,7 @@
         <result property="createDate" column="create_date"/>
         <result property="updateBy" column="update_by"/>
         <result property="updateDate" column="update_date"/>
+        <result property="nodeNum" column="node_num"/>
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <collection property="usergroups" column="id" select="queryUgBySysId" ofType="com.nis.modules.sys.entity.UsergroupEntity">
@@ -63,7 +64,7 @@
 	</select>
 	
 	<select id="detail" resultMap="systemWithUsergroup">
-		SELECT si.id, si.name, si.build_in, si.remarks, si.del_flag, si.create_date
+		SELECT si.id, si.name, si.build_in, si.remarks, si.del_flag, si.create_date, (SELECT COUNT(snr.id) FROM system_node_rel snr WHERE snr.system_id=#{id} AND snr.del_flag=0) as node_num
 		FROM system_info si
 		WHERE si.id=#{id} AND si.del_flag=0
 	</select>

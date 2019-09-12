@@ -7,9 +7,9 @@
   <title>NEZHA</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-  <link rel="stylesheet" href="${request.contextPath}/statics/css/bootstrap.min.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/font-awesome.min.css">
   <link rel="stylesheet" href="${request.contextPath}/statics/css/AdminLTE.min.css">
+  <link rel="stylesheet" href="${request.contextPath}/statics/css/bootstrap.min.css">
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
   <link rel="stylesheet" href="${request.contextPath}/statics/css/all-skins.min.css">
@@ -111,30 +111,70 @@
        immediately after the control sidebar -->
   <div class="control-sidebar-bg"></div>
   
-  <!-- 修改密码 -->
-<div id="passwordLayer" style="display: none;">
-	<form class="form-horizontal">
-	<div class="form-group">
+    <!-- 修改密码 -->
+	<div id="passwordLayer" style="display: none;">
+		<form class="form-horizontal">
 		<div class="form-group">
-		   	<div class="col-sm-2 control-label">账号</div>
-		    <span class="label label-success" style="vertical-align: bottom;">{{user.username}}</span>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">账号</div>
+			    <span class="label label-success" style="vertical-align: bottom;">{{user.username}}</span>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">原密码</div>
+			   	<div class="col-sm-10">
+			      <input type="password" class="form-control" v-model="password" placeholder="原密码"/>
+			    </div>
+			</div>
+			<div class="form-group">
+			   	<div class="col-sm-2 control-label">新密码</div>
+			   	<div class="col-sm-10">
+			      <input type="text" class="form-control" v-model="newPassword" placeholder="新密码"/>
+			    </div>
+			</div>
 		</div>
-		<div class="form-group">
-		   	<div class="col-sm-2 control-label">原密码</div>
-		   	<div class="col-sm-10">
-		      <input type="password" class="form-control" v-model="password" placeholder="原密码"/>
-		    </div>
-		</div>
-		<div class="form-group">
-		   	<div class="col-sm-2 control-label">新密码</div>
-		   	<div class="col-sm-10">
-		      <input type="text" class="form-control" v-model="newPassword" placeholder="新密码"/>
-		    </div>
-		</div>
+		</form>
 	</div>
-	</form>
-</div>
-          
+    
+	<!-- 业务系统节点分配 -->
+	<!-- <div id="system-node-rel" style="display:none">
+		<div class="col-sm-6">
+			<div class="col-sm-12"><h4>可选</h4></div>
+			<div class="grid-btn">
+				<div class="form-group col-sm-4">
+					<input type="text" class="form-control"  placeholder="Code">
+				</div>
+				<div class="grid-btn">
+					<a class="btn btn-primary" ><i class="fa fa-refresh"></i></a>
+					<a class="btn btn-primary" ><i class="fa fa-pencil-square-o"></i></a>
+				</div>
+			</div>
+			<div class="col-sm-12">
+				<div style="border: 1px solid #ddd; height: 300px;">
+					<div class="node-box">
+						<div class="node-item" style="background-color: #e47f7f;">888.888.888.888</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item" style="background-color: #e47f7f;">10.0.6.1</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item node-item_selected" style="background-color: #c0e1e8;">192.168.888.124</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item" style="background-color: #e47f7f;">10.0.6.1</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item node-item_selected" style="background-color: #c0e1e8;">192.168.777.124</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item node-item_selected" style="background-color: #c0e1e8;">192.168.777.124</div>
+					</div>
+					<div class="node-box">
+						<div class="node-item node-item_selected" style="background-color: #c0e1e8;">192.168.777.124</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div> -->
 </div>
 <!-- ./wrapper -->
 

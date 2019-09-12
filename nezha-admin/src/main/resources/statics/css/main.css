@@ -115,3 +115,13 @@ tbody > tr > th {font-weight: normal; }
 .btn-login {
 	padding: 0 !important;
 }
+.iconbtn-primary {
+	color: #337ab7;
+}
+.iconbtn-danger {
+	color: #d9534f;
+}
+.form-text {
+	padding-top: 7px;
+	cursor: pointer;
+}

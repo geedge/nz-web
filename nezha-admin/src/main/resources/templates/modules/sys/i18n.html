@@ -37,7 +37,7 @@
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.code.$dirty && $v.i18n.code.$error}" v-model.trim="$v.i18n.code.$model"/>
 			        <span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.required"><@spring.message 'validate.common.required'/></div>
-			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.checkI18n">重复的记录</div>
+			        <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.checkI18n"><@spring.message 'validate.common.duplicate'/></div>
 			    </div>
 			</div>
 			<div class="form-group">
