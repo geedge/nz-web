@@ -1,11 +1,12 @@
+<script>
 $(function () {
     $("#jqGrid").jqGrid({
         url: baseURL + 'mission/list',
         datatype: "json",
         colModel: [		
-            { label: 'ID', name: 'id', width: 30, key: true },
+            { label: 'ID', name: 'id', width: 30, key: true,hidden:true },
             { label: '任务名称', name: 'name', sortable: false, width: 60 },
-			{ label: '任务类型', name: 'type', sortable: false, width: 60,formatter:function(value,options,rowData){return vm.missionList[value-1]} },
+			{ label: '任务类型', name: 'type', sortable: false, width: 60,formatter:function(value,options,rowData){return vm.missionTypeList[value-1].value} },
 			{ label: '周期任务', name: 'isLoop', width: 100,formatter: "select", editoptions:{value:"0:否;1:是"} },
 			{ label: '任务状态', name: 'state', width: 100,formatter: "select", editoptions:{value:"0:非周期;1:运行;2:暂停;3:终止"} },
 			/*{ label: '查看人', name: 'viewer', width: 100 },*/
@@ -37,7 +38,7 @@ $(function () {
         	$("#jqGrid").closest(".ui-jqgrid-bdiv").css({ "overflow-x" : "hidden" }); 
         }
     });
-});
+});   
 //注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
 //引用vuelidate组件
@@ -49,16 +50,34 @@ var vm = new Vue({
 	el:'#missionVIew',
 	data:{
 		q:{
-            name: null
+            name: null,
+            type: null
 		},
 		showList: true,
+		missionParam :true,
 		title: null,
 		mission:{
 			id:"",
 			name:"",
 			ids:[],
-			state:""
-		}
+			state:"",
+			type:1,
+			viewLevel:3,
+			executeType:0,
+			commandEnname:null,
+			isLoop:0,
+			loopInterval:null,
+			param:""
+		},
+		radio: '1',
+		missionTypeList:[],
+		executeType:[],
+		viewLevel:[],
+		loopMission:[],
+		commandEnnameTypeList1:[],
+		commandEnnameTypeList2:[],
+		commandEnnameTypeList3:[],
+		files:[]
 	},
 	validations: { //定义校验规则
 		mission:{
@@ -73,18 +92,74 @@ var vm = new Vue({
 		},
 		getMissionList: function(event) {
 			$.getJSON(baseURL + "sys/dict/all?type=missiontype&_"+$.now(), function(r){
-				var missionList = [];
+				var missionTypeList = [];
 				for (var i = 0; i < r.data.length; i++) {
-					missionList.push(r.data[i].value);
+					missionTypeList.push(r.data[i]);
 				}
-				vm.missionList = missionList;
+				vm.missionTypeList = missionTypeList;
+			});
+		},
+		getExecuteType: function(event) {
+			$.getJSON(baseURL + "sys/dict/all?type=executeType&_"+$.now(), function(r){
+				var executeType = [];
+				for (var i = 0; i < r.data.length; i++) {
+					executeType.push(r.data[i]);
+				}
+				vm.executeType = executeType;
+			});
+		},
+		getCommandEnnameTypeList1: function(event) {
+			$.getJSON(baseURL + "sys/dict/all?type=commandEnnameType1&_"+$.now(), function(r){
+				var commandEnnameTypeList1 = [];
+				for (var i = 0; i < r.data.length; i++) {
+					commandEnnameTypeList1.push(r.data[i]);
+				}
+				vm.commandEnnameTypeList1 = commandEnnameTypeList1;
+			});
+		},
+		getCommandEnnameTypeList2: function(event) {
+			$.getJSON(baseURL + "sys/dict/all?type=commandEnnameType2&_"+$.now(), function(r){
+				var commandEnnameTypeList2 = [];
+				for (var i = 0; i < r.data.length; i++) {
+					commandEnnameTypeList2.push(r.data[i]);
+				}
+				vm.commandEnnameTypeList2 = commandEnnameTypeList2;
+			});
+		},
+		getCommandEnnameTypeList3: function(event) {
+			$.getJSON(baseURL + "sys/dict/all?type=commandEnnameType3&_"+$.now(), function(r){
+				var commandEnnameTypeList3 = [];
+				for (var i = 0; i < r.data.length; i++) {
+					commandEnnameTypeList3.push(r.data[i]);
+				}
+				vm.commandEnnameTypeList3 = commandEnnameTypeList3;
+			});
+		},
+		getViewLevel:function(){
+			$.getJSON(baseURL + "sys/dict/all?type=viewLevel&_"+$.now(), function(r){
+				var viewLevel = [];
+				for (var i = 0; i < r.data.length; i++) {
+					viewLevel.push(r.data[i]);
+				}
+				vm.viewLevel = viewLevel;
+			});
+		},
+		getLoopMission:function(){
+			$.getJSON(baseURL + "sys/dict/all?type=loopMission&_"+$.now(), function(r){
+				var loopMission = [];
+				for (var i = 0; i < r.data.length; i++) {
+					loopMission.push(r.data[i]);
+				}
+				vm.loopMission = loopMission;
 			});
 		},
 		add: function(){
 			vm.$v.mission.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
+			vm.missionParam = false;
 			vm.title = "新增";
-			vm.mission = {name:null,remark:null,id:null};
+			vm.mission = {name:null,remark:null,id:null,viewLevel:3,type:1,executeType:0,commandEnname:null,isLoop:0,loopInterval:null};
+			vm.file='';
 		},
 		update: function () {
 			vm.$v.mission.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
@@ -93,6 +168,7 @@ var vm = new Vue({
 				return ;
 			}
 			vm.showList = false;
+			vm.missionParam = true;
             vm.title = "修改";
             vm.getInfo(id);
 		},
@@ -101,16 +177,29 @@ var vm = new Vue({
                 vm.mission = r.data;
             });
 		},
+		getFile(event) {
+			this.file = event.target.files[0];
+			console.log(this.file);
+		},
 		saveOrUpdate: function (event) {
 			if (!vm.validate()) { //在下方定义的validate方法
 				return;
 			}
+			event.preventDefault();
+            let formData = new FormData();
+            formData.append("name",this.mission.name);
+            formData.append("files",this.file);
+            formData.missionInfo=this.mission
+            formData.files=this.file
 			var url = vm.mission.id == null ? "mission/save" : "mission/update";
 			$.ajax({
 				type: vm.mission.id == null ? "POST" : "PUT",
 			    url: baseURL + url,
-                contentType: "application/json",
-			    data: JSON.stringify(vm.mission),
+ //               contentType: "application/json;charset=UTF-8",
+			    contentType:false,
+			    processData:false,
+//			    data: JSON.stringify(vm.mission),
+			    data:formData,
 			    success: function(r){
 			    	if(r.code === 200){
 						alert('操作成功', function(index){
@@ -124,9 +213,13 @@ var vm = new Vue({
 		},
 		reload: function (event) {
 			vm.showList = true;
+			vm.missionParam = true;
 			var page = $("#jqGrid").jqGrid('getGridParam','page');
 			$("#jqGrid").jqGrid('setGridParam',{
-				postData:{'name': vm.q.name},
+				postData:
+				{'name': vm.q.name,
+				 'type': vm.q.type==null ? null :vm.q.type.code
+				},
                 page:page
             }).trigger("reloadGrid");
 		},
@@ -160,10 +253,20 @@ var vm = new Vue({
 					}
 				});
 			});
+		},
+		updateCommandEnname:function(){
+			vm.mission.commandEnname=null;
 		}
 	},
 	created: function(){
 		// 初始化进入执行方法
 		this.getMissionList();
+		this.getViewLevel();
+		this.getExecuteType();
+		this.getCommandEnnameTypeList1();
+		this.getCommandEnnameTypeList2();
+		this.getCommandEnnameTypeList3();
+		this.getLoopMission();
 	}
 });
+</script>

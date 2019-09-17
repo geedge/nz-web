@@ -86,3 +86,161 @@ function getSelectedRows() {
 function isBlank(value) {
     return !value || !/\S/.test(value)
 }
+
+/*======================时间验证方法start===========================*/
+//startTimeSelector:输入框开始时间选择器; 
+//endTimeSelector:输入框结束时间选择器; 
+//granule:时间粒度(数字);
+//unit:时间粒度单位(h-小时,d-天,w-周,m-月);
+//formate：时间格式;默认格式：yyyy-MM-dd hh:mm:ss
+//future:选择的时间是否可以为未来时间 true or false 默认false(不能为未来时间)
+function setEndTime(startTimeSelector,endTimeSelector,granule,unit,formate,future){
+	
+	/*if(strIsBlank(granule)||strIsBlank(unit)){
+		console.log("时间粒度或时间单位为空");
+		return;
+	}*/
+
+	if(strIsBlank(startTimeSelector)||strIsBlank(endTimeSelector)){
+		console.log("时间输入框选择器为空");
+		return;
+	}
+
+	if(strIsBlank(formate)){
+		formate="yyyy-MM-dd hh:mm:ss"
+	}
+	if(future==null || future==undefined){
+		future=false;
+	}
+	var startTimeVal=$(startTimeSelector).val();
+	var endTimeVal=$(endTimeSelector).val();
+
+	var startTime;
+	var endTime;
+
+	if(!strIsBlank(endTimeVal)){
+		endTime=new Date(endTimeVal);
+		var currentTime=new Date().getTime();
+		if(!future&&endTime.getTime()>currentTime){ //endTime不能是未来时间
+			endTime=new Date();
+		}
+		if(strIsBlank(startTimeVal)){
+			startTime=new Date();
+		}else{//startTime和endTime都不为空
+			startTime=new Date(startTimeVal);
+			if(endTime.getTime()-startTime.getTime()<=0){//startTime不在时间粒度之内
+				startTime=new Date(endTime.getTime());
+			}
+		}
+		
+	}else{
+		if(strIsBlank(startTimeVal)){//startTime and endTime 都为空
+			endTime=new Date();
+			startTime=new Date(endTime.getTime());
+		}else{//startTime 不为空，endTime为空
+			setStartTime(startTimeSelector,endTimeSelector,granule,unit,formate,future);
+			return;
+		}
+	}
+
+	$(startTimeSelector).val(dateFtt(formate,startTime));
+	$(endTimeSelector).val(dateFtt(formate,endTime));	
+}
+
+//startTimeSelector:输入框开始时间选择器; 
+//endTimeSelector:输入框结束时间选择器; 
+//granule:时间粒度(数字);
+//unit:时间粒度单位(h-小时,d-天,w-周,m-月);
+//formate：时间格式;默认格式：yyyy-MM-dd hh:mm:ss
+//future:选择的时间是否可以为未来时间 true or false 默认false(不能为未来时间)
+function setStartTime(startTimeSelector,endTimeSelector,granule,unit,formate,future){
+	
+	/*if(strIsBlank(granule)||strIsBlank(unit)){
+		//console.log("时间粒度或时间单位为空");
+		return;
+	}*/
+
+	if(strIsBlank(startTimeSelector)||strIsBlank(endTimeSelector)){
+		//console.log("时间输入框选择器为空");
+		return;
+	}
+
+	if(strIsBlank(formate)){
+		formate="yyyy-MM-dd hh:mm:ss"
+	}
+
+	if(future==null || future==undefined){
+		future=false;
+	}
+	var startTimeVal=$(startTimeSelector).val();
+	var endTimeVal=$(endTimeSelector).val();
+
+	var startTime;
+	var endTime;
+	
+	if(!strIsBlank(startTimeVal)){
+		startTime=new Date(startTimeVal);
+		var currentTime=new Date().getTime();
+		if(!future&&startTime.getTime()>currentTime){//startTime是一个超过当前时间值
+			startTime=new Date(currentTime);
+		}
+		if(strIsBlank(endTimeVal)){
+			if(startTime.getTime()>currentTime){
+				endTime=new Date();
+			}else{
+				endTime=new Date(startTime.getTime());
+			}
+		}else{//startTime和endTime都不为空
+			endTime=new Date(endTimeVal);
+			if(endTime.getTime()-startTime.getTime()<=0){//endTime不在时间粒度之内
+				
+				if(startTime.getTime()>currentTime){
+					endTime=new Date();
+					startTime=new Date(endTime.getTime()-5*60*1000);
+				}else{
+					endTime=new Date(startTime.getTime());
+				}
+			}
+		}
+	}else{
+		if(strIsBlank(endTimeVal)){//startTime和endTime 都为空
+			endTime=new Date();
+			startTime=new Date(endTime.getTime());
+			
+		}else{
+			setEndTime(startTimeSelector,endTimeSelector,granule,unit,formate,future);
+			return;
+		}
+	}
+
+	$(startTimeSelector).val(dateFtt(formate,startTime));
+	$(endTimeSelector).val(dateFtt(formate,endTime));	
+}
+
+function strIsBlank(obj){
+	if(obj==null || obj==undefined|| obj==''){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function dateFtt(fmt,date){ 
+var o = {   
+"M+" : date.getMonth()+1,                 //月份   
+"d+" : date.getDate(),                    //日   
+"h+" : date.getHours(),                   //小时   
+"m+" : date.getMinutes(),                 //分   
+"s+" : date.getSeconds(),                 //秒   
+"q+" : Math.floor((date.getMonth()+3)/3), //季度   
+"S"  : date.getMilliseconds()             //毫秒   
+};   
+if(/(y+)/.test(fmt))   
+fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length));   
+for(var k in o)   
+if(new RegExp("("+ k +")").test(fmt))   
+fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+return fmt;   
+}
+/*======================时间验证方法end===========================*/
+

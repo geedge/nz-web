@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<#import "/spring.ftl" as spring>
 <html>
 <head>
 <title>任务管理</title>
@@ -10,23 +11,23 @@
 	<div v-show="showList">
 		<div class="grid-btn">
 			<div class="form-group col-sm-2">
-				任务名称 : <input type="text" class="form-control" v-model="q.name" @keyup.enter="query" >
+				<input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder='任务名称 '>
 			</div>
 			<!-- <div class="form-group col-sm-2">
-				是否为周期任务:<multiselect v-model=""></multiselect>
+				是否为周期任务:<multiselect ></multiselect>
 			</div>
 			<div class="form-group col-sm-2">
-				任务状态:<multiselect v-model="" ></multiselect>
-			</div>
-			<div class="form-group col-sm-2">
-				任务类型:<multiselect v-model=""></multiselect>
+				任务状态:<multiselect  ></multiselect>
 			</div> -->
-			<a class="btn btn-default" @click="query">查询</a>
-			<a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-			<a class="btn btn-primary" @click=""><i class="fa fa-plus"></i>&nbsp;新增逆向任务</a>
-			<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
-			<a class="btn btn-success" @click="converseStatus(1)"><i class="fa fa-play"></i>&nbsp;启用</a>
-			<a class="btn btn-danger" @click="converseStatus(2)"><i class="fa fa-ban"></i>&nbsp;停用</a>
+			<div class="form-group col-sm-2">
+				<multiselect v-model="q.type" :options="missionTypeList" label="value" placeholder="<@spring.message 'mission.missionType'/>" :show-labels="false"></multiselect>
+			</div>
+			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+			<!-- <a class="btn btn-primary" @click=""><i class="fa fa-plus"></i>&nbsp;新增逆向任务</a> -->
+			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+			<a class="btn btn-success" @click="converseStatus(1)" title="<@spring.message 'mission.start'/>"><i class="fa fa-play"></i></a>
+			<a class="btn btn-danger" @click="converseStatus(2)" title="<@spring.message 'mission.stop'/>"><i class="fa fa-ban"></i></a>
 		</div>
 	    <table id="jqGrid"></table>
 	    <div id="jqGridPager"></div>
@@ -34,19 +35,352 @@
      
    	<div v-show="!showList" class="panel panel-default">
 		<div class="panel-heading">{{title}}</div>
-		<form class="form-horizontal">
+		<form class="form-horizontal" id="missionTest">
 			<div class="form-group">
 			   	<div class="col-sm-2 control-label">任务名称</div>
 			   	<div class="col-sm-10">
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.mission.name.$dirty && !$v.mission.name.required}" v-model.trim="$v.mission.name.$model"/>
-			        <span class="required-symbol">*</span>
+			        <!-- <span class="required-symbol">*</span> -->
 			        <div class="form-control_error-msg" v-if="$v.mission.name.$dirty && !$v.mission.name.required">必填项</div>
 			    </div>
 			</div>
+			<div v-show="!missionParam" class="form-group">
+			   	<div class="col-sm-2 control-label">任务类型</div>
+			   	<div class="col-sm-10">
+			   		<template v-for="mt in missionTypeList">
+			   			<label class="radio-inline">
+							<input type="radio" :value="mt.code" v-model="mission.type" @click='updateCommandEnname'/> {{mt.value}}
+						</label>
+			    	</template>
+			    </div>
+			</div>
+			
+			<!-- 当任务类型选为命令执行时 出现单选钮选择命令类型 -->
+			<div v-show="mission.type==2" class="form-group">
+			   	<div class="col-sm-2 control-label">命令类型</div>
+			   	<div class="col-sm-10">
+			   		<template v-for="et in executeType">
+			   			<label class="radio-inline">
+							<input type="radio" :value="et.code" v-model="mission.executeType" @click='updateCommandEnname'/> {{et.value}}
+						</label>
+			    	</template>
+			    </div>
+			</div>
+			
+			<!-- 根据任务类型以及命令类型两个条件 筛选下拉框内容 -->
+			<div v-show="mission.type==2&&mission.executeType==0" class="form-group">
+				<div class="col-sm-2 control-label">命令名称:</div>
+			   	<div class="col-sm-10">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList1" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>
+				</div>
+			</div>
+			
+			<div v-show="mission.type==2&&mission.executeType==1" class="form-group">
+				<div class="col-sm-2 control-label">命令名称:</div>
+			   	<div class="col-sm-10">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList2" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>			
+	 			</div>
+			</div>
+			
+			<!-- 升级部署类型选择 -->
+			<div v-show="mission.type==3" class="form-group">
+				<div class="col-sm-2 control-label">命令名称:</div>
+			   	<div class="col-sm-10">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList3" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>			
+	 			</div>
+			</div>
+			
+			<div v-show="!missionParam" class="form-group">
+			   	<div class="col-sm-2 control-label">节点组</div>
+			   	<div class="col-sm-10">
+					<input type="text" class="form-control"></input><a class="btn btn-primary" @click=""><i class="fa fa-search"></i></a>		        
+ 					<!-- <span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="">必填项</div> -->
+			    </div>
+			</div>
+			<div v-show="!missionParam" class="form-group">
+			   	<div class="col-sm-2 control-label">节点</div>
+			   	<div class="col-sm-10">
+ 	 			    <input type="text" class="form-control"></input><a class="btn btn-primary" @click=""><i class="fa fa-search"></i></a>		        
+ 					<!-- <span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="">必填项</div>  -->
+			    </div>
+			</div>
+			<div v-show="!missionParam" class="form-group">
+			   	<div class="col-sm-2 control-label">查看权限</div>
+			   	<div class="col-sm-10">
+			   		<template v-for="vl in viewLevel">
+			   			<label class="radio-inline">
+							<input type="radio" name="missionViewLevel" :value="vl.code" v-model="mission.viewLevel"/> {{vl.value}}
+						</label>
+			    	</template>
+			    </div>
+			</div>
+			
+			<!-- 文件上传测试 -->
+			<!-- <div v-show="!missionParam" class="form-group">
+			   	<div class="col-sm-2 control-label">路径</div>
+			   	<div class="col-sm-10">
+ 	 			    <input type="file" class="" :v-model="files" name="files" @change="getFile($event)"></input>		        
+			    </div>
+			</div> -->
+			
+			<div id="filepush">
+			    <filepush></filepush>
+			</div>
+			
+			<div id='upgradeKillProcess'>
+				<upgrade-kill-process></upgrade-kill-process>
+			</div>
+			
+			<div id="upgradeBackup">
+				<upgrade-backup></upgrade-backup>
+			</div>
+			
+			<div id="upgradeUpdate">
+				<upgrade-update></upgrade-update> 
+			</div>
+			
+			<div id="upgradeExecStart">
+				<upgrade-exec-start></upgrade-exec-start>
+			</div>
+			
+			<div id="upgradeRecover">
+				<upgrade-recover></upgrade-recover>
+			</div>
+			
+			<div id="singleExec">
+				<single-exec></single-exec>
+			</div>
+			
+			<!-- 任务类型为命令执行 显示周期任务选项 -->
+			<div v-show="mission.type==2" class="form-group">
+			   	<div class="col-sm-2 control-label">周期任务</div>
+			   	<div class="col-sm-10">
+			   		<template v-for="lm in loopMission">
+			   			<label class="radio-inline">
+							<input type="radio" name="loopMission" :value="lm.code" v-model="mission.isLoop"/> {{lm.value}}
+						</label>
+			    	</template>
+			    </div>
+			</div>
+			
+			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
+			   	<div class="col-sm-2 control-label">周期</div>
+			   	<div class="col-sm-10">
+			        <input type="text" class="form-control" :class="" v-model="mission.loopInterval"/>分钟
+			    </div>
+			</div>
+			
+			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
+			   	<div class="col-sm-2 control-label">开始时间</div>
+			   	<div class="col-sm-10">
+			        <input name="beginDate" id="beginDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
+					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setStartTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
+			    </div>
+			</div>
+			
+			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
+			   	<div class="col-sm-2 control-label">结束时间</div>
+			   	<div class="col-sm-10">
+			        <input name="endDate" id="endDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
+					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setEndTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
+			    </div>
+			</div>
+			
+			<!-- 周期任务参数设置结束 -->
+			
+			<div id="ugprade" v-show="mission.type==3">
+				<!-- NC升级 -->
+				<div v-show="mission.commandEnname!=null &&mission.commandEnname.code==7">
+					<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		推送目的地
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		属主
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		属群
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		文件权限
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div  class="form-group">
+					   	<div class="col-sm-2 control-label">
+					   		创建标识
+					   	</div>
+					   	<div class="col-sm-10">
+					   		<label class="radio-inline">
+									<input type="radio" value="1" /> 创建
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0" /> 不创建
+							</label>
+					    </div>
+			    	</div>
+			    	<div  class="form-group">
+					   	<div class="col-sm-2 control-label">
+					   		解压标识
+					   	</div>
+					   	<div class="col-sm-10">
+					   		<label class="radio-inline">
+									<input type="radio" value="1" /> 绝对路径
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0" /> 相对路径
+							</label>
+					    </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		删除文件
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<textarea class="form-control" ></textarea>
+				        </div>	
+			    	</div>
+				</div>
+				
+				<!-- DC升级或者第三方部署 -->
+				<div v-show="mission.commandEnname!=null && (mission.commandEnname.code==8 || mission.commandEnname.code==9)">
+					<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		覆盖目录
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		启动文件或命令
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		pid文件
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		属主
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		属群
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		文件权限
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		等待时间
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<input type="text" class="form-control" />秒
+				        </div>
+			    	</div>
+			    	<div  class="form-group">
+					   	<div class="col-sm-2 control-label">
+					   		创建标识
+					   	</div>
+					   	<div class="col-sm-10">
+					   		<label class="radio-inline">
+									<input type="radio" value="1" /> 创建
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0" /> 不创建
+							</label>
+					    </div>
+			    	</div>
+			    	<div  class="form-group">
+					   	<div class="col-sm-2 control-label">
+					   		解压标识
+					   	</div>
+					   	<div class="col-sm-10">
+					   		<label class="radio-inline">
+									<input type="radio" value="1" /> 绝对路径
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0" /> 相对路径
+							</label>
+					    </div>
+			    	</div>
+			    	<div  class="form-group">
+					   	<div class="col-sm-2 control-label">
+					   		强制执行
+					   	</div>
+					   	<div class="col-sm-10">
+					   		<label class="radio-inline">
+									<input type="radio" value="1" /> 是
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0" /> 否
+							</label>
+					    </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		删除文件
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<textarea class="form-control" ></textarea>
+				        </div>	
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		启动参数
+				    	</div>
+				    	<div class="col-sm-10">
+				        	<textarea class="form-control" ></textarea>
+				        </div>	
+			    	</div>
+				</div>
+			</div>
+			
 			<div class="form-group">
 			   	<div class="col-sm-2 control-label">任务描述</div>
 			   	<div class="col-sm-10">
-					<textarea placeholder="" v-model.trim="mission.remark"></textarea>
+					<textarea placeholder="" row=3 v-model.trim="mission.remark"></textarea>
 			    </div>
 			</div>
 			<div class="form-group">
@@ -58,6 +392,14 @@
 	</div>
 </div>
 
-<script src="${request.contextPath}/statics/js/modules/mission/mission.js?_${.now?long}"></script>
+<#include "/js/modules/mission/mission.js"/>
+<#include "/js/modules/mission/filepush.js"/>
+<#include "/js/modules/mission/upgradeKillProcess.js"/>
+<#include "/js/modules/mission/upgradeBackup.js"/>
+<#include "/js/modules/mission/upgradeUpdate.js"/>
+<#include "/js/modules/mission/upgradeExecOrStart.js"/>
+<#include "/js/modules/mission/upgradeRecover.js"/>
+<#include "/js/modules/mission/singleExec.js"/>
+
 </body>
 </html>

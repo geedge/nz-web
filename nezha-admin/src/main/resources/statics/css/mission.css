@@ -1,8 +1,21 @@
-.form-control {
-    display: inline !important;
-    width: 50% !important;
-}
-
 .required-symbol {
 	left:200px !important;
+}
+
+textarea{
+	overflow: auto;
+    display: block;
+    width: 65%;
+    height: 110px;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857;
+    color: rgb(85, 85, 85);
+    background-color: rgb(255, 255, 255);
+    background-image: none;
+    border: 1px solid rgb(204, 204, 204);
+    border-radius: 4px;
+    box-shadow: rgba(0, 0, 0, 0.075) 0px 1px 1px inset;
+    transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+    margin: 0px 93.3281px 0px 0px;
 }
