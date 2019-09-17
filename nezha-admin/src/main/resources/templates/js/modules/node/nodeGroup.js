@@ -203,7 +203,12 @@ var vm = new Vue({
     },
     methods: {
         showTree: function (item) {
-            $("#" + item.id).toggle(500);
+            $("#box" + item.id).toggle(200);
+            if ($("#icon" + item.id).hasClass("mytreeicon-open")) {
+            	$("#icon" + item.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
+            } else {
+            	$("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
+            }
         },
         saveOrUpdate: function () {
             if (!this.validate()) { //在下方定义的validate方法
@@ -276,6 +281,18 @@ var vm = new Vue({
                     vm.system = r.data;
                 }
             });
+        },
+        showBtn: function(item) {
+        	$("#icon2" + item.id).css("display", "inline-block");
+        },
+        hideBtn: function(item) {
+        	$("#icon2" + item.id).hide();
+        },
+        showBtn2: function(item) {
+        	$("#icon2" + item.id).removeClass("mytreeicon-add_unact").addClass("mytreeicon-add_act");
+        },
+        hideBtn2: function(item) {
+        	$("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");;
         }
     },
     created: function () {
@@ -298,7 +315,7 @@ var vm = new Vue({
                 treeObj = $.fn.zTree.init($("#" + item.id), group_ztree, item.nodegroups);
                 treeObj.expandAll(true);
                 // 开始隐藏
-                $("#" + item.id).hide();
+                $("#box" + item.id).hide();
             });
         } else {
             var treeObj = $.fn.zTree.init($("#" + data.systems[0].id), group_ztree, data.systems[0].nodegroups);

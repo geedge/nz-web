@@ -129,3 +129,52 @@ tbody > tr > th {font-weight: normal; }
 	clear: both;
 	height: 34px;
 }
+.nodegroup_system {
+	font-size: 12px;
+}
+.mytreeicon {
+	margin-right: 2px;
+	float: left; 
+	display: inline-block;
+	width: 21px;
+	height: 21px;
+	background-color: transparent;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    background-image: url(../plugins/ztree/css/metroStyle/img/metro.png);
+}
+.mytreeicon-open {
+    background-position: -126px -63px;
+}
+.mytreeicon-close {
+    background-position: -105px -63px;
+}
+.mytreeicon-add_unact {
+	background-position: -189px 0px;
+	margin-left: 3px;
+	display: none;
+    float: right !important;
+}
+.mytreeicon-add_act {
+    float: right !important;
+	background-position: -168px 0px;
+	margin-left: 3px;
+	display: none;
+}
+.mytree-title {
+	margin-left: -16px;
+}
+.mytree-item {
+	
+}
+.mytree-subtitle {
+	display: inline-block;
+	float: left;
+}
+.mytree-subtitle:hover, .mytreeicon:hover {
+	cursor: pointer;
+}
+.mytree-box {
+	overflow: hidden;
+	margin-left: 12px !important;
+}

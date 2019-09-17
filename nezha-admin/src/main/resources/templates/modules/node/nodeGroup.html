@@ -8,24 +8,26 @@
 <body>
 
 <!-- 节点组 -->
-<div id="app" v-cloak style="float: left;">
+<div id="app" class="" style="width: 22%; display: inline-block;padding-left: 15px;float:left" v-cloak>
 
-    <div class="" style="margin-top:30px;margin-left:20px;width: 280px;height: 100%">
-        <div class="" v-for="item in systems" :key="item.id">
-            <div>
-                <div style="float:left">
-                    <a href="#" title="<@spring.message 'system.system'/>"
-                       class="col-sm-5 control-label" style="font-size: 120%;color: black; text-decoration:none;"
-                       @click="showTree(item)">{{item.name}}</a></div>
-                <div style="float:right;margin-right: 20px"><a href="#" title="<@spring.message 'common.add'/><@spring.message 'nodegroup.root.group'/>" @click="add(item)"><@spring.message 'common.add'/></a></div>
+    <div>
+    	<div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>业务系统<div style="clear:both"></div></div>
+        <div v-for="item in systems" :key="item.id" class="mytree-item">
+        	<div>
+	          	<span :id="'icon' + item.id" class="mytreeicon mytreeicon-open" @click="showTree(item)"></span>
+	           	<span class="mytree-subtitle" @mouseenter="showBtn(item)" @mouseleave="hideBtn(item)"><a :title="item.name" @click="showTree(item)">{{item.name}}</a>
+		           	<span :id="'icon2' + item.id" class="mytreeicon mytreeicon-add_unact" @mouseenter="showBtn2(item)" @mouseleave="hideBtn2(item)"></span>
+	           	</span>
             </div>
-            <div class="col-sm-10">
-                <ul :id="item.id" class="ztree"></ul>
+            <div style="clear:both"></div>
+            <div class="mytree-box" :id="'box' + item.id">
+            	<ul :id="item.id" class="ztree"></ul>
             </div>
+            <div style="clear:both"></div>
         </div>
     </div>
 
-    <div v-show="showForm" id="form" v-cloak style="width: 100%;height: 100%;">
+    <div v-show="showForm" id="form">
         <div class="panel panel-default">
             <form class="form-horizontal">
                 <div class="form-group">
@@ -86,7 +88,7 @@
 </div>
 
 <!-- 节点 -->
-<div id="nodeInfoApp" style="float: left;height: 100%;width: 1200px;margin-top: 100px;margin-left: 50px" v-cloak>
+<div id="nodeInfoApp" class="" style="width: 77%;display: inline-block;float:left" v-cloak>
 
     <div class="form-group">
         <a class="" href="#" style="font-size: 16px;"><@spring.message 'node.list'/></a>
