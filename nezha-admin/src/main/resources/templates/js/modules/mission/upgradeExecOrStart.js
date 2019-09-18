@@ -5,85 +5,99 @@ var upgradeExecOrStartChild = Vue.extend({
     	<div>
 		    <div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		启动文件或命令
+		    		<@spring.message 'mission.startupFileOrCommand'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		执行结果文件
+		    		<@spring.message 'mission.executionResultFile'/> 
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		最大等待时间
+		    		<@spring.message 'mission.maximumWaitingTime'/> 
 		    	</div>
-		    	<div class="col-sm-10">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>秒
+		    	<div class="col-sm-9">
+		        	<input type="text" class="form-control" v-model="param.destPath"/>&nbsp&nbsp秒
 		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		属主
+		    		<@spring.message 'mission.owner'/> 
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
 		        </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		强制执行
+			   		<@spring.message 'mission.forceEnforcement'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 是
+							<input type="radio" value="1" /> <@spring.message 'mission.yes'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 否
+						<input type="radio" value="0" /> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		常驻内存
+			   		<@spring.message 'mission.residentMemory'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 是
+							<input type="radio" value="1" /> <@spring.message 'mission.yes'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 否
+						<input type="radio" value="0" /> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		回传标识
+			   		<@spring.message 'mission.postbackID'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 是
+							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.yes'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 否
+						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
+	    	</div>
+	    	<div class="form-group" v-show="param.isCover==1">
+		    	<div class="col-sm-2 control-label">
+		    		<@spring.message 'mission.postFile'/>  
+		    	</div>
+		    	<div class="col-sm-9">
+		        	<input type="text" class="form-control"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
+		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		启动参数
+		    		<@spring.message 'mission.startupParameters'/> 
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<textarea class="form-control" v-model="param.destPath"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
-				<input type="button" class="btn btn-primary" @click="deleteparam" value="删除"/>
+				<a class="btn btn-primary" @click="deleteparam" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</div>
     	</div>
     `,
@@ -100,7 +114,8 @@ var upgradeExecOrStartChild = Vue.extend({
   data () {
     return {
       param: {
-    	pidFiles: ''
+    	pidFiles: '',
+    	isCover:0
       }
     }
   },
@@ -137,7 +152,7 @@ var upgradeExecOrStart = Vue.extend({
           @deleteIndex="del"
           @uploadData="getData">
         </upgradeExecOrStartChild>
-        <input type="button" class="btn btn-primary" @click="add" value="新增"/>
+        <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
     data () {

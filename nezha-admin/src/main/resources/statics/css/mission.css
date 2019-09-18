@@ -1,11 +1,7 @@
-.required-symbol {
-	left:200px !important;
-}
-
 textarea{
 	overflow: auto;
     display: block;
-    width: 65%;
+    width: 90%;
     height: 110px;
     padding: 6px 12px;
     font-size: 14px;

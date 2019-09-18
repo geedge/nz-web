@@ -11,16 +11,16 @@
 	<div v-show="showList">
 		<div class="grid-btn">
 			<div class="form-group col-sm-2">
-				<input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder='任务名称 '>
+				<input type="text" class="form-control" v-model="q.name" @keyup.enter="query" placeholder='<@spring.message 'mission.name'/> '>
 			</div>
 			<!-- <div class="form-group col-sm-2">
-				是否为周期任务:<multiselect ></multiselect>
+				<@spring.message 'mission.yes'/><@spring.message 'mission.no'/>为周期任务:<multiselect ></multiselect>
 			</div>
 			<div class="form-group col-sm-2">
 				任务状态:<multiselect  ></multiselect>
 			</div> -->
 			<div class="form-group col-sm-2">
-				<multiselect v-model="q.type" :options="missionTypeList" label="value" placeholder="<@spring.message 'mission.missionType'/>" :show-labels="false"></multiselect>
+				<multiselect v-model="q.type" :options="missionTypeList" label="value" placeholder="<@spring.message 'mission.type'/>" :show-labels="false"></multiselect>
 			</div>
 			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
 			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
@@ -37,16 +37,16 @@
 		<div class="panel-heading">{{title}}</div>
 		<form class="form-horizontal" id="missionTest">
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">任务名称</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.name'/></div>
+			   	<div class="col-sm-9">
 			        <input type="text" class="form-control" :class="{'form-control--error': $v.mission.name.$dirty && !$v.mission.name.required}" v-model.trim="$v.mission.name.$model"/>
-			        <!-- <span class="required-symbol">*</span> -->
-			        <div class="form-control_error-msg" v-if="$v.mission.name.$dirty && !$v.mission.name.required">必填项</div>
+			        <span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="$v.mission.name.$dirty && !$v.mission.name.required"><@spring.message 'validate.common.required'/></div>
 			    </div>
 			</div>
 			<div v-show="!missionParam" class="form-group">
-			   	<div class="col-sm-2 control-label">任务类型</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.type'/></div>
+			   	<div class="col-sm-9">
 			   		<template v-for="mt in missionTypeList">
 			   			<label class="radio-inline">
 							<input type="radio" :value="mt.code" v-model="mission.type" @click='updateCommandEnname'/> {{mt.value}}
@@ -57,58 +57,58 @@
 			
 			<!-- 当任务类型选为命令执行时 出现单选钮选择命令类型 -->
 			<div v-show="mission.type==2" class="form-group">
-			   	<div class="col-sm-2 control-label">命令类型</div>
-			   	<div class="col-sm-10">
-			   		<template v-for="et in executeType">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.commandType'/></div>
+			   	<div class="col-sm-9">
+			   		<template v-for="ct in commandType">
 			   			<label class="radio-inline">
-							<input type="radio" :value="et.code" v-model="mission.executeType" @click='updateCommandEnname'/> {{et.value}}
+							<input type="radio" :value="ct.code" v-model="mission.commandType" @click='updateCommandEnname'/> {{ct.value}}
 						</label>
 			    	</template>
 			    </div>
 			</div>
 			
 			<!-- 根据任务类型以及命令类型两个条件 筛选下拉框内容 -->
-			<div v-show="mission.type==2&&mission.executeType==0" class="form-group">
-				<div class="col-sm-2 control-label">命令名称:</div>
-			   	<div class="col-sm-10">
-					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList1" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>
+			<div v-show="mission.type==2&&mission.commandType==0" class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
+			   	<div class="col-sm-9">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList1" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>
 				</div>
 			</div>
 			
-			<div v-show="mission.type==2&&mission.executeType==1" class="form-group">
-				<div class="col-sm-2 control-label">命令名称:</div>
-			   	<div class="col-sm-10">
-					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList2" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>			
+			<div v-show="mission.type==2&&mission.commandType==1" class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
+			   	<div class="col-sm-9">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList2" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
 	 			</div>
 			</div>
 			
 			<!-- 升级部署类型选择 -->
 			<div v-show="mission.type==3" class="form-group">
-				<div class="col-sm-2 control-label">命令名称:</div>
-			   	<div class="col-sm-10">
-					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList3" label="value" placeholder="请选择命令名称" :show-labels="false"></multiselect>			
+				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
+			   	<div class="col-sm-9">
+					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList3" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
 	 			</div>
 			</div>
 			
 			<div v-show="!missionParam" class="form-group">
-			   	<div class="col-sm-2 control-label">节点组</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.nodeGroup'/></div>
+			   	<div class="col-sm-9">
 					<input type="text" class="form-control"></input><a class="btn btn-primary" @click=""><i class="fa fa-search"></i></a>		        
- 					<!-- <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="">必填项</div> -->
+ 					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
 			    </div>
 			</div>
 			<div v-show="!missionParam" class="form-group">
-			   	<div class="col-sm-2 control-label">节点</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.node'/></div>
+			   	<div class="col-sm-9">
  	 			    <input type="text" class="form-control"></input><a class="btn btn-primary" @click=""><i class="fa fa-search"></i></a>		        
- 					<!-- <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="">必填项</div>  -->
+ 					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
 			    </div>
 			</div>
 			<div v-show="!missionParam" class="form-group">
-			   	<div class="col-sm-2 control-label">查看权限</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.viewPermission'/></div>
+			   	<div class="col-sm-9">
 			   		<template v-for="vl in viewLevel">
 			   			<label class="radio-inline">
 							<input type="radio" name="missionViewLevel" :value="vl.code" v-model="mission.viewLevel"/> {{vl.value}}
@@ -120,7 +120,7 @@
 			<!-- 文件上传测试 -->
 			<!-- <div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label">路径</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
  	 			    <input type="file" class="" :v-model="files" name="files" @change="getFile($event)"></input>		        
 			    </div>
 			</div> -->
@@ -155,34 +155,35 @@
 			
 			<!-- 任务类型为命令执行 显示周期任务选项 -->
 			<div v-show="mission.type==2" class="form-group">
-			   	<div class="col-sm-2 control-label">周期任务</div>
-			   	<div class="col-sm-10">
-			   		<template v-for="lm in loopMission">
-			   			<label class="radio-inline">
-							<input type="radio" name="loopMission" :value="lm.code" v-model="mission.isLoop"/> {{lm.value}}
-						</label>
-			    	</template>
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.loopMission'/></div>
+			   	<div class="col-sm-9">
+			   		<label class="radio-inline">
+							<input type="radio" value="1" v-model="mission.isLoop"/> <@spring.message 'mission.yes'/>
+					</label>
+					<label class="radio-inline">
+						<input type="radio" value="0" v-model="mission.isLoop"/> <@spring.message 'mission.no'/>
+					</label>
 			    </div>
 			</div>
 			
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
-			   	<div class="col-sm-2 control-label">周期</div>
-			   	<div class="col-sm-10">
-			        <input type="text" class="form-control" :class="" v-model="mission.loopInterval"/>分钟
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.loop'/></div>
+			   	<div class="col-sm-9">
+			        <input type="text" class="form-control" :class="" v-model="mission.loopInterval"/><@spring.message 'mission.minute'/>
 			    </div>
 			</div>
 			
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
-			   	<div class="col-sm-2 control-label">开始时间</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.startTime'/></div>
+			   	<div class="col-sm-9">
 			        <input name="beginDate" id="beginDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
 					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setStartTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
 			    </div>
 			</div>
 			
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
-			   	<div class="col-sm-2 control-label">结束时间</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.endTime'/></div>
+			   	<div class="col-sm-9">
 			        <input name="endDate" id="endDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
 					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setEndTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
 			    </div>
@@ -194,69 +195,92 @@
 				<!-- NC升级 -->
 				<div v-show="mission.commandEnname!=null &&mission.commandEnname.code==7">
 					<div class="form-group">
+					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
+					   	<div class="col-sm-9">
+		 	 			    <input type="file" class="" name="" @change=""></input>
+		 	 			    <span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
+					    </div>
+					</div>
+					<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		推送目的地
+				    		<@spring.message 'mission.pushDestination'/>   
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
+				        	<input type="text" class="form-control" />
+				        	<span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>	
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		<@spring.message 'mission.owner'/>    
+				    	</div>
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		属主
+				    		<@spring.message 'mission.groups'/>     
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		属群
+				    		<@spring.message 'mission.filePermissions'/>
 				    	</div>
-				    	<div class="col-sm-10">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		文件权限
-				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div  class="form-group">
 					   	<div class="col-sm-2 control-label">
-					   		创建标识
+					   		<@spring.message 'mission.overwrite'/> 
 					   	</div>
-					   	<div class="col-sm-10">
+					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> 创建
+									<input type="radio" value="1" /> <@spring.message 'mission.create'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> 不创建
+								<input type="radio" value="0" /> <@spring.message 'mission.doNotCreate'/>
 							</label>
 					    </div>
 			    	</div>
 			    	<div  class="form-group">
 					   	<div class="col-sm-2 control-label">
-					   		解压标识
+					   		<@spring.message 'mission.uncompressionID'/>
 					   	</div>
-					   	<div class="col-sm-10">
+					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> 绝对路径
+									<input type="radio" value="1" /> <@spring.message 'mission.absolutePath'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> 相对路径
+								<input type="radio" value="0" /> <@spring.message 'mission.relativePath'/>
 							</label>
 					    </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		删除文件
+				    		<@spring.message 'mission.deleteFiles'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<textarea class="form-control" ></textarea>
+				        </div>	
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		<@spring.message 'mission.backUp'/>
+				    	</div>
+				    	<div class="col-sm-9">
+				        	<label class="radio-inline">
+									<input type="radio" value="1"/> <@spring.message 'mission.yes'/>
+							</label>
+							<label class="radio-inline">
+								<input type="radio" value="0"/> <@spring.message 'mission.no'/>
+							</label>
 				        </div>	
 			    	</div>
 				</div>
@@ -264,113 +288,127 @@
 				<!-- DC升级或者第三方部署 -->
 				<div v-show="mission.commandEnname!=null && (mission.commandEnname.code==8 || mission.commandEnname.code==9)">
 					<div class="form-group">
+					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
+					   	<div class="col-sm-9">
+		 	 			    <input type="file" class="" name="" @change=""></input>
+		 	 			    <span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
+					    </div>
+					</div>
+					<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		覆盖目录
+				    		<@spring.message 'mission.overwriteDirectory'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
+				        	<input type="text" class="form-control" />
+				        	<span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		<@spring.message 'mission.startupFileOrCommand'/>
+				    	</div>
+				    	<div class="col-sm-9">
+				        	<input type="text" class="form-control" />
+				        	<span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		<@spring.message 'mission.pidFile'/>
+				    	</div>
+				    	<div class="col-sm-9">
+				        	<input type="text" class="form-control" />
+				        	<span class="required-symbol">*</span>
+			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
+				        </div>
+			    	</div>
+			    	<div class="form-group">
+				    	<div class="col-sm-2 control-label">
+				    		<@spring.message 'mission.owner'/>
+				    	</div>
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		启动文件或命令
+				    		<@spring.message 'mission.groups'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		pid文件
+				    		<@spring.message 'mission.filePermissions'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<input type="text" class="form-control" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		属主
+				    		<@spring.message 'mission.waitingTime'/>
 				    	</div>
-				    	<div class="col-sm-10">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		属群
-				    	</div>
-				    	<div class="col-sm-10">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		文件权限
-				    	</div>
-				    	<div class="col-sm-10">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		等待时间
-				    	</div>
-				    	<div class="col-sm-10">
-				        	<input type="text" class="form-control" />秒
+				    	<div class="col-sm-9">
+				        	<input type="text" class="form-control" />&nbsp&nbsp<@spring.message 'mission.second'/>
 				        </div>
 			    	</div>
 			    	<div  class="form-group">
 					   	<div class="col-sm-2 control-label">
-					   		创建标识
+					   		<@spring.message 'mission.createLogo'/>
 					   	</div>
-					   	<div class="col-sm-10">
+					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> 创建
+									<input type="radio" value="1" /> <@spring.message 'mission.create'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> 不创建
+								<input type="radio" value="0" /> <@spring.message 'mission.doNotCreate'/>
 							</label>
 					    </div>
 			    	</div>
 			    	<div  class="form-group">
 					   	<div class="col-sm-2 control-label">
-					   		解压标识
+					   		<@spring.message 'mission.uncompressionID'/>
 					   	</div>
-					   	<div class="col-sm-10">
+					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> 绝对路径
+									<input type="radio" value="1" /> <@spring.message 'mission.absolutePath'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> 相对路径
+								<input type="radio" value="0" /> <@spring.message 'mission.relativePath'/>
 							</label>
 					    </div>
 			    	</div>
 			    	<div  class="form-group">
 					   	<div class="col-sm-2 control-label">
-					   		强制执行
+					   		<@spring.message 'mission.forceEnforcement'/>
 					   	</div>
-					   	<div class="col-sm-10">
+					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> 是
+									<input type="radio" value="1" /> <@spring.message 'mission.yes'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> 否
+								<input type="radio" value="0" /> <@spring.message 'mission.no'/>
 							</label>
 					    </div>
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		删除文件
+				    		<@spring.message 'mission.deleteFiles'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<textarea class="form-control" ></textarea>
 				        </div>	
 			    	</div>
 			    	<div class="form-group">
 				    	<div class="col-sm-2 control-label">
-				    		启动参数
+				    		<@spring.message 'mission.startupParameters'/>
 				    	</div>
-				    	<div class="col-sm-10">
+				    	<div class="col-sm-9">
 				        	<textarea class="form-control" ></textarea>
 				        </div>	
 			    	</div>
@@ -378,15 +416,16 @@
 			</div>
 			
 			<div class="form-group">
-			   	<div class="col-sm-2 control-label">任务描述</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.description'/></div>
+			   	<div class="col-sm-9">
 					<textarea placeholder="" row=3 v-model.trim="mission.remark"></textarea>
 			    </div>
 			</div>
 			<div class="form-group">
 				<div class="col-sm-2 control-label"></div> 
-				<input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-				&nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+				<button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+				&nbsp;&nbsp;
+				<button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
 			</div>
 		</form>
 	</div>

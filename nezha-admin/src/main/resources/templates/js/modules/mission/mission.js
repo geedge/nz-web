@@ -63,17 +63,18 @@ var vm = new Vue({
 			state:"",
 			type:1,
 			viewLevel:3,
-			executeType:0,
+			commandType:0,
 			commandEnname:null,
 			isLoop:0,
 			loopInterval:null,
-			param:""
+			param:{
+				beifen:0
+			}
 		},
 		radio: '1',
 		missionTypeList:[],
-		executeType:[],
+		commandType:[],
 		viewLevel:[],
-		loopMission:[],
 		commandEnnameTypeList1:[],
 		commandEnnameTypeList2:[],
 		commandEnnameTypeList3:[],
@@ -99,13 +100,13 @@ var vm = new Vue({
 				vm.missionTypeList = missionTypeList;
 			});
 		},
-		getExecuteType: function(event) {
-			$.getJSON(baseURL + "sys/dict/all?type=executeType&_"+$.now(), function(r){
-				var executeType = [];
+		getcommandType: function(event) {
+			$.getJSON(baseURL + "sys/dict/all?type=commandType&_"+$.now(), function(r){
+				var commandType = [];
 				for (var i = 0; i < r.data.length; i++) {
-					executeType.push(r.data[i]);
+					commandType.push(r.data[i]);
 				}
-				vm.executeType = executeType;
+				vm.commandType = commandType;
 			});
 		},
 		getCommandEnnameTypeList1: function(event) {
@@ -144,21 +145,23 @@ var vm = new Vue({
 				vm.viewLevel = viewLevel;
 			});
 		},
-		getLoopMission:function(){
-			$.getJSON(baseURL + "sys/dict/all?type=loopMission&_"+$.now(), function(r){
-				var loopMission = [];
-				for (var i = 0; i < r.data.length; i++) {
-					loopMission.push(r.data[i]);
-				}
-				vm.loopMission = loopMission;
-			});
-		},
 		add: function(){
 			vm.$v.mission.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.missionParam = false;
 			vm.title = "新增";
-			vm.mission = {name:null,remark:null,id:null,viewLevel:3,type:1,executeType:0,commandEnname:null,isLoop:0,loopInterval:null};
+			vm.mission = {
+					name:null,
+					remark:null,
+					id:null,
+					viewLevel:3,
+					type:1,
+					commandType:0,
+					commandEnname:null,
+					isLoop:0,
+					loopInterval:null,
+					param:null
+			};
 			vm.file='';
 		},
 		update: function () {
@@ -262,11 +265,10 @@ var vm = new Vue({
 		// 初始化进入执行方法
 		this.getMissionList();
 		this.getViewLevel();
-		this.getExecuteType();
+		this.getcommandType();
 		this.getCommandEnnameTypeList1();
 		this.getCommandEnnameTypeList2();
 		this.getCommandEnnameTypeList3();
-		this.getLoopMission();
 	}
 });
 </script>

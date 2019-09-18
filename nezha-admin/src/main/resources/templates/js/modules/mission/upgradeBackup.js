@@ -5,43 +5,47 @@ var upgradeBackupChild = Vue.extend({
     	<div>
 		    <div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		需要备份的文件
+		    		<@spring.message 'mission.filesThatNeedToBeBackedUp'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		备份到的路径
+		    		<@spring.message 'mission.pathToBackup'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		压缩标识
+			   		<@spring.message 'mission.compressionID'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 绝对路径
+							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.absolutePath'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 相对路径
+						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.relativePath'/> 
 					</label>
 			    </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		排除文件
+		    		<@spring.message 'mission.excludeFile'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<textarea class="form-control" v-model="param.destPath"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
-				<input type="button" class="btn btn-primary" @click="deleteparam" value="删除"/>
+				<a class="btn btn-primary" @click="deleteparam" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</div>
     	</div>
     `,
@@ -95,7 +99,7 @@ var upgradeBackup = Vue.extend({
           @deleteIndex="del"
           @uploadData="getData">
         </upgradeBackupChild>
-        <input type="button" class="btn btn-primary" @click="add" value="新增"/>
+        <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
     data () {

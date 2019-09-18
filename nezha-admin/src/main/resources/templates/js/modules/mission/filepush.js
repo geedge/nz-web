@@ -3,56 +3,60 @@ var filePushChild = Vue.extend({
     template: `  
     	<div>
 	    	<div class="form-group">
-			   	<div class="col-sm-2 control-label">文件</div>
-			   	<div class="col-sm-10">
- 	 			    <input type="file" class=""></input>		        
+			   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
+			   	<div class="col-sm-9">
+ 	 			    <input type="file" class=""></input>
+ 	 			    <span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
 			    </div>
 			</div>
 	    
 	        <div class="form-group">
-    			<div class="col-sm-2 control-label">推送目的地</div>
-    			<div class="col-sm-10">
+    			<div class="col-sm-2 control-label"><@spring.message 'mission.pushDestination'/></div>
+    			<div class="col-sm-9">
         			<input type="text" class="form-control" v-model="param.destPath"/>
+        			<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
     			</div>
     		</div>
 		
     		<div class="form-group">
-		   		<div class="col-sm-2 control-label">属主</div>
-		   		<div class="col-sm-10">
+		   		<div class="col-sm-2 control-label"><@spring.message 'mission.owner'/></div>
+		   		<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.username"/>
 		    	</div>
 			</div>
 
 
     		<div class="form-group">
-		   		<div class="col-sm-2 control-label">属群</div>
-		   		<div class="col-sm-10">
+		   		<div class="col-sm-2 control-label"><@spring.message 'mission.groups'/></div>
+		   		<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.groupName"/>
 		    	</div>
 			</div>
 
 
     		<div class="form-group">
-		   		<div class="col-sm-2 control-label">文件权限</div>
-		   		<div class="col-sm-10">
+		   		<div class="col-sm-2 control-label"><@spring.message 'mission.filePermissions'/></div>
+		   		<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.permisson"/>
 		    	</div>
 			</div>
 
 
     		<div  class="form-group">
-		   		<div class="col-sm-2 control-label">覆盖</div>
-		   		<div class="col-sm-10">
+		   		<div class="col-sm-2 control-label"><@spring.message 'mission.overwrite'/></div>
+		   		<div class="col-sm-9">
 			   		<label class="radio-inline">
-						<input type="radio" value="1" v-model="param.isCover"/> 是
+						<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.yes'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 否
+						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.no'/>
 					</label>
 		    	</div>
 			</div>	
 			<div class="form-group" v-show="items.length>1">
-				<input type="button" class="btn btn-primary" @click="deleteparam" value="删除"/>
+				<a class="btn btn-primary" @click="deleteparam" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</div>
     	</div>
     `,
@@ -120,7 +124,7 @@ var filePush = Vue.extend({
           @uploadData="getData"
           v-model="vm.mission.param">
         </filePushChild>
-        <input type="button" class="btn btn-primary" @click="add" value="新增"/>
+        <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
     data () {

@@ -5,56 +5,60 @@ var upgradeUpateChild = Vue.extend({
     	<div>
 		    <div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		源文件或目录
+		    		<@spring.message 'mission.sourceFileOrDirectory'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		覆盖目录
+		    		<@spring.message 'mission.overwriteDirectory'/>
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		解压标识
+			   		<@spring.message 'mission.uncompressionID'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 绝对路径
+							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.absolutePath'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 相对路径
+						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.relativePath'/> 
 					</label>
 			    </div>
 	    	</div>
 	    	<div  class="form-group">
 			   	<div class="col-sm-2 control-label">
-			   		创建标识
+			   		<@spring.message 'mission.createLogo'/> 
 			   	</div>
-			   	<div class="col-sm-10">
+			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> 创建
+							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.create'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> 不创建
+						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.doNotCreate'/> 
 					</label>
 			    </div>
 	    	</div>
 	    	<div class="form-group">
 		    	<div class="col-sm-2 control-label">
-		    		删除文件
+		    		<@spring.message 'mission.deleteFiles'/> 
 		    	</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-9">
 		        	<textarea class="form-control" v-model="param.destPath"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
-				<input type="button" class="btn btn-primary" @click="deleteparam" value="删除"/>
+				<a class="btn btn-primary" @click="deleteparam" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</div>
     	</div>
     `,
@@ -108,7 +112,7 @@ var upgradeUpate = Vue.extend({
           @deleteIndex="del"
           @uploadData="getData">
         </upgradeUpateChild>
-        <input type="button" class="btn btn-primary" @click="add" value="新增"/>
+        <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
     data () {

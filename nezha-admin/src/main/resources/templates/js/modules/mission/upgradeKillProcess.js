@@ -4,13 +4,15 @@ var upgradeKillProcessChild = Vue.extend({
     template: `  
     	<div>
 		    <div class="form-group">
-		    	<div class="col-sm-2 control-label">PID文件</div>
-		    	<div class="col-sm-10">
+		    	<div class="col-sm-2 control-label"><@spring.message 'mission.pidFile'/></div>
+		    	<div class="col-sm-9">
 		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 	    		</div>
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
-				<input type="button" class="btn btn-primary" @click="deleteparam" value="删除"/>
+				<a class="btn btn-primary" @click="deleteparam" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			</div>
     	</div>
     `,
@@ -64,7 +66,7 @@ var upgradeKillProcess = Vue.extend({
           @deleteIndex="del"
           @uploadData="getData">
         </upgradeKillProcessChild>
-        <input type="button" class="btn btn-primary" @click="add" value="新增"/>
+        <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
     data () {
