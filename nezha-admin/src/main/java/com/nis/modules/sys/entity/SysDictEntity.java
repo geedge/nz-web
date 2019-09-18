@@ -75,5 +75,10 @@ public class SysDictEntity implements Serializable {
 	 * 操作时间
 	 */
 	private Date opTime;
+	
+	/**
+	 * 国际化code
+	 */
+	private String i18nCode;
 
 }

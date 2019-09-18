@@ -16,15 +16,16 @@ import com.nis.common.utils.Query;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.Serializable;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,9 @@ import java.util.Map;
 @Service("sysDictService")
 public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> implements SysDictService {
 
+	@Autowired
+	private SysI18nService i18nService;
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String name = (String)params.get("name");
@@ -60,6 +64,14 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
         		.eq(StringUtils.isNotBlank(type), "type", type)
         		.eq("del_flag", Constant.DELFLAG_FALSE);
         List<SysDictEntity> list = this.list(wrapper);
+        if (!CommonUtil.isNull(list)) {
+        	for (SysDictEntity s : list) {
+        		if (!CommonUtil.isNull(s.getI18nCode())) {
+        			String queryValue = i18nService.queryValue(s.getI18nCode());
+        			s.setValue(queryValue);
+        		}
+        	}
+        }
         
 		return list;
 	}

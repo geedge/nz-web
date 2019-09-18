@@ -10,7 +10,7 @@
 	<div v-show="showList">
 		<div class="grid-btn">
 			<div class="form-group col-sm-2">
-				<input type="text" class="form-control" v-model="q.username" @keyup.enter="query" placeholder="用户名">
+				<input type="text" class="form-control" v-model="q.username" @keyup.enter="query" placeholder="<@spring.message 'user.username'/>">
 			</div>
 			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
 			<#if shiro.hasPermission("sys:user:save")>
