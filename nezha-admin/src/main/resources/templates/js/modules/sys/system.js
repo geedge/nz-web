@@ -208,7 +208,7 @@ var vm = new Vue({
 			var page = parent.$("#selectable").jqGrid('getGridParam','page');
 			parent.$("#selectable").jqGrid('setGridParam',{ 
                 postData:{'id':1},
-                page:page
+                page:1
             }).trigger("reloadGrid");
 		},
 		validate: function () {//提交时的校验

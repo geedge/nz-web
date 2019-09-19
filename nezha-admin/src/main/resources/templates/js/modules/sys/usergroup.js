@@ -178,7 +178,7 @@ var vm = new Vue({
 			vm.showList = true;
 			var page = $("#jqGrid").jqGrid('getGridParam','page');
 			$("#jqGrid").jqGrid('setGridParam',{ 
-                page:page
+                page:1
             }).trigger("reloadGrid");
 		},
 		validate: function () {//提交时的校验

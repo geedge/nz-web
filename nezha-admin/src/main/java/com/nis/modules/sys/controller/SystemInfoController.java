@@ -50,7 +50,7 @@ public class SystemInfoController extends AbstractController {
 	@ApiOperation(httpMethod = "GET", value = "业务系统详情查询")
 	public R detail(Long id) {
 		if (id == null) {
-			return R.ok(ShiroUtils.getCurrSystem());
+			return R.ok(systemInfoService.queryDetail(ShiroUtils.getCurrSystem().getId()));
 		}
 		SystemInfoEntity queryDetail = systemInfoService.queryDetail(id);
 		return R.ok(queryDetail);

@@ -230,7 +230,7 @@ var vm = new Vue({
             var page = $("#jqGrid").jqGrid('getGridParam','page');
             $("#jqGrid").jqGrid('setGridParam',{
                 postData:{'username': vm.q.username},
-                page:page
+                page:1
             }).trigger("reloadGrid");
         },
 		validate: function () {//提交时的校验
