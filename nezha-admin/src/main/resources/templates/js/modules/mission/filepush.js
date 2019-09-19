@@ -14,9 +14,9 @@ var filePushChild = Vue.extend({
 	        <div class="form-group">
     			<div class="col-sm-2 control-label"><@spring.message 'mission.pushDestination'/></div>
     			<div class="col-sm-9">
-        			<input type="text" class="form-control" v-model="param.destPath"/>
+        			<input type="text" class="form-control" :class="{'form-control--error': vm.$v.mission.param.destPath.$dirty && ! vm.$v.mission.param.destPath.required}" v-model="param.destPath"/>
         			<span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="vm.$v.mission.param.destPath.$dirty && ! vm.$v.mission.param.destPath.required"><@spring.message 'validate.common.required'/></div>
     			</div>
     		</div>
 		
@@ -85,13 +85,6 @@ var filePushChild = Vue.extend({
   watch: {
     param: {
       handler (newV, oldV) {
-       /*  if (newV.name.length === 0) {
-          return false
-        }
-        if (newV.age.length === 0) {
-          return false
-        }
- */
         this.$emit('uploadData', {index: this.index, data: newV})
       },
       deep: true
@@ -158,6 +151,7 @@ var filePush = Vue.extend({
         },
         //  get the data from child
         getData: function (val) {
+          vm.mission.param=val.data;
           let index = val.index
           this.items[index] = val.data
           console.log('I got the data:', JSON.stringify(this.items))

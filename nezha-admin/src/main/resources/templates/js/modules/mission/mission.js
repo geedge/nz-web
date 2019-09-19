@@ -69,12 +69,14 @@ var vm = new Vue({
 			loopInterval:null,
 			param:{
 				beifen:0
-			}
+			},
+			userGroup:null
 		},
 		radio: '1',
 		missionTypeList:[],
 		commandType:[],
 		viewLevel:[],
+		userGroups:[],
 		commandEnnameTypeList1:[],
 		commandEnnameTypeList2:[],
 		commandEnnameTypeList3:[],
@@ -84,6 +86,11 @@ var vm = new Vue({
 		mission:{
 			name:{
 				required
+			},
+			param:{
+				destPath:{
+					required
+				}
 			}
 		}
 	}, 
@@ -145,6 +152,16 @@ var vm = new Vue({
 				vm.viewLevel = viewLevel;
 			});
 		},
+		getUserGroups:function(){
+			$.getJSON(baseURL + "sys/user/info?"+$.now(), function(r){
+				var userGroups = [];
+				for (var i = 0; i < r.user.usergroups.length; i++) {
+					userGroups.push(r.user.usergroups[i]);
+				}
+				vm.userGroups = userGroups;
+				console.log(userGroups)
+			});
+		},
 		add: function(){
 			vm.$v.mission.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
@@ -160,7 +177,8 @@ var vm = new Vue({
 					commandEnname:null,
 					isLoop:0,
 					loopInterval:null,
-					param:null
+					param:null,
+					userGroup:null
 			};
 			vm.file='';
 		},
@@ -269,6 +287,7 @@ var vm = new Vue({
 		this.getCommandEnnameTypeList1();
 		this.getCommandEnnameTypeList2();
 		this.getCommandEnnameTypeList3();
+		this.getUserGroups();
 	}
 });
 </script>

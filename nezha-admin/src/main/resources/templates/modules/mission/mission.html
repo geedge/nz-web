@@ -116,6 +116,13 @@
 			    	</template>
 			    </div>
 			</div>
+			<!-- 当查看权限为用户组内时 选择具体用户组 -->
+			<div v-show="mission.viewLevel==1" class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/>:</div>
+			   	<div class="col-sm-9">
+					<multiselect v-model="mission.userGroup" :options="userGroups" label="name" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
+	 			</div>
+			</div>
 			
 			<!-- 文件上传测试 -->
 			<!-- <div v-show="!missionParam" class="form-group">
