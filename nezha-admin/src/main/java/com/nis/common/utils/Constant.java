@@ -209,9 +209,8 @@ public class Constant {
     public static final String NODE_TYPE_SERVER = "1";  // server
     public static final String NODE_TYPE_NET = "2";     // net
 
-    // 数据字典定义nodeTag type 类型为server net
-    public static final String DICT_NODE_TYPE_SERVER = "server";
-    public static final String DICT_NODE_TYPE_NET = "net";
+    // 数据字典定义nodeTag type 类型为nodeTag + server(1) / net (2)
+    public static final String DICT_NODE_TAG_TYPE = "nodeTag";
 
     // 节点组 分配节点/添加子节点组
     public static final String NODEGROUP_REFUSE= "0"; // 不可以

@@ -11,49 +11,43 @@
     <!-- 列表  查询 -->
     <div v-show="showList">
         <div class="grid-btn">
-            <!--<div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
-                       placeholder="<@spring.message 'common.name'/>">
-            </div>-->
+
+            <!-- 搜索条件 -->
             <div class="form-group col-sm-2">
                 <input type="text" class="form-control" v-model="q.ip" @keyup.enter="query"
                        placeholder="<@spring.message 'node.ipAddress'/>">
             </div>
 
             <div class="form-group col-sm-2">
-                <multiselect v-model="q.type" :options="nodeTypes" label="value" :show-labels="false"
-                             placeholder="<@spring.message 'node.type'/>" @close="getQueryTag"></multiselect>
-            </div>
-
-            <!--<div class="form-group col-sm-2">
-                <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false"
-                             placeholder="<@spring.message 'node.tag'/>" @open="checkQueryTag"></multiselect>
+                <multiselect :options="nodeTypes" label="value" :show-labels="false"
+                             v-model="q.type" @close="getQueryTag"
+                             placeholder="<@spring.message 'node.type'/>"></multiselect>
             </div>
 
 
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>" :show-labels="false"
-                             :options="nodeStates" label="value"></multiselect>-->
-            <a class="btn btn-default" @click="advancedSearch"><i class="fa"
-                                                                  :class="{'fa-angle-double-down': !isAdvancedSearch, 'fa-angle-double-up': isAdvancedSearch}"></i></a>
-            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i
-                    class="fa fa-search"></i></a>
-            <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>"><i
-                    class="fa fa-refresh"></i></a>
+            <!-- 功能按钮 -->
+            <a class="btn btn-default" @click="advancedSearch" title="<@spring.message 'common.advanced.search'/>">
+                <i class="fa" :class="{'fa-angle-double-down': !isAdvancedSearch, 'fa-angle-double-up': isAdvancedSearch}"></i>
+            </a>
+            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>">
+                <i class="fa fa-search"></i></a>
+            <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>">
+                <i class="fa fa-refresh"></i></a>
 
-            <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i
-                    class="fa fa-plus"></i></a>
-            <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i
-                    class="fa fa-pencil-square-o"></i></a>
-            <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i
-                    class="fa fa-trash-o"></i></a>
-            <a class="btn btn-primary" @click="changeState(1)" title="<@spring.message 'common.onLine'/>"><i
-                    class="fa fa-arrow-up"></i></a>
-            <a class="btn btn-primary" @click="changeState(2)" title="<@spring.message 'common.offLine'/>"><i
-                    class="fa fa-arrow-down"></i></a>
+            <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>">
+                <i class="fa fa-plus"></i></a>
+            <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>">
+                <i class="fa fa-pencil-square-o"></i></a>
+            <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>">
+                <i class="fa fa-trash-o"></i></a>
+            <a class="btn btn-primary" @click="changeState(1)" title="<@spring.message 'common.onLine'/>">
+                <i class="fa fa-arrow-up"></i></a>
+            <a class="btn btn-primary" @click="changeState(2)" title="<@spring.message 'common.offLine'/>">
+                <i class="fa fa-arrow-down"></i></a>
         </div>
 
 
+        <!-- 搜索条件 -->
         <div class="grid-btn grid-btn_advanced" v-show="isAdvancedSearch">
             <div class="form-group col-sm-2">
                 <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
@@ -66,27 +60,31 @@
             </div>
 
             <div class="form-group col-sm-2">
-                <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>" :show-labels="false" :options="nodeStates"
+                <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>"
+                             :show-labels="false" :options="nodeStates"
                              label="value"></multiselect>
             </div>
         </div>
 
+        <!-- 列表数据 / 分页 -->
+        <table id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+
     </div>
 
-    <table id="jqGrid"></table>
-    <div id="jqGridPager"></div>
-
-    <!-- 添加/修改 表单 -->
+    <!-- 添加 / 修改 表单 -->
     <div v-show="!showList" class="panel panel-default">
+        <!-- 标题 -->
         <div class="panel-heading">{{title}}</div>
         <form class="form-horizontal">
 
+            <!-- 名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
                            :class="{'form-control--error': $v.nodeInfo.name.$dirty && !$v.nodeInfo.name.required}"
-                           v-model.trim="nodeInfo.name" @blur="$v.nodeInfo.name.$touch"
+                           v-model.trim="$v.nodeInfo.name.$model"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeInfo.name.$dirty && !$v.nodeInfo.name.required">
@@ -98,6 +96,7 @@
                 </div>
             </div>
 
+            <!-- 主机名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.hostName'/></div>
                 <div class="col-sm-9">
@@ -106,12 +105,14 @@
                 </div>
             </div>
 
+            <!--<pre>{{$v.nodeInfo.ip}}</pre>-->
+            <!-- IP 地址 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.ipAddress'/></div>
                 <div class="col-sm-9">
-                    <input type="text" class="form-control"
+                    <input type="text" class="form-control" id="ipAddress"
                            :class="{'form-control--error': $v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required || !$v.nodeInfo.ip.ipAddress}"
-                           v-model.trim="nodeInfo.ip" @blur="$v.nodeInfo.ip.$touch"
+                           v-model.trim="$v.nodeInfo.ip.$model"
                            placeholder="<@spring.message 'node.ipAddress'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required">
@@ -127,13 +128,14 @@
                 </div>
             </div>
 
+            <!-- 设备类型 server / net -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.type'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.type" :options="nodeTypes"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>" label="value"
+                    <multiselect :options="nodeTypes" label="value" :show-labels="false" :disabled="disabledFlag"
                                  :class="{'form-control--error': $v.nodeInfo.type.$dirty && !$v.nodeInfo.type.required}"
-                                 @close="$v.nodeInfo.type.$touch(),getTags()" :show-labels="false"></multiselect>
+                                 v-model="$v.nodeInfo.type.$model" @close="getTags()"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeInfo.type.$dirty && !$v.nodeInfo.type.required">
                         <@spring.message 'validate.common.required'/>
@@ -141,21 +143,24 @@
                 </div>
             </div>
 
+            <!-- 设备标签 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.tag'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.tag" :options="nodeTags"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"
-                                 label="value" @open="checkNodeType()" :show-labels="false"></multiselect>
+                    <multiselect :options="nodeTags" label="value" :show-labels="false" :disabled="disabledFlag"
+                                 v-model="nodeInfo.tag" @open="checkNodeType()"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                 </div>
             </div>
 
+            <!-- U位大小 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.uSize'/>(U)</div>
                 <div class="col-sm-9">
-                    <input type="text" class="form-control" v-model.trim="nodeInfo.uSize"
+                    <input type="text" class="form-control"
                            :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
-                           @blur="$v.nodeInfo.uSize.$touch" placeholder="<@spring.message 'node.uSize'/>(U)"/>
+                           v-model.trim="$v.nodeInfo.uSize.$model"
+                           placeholder="<@spring.message 'node.uSize'/>(U)"/>
                     <span class="required-symbol"
                           v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
                     <div class="form-control_error-msg"
@@ -169,22 +174,25 @@
                 </div>
             </div>
 
+            <!-- 机房名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.room.name'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.nodeRoom" :options="rooms" label="roomName"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"
+                    <multiselect :options="rooms" label="roomName" :disabled="disabledFlag" :show-labels="false"
                                  @close="getCabinets($event),$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()"
-                                 @open="checkUsize()" :show-labels="false"></multiselect>
+                                 v-model="nodeInfo.nodeRoom" @open="checkUsize()"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                 </div>
             </div>
+
+            <!-- 机柜名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.name'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.cabinetId" :options="cabinets" label="name"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"
+                    <multiselect :options="cabinets" label="name" :disabled="disabledFlag" :show-labels="false"
                                  @close="getStarts($event),$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
-                                 @open="checkNodeRoom()" :show-labels="false"></multiselect>
+                                 v-model="nodeInfo.cabinetId" @open="checkNodeRoom()"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                     <span class="required-symbol"
                           v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">*</span>
                     <div class="form-control_error-msg"
@@ -194,12 +202,14 @@
                 </div>
             </div>
 
+            <!-- 机柜起始位置 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinetStart'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.cabinetStart" :options="starts" @blur="$v.nodeInfo.uSize.$touch()"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>" @open="checkCabStart()"
-                                 :show-labels="false"></multiselect>
+                    <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
+                                 v-model="nodeInfo.cabinetStart" @open="checkCabStart()"
+                                 @blur="$v.nodeInfo.uSize.$touch()"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                     <span class="required-symbol"
                           v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">*</span>
                     <div class="form-control_error-msg"
@@ -209,13 +219,14 @@
                 </div>
             </div>
 
+            <!-- 在线状态 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.onLineState'/></div>
                 <div class="col-sm-9">
-                    <multiselect v-model="nodeInfo.state" :options="nodeStates"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>" label="value"
+                    <multiselect :options="nodeStates" label="value" :disabled="disabledFlag" :show-labels="false"
                                  :class="{'form-control--error': $v.nodeInfo.state.$dirty && !$v.nodeInfo.state.required}"
-                                 @close="$v.nodeInfo.state.$touch" :show-labels="false"></multiselect>
+                                 v-model="$v.nodeInfo.state.$model"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.nodeInfo.state.$dirty && !$v.nodeInfo.state.required">
                         <@spring.message 'validate.common.required'/>
@@ -223,12 +234,14 @@
                 </div>
             </div>
 
-            <div class="form-group" v-if="nodeInfo.type != null && nodeInfo.type.code == 2">
+            <!-- snmp端口 -->
+            <div class="form-group" v-show="nodeInfo.type != null && nodeInfo.type.code == 2">
                 <div class="col-sm-2 control-label"><@spring.message 'node.snmpPort'/></div>
                 <div class="col-sm-9">
-                    <input type="text" v-model.trim="nodeInfo.snmpPort" class="form-control"
+                    <input type="text" class="form-control"
                            :class="{'form-control&#45;&#45;error':  $v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric}"
-                           @blur="$v.nodeInfo.snmpPort.$touch" placeholder="<@spring.message 'node.snmpPort'/>"/>
+                           v-model.trim="$v.nodeInfo.snmpPort.$model"
+                           placeholder="<@spring.message 'node.snmpPort'/>"/>
                     <div class="form-control_error-msg"
                          v-if="$v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric">
                         <@spring.message 'validate.common.numeric'/>
@@ -236,7 +249,8 @@
                 </div>
             </div>
 
-            <div class="form-group" v-if="nodeInfo.type != null && nodeInfo.type.code == 2">
+            <!-- snmp团体 -->
+            <div class="form-group" v-show="nodeInfo.type != null && nodeInfo.type.code == 2">
                 <div class="col-sm-2 control-label"><@spring.message 'node.snmpCommunity'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control" v-model.trim="nodeInfo.snmpCommunity"
@@ -244,6 +258,7 @@
                 </div>
             </div>
 
+            <!-- 用户名 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'user.username'/></div>
                 <div class="col-sm-9">
@@ -252,6 +267,7 @@
                 </div>
             </div>
 
+            <!-- 密码 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'user.password'/></div>
                 <div class="col-sm-9">
@@ -260,6 +276,7 @@
                 </div>
             </div>
 
+            <!-- 备注 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.remark'/></div>
                 <div class="col-sm-9">
@@ -268,7 +285,9 @@
                 </div>
             </div>
 
+            <pre v-show="disabledFlag" style="text-align: center;color: red">此节点已和其他业务系统建立联系,点击保存和当前系统再次建立联系</pre>
 
+            <!-- 保存 / 返回 -->
             <div class="form-group form-group_opbox">
                 <div>
                     <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"

@@ -16,12 +16,14 @@ import com.nis.modules.node.service.NodeInfoService;
 import com.nis.modules.node.service.SystemNodeRelService;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.org.apache.xalan.internal.lib.NodeInfo;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -100,10 +102,10 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     public void getTagName(List<NodeInfoEntity> nodeInfoEntities) {
         Map<String, Object> map = new HashMap();
-        map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
+        map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_SERVER); // 节点类型为 server
         List<SysDictEntity> serverTags = sysDictService.queryList(map);
 
-        map.put("type", Constant.DICT_NODE_TYPE_NET); // 节点类型为 Net
+        map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_NET); // 节点类型为 Net
         List<SysDictEntity> netTags = sysDictService.queryList(map);
 
         for (NodeInfoEntity nodeInfo : nodeInfoEntities) {
@@ -139,9 +141,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         Map<String, Object> map = new HashMap();
 
         if (Constant.NODE_TYPE_SERVER.equals(nodeInfoEntity.getType())) {
-            map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
+            map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_SERVER); // 节点类型为 server
         } else if (Constant.NODE_TYPE_NET.equals(nodeInfoEntity.getType())) {
-            map.put("type", Constant.DICT_NODE_TYPE_NET);    // 节点类型为 Net
+            map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_NET);    // 节点类型为 Net
         } else {
             throw new NZException(RCode.NODE_TYPE_NOTFOUND); // 节点类型未找到
         }
@@ -171,18 +173,24 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     //  IP校验，分三种情况：1.校验不通过；2.校验通过；3.ip已在其他业务系统里存在，此时返回node实体，询问用户是否关联；
     @Override
     public R ipCheck(Long uuid, String ip) {
-        if (ShiroUtils.isGlobal()) {
+        if (ShiroUtils.isGlobal()) { // global
             if (checkFieldExist(uuid, "ip", ip)) {  // 通过
                 return R.ok();
             } else {                                         // 不通过
                 return R.error(RCode.NODE_IPADDRESS_DUPLICATE);
             }
-        } else {
+        } else { // 当前业务系统
             if (checkFieldExist(uuid, "ip", ip)) {   // 通过
                 return R.ok();
             } else {                                          // 其他业务系统已存在 返回详情
                 NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", ip));
                 NodeInfoEntity nodeDetail = this.detail(node.getUuid());
+                List<SystemInfoEntity> systemInfo = nodeDetail.getSystemInfo();
+                for (SystemInfoEntity entity : systemInfo) {
+                    if (entity.getId().equals(ShiroUtils.getCurrSystemId())) {
+                        return R.error(RCode.NODE_IPADDRESS_DUPLICATE); // 本系统已存在该IP
+                    }
+                }
                 return R.ok(nodeDetail);
             }
         }
@@ -310,8 +318,8 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 if (starts.size() > 0 && !starts.contains(nodeInfoEntity.getCabinetStart())) {
                     throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
                 }
-            }else{ // 没有指定机柜的情况 不可以填写起始位置
-                if(nodeInfoEntity.getCabinetStart() != null){
+            } else { // 没有指定机柜的情况 不可以填写起始位置
+                if (nodeInfoEntity.getCabinetStart() != null) {
                     throw new NZException(RCode.NODECABINET_ID_ISNULL); // 指定机柜起始位置,需要指定机柜ID
                 }
             }
@@ -340,7 +348,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         Map<String, Object> map = new HashMap();
 
         if (Constant.NODE_TYPE_SERVER.equals(nodeInfoEntity.getType())) {
-            map.put("type", Constant.DICT_NODE_TYPE_SERVER); // 节点类型为 server
+            map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_SERVER); // 节点类型为 server
             if (nodeInfoEntity.getSnmpPort() != null) {
                 throw new NZException(RCode.NODE_SERVER_CANNOT_HAVE_SNMPPORT);
             }
@@ -348,7 +356,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 throw new NZException(RCode.NODE_SERVER_CANNOT_HAVE_SNMPCOMMUNITY);
             }
         } else if (Constant.NODE_TYPE_NET.equals(nodeInfoEntity.getType())) {
-            map.put("type", Constant.DICT_NODE_TYPE_NET);    // 节点类型为 Net
+            map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_NET);    // 节点类型为 Net
             if (nodeInfoEntity.getSnmpPort() == null) {
                 nodeInfoEntity.setSnmpPort(161);
             }
@@ -380,51 +388,80 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateNodeInfo(NodeInfoEntity nodeInfoEntity) {
-        // 1. 校验 IP NAME 是否唯一
-        if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
-            if (this.nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
-
-                //2. 校验可用机柜
-                if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
-
-                    NodeCabinetEntity cab = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
-                    if (cab == null) {
-                        throw new NZException(RCode.NODECABINET_NOT_EXISTS);
-                    }
-
-                    // 查询该机柜的可选起始位置
-                    List<Integer> starts = this.checkPosition(nodeInfoEntity);
-
-                    if (starts == null) {
-                        throw new NZException(RCode.NODECABINET_NOT_HAVE_POSITION); // 所选机柜 U位已被占用 或 不存在该位置
-                    }
-                    if (nodeInfoEntity.getCabinetStart() == null) {
-                        throw new NZException(RCode.NODE_USTART_ISNULL);
-                    }
-                    if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
-                        throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
-                    }
-                }
-
-                // 校验节点类型和标签是否正确
-                this.checkTypeAndTag(nodeInfoEntity);
-
-                //3 IP地址转换 IP整数
-                nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
-                //4. 密码加密 base64
-                if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
-                    nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
-                }
-                nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
-                nodeInfoEntity.setOpTime(new Date());
-
-                //5. 入库
-                update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+        if (ShiroUtils.isGlobal()) { // global 系统下
+            // 1.校验IP
+            if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
+                // 正常修改操作
+                this.updateNode(nodeInfoEntity);
             } else {
-                throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
+                // ip 已存在 抛异常
+                throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
             }
         } else {
-            throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);// IP地址重复
+            // 校验IP
+            if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
+                // 正常修改操作
+                this.updateNode(nodeInfoEntity);
+            } else {
+                // 维护关系
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()));
+                List<SystemNodeRelEntity> systemInfo = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", node.getUuid()));
+                for (SystemNodeRelEntity entity : systemInfo) {
+                    if (entity.getSystemId() - ShiroUtils.getCurrSystemId() == 0) {
+                        throw new NZException(RCode.NODE_SYSTEM_REL_EXISTS); // 节点和业务系统已经关联
+                    }
+                }
+                // ip已经存在 和自身没有关联 则建立关联
+                SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(ShiroUtils.getCurrSystemId(), node.getUuid(),
+                        ShiroUtils.getCurrSystemId(), new Date());
+                systemNodeRelService.save(nodeRelEntity);
+            }
+        }
+    }
+
+    // 正常修改流程
+    public void updateNode(NodeInfoEntity nodeInfoEntity) {
+        if (this.nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
+
+            // 3. 校验可用机柜
+            if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
+                // 指定机柜的情况下 必须指定机柜起始位置
+                if (nodeInfoEntity.getCabinetStart() == null) {
+                    throw new NZException(RCode.NODE_USTART_ISNULL);
+                }
+
+                NodeCabinetEntity cab = nodeCabinetService.getById(nodeInfoEntity.getCabinetId());
+                if (cab == null) {
+                    throw new NZException(RCode.NODECABINET_NOT_EXISTS);
+                }
+
+                // 查询该机柜的可选起始位置
+                List<Integer> starts = this.checkPosition(nodeInfoEntity);
+
+                if (starts == null) {
+                    throw new NZException(RCode.NODECABINET_NOT_HAVE_POSITION); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+                if (!starts.contains(nodeInfoEntity.getCabinetStart())) {
+                    throw new NZException(RCode.NODE_USTART_OCCUPIED); // 所选机柜 U位已被占用 或 不存在该位置
+                }
+            }
+
+            // 校验节点类型和标签是否正确
+            this.checkTypeAndTag(nodeInfoEntity);
+
+            //3 IP地址转换 IP整数
+            nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
+            //4. 密码加密 base64
+            if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
+                nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
+            }
+            nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
+            nodeInfoEntity.setOpTime(new Date());
+
+            //5. 入库
+            update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+        } else {
+            throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
         }
     }
 
@@ -627,13 +664,13 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         page.setRecords(queryNodeBySystemId);
         return new PageUtils(page);
     }
-    
+
     @Override
     public PageUtils querySelectableNodeBySystemId(Map<String, Object> params) {
-    	IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
-    	List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.querySelectableNodeBySystemId(page, (Long) params.get("id"));
-    	this.getTagName(queryNodeBySystemId);
-    	page.setRecords(queryNodeBySystemId);
-    	return new PageUtils(page);
+        IPage<NodeInfoEntity> page = new Query<NodeInfoEntity>().getPage(params);
+        List<NodeInfoEntity> queryNodeBySystemId = nodeInfoDao.querySelectableNodeBySystemId(page, (Long) params.get("id"));
+        this.getTagName(queryNodeBySystemId);
+        page.setRecords(queryNodeBySystemId);
+        return new PageUtils(page);
     }
 }

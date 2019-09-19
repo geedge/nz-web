@@ -33,23 +33,22 @@ $(function () {
             order: "order"
         },
         gridComplete: function () {
-            //隐藏grid底部滚动条
-            $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+            $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"}); // 隐藏grid底部滚动条
         }
     });
 });
 
-//注册select组件
+// 注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
 
+// 引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 Vue.use(window.vuelidate.default);
-//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 var required = window.validators.required;
 var minValue = window.validators.minValue;
 var integer = window.validators.integer;
 var helpers = window.validators.helpers;
 
-//自定义规则，;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.nodeCabinet)
+// 自定义规则，;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.nodeCabinet)
 var nameCheck = function (value, nodeCabinet) {
     var flag = true;
     if (nodeCabinet.roomId == null) {
@@ -63,7 +62,7 @@ var nameCheck = function (value, nodeCabinet) {
             $.ajax({
                 type: "GET",
                 url: baseURL + "cab/cabNameCheck" + params,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+                async: false, // 关闭异步
                 dataType: "json",
                 success: function (r) {
                     if (r.code != 200) {
@@ -88,7 +87,7 @@ var cabUbitCheck = function (value, nodeCabinet) {
         $.ajax({
             type: "GET",
             url: baseURL + "cab/cabUbitCheck" + params,
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false, // 关闭异步
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
@@ -131,8 +130,7 @@ var vm = new Vue({
     validations: {
         nodeCabinet: {
             name: {
-                required,
-                nameCheck
+                required, nameCheck
             },
             roomId: {
                 required
@@ -144,10 +142,7 @@ var vm = new Vue({
                 required
             },
             ubit: {
-                required,
-                integer,
-                minValue: minValue(1),
-                cabUbitCheck
+                required, integer, minValue: minValue(1), cabUbitCheck
             }
         }
     },
@@ -173,15 +168,14 @@ var vm = new Vue({
             $.ajax({
                 type: "GET",
                 url: baseURL + "cab/detail?id=" + id,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+                async: false, // 关闭异步
                 dataType: "json",
                 success: function (r) {
                     vm.nodeCabinet = r.data;
                 }
             });
 
-            // 解决下拉框回显问题
-            // 1 .先得到目前的机房 行号 列号 的数组集合
+            // 得到目前的机房 行号 列号 的数组集合
             var cab = JSON.parse(JSON.stringify(vm.nodeCabinet));
             this.getRooms();
             vm.rooms.some(item => {
@@ -258,8 +252,7 @@ var vm = new Vue({
             });
         },
         getRooms: function () { // 获取机房列表
-            // 获取之前先置空
-            vm.rooms = [];
+            vm.rooms = [];      // 获取之前先置空
             var params = "";
             if (data.nodeCabinet.id) {
                 params = "?id=" + data.nodeCabinet.id;
@@ -268,7 +261,7 @@ var vm = new Vue({
             $.ajax({
                 type: "GET",
                 url: baseURL + "cab/optionalRoom" + params,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+                async: false, // 关闭异步，否则会在执行完ajax前就跳到下一段代码
                 dataType: "json",
                 success: function (r) {
                     vm.rooms = r.data.list;
@@ -300,7 +293,7 @@ var vm = new Vue({
             });
         },
         saveOrUpdate: function () {
-            if (!vm.validate()) { //在下方定义的validate方法
+            if (!vm.validate()) { // 在下方定义的validate方法
                 return;
             }
             var url;
@@ -329,34 +322,30 @@ var vm = new Vue({
             });
         },
         checkRoom: function () {
-            if(vm.nodeCabinet.roomId == null){
+            if (vm.nodeCabinet.roomId == null) {
                 alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!")
-            }else if(vm.roomRows.length <1 ){
+            } else if (vm.roomRows.length < 1) {
                 vm.roomCols = [];
                 alert("<@spring.message 'node.room.notPosition'/>");
             }
         },
-        checkRoomRow:function(){
-            if(vm.nodeCabinet.roomId == null){
+        checkRoomRow: function () {
+            if (vm.nodeCabinet.roomId == null) {
                 alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.room.name'/>!")
-            }else if(vm.nodeCabinet.roomRow == null && vm.roomRows.length <1){
+            } else if (vm.nodeCabinet.roomRow == null && vm.roomRows.length < 1) {
                 alert("<@spring.message 'node.room.notPosition'/>");
-            }else if(vm.nodeCabinet.roomRow == null && vm.roomRows.length > 0){
+            } else if (vm.nodeCabinet.roomRow == null && vm.roomRows.length > 0) {
                 alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.cabinet.roomRow'/>");
             }
         },
         validate: function () {
-            vm.$v.nodeCabinet.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
+            vm.$v.nodeCabinet.$touch(); // 提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
             return !vm.$v.nodeCabinet.$error;
         }
     },
     created: function () {
 
     },
-    watch: {
-        /*"nodeCabinet.ubit": function (newValue, oldValue) {
-
-        }*/
-    }
+    watch: {}
 });
 </script>

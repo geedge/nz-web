@@ -11,10 +11,13 @@
     <!-- 列表  查询 -->
     <div v-show="showList">
         <div class="grid-btn">
+
+            <!-- 搜索条件 -->
             <div class="form-group col-sm-2">
                 <input type="text" class="form-control" v-model="q.cabName" @keyup.enter="query" placeholder="<@spring.message 'node.cabinet.name'/>">
             </div>
 
+            <!-- 功能按钮 -->
             <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
             <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
             <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
@@ -22,15 +25,18 @@
             <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
         </div>
 
+        <!-- 列表数据 / 分页 -->
         <table id="jqGrid"></table>
         <div id="jqGridPager"></div>
 
     </div>
 
     <div v-show="!showList" class="panel panel-default">
+        <!-- 标题 -->
         <div class="panel-heading">{{title}}</div>
         <form class="form-horizontal">
 
+            <!-- 名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
@@ -47,6 +53,7 @@
                 </div>
             </div>
 
+            <!-- 机房名称 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.room.name'/></div>
                 <div class="col-sm-9">
@@ -61,6 +68,7 @@
                 </div>
             </div>
 
+            <!-- 机房行号 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.roomRow'/></div>
                 <div class="col-sm-9">
@@ -75,6 +83,7 @@
                 </div>
             </div>
 
+            <!-- 机房列号 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.roomCol'/></div>
                 <div class="col-sm-9">
@@ -89,6 +98,7 @@
                 </div>
             </div>
 
+            <!-- U位 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.uSize'/></div>
                 <div class="col-sm-9">
@@ -111,6 +121,7 @@
                 </div>
             </div>
 
+            <!-- 备注 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
                 <div class="col-sm-9">
@@ -118,6 +129,8 @@
                 </div>
             </div>
 
+
+            <!-- 保存 / 返回 -->
             <div class="form-group form-group_opbox">
                 <div>
                     <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>

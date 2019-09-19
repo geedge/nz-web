@@ -27,11 +27,11 @@ var group_ztree = { // setting
         nocheckInherit: true
     },
     callback: {
-        beforeRemove: beforeRemove,         //点击删除时触发，用来提示用户是否确定删除（可以根据返回值 true|false 确定是否可以删除）
-        beforeEditName: beforeEditName,     //点击编辑时触发，用来判断该节点是否能编辑
-        // beforeRename: beforeRename,         //编辑结束时触发，用来验证输入的数据是否符合要求(也是根据返回值 true|false 确定是否可以编辑完成)
-        beforeDrag: beforeDrag,             //用户禁止拖动节点
-        onClick: clickNode                  //点击节点触发的事件
+        beforeRemove: beforeRemove,         // 点击删除时触发，用来提示用户是否确定删除（可以根据返回值 true|false 确定是否可以删除）
+        beforeEditName: beforeEditName,     // 点击编辑时触发，用来判断该节点是否能编辑
+        // beforeRename: beforeRename,         // 编辑结束时触发，用来验证输入的数据是否符合要求(也是根据返回值 true|false 确定是否可以编辑完成)
+        beforeDrag: beforeDrag,             // 用户禁止拖动节点
+        onClick: clickNode                  // 点击节点触发的事件
     }
 };
 
@@ -69,7 +69,7 @@ function beforeEditName(treeId, treeNode) {
     $.ajax({
         type: "GET",
         url: baseURL + "nodegroup/detail?id=" + treeNode.id,
-        async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+        async: false, // 关闭异步
         dataType: "json",
         success: function (r) {
             vm.nodeGroup = r.data;
@@ -77,7 +77,10 @@ function beforeEditName(treeId, treeNode) {
     });
     vm.getParentSystem(treeNode.systemId);
     open("<@spring.message 'common.edit'/>");
-    vm.nodeGroup.parentGroup = treeNode.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : treeNode.getParentNode();
+    vm.nodeGroup.parentGroup = treeNode.getParentNode() == null ? {
+        name: "<@spring.message 'nodegroup.root.group'/>",
+        id: 0
+    } : treeNode.getParentNode();
     return false;
 }
 
@@ -106,7 +109,6 @@ function addHoverDom(treeId, treeNode) {
     sObj.append(addStr);
     var btn = $("#addBtn_" + treeNode.tId);
     if (btn) btn.bind("click", function () {
-
         vm.$v.nodeGroup.$reset();
         // 获取节点组的业务系统 作为子节点组的业务系统
         vm.getParentSystem(treeNode.systemId);
@@ -119,9 +121,9 @@ function addHoverDom(treeId, treeNode) {
             remark: null,
             parentGroup: null
         };
-        vm.nodeGroup.parentGroup = treeNode;
+        vm.nodeGroup.parentGroup = treeNode; // 点击的当前节点组添加子节点组,所以即将添加的节点组父级为当前节点组
         vm.count = 1;
-        open("<@spring.message 'common.add'/>");
+        open("<@spring.message 'common.add'/>"); // 弹框
     });
 }
 
@@ -134,13 +136,12 @@ function open(title) {
         type: 1,
         fixed: false,
         maxmin: false,
-        content: $("#form")
+        content: $("#form") // 本页面的元素
     });
 }
 
-
+// 引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 Vue.use(window.vuelidate.default);
-//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 var required = window.validators.required;
 var helpers = window.validators.helpers;
 
@@ -158,7 +159,7 @@ var nameCheck = function (value, nodeGroup) {
         $.ajax({
             type: "GET",
             url: baseURL + "nodegroup/groupNameCheck" + params,
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false,
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
@@ -198,20 +199,22 @@ var vm = new Vue({
     data: this.data,
     validations: {
         nodeGroup: {
-            name: {required, nameCheck}
+            name: {
+                required, nameCheck
+            }
         }
     },
     methods: {
         showTree: function (item) {
             $("#box" + item.id).toggle(200);
             if ($("#icon" + item.id).hasClass("mytreeicon-open")) {
-            	$("#icon" + item.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
+                $("#icon" + item.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
             } else {
-            	$("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
+                $("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
             }
         },
         saveOrUpdate: function () {
-            if (!this.validate()) { //在下方定义的validate方法
+            if (!this.validate()) { // 在下方定义的validate方法
                 return;
             }
             vm.count++;
@@ -275,24 +278,24 @@ var vm = new Vue({
             $.ajax({
                 type: "GET",
                 url: baseURL + "/system/detail?id=" + systemId,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+                async: false,
                 dataType: "json",
                 success: function (r) {
                     vm.system = r.data;
                 }
             });
         },
-        showBtn: function(item) {
-        	$("#icon2" + item.id).css("display", "inline-block");
+        showBtn: function (item) {
+            $("#icon2" + item.id).css("display", "inline-block");
         },
-        hideBtn: function(item) {
-        	$("#icon2" + item.id).hide();
+        hideBtn: function (item) {
+            $("#icon2" + item.id).hide();
         },
-        showBtn2: function(item) {
-        	$("#icon2" + item.id).removeClass("mytreeicon-add_unact").addClass("mytreeicon-add_act");
+        showBtn2: function (item) {
+            $("#icon2" + item.id).removeClass("mytreeicon-add_unact").addClass("mytreeicon-add_act");
         },
-        hideBtn2: function(item) {
-        	$("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");;
+        hideBtn2: function (item) {
+            $("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");
         }
     },
     created: function () {
@@ -300,7 +303,7 @@ var vm = new Vue({
         $.ajax({
             type: "GET",
             url: baseURL + "nodegroup/list",
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false,
             dataType: "json",
             success: function (r) {
                 data.systems = r.data.list;

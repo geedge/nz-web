@@ -32,8 +32,7 @@ $(function () {
             order: "order"
         },
         gridComplete: function () {
-            //隐藏grid底部滚动条
-            $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+            $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"}); // 隐藏grid底部滚动条
         }
 
     });
@@ -41,18 +40,18 @@ $(function () {
 });
 
 
-//注册select组件
+// 注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
 
+// 引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 Vue.use(window.vuelidate.default);
-//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 var required = window.validators.required;
 var numeric = window.validators.numeric;
 var minValue = window.validators.minValue;
 var integer = window.validators.integer;
 var helpers = window.validators.helpers;
 
-//自定义规则，;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.nodeInfo)
+// 自定义规则，;第一个参数是当前字段值，第二个参数是当前校验的整个对象(此处是vm.data.nodeRoom)
 var nameCheck = function (value, nodeRoom) {
     if (helpers.req(value)) {
         var flag = true;
@@ -63,7 +62,7 @@ var nameCheck = function (value, nodeRoom) {
         $.ajax({
             type: "GET",
             url: baseURL + "room/roomNameCheck" + params,
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false, // 关闭异步，否则会在执行完ajax前就跳到下一段代码
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
@@ -86,7 +85,7 @@ var roomRowsCheck = function (value, nodeRoom) {
         $.ajax({
             type: "GET",
             url: baseURL + "room/roomSizeCheck" + params,
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false, // 关闭异步，否则会在执行完ajax前就跳到下一段代码
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
@@ -110,7 +109,7 @@ var roomColsCheck = function (value, nodeRoom) {
         $.ajax({
             type: "GET",
             url: baseURL + "room/roomSizeCheck" + params,
-            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            async: false, // 关闭异步，否则会在执行完ajax前就跳到下一段代码
             dataType: "json",
             success: function (r) {
                 if (r.code != 200) {
@@ -151,20 +150,13 @@ var vm = new Vue({
     validations: {
         nodeRoom: {
             name: {
-                required,
-                nameCheck
+                required, nameCheck
             },
             roomRows: {
-                required,
-                integer,
-                minValue: minValue(1),
-                roomRowsCheck
+                required, integer, minValue: minValue(1), roomRowsCheck
             },
             roomCols: {
-                required,
-                integer,
-                minValue: minValue(1),
-                roomColsCheck
+                required, integer, minValue: minValue(1), roomColsCheck
             },
             addr: {
                 required
@@ -194,7 +186,7 @@ var vm = new Vue({
             $.ajax({
                 type: "GET",
                 url: baseURL + "room/detail?id=" + id,
-                async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+                async: false, // 关闭异步，否则会在执行完ajax前就跳到下一段代码
                 dataType: "json",
                 success: function (r) {
                     vm.nodeRoom = r.data;
@@ -213,7 +205,7 @@ var vm = new Vue({
             })
         },
         add: function () {
-            vm.$v.nodeRoom.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
+            vm.$v.nodeRoom.$reset(); // 进入新增页面时，将校验的触发状态清空($dirty=true -> false)
             vm.showList = false;
             vm.title = "<@spring.message 'common.add'/>";
             vm.nodeRoom = {
@@ -226,7 +218,7 @@ var vm = new Vue({
             }
         },
         update: function () {
-            vm.$v.nodeRoom.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
+            vm.$v.nodeRoom.$reset(); // 进入新增页面时，将校验触发状态清空($dirty=true -> false)
             var id = getSelectedRow();
             if (id == null) {
                 return;
@@ -236,7 +228,7 @@ var vm = new Vue({
             this.getInfo(id);
         },
         saveOrUpdate: function () {
-            if (!vm.validate()) { //在下方定义的validate方法
+            if (!vm.validate()) { // 在下方定义的validate方法
                 return;
             }
             var url;
@@ -295,7 +287,7 @@ var vm = new Vue({
             });
         },
         validate: function () {
-            vm.$v.nodeRoom.$touch(); //提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
+            vm.$v.nodeRoom.$touch(); // 提交时，不论是否已触发校验，都触发一下($dirty=false -> true)
             return !vm.$v.nodeRoom.$error;
         }
     },
