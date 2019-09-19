@@ -33,7 +33,7 @@ public class LocaleConfig implements WebMvcConfigurer {
     public LocaleResolver localeResolver() {
         SessionLocaleResolver slr = new SessionLocaleResolver();
         // 默认语言
-        String defaultLang = env.getProperty("lang.default", "en_US");
+        String defaultLang = env.getProperty("lang.default", "en");
         slr.setDefaultLocale(new Locale(defaultLang));
         return slr;
     }
