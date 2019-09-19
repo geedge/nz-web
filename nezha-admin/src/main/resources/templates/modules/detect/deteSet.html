@@ -3,70 +3,165 @@
 <html>
 <head>
     <title>监测设置</title>
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css">
 </head>
 <#include "/header.html">
-<script src="${request.contextPath}/statics/js/modules/detect/deteSet.js?_${.now?long}"></script>
 <body>
-<div id="rrapp" v-cloak>
+<div id="deteSet" v-cloak>
     <div v-show="showList">
         <div class="grid-btn">
             <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.code" @keyup.enter="query" placeholder="code">
+                <input type="text" class="form-control" v-model.trim="params.name" @keyup.enter="query" placeholder="名称">
             </div>
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.lang" :options="langList" placeholder="请选择语言"></multiselect>
-            </div>
-            <a class="btn btn-default" @click="query">查询</a>
-
-            <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-            <a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>
-            <a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>
+            <a class="btn btn-default" @click="query" title="查询"><i class="fa fa-search"></i></a>
+            <a class="btn btn-primary" @click="add" title="添加"><i class="fa fa-plus"></i></a>
+            <a class="btn btn-primary" @click="update" title="修改"><i class="fa fa-pencil-square-o"></i></a>
+            <a class="btn btn-primary" @click="del" title="删除"><i class="fa fa-trash-o"></i></a>
         </div>
         <table id="jqGrid"></table>
         <div id="jqGridPager"></div>
     </div>
-
-    <div v-show="!showList" class="panel panel-default">
+    
+    <div id="deteSetEditView" v-show="!showList" class="panel panel-default" >
         <div class="panel-heading">{{title}}</div>
-        <form class="form-horizontal">
+        <form class="form-horizontal" >
             <div class="form-group">
-                <div class="col-sm-2 control-label">CODE</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.code.$dirty && !$v.i18n.code.required}" v-model.trim="i18n.code" @blur="$v.i18n.code.$touch"/>
+                <div class="col-sm-2 control-label">名称:</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" :class="{'form-control--error': $v.deteSet.name.$dirty && !$v.deteSet.name.required}" v-model.trim="$v.deteSet.name.$model"/>
                     <span class="required-symbol">*</span>
-                    <pre>{{$v}}</pre>
-                    <div class="form-control_error-msg" v-if="$v.i18n.code.$dirty && !$v.i18n.code.required">必填项</div>
+                    <div class="form-control_error-msg" v-if="$v.deteSet.name.$dirty && !$v.deteSet.name.required">必填项</div>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">语言</div>
-                <div class="col-sm-10">
-                    <multiselect v-model="i18n.lang" :options="langList" placeholder="请选择语言" :class="{'form-control--error': $v.i18n.lang.$dirty && !$v.i18n.lang.required}" @close="$v.i18n.lang.$touch"></multiselect>
+                <div class="col-sm-2 control-label">监测类别:</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="$v.deteSet.typeId.$model" :class="{'form-control--error': $v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required}":options="deteTypes" placeholder="..." track-by="code" label="value" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
                     <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg" v-if="$v.i18n.lang.$dirty && !$v.i18n.lang.required">必选项</div>
+                    <div class="form-control_error-msg" v-if="$v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required">必填项</div>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">VALUE</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" :class="{'form-control--error': $v.i18n.value.$dirty && !$v.i18n.value.required}" v-model.trim="i18n.value" @blur="$v.i18n.value.$touch"/>
-                    <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg" v-if="$v.i18n.value.$dirty && !$v.i18n.value.required">必填项</div>
+                <div class="col-sm-2 control-label">参数:</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"  v-model.trim="$v.deteSet.params.$model"/>
+                    <span class="help-block">多个参数使用,隔开</span>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">备注</div>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" v-model="i18n.remark"/>
+                <div class="col-sm-2 control-label">选择节点/节点组:</div>
+                <div class="col-sm-9" >
+<!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
+                    <div class="panel panel-default" style="width: 90%;" >
+                        <div class="panel-heading">
+                            节点组
+                        </div>
+                        <div class="panel-body scrollbar" style="position: relative;height: 185px;">
+                            <ul class="list-group">
+                                <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
+                                    <div style="height: 12px;">
+                                        <div class="left" style="width: 89%;">{{ng.fullPath}}</div>
+                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)" ><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="plus border" style="bottom:268px" @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+
+                    </div>
+                    <div class="panel panel-default" style="width: 90%;">
+                        <div class="panel-heading">
+                            节点
+                        </div>
+                        <div>
+                            <div class="panel-body scrollbar" style="position: relative;height: 185px;">
+                                <ul class="list-group">
+                                    <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
+                                        <div style="height: 12px;">
+                                            <div class="left" style="width: 89%;">{{ni.ip}}</div>
+                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="plus border" style="bottom:20px"  @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+            <select-panel
+                    v-show="showNodeSelect"
+                    v-bind:znode="nodeGroups"
+                    :columns="columnModel"
+                    :tdata="nodeInfoData"
+                    @node-click="getNodeList"
+                    @node-check="checkNodeGroup"
+                    @row-check="checkNodeInfos"
+                    :uncheck-node="uncheckGroup" >
+
+            </select-panel>
+
             <div class="form-group">
-                <div class="col-sm-2 control-label"></div>
-                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
-                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+                <div class="col-sm-2 control-label">国际化CODE:</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"  v-model.trim="$v.deteSet.i18nCode.$model"/>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">查看权限:</div>
+                <div class="col-sm-9">
+                    <template v-for="vl in viewLevels">
+                        <label class="radio-inline">
+                            <input type="radio" :value="vl.code" v-model="$v.deteSet.viewLevel.$model" /> {{vl.value}}
+                        </label>
+                    </template>
+                </div>
+            </div>
+
+            <div class="form-group" v-show="deteSet.viewLevel==1">
+                <div class="col-sm-2 control-label">用户组:</div>
+                <div class="col-sm-9 ">
+                    <div class="panel panel-default" style="width: 90%;">
+                        <div class="panel-body scrollbar" style="height: 185px;">
+                            <ul class="list-group" v-if="viewers ==null || viewers.length > 0">
+                                <li class="list-group-item" v-for="viewer in viewers">
+                                    <div style="height: 12px;">
+                                        <input type="checkbox"  :value="viewer.code" v-model="$v.deteSet.viewerId.$model" > {{viewer.value}}
+                                    </div>
+                                </li>
+                            </ul>
+                            <span class="help-block" v-else>
+                                当前业务系统下没有节点组
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-sm-2 control-label">备注:</div>
+                <div class="col-sm-9">
+                    <textarea v-model.trim="$v.deteSet.remark.$model" class="form-control" ></textarea>
+                </div>
+            </div>
+
+            <div class="form-group form-group_opbox">
+                <div>
+                    <button title="提交" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="返回" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+                </div>
             </div>
         </form>
     </div>
+
 </div>
+
 </body>
+<#include "main.html">
+<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/js/modules/detect/deteSet.js?_${.now?long}"></script>
 </html>

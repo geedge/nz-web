@@ -2,7 +2,7 @@
 <#import "/spring.ftl" as spring>
 <html>
 <head>
-    <title>监测类别</title>
+    <title><@spring.message 'deteType'/></title>
 </head>
 <#include "/header.html">
 
@@ -32,7 +32,7 @@
                         <input type="text" class="form-control" :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| !$v.deteType.name.nameRepeat}" v-model.trim="$v.deteType.name.$model"/>
                         <span class="required-symbol">*</span>
                         <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.required"><@spring.message 'validate.common.required'/></div>
-                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat"><@spring.message 'validate.deteType.nameRepeat'/></div>
+                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat"><@spring.message 'validate.deteType.name.repeat'/></div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -79,7 +79,7 @@
                         <div class="form-group">
                             <div class="col-sm-2 control-label"><@spring.message 'common.name'/>:</div>
                             <div class="col-sm-9"><!--v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model"-->
-                                <input type="text"  class="form-control" @input="metaNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required)|| validation.meta[index] }"  v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model" value="{{item.name}}"/>
+                                <input type="text" class="form-control  nameEvent" @blur="metaNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required)|| validation.meta[index] }"  v-model.trim="$v.deteType.deteTypeMetas.$each[index].name.$model" value="{{item.name}}"/>
                                 <span class="required-symbol">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeMetas.$each[index].name.$dirty && !$v.deteType.deteTypeMetas.$each[index].name.required"><@spring.message 'validate.common.required'/></div>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeMetas.$each[index].name.$dirty && validation.meta[index]"><@spring.message 'validate.deteType.name.repeat'/></div>
@@ -157,7 +157,7 @@
                         <div class="form-group">
                             <div class="col-sm-2 control-label"><@spring.message 'common.name'/>:</div>
                             <div class="col-sm-9">
-                                <input type="text"  class="form-control" @input="paramNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required)|| validation.param[index]}"  v-model.trim="$v.deteType.deteTypeParams.$each[index].name.$model" value="{{item.name}}"/>
+                                <input type="text" class="form-control nameEvent" @blur="paramNameRepeat(index)" :class="{'form-control--error': ($v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required)|| validation.param[index]}"  v-model.trim="$v.deteType.deteTypeParams.$each[index].name.$model" value="{{item.name}}"/>
                                 <span class="required-symbol">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeParams.$each[index].name.$dirty && !$v.deteType.deteTypeParams.$each[index].name.required"><@spring.message 'validate.common.required'/></div>
                                 <div class="form-control_error-msg" v-if="$v.deteType.deteTypeParams.$each[index].name.$dirty && validation.param[index]"><@spring.message 'validate.deteType.name.repeat'/></div>

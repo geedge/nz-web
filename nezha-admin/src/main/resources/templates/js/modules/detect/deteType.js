@@ -266,22 +266,22 @@ var vm = new Vue({
             vm.query();
         },
         add: function () {
-            vm.$v.deteType.name.$reset();
-            vm.$v.deteType.method.$reset();
-            vm.$v.deteType.deteInterval.$reset();
-            vm.$v.deteType.content.$reset();
-            vm.$v.deteType.i18nCode.$reset();
-            vm.$v.deteType.remark.$reset();
-            /*遍历touch 对数组调用touch会栈溢出*/
-            for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
-
-                vm.$v.deteType.deteTypeMetas.$each[i].$reset();
-            }
-
-            for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
-                vm.$v.deteType.deteTypeParams.$each[i].$reset();
-            }
-
+            // vm.$v.deteType.name.$reset();
+            // vm.$v.deteType.method.$reset();
+            // vm.$v.deteType.deteInterval.$reset();
+            // vm.$v.deteType.content.$reset();
+            // vm.$v.deteType.i18nCode.$reset();
+            // vm.$v.deteType.remark.$reset();
+            // /*遍历touch 对数组调用touch会栈溢出*/
+            // for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
+            //
+            //     vm.$v.deteType.deteTypeMetas.$each[i].$reset();
+            // }
+            //
+            // for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
+            //     vm.$v.deteType.deteTypeParams.$each[i].$reset();
+            // }
+            vm.$v.deteType.$reset();
             vm.showList = false;
             vm.curStep = 0;
             var deteType = {
@@ -321,21 +321,22 @@ var vm = new Vue({
             vm.deteType = deteType;
         },
         update: function () {
-            vm.$v.deteType.name.$reset();
-            vm.$v.deteType.method.$reset();
-            vm.$v.deteType.deteInterval.$reset();
-            vm.$v.deteType.content.$reset();
-            vm.$v.deteType.i18nCode.$reset();
-            vm.$v.deteType.remark.$reset();
-            /*遍历touch 对数组调用touch会栈溢出*/
-            for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
-
-                vm.$v.deteType.deteTypeMetas.$each[i].$reset();
-            }
-
-            for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
-                vm.$v.deteType.deteTypeParams.$each[i].$reset();
-            }
+            // vm.$v.deteType.name.$reset();
+            // vm.$v.deteType.method.$reset();
+            // vm.$v.deteType.deteInterval.$reset();
+            // vm.$v.deteType.content.$reset();
+            // vm.$v.deteType.i18nCode.$reset();
+            // vm.$v.deteType.remark.$reset();
+            // /*遍历touch 对数组调用touch会栈溢出*/
+            // for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
+            //
+            //     vm.$v.deteType.deteTypeMetas.$each[i].$reset();
+            // }
+            //
+            // for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
+            //     vm.$v.deteType.deteTypeParams.$each[i].$reset();
+            // }
+            vm.$v.deteType.$reset();
             var id = getSelectedRow();
             if (id == null) {
                 return;
@@ -427,37 +428,23 @@ var vm = new Vue({
                     break;
                 }
             }
-            vm.$v.deteType.name.$touch();
-            vm.$v.deteType.method.$touch();
-            vm.$v.deteType.deteInterval.$touch();
-            vm.$v.deteType.content.$touch();
-            vm.$v.deteType.i18nCode.$touch();
-            vm.$v.deteType.remark.$touch();
-            /*遍历touch 对数组调用touch会栈溢出*/
-            for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
-
-                vm.$v.deteType.deteTypeMetas.$each[i].$touch();
-            }
-
-            for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
-                vm.$v.deteType.deteTypeParams.$each[i].$touch();
-            }
+            // vm.$v.deteType.name.$touch();
+            // vm.$v.deteType.method.$touch();
+            // vm.$v.deteType.deteInterval.$touch();
+            // vm.$v.deteType.content.$touch();
+            // vm.$v.deteType.i18nCode.$touch();
+            // vm.$v.deteType.remark.$touch();
+            // /*遍历touch 对数组调用touch会栈溢出*/
+            // for (var i = 0; i < vm.$v.deteType.deteTypeMetas.length; i++) {
+            //
+            //     vm.$v.deteType.deteTypeMetas.$each[i].$touch();
+            // }
+            //
+            // for (var i = 0; i < vm.$v.deteType.deteTypeParams.length; i++) {
+            //     vm.$v.deteType.deteTypeParams.$each[i].$touch();
+            // }
+            vm.$v.deteType.$touch();
             return vm.$v.deteType.$error || metaFlag || paramFlag;
-        },
-        nameCheck: function (name) {
-            if (name == null || name == "") {
-                return false;
-            }
-            axios.get(baseURL + '/deteType/nameCheck?name=' + name + "&id=" + vm.deteType.id)
-                .then(function (response) {
-                    var code = response.data.code;
-                    if ("200" == code) {
-                        return false;
-                    } else {
-                        return true;
-                    }
-                })
-
         },
         getDeteMethod: function () {
             $.getJSON(baseURL + "sys/dict/all?type=dtmethond&_" + $.now(), function (r) {
@@ -499,13 +486,6 @@ var vm = new Vue({
                 }
             });
         },
-        /*
-        * $("#nextStep")[0].disabled=true;
-        * $("#preStep")[0].disabled=false;
-        *
-        * $("#preStep")[0].disabled=true;
-        * $("#nextStep")[0].disabled=false;
-        * */
         preStep: function () {
             this.curStep -= 1;
             if (this.curStep <= 0) {
