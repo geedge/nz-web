@@ -115,6 +115,9 @@ var znodeTree = Vue.extend({
     methods: {
         // 初始化ztree
         initZtree() {
+        	console.log("初始化树")
+        	console.log(this.setting)
+        	console.log(this.znode)
            this.zTree=$.fn.zTree.init($("#beTree"), this.setting, this.znode);
            this.zTree.expandAll(true);
         },

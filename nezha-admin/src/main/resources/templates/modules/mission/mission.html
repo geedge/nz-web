@@ -5,6 +5,7 @@
 <title>任务管理</title>
 <#include "/header.html">
 <link rel="stylesheet" href="${request.contextPath}/statics/css/mission.css">
+<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
 </head>
 <body>
 <div id="missionVIew" v-cloak>
@@ -90,6 +91,7 @@
 	 			</div>
 			</div>
 			
+			<!-- 节点组 节点的选择 -->
 			<div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.nodeGroup'/></div>
 			   	<div class="col-sm-9">
@@ -105,7 +107,8 @@
  					<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
 			    </div>
-			</div>
+			</div> 
+						
 			<div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.viewPermission'/></div>
 			   	<div class="col-sm-9">
@@ -438,6 +441,8 @@
 	</div>
 </div>
 
+</body>
+
 <#include "/js/modules/mission/mission.js"/>
 <#include "/js/modules/mission/filepush.js"/>
 <#include "/js/modules/mission/upgradeKillProcess.js"/>
@@ -446,6 +451,4 @@
 <#include "/js/modules/mission/upgradeExecOrStart.js"/>
 <#include "/js/modules/mission/upgradeRecover.js"/>
 <#include "/js/modules/mission/singleExec.js"/>
-
-</body>
 </html>

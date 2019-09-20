@@ -70,7 +70,7 @@ var filePushChild = Vue.extend({
       default: Array
     }
   },
-  data () {
+  data : function () {
     return {
       param: {
     	destPath: '',
@@ -85,6 +85,7 @@ var filePushChild = Vue.extend({
   watch: {
     param: {
       handler (newV, oldV) {
+    	//这里加判断 如果输入框中没有填写内容贼不允许添加新的组件
         this.$emit('uploadData', {index: this.index, data: newV})
       },
       deep: true
@@ -100,8 +101,11 @@ var filePushChild = Vue.extend({
   },
   methods: {
     deleteparam: function () {
-      this.$emit('deleteIndex', this.index)
+    	this.$emit('deleteIndex', this.index)
     }
+  },
+  mounted:function(){
+	  this.param = {...this.items[this.index]}
   }
 })
 
@@ -114,16 +118,20 @@ var filePush = Vue.extend({
           :index="index"
           :items="items"
           @deleteIndex="del"
-          @uploadData="getData"
-          v-model="vm.mission.param">
+          @uploadData="getData">
         </filePushChild>
         <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
     `,
-    data () {
+    data : function () {
 	    return {
-	      items: [{}],
-	      dataRec: []
+	      items: [{destPath: '',
+	      	fileName: '',
+	    	groupName:'',
+	    	isCover:0,
+	    	permisson:'',
+	    	username:''
+	      }]
 	    }
 	  },
     // 局部注册子组件
@@ -133,7 +141,7 @@ var filePush = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: '',
+          this.items.push({destPath:'',
           	fileName: '',
         	groupName:'',
         	isCover:0,
@@ -142,18 +150,18 @@ var filePush = Vue.extend({
         },
         // delete param
         del: function (index) {
-          //  not allow to delete the first
+          //  仅剩一个组件的时候不允许删除
           if (this.items.length !== 1) {
             this.items.splice(index, 1)
             console.log('deleted:', JSON.stringify(this.items))
           }
-          console.log(vm.mission.type+"    tttttttttttttt")
         },
         //  get the data from child
         getData: function (val) {
-          vm.mission.param=val.data;
           let index = val.index
           this.items[index] = val.data
+          /*vm.mission.param=this.items;*/
+          vm.mission.param=val.data
           console.log('I got the data:', JSON.stringify(this.items))
         }
       }
@@ -161,10 +169,4 @@ var filePush = Vue.extend({
 
 // 注册到全局
 Vue.component('filepush', filePush)
-new Vue({
-    el: '#filepush',
-    data: {
-        
-    }
-})
 </script>

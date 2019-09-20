@@ -38,7 +38,8 @@ $(function () {
         	$("#jqGrid").closest(".ui-jqgrid-bdiv").css({ "overflow-x" : "hidden" }); 
         }
     });
-});   
+});  
+
 //注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
 //引用vuelidate组件
@@ -68,7 +69,8 @@ var vm = new Vue({
 			isLoop:0,
 			loopInterval:null,
 			param:{
-				beifen:0
+				beifen:0,
+				destPath:""
 			},
 			userGroup:null
 		},
@@ -159,7 +161,6 @@ var vm = new Vue({
 					userGroups.push(r.user.usergroups[i]);
 				}
 				vm.userGroups = userGroups;
-				console.log(userGroups)
 			});
 		},
 		add: function(){
@@ -200,7 +201,6 @@ var vm = new Vue({
 		},
 		getFile(event) {
 			this.file = event.target.files[0];
-			console.log(this.file);
 		},
 		saveOrUpdate: function (event) {
 			if (!vm.validate()) { //在下方定义的validate方法
@@ -209,6 +209,7 @@ var vm = new Vue({
 			event.preventDefault();
             let formData = new FormData();
             formData.append("name",this.mission.name);
+            formData.append("param",JSON.stringify(this.mission.param));
             formData.append("files",this.file);
             formData.missionInfo=this.mission
             formData.files=this.file
