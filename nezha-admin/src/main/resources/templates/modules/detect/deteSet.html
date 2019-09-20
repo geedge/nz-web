@@ -13,6 +13,9 @@
             <div class="form-group col-sm-2">
                 <input type="text" class="form-control" v-model.trim="params.name" @keyup.enter="query" placeholder="名称">
             </div>
+            <div class="form-group col-sm-2">
+                <multiselect v-model="params.type"  :options="deteTypes" placeholder="..." track-by="id" label="name" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
+            </div>
             <a class="btn btn-default" @click="query" title="查询"><i class="fa fa-search"></i></a>
             <a class="btn btn-primary" @click="add" title="添加"><i class="fa fa-plus"></i></a>
             <a class="btn btn-primary" @click="update" title="修改"><i class="fa fa-pencil-square-o"></i></a>
@@ -36,7 +39,7 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label">监测类别:</div>
                 <div class="col-sm-9">
-                    <multiselect v-model="$v.deteSet.typeId.$model" :class="{'form-control--error': $v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required}":options="deteTypes" placeholder="..." track-by="code" label="value" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
+                    <multiselect v-model="$v.deteSet.typeId.$model" :value="deteSet.typeId" :class="{'form-control--error': $v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required}":options="deteTypes" placeholder="..." track-by="id" label="name" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required">必填项</div>
                 </div>
@@ -98,6 +101,8 @@
                     @node-click="getNodeList"
                     @node-check="checkNodeGroup"
                     @row-check="checkNodeInfos"
+                    :table-row-class-change="columnClassChange"
+                    ref="selectPanel"
                     :uncheck-node="uncheckGroup" >
 
             </select-panel>

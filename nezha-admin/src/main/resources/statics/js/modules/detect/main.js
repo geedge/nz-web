@@ -21,6 +21,9 @@ var pannel = Vue.extend({
         },
         uncheckNode:{
             type:Object
+        },
+        tableRowClassChange:{
+            type:Function
         }
     },
     data:function(){
@@ -45,6 +48,10 @@ var pannel = Vue.extend({
             this.$emit("row-check",selection);
         },
         selectChange(selection,rowData){
+        },
+        resetTree:function(){
+            console.log("resetTree");
+            this.$refs.treeChild.initZtree();
         }
 
     },
@@ -116,6 +123,7 @@ var znodeTree = Vue.extend({
             this.$emit("tree-click", treeNode);
         },
         zTreeOnCheck:function(event, treeId, treeNode){
+            console.log("option node-->"+JSON.stringify(treeNode))
             this.$emit("tree-select", treeNode);
         }
     },
@@ -125,6 +133,9 @@ var znodeTree = Vue.extend({
             this.initZtree();
         },
         uncheckNode:function(){
+            if(this.uncheckNode.tId==undefined||this.uncheckNode.tId==null){ //解决更新操作中 找不到关联节点的问题
+                this.uncheckNode=this.zTree.getNodeByParam("id",this.uncheckNode.id,null);
+            }
             this.uncheckNode.checked=false;
             this.zTree.updateNode(this.uncheckNode,false);
         }
@@ -172,4 +183,23 @@ function getSysDicMap(dtype){
         }
     })
     return container;
+}
+
+function printNodeGroupName (nodeGroup){
+    var fullPath="";
+    var func=function(nodeGroup){
+        var pid=nodeGroup.pid;
+        if(pid != 0){
+            $.each(vm.nodeGroups,function(i,v){
+                if(pid == v.id){
+                    fullPath += printNodeGroupName(v)+"/"+nodeGroup.name;
+                }
+            })
+        }else{
+            fullPath+=nodeGroup.name;
+        }
+
+    }
+    func(nodeGroup);
+    return fullPath;
 }

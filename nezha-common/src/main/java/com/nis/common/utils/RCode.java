@@ -142,6 +142,7 @@ public enum RCode {
 	SET_TYPE_NOTEXISTS(302006,"SET_TYPE_NOTEXISTS"),//监测设置所选监测类别不存在
 	VALIDE_NODE_NOTEXISTS(302007,"vilide_node_notexists"),//监测设置所选节点组符合条件的节点为空
 	SET_NODE_INVALIDE(302008,"SET_NODE_INVALIDE"),//监测设置所选节点/节点不符合条件
+	SET_NO_DETECT_NODE_DISTRIBUTE(302009,"SET_NO_GROUP_OR_NODE_DISTRIBUTE"),//未指定监测节点
 
 	WARN_NAME_ISNULL(303001,"warn_name_isnull"),//告警设置名称为空
 	WARN_TYPE_ISNULL(303002,"warn_type_isnull"),//告警设置配置类别为空

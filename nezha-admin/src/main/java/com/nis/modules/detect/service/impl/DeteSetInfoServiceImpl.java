@@ -58,6 +58,11 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     private NodeInfoService nodeInfoService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        String sidx=(String)params.get("sidx");
+        if(!StringUtils.isNotBlank(sidx)){
+            params.put("sidx","state");
+            params.put("order","desc");
+        }
         IPage<DeteSetInfoEntity> page = new Query<DeteSetInfoEntity>().getPage(params);
         String name=(String)params.get("name");
         String typeIdStr=(String)params.get("typeId");
@@ -297,21 +302,21 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     public boolean nodeOrNodeGroupValide(DeteSetInfoEntity deteSetInfoEntity){
         DeteTypeInfoEntity deteTypeInfo = deteTypeInfoService.getById(deteSetInfoEntity.getTypeId());
         if(Constant.DETE_DETEMETHOD_SNMP.equals(deteTypeInfo.getMethod())){//snmp 监测，节点类型为网元
-            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
-                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_NET)){
-                    return false;
-                }
-            }
+//            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
+//                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_NET)){
+//                    return false;
+//                }
+//            }
 
             if(!this.nodeIsValide(Constant.NODE_TYPE_NET,deteSetInfoEntity.getNodeIds())){
                 return false;
             }
         }else{ //节点类型为服务器
-            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
-                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_SERVER)){
-                    return false;
-                }
-            }
+//            for(Long nodeGroupId:deteSetInfoEntity.getNodeGroupIds()){
+//                if(!this.nodeGroupIsPurely(nodeGroupId,Constant.NODE_TYPE_SERVER)){
+//                    return false;
+//                }
+//            }
 
             if(!this.nodeIsValide(Constant.NODE_TYPE_SERVER,deteSetInfoEntity.getNodeIds())){
                 return false;
@@ -346,6 +351,9 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     * @Exception
     */
     private boolean nodeIsValide(String nodeType,Long ... nodeUUID){
+        if(nodeUUID==null||nodeUUID.length<1){
+            return true;
+        }
         QueryWrapper<NodeInfoEntity> nodeInfoQueryWrapper =new  QueryWrapper<NodeInfoEntity>();
         nodeInfoQueryWrapper.eq("type",nodeType);
         nodeInfoQueryWrapper.in("uuid",nodeUUID);

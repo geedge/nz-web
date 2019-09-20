@@ -76,13 +76,16 @@ public class DeteSetController {
     public R save(@RequestBody DeteSetInfoEntity deteSetInfo){
         ValidateUtils.is(deteSetInfo.getName()).notNull(RCode.SET_NAME_ISNULL);
         ValidateUtils.is(deteSetInfo.getTypeId()).notNull(RCode.SET_TYPE_ISNULL);
+        if((deteSetInfo.getNodeGroupIds()==null||deteSetInfo.getNodeGroupIds().length<1)&&(deteSetInfo.getNodeIds()==null||deteSetInfo.getNodeIds().length<1)){
+            throw  new NZException(RCode.SET_NO_DETECT_NODE_DISTRIBUTE);
+        }
         if(deteSetInfoService.checkNameExists(deteSetInfo.getName(),null)){
             throw new NZException(RCode.SET_NAME_EXISTS);
         }
-        if(deteSetInfo.getNodeGroupIds()!=null && !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
+        if(deteSetInfo.getNodeGroupIds()!=null && deteSetInfo.getNodeGroupIds().length>0 && !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
             throw new NZException(RCode.SET_NODEGROUP_ISNOT_CURRENTSYSTEM);
         }
-        if(deteSetInfo.getNodeIds()!=null&& !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
+        if(deteSetInfo.getNodeIds()!=null && deteSetInfo.getNodeIds().length>0 && !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
             throw new NZException(RCode.SET_NODE_ISNOT_CURRENTSYSTEM);
         }
         if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){

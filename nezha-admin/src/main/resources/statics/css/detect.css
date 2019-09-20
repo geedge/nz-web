@@ -45,3 +45,11 @@
     position: relative;
     padding-top: 11px;
 }
+
+.table-row-disabled{
+    background-color: lavender;
+}
+
+.table-row-able{
+    background-color: white;
+}
