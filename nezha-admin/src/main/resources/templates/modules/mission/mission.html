@@ -92,7 +92,7 @@
 			</div>
 			
 			<!-- 节点组 节点的选择 -->
-			<div v-show="!missionParam" class="form-group">
+			<!-- <div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.nodeGroup'/></div>
 			   	<div class="col-sm-9">
 					<input type="text" class="form-control"></input><a class="btn btn-primary" @click=""><i class="fa fa-search"></i></a>		        
@@ -107,7 +107,68 @@
  					<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>
 			    </div>
-			</div> 
+			</div>  -->
+			
+			<div class="form-group">
+                <div class="col-sm-2 control-label">选择节点/节点组:</div>
+                <div class="col-sm-9" >
+                    <div class="panel panel-default" style="width: 90%;" >
+                        <div class="panel-heading">
+                            节点组
+                        </div>
+                        <div class="panel-body scrollbar" style="position: relative;height: 185px;">
+                            <ul class="list-group">
+                                <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
+                                    <div style="height: 12px;">
+                                        <div class="left" style="width: 89%;">{{ng.fullPath}}</div>
+                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)" ><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="plus border" style="bottom:268px" @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+
+                    </div>
+                    <div class="panel panel-default" style="width: 90%;">
+                        <div class="panel-heading">
+                            节点
+                        </div>
+                        <div>
+                            <div class="panel-body scrollbar" style="position: relative;height: 185px;">
+                                <ul class="list-group">
+                                    <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
+                                        <div style="height: 12px;">
+                                            <div class="left" style="width: 89%;">{{ni.ip}}</div>
+                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="plus border" style="bottom:20px"  @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <select-panel
+                    v-show="showNodeSelect"
+                    v-bind:znode="nodeGroups"
+                    :columns="columnModel"
+                    :tdata="nodeInfoData"
+                    @node-click="getNodeList"
+                    @node-check="checkNodeGroup"
+                    @row-check="checkNodeInfos"
+                    
+                    ref="selectPanel"
+                    :uncheck-node="uncheckGroup" >
+
+            </select-panel>
+			
+			
+			<!-- :table-row-class-change="columnClassChange" -->
+			
+			
+			
 						
 			<div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.viewPermission'/></div>
@@ -123,7 +184,7 @@
 			<div v-show="mission.viewLevel==1" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/>:</div>
 			   	<div class="col-sm-9">
-					<multiselect v-model="mission.userGroup" :options="userGroups" label="name" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
+					<multiselect v-model="mission.viewerId" :options="userGroups" label="name" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
 	 			</div>
 			</div>
 			
@@ -442,7 +503,8 @@
 </div>
 
 </body>
-
+<#include "/modules/detect/main.html">
+<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
 <#include "/js/modules/mission/mission.js"/>
 <#include "/js/modules/mission/filepush.js"/>
 <#include "/js/modules/mission/upgradeKillProcess.js"/>

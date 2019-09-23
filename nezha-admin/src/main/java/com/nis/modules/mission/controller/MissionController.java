@@ -152,7 +152,7 @@ public class MissionController {
     public R save(MissionInfoEntity missionInfo,MultipartFile[] files){
     	// 验证处理参数
     	missionInfoService.validateMissionInfoData(missionInfo,files);
-//		missionInfoService.saveMission(missionInfo);
+		missionInfoService.saveMission(missionInfo);
 
         return R.ok();
     }

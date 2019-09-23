@@ -422,6 +422,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						}
 						paramForFilePush.setMd5Value(fileMd5);
 						paramForFilePush.setUpFileName(upFileName);
+						paramForFilePush.setFileName(uploadFile.getOriginalFilename());
 					}
 					logger.info("mission_file_push finish file upload");
 					//如果超出100M文件大小 则将已上传文件删除

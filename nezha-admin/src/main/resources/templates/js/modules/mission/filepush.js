@@ -5,7 +5,7 @@ var filePushChild = Vue.extend({
 	    	<div class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
 			   	<div class="col-sm-9">
- 	 			    <input type="file" class=""></input>
+ 	 			    <input type="file" class="" name="file" @change="getFile($event)"></input>
  	 			    <span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
 			    </div>
@@ -14,9 +14,9 @@ var filePushChild = Vue.extend({
 	        <div class="form-group">
     			<div class="col-sm-2 control-label"><@spring.message 'mission.pushDestination'/></div>
     			<div class="col-sm-9">
-        			<input type="text" class="form-control" :class="{'form-control--error': vm.$v.mission.param.destPath.$dirty && ! vm.$v.mission.param.destPath.required}" v-model="param.destPath"/>
+        			<input type="text" class="form-control" v-model="param.destPath"/>
         			<span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if="vm.$v.mission.param.destPath.$dirty && ! vm.$v.mission.param.destPath.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" ><@spring.message 'validate.common.required'/></div>
     			</div>
     		</div>
 		
@@ -102,6 +102,9 @@ var filePushChild = Vue.extend({
   methods: {
     deleteparam: function () {
     	this.$emit('deleteIndex', this.index)
+    },
+    getFile:function(event){
+    	this.$emit('uploadFile',event,this.index)
     }
   },
   mounted:function(){
@@ -118,7 +121,8 @@ var filePush = Vue.extend({
           :index="index"
           :items="items"
           @deleteIndex="del"
-          @uploadData="getData">
+          @uploadData="getData"
+          @uploadFile="getPushFile">
         </filePushChild>
         <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
       </div>
@@ -160,9 +164,15 @@ var filePush = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
-          /*vm.mission.param=this.items;*/
-          vm.mission.param=val.data
+          vm.mission.param=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        getPushFile:function(val,index){
+        	console.log(val)
+        	console.log("--------------")
+        	console.log(index)
+        	vm.files[index]=event.target.files[0]
+        	console.log(vm.files);
         }
       }
 })
