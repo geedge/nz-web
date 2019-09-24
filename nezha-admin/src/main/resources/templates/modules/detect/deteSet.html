@@ -1,5 +1,5 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<#import "/spring.ftl" as spring>
 <html>
 <head>
     <title>监测设置</title>
@@ -11,70 +11,94 @@
     <div v-show="showList">
         <div class="grid-btn">
             <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model.trim="params.name" @keyup.enter="query" placeholder="名称">
+                <input type="text" class="form-control" v-model.trim="params.name" @keyup.enter="query"
+                       placeholder="<@spring.message 'common.name'/>">
             </div>
             <div class="form-group col-sm-2">
-                <multiselect v-model="params.type"  :options="deteTypes" placeholder="..." track-by="id" label="name" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
+                <multiselect v-model="params.type" :options="deteTypes" placeholder="..." track-by="id" label="name"
+                             :searchable="false" :allow-empty="false" :show-labels="false"></multiselect>
             </div>
-            <a class="btn btn-default" @click="query" title="查询"><i class="fa fa-search"></i></a>
-            <a class="btn btn-primary" @click="add" title="添加"><i class="fa fa-plus"></i></a>
-            <a class="btn btn-primary" @click="update" title="修改"><i class="fa fa-pencil-square-o"></i></a>
-            <a class="btn btn-primary" @click="del" title="删除"><i class="fa fa-trash-o"></i></a>
+            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+            <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+            <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+            <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
         </div>
         <table id="jqGrid"></table>
         <div id="jqGridPager"></div>
     </div>
-    
-    <div id="deteSetEditView" v-show="!showList" class="panel panel-default" >
+
+    <div id="deteSetEditView" v-show="!showList" class="panel panel-default">
         <div class="panel-heading">{{title}}</div>
-        <form class="form-horizontal" >
+        <form class="form-horizontal">
             <div class="form-group">
-                <div class="col-sm-2 control-label">名称:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.name'/>:</div>
                 <div class="col-sm-9">
-                    <input type="text" class="form-control" :class="{'form-control--error': $v.deteSet.name.$dirty && !$v.deteSet.name.required}" v-model.trim="$v.deteSet.name.$model"/>
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.deteSet.name.$dirty && (!$v.deteSet.name.required || !$v.deteSet.name.nameRepeat)}"
+                           v-model.trim="$v.deteSet.name.$model"/>
                     <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg" v-if="$v.deteSet.name.$dirty && !$v.deteSet.name.required">必填项</div>
+                    <div class="form-control_error-msg" v-if="$v.deteSet.name.$dirty && !$v.deteSet.name.required"><@spring.message 'validate.common.required'/>
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.deteSet.name.$dirty && !$v.deteSet.name.nameRepeat"><@spring.message 'validate.common.name.repeat'/>
+                    </div>
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label">监测类别:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'deteType'/>:</div>
                 <div class="col-sm-9">
-                    <multiselect v-model="$v.deteSet.typeId.$model" :value="deteSet.typeId" :class="{'form-control--error': $v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required}":options="deteTypes" placeholder="..." track-by="id" label="name" :searchable="false"  :allow-empty="false" :show-labels="false"></multiselect>
+                    <multiselect v-model="$v.deteSet.typeId.$model"
+                                 :value="deteSet.typeId"
+                                 :class="{'form-control--error': $v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required}"
+                                 :options="deteTypes"
+                                 placeholder="..."
+                                 track-by="id"
+                                 label="name"
+                                 :searchable="false"
+                                 :allow-empty="false"
+                                 :show-labels="false"
+                                 @select="getDeteTypeDetail"
+                    ></multiselect>
                     <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg" v-if="$v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required">必填项</div>
+                    <div class="form-control_error-msg" v-if="$v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required">
+                        <@spring.message 'validate.common.required'/>
+                    </div>
+                    <div class="form-control_error-msg" v-if="deteTypeIsNull&&(deteSet.typeId==null||deteSet.typeId=='')">
+                        <@spring.message 'validate.deteSet.pickTypeFirst'/>
+                    </div>
                 </div>
             </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">参数:</div>
-                <div class="col-sm-9">
-                    <input type="text" class="form-control"  v-model.trim="$v.deteSet.params.$model"/>
-                    <span class="help-block">多个参数使用,隔开</span>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label">选择节点/节点组:</div>
+            <div class="form-group" v-show="typeParams !=null && typeParams.length>0">
+                <div class="col-sm-2 control-label"><@spring.message 'validate.deteSet.param'/>:</div>
                 <div class="col-sm-9" >
-<!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
-                    <div class="panel panel-default" style="width: 90%;" >
+                    <lable-input v-for="param,index in typeParams" :label="param.name+' ['+param.defVal+']:'" v-model="paramVals[index]"></lable-input>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/>:</div>
+                <div class="col-sm-9">
+                    <!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
+                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': nodeOrGroupEmpty}">
                         <div class="panel-heading">
-                            节点组
+                            <@spring.message 'common.nodeGroup'/>
                         </div>
                         <div class="panel-body scrollbar" style="position: relative;height: 185px;">
                             <ul class="list-group">
                                 <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
                                     <div style="height: 12px;">
                                         <div class="left" style="width: 89%;">{{ng.fullPath}}</div>
-                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)" ><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)"><i
+                                                @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
                                     </div>
                                 </li>
                             </ul>
                         </div>
-                        <div class="plus border" style="bottom:268px" @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+                        <div class="plus border" style="bottom:269px" @click="openNodePannel"><i
+                                class="glyphicon glyphicon-plus"></i></div>
 
                     </div>
-                    <div class="panel panel-default" style="width: 90%;">
+                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': nodeOrGroupEmpty}">
                         <div class="panel-heading">
-                            节点
+                            <@spring.message 'common.node'/>
                         </div>
                         <div>
                             <div class="panel-body scrollbar" style="position: relative;height: 185px;">
@@ -82,15 +106,17 @@
                                     <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
                                         <div style="height: 12px;">
                                             <div class="left" style="width: 89%;">{{ni.ip}}</div>
-                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i
+                                                    @click="openNodePannel" class="glyphicon glyphicon-remove"></i>
+                                            </div>
                                         </div>
                                     </li>
                                 </ul>
                             </div>
-                            <div class="plus border" style="bottom:20px"  @click="openNodePannel"><i class="glyphicon glyphicon-plus"></i></div>
+                            <div class="plus border" style="bottom:21px" @click="openNodePannel"><i
+                                    class="glyphicon glyphicon-plus"></i></div>
                         </div>
                     </div>
-
                 </div>
             </div>
             <select-panel
@@ -103,61 +129,67 @@
                     @row-check="checkNodeInfos"
                     :table-row-class-change="columnClassChange"
                     ref="selectPanel"
-                    :uncheck-node="uncheckGroup" >
+                    :warn-message="nodeOrGroupEmptyMsg"
+                    :uncheck-node="uncheckGroup">
 
             </select-panel>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">国际化CODE:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.i18nCode'/>:</div>
                 <div class="col-sm-9">
-                    <input type="text" class="form-control"  v-model.trim="$v.deteSet.i18nCode.$model"/>
+                    <input type="text" class="form-control" v-model.trim="$v.deteSet.i18nCode.$model"/>
                 </div>
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">查看权限:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/>:</div>
                 <div class="col-sm-9">
                     <template v-for="vl in viewLevels">
                         <label class="radio-inline">
-                            <input type="radio" :value="vl.code" v-model="$v.deteSet.viewLevel.$model" /> {{vl.value}}
+                            <input type="radio" :value="vl.code" v-model="$v.deteSet.viewLevel.$model"/> {{vl.value}}
                         </label>
                     </template>
                 </div>
             </div>
 
             <div class="form-group" v-show="deteSet.viewLevel==1">
-                <div class="col-sm-2 control-label">用户组:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/>:</div>
                 <div class="col-sm-9 ">
-                    <div class="panel panel-default" style="width: 90%;">
+                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': deteSet.viewLevel==1&&userGroupsEmpty}">
                         <div class="panel-body scrollbar" style="height: 185px;">
                             <ul class="list-group" v-if="viewers ==null || viewers.length > 0">
                                 <li class="list-group-item" v-for="viewer in viewers">
-                                    <div style="height: 12px;">
-                                        <input type="checkbox"  :value="viewer.code" v-model="$v.deteSet.viewerId.$model" > {{viewer.value}}
+                                    <div style="height: 12px;" >
+                                        <input type="checkbox" :value="viewer.code"  v-model="viewer.checked"> {{viewer.value}}
                                     </div>
+
                                 </li>
                             </ul>
                             <span class="help-block" v-else>
-                                当前业务系统下没有节点组
+                                <@spring.message 'validate.common.noUsergroupInSysView'/>
                             </span>
                         </div>
                     </div>
-
+                    <div class="form-control_error-msg" v-if="deteSet.viewLevel==1&&userGroupsEmpty">
+                        <@spring.message 'validate.common.required'/>
+                    </div>
                 </div>
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label">备注:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.remark'/>:</div>
                 <div class="col-sm-9">
-                    <textarea v-model.trim="$v.deteSet.remark.$model" class="form-control" ></textarea>
+                    <textarea v-model.trim="$v.deteSet.remark.$model" class="form-control"></textarea>
                 </div>
             </div>
 
             <div class="form-group form-group_opbox">
                 <div>
-                    <button title="提交" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate">
+                        <i class="fa fa-check"></i></button>
                     <div style="display:inline-block;width:10px;"></div>
-                    <button title="返回" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i
+                            class="fa fa-reply"></i></button>
                 </div>
             </div>
         </form>
@@ -167,6 +199,6 @@
 
 </body>
 <#include "main.html">
-<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
-<script src="${request.contextPath}/statics/js/modules/detect/deteSet.js?_${.now?long}"></script>
+<#include "/js/modules/detect/main.js"/>
+<#include "/js/modules/detect/deteSet.js"/>
 </html>

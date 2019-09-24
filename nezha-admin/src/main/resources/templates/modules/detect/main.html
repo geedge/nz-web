@@ -1,5 +1,8 @@
 <script id="popUpWindow" type="text/x-template">
-    <div id="layerView"  class="panel panel-default main">
+    <div id="layerView" class="panel panel-default main">
+        <div class="alert alert-warning alert-dismissible" id="panel-warn-msg" style="display:none;">
+            {{warnMessage}}
+        </div>
         <div class="left scrollbar">
             <left-tree
                     v-bind:znode="znode"
@@ -10,7 +13,7 @@
             ></left-tree>
         </div>
         <div class="right" style="padding-top:10px">
-<!--            <right-table :list-url="listUrl" :list-colmodel="listColmodel" :post-data="postData"></right-table>-->
+            <!--            <right-table :list-url="listUrl" :list-colmodel="listColmodel" :post-data="postData"></right-table>-->
             <v-table
                     ref="rightTable"
                     is-horizontal-resize
@@ -34,14 +37,16 @@
 
 
 <script id="leftTree" type="text/x-template">
-    <div >
+    <div>
         <ul id="beTree" class="ztree"></ul>
     </div>
 </script>
 
-<script id="rightTableList" type="text/x-template">
-    <div>
-        <table id="rightTable"></table>
-        <div id="rightTablePager"></div>
+<script id="labelInput" type="text/x-template">
+    <div class="input-group" >
+        <label class="input-group-addon">
+            {{label}}
+        </label>
+        <input type="text" style="z-index:0;" class="form-control" :value="value" @input="$emit('input', $event.target.value)"/>
     </div>
 </script>
