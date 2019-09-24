@@ -6,7 +6,7 @@ var upgradeKillProcessChild = Vue.extend({
 		    <div class="form-group">
 		    	<div class="col-sm-2 control-label"><@spring.message 'mission.pidFile'/></div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="pidFile"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 	    		</div>
@@ -28,13 +28,11 @@ var upgradeKillProcessChild = Vue.extend({
   },
   data () {
     return {
-      param: {
-    	pidFiles: ''
-      }
+      pidFile:""
     }
   },
   watch: {
-	    param: {
+	    pidFile: {
 	      handler (newV, oldV) {
 	        this.$emit('uploadData', {index: this.index, data: newV})
 	      },
@@ -43,7 +41,7 @@ var upgradeKillProcessChild = Vue.extend({
 	    items: {
 	      handler (newV, oldV) {
 	        if (newV.length !== 0) {
-	          this.param = {...newV[this.index]}
+	          this.pidFile = newV[this.index]
 	        }
 	      },
 	      deep: true
@@ -53,12 +51,15 @@ var upgradeKillProcessChild = Vue.extend({
 	    deleteparam: function () {
 	      this.$emit('deleteIndex', this.index)
 	    }
+	  },
+	  mounted:function(){
+		  this.pidFile = this.items[this.index]
 	  }
 	})
-	// 构建一个父组件   && vm.mission.commandEnname!=null && vm.mission.commandEnname.code==0  
+	// 构建一个父组件   
 var upgradeKillProcess = Vue.extend({
     template: `
-    	<div v-if="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code==0 ">
+    	<div v-if="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_kill_process' ">
         <upgradeKillProcessChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -71,7 +72,7 @@ var upgradeKillProcess = Vue.extend({
     `,
     data () {
 	    return {
-	      items: [{}],
+	      items: [''],
 	      dataRec: []
 	    }
 	  },
@@ -82,7 +83,7 @@ var upgradeKillProcess = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: ''})
+          this.items.push('')
         },
         // delete param
         del: function (index) {
@@ -94,19 +95,22 @@ var upgradeKillProcess = Vue.extend({
         },
         //  get the data from child
         getData: function (val) {
-          let index = val.index
-          this.items[index] = val.data
+          let index = val.index;
+          this.items[index] = val.data;
+          if(vm.mission.param.paramForExecuteInstruct==null||vm.mission.param.paramForExecuteInstruct==undefined){
+        	  vm.mission.param.paramForExecuteInstruct={
+        			  pidFiles:[]
+        	  }
+          }
+          vm.mission.param.paramForExecuteInstruct.pidFiles=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        dataReset:function(){
+        	this.items=['']
         }
       }
 })
 
 // 注册到全局
 Vue.component('upgrade-kill-process', upgradeKillProcess)
-new Vue({
-    el: '#upgradeKillProcess',
-    data: {
-        
-    }
-})
 </script>

@@ -69,14 +69,14 @@
 			</div>
 			
 			<!-- 根据任务类型以及命令类型两个条件 筛选下拉框内容 -->
-			<div v-show="mission.type==2&&mission.commandType==0" class="form-group">
+			<div v-show="mission.type==2&&mission.commandType==1" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
 			   	<div class="col-sm-9">
 					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList1" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>
 				</div>
 			</div>
 			
-			<div v-show="mission.type==2&&mission.commandType==1" class="form-group">
+			<div v-show="mission.type==2&&mission.commandType==2" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
 			   	<div class="col-sm-9">
 					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList2" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
@@ -110,11 +110,11 @@
 			</div>  -->
 			
 			<div class="form-group">
-                <div class="col-sm-2 control-label">选择节点/节点组:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.pleaseSelect'/><@spring.message 'common.node'/>/<@spring.message 'common.nodeGroup'/>:</div>
                 <div class="col-sm-9" >
                     <div class="panel panel-default" style="width: 90%;" >
                         <div class="panel-heading">
-                            节点组
+          <@spring.message 'common.nodeGroup'/>
                         </div>
                         <div class="panel-body scrollbar" style="position: relative;height: 185px;">
                             <ul class="list-group">
@@ -131,7 +131,7 @@
                     </div>
                     <div class="panel panel-default" style="width: 90%;">
                         <div class="panel-heading">
-                            节点
+          <@spring.message 'common.node'/>
                         </div>
                         <div>
                             <div class="panel-body scrollbar" style="position: relative;height: 185px;">
@@ -158,10 +158,8 @@
                     @node-click="getNodeList"
                     @node-check="checkNodeGroup"
                     @row-check="checkNodeInfos"
-                    
                     ref="selectPanel"
                     :uncheck-node="uncheckGroup" >
-
             </select-panel>
 			
 			
@@ -171,7 +169,7 @@
 			
 						
 			<div v-show="!missionParam" class="form-group">
-			   	<div class="col-sm-2 control-label"><@spring.message 'mission.viewPermission'/></div>
+			   	<div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/></div>
 			   	<div class="col-sm-9">
 			   		<template v-for="vl in viewLevel">
 			   			<label class="radio-inline">
@@ -197,31 +195,31 @@
 			</div> -->
 			
 			<div id="filepush">
-			    <filepush></filepush>
+			    <filepush ref="filePush"></filepush>
 			</div>
 			
 			<div id='upgradeKillProcess'>
-				<upgrade-kill-process></upgrade-kill-process>
+				<upgrade-kill-process ref="upgradeKillProcess"></upgrade-kill-process>
 			</div>
 			
 			<div id="upgradeBackup">
-				<upgrade-backup></upgrade-backup>
+				<upgrade-backup ref="upgradeBackup"></upgrade-backup>
 			</div>
 			
 			<div id="upgradeUpdate">
-				<upgrade-update></upgrade-update> 
+				<upgrade-update ref="upgradeUpdate"></upgrade-update> 
 			</div>
 			
 			<div id="upgradeExecStart">
-				<upgrade-exec-start></upgrade-exec-start>
+				<upgrade-exec-start ref="upgradeExecStart"></upgrade-exec-start>
 			</div>
 			
 			<div id="upgradeRecover">
-				<upgrade-recover></upgrade-recover>
+				<upgrade-recover ref="upgradeRecover"></upgrade-recover>
 			</div>
 			
-			<div id="singleExec">
-				<single-exec></single-exec>
+			<div id="singleExec" >
+				<single-exec ref="singleExec"></single-exec>
 			</div>
 			
 			<!-- 任务类型为命令执行 显示周期任务选项 -->
@@ -247,7 +245,7 @@
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.startTime'/></div>
 			   	<div class="col-sm-9">
-			        <input name="beginDate" id="beginDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
+			        <input name="beginDate" id="beginDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium" v-model="missionLoopEntity.startTime"
 					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setStartTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
 			    </div>
 			</div>
@@ -255,7 +253,7 @@
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.endTime'/></div>
 			   	<div class="col-sm-9">
-			        <input name="endDate" id="endDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"
+			        <input name="endDate" id="endDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"  v-model="missionLoopEntity.endTime"
 					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setEndTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
 			    </div>
 			</div>

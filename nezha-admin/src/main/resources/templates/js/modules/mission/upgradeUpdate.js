@@ -8,7 +8,7 @@ var upgradeUpateChild = Vue.extend({
 		    		<@spring.message 'mission.sourceFileOrDirectory'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.source"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -18,7 +18,7 @@ var upgradeUpateChild = Vue.extend({
 		    		<@spring.message 'mission.overwriteDirectory'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.cover"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -29,10 +29,10 @@ var upgradeUpateChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.absolutePath'/> 
+							<input type="radio" value="1" v-model="param.isAbs"/> <@spring.message 'mission.absolutePath'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.relativePath'/> 
+						<input type="radio" value="0" v-model="param.isAbs"/> <@spring.message 'mission.relativePath'/> 
 					</label>
 			    </div>
 	    	</div>
@@ -42,10 +42,10 @@ var upgradeUpateChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.create'/> 
+							<input type="radio" value="1" v-model="param.isCreateCover"/> <@spring.message 'mission.create'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.doNotCreate'/> 
+						<input type="radio" value="0" v-model="param.isCreateCover"/> <@spring.message 'mission.doNotCreate'/> 
 					</label>
 			    </div>
 	    	</div>
@@ -54,7 +54,7 @@ var upgradeUpateChild = Vue.extend({
 		    		<@spring.message 'mission.deleteFiles'/> 
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<textarea class="form-control" v-model="param.destPath"></textarea>
+		        	<textarea class="form-control" v-model="param.deleteTmpStr"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
@@ -75,7 +75,11 @@ var upgradeUpateChild = Vue.extend({
   data () {
     return {
       param: {
-    	pidFiles: ''
+    	  source: '',
+    	  cover:'',
+    	  isAbs:0,
+    	  isCreateCover:0,
+    	  deleteTmpStr:''
       }
     }
   },
@@ -99,12 +103,15 @@ var upgradeUpateChild = Vue.extend({
 	    deleteparam: function () {
 	      this.$emit('deleteIndex', this.index)
 	    }
+	  },
+	  mounted:function(){
+		  this.param = {...this.items[this.index]}
 	  }
 	})
 	// 构建一个父组件 
 var upgradeUpate = Vue.extend({
     template: `
-    	<div class=""  v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code==2">
+    	<div class=""  v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_update'">
         <upgradeUpateChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -117,7 +124,13 @@ var upgradeUpate = Vue.extend({
     `,
     data () {
 	    return {
-	      items: [{}],
+	      items: [{
+	    	  source: '',
+	    	  cover:'',
+	    	  isAbs:0,
+	    	  isCreateCover:0,
+	    	  deleteTmpStr:''
+	      }],
 	      dataRec: []
 	    }
 	  },
@@ -128,12 +141,13 @@ var upgradeUpate = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: '',
-          	fileName: '',
-        	groupName:'',
-        	isCover:0,
-        	permisson:'',
-        	username:''})
+          this.items.push({
+        	  source: '',
+        	  cover:'',
+        	  isAbs:0,
+        	  isCreateCover:0,
+        	  deleteTmpStr:''
+          })
         },
         // delete param
         del: function (index) {
@@ -147,17 +161,24 @@ var upgradeUpate = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
+          if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
+        	  vm.mission.param.paramForExecuteInstructs={}
+          }
+          vm.mission.param.paramForExecuteInstructs=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        dataReset:function(){
+        	this.items=[{
+        		  source: '',
+	          	  cover:'',
+	          	  isAbs:0,
+	          	  isCreateCover:0,
+	          	  deleteTmpStr:''
+	      }]
         }
       }
 })
 
 // 注册到全局
 Vue.component('upgrade-update', upgradeUpate)
-new Vue({
-    el: '#upgradeUpdate',
-    data: {
-        
-    }
-})
 </script>

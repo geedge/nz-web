@@ -70,7 +70,7 @@ var vm = new Vue({
 			commandEnname:null,
 			isLoop:0,
 			loopInterval:null,
-			param:null,
+			param:{},
 			userGroup:null,
 			nodeGroupIds:[],
 			nodeIds:[]
@@ -84,6 +84,14 @@ var vm = new Vue({
 		commandEnnameTypeList2:[],
 		commandEnnameTypeList3:[],
 		files:[],
+		paramForExecuteInstruct:{
+			pidFiles:[]
+		},
+		paramForExecuteInstructs:{},
+		missionLoopEntity:{
+			endTime:null,
+			startTime:null
+		},
 		
 		
 		uncheckGroup: null, //标记左侧树取消选中的节点，用于左右联动
@@ -211,26 +219,41 @@ var vm = new Vue({
 			});
 		},
 		add: function(){
+			console.log(vm)
+			//清空界面数据
+			vm.$refs.filePush.dataReset();
+			vm.$refs.upgradeKillProcess.dataReset();
+			vm.$refs.singleExec.dataReset();
+			vm.$refs.upgradeExecStart.dataReset();
+			vm.$refs.upgradeBackup.dataReset();
+			vm.$refs.upgradeRecover.dataReset();
+			vm.$refs.upgradeUpdate.dataReset();
+			vm.nodeInfoData = [];
+            vm.nodeGroupsChecked = [];
+            vm.nodeInfosChecked = [];
 			vm.$v.mission.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.missionParam = false;
 			vm.title = "新增";
+			vm.missionLoopEntity={startTime:'',endTime:''}
+			this.dataReset();
+		},
+		dataReset:function(){
 			vm.mission = {
-				name:null,
-				remark:null,
-				id:null,
-				viewLevel:3,
-				type:1,
-				commandType:0,
-				commandEnname:null,
-				isLoop:0,
-				loopInterval:null,
-				param:null,
-				viewerId:null,
-				nodeGroupIds:[],
-				nodeIds:[]
-			};
-			vm.file='';
+					name:null,
+					remark:null,
+					id:null,
+					viewLevel:3,
+					type:1,
+					commandType:1,
+					commandEnname:null,
+					isLoop:0,
+					loopInterval:null,
+					param:{},
+					viewerId:null,
+					nodeGroupIds:[],
+					nodeIds:[]
+				};
 		},
 		update: function () {
 			vm.$v.mission.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
@@ -266,8 +289,22 @@ var vm = new Vue({
             	this.files.forEach(function(o){
             		formData.append("files",o);
             	});
+            }else{
+            	//针对任务为指令的处理各种类型任务的参数
+                this.mission.param.commandEnname=this.mission.commandEnname.code;
+                formData.append("commandEnname",this.mission.commandEnname.code);
+                formData.append("commandType",this.mission.commandType);
+            	//处理任务为指令的周期参数
+                if(this.mission.isLoop){
+                	console.log("missionLoopEntity")
+                	console.log($("#beginDate").val())
+                	console.log(this.missionLoopEntity)
+                	formData.append("isLoop",this.mission.isLoop);
+                	formData.append("loopInterval",this.mission.isLoop);
+                	this.mission.param.missionLoopEntity=this.missionLoopEntity;
+                }
             }
-            console.log(this.mission.viewerId)
+            
             //判断用户选择是否为用户组选项
             if(this.mission.viewLevel==1){
             	formData.append("viewerId",this.mission.viewerId.id);
@@ -277,9 +314,8 @@ var vm = new Vue({
             formData.append("nodeGroupIds",this.mission.nodeGroupIds);
             formData.append("nodeIds",this.mission.nodeIds);
             formData.append("type",this.mission.type);
-            
+            formData.append("viewLevel",this.mission.viewLevel);
 			var url = vm.mission.id == null ? "mission/save" : "mission/update";
-            
 			$.ajax({
 				type: vm.mission.id == null ? "POST" : "PUT",
 			    url: baseURL + url,
@@ -395,6 +431,7 @@ var vm = new Vue({
             return "";
         },*/
 		updateCommandEnname:function(){
+			vm.mission.param={};
 			vm.mission.commandEnname=null;
 		},
 		getNodeList: function (nodeGroup) {

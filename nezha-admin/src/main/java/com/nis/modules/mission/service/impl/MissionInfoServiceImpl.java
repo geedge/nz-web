@@ -489,7 +489,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 							}
 							if(CommonUtil.isNull(paramForExecuteInstruct2.getReturnFlag())) {
 								paramForExecuteInstruct2.setReturnFlag("0");
-							}else {
+							}else if(paramForExecuteInstruct2.getReturnFlag().equals("1")){
 								ValidateUtils.is(paramForExecuteInstruct2.getReturnPath()).notNull(RCode.MISSION_EXECUTE_INSTRUCT_START_RETURNPATH_ISNULL);
 							}
 							if(CommonUtil.isNull(paramForExecuteInstruct2.getMaxWaitTime())) {
@@ -644,7 +644,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 							ValidateUtils.is(paramForExecuteInstruct6.getExecCmd()).notNull(RCode.MISSION_EXECUTE_INSTRUCT_SINGLEEXEC_EXECCMD_ISNULL);
 							if(CommonUtil.isNull(paramForExecuteInstruct6.getReturnFlag())) {
 								paramForExecuteInstruct6.setReturnFlag("0");
-							}else {
+							}else if(paramForExecuteInstruct6.getReturnFlag().equals("1")){
 								ValidateUtils.is(paramForExecuteInstruct6.getReturnPath()).notNull(RCode.MISSION_EXECUTE_INSTRUCT_SINGLEEXEC_RETURNPATH_ISNULL);
 							}
 							if(CommonUtil.isNull(paramForExecuteInstruct6.getMaxWaitTime())) {

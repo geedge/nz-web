@@ -8,7 +8,7 @@ var upgradeExecOrStartChild = Vue.extend({
 		    		<@spring.message 'mission.startupFileOrCommand'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.execCmd"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -18,7 +18,7 @@ var upgradeExecOrStartChild = Vue.extend({
 		    		<@spring.message 'mission.executionResultFile'/> 
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.execResult"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -28,7 +28,7 @@ var upgradeExecOrStartChild = Vue.extend({
 		    		<@spring.message 'mission.maximumWaitingTime'/> 
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>&nbsp&nbsp秒
+		        	<input type="text" class="form-control" v-model="param.maxWaitTime"/>&nbsp&nbsp秒
 		        </div>
 	    	</div>
 	    	<div class="form-group">
@@ -36,7 +36,7 @@ var upgradeExecOrStartChild = Vue.extend({
 		    		<@spring.message 'mission.owner'/> 
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.username"/>
 		        </div>
 	    	</div>
 	    	<div  class="form-group">
@@ -45,10 +45,10 @@ var upgradeExecOrStartChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" /> <@spring.message 'mission.yes'/> 
+							<input type="radio" value="1" v-model="param.forceExec" /> <@spring.message 'mission.yes'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" /> <@spring.message 'mission.no'/> 
+						<input type="radio" value="0" v-model="param.forceExec" /> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
 	    	</div>
@@ -58,10 +58,10 @@ var upgradeExecOrStartChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" /> <@spring.message 'mission.yes'/>
+							<input type="radio" value="1" v-model="param.residentFlag" /> <@spring.message 'mission.yes'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" /> <@spring.message 'mission.no'/> 
+						<input type="radio" value="0" v-model="param.residentFlag" /> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
 	    	</div>
@@ -71,19 +71,19 @@ var upgradeExecOrStartChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.yes'/>
+							<input type="radio" value="1" v-model="param.returnFlag"/> <@spring.message 'mission.yes'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.no'/> 
+						<input type="radio" value="0" v-model="param.returnFlag"/> <@spring.message 'mission.no'/> 
 					</label>
 			    </div>
 	    	</div>
-	    	<div class="form-group" v-show="param.isCover==1">
+	    	<div class="form-group" v-show="param.returnFlag==1">
 		    	<div class="col-sm-2 control-label">
 		    		<@spring.message 'mission.postFile'/>  
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control"/>
+		        	<input type="text" class="form-control" v-model="param.returnPath" />
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -93,7 +93,7 @@ var upgradeExecOrStartChild = Vue.extend({
 		    		<@spring.message 'mission.startupParameters'/> 
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<textarea class="form-control" v-model="param.destPath"></textarea>
+		        	<textarea class="form-control" v-model="param.execParamsTmpStr"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
@@ -114,8 +114,14 @@ var upgradeExecOrStartChild = Vue.extend({
   data () {
     return {
       param: {
-    	pidFiles: '',
-    	isCover:0
+    	  execResult:"",
+          forceExec:0,
+          maxWaitTime:null,
+          residentFlag:0,
+          returnFlag:0,
+          returnPath:'',
+          username:"",
+          execParamsTmpStr:''
       }
     }
   },
@@ -139,12 +145,15 @@ var upgradeExecOrStartChild = Vue.extend({
 	    deleteparam: function () {
 	      this.$emit('deleteIndex', this.index)
 	    }
+	  },
+	  mounted:function(){
+		  this.param = {...this.items[this.index]}
 	  }
 	})
 	// 构建一个父组件
 var upgradeExecOrStart = Vue.extend({
     template: `
-    	<div class=""  v-show="vm.mission.type==2&&vm.mission.commandEnname!=null &&(vm.mission.commandEnname.code==5||vm.mission.commandEnname.code==3)">
+    	<div class=""  v-show="vm.mission.type==2&&vm.mission.commandEnname!=null &&(vm.mission.commandEnname.code=='upgrade_exec'||vm.mission.commandEnname.code=='upgrade_start')">
         <upgradeExecOrStartChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -157,7 +166,16 @@ var upgradeExecOrStart = Vue.extend({
     `,
     data () {
 	    return {
-	      items: [{}],
+	      items: [{
+	    	  execResult:"",
+	          forceExec:0,
+	          maxWaitTime:null,
+	          residentFlag:0,
+	          returnFlag:0,
+	          returnPath:'',
+	          username:"",
+	          execParamsTmpStr:''
+	      }],
 	      dataRec: []
 	    }
 	  },
@@ -168,12 +186,15 @@ var upgradeExecOrStart = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: '',
-          	fileName: '',
-        	groupName:'',
-        	isCover:0,
-        	permisson:'',
-        	username:''})
+          this.items.push({
+        	  execResult:"",
+              forceExec:0,
+              maxWaitTime:null,
+              residentFlag:0,
+              returnFlag:0,
+              returnPath:'',
+              username:"",
+              execParamsTmpStr:''})
         },
         // delete param
         del: function (index) {
@@ -187,17 +208,27 @@ var upgradeExecOrStart = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
+          if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
+        	  vm.mission.param.paramForExecuteInstructs={}
+          }
+          vm.mission.param.paramForExecuteInstructs=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        dataReset:function(){
+        	this.items=[{
+        		execResult:"",
+                forceExec:0,
+                maxWaitTime:null,
+                residentFlag:0,
+                returnFlag:0,
+                returnPath:'',
+                username:"",
+                execParamsTmpStr:''
+  	      }]
         }
       }
 })
 
 // 注册到全局
 Vue.component('upgrade-exec-start', upgradeExecOrStart)
-new Vue({
-    el: '#upgradeExecStart',
-    data: {
-        
-    }
-})
 </script>

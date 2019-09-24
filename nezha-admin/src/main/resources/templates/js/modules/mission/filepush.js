@@ -168,11 +168,16 @@ var filePush = Vue.extend({
           console.log('I got the data:', JSON.stringify(this.items))
         },
         getPushFile:function(val,index){
-        	console.log(val)
-        	console.log("--------------")
-        	console.log(index)
         	vm.files[index]=event.target.files[0]
-        	console.log(vm.files);
+        },
+        dataReset:function(){
+        	this.items=[{destPath: '',
+    	      	fileName: '',
+    	    	groupName:'',
+    	    	isCover:0,
+    	    	permisson:'',
+    	    	username:''
+    	      }]
         }
       }
 })

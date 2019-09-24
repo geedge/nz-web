@@ -8,7 +8,7 @@ var upgradeBackupChild = Vue.extend({
 		    		<@spring.message 'mission.filesThatNeedToBeBackedUp'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.backup"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -18,7 +18,7 @@ var upgradeBackupChild = Vue.extend({
 		    		<@spring.message 'mission.pathToBackup'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.backupTo"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -29,10 +29,10 @@ var upgradeBackupChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.absolutePath'/> 
+							<input type="radio" value="1" v-model="param.isAbs"/> <@spring.message 'mission.absolutePath'/> 
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.relativePath'/> 
+						<input type="radio" value="0" v-model="param.isAbs"/> <@spring.message 'mission.relativePath'/> 
 					</label>
 			    </div>
 	    	</div>
@@ -41,7 +41,7 @@ var upgradeBackupChild = Vue.extend({
 		    		<@spring.message 'mission.excludeFile'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<textarea class="form-control" v-model="param.destPath"></textarea>
+		        	<textarea class="form-control" v-model="param.exceptTmpStr"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
@@ -62,7 +62,10 @@ var upgradeBackupChild = Vue.extend({
   data () {
     return {
       param: {
-    	pidFiles: ''
+    	  backup: '',
+    	  backupTo:'',
+    	  isAbs:0,
+    	  exceptTmpStr:''
       }
     }
   },
@@ -86,12 +89,15 @@ var upgradeBackupChild = Vue.extend({
 	    deleteparam: function () {
 	      this.$emit('deleteIndex', this.index)
 	    }
+	  },
+	  mounted:function(){
+		  this.param = {...this.items[this.index]}
 	  }
 	})
 	// 构建一个父组件 
 var upgradeBackup = Vue.extend({
     template: `
-    	<div class="" v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code==1">
+    	<div class="" v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_backup'">
         <upgradeBackupChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -104,7 +110,12 @@ var upgradeBackup = Vue.extend({
     `,
     data () {
 	    return {
-	      items: [{}],
+	      items: [{
+	    	  backup: '',
+	    	  backupTo:'',
+	    	  isAbs:0,
+	    	  exceptTmpStr:''
+	      }],
 	      dataRec: []
 	    }
 	  },
@@ -115,12 +126,12 @@ var upgradeBackup = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: '',
-          	fileName: '',
-        	groupName:'',
-        	isCover:0,
-        	permisson:'',
-        	username:''})
+          this.items.push({ 
+        	  backup: '',
+        	  backupTo:'',
+        	  isAbs:0,
+        	  exceptTmpStr:''
+          })
         },
         // delete param
         del: function (index) {
@@ -134,17 +145,23 @@ var upgradeBackup = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
+          if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
+        	  vm.mission.param.paramForExecuteInstructs={}
+          }
+          vm.mission.param.paramForExecuteInstructs=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        dataReset:function(){
+        	this.items=[{
+        	  backup: '',
+          	  backupTo:'',
+          	  isAbs:0,
+          	  exceptTmpStr:''
+  	      }]
         }
       }
 })
 
 // 注册到全局
 Vue.component('upgrade-backup', upgradeBackup)
-new Vue({
-    el: '#upgradeBackup',
-    data: {
-        
-    }
-})
 </script>

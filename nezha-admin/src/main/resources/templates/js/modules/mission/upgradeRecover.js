@@ -8,7 +8,7 @@ var upgradeRecoverChild = Vue.extend({
 		    		<@spring.message 'mission.sourceFileOrDirectory'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.source"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -18,7 +18,7 @@ var upgradeRecoverChild = Vue.extend({
 		    		<@spring.message 'mission.overwriteDirectory'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<input type="text" class="form-control" v-model="param.destPath"/>
+		        	<input type="text" class="form-control" v-model="param.cover"/>
 		        	<span class="required-symbol">*</span>
 			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
 		        </div>
@@ -29,10 +29,10 @@ var upgradeRecoverChild = Vue.extend({
 			   	</div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
-							<input type="radio" value="1" v-model="param.isCover"/> <@spring.message 'mission.absolutePath'/>
+							<input type="radio" value="1" v-model="param.isAbs"/> <@spring.message 'mission.absolutePath'/>
 					</label>
 					<label class="radio-inline">
-						<input type="radio" value="0" v-model="param.isCover"/> <@spring.message 'mission.relativePath'/>
+						<input type="radio" value="0" v-model="param.isAbs"/> <@spring.message 'mission.relativePath'/>
 					</label>
 			    </div>
 	    	</div>
@@ -41,7 +41,7 @@ var upgradeRecoverChild = Vue.extend({
 		    		<@spring.message 'mission.deleteFiles'/>
 		    	</div>
 		    	<div class="col-sm-9">
-		        	<textarea class="form-control" v-model="param.destPath"></textarea>
+		        	<textarea class="form-control" v-model="param.deleteTmpStr"></textarea>
 		        </div>	
 	    	</div>
 			<div class="form-group" v-show="items.length>1">
@@ -62,7 +62,10 @@ var upgradeRecoverChild = Vue.extend({
   data () {
     return {
       param: {
-    	pidFiles: ''
+    	  source: '',
+    	  cover:'',
+    	  isAbs:0,
+    	  deleteTmpStr:''
       }
     }
   },
@@ -91,7 +94,7 @@ var upgradeRecoverChild = Vue.extend({
 	// 构建一个父组件   
 var upgradeRecover = Vue.extend({
     template: `
-    	<div class="" v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code==4">
+    	<div class="" v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_recover'">
         <upgradeRecoverChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -104,7 +107,12 @@ var upgradeRecover = Vue.extend({
     `,
     data () {
 	    return {
-	      items: [{}],
+	      items: [{
+	    	  source: '',
+	    	  cover:'',
+	    	  isAbs:0,
+	    	  deleteTmpStr:''
+	      }],
 	      dataRec: []
 	    }
 	  },
@@ -115,12 +123,12 @@ var upgradeRecover = Vue.extend({
     methods: {
         //  add param
         add: function () {
-          this.items.push({destPath: '',
-          	fileName: '',
-        	groupName:'',
-        	isCover:0,
-        	permisson:'',
-        	username:''})
+          this.items.push({
+        	  source: '',
+        	  cover:'',
+        	  isAbs:0,
+        	  deleteTmpStr:''
+          })
         },
         // delete param
         del: function (index) {
@@ -134,17 +142,23 @@ var upgradeRecover = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
+          if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
+        	  vm.mission.param.paramForExecuteInstructs={}
+          }
+          vm.mission.param.paramForExecuteInstructs=this.items;
           console.log('I got the data:', JSON.stringify(this.items))
+        },
+        dataReset:function(){
+        	this.items=[{
+        	  source: '',
+          	  cover:'',
+          	  isAbs:0,
+          	  deleteTmpStr:''
+	      }]
         }
       }
 })
 
 // 注册到全局
 Vue.component('upgrade-recover', upgradeRecover)
-new Vue({
-    el: '#upgradeRecover',
-    data: {
-        
-    }
-})
 </script>
