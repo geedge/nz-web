@@ -157,7 +157,7 @@ var vm = new Vue({
                 postData: {
                     "name": vm.q.cabName
                 },
-                page: page
+                page: 1
             }).trigger("reloadGrid");
         },
         reset: function () {

@@ -7,37 +7,23 @@
 </head>
 <body>
 
-<!-- 节点组 tree -->
 <div id="app" class="" style="width: 22%; display: inline-block;padding-left: 15px;float:left" v-cloak>
 
-    <div>
-        <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
-            业务系统
-            <div style="clear:both"></div>
-        </div>
-        <div v-for="item in systems" :key="item.id" class="mytree-item">
-
-            <!-- 业务系统名称 + 添加按钮 -->
-            <div>
-                <span :id="'icon' + item.id" class="mytreeicon mytreeicon-open" @click="showTree(item)"></span>
-                <span class="mytree-subtitle" @mouseenter="showBtn(item)" @mouseleave="hideBtn(item)">
-                    <a :title="item.name" @click="showTree(item)">{{item.name}}</a>
-                    <!-- 添加按钮 -->
-		           	<span :id="'icon2' + item.id" class="mytreeicon mytreeicon-add_unact" @mouseenter="showBtn2(item)"
-                          @mouseleave="hideBtn2(item)" @click="add(item)"
-                          title="<@spring.message 'common.add'/><@spring.message 'nodegroup.root.group'/>"></span>
-	           	</span>
-            </div>
-
-            <!-- 树 div -->
-            <div style="clear:both"></div>
-            <div class="mytree-box" :id="'box' + item.id">
-                <ul :id="item.id" class="ztree"></ul>
-            </div>
-            <div style="clear:both"></div>
-        </div>
+    <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
+        <@spring.message 'system.system'/>
+        <div style="clear:both"></div>
     </div>
+    <group-tree
+            v-for="item in systems"
+            :key="item.id"
+            :zNodes="item.nodegroups"
+            :node="item"
+            @addrootgroup="add"
+            ref="gtree"> <!-- ref 为获取 组件 或 dom 时使用 -->
 
+    </group-tree>
+
+    <!-- 添加 / 修改 表单 -->
     <div v-show="showForm" id="form">
         <div class="panel panel-default">
             <form class="form-horizontal">
@@ -172,6 +158,31 @@
     </div>
 </div>
 
+<!-- 节点组树结构模板 -->
+<template id="treeTemplate">
+    <div class="mytree-item">
+
+        <!-- 业务系统名称 + 添加按钮 -->
+        <div>
+            <span :id="'icon' + node.id" class="mytreeicon mytreeicon-open" @click="showTree(node)"></span>
+            <span class="mytree-subtitle" @mouseenter="showBtn(node)" @mouseleave="hideBtn(node)">
+                    <a :title="node.name" @click="showTree(node)">{{node.name}}</a>
+                <!-- 添加按钮 -->
+		           	<span :id="'icon2' + node.id" class="mytreeicon mytreeicon-add_unact" @mouseenter="showBtn2(node)"
+                          @mouseleave="hideBtn2(node)" @click="addRootGroup"
+                          title="<@spring.message 'common.add'/><@spring.message 'nodegroup.root.group'/>"></span>
+	           	</span>
+        </div>
+
+        <!-- 树 div -->
+        <div style="clear:both"></div>
+        <div class="mytree-box" :id="'box' + node.id">
+            <ul :id="'treeDemo'+node.id" class="ztree"></ul>
+        </div>
+        <div style="clear:both"></div>
+
+    </div>
+</template>
 
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeGroup.js"></script>-->

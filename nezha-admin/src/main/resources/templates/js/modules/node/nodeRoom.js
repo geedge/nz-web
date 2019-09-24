@@ -175,7 +175,7 @@ var vm = new Vue({
                     "name": vm.q.name,
                     "addr": vm.q.addr == null ? null : vm.q.addr.code
                 },
-                page: page
+                page: 1
             }).trigger("reloadGrid");
         },
         reset:function(){

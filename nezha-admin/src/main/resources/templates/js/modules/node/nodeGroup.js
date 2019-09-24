@@ -1,143 +1,156 @@
 <script>
-$(function () {
-
-});
-
-var group_ztree = { // setting
-    view: {
-        addHoverDom: addHoverDom,
-        removeHoverDom: removeHoverDom,
-        selectedMulti: false
+    //  定义为 nodegroup 的私有组件
+let groupTree = Vue.component('groupTree', {
+    template: "#treeTemplate",
+    props: {
+        znodes: {
+            type: Array
+        },
+        selectedNodeId: "",
+        node: null
     },
-    edit: {
-        enable: true,
-        removeTitle: "<@spring.message 'common.delete'/>",
-        renameTitle: "<@spring.message 'common.edit'/>"
-    },
-    data: {
-        simpleData: {
-            enable: true,
-            idKey: "id",
-            pIdKey: "pid",
-            rootPId: 0
-        }
-    },
-    check: {
-        enable: false,
-        nocheckInherit: true
-    },
-    callback: {
-        beforeRemove: beforeRemove,         // 点击删除时触发，用来提示用户是否确定删除（可以根据返回值 true|false 确定是否可以删除）
-        beforeEditName: beforeEditName,     // 点击编辑时触发，用来判断该节点是否能编辑
-        // beforeRename: beforeRename,         // 编辑结束时触发，用来验证输入的数据是否符合要求(也是根据返回值 true|false 确定是否可以编辑完成)
-        beforeDrag: beforeDrag,             // 用户禁止拖动节点
-        onClick: clickNode                  // 点击节点触发的事件
-    }
-};
-
-// 删除
-function beforeRemove(treeId, treeNode) {
-    confirm("删除会删除关联节点,确定删除吗?", function () {
-        var form = new FormData();
-        form.append("id", treeNode.id);
-        $.ajax({
-            type: "DELETE",
-            url: baseURL + "nodegroup/delete",
-            processData: false,
-            contentType: false,
-            mimeType: "multipart/form-data",
-            data: form,
-            success: function (r) {
-                if (r.code == 200) {
-                    alert("<@spring.message 'common.success'/>", function (index) {
-                        vm.reload();
-                        location.reload();
-                    });
-                } else {
-                    alert(r.msg);
-                    location.reload();
+    data() {
+        return {
+            selectedNode: {},
+            setting: {
+                view: {
+                    addHoverDom: this.addHoverDom,
+                    removeHoverDom: this.removeHoverDom,
+                    showIcon: false
+                },
+                edit: {
+                    enable: true,
+                    removeTitle: "<@spring.message 'common.delete'/>",
+                    renameTitle: "<@spring.message 'common.edit'/>"
+                },
+                data: {
+                    simpleData: {
+                        enable: true,
+                        idKey: "id",
+                        pIdKey: "pid",
+                        rootPId: 0
+                    }
+                },
+                check: {
+                    enable: false,
+                    nocheckInherit: true
+                },
+                callback: {
+                    beforeRemove: this.beforeRemove,         // 点击删除时触发，用来提示用户是否确定删除（可以根据返回值 true|false 确定是否可以删除）
+                    beforeEditName: this.beforeEditName,     // 点击编辑时触发，用来判断该节点是否能编辑
+                    onClick: this.clickNode                  // 点击节点触发的事件
                 }
             }
-        });
-    });
-    return false;
-}
-
-// 修改
-function beforeEditName(treeId, treeNode) {
-    vm.$v.nodeGroup.$reset();
-    $.ajax({
-        type: "GET",
-        url: baseURL + "nodegroup/detail?id=" + treeNode.id,
-        async: false, // 关闭异步
-        dataType: "json",
-        success: function (r) {
-            vm.nodeGroup = r.data;
-        }
-    });
-    vm.getParentSystem(treeNode.systemId);
-    open("<@spring.message 'common.edit'/>");
-    vm.nodeGroup.parentGroup = treeNode.getParentNode() == null ? {
-        name: "<@spring.message 'nodegroup.root.group'/>",
-        id: 0
-    } : treeNode.getParentNode();
-    return false;
-}
-
-function clickNode(e, treeId, treeNode) {
-    vue.nodeGroup = treeNode;
-    vue.query();
-    return false;
-}
-
-function beforeDrag(treeId, treeNodes) {
-    return false;
-}
-
-function removeHoverDom(treeId, treeNode) {
-    $("#addBtn_" + treeNode.tId).unbind().remove();
-}
-
-// 控制添加按钮和添加功能
-function addHoverDom(treeId, treeNode) {
-    var sObj = $("#" + treeNode.tId + "_span");
-    if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0 || treeNode.allowSub == 0) { // 可以让不可添加的按钮隐藏
-        return;
-    }
-    // 添加子节点组
-    var addStr = "<span class='button add' id='addBtn_" + treeNode.tId + "' title='<@spring.message 'common.add'/><@spring.message 'nodegroup.child.group'/>' onfocus='this.blur();'></span>";
-    sObj.append(addStr);
-    var btn = $("#addBtn_" + treeNode.tId);
-    if (btn) btn.bind("click", function () {
-        vm.$v.nodeGroup.$reset();
-        // 获取节点组的业务系统 作为子节点组的业务系统
-        vm.getParentSystem(treeNode.systemId);
-        vm.showForm = true;
-        vm.nodeGroup = {
-            name: null,
-            id: null,
-            systemId: null,
-            pid: null,
-            remark: null,
-            parentGroup: null
         };
-        vm.nodeGroup.parentGroup = treeNode; // 点击的当前节点组添加子节点组,所以即将添加的节点组父级为当前节点组
-        vm.count = 1;
-        open("<@spring.message 'common.add'/>"); // 弹框
-    });
-}
+    },
+    methods: {
+        // 初始化ztree
+        init() {
+            var tree = $.fn.zTree.init($("#treeDemo" + this.node.id), this.setting, this.znodes);
+            tree.expandAll(true);
+        },
+        // 删除
+        beforeRemove: function (treeId, treeNode) {
+            var parent = this.$parent;
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
+                parent.delete(treeNode);
+            });
+            return false;
+        },
+        // 修改
+        beforeEditName: function (treeId, treeNode) {
+            this.$parent.update(treeNode);
+            return false;
+        },
+        // 点击节点组
+        clickNode: function (e, treeId, treeNode) {
+            this.$parent.getNodeInfos(treeNode);
+            return false;
+        },
+        // 鼠标划过展示功能按钮
+        addHoverDom: function (treeId, treeNode) {
+            //var node = this.node;
+            var parent = this.$parent;
+            var sObj = $("#" + treeNode.tId + "_span");
+            if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0 || treeNode.allowSub == 0) { // 可以让不可添加的按钮隐藏
+                return;
+            }
+            // 添加子节点组
+            var addStr = "<span class='button add' id='addBtn_" + treeNode.tId + "' title='<@spring.message 'common.add'/><@spring.message 'nodegroup.child.group'/>' onfocus='this.blur();'></span>";
+            sObj.append(addStr);
+            var btn = $("#addBtn_" + treeNode.tId);
+            if (btn) btn.bind("click", function () {
+                //vm.$refs.gtree[node.id].open(treeNode);
+                parent.add(treeNode, false);
+                return false; // 结束方法
+            });
+        },
+        open: function (treeNode) {
+            this.$parent.add(treeNode, false);
+        },
+        // 点击业务系统旁边的添加按钮 添加根节点组
+        addRootGroup: function () {
+            // 将数据传至父组件 也就是外面的vm 实例中进行添加操作
+            this.$emit('addrootgroup', this.node, true);
+        },
+        // 鼠标移除删除添加按钮
+        removeHoverDom: function (treeId, treeNode) {
+            $("#addBtn_" + treeNode.tId).unbind().remove();
+        },
+        // 一下是 展示/样式相关方法
+        showTree: function (item) {
+            $("#box" + item.id).toggle(200);
+            if ($("#icon" + item.id).hasClass("mytreeicon-open")) {
+                $("#icon" + item.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
+            } else {
+                $("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
+            }
+        },
+        showBtn: function (item) {
+            $("#icon2" + item.id).css("display", "inline-block");
+        },
+        hideBtn: function (item) {
+            $("#icon2" + item.id).hide();
+        },
+        showBtn2: function (item) {
+            $("#icon2" + item.id).removeClass("mytreeicon-add_unact").addClass("mytreeicon-add_act");
+        },
+        hideBtn2: function (item) {
+            $("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");
+        },
+    },
+    watch: {
+        // 监听树节点的变化更新树
+        znodes: function (val) {
+            this.init();
+        },
+    },
+    mounted() {
+        this.init();
+    }
+});
 
-// 弹出框
-function open(title) {
-    layer.open({
-        area: ['600px', '400px'],
-        shade: 0,
-        title: title,
-        type: 1,
-        fixed: false,
-        maxmin: false,
-        content: $("#form") // 本页面的元素
-    });
+var data = {
+    ref: '',
+    systems: [],
+    nodegroups: [],
+    showForm: false,
+    nodeGroup: {
+        name: null,
+        id: null,
+        systemId: null,
+        pid: null,
+        remark: null,
+        parentGroup: {
+            id: null,
+            name: null
+        }
+    },
+    system: {
+        id: null,
+        name: null
+    },
+    count: 1
 }
 
 // 引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
@@ -173,29 +186,8 @@ var nameCheck = function (value, nodeGroup) {
     }
 }
 
-var data = {
-    showForm: false,
-    systems: [],
-    nodeGroup: {
-        name: null,
-        id: null,
-        systemId: null,
-        pid: null,
-        remark: null,
-        parentGroup: {
-            id: null,
-            name: null
-        }
-    },
-    system: {
-        id: null,
-        name: null
-    },
-    count: 1
-};
-
 var vm = new Vue({
-    el: '#app',
+    el: "#app",
     data: this.data,
     validations: {
         nodeGroup: {
@@ -204,14 +196,60 @@ var vm = new Vue({
             }
         }
     },
+    components: {
+        groupTree // 私有组件 节点组页面左侧树结构
+    },
     methods: {
-        showTree: function (item) {
-            $("#box" + item.id).toggle(200);
-            if ($("#icon" + item.id).hasClass("mytreeicon-open")) {
-                $("#icon" + item.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
+        getNodeInfos: function (node) {
+            vue.nodeGroup = node;
+            vue.query();
+        },
+        add: function (node, isRoot) {
+            vm.$v.nodeGroup.$reset();
+            if (isRoot) { // 添加根节点组
+                vm.showForm = true;
+                // 获取当前权限
+                vm.system = node;
+                vm.nodeGroup = {
+                    name: null,
+                    id: null,
+                    systemId: null,
+                    pid: null,
+                    remark: null,
+                    parentGroup: null
+                };
+                vm.nodeGroup.parentGroup = {name: "<@spring.message 'nodegroup.root.group'/>", id: 0}; // 根节点组
             } else {
-                $("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
+                // 获取节点组的业务系统 作为子节点组的业务系统
+                vm.getParentSystem(node.systemId);
+                vm.showForm = true;
+                vm.nodeGroup = {
+                    name: null,
+                    id: null,
+                    systemId: null,
+                    pid: null,
+                    remark: null,
+                    parentGroup: null
+                };
+                vm.nodeGroup.parentGroup = node;
             }
+            vm.count = 1;
+            this.open("<@spring.message 'common.add'/>");
+        },
+        update: function (node) {
+            vm.$v.nodeGroup.$reset();
+            $.ajax({
+                type: "GET",
+                url: baseURL + "nodegroup/detail?id=" + node.id,
+                async: false, // 关闭异步
+                dataType: "json",
+                success: function (r) {
+                    vm.nodeGroup = r.data;
+                }
+            });
+            vm.getParentSystem(node.systemId);
+            vm.nodeGroup.parentGroup = node.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : node.getParentNode();
+            this.open("<@spring.message 'common.edit'/>");
         },
         saveOrUpdate: function () {
             if (!this.validate()) { // 在下方定义的validate方法
@@ -245,34 +283,28 @@ var vm = new Vue({
                 }
             });
         },
-        validate: function () {
-            vm.$v.nodeGroup.$touch();
-            return !vm.$v.nodeGroup.$error;
-        },
-        reload: function () {
-            if (vm.count == 1) {
-                layer.closeAll();
-            } else {
-                location.reload();
-            }
-        },
-        add: function (system) {
-            // 此添加为根节点
-            vm.$v.nodeGroup.$reset();
-            // 获取当前权限
-            vm.system = system;
-            vm.showForm = true;
-            vm.nodeGroup = {
-                name: null,
-                id: null,
-                systemId: null,
-                pid: null,
-                remark: null,
-                parentGroup: null
-            };
-            vm.nodeGroup.parentGroup = {name: "<@spring.message 'nodegroup.root.group'/>", id: 0}; // 根节点组
-            vm.count = 1;
-            open("<@spring.message 'common.add'/>");
+        delete: function (node) {
+            var form = new FormData();
+            form.append("id", node.id);
+            $.ajax({
+                type: "DELETE",
+                url: baseURL + "nodegroup/delete",
+                processData: false,
+                contentType: false,
+                mimeType: "multipart/form-data",
+                data: form,
+                success: function (r) {
+                    if (r.code == 200) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
+                            vm.reload();
+                            location.reload();
+                        });
+                    } else {
+                        alert(r.msg);
+                        location.reload();
+                    }
+                }
+            });
         },
         getParentSystem: function (systemId) { // 获取父节点的业务系统
             $.ajax({
@@ -285,17 +317,27 @@ var vm = new Vue({
                 }
             });
         },
-        showBtn: function (item) {
-            $("#icon2" + item.id).css("display", "inline-block");
+        open: function (title) {
+            layer.open({
+                area: ['600px', '400px'],
+                shade: 0,
+                title: title,
+                type: 1,
+                fixed: false,
+                maxmin: false,
+                content: $("#form") // 本页面的元素
+            });
         },
-        hideBtn: function (item) {
-            $("#icon2" + item.id).hide();
+        validate: function () {
+            vm.$v.nodeGroup.$touch();
+            return !vm.$v.nodeGroup.$error;
         },
-        showBtn2: function (item) {
-            $("#icon2" + item.id).removeClass("mytreeicon-add_unact").addClass("mytreeicon-add_act");
-        },
-        hideBtn2: function (item) {
-            $("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");
+        reload: function () {
+            if (vm.count == 1) {
+                layer.closeAll();
+            } else {
+                location.reload();
+            }
         }
     },
     created: function () {
@@ -310,20 +352,14 @@ var vm = new Vue({
             }
         });
     },
-    mounted: function () {
-        // 页面挂载后 创建ztree对象,构建树结构
+    mounted() {
+        // 如果是global 下隐藏树
         if (data.systems.length > 1) {
             data.systems.forEach(item => {
-                var treeObj;
-                treeObj = $.fn.zTree.init($("#" + item.id), group_ztree, item.nodegroups);
-                treeObj.expandAll(true);
                 // 开始隐藏
                 $("#box" + item.id).hide();
             });
-        } else {
-            var treeObj = $.fn.zTree.init($("#" + data.systems[0].id), group_ztree, data.systems[0].nodegroups);
-            treeObj.expandAll(true);
         }
     }
-});
-</script>
+})
+    </script>

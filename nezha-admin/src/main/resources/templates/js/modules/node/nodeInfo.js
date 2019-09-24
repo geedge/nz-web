@@ -10,8 +10,8 @@ $(function () {
             {label: '<@spring.message "node.ipAddress"/>', name: 'ip', width: 105, sortable: false, resizable: false},
             {label: '<@spring.message "node.type"/>', name: 'type', width: 60, sortable: false, formatter: typeFormat},
             {label: '<@spring.message "node.tag"/>', name: 'tagName', width: 60, sortable: false},
-            {label: '<@spring.message "node.cabinet.name"/>', name: 'cabinetInfo.name', width: 60, sortable: false},
-            {label: '<@spring.message "node.cabinetStart"/>', name: 'cabinetStart', width: 60, sortable: false},
+            /*{label: '<@spring.message "node.cabinet.name"/>', name: 'cabinetInfo.name', width: 60, sortable: false},
+            {label: '<@spring.message "node.cabinetStart"/>', name: 'cabinetStart', width: 60, sortable: false},*/
             {label: '<@spring.message "node.uSize"/>', name: 'uSize', width: 60, sortable: false},
             {label: '<@spring.message "node.snmpPort"/>', name: 'snmpPort', width: 60, sortable: false},
             {label: '<@spring.message "node.snmpCommunity"/>', name: 'snmpCommunity', width: 60, sortable: false},
@@ -99,7 +99,7 @@ var nameCheck = function (value, nodeInfo) {
 }
 // ip 唯一校验   特殊IP : IP存在与其他业务系统 则回显该节点数据 点击保存维护与当前系统的关系
 var ipCheck = function (value, nodeInfo) {
-    console.log("------ipcheck------")
+
     if (helpers.req(value)) {
         var flag = true;
         var params = "?ip=" + value;
@@ -593,7 +593,7 @@ var vue = new Vue({
                     "state": vue.q.state == null ? null : vue.q.state.code,
                     "groupId": vue.nodeGroup == null ? null : vue.nodeGroup.id
                 },
-                page: page
+                page: 1
             }).trigger("reloadGrid");
         },
         getTags: function () {
@@ -739,7 +739,6 @@ var vue = new Vue({
     },
     watch: {
         "nodeInfo.uSize": function (newValue, oldValue) {
-            console.log("进入uSize监听:")
 
             // 1. 表单锁定 或 值错误情况下 直接返回
             if (newValue == undefined) {
