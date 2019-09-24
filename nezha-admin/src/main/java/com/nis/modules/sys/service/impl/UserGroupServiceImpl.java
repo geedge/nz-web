@@ -278,7 +278,7 @@ public class UserGroupServiceImpl extends ServiceImpl<UserGroupDao, UserGroupEnt
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if (CommonUtil.isNull(list) ||
-				(list != null && list.size() == 1 && list.get(0).getId() == entity.getId())) {
+				(list != null && list.size() == 1 && list.get(0).getId().longValue() == entity.getId().longValue())) {
 			dumpFlag = false;
 		}
 		return dumpFlag;

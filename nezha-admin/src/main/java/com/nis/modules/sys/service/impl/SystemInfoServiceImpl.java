@@ -111,7 +111,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if ((list == null || list.size() == 0) ||
-				(list != null && list.size() == 1 && list.get(0).getId() == systemInfo.getId())) {
+				(list != null && list.size() == 1 && list.get(0).getId().longValue() == systemInfo.getId().longValue())) {
 			dumpFlag = false;
 		}
 		return dumpFlag;
