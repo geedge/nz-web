@@ -333,6 +333,12 @@ var vm = new Vue({
 				}
 			});
 		},
+		changeStartTime:function(){
+			this.missionLoopEntity.startTime = $("#beginDate").val();  
+		},
+		changeEndTime:function(){
+			this.missionLoopEntity.endTime = $("#endDate").val();  
+		},
 		reload: function (event) {
 			vm.showList = true;
 			vm.missionParam = true;

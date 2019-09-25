@@ -237,7 +237,7 @@
 			<div class="form-group" v-show="mission.type==2 && mission.isLoop==1">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.loop'/></div>
 			   	<div class="col-sm-9">
-			        <input type="text" class="form-control" :class="" v-model="mission.loopInterval"/><@spring.message 'mission.minute'/>
+			        <input type="text" class="form-control" :class="" v-model="mission.loopInterval"/>&nbsp<@spring.message 'mission.minute'/>
 			    </div>
 			</div>
 			
@@ -245,7 +245,7 @@
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.startTime'/></div>
 			   	<div class="col-sm-9">
 			        <input name="beginDate" id="beginDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium" v-model="missionLoopEntity.startTime"
-					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setStartTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
+					@click="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" @focus="changeStartTime()"/>
 			    </div>
 			</div>
 			
@@ -253,7 +253,7 @@
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.endTime'/></div>
 			   	<div class="col-sm-9">
 			        <input name="endDate" id="endDate" type="text" readonly="readonly" maxlength="20" class="form-control Wdate input-medium"  v-model="missionLoopEntity.endTime"
-					value="" onclick="WdatePicker({onpicked:function(){this.onchange()},dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" onchange="setEndTime('#beginDate','#endDate',1,'d','yyyy-MM-dd hh:mm:ss',true)"/>
+					 @click="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss',isShowClear:true,minDate:'#F{\'new Date()\'}'});" @focus="changeEndTime()"/>
 			    </div>
 			</div>
 			
