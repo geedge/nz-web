@@ -147,6 +147,7 @@ public class DeteTypeController {
         ValidateUtils.is(deteTypeMetaMapppingVO.getMappings()).notNull(RCode.DICT_MAPPINGS_ISNULL);
         int count=0;
         for(DeteTypeMetaMappingEntity mapping:deteTypeMetaMapppingVO.getMappings()){
+
             if(mapping.getDelFlag()!=null&& !Constant.DELFLAG_FALSE.equals(mapping.getDelFlag())){
                 count++;
             }

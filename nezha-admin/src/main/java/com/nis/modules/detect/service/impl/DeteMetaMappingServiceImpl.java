@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sun.rmi.runtime.Log;
 
 import java.util.*;
 
@@ -35,7 +36,7 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
                 new QueryWrapper<DeteTypeMetaMappingEntity>()
                         .like(StringUtils.isNotBlank(type), "type", type)
         );
-
+        //2019-09-24 为适应jqgrid 取消数据封装
         List<DeteTypeMetaMappingEntity> records = page.getRecords();
         HashMap<String, DeteTypeMetaMapppingVO> metaMappingFilter = new HashMap<>();
         List<DeteTypeMetaMapppingVO> mappingInfos=new ArrayList<>();
@@ -71,6 +72,8 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
     @Transactional(rollbackFor = Exception.class)
     public void updateDict(DeteTypeMetaMapppingVO deteTypeMetaMapppingVO) {
         String oldTypeName=null;
+        Long userId=ShiroUtils.getUserId();
+        Date curDate=new Date();
         List<DeteTypeMetaMappingEntity> mappings = deteTypeMetaMapppingVO.getMappings();
         for(int i=0;i<mappings.size();i++){
             DeteTypeMetaMappingEntity mapping=mappings.get(i);
@@ -93,14 +96,15 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
         int updateCount=0;
         for(DeteTypeMetaMappingEntity mapping:mappings){
             mapping.setType(oldTypeName); //type不允许修改
-
+            mapping.setOpTime(curDate);
+            mapping.setOperator(userId);
             if(mapping.getId()==null){
                 this.save(mapping);
                 saveCount++;
             }else{
                 UpdateWrapper<DeteTypeMetaMappingEntity> updateWrapper = new UpdateWrapper<>();
-                updateWrapper.set("operator",ShiroUtils.getUserId());
-                updateWrapper.set("op_time",new Date());
+                updateWrapper.set("operator",userId);
+                updateWrapper.set("op_time",curDate);
                 updateWrapper.set(mapping.getDelFlag()!=null,"del_flag",mapping.getDelFlag());
                 updateWrapper.eq("id",mapping.getId());
                 this.update(mapping,updateWrapper);
