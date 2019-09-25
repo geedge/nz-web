@@ -5,7 +5,6 @@
 <title>任务管理</title>
 <#include "/header.html">
 <link rel="stylesheet" href="${request.contextPath}/statics/css/mission.css">
-<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
 </head>
 <body>
 <div id="missionVIew" v-cloak>
@@ -262,7 +261,7 @@
 			
 			<div id="ugprade" v-show="mission.type==3">
 				<!-- NC升级 -->
-				<div v-show="mission.commandEnname!=null &&mission.commandEnname.code==7">
+				<div v-show="mission.commandEnname!=null &&mission.commandEnname.code=='upgrade_agent'">
 					<div class="form-group">
 					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
 					   	<div class="col-sm-9">
@@ -355,7 +354,7 @@
 				</div>
 				
 				<!-- DC升级或者第三方部署 -->
-				<div v-show="mission.commandEnname!=null && (mission.commandEnname.code==8 || mission.commandEnname.code==9)">
+				<div v-show="mission.commandEnname!=null && (mission.commandEnname.code=='upgrade_server' || mission.commandEnname.code=='upgrade_other')">
 					<div class="form-group">
 					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
 					   	<div class="col-sm-9">
@@ -502,7 +501,7 @@
 
 </body>
 <#include "/modules/detect/main.html">
-<script src="${request.contextPath}/statics/js/modules/detect/main.js?_${.now?long}"></script>
+<#include "/js/modules/detect/main.js"/>
 <#include "/js/modules/mission/mission.js"/>
 <#include "/js/modules/mission/filepush.js"/>
 <#include "/js/modules/mission/upgradeKillProcess.js"/>

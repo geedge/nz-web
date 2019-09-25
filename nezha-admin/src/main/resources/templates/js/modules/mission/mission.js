@@ -430,6 +430,26 @@ var vm = new Vue({
             rowData._disabled=false;
             return "";
         },*/
+        unCheckNodeInfo: function (index) {
+            var delNode = JSON.parse(JSON.stringify(vm.nodeInfosChecked[index]));
+            var delIndex = -1;
+            $.each(vm.nodeInfoData, function (i, v) {
+                for (var j = 0; j < vm.nodeInfosChecked.length; j++) {
+                    var checkedNode = vm.nodeInfosChecked[j];
+                    if (checkedNode.uuid == v.uuid) {
+                        v._checked = true;
+                    }
+                }
+
+                if (delNode.uuid == v.uuid) {
+                    delIndex = i;
+                }
+            })
+            vm.nodeInfosChecked.splice(index, 1);
+            delNode._checked = false;
+            // delNode._disabled=false;
+            vm.nodeInfoData.splice(delIndex, 1, delNode);
+        },
 		updateCommandEnname:function(){
 			vm.mission.param={};
 			vm.mission.commandEnname=null;
