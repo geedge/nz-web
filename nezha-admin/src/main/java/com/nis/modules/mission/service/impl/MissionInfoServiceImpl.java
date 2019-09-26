@@ -735,6 +735,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 						if(CommonUtil.isNull(upgradeAgent.getIsCreateCover())) {
 							upgradeAgent.setIsCreateCover("0");
 						}
+						upgradeAgent.setFileName(uploadFile.getOriginalFilename());
 						upgradeAgent.setMd5Value(fileMd5);
 						upgradeAgent.setUpFileName(upFileName);
 						if (upgradeAgent.getDeleteTmpStr() != null && upgradeAgent.getDeleteTmpStr().trim().length() > 0) {
@@ -843,6 +844,7 @@ public class MissionInfoServiceImpl extends ServiceImpl<MissionInfoDao, MissionI
 								e.printStackTrace();
 								throw new NZException(RCode.MISSION_UPGRADE_MD5_ERROR);
 							}
+							paramForUpgrade.setFileName(file.getOriginalFilename());
 							paramForUpgrade.setMd5Value(upgradeFileMd5);
 							paramForUpgrade.setUpFileName(upgradeUpFileName);
 							

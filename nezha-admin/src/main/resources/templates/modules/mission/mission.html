@@ -56,7 +56,7 @@
 			</div>
 			
 			<!-- 当任务类型选为命令执行时 出现单选钮选择命令类型 -->
-			<div v-show="mission.type==2" class="form-group">
+			<div v-show="mission.type==2 &&!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.commandType'/></div>
 			   	<div class="col-sm-9">
 			   		<template v-for="ct in commandType">
@@ -68,14 +68,14 @@
 			</div>
 			
 			<!-- 根据任务类型以及命令类型两个条件 筛选下拉框内容 -->
-			<div v-show="mission.type==2&&mission.commandType==1" class="form-group">
+			<div v-show="mission.type==2 && mission.commandType==1 &&!missionParam" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
 			   	<div class="col-sm-9">
 					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList1" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>
 				</div>
 			</div>
 			
-			<div v-show="mission.type==2&&mission.commandType==2" class="form-group">
+			<div v-show="mission.type==2 && mission.commandType==2 && !missionParam" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
 			   	<div class="col-sm-9">
 					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList2" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
@@ -83,7 +83,7 @@
 			</div>
 			
 			<!-- 升级部署类型选择 -->
-			<div v-show="mission.type==3" class="form-group">
+			<div v-show="mission.type==3 && !missionParam" class="form-group">
 				<div class="col-sm-2 control-label"><@spring.message 'mission.commandName'/>:</div>
 			   	<div class="col-sm-9">
 					<multiselect v-model="mission.commandEnname" :options="commandEnnameTypeList3" label="value" placeholder="<@spring.message 'common.pleaseSelect'/>" :show-labels="false"></multiselect>			
@@ -108,7 +108,7 @@
 			    </div>
 			</div>  -->
 			
-			<div class="form-group">
+			<div class="form-group" v-show="!missionParam">
                 <div class="col-sm-2 control-label"><@spring.message 'common.pleaseSelect'/><@spring.message 'common.node'/>/<@spring.message 'common.nodeGroup'/>:</div>
                 <div class="col-sm-9" >
                     <div class="panel panel-default" style="width: 90%;" >
@@ -193,6 +193,7 @@
 			    </div>
 			</div> -->
 			
+			<div v-show='!missionParam'>
 			<div id="filepush">
 			    <filepush ref="filePush"></filepush>
 			</div>
@@ -220,9 +221,10 @@
 			<div id="singleExec" >
 				<single-exec ref="singleExec"></single-exec>
 			</div>
+			</div>
 			
 			<!-- 任务类型为命令执行 显示周期任务选项 -->
-			<div v-show="mission.type==2" class="form-group">
+			<div v-show="mission.type==2 && !missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'mission.loopMission'/></div>
 			   	<div class="col-sm-9">
 			   		<label class="radio-inline">
@@ -259,13 +261,13 @@
 			
 			<!-- 周期任务参数设置结束 -->
 			
-			<div id="ugprade" v-show="mission.type==3">
+			<div id="ugprade" v-show="mission.type==3 && !missionParam">
 				<!-- NC升级 -->
 				<div v-show="mission.commandEnname!=null &&mission.commandEnname.code=='upgrade_agent'">
 					<div class="form-group">
 					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
 					   	<div class="col-sm-9">
-		 	 			    <input type="file" class="" name="" @change=""></input>
+		 	 			    <input type="file" class="" name="" @change="getFile($event)"></input>
 		 	 			    <span class="required-symbol">*</span>
 			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
 					    </div>
@@ -275,7 +277,7 @@
 				    		<@spring.message 'mission.pushDestination'/>   
 				    	</div>
 				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
+				        	<input type="text" class="form-control" v-model="paramForUpgrade.cover"/>
 				        	<span class="required-symbol">*</span>
 			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>	
 				        </div>
@@ -285,7 +287,7 @@
 				    		<@spring.message 'mission.owner'/>    
 				    	</div>
 				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
+				        	<input type="text" class="form-control" v-model="paramForUpgrade.username" />
 				        </div>
 			    	</div>
 			    	<div class="form-group">
@@ -293,7 +295,7 @@
 				    		<@spring.message 'mission.groups'/>     
 				    	</div>
 				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
+				        	<input type="text" class="form-control" v-model="paramForUpgrade.groupName"/>
 				        </div>
 			    	</div>
 			    	<div class="form-group">
@@ -301,7 +303,7 @@
 				    		<@spring.message 'mission.filePermissions'/>
 				    	</div>
 				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
+				        	<input type="text" class="form-control" v-model="paramForUpgrade.permisson"/>
 				        </div>
 			    	</div>
 			    	<div  class="form-group">
@@ -310,10 +312,10 @@
 					   	</div>
 					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> <@spring.message 'mission.create'/>
+									<input type="radio" value="1" v-model="paramForUpgrade.isCreateCover"/> <@spring.message 'mission.create'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> <@spring.message 'mission.doNotCreate'/>
+								<input type="radio" value="0" v-model="paramForUpgrade.isCreateCover"/> <@spring.message 'mission.doNotCreate'/>
 							</label>
 					    </div>
 			    	</div>
@@ -323,10 +325,10 @@
 					   	</div>
 					   	<div class="col-sm-9">
 					   		<label class="radio-inline">
-									<input type="radio" value="1" /> <@spring.message 'mission.absolutePath'/>
+									<input type="radio" value="1" v-model="paramForUpgrade.isAbs"/> <@spring.message 'mission.absolutePath'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0" /> <@spring.message 'mission.relativePath'/>
+								<input type="radio" value="0" v-model="paramForUpgrade.isAbs"/> <@spring.message 'mission.relativePath'/>
 							</label>
 					    </div>
 			    	</div>
@@ -335,7 +337,7 @@
 				    		<@spring.message 'mission.deleteFiles'/>
 				    	</div>
 				    	<div class="col-sm-9">
-				        	<textarea class="form-control" ></textarea>
+				        	<textarea class="form-control" v-model="paramForUpgrade.deleteTmpStr"></textarea>
 				        </div>	
 			    	</div>
 			    	<div class="form-group">
@@ -344,143 +346,60 @@
 				    	</div>
 				    	<div class="col-sm-9">
 				        	<label class="radio-inline">
-									<input type="radio" value="1"/> <@spring.message 'mission.yes'/>
+									<input type="radio" value="1" v-model="isUpgradeBackup"/> <@spring.message 'mission.yes'/>
 							</label>
 							<label class="radio-inline">
-								<input type="radio" value="0"/> <@spring.message 'mission.no'/>
+								<input type="radio" value="0" v-model="isUpgradeBackup"/> <@spring.message 'mission.no'/>
 							</label>
 				        </div>	
+			    	</div>
+			    	
+			    	<div v-show="isUpgradeBackup==1">
+				    	<div class="form-group">
+					    	<div class="col-sm-2 control-label">
+					    		<@spring.message 'mission.filesThatNeedToBeBackedUp'/>
+					    	</div>
+					    	<div class="col-sm-9">
+					        	<input type="text" class="form-control" v-model="backup.backUp"/>
+					        </div>
+				    	</div>
+				    	<div class="form-group">
+					    	<div class="col-sm-2 control-label">
+					    		<@spring.message 'mission.pathToBackup'/>
+					    	</div>
+					    	<div class="col-sm-9">
+					        	<input type="text" class="form-control" v-model="backup.backUpTo"/>
+					        </div>
+				    	</div>
+				    	<div class="form-group">
+					    	<div class="col-sm-2 control-label">
+					    		<@spring.message 'mission.compressionID'/>
+					    	</div>
+					    	<div class="col-sm-9">
+					        	<label class="radio-inline">
+										<input type="radio" value="1" v-model="backup.isAbs"/> <@spring.message 'mission.yes'/>
+								</label>
+								<label class="radio-inline">
+									<input type="radio" value="0" v-model="backup.isAbs"/> <@spring.message 'mission.no'/>
+								</label>
+					        </div>	
+				    	</div>
+				    	<div class="form-group">
+					    	<div class="col-sm-2 control-label">
+					    		<@spring.message 'mission.excludeFile'/>
+					    	</div>
+					    	<div class="col-sm-9">
+					        	<textarea class="form-control" v-model="backup.exceptTmpStr"></textarea>
+					        </div>	
+				    	</div>
 			    	</div>
 				</div>
 				
 				<!-- DC升级或者第三方部署 -->
-				<div v-show="mission.commandEnname!=null && (mission.commandEnname.code=='upgrade_server' || mission.commandEnname.code=='upgrade_other')">
-					<div class="form-group">
-					   	<div class="col-sm-2 control-label"><@spring.message 'mission.path'/></div>
-					   	<div class="col-sm-9">
-		 	 			    <input type="file" class="" name="" @change=""></input>
-		 	 			    <span class="required-symbol">*</span>
-			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
-					    </div>
-					</div>
-					<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.overwriteDirectory'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        	<span class="required-symbol">*</span>
-			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.startupFileOrCommand'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        	<span class="required-symbol">*</span>
-			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.pidFile'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        	<span class="required-symbol">*</span>
-			        		<div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.owner'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.groups'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.filePermissions'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />
-				        </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.waitingTime'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<input type="text" class="form-control" />&nbsp&nbsp<@spring.message 'mission.second'/>
-				        </div>
-			    	</div>
-			    	<div  class="form-group">
-					   	<div class="col-sm-2 control-label">
-					   		<@spring.message 'mission.createLogo'/>
-					   	</div>
-					   	<div class="col-sm-9">
-					   		<label class="radio-inline">
-									<input type="radio" value="1" /> <@spring.message 'mission.create'/>
-							</label>
-							<label class="radio-inline">
-								<input type="radio" value="0" /> <@spring.message 'mission.doNotCreate'/>
-							</label>
-					    </div>
-			    	</div>
-			    	<div  class="form-group">
-					   	<div class="col-sm-2 control-label">
-					   		<@spring.message 'mission.uncompressionID'/>
-					   	</div>
-					   	<div class="col-sm-9">
-					   		<label class="radio-inline">
-									<input type="radio" value="1" /> <@spring.message 'mission.absolutePath'/>
-							</label>
-							<label class="radio-inline">
-								<input type="radio" value="0" /> <@spring.message 'mission.relativePath'/>
-							</label>
-					    </div>
-			    	</div>
-			    	<div  class="form-group">
-					   	<div class="col-sm-2 control-label">
-					   		<@spring.message 'mission.forceEnforcement'/>
-					   	</div>
-					   	<div class="col-sm-9">
-					   		<label class="radio-inline">
-									<input type="radio" value="1" /> <@spring.message 'mission.yes'/>
-							</label>
-							<label class="radio-inline">
-								<input type="radio" value="0" /> <@spring.message 'mission.no'/>
-							</label>
-					    </div>
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.deleteFiles'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<textarea class="form-control" ></textarea>
-				        </div>	
-			    	</div>
-			    	<div class="form-group">
-				    	<div class="col-sm-2 control-label">
-				    		<@spring.message 'mission.startupParameters'/>
-				    	</div>
-				    	<div class="col-sm-9">
-				        	<textarea class="form-control" ></textarea>
-				        </div>	
-			    	</div>
+				<div id="upgradeServer">
+					<upgrade-server ref="upgradeServer"></upgrade-server>
 				</div>
+				
 			</div>
 			
 			<div class="form-group">
@@ -510,4 +429,5 @@
 <#include "/js/modules/mission/upgradeExecOrStart.js"/>
 <#include "/js/modules/mission/upgradeRecover.js"/>
 <#include "/js/modules/mission/singleExec.js"/>
+<#include "/js/modules/mission/upgradeServer.js"/>
 </html>

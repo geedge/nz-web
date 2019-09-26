@@ -92,6 +92,24 @@ var vm = new Vue({
 			endTime:null,
 			startTime:null
 		},
+		backup:{
+			backUp:"",
+			backUpTo:"",
+			isAbs:0,
+			exceptTmpStr:""
+		},
+		isUpgradeBackup:0,
+		paramForUpgrade:{
+            backups:[],
+            cover:"",
+            deleteTmpStr:'',
+            groupName:"",
+            isAbs:0,
+            isCreateCover:0,
+            permisson:"",
+            username:""
+        },
+		paramForUpgrades:[],
 		
 		
 		uncheckGroup: null, //标记左侧树取消选中的节点，用于左右联动
@@ -219,18 +237,6 @@ var vm = new Vue({
 			});
 		},
 		add: function(){
-			console.log(vm)
-			//清空界面数据
-			vm.$refs.filePush.dataReset();
-			vm.$refs.upgradeKillProcess.dataReset();
-			vm.$refs.singleExec.dataReset();
-			vm.$refs.upgradeExecStart.dataReset();
-			vm.$refs.upgradeBackup.dataReset();
-			vm.$refs.upgradeRecover.dataReset();
-			vm.$refs.upgradeUpdate.dataReset();
-			vm.nodeInfoData = [];
-            vm.nodeGroupsChecked = [];
-            vm.nodeInfosChecked = [];
 			vm.$v.mission.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.missionParam = false;
@@ -254,6 +260,37 @@ var vm = new Vue({
 					nodeGroupIds:[],
 					nodeIds:[]
 				};
+			//清空界面数据
+			vm.$refs.filePush.dataReset();
+			vm.$refs.upgradeKillProcess.dataReset();
+			vm.$refs.singleExec.dataReset();
+			vm.$refs.upgradeExecStart.dataReset();
+			vm.$refs.upgradeBackup.dataReset();
+			vm.$refs.upgradeRecover.dataReset();
+			vm.$refs.upgradeUpdate.dataReset();
+			vm.$refs.upgradeServer.dataReset();
+			vm.nodeInfoData = [];
+            vm.nodeGroupsChecked = [];
+            vm.nodeInfosChecked = [];
+            vm.isUpgradeBackup=0;
+            vm.paramForUpgrade={
+                backups:[],
+                cover:"",
+                deleteTmpStr:'',
+                groupName:"",
+                isAbs:0,
+                isCreateCover:0,
+                permisson:"",
+                username:""
+            };
+            vm.backup={
+    			backUp:"",
+    			backUpTo:"",
+    			isAbs:0,
+    			exceptTmpStr:""
+    		};
+    		vm.paramForUpgrades=[];
+			
 		},
 		update: function () {
 			vm.$v.mission.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
@@ -295,10 +332,7 @@ var vm = new Vue({
                 formData.append("commandEnname",this.mission.commandEnname.code);
                 formData.append("commandType",this.mission.commandType);
             	//处理任务为指令的周期参数
-                if(this.mission.isLoop){
-                	console.log("missionLoopEntity")
-                	console.log($("#beginDate").val())
-                	console.log(this.missionLoopEntity)
+                if(this.mission.isLoop && this.mission.type==2){
                 	formData.append("isLoop",this.mission.isLoop);
                 	formData.append("loopInterval",this.mission.isLoop);
                 	this.mission.param.missionLoopEntity=this.missionLoopEntity;
@@ -308,6 +342,20 @@ var vm = new Vue({
             //判断用户选择是否为用户组选项
             if(this.mission.viewLevel==1){
             	formData.append("viewerId",this.mission.viewerId.id);
+            }
+            //组装NC升级部署param参数
+            if(this.mission.commandEnname.code=='upgrade_agent'){
+            	if(this.isUpgradeBackup==1){
+            		this.paramForUpgrade.backups.push(this.backup);
+            	}
+            	this.mission.param.paramForUpgrade=this.paramForUpgrade;
+            	formData.append("files",this.file);
+            }
+            //组装DC升级部署或第三方升级部署的文件上传
+            if((this.mission.commandEnname.code=='upgrade_server')||(this.mission.commandEnname.code=='upgrade_other')){
+            	this.files.forEach(function(o){
+            		formData.append("files",o);
+            	});
             }
             formData.append("name",this.mission.name);
             formData.append("param",JSON.stringify(this.mission.param));
