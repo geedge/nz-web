@@ -343,20 +343,22 @@ var vm = new Vue({
             if(this.mission.viewLevel==1){
             	formData.append("viewerId",this.mission.viewerId.id);
             }
-            //组装NC升级部署param参数
-            if(this.mission.commandEnname.code=='upgrade_agent'){
-            	if(this.isUpgradeBackup==1){
-            		this.paramForUpgrade.backups.push(this.backup);
-            	}
-            	this.mission.param.paramForUpgrade=this.paramForUpgrade;
-            	formData.append("files",this.file);
-            }
-            //组装DC升级部署或第三方升级部署的文件上传
-            if((this.mission.commandEnname.code=='upgrade_server')||(this.mission.commandEnname.code=='upgrade_other')){
-            	this.files.forEach(function(o){
-            		formData.append("files",o);
-            	});
-            }
+            if(this.mission.commandEnname!=null&&this.mission.commandEnname!=undefined){
+	            //组装NC升级部署param参数
+	            if(this.mission.commandEnname.code=='upgrade_agent'){
+	            	if(this.isUpgradeBackup==1){
+	            		this.paramForUpgrade.backups.push(this.backup);
+	            	}
+	            	this.mission.param.paramForUpgrade=this.paramForUpgrade;
+	            	formData.append("files",this.file);
+	            }
+	            //组装DC升级部署或第三方升级部署的文件上传
+	            if((this.mission.commandEnname.code=='upgrade_server')||(this.mission.commandEnname.code=='upgrade_other')){
+	            	this.files.forEach(function(o){
+	            		formData.append("files",o);
+	            	});
+	            }
+            }    
             formData.append("name",this.mission.name);
             formData.append("param",JSON.stringify(this.mission.param));
             formData.append("nodeGroupIds",this.mission.nodeGroupIds);

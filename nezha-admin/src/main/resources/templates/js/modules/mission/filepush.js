@@ -7,7 +7,7 @@ var filePushChild = Vue.extend({
 			   	<div class="col-sm-9">
  	 			    <input type="file" class="" name="file" @change="getFile($event)"></input>
  	 			    <span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" v-if=""><@spring.message 'validate.common.required'/></div>		        
+			        <div class="form-control_error-msg" ><@spring.message 'validate.common.required'/></div>		        
 			    </div>
 			</div>
 	    
@@ -16,7 +16,7 @@ var filePushChild = Vue.extend({
     			<div class="col-sm-9">
         			<input type="text" class="form-control" v-model="param.destPath"/>
         			<span class="required-symbol">*</span>
-			        <div class="form-control_error-msg" ><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg"></div>
     			</div>
     		</div>
 		
