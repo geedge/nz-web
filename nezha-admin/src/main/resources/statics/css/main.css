@@ -169,7 +169,7 @@ tbody > tr > th {font-weight: normal; }
 }
 .mytree-subtitle {
 	display: inline-block;
-	float: left;
+	/* float: left;*/
 }
 .mytree-subtitle:hover, .mytreeicon:hover {
 	cursor: pointer;

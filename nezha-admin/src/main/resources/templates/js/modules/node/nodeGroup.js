@@ -359,6 +359,9 @@ var vm = new Vue({
                 // 开始隐藏
                 $("#box" + item.id).hide();
             });
+        }else{
+            // 如果只是一条数据的话 默认展开 图标状态转换
+            $("#icon" + data.systems[0].id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
         }
     }
 })
