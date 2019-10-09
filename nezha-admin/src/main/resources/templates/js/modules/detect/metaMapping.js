@@ -70,7 +70,27 @@ $(function () {
 var arrayEmpty=function(value,metaMappings){
     return !(metaMappings.mappings == null || metaMappings.mappings == undefined || metaMappings.mappings.length < 1);
 }
+var typeRepeat = function (type, metaMappings) {
+    if (helpers.req(type) && helpers.req(metaMappings)) {
+        var params = "?type=" + type;
+        var flag = true;
+        $.ajax({
+            type: "get",
+            url: baseURL + "/deteType/dicNameCheck" + params,
+            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            dataType: "json",
+            success: function (r) {
+                if (r.code != 200) {
+                    flag = false;
+                }
+            }
+        });
+        return flag;
+    } else {
+        return true;
+    }
 
+}
 var vm = new Vue({
         el: "#metaMapping",
         data: {
@@ -92,6 +112,7 @@ var vm = new Vue({
                 ]
             },
             hackReset:true,
+            newMapping:false
         },
         created: function () {
 
@@ -99,7 +120,8 @@ var vm = new Vue({
         validations: {
             metaMappings:{
                 type:{
-                    required
+                    required,
+                    typeRepeat
                 },
                 mappings:{
                     arrayEmpty
@@ -137,6 +159,7 @@ var vm = new Vue({
                         }
                     ]
                 }
+                vm.newMapping=true;
                 $("#saveOrUpdate").click(vm.save)
             },
             toUpdate: function () {
@@ -148,6 +171,7 @@ var vm = new Vue({
                 vm.showList=false;
                 hackReset();
                 vm.$v.metaMappings.$reset();
+                vm.newMapping=false;
                 $("#saveOrUpdate").click(vm.update)
             },
             getInfo: function (type) {

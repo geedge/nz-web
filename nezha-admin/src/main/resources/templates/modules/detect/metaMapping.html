@@ -33,11 +33,14 @@
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
                            :class="{'form-control--error': $v.metaMappings.type.$dirty && !$v.metaMappings.type.required}"
+                           :disabled="!newMapping"
                            v-model.trim="$v.metaMappings.type.$model"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg"
                          v-if="$v.metaMappings.type.$dirty && !$v.metaMappings.type.required"><@spring.message
                         'validate.common.required'/>
+                    </div>
+                    <div class="form-control_error-msg" v-if="newMapping&&$v.metaMappings.type.$dirty && !$v.metaMappings.type.typeRepeat"><@spring.message 'validate.metaMapping.typeRepeat'/>
                     </div>
                 </div>
             </div>
