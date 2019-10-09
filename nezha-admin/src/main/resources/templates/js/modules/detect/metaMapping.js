@@ -6,7 +6,7 @@ $(function () {
         colModel: [
             {label: 'ID', name: 'id', width: 30, key: true, hidden: true,},
             {
-                label: '类型',
+                label: '<@spring.message "metaMapping.type"/>',
                 name: 'type',
                 sortable: true,
                 width: 60,
@@ -17,7 +17,7 @@ $(function () {
                 // }
             },
             {
-                label: '原值',
+                label: '<@spring.message "metaMapping.key"/>',
                 name: 'val',
                 sortable: false,
                 width: 100,
@@ -27,7 +27,7 @@ $(function () {
                 }
             },
             {
-                label: '映射值',
+                label: '<@spring.message "metaMapping.val"/>',
                 name: 'mapping',
                 sortable: false,
                 width: 100,
@@ -78,7 +78,7 @@ var vm = new Vue({
             params: {
                 type: '',
             },
-            title: '监测元数据',
+            title: '<@spring.message "deteTypeMeta"/>',
             metaMappings:{
                 type:'',
                 mappings:[
@@ -86,7 +86,8 @@ var vm = new Vue({
                         id:null,
                         type:null,
                         val:'',
-                        mapping:''
+                        mapping:'',
+                        delFlag:'0'
                     }
                 ]
             },
@@ -131,19 +132,18 @@ var vm = new Vue({
                             id:null,
                             type:null,
                             val:'',
-                            mapping:''
+                            mapping:'',
+                            delFlag:'0'
                         }
                     ]
                 }
                 $("#saveOrUpdate").click(vm.save)
             },
             toUpdate: function () {
-                var ids=getSelectedType();
-                if(ids == null){
+                var type=getSelectedType();
+                if(type == null){
                     return ;
                 }
-                var type=getSelectedType();
-                console.log("type-->"+type)
                 vm.getInfo(type);
                 vm.showList=false;
                 hackReset();
@@ -156,7 +156,6 @@ var vm = new Vue({
                     type:"GET",
                     async:false,
                     success:function (r) {
-                        console.log("r.data-->"+JSON.stringify(r.data))
                         vm.metaMappings = r.data.list[0];
                     }
                 });
@@ -164,7 +163,6 @@ var vm = new Vue({
             save: function () {
                 console.log('save')
                 if (vm.validate()) { //在下方定义的validate方法
-                    console.log("校验不通过")
                     return;
                 }
                 var url = "deteType/saveDic";
@@ -180,6 +178,31 @@ var vm = new Vue({
                 saveOrUpdate(url,method);
             },
             del: function (event) {
+                var types=getSelectedTypes();
+                if(types == null){
+                    return ;
+                }
+                console.log("types-->"+JSON.stringify(types))
+                confirm("<@spring.message 'common.confirmDelete'/>", function () {
+                    $.ajax({
+                        url:baseURL + "/deteType/deleteDic",
+                        type:"DELETE",
+                        datatype:"JSON",
+                        data:JSON.stringify(types),
+                        contentType:"application/json",
+                        async:false,
+                        success:function (r) {
+                            if (r.code === 200) {
+                                alert('<@spring.message "common.success"/>', function (index) {
+                                    vm.reload();
+                                });
+                            } else {
+                                alert(r.msg);
+                            }
+                        }
+                    });
+                })
+
             },
             validate: function () {//提交时的校验
                 vm.$v.metaMappings.$touch();
@@ -214,12 +237,19 @@ var vm = new Vue({
                     id:null,
                     type:'',
                     val:'',
-                    mapping:''
+                    mapping:'',
+                    delFlag:'0'
                 }
                 this.metaMappings.mappings.push(mapping)
             },
             delMapping:function(index){
-                this.metaMappings.mappings.splice(index,1);
+                var mapping=this.metaMappings.mappings[index];
+                if(mapping.id==null||mapping.id==undefined){
+                    this.metaMappings.mappings.splice(index,1);
+                }else{
+                    mapping.delFlag='1';
+                }
+
                 hackReset();
             }
         },
@@ -281,17 +311,35 @@ function getSelectedType() {
     var grid = $("#jqGrid");
     var rowKey = grid.getGridParam("selrow");
     if(!rowKey){
-        alert("请选择一条记录");
+        alert("<@spring.message 'common.selectOne'/>");
         return ;
     }
 
     var selectedIDs = grid.getGridParam("selarrrow");
     if(selectedIDs.length > 1){
-        alert("只能选择一条记录");
+        alert("<@spring.message 'common.onlySelectOne'/>");
         return ;
     }
     var rowData = grid.jqGrid('getRowData',selectedIDs[0]);
     return rowData.type;
+}
+
+function getSelectedTypes() {
+    var grid = $("#jqGrid");
+    var rowKey = grid.getGridParam("selrow");
+    if(!rowKey){
+        alert("<@spring.message 'common.selectOne'/>");
+        return ;
+    }
+
+    var selectedIDs = grid.getGridParam("selarrrow");
+    var types=[];
+    for(let i in selectedIDs){
+        var rowData = grid.jqGrid('getRowData',selectedIDs[i]);
+        types.push(rowData.type);
+    }
+
+    return types;
 }
 
 Vue.component("meta-mapping",{

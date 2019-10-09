@@ -35,9 +35,19 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
                 new Query<DeteTypeMetaMappingEntity>().getPage(params),
                 new QueryWrapper<DeteTypeMetaMappingEntity>()
                         .like(StringUtils.isNotBlank(type), "type", type)
+                        .groupBy("type")
         );
-        //2019-09-24 为适应jqgrid 取消数据封装
-        List<DeteTypeMetaMappingEntity> records = page.getRecords();
+        List<String> types=new ArrayList<String>();
+        for(DeteTypeMetaMappingEntity metaMapping:page.getRecords()){
+            types.add(metaMapping.getType());
+        }
+
+        QueryWrapper<DeteTypeMetaMappingEntity> queryWrapper=new  QueryWrapper<DeteTypeMetaMappingEntity>();
+        queryWrapper.in("type",types);
+
+        List<DeteTypeMetaMappingEntity> records = this.list(queryWrapper);
+
+//        List<DeteTypeMetaMappingEntity> records = page.getRecords();
         HashMap<String, DeteTypeMetaMapppingVO> metaMappingFilter = new HashMap<>();
         List<DeteTypeMetaMapppingVO> mappingInfos=new ArrayList<>();
         for(DeteTypeMetaMappingEntity metaMappingEntity:records){
