@@ -733,6 +733,9 @@ var vue = new Vue({
         },
         advancedSearch: function () { //高级搜索
             this.isAdvancedSearch = !this.isAdvancedSearch;
+            if (!this.isAdvancedSearch) {
+            	vue.q.state = vue.q.tag = null;
+            }
         },
         adSearchDropdown1: function() {
         	this.selectFlag1 = !this.selectFlag1;

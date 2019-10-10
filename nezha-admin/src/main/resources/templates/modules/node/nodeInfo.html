@@ -48,15 +48,15 @@
             <a class="btn btn-default" @click="advancedSearch" title="<@spring.message 'common.advanced.search'/>">
                 <i class="fa" :class="{'fa-angle-double-right': !isAdvancedSearch, 'fa-angle-double-left': isAdvancedSearch}"></i>
             </a>
-            <a class="btn btn-default btn-search" @click="query" title="<@spring.message 'common.search'/>">
-                <i class="fa fa-search"></i></a>
             <!-- <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>">
                 <i class="fa fa-refresh"></i></a> -->
+            <a class="btn btn-default btn-search" @click="query" title="<@spring.message 'common.search'/>">
+                <i class="fa fa-search"></i></a>
 
             <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>">
                 <i class="fa fa-plus"></i></a>
             <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>">
-                <i class="fa fa-pencil-square-o"></i></a>
+                <i class="fa fa-pencil"></i></a>
             <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>">
                 <i class="fa fa-trash-o"></i></a>
             <a class="btn btn-primary" @click="changeState(1)" title="<@spring.message 'common.onLine'/>">
