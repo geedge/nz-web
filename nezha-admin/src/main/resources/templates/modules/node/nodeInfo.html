@@ -29,13 +29,13 @@
 
             <div class="form-group">
                 <multiselect :options="nodeTypes" label="value" :show-labels="false"
-                             v-model="q.type" @close="getQueryTag" class="input-medium"
+                             v-model="q.type"  class="input-medium"
                              placeholder="<@spring.message 'node.type'/>"></multiselect>
             </div>
             
 			<div class="form-group" v-show="isAdvancedSearch">
                 <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false" class="input-medium"
-                             placeholder="<@spring.message 'node.tag'/>" @open="checkQueryTag"></multiselect>
+                             placeholder="<@spring.message 'node.tag'/>"></multiselect>
             </div>
 
             <div class="form-group" v-show="isAdvancedSearch">

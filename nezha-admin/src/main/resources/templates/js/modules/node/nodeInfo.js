@@ -675,7 +675,7 @@ var vue = new Vue({
                 }
             });
         },
-        getQueryTag: function () {
+        /*getQueryTag: function () {
             vue.queryTags = [];
             vue.q.tag = null;
             if (vue.q.type != null) {
@@ -690,7 +690,7 @@ var vue = new Vue({
                     }
                 });
             }
-        },
+        },*/
         checkUsize: function () {
             if (vue.nodeInfo.uSize == null || vue.nodeInfo.uSize == '') { // 节点高度为null
                 alert("<@spring.message 'node.pleaseWrite.uSize'/>!");
@@ -722,11 +722,11 @@ var vue = new Vue({
                 alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.type'/>!");
             }
         },
-        checkQueryTag: function () {
+        /*checkQueryTag: function () {
             if (vue.q.type == null) {
                 alert("<@spring.message 'common.pleaseSelect'/><@spring.message 'node.type'/>!");
             }
-        },
+        },*/
         validate: function () {
             vue.$v.nodeInfo.$touch();
             return !vue.$v.nodeInfo.$error;
@@ -751,6 +751,9 @@ var vue = new Vue({
         });
         $.getJSON(baseURL + "sys/dict/all?type=onLineState", function (r) {
             vue.nodeStates = r.data;
+        });
+        $.getJSON(baseURL + "sys/dict/all?name=nodeTag", function (r) {
+            vue.queryTags = r.data;
         });
     },
     watch: {
