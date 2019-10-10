@@ -23,9 +23,12 @@ $(function () {
             {label: "test", name: 'state', width: 60, sortable: false, hidden: true}//此列用作获取状态值
         ],
         viewrecords: true,
-        height: 385,
+        height: top.$(".content").height()-130,
+        rowNum: 15,
+		rowList : [15,30,50],
+        /*height: 385,
         rowNum: 10,
-        rowList: [10, 30, 50],
+        rowList: [10, 30, 50],*/
         rownumbers: true,
         rownumWidth: 25,
         autowidth: true,
@@ -336,7 +339,11 @@ var data = {
     isAdvancedSearch: false, // 高级搜索状态控制
     disabledFlag: false,     // 表单锁定状态控制
     oldNodeInfos: [],        // 增加/修改 回显旧对象数组
-    ipFlag: true // IP 标识 存在其他业务系统则为 true,
+    ipFlag: true, // IP 标识 存在其他业务系统则为 true,
+    showIp: true,
+    selectFlag1: false,
+    selectItems1: ["IP", "<@spring.message 'common.name'/>"],
+    selectedItem1: "IP"
 };
 
 Vue.config.devtools = true;
@@ -726,6 +733,12 @@ var vue = new Vue({
         },
         advancedSearch: function () { //高级搜索
             this.isAdvancedSearch = !this.isAdvancedSearch;
+        },
+        adSearchDropdown1: function() {
+        	this.selectFlag1 = !this.selectFlag1;
+        },
+        changeAdSearch1: function(item) {
+        	this.selectedItem1 = item;
         }
     },
     created: function () {
@@ -739,7 +752,6 @@ var vue = new Vue({
     },
     watch: {
         "nodeInfo.uSize": function (newValue, oldValue) {
-
             // 1. 表单锁定 或 值错误情况下 直接返回
             if (newValue == undefined) {
                 return;
@@ -816,6 +828,22 @@ var vue = new Vue({
             if (vue.starts.length > 0 && flag) {// vue.nodeInfo.uuid != null 可加可不加 加上为只在修改上回显
                 vue.nodeInfo.cabinetStart = cloneNodeInfo.cabinetStart;
             }
+        },
+        "selectedItem1": function(n, o) {
+        	if (n == 'IP') {
+        		this.showIp = true;
+        		this.q.name = "";
+        	} else {
+        		this.showIp = false;
+        		this.q.ip = "";
+        	}
+        },
+        "selectFlag1": function(n, o) {
+        	if (n) {
+        		$(".ad-search-label").css("border-bottom", "0");
+        	} else {
+        		$(".ad-search-label").css("border-bottom", "1px solid #ccc");
+        	}
         }
     },
     computed: {}

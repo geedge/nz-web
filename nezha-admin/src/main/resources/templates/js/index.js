@@ -30,6 +30,7 @@ $(window).on('resize', function() {
 	$content.height($(this).height() - 154);
 	$content.find('iframe').each(function() {
 		$(this).height($content.height());
+		//$(this).contents().find('.ui-jqgrid-bdiv').height($('.content').height()-130);
 	});
 }).resize();
 

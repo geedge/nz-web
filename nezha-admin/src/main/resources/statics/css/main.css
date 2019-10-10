@@ -1,4 +1,26 @@
 html { overflow-x:hidden; }
+#rrapp { overflow:hidden; }
+.content-header {
+	position: relative;
+	padding: 0 0 3px 8px
+}
+
+.input-medium {
+	width: 160px;
+	display: inline-block;
+}
+.input-small {
+	width: 100px;
+	display: inline-block;
+}
+.input-xsmall {
+	width: 80px;
+	display: inline-block;
+}
+.ad-search-input {
+	border-radius: 0 4px 4px 0;
+}
+
 .content-header {
 	position: relative;
 	padding: 0 0 3px 8px
@@ -177,4 +199,57 @@ tbody > tr > th {font-weight: normal; }
 .mytree-box {
 	overflow: hidden;
 	margin-left: 12px !important;
+}
+
+.tools .form-group {
+	float: left;
+	margin-right: 15px;
+}
+.tools {
+	margin-bottom: 12px;
+}
+.btn-search {
+	margin-right: 10px;
+}
+
+.ad-search-label {
+	float: left;
+	height: 34px;
+	line-height: 34px;
+	border: 1px solid #ccc;
+	border-right-width: 0;
+	padding: 0 12px;
+	border-radius: 4px 0 0 0;
+	position: relative;
+	width: 60px;
+	cursor: pointer;
+}
+.ad-search-dropdown-items {
+	position: absolute;
+	height: auto;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+	width: calc(100% + 2px);
+	left: -1px;
+	top: 33px;
+	z-index: 999;
+}
+.ad-search-dropdown-items:hover {
+	cursor: pointer;
+}
+.ad-search-dropdown-item {
+	width: 100%;
+	background-color: white;
+	min-height: 35px;
+	line-height: 35px;
+	padding-left: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	-o-text-overflow: ellipsis;
+	text-overflow: ellipsis;
+}
+.ad-search-dropdown-item:hover {
+	background-color: #41B883;
+	color: white;
 }

@@ -10,29 +10,48 @@
 
     <!-- 列表  查询 -->
     <div v-show="showList">
-        <div class="grid-btn">
-
+        <div class="tools">
             <!-- 搜索条件 -->
-            <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.ip" @keyup.enter="query"
-                       placeholder="<@spring.message 'node.ipAddress'/>">
+            <div class="form-group">
+            	<div class="ad-search-label" @click="adSearchDropdown1">
+            		<span>{{selectedItem1}}</span>
+            		<div class="ad-search-dropdown-items" v-show="selectFlag1">
+            			<div @click="changeAdSearch1(i)" class="ad-search-dropdown-item" v-for="i in selectItems1">
+            				{{i}}
+            			</div>
+            		</div>
+            	</div>
+                <input type="text" class="form-control input-medium ad-search-input" v-model="q.ip" @keyup.enter="query"
+                       placeholder="<@spring.message 'node.ipAddress'/>" v-show="showIp">
+                <input type="text" class="form-control input-medium ad-search-input" v-model="q.name" @keyup.enter="query"
+                       placeholder="<@spring.message 'common.name'/>" v-show="!showIp">
             </div>
 
-            <div class="form-group col-sm-2">
+            <div class="form-group">
                 <multiselect :options="nodeTypes" label="value" :show-labels="false"
-                             v-model="q.type" @close="getQueryTag"
+                             v-model="q.type" @close="getQueryTag" class="input-medium"
                              placeholder="<@spring.message 'node.type'/>"></multiselect>
             </div>
+            
+			<div class="form-group" v-show="isAdvancedSearch">
+                <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false" class="input-medium"
+                             placeholder="<@spring.message 'node.tag'/>" @open="checkQueryTag"></multiselect>
+            </div>
 
+            <div class="form-group" v-show="isAdvancedSearch">
+                <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>"
+                             :show-labels="false" :options="nodeStates" class="input-medium"
+                             label="value"></multiselect>
+            </div>
 
             <!-- 功能按钮 -->
             <a class="btn btn-default" @click="advancedSearch" title="<@spring.message 'common.advanced.search'/>">
-                <i class="fa" :class="{'fa-angle-double-down': !isAdvancedSearch, 'fa-angle-double-up': isAdvancedSearch}"></i>
+                <i class="fa" :class="{'fa-angle-double-right': !isAdvancedSearch, 'fa-angle-double-left': isAdvancedSearch}"></i>
             </a>
-            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>">
+            <a class="btn btn-default btn-search" @click="query" title="<@spring.message 'common.search'/>">
                 <i class="fa fa-search"></i></a>
-            <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>">
-                <i class="fa fa-refresh"></i></a>
+            <!-- <a class="btn btn-default" @click="reset" title="<@spring.message 'common.reset'/>">
+                <i class="fa fa-refresh"></i></a> -->
 
             <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>">
                 <i class="fa fa-plus"></i></a>
@@ -44,26 +63,6 @@
                 <i class="fa fa-arrow-up"></i></a>
             <a class="btn btn-primary" @click="changeState(2)" title="<@spring.message 'common.offLine'/>">
                 <i class="fa fa-arrow-down"></i></a>
-        </div>
-
-
-        <!-- 搜索条件 -->
-        <div class="grid-btn grid-btn_advanced" v-show="isAdvancedSearch">
-            <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model="q.name" @keyup.enter="query"
-                       placeholder="<@spring.message 'common.name'/>">
-            </div>
-
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.tag" :options="queryTags" label="value" :show-labels="false"
-                             placeholder="<@spring.message 'node.tag'/>" @open="checkQueryTag"></multiselect>
-            </div>
-
-            <div class="form-group col-sm-2">
-                <multiselect v-model="q.state" placeholder="<@spring.message 'common.onLineState'/>"
-                             :show-labels="false" :options="nodeStates"
-                             label="value"></multiselect>
-            </div>
         </div>
 
         <!-- 列表数据 / 分页 -->
