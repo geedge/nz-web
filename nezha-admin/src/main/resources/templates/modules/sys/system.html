@@ -8,10 +8,10 @@
 <body>
 <div id="rrapp" v-cloak>
 	<div v-show="showList">
-		<div class="grid-btn">
+		<div class="tools">
 			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
-			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
-			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+			<a :disabled="single" class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil"></i></a>
+			<a :disabled="multi" class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			<!-- <a class="btn btn-primary" @click="nodeRel"><i class="fa fa-trash-o"></i>&nbsp;test</a> -->
 		</div>
 	    <table id="jqGrid"></table>

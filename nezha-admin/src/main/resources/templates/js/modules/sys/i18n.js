@@ -33,6 +33,14 @@ $(function () {
         gridComplete:function(){
         	//隐藏grid底部滚动条
         	$("#jqGrid").closest(".ui-jqgrid-bdiv").css({ "overflow-x" : "hidden" }); 
+        },
+        onSelectAll: function(rowids, status) {
+            if (status) {
+                toolsBtnHandle();
+            }
+        },
+        onSelectRow: function(rowid,status) {
+        	toolsBtnHandle();
         }
     });
 });
@@ -71,6 +79,10 @@ var checkI18n = function(value, i18n) {
 var vm = new Vue({
 	el:'#rrapp',
 	data:{
+		//single和multi分别控制工具栏的单选、多选按钮的可点击状态
+		single: true,
+		multi: true,
+		
 		q:{
             code: null,
             lang: null,
@@ -180,6 +192,7 @@ var vm = new Vue({
 			});
 		},
 		reload: function (event) {
+			vm.single = vm.multi = true;
 			vm.showList = true;
 			var page = $("#jqGrid").jqGrid('getGridParam','page');
 			$("#jqGrid").jqGrid('setGridParam',{ 

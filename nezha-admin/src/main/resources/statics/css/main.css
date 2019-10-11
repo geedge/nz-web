@@ -5,6 +5,10 @@ html { overflow-x:hidden; }
 	padding: 0 0 3px 8px
 }
 
+.input-large {
+	width: 220px;
+	display: inline-block;
+}
 .input-medium {
 	width: 160px;
 	display: inline-block;

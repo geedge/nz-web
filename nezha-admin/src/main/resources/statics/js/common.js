@@ -50,13 +50,13 @@ function getSelectedRow() {
     var grid = $("#jqGrid");
     var rowKey = grid.getGridParam("selrow");
     if(!rowKey){
-    	alert("请选择一条记录");
+    	//alert("请选择一条记录");
     	return ;
     }
     
     var selectedIDs = grid.getGridParam("selarrrow");
     if(selectedIDs.length > 1){
-    	alert("只能选择一条记录");
+    	//alert("只能选择一条记录");
     	return ;
     }
     
@@ -75,7 +75,7 @@ function getSelectedRows() {
     var grid = $("#jqGrid");
     var rowKey = grid.getGridParam("selrow");
     if(!rowKey){
-    	alert("请选择一条记录");
+    	//alert("请选择一条记录");
     	return ;
     }
     
@@ -85,6 +85,19 @@ function getSelectedRows() {
 //判断是否为空
 function isBlank(value) {
     return !value || !/\S/.test(value)
+}
+
+//控制工具栏按钮的可用状态
+function toolsBtnHandle() {
+	var checkedNum = $(".cbox:checked").not("#cb_jqGrid").length;//表格中选中状态的行的数量
+	if (checkedNum == 0) {
+		vm.single = vm.multi = true;
+	} else if (checkedNum == 1) {
+		vm.single = vm.multi = false;
+	} else if (checkedNum > 1) {
+		vm.single = true;
+		vm.multi = false;
+	}
 }
 
 /*======================时间验证方法start===========================*/

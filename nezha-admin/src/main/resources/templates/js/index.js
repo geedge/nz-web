@@ -30,7 +30,7 @@ $(window).on('resize', function() {
 	$content.height($(this).height() - 154);
 	$content.find('iframe').each(function() {
 		$(this).height($content.height());
-		//$(this).contents().find('.ui-jqgrid-bdiv').height($('.content').height()-130);
+		$(this).contents().find('.ui-jqgrid-bdiv').height($content.height()-130);
 	});
 }).resize();
 
@@ -150,15 +150,6 @@ var vm = new Vue({
         logout: function() {
         	$.get("${request.contextPath}/logout");
         	location.reload();
-        },
-        selectableNodes: function (id) {
-        	layer.open({
-				type: 1,
-				area: ['1200px', '500px'],
-				title: "节点分配",
-				content: $("#system-node-rel"),
-				btn: ['确认', '取消']
-			});
         }
 	},
 	created: function(){

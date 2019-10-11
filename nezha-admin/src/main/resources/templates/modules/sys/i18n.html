@@ -20,8 +20,8 @@
 			</div>
 			<a class="btn btn-default btn-search" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
 			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
-			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil"></i></a>
-			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+			<a :disabled="single" class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil"></i></a>
+			<a :disabled="multi" class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
 			<a class="btn btn-success" @click="refresh" title="<@spring.message 'sys.i18n.refresh'/>"><i class="fa fa-refresh"></i></a>
 		</div>
 	    <table id="jqGrid"></table>

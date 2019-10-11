@@ -11,9 +11,12 @@ $(function () {
 			{ label: 'builtIn', name: 'buildIn', hidden: true }
         ],
 		viewrecords: true,
-        height: 385,
+		height: top.$(".content").height()-130,
+        rowNum: 15,
+		rowList : [15,30,50],
+        /*height: 385,
         rowNum: 10,
-		rowList : [10,30,50],
+		rowList : [10,30,50],*/
         rownumbers: true, 
         rownumWidth: 25, 
         autowidth:true,
@@ -59,7 +62,11 @@ $(function () {
                 var cbs = $("tr.jqgrow > td > input[type=checkbox]:disabled");
                 cbs.removeAttr("checked");
                 cbs.parent().parent().removeClass("success");
+                toolsBtnHandle();
             }
+        },
+        onSelectRow: function(rowid,status) {
+        	toolsBtnHandle();
         }
     });
 });
@@ -96,7 +103,10 @@ var checkName = function(value, system) {
 var vm = new Vue({
 	el:'#rrapp',
 	data:{
-		test: true,
+		//single和multi分别控制工具栏的单选、多选按钮的可点击状态
+		single: true,
+		multi: true,
+		
 		showList: true,
 		title: null,
 		system: {
@@ -195,9 +205,21 @@ var vm = new Vue({
 			});
 		},
 		nodeRel: function (event) {
-			parent.vm.selectableNodes();
+			layer.open({
+                area: ['50%', '100%'],
+                shade: 0,
+                title: "<@spring.message 'common.selectNodeOrNodeGroup'/>",
+                type: 1,
+                maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
+                content: "hehe"
+            });
 		},
 		reload: function (event) {
+			vm.single = vm.multi = true;
 			vm.showList = true;
 			var page = $("#jqGrid").jqGrid('getGridParam','page');
 			$("#jqGrid").jqGrid('setGridParam',{ 
