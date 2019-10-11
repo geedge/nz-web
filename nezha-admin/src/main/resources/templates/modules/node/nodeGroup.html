@@ -116,7 +116,7 @@
 
             <div class="form-group col-sm-2">
                 <multiselect :options="nodeTypes" label="value" :show-labels="false"
-                             v-model="q.type" @close="getQueryTag"
+                             v-model="q.type"
                              placeholder="<@spring.message 'node.type'/>"></multiselect>
             </div>
 
@@ -139,7 +139,7 @@
 
                 <div class="form-group col-sm-2">
                     <multiselect :options="queryTags" label="value" :show-labels="false"
-                                 v-model="q.tag" @open="checkQueryTag"
+                                 v-model="q.tag"
                                  placeholder="<@spring.message 'node.tag'/>"></multiselect>
                 </div>
 
