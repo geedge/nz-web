@@ -3,6 +3,7 @@
 <html>
 <head>
     <title><@spring.message 'deteSet'/></title>
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
     <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css">
 </head>
 <#include "/header.html">
@@ -85,8 +86,8 @@
                             <ul class="list-group">
                                 <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
                                     <div style="height: 12px;">
-                                        <div class="left" style="width: 89%;">{{ng.fullPath}}</div>
-                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)"><i
+                                        <div class="left" style="width: 89%;">{{ng.absolutePath}}</div>
+                                        <div class="right" style="width: 10%;" @click="unCheckGroup(ng)"><i
                                                 @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
                                     </div>
                                 </li>
@@ -106,7 +107,7 @@
                                     <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
                                         <div style="height: 12px;">
                                             <div class="left" style="width: 89%;">{{ni.ip}}</div>
-                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i
+                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(ni)"><i
                                                     @click="openNodePannel" class="glyphicon glyphicon-remove"></i>
                                             </div>
                                         </div>
@@ -119,20 +120,17 @@
                     </div>
                 </div>
             </div>
-            <select-panel
-                    v-show="showNodeSelect"
-                    v-bind:znode="nodeGroups"
-                    :columns="columnModel"
-                    :tdata="nodeInfoData"
-                    @node-click="getNodeList"
-                    @node-check="checkNodeGroup"
-                    @row-check="checkNodeInfos"
-                    :table-row-class-change="columnClassChange"
-                    ref="selectPanel"
-                    :warn-message="nodeOrGroupEmptyMsg"
-                    :uncheck-node="uncheckGroup">
+            <div id="layerView" v-show="showNodeSelect">
+                <nz-node-selector ref="nzSelector"
+                                  v-if="selectorReset"
+                                  :notify-selected-tab-datas="deteSet.nodes"
+                                  :notify-selected-tree-datas="deteSet.nodeGroups"
+                                  :selected-tab-data-change="getTabDatas"
+                                  :selected-tree-data-change="getTreeDatas"
+                                  :disable-switch="formatTab"
+                ></nz-node-selector>
+            </div>
 
-            </select-panel>
 
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.i18nCode'/>:</div>
@@ -198,7 +196,10 @@
 </div>
 
 </body>
-<#include "main.html">
+
+<#include "/modules/common/template.html"/>
+<#include "main.html"/>
+<#include "/js/modules/common/componets.js"/>
 <#include "/js/modules/detect/main.js"/>
 <#include "/js/modules/detect/deteSet.js"/>
 </html>
