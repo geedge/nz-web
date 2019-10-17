@@ -6,20 +6,33 @@ html { overflow-x:hidden; }
 }
 
 .input-large {
-	width: 220px;
+	width: 220px !important;
 	display: inline-block;
 }
 .input-medium {
-	width: 160px;
+	width: 160px !important;
 	display: inline-block;
 }
 .input-small {
-	width: 100px;
+	width: 100px !important;
 	display: inline-block;
 }
 .input-xsmall {
-	width: 80px;
+	width: 70px !important;
 	display: inline-block;
+}
+/* 带单位的input */
+.input-with-unit {
+	padding-right: 22px !important;
+}
+/* input内单位 */
+.input-unit {
+	position: absolute;
+	line-height: 34px;
+}
+#deteType .input-unit {
+	left: 100px;
+	color: #888888;
 }
 .ad-search-input {
 	border-radius: 0 4px 4px 0;
@@ -81,13 +94,21 @@ tbody > tr > th {font-weight: normal; }
 .form-control_error-msg {
 	color: #f57f6c;
 }
-.required-symbol {
+.required-symbol, .required-symbol_meta-model {
     color: #f57f6c;
     font-size: 20px;
     display: inline-block;
     position: absolute;
     top: 7px;
-    left: 370px;
+}
+.required-symbol {
+	left: 370px;
+}
+.required-symbol_meta-model {
+	left: 270px;
+}
+.required-symbol {
+	left: 370px;
 }
 .multiselect {
 	border-radius: 4px;
