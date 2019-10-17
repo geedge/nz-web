@@ -387,10 +387,11 @@ var rTable = Vue.extend({
         checkboxStatus: function () {
             var temp = this;
             temp.removeCheckboxClass();
-            if(temp.tableData.length==0){
+            var enableSize=temp.tableData.length-temp.disabledSize;
+            if(temp.tableData.length==0||enableSize==0){
                 temp.checked?temp.checkboxDom.addClass("checkbox_true_part"):temp.checkboxDom.addClass("checkbox_false_full");
             }else{
-                var enableSize=temp.tableData.length-temp.disabledSize;
+
                 if (temp.checkedDatas.size >= enableSize) {
                     temp.checked = true;
                     temp.partChecked = false;
@@ -405,7 +406,6 @@ var rTable = Vue.extend({
                     temp.checkboxDom.addClass("checkbox_false_full");
                 }
             }
-
         },
         selectedChange: function () {
             var checkedDatas = this.checkedDatas.values();

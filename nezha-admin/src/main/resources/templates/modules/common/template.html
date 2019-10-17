@@ -9,7 +9,7 @@
             <tbody>
                 <template v-if="trReset & tableData.length>0"  v-for="rdata,index in tableData" >
                     <r-tr
-                            ref="{{ref}}"
+                            ref="r-tr-ref"
                             :rowData="rdata"
                             :colModel="colModel"
                             :index="index"
