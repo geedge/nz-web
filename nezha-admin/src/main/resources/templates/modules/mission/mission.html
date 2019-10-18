@@ -4,6 +4,7 @@
 <head>
 <title>任务管理</title>
 <#include "/header.html">
+<link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
 <link rel="stylesheet" href="${request.contextPath}/statics/css/mission.css">
 </head>
 <body>
@@ -108,6 +109,17 @@
 			    </div>
 			</div>  -->
 			
+			<div id="layerView" v-show="showNodeSelect">
+                <nz-node-selector ref="nzSelector"
+                                  v-if="selectorReset"
+                                  :notify-selected-tab-datas="mission.nodeIds"
+                                  :notify-selected-tree-datas="mission.nodeGroupIds"
+                                  :selected-tab-data-change="getTabDatas"
+                                  :selected-tree-data-change="getTreeDatas"
+                ></nz-node-selector>
+            </div>
+			
+			
 			<div class="form-group" v-show="!missionParam">
                 <div class="col-sm-2 control-label"><@spring.message 'common.pleaseSelect'/><@spring.message 'common.node'/>/<@spring.message 'common.nodeGroup'/>:</div>
                 <div class="col-sm-9" >
@@ -119,8 +131,8 @@
                             <ul class="list-group">
                                 <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
                                     <div style="height: 12px;">
-                                        <div class="left" style="width: 89%;">{{ng.fullPath}}</div>
-                                        <div class="right" style="width: 10%;" @click="unCheckGroup(index)" ><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                        <div class="left" style="width: 89%;">{{ng.absolutePath}}</div>
+                                        <div class="right" style="width: 10%;" @click="unCheckGroup(ng)" ><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
                                     </div>
                                 </li>
                             </ul>
@@ -138,7 +150,7 @@
                                     <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
                                         <div style="height: 12px;">
                                             <div class="left" style="width: 89%;">{{ni.ip}}</div>
-                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(index)"><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
+                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(ni)"><i @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
                                         </div>
                                     </li>
                                 </ul>
@@ -149,24 +161,8 @@
 
                 </div>
             </div>
-            <select-panel
-                    v-show="showNodeSelect"
-                    v-bind:znode="nodeGroups"
-                    :columns="columnModel"
-                    :tdata="nodeInfoData"
-                    @node-click="getNodeList"
-                    @node-check="checkNodeGroup"
-                    @row-check="checkNodeInfos"
-                    ref="selectPanel"
-                    :uncheck-node="uncheckGroup" >
-            </select-panel>
-			
-			
-			<!-- :table-row-class-change="columnClassChange" -->
-			
-			
-			
-						
+           
+
 			<div v-show="!missionParam" class="form-group">
 			   	<div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/></div>
 			   	<div class="col-sm-9">
@@ -195,31 +191,46 @@
 			
 			<div v-show='!missionParam'>
 			<div id="filepush">
-			    <filepush ref="filePush"></filepush>
+			    <filepush ref="filePush" v-show="mission.type==1"
+			    	@param="setMissionParam"
+			    	@files="setFiles"
+			    ></filepush>
 			</div>
 			
 			<div id='upgradeKillProcess'>
-				<upgrade-kill-process ref="upgradeKillProcess"></upgrade-kill-process>
+				<upgrade-kill-process ref="upgradeKillProcess" v-show="mission.type==2 && mission.commandEnname!=null && mission.commandEnname.code=='upgrade_kill_process' "
+				@param="setMissionParam"
+				></upgrade-kill-process>
 			</div>
 			
 			<div id="upgradeBackup">
-				<upgrade-backup ref="upgradeBackup"></upgrade-backup>
+				<upgrade-backup ref="upgradeBackup" v-show="mission.type==2 && mission.commandEnname!=null && mission.commandEnname.code=='upgrade_backup'"
+				@param="setMissionParam"
+				></upgrade-backup>
 			</div>
 			
 			<div id="upgradeUpdate">
-				<upgrade-update ref="upgradeUpdate"></upgrade-update> 
+				<upgrade-update ref="upgradeUpdate" v-show="mission.type==2 && mission.commandEnname!=null && mission.commandEnname.code=='upgrade_update'"
+				@param="setMissionParam"
+				></upgrade-update> 
 			</div>
 			
 			<div id="upgradeExecStart">
-				<upgrade-exec-start ref="upgradeExecStart"></upgrade-exec-start>
+				<upgrade-exec-start ref="upgradeExecStart" v-show="mission.type==2 && mission.commandEnname!=null && (mission.commandEnname.code=='upgrade_exec'||mission.commandEnname.code=='upgrade_start')"
+				@param="setMissionParam"
+				></upgrade-exec-start>
 			</div>
 			
 			<div id="upgradeRecover">
-				<upgrade-recover ref="upgradeRecover"></upgrade-recover>
+				<upgrade-recover ref="upgradeRecover" v-show="mission.type==2 && mission.commandEnname!=null && mission.commandEnname.code=='upgrade_recover'"
+				@param="setMissionParam"
+				></upgrade-recover>
 			</div>
 			
 			<div id="singleExec" >
-				<single-exec ref="singleExec"></single-exec>
+				<single-exec ref="singleExec" v-show="mission.type==2&&mission.commandEnname!=null && mission.commandEnname.code=='single_exec'"
+				@param="setMissionParam"
+				></single-exec>
 			</div>
 			</div>
 			
@@ -397,7 +408,10 @@
 				
 				<!-- DC升级或者第三方部署 -->
 				<div id="upgradeServer">
-					<upgrade-server ref="upgradeServer"></upgrade-server>
+					<upgrade-server ref="upgradeServer" v-show="mission.commandEnname!=null && (mission.commandEnname.code=='upgrade_server'|| mission.commandEnname.code=='upgrade_other')"
+					@param="setMissionParam"
+			    	@files="setFiles"
+					></upgrade-server>
 				</div>
 				
 			</div>
@@ -419,9 +433,9 @@
 </div>
 
 </body>
-<#include "/modules/detect/main.html">
-<#include "/js/modules/detect/main.js"/>
-<#include "/js/modules/mission/mission.js"/>
+
+<#include "/modules/common/template.html"/>
+<#include "/js/modules/common/componets.js"/>
 <#include "/js/modules/mission/filepush.js"/>
 <#include "/js/modules/mission/upgradeKillProcess.js"/>
 <#include "/js/modules/mission/upgradeBackup.js"/>
@@ -430,4 +444,7 @@
 <#include "/js/modules/mission/upgradeRecover.js"/>
 <#include "/js/modules/mission/singleExec.js"/>
 <#include "/js/modules/mission/upgradeServer.js"/>
+<#include "/js/modules/mission/mission.js"/>
+
+
 </html>

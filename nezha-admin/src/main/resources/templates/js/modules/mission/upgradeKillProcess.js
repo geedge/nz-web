@@ -59,7 +59,7 @@ var upgradeKillProcessChild = Vue.extend({
 	// 构建一个父组件   
 var upgradeKillProcess = Vue.extend({
     template: `
-    	<div v-if="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_kill_process' ">
+    	<div>
         <upgradeKillProcessChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -97,13 +97,20 @@ var upgradeKillProcess = Vue.extend({
         getData: function (val) {
           let index = val.index;
           this.items[index] = val.data;
-          if(vm.mission.param.paramForExecuteInstruct==null||vm.mission.param.paramForExecuteInstruct==undefined){
+          /*if(vm.mission.param.paramForExecuteInstruct==null||vm.mission.param.paramForExecuteInstruct==undefined){
         	  vm.mission.param.paramForExecuteInstruct={
         			  pidFiles:[]
         	  }
           }
           vm.mission.param.paramForExecuteInstruct.pidFiles=this.items;
-          console.log('I got the data:', JSON.stringify(this.items))
+          console.log('I got the data:', JSON.stringify(this.items))*/
+          var param={
+        		  paramForExecuteInstruct:{
+        			  pidFiles:[]
+        		  }
+          }
+          param.paramForExecuteInstruct.pidFiles=this.items
+          this.$emit('param',this.param)
         },
         dataReset:function(){
         	this.items=['']

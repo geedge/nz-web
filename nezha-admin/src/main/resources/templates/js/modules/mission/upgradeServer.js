@@ -350,10 +350,15 @@ var upgradeServer = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
-          if(vm.mission.param.paramForUpgrades==null||vm.mission.param.paramForUpgrades==undefined){
+          /*if(vm.mission.param.paramForUpgrades==null||vm.mission.param.paramForUpgrades==undefined){
         	  vm.mission.param.paramForUpgrades={}
           }
-          vm.mission.param.paramForUpgrades=this.items;
+          vm.mission.param.paramForUpgrades=this.items;*/
+          var param={
+        		  paramForUpgrades:{}
+          }
+          param.paramForUpgrades=this.items;
+          this.$emit('param',this.param)
           console.log('I got the data:', JSON.stringify(this.items))
         },
         dataReset:function(){
@@ -375,7 +380,7 @@ var upgradeServer = Vue.extend({
   	      	}]
         },
         getPushFile:function(val,index){
-        	vm.files[index]=event.target.files[0]
+        	this.$emit('files',val,index)
         }
       }
 })

@@ -94,7 +94,7 @@ var upgradeRecoverChild = Vue.extend({
 	// 构建一个父组件   
 var upgradeRecover = Vue.extend({
     template: `
-    	<div class="" v-show="vm.mission.type==2 && vm.mission.commandEnname!=null && vm.mission.commandEnname.code=='upgrade_recover'">
+    	<div class="">
         <upgradeRecoverChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -142,10 +142,15 @@ var upgradeRecover = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
-          if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
+         /* if(vm.mission.param.paramForExecuteInstructs==null||vm.mission.param.paramForExecuteInstructs==undefined){
         	  vm.mission.param.paramForExecuteInstructs={}
           }
-          vm.mission.param.paramForExecuteInstructs=this.items;
+          vm.mission.param.paramForExecuteInstructs=this.items;*/
+          var param={
+        		  paramForExecuteInstructs:{}
+          }
+          param.paramForExecuteInstructs=this.items;
+          this.$emit('param',this.param)
           console.log('I got the data:', JSON.stringify(this.items))
         },
         dataReset:function(){

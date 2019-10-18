@@ -40,8 +40,8 @@ $(function () {
     });
 });  
 
-Vue.component("select-panel", pannel);
-Vue.component("left-tree", znodeTree);
+Vue.component("nz-node-selector",selector);
+
 //注册select组件
 Vue.component('multiselect', window.VueMultiselect.default);
 //引用vuelidate组件
@@ -73,7 +73,8 @@ var vm = new Vue({
 			param:{},
 			userGroup:null,
 			nodeGroupIds:[],
-			nodeIds:[]
+			nodeIds:[],
+			remark:''
 		},
 		radio: '1',
 		missionTypeList:[],
@@ -112,53 +113,10 @@ var vm = new Vue({
 		paramForUpgrades:[],
 		
 		
-		uncheckGroup: null, //标记左侧树取消选中的节点，用于左右联动
 		nodeGroupsChecked: [], //选中的节点组
         nodeInfosChecked: [], //选中的节点
-        showNodeSelect:false,
-        nodeGroups: [],//select-panel 组件左侧树 填充数据
-        nodeInfoData: [], //select-panel 组件右侧列表 填充数据
-        columnModel: [    //select-panel 组件右侧列表 显示列设置  api doc：http://doc.huangsw.com/vue-easytable/app.html#/table/api
-            {width: 60, titleAlign: 'center', columnAlign: 'center', type: 'selection', isFrozen: true},
-            {field: 'name', title: '名称', width: 80, titleAlign: 'center', columnAlign: 'center', isResize: true},
-            {field: 'ip', title: 'IP', width: 150, titleAlign: 'center', columnAlign: 'center', isResize: true},
-            {
-                field: 'type',
-                title: '节点类型',
-                width: 80,
-                titleAlign: 'center',
-                columnAlign: 'center',
-                isResize: true,
-                formatter: function (rowData, rowIndex, pagingIndex, field) {
-                    switch (rowData.type) {
-                        case "1":
-                            return "服务器";
-                        case "2":
-                            return "网元";
-                        default:
-                            return "<span style='color:red;'>未知节点类型</span>";
-                    }
-                }
-            },
-            {
-                field: 'state',
-                title: '节点类型',
-                width: 80,
-                titleAlign: 'center',
-                columnAlign: 'center',
-                isResize: true,
-                formatter: function (rowData, rowIndex, pagingIndex, field) {
-                    switch (rowData.state) {
-                        case "1":
-                            return "上线";
-                        case "2":
-                            return "<span style='color:red;'>下线</span>";
-                        default:
-                            return "<span style='color:red;'>未知节点状态</span>";
-                    }
-                }
-            }
-        ]
+        showNodeSelect: false,
+        selectorReset:true
 	},
 	
 	
@@ -247,7 +205,7 @@ var vm = new Vue({
 		dataReset:function(){
 			vm.mission = {
 					name:null,
-					remark:null,
+					remark:'',
 					id:null,
 					viewLevel:3,
 					type:1,
@@ -259,7 +217,7 @@ var vm = new Vue({
 					viewerId:null,
 					nodeGroupIds:[],
 					nodeIds:[]
-				};
+			};
 			//清空界面数据
 			vm.$refs.filePush.dataReset();
 			vm.$refs.upgradeKillProcess.dataReset();
@@ -365,6 +323,7 @@ var vm = new Vue({
             formData.append("nodeIds",this.mission.nodeIds);
             formData.append("type",this.mission.type);
             formData.append("viewLevel",this.mission.viewLevel);
+            formData.append("remark",this.mission.remark);
 			var url = vm.mission.id == null ? "mission/save" : "mission/update";
 			$.ajax({
 				type: vm.mission.id == null ? "POST" : "PUT",
@@ -435,7 +394,24 @@ var vm = new Vue({
 		updateCommandEnname:function(){
 			vm.mission.commandEnname=null;
 		},
-		formatMissionData: function () {
+		setMissionParam:function(data){
+			console.log("操作组件传出的param")
+			console.log(data)
+			this.mission.param=data;
+			console.log(this.param)
+		},
+		setFiles:function(event,index){
+			console.log("操作组件传出的files")
+			this.files[index]=event.target.files[0]
+			console.log(this.files)
+		},
+		getTabDatas:function(tabData){
+            vm.nodeInfosChecked=tabData;
+        },
+        getTreeDatas:function(treeData){
+            vm.nodeGroupsChecked=treeData;
+        },
+        formatMissionData: function () {
 			console.log("处理任务节点相关")
             if(vm.mission.nodeGroupIds==null||vm.mission.nodeGroupIds==undefined){
                 vm.mission.nodeGroupIds=[];
@@ -450,151 +426,37 @@ var vm = new Vue({
                 vm.mission.nodeIds.push(v.uuid);
             })
         },
-		openNodePannel: function () {
-			console.log("openPanel");
+        openNodePannel: function () {
+           
             vm.showNodeSelect = true;
             var index = layer.open({
                 area: ['50%', '100%'],
                 shade: 0,
-                title: "节点/节点组",
+                title: "<@spring.message 'common.selectNodeOrNodeGroup'/>",
                 type: 1,
                 maxmin: false,
                 scrollbar: false,
                 offset: 'r',
                 closeBtn: 1,
                 move: false,
-                content: $("#layerView")
+                content: $("#layerView"),
+                success:function(){
+                    
+                }
             });
         },
-		/*columnClassChange: function (rowIndex, columnName, rowData) {
-            if (rowData.state == '2') { //下线节点
-                rowData._disabled = true;
-                return "table-row-disabled";
-            } else {
-                if (vm.deteSet.typeId.method == "2") { //snmp 监测 节点类型 网元
-                    if (rowData.type == '1') { //服务器
-                        rowData._disabled = true;
-                        return "table-row-disabled";
-                    }
-                } else {//snmp 监测 节点类型 服务器
-                    if (rowData.type == '2') {//网元
-                        rowData._disabled = true;
-                        return "table-row-disabled";
-                    }
-                }
-            }
-            rowData._disabled=false;
-            return "";
-        },*/
-        unCheckNodeInfo: function (index) {
-            var delNode = JSON.parse(JSON.stringify(vm.nodeInfosChecked[index]));
-            var delIndex = -1;
-            $.each(vm.nodeInfoData, function (i, v) {
-                for (var j = 0; j < vm.nodeInfosChecked.length; j++) {
-                    var checkedNode = vm.nodeInfosChecked[j];
-                    if (checkedNode.uuid == v.uuid) {
-                        v._checked = true;
-                    }
-                }
-
-                if (delNode.uuid == v.uuid) {
-                    delIndex = i;
-                }
-            })
-            vm.nodeInfosChecked.splice(index, 1);
-            delNode._checked = false;
-            // delNode._disabled=false;
-            vm.nodeInfoData.splice(delIndex, 1, delNode);
+        unCheckNodeInfo:function(rowData){
+            this.$refs.nzSelector.uncheckTabData(rowData);
         },
-		updateCommandEnname:function(){
-			vm.mission.param={};
-			vm.mission.commandEnname=null;
-		},
-		getNodeList: function (nodeGroup) {
-	        $.getJSON(baseURL + "node/list?groupId=" + nodeGroup.id+"&sidx=state&order=asc", function (r) {
-	            vm.nodeFreshPoint = vm.nodeInfosChecked.length;
-	            $.each(r.data.list, function (i, newNodeInfo) {
-	                for (var j = 0; j < vm.nodeInfosChecked.length; j++) {
-	                    var nodeInfo = vm.nodeInfosChecked[j];
-	                    if (newNodeInfo.uuid == nodeInfo.uuid) {
-	                        newNodeInfo._checked = true;
-	                        break;
-	                    }
-	                }
-	            })
-
-	            vm.nodeInfoData = r.data.list;
-	        })
-	    },
-	    unCheckGroup: function (index) {
-	        vm.uncheckGroup = vm.nodeGroupsChecked[index];
-	        vm.nodeGroupsChecked.splice(index, 1);
-	    },
-	    checkNodeGroup: function (nodeGroup) {
-            if (nodeGroup.checked) {
-                var fullPath = printNodeGroupName(nodeGroup);
-                nodeGroup.fullPath = fullPath;
-                vm.nodeGroupsChecked.push(nodeGroup)
-            } else {
-                $.each(vm.nodeGroupsChecked, function (i, v) {
-                    if (v.id == nodeGroup.id) {
-                        vm.nodeGroupsChecked.splice(i, 1);
-                    }
-                })
-            }
-
+        uncheckAllNodeInfo:function(){
+            this.$refs.nzSelector.uncheckAllTabData();
         },
-        checkNodeInfos: function (nodeInfos) {
-            if (vm.nodeFreshPoint > 0) {
-                vm.nodeInfosChecked.splice(vm.nodeFreshPoint);
-                $.each(nodeInfos, function (i, v) {
-                    var flag = true;
-                    var index = -1;
-                    for (var j = 0; j < vm.nodeInfosChecked.length; j++) {
-                        var checkedNode = vm.nodeInfosChecked[j];
-                        if (checkedNode.uuid == v.uuid) {
-                            flag = false;
-                            index = j;
-                            break;
-                        }
-                    }
-
-                    if (flag) {
-                        vm.nodeInfosChecked.push(v);
-                    } else {
-                        console.log("节点存在" + (index + 1) + "号位置")
-                    }
-                })
-
-            } else {
-                vm.nodeInfosChecked = nodeInfos;
-            }
+        unCheckGroup:function(nodeGroup){
+            this.$refs.nzSelector.uncheckTreeData(nodeGroup);
         },
-        init: function (systemId) {
-            $.ajax({
-                url: baseURL + "/nodegroup/list",
-                type: "GET",
-                async: false,
-                success: function (r) {
-                    if (200 == r.code) {
-                        $.each(r.data.list, function (i, v) {
-                            if (systemId == v.id) {
-                                vm.nodeGroups = v.nodegroups;
-                            }
-                        });
-                    }
-                }
-            })
-        },
-        getCurSystem: function () {
-            $.getJSON(baseURL + "system/detail", function (r) {
-                vm.curSystem = r.data;
-                vm.init(vm.curSystem.id);
-            });
-        },
-		
-		
-		
+        uncheckAllGroup:function(){
+            this.$refs.nzSelector.uncheckAllTreeData();
+        }
 	},
 	created: function(){
 		// 初始化进入执行方法
@@ -605,7 +467,34 @@ var vm = new Vue({
 		this.getCommandEnnameTypeList2();
 		this.getCommandEnnameTypeList3();
 		this.getUserGroups();
-		this.getCurSystem();
+	},
+	watch:{
+		'mission.type':{
+			handler(newVal,oldVal){
+				vm.$refs.filePush.dataReset();
+				vm.$refs.upgradeKillProcess.dataReset();
+				vm.$refs.singleExec.dataReset();
+				vm.$refs.upgradeExecStart.dataReset();
+				vm.$refs.upgradeBackup.dataReset();
+				vm.$refs.upgradeRecover.dataReset();
+				vm.$refs.upgradeUpdate.dataReset();
+				vm.$refs.upgradeServer.dataReset();
+			},
+			deep:true
+		},
+		'mission.commandEnname':{
+			handler(newVal,oldVal){
+				vm.$refs.filePush.dataReset();
+				vm.$refs.upgradeKillProcess.dataReset();
+				vm.$refs.singleExec.dataReset();
+				vm.$refs.upgradeExecStart.dataReset();
+				vm.$refs.upgradeBackup.dataReset();
+				vm.$refs.upgradeRecover.dataReset();
+				vm.$refs.upgradeUpdate.dataReset();
+				vm.$refs.upgradeServer.dataReset();
+			},
+			deep:true
+		}
 	}
 });
 </script>

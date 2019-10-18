@@ -115,7 +115,7 @@ var filePushChild = Vue.extend({
 // 构建一个父组件
 var filePush = Vue.extend({
     template: `
-    	<div class="" v-show="vm.mission.type==1">
+    	<div class="" >
         <filePushChild v-for="(item,index) in items"
           :key="index"
           :index="index"
@@ -164,11 +164,12 @@ var filePush = Vue.extend({
         getData: function (val) {
           let index = val.index
           this.items[index] = val.data
-          vm.mission.param=this.items;
-          console.log('I got the data:', JSON.stringify(this.items))
+          //this.param=this.items;
+          this.$emit('param',this.items)
         },
         getPushFile:function(val,index){
-        	vm.files[index]=event.target.files[0]
+        	this.$emit('files',val,index)
+        	//this.files[index]=event.target.files[0]
         },
         dataReset:function(){
         	this.items=[{destPath: '',
