@@ -130,6 +130,7 @@ var vm = new Vue({
         dataTypes: [],//数据类型数组
         dataType: [], //数据类型对象
         dicTypes: [],//mapping type数组
+        dicTypess: [],
         validation: {
             meta: [false],
             param: [false]
@@ -485,7 +486,8 @@ var vm = new Vue({
         getDicTypes: function () {
             $.getJSON(baseURL + "deteType/dicList?limit=999&_" + $.now(), function (r) {
                 for (var i = 0; i < r.data.list.length; i++) {
-                    vm.dicTypes.push(r.data.list[i].type)
+                    vm.dicTypes.push(r.data.list[i].type);
+                    vm.dicTypess.push(r.data.list[i]);
                 }
             });
         },
@@ -663,6 +665,18 @@ var vm = new Vue({
         		'<div style="text-align:right;"><span class="add-box_tag1"></span><span class="add-box_tag2"></span></div>' +
             			'</div>'
         	$(event.currentTarget).parent().before(hhh);
+        },
+        tttat: function(id) {
+        	layer.open({
+        		type: 4,
+        		content: [$("#items" + id).html(), "#position"+id],
+        		tips: [1, "#41B883"],
+        		closeBtn: 0,
+        		shade: 0
+        	})
+        },
+        tttbt: function(){
+        	layer.closeAll("tips");
         }
     },
     watch: {
