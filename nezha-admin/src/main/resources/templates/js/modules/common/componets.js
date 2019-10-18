@@ -435,12 +435,11 @@ var rTable = Vue.extend({
         },
         uncheckTabData:function(rowData){//取消选中某个tr
             for (let trComponet of this.$refs["r-tr-ref"]){
-                if(rowData[this.key]==trComponet.rowData[this.key]){
+                if(rowData[this.identification]==trComponet.rowData[this.identification]){
                     trComponet.uncheckTr();
                     break;
                 }
             }
-
         },
         uncheckAllTabData:function(){
             $.each(this.$refs["r-tr-ref"],function(i,v){
@@ -775,19 +774,9 @@ var selector = Vue.extend({
                 return arr;
             }
             return null;
-        },
-        resetTree: function () {
-            this.$refs.treeChild.initZtree();
-        },
-        showWarnMessage: function () {
-            $("#panel-warn-msg").show();
-        },
-        hideWarnMessage: function () {
-            $("#panel-warn-msg").fadeOut("slow");
         }
-    }
 
-    ,
+    },
     watch: {
         notifySelectedTabDatas:{
             handler: function (val, oldVal) {
