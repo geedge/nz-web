@@ -670,7 +670,7 @@ var vm = new Vue({
         	layer.open({
         		type: 4,
         		content: [$("#items" + id).html(), "#position"+id],
-        		tips: [1, "#41B883"],
+        		tips: [4, "#41B883"],
         		closeBtn: 0,
         		shade: 0
         	})

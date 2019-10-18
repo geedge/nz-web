@@ -390,7 +390,7 @@
 	                    <div class="col-sm-9">
 	                        <multiselect :options="dicTypess" placeholder="..."  :searchable="false" value="dataType" :show-labels="false">
 	                        	<template slot="option" slot-scope="props">
-	                        		<div :id="'position'+props.option.type" style="position:absolute;top:0;left:40%;width:1px;height:1px;"></div>
+	                        		<div :id="'position'+props.option.type" style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>
 	                        		<div style="line-height: 30px"id="title" @mouseenter="tttat(props.option.type)" @mouseleave="tttbt()">{{props.option.type}}</div>
 	                        		<div :id="'items'+props.option.type" style="display:none;">
 		                        		<div style="color: white;" v-for="tttt in props.option.mappings">
