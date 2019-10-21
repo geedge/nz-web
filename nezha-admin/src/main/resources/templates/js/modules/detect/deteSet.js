@@ -123,7 +123,7 @@ var vm = new Vue({
         this.getDeteTypes();
         this.getNodeType();
         this.getViewLevels();
-
+        this.getUserGroups();
     },
     validations: {
         deteSet: {
@@ -152,7 +152,6 @@ var vm = new Vue({
             vm.nodeInfosChecked = [];
             vm.typeParams=[];
             vm.paramVals=[];
-            vm.resetSelector();
             vm.$v.deteSet.$reset();
 
             vm.deteSet = {
@@ -188,6 +187,7 @@ var vm = new Vue({
         add: function () {
             vm.showList = false;
             this.reset();
+            vm.resetSelector();
         },
         update: function () {
             var id = getSelectedRow();
