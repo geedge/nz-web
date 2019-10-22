@@ -13,9 +13,9 @@ $(function () {
             {label: "<@spring.message 'common.remark'/>", name: 'remarks', width: 60, sortable: false}
         ],
         viewrecords: true,
-        height: 385,
-        rowNum: 10,
-        rowList: [10, 30, 50],
+        height: top.$(".content").height()-130,
+        rowNum: 15,
+        rowList : [15,30,50],
         rownumbers: true,
         rownumWidth: 25,
         autowidth: true,
@@ -34,6 +34,14 @@ $(function () {
         },
         gridComplete: function () {
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"}); // 隐藏grid底部滚动条
+        },
+        onSelectAll: function(rowids, status) {
+            if (status) {
+                toolsBtnHandle();
+            }
+        },
+        onSelectRow: function(rowid,status) {
+            toolsBtnHandle();
         }
     });
 });
@@ -121,7 +129,10 @@ var data = {
     rooms: [],
     roomRows: [],
     roomCols: [],
-    occUbit: null
+    occUbit: null,
+    // single  multi 控制工具栏单选 多选可点击状态
+    single:true,
+    multi:true
 };
 
 var vm = new Vue({
@@ -151,6 +162,7 @@ var vm = new Vue({
             this.reload();
         },
         reload: function () {
+            vm.single = vm.multi = true;
             vm.showList = true;
             var page = $("#jqGrid").jqGrid('getGridParam', 'page');
             $("#jqGrid").jqGrid('setGridParam', {

@@ -162,12 +162,12 @@ var helpers = window.validators.helpers;
 var nameCheck = function (value, nodeGroup) {
     if (helpers.req(value)) {
         var flag = true;
-        var params = "?name=" + value + "&pid=" + vm.nodeGroup.parentGroup.id;
+        var params = "?name=" + value + "&pid=" + vue.nodeGroup.parentGroup.id;
         if (nodeGroup.id) {
             params += "&id=" + nodeGroup.id;
         }
         if (nodeGroup.parentGroup.id == 0) { // 添加的是根节点 则参数需要传业务ID
-            params += "&systemId=" + vm.system.id;
+            params += "&systemId=" + vue.system.id;
         }
         $.ajax({
             type: "GET",
@@ -186,7 +186,7 @@ var nameCheck = function (value, nodeGroup) {
     }
 }
 
-var vm = new Vue({
+var vue = new Vue({
     el: "#app",
     data: this.data,
     validations: {
@@ -201,16 +201,16 @@ var vm = new Vue({
     },
     methods: {
         getNodeInfos: function (node) {
-            vue.nodeGroup = node;
-            vue.query();
+            vm.nodeGroup = node;
+            vm.query();
         },
         add: function (node, isRoot) {
-            vm.$v.nodeGroup.$reset();
+            vue.$v.nodeGroup.$reset();
             if (isRoot) { // 添加根节点组
-                vm.showForm = true;
+                vue.showForm = true;
                 // 获取当前权限
-                vm.system = node;
-                vm.nodeGroup = {
+                vue.system = node;
+                vue.nodeGroup = {
                     name: null,
                     id: null,
                     systemId: null,
@@ -218,12 +218,12 @@ var vm = new Vue({
                     remark: null,
                     parentGroup: null
                 };
-                vm.nodeGroup.parentGroup = {name: "<@spring.message 'nodegroup.root.group'/>", id: 0}; // 根节点组
+                vue.nodeGroup.parentGroup = {name: "<@spring.message 'nodegroup.root.group'/>", id: 0}; // 根节点组
             } else {
                 // 获取节点组的业务系统 作为子节点组的业务系统
-                vm.getParentSystem(node.systemId);
-                vm.showForm = true;
-                vm.nodeGroup = {
+                vue.getParentSystem(node.systemId);
+                vue.showForm = true;
+                vue.nodeGroup = {
                     name: null,
                     id: null,
                     systemId: null,
@@ -231,51 +231,51 @@ var vm = new Vue({
                     remark: null,
                     parentGroup: null
                 };
-                vm.nodeGroup.parentGroup = node;
+                vue.nodeGroup.parentGroup = node;
             }
-            vm.count = 1;
+            vue.count = 1;
             this.open("<@spring.message 'common.add'/>");
         },
         update: function (node) {
-            vm.$v.nodeGroup.$reset();
+            vue.$v.nodeGroup.$reset();
             $.ajax({
                 type: "GET",
                 url: baseURL + "nodegroup/detail?id=" + node.id,
                 async: false, // 关闭异步
                 dataType: "json",
                 success: function (r) {
-                    vm.nodeGroup = r.data;
+                    vue.nodeGroup = r.data;
                 }
             });
-            vm.getParentSystem(node.systemId);
-            vm.nodeGroup.parentGroup = node.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : node.getParentNode();
+            vue.getParentSystem(node.systemId);
+            vue.nodeGroup.parentGroup = node.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : node.getParentNode();
             this.open("<@spring.message 'common.edit'/>");
         },
         saveOrUpdate: function () {
             if (!this.validate()) { // 在下方定义的validate方法
                 return;
             }
-            vm.count++;
+            vue.count++;
             var url;
-            if (vm.nodeGroup.id == null) {
+            if (vue.nodeGroup.id == null) {
                 url = "nodegroup/save";
             } else {
                 url = "nodegroup/update";
             }
-            vm.$set(vm.nodeGroup, "pid", vm.nodeGroup.parentGroup.id);
-            vm.$set(vm.nodeGroup, "systemId", vm.system == null ? null : vm.system.id);
-            if (vm.nodeGroup.id) {
-                vm.nodeGroup.pid = vm.nodeGroup.pids = vm.nodeGroup.systemId = null;
+            vue.$set(vm.nodeGroup, "pid", vue.nodeGroup.parentGroup.id);
+            vue.$set(vue.nodeGroup, "systemId", vue.system == null ? null : vue.system.id);
+            if (vue.nodeGroup.id) {
+                vue.nodeGroup.pid = vue.nodeGroup.pids = vue.nodeGroup.systemId = null;
             }
             $.ajax({
-                type: vm.nodeGroup.id == null ? "POST" : "PUT",
+                type: vue.nodeGroup.id == null ? "POST" : "PUT",
                 url: baseURL + url,
                 contentType: "application/json",
-                data: JSON.stringify(vm.nodeGroup),
+                data: JSON.stringify(vue.nodeGroup),
                 success: function (r) {
                     if (r.code === 200) {
                         alert("<@spring.message 'common.success'/>", function (index) {
-                            vm.reload();
+                            vue.reload();
                         });
                     } else {
                         alert(r.msg);
@@ -296,7 +296,7 @@ var vm = new Vue({
                 success: function (r) {
                     if (r.code == 200) {
                         alert("<@spring.message 'common.success'/>", function (index) {
-                            vm.reload();
+                            vue.reload();
                             location.reload();
                         });
                     } else {
@@ -313,27 +313,31 @@ var vm = new Vue({
                 async: false,
                 dataType: "json",
                 success: function (r) {
-                    vm.system = r.data;
+                    vue.system = r.data;
                 }
             });
         },
         open: function (title) {
             layer.open({
-                area: ['600px', '400px'],
+                area: ['50%', '100%'],
                 shade: 0,
                 title: title,
                 type: 1,
                 fixed: false,
                 maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
                 content: $("#form") // 本页面的元素
             });
         },
         validate: function () {
-            vm.$v.nodeGroup.$touch();
-            return !vm.$v.nodeGroup.$error;
+            vue.$v.nodeGroup.$touch();
+            return !vue.$v.nodeGroup.$error;
         },
         reload: function () {
-            if (vm.count == 1) {
+            if (vue.count == 1) {
                 layer.closeAll();
             } else {
                 location.reload();

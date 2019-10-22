@@ -1,0 +1,76 @@
+/*按钮的显示与隐藏*/
+.myoption-open {
+    display: inline-block;
+}
+
+.myoption-close {
+    display: none;
+}
+
+/*左侧机房*/
+.room {
+    width: 20%;
+    height: 500px;
+    float: left;
+    margin-right: 50px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 左侧机房的背景高亮*/
+.tr-higHlight {
+    background-color: #F5F5F5;
+}
+
+.tr-normal {
+    background-color: #FFFFFF;
+}
+
+
+/*右侧行列表*/
+.ranks {
+    width: 70%;
+    float: left;
+    position: relative;
+}
+
+/*行展示*/
+.cols {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+/*机柜块*/
+.cab {
+    height: 100px;
+    width: 100px;
+    margin: 20px 10px;
+    /*background-color: #c4e3f3;*/
+    line-height: 105px;
+    text-align: center;
+    border: 2px solid #337ab7;
+    border-radius: 20px;
+    float: left;
+    position: relative
+}
+
+/*机柜详情按钮*/
+.cab-detail-option {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    line-height: 20px;
+    right: 10px;
+    bottom: 5px;
+}
+
+/*机柜修改删除按钮*/
+.cab-but {
+    float: right;
+    position: absolute;
+    bottom: -10px;
+    right: 0px;
+}
+
+

@@ -55,13 +55,13 @@
 
             <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>">
                 <i class="fa fa-plus"></i></a>
-            <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>">
+            <a :disabled="single" class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>">
                 <i class="fa fa-pencil"></i></a>
-            <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>">
+            <a :disabled="multi" class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>">
                 <i class="fa fa-trash-o"></i></a>
-            <a class="btn btn-primary" @click="changeState(1)" title="<@spring.message 'common.onLine'/>">
+            <a :disabled="multi" class="btn btn-primary" @click="changeState(1)" title="<@spring.message 'common.onLine'/>">
                 <i class="fa fa-arrow-up"></i></a>
-            <a class="btn btn-primary" @click="changeState(2)" title="<@spring.message 'common.offLine'/>">
+            <a :disabled="multi" class="btn btn-primary" @click="changeState(2)" title="<@spring.message 'common.offLine'/>">
                 <i class="fa fa-arrow-down"></i></a>
         </div>
 
