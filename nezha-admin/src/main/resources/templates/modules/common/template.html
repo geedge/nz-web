@@ -1,11 +1,13 @@
 <script type="text/x-template" id="rTable">
     <div>
-        <table class="r-table" border="1px" id="r-tab-id" >
-            <tr>
-                <th width="30px"></th>
-                <th width="30px"><span class="r-checkbox checkbox_false_full" id="r-tab-checkall"/></th>
-                <th v-for="cm,index in colModel" class="r-tab-th" v-width="cm.width">{{cm.name}}</th>
-            </tr>
+        <table class="r-table" id="r-tab-id">
+			<thead>
+            	<tr>
+                	<th width="30px"></th>
+                	<th width="30px"><span class="r-checkbox checkbox_false_full" id="r-tab-checkall"/></th>
+                	<th v-for="cm,index in colModel" class="r-tab-th" v-width="cm.width">{{cm.name}}</th>
+            	</tr>
+			</thead>
             <tbody>
                 <template v-if="trReset & tableData.length>0"  v-for="rdata,index in tableData" >
                     <r-tr
@@ -39,8 +41,8 @@
 </script>
 
 <script type="text/x-template" id="nzNodeSelector">
-    <div class="panel panel-default main">
-        <div class="left scrollbar">
+    <div class="main">
+        <div class="left nodeTree">
             <nz-tree
                     :tree-data="treeData"
                     @tree-click="clickNode"
@@ -48,7 +50,7 @@
                     ref="treeChild"
             ></nz-tree>
         </div>
-        <div class="right" style="padding-top:10px">
+        <div class="right">
             <nz-table
                     ref="nzTable"
                     :table-data="tableData"
@@ -59,9 +61,6 @@
         </div>
     </div>
 </script>
-
 <script id="nzTree" type="text/x-template">
-    <div>
-        <ul id="beTree" class="ztree"></ul>
-    </div>
+	<ul id="beTree" class="ztree"></ul>
 </script>

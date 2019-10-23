@@ -593,13 +593,13 @@ var selector = Vue.extend({
             treeSelectedKeyPre:"tree-checked-",
             key: "uuid", //数据的唯一标识
             colModel: [
-                {name: "名称", field: "name", width: 180},
-                {name: "IP", field: "ip", width: 180},
-                {name: "设备类型", field: "type", width: 100,formatter:function(rowData){
+                {name: "名称", field: "name", width: 120},
+                {name: "IP", field: "ip", width: 120},
+                {name: "类型", field: "type", width: 70,formatter:function(rowData){
                         return rowData["type"]=='1'?"服务器":"网元";
                     }},
-                {name: "在线状态", field: "state", width: 100,formatter:function(rowData){
-                        return rowData["state"]=='1'?"在线":"<span style='color:red;'>下线</span>";
+                {name: "状态", field: "state", width: 60,formatter:function(rowData){
+                        return rowData["state"]=='1'?"在线":"<span style='color:#cccccc;'>下线</span>";
                     }}
             ],
             treeData: [],

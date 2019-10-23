@@ -1,24 +1,79 @@
-
-.scrollbar {
-    overflow: auto
-}
-
 .main {
     width: 100%;
     height: 100%;
 }
-
+#layerView {
+	height: 100%;
+}
 .v-table-rightview {
     width: 100%;
 }
 
-.plus {
-    width: 83%;
-    height: 25px;
-    text-align: center;
-    position:absolute;
+/* 自定义框组件 */
+.add-box {
+	font-size: 13px;
+	border: 1px solid #cccccc;
+	width: 90%;
+	border-radius: 4px;
+}
+.add-box2 {
+	font-size: 13px;
+	border: 1px solid #cccccc;
+	width: 90%;
+	border-radius: 4px;
+	padding: 15px 0 0 0;
+}
+.add-box2 .form-group {
+	margin-bottom: 15px;
+}
+.add-box2 .control-label {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
 
-    /*z-index: 9999;*/
+.add-box:first-of-type {
+	margin-bottom: 15px;
+}
+.add-box_head {
+	 border-bottom: 1px solid #cccccc;
+	 padding: 7px 10px 4px 10px;
+}
+.add-box_rows {
+	padding: 3px 0;
+	position: relative;
+	height: 160px;
+}
+.add-box_ug {
+	height: auto;
+}
+.add-box_row {
+    line-height: 23px;
+    position: relative;
+    padding: 3px 0 3px 10px;
+    margin-right: 7px;
+}
+.add-box_op {
+	position: absolute;
+	right: 10px;
+	color: #777777;
+}
+.add-box_op>i {
+	cursor: pointer;
+}
+.add-box_foot {
+	height: 23px;
+	line-height: 23px;
+	text-align: center;
+}
+.add-box_foot>i {
+	cursor: pointer;
+}
+/* 自定义框组件 end*/
+
+.plus {
+    height: 23px;
+	line-height: 23px;
     background-color: white;
 }
 .border{

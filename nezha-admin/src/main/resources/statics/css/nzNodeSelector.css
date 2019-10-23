@@ -1,19 +1,16 @@
-.scrollbar {
-    overflow: auto
-}
 .r-table {
     width: 100%;
+	}
+.r-table>tbody>tr>td, .r-table>thead>tr>th {
+	padding: 5px;
+	word-break: break-all;
 }
-.r-table .r-tab-th{
-
-}
-
 .r-checkbox{
     line-height: 0;
     margin: 0;
     padding: 0;
-    width: 21px;
-    height: 21px;
+    width: 13px;
+    height: 15px;
     display: inline-block;
     vertical-align: middle;
     border: 0 none;
@@ -22,7 +19,7 @@
     background-color: transparent;
     background-repeat: no-repeat;
     background-attachment: scroll;
-    background-image:url("../plugins/ztree/css/metroStyle/img/metro.png");
+    background-image:url("../../statics/plugins/ztree/css/metroStyle/img/metro.png");
 }
 /*未选中*/
 .checkbox_false_full {
@@ -66,15 +63,16 @@
     height: 100%;
     /*background-color:red;*/
     float: left;
-    border-right: 1px solid #00000057;
+    border-right: 1px solid #ddd;
+    position: relative;
     /*border-bottom:1px solid #00000057;*/
 }
 
 .right {
-    width: 70%;
+    width: 71%;
     height: 100%;
-    /*background-color:green;*/
-    float: right;
+    float: left;
+    padding-left: 6px;
 }
 .text-center{
     text-align: center;
@@ -90,5 +88,6 @@
     background-color: #FDF8E4;
 }
 .danger{
-    background-color: #F2DEDF;
+    /* background-color: #F2DEDF; */
+    color: #cccccc;
 }

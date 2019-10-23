@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <#import "/spring.ftl" as spring>
 <html>
 <head>
@@ -10,16 +10,16 @@
 <body>
 <div id="deteSet" v-cloak>
     <div v-show="showList">
-        <div class="grid-btn">
-            <div class="form-group col-sm-2">
-                <input type="text" class="form-control" v-model.trim="params.name" @keyup.enter="query"
+        <div class="tools">
+            <div class="form-group">
+                <input type="text" class="form-control input-medium" v-model.trim="params.name" @keyup.enter="query"
                        placeholder="<@spring.message 'common.name'/>">
             </div>
-            <div class="form-group col-sm-2">
+            <div class="form-group">
                 <multiselect v-model="params.type" :options="deteTypes" placeholder="..." track-by="id" label="name"
-                             :searchable="false" :allow-empty="false" :show-labels="false"></multiselect>
+                             :searchable="false" :allow-empty="false" :show-labels="false" class="input-medium"></multiselect>
             </div>
-            <a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+            <a class="btn btn-default btn-search" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
             <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
             <a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
             <a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
@@ -70,52 +70,48 @@
             </div>
             <div class="form-group" v-show="typeParams !=null && typeParams.length>0">
                 <div class="col-sm-2 control-label"><@spring.message 'validate.deteSet.param'/>:</div>
-                <div class="col-sm-9" >
-                    <lable-input v-for="param,index in typeParams" :label="param.name+' ['+param.defVal+']:'" v-model="paramVals[index]"></lable-input>
+                <div class="col-sm-9">
+                <div class="add-box2">
+	                <label-input v-for="param,index in typeParams" :def-val="param.defVal" :label="param.name" v-model="paramVals[index]"></label-input>
+                </div>
                 </div>
             </div>
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/>:</div>
                 <div class="col-sm-9">
                     <!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
-                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': nodeOrGroupEmpty}">
-                        <div class="panel-heading">
-                            <@spring.message 'common.nodeGroup'/>
+                    <div class="add-box" :class="{'form-control--error': nodeOrGroupEmpty}">
+                        <div class="add-box_head">
+                        	<@spring.message 'common.nodeGroup'/>
                         </div>
-                        <div class="panel-body scrollbar" style="position: relative;height: 185px;">
-                            <ul class="list-group">
-                                <li class="list-group-item" v-for="ng,index in nodeGroupsChecked">
-                                    <div style="height: 12px;">
-                                        <div class="left" style="width: 89%;">{{ng.absolutePath}}</div>
-                                        <div class="right" style="width: 10%;" @click="unCheckGroup(ng)"><i
-                                                @click="openNodePannel" class="glyphicon glyphicon-remove"></i></div>
-                                    </div>
-                                </li>
-                            </ul>
+                        <div class="add-box_rows psNg">
+	                        <div class="add-box_row" v-for="ng,index in nodeGroupsChecked">
+	                            <span class="add-box_row_item">{{ng.absolutePath}}</span>
+	                            <span class="add-box_op">
+	                            	<i @click="unCheckGroup(ng)" class="fa fa-trash-o"></i>
+	                            </span>
+	                        </div>
                         </div>
-                        <div class="plus border" style="bottom:269px" @click="openNodePannel"><i
-                                class="glyphicon glyphicon-plus"></i></div>
-
+                        <div class="add-box_foot">
+                        	<i @click="openNodePannel" class="fa fa-plus"></i>
+                        </div>
                     </div>
-                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': nodeOrGroupEmpty}">
-                        <div class="panel-heading">
+                    <div class="add-box" :class="{'form-control--error': nodeOrGroupEmpty}">
+                        <div class="add-box_head">
                             <@spring.message 'common.node'/>
                         </div>
                         <div>
-                            <div class="panel-body scrollbar" style="position: relative;height: 185px;">
-                                <ul class="list-group">
-                                    <li class="list-group-item" v-for="ni,index in nodeInfosChecked">
-                                        <div style="height: 12px;">
-                                            <div class="left" style="width: 89%;">{{ni.ip}}</div>
-                                            <div class="right" style="width: 10%;" @click="unCheckNodeInfo(ni)"><i
-                                                    @click="openNodePannel" class="glyphicon glyphicon-remove"></i>
-                                            </div>
-                                        </div>
-                                    </li>
-                                </ul>
+                            <div class="add-box_rows psN">
+		                        <div class="add-box_row" v-for="ni,index in nodeInfosChecked">
+	                                <span class="add-box_row_item">{{ni.ip}}</span>
+	                                <span class="add-box_op">
+	                                	<i @click="unCheckNodeInfo(ni)" class="fa fa-trash-o"></i>
+	                                </span>
+		                        </div>
                             </div>
-                            <div class="plus border" style="bottom:21px" @click="openNodePannel"><i
-                                    class="glyphicon glyphicon-plus"></i></div>
+                        </div>
+                        <div class="add-box_foot">
+                        	<i @click="openNodePannel" class="fa fa-plus"></i>
                         </div>
                     </div>
                 </div>
@@ -132,44 +128,35 @@
             </div>
 
 
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.i18nCode'/>:</div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control" v-model.trim="$v.deteSet.i18nCode.$model"/>
                 </div>
-            </div>
+            </div> -->
 
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/>:</div>
                 <div class="col-sm-9">
-                    <template v-for="vl in viewLevels">
-                        <label class="radio-inline">
-                            <input type="radio" :value="vl.code" v-model="$v.deteSet.viewLevel.$model"/> {{vl.value}}
-                        </label>
-                    </template>
-                </div>
-            </div>
-
-            <div class="form-group" v-show="deteSet.viewLevel==1">
-                <div class="col-sm-2 control-label"><@spring.message 'usergroup.usergroup'/>:</div>
-                <div class="col-sm-9 ">
-                    <div class="panel panel-default" style="width: 90%;" :class="{'form-control--error': deteSet.viewLevel==1&&userGroupsEmpty}">
-                        <div class="panel-body scrollbar" style="height: 185px;">
-                            <ul class="list-group" v-if="viewers ==null || viewers.length > 0">
-                                <li class="list-group-item" v-for="viewer in viewers">
-                                    <div style="height: 12px;" >
-                                        <input type="checkbox" :value="viewer.code"  v-model="viewer.checked"> {{viewer.value}}
-                                    </div>
-
-                                </li>
-                            </ul>
-                            <span class="help-block" v-else>
-                                <@spring.message 'validate.common.noUsergroupInSysView'/>
-                            </span>
-                        </div>
+                	<div style="margin-bottom: 10px;">
+	                    <template v-for="vl in viewLevels">
+	                        <label class="radio-inline">
+	                            <input type="radio" :value="vl.code" v-model="$v.deteSet.viewLevel.$model"/> {{vl.value}}
+	                        </label>
+	                    </template>
                     </div>
-                    <div class="form-control_error-msg" v-if="deteSet.viewLevel==1&&userGroupsEmpty">
-                        <@spring.message 'validate.common.required'/>
+                    <div class="add-box" v-show="deteSet.viewLevel==1">
+                    	<div class="add-box_rows add-box_ug" :class="{'form-control--error': deteSet.viewLevel==1&&userGroupsEmpty}">
+	                        <div class="add-box_row" v-for="viewer in viewers" v-if="viewers ==null || viewers.length > 0">
+	                             <span class="add-box_row_item"><input type="checkbox" :value="viewer.code"  v-model="viewer.checked"> {{viewer.value}}</span>
+	                        </div>
+	                        <span class="help-block" v-else>
+	                                <@spring.message 'validate.common.noUsergroupInSysView'/>
+	                        </span>
+                        </div>
+	                    <div class="form-control_error-msg" v-if="deteSet.viewLevel==1&&userGroupsEmpty">
+	                        <@spring.message 'validate.common.required'/>
+	                    </div>
                     </div>
                 </div>
             </div>

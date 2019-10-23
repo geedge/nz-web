@@ -21,9 +21,9 @@ $(function () {
             {label: '<@spring.message "common.remark"/>', name: 'remark', sortable: false, width: 100},
         ],
         viewrecords: true,
-        height: 385,
-        rowNum: 10,
-        rowList: [10, 30, 50],
+        height: top.$(".content").height()-130,
+        rowNum: 15,
+		rowList : [15,30,50],
         rownumbers: true,
         rownumWidth: 25,
         autowidth: true,
@@ -45,6 +45,8 @@ $(function () {
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
         }
     });
+    var ps1 = new PerfectScrollbar('.psNg');
+    var ps2 = new PerfectScrollbar('.psN');
 });
 
 // Vue.component("select-panel", pannel);
@@ -332,6 +334,7 @@ var vm = new Vue({
                     }
                 }
             });
+            var ps3 = new PerfectScrollbar('.nodeTree');
         },
         getTabDatas:function(tabData){
             vm.nodeInfosChecked=tabData;
@@ -360,12 +363,14 @@ var vm = new Vue({
         },
         unCheckGroup:function(nodeGroup){
             this.$refs.nzSelector.uncheckTreeData(nodeGroup);
+            this.openNodePannel();
         },
         uncheckAllGroup:function(){
             this.$refs.nzSelector.uncheckAllTreeData();
         },
         unCheckNodeInfo:function(rowData){
             this.$refs.nzSelector.uncheckTabData(rowData);
+            this.openNodePannel();
         },
         uncheckAllNodeInfo:function(){
             this.$refs.nzSelector.uncheckAllTabData();

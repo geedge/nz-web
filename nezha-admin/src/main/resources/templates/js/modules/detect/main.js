@@ -8,9 +8,12 @@ var required = window.validators.required;
 var helpers = window.validators.helpers;
 var integer = window.validators.integer;
 
-Vue.component("lable-input",{
+Vue.component("label-input",{
     template:"#labelInput",
     props:{
+    	defVal: {
+    		type: String
+    	},
         label:{
             type:String
         },
