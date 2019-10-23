@@ -16,7 +16,8 @@ let groupTree = Vue.component('groupTree', {
                 view: {
                     addHoverDom: this.addHoverDom,
                     removeHoverDom: this.removeHoverDom,
-                    showIcon: false
+                    showIcon: false,
+                    nameIsHTML: true // 名称支持Html标签转换
                 },
                 edit: {
                     enable: true,
@@ -29,6 +30,9 @@ let groupTree = Vue.component('groupTree', {
                         idKey: "id",
                         pIdKey: "pid",
                         rootPId: 0
+                    },
+                    key:{
+                        title:"nodeTitle" // 因为name 拼接了带有html的字段 所以默认的title 会展示html标签
                     }
                 },
                 check: {
@@ -46,6 +50,24 @@ let groupTree = Vue.component('groupTree', {
     methods: {
         // 初始化ztree
         init() {
+            // 获取当前的集合
+            this.znodes.forEach(item => {
+                this.$set(item,"nodeTitle",item.name);
+                if(item.allowAss == 1){ // 证明是叶子节点
+                    var count = "";
+                    $.ajax({
+                        type: "GET",
+                        url: baseURL + "nodegroup/getNodeCount?id="+item.id,
+                        async: false,
+                        dataType: "json",
+                        success: function (r) {
+                           count = r.data;
+                        }
+                    });
+                    this.$set(item,"name",item.name + "     <font color='gray'>("+ count +")</font>");
+                }
+            });
+            // 生成树结构
             var tree = $.fn.zTree.init($("#treeDemo" + this.node.id), this.setting, this.znodes);
             tree.expandAll(true);
         },
@@ -121,12 +143,12 @@ let groupTree = Vue.component('groupTree', {
     },
     watch: {
         // 监听树节点的变化更新树
-        znodes: function (val) {
+       /* znodes: function (val) {
             this.init();
-        },
+        },*/
     },
     mounted() {
-        this.init();
+         this.init();
     }
 });
 
@@ -262,7 +284,7 @@ var vue = new Vue({
             } else {
                 url = "nodegroup/update";
             }
-            vue.$set(vm.nodeGroup, "pid", vue.nodeGroup.parentGroup.id);
+            vue.$set(vue.nodeGroup, "pid", vue.nodeGroup.parentGroup.id);
             vue.$set(vue.nodeGroup, "systemId", vue.system == null ? null : vue.system.id);
             if (vue.nodeGroup.id) {
                 vue.nodeGroup.pid = vue.nodeGroup.pids = vue.nodeGroup.systemId = null;

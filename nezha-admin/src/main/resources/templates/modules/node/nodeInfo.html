@@ -152,72 +152,6 @@
                 </div>
             </div>
 
-            <!-- U位大小 -->
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'node.uSize'/>(U)</div>
-                <div class="col-sm-9">
-                    <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
-                           v-model.trim="$v.nodeInfo.uSize.$model"
-                           placeholder="<@spring.message 'node.uSize'/>(U)"/>
-                    <span class="required-symbol"
-                          v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
-                    <div class="form-control_error-msg"
-                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
-                        <@spring.message 'validate.common.positiveInteger'/>
-                    </div>
-                    <div class="form-control_error-msg"
-                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
-                        <@spring.message 'validate.common.required'/>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 机房名称 -->
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'node.room.name'/></div>
-                <div class="col-sm-9">
-                    <multiselect :options="rooms" label="roomName" :disabled="disabledFlag" :show-labels="false"
-                                 @close="getCabinets($event),$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()"
-                                 v-model="nodeInfo.nodeRoom" @open="checkUsize()"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                </div>
-            </div>
-
-            <!-- 机柜名称 -->
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.name'/></div>
-                <div class="col-sm-9">
-                    <multiselect :options="cabinets" label="name" :disabled="disabledFlag" :show-labels="false"
-                                 @close="getStarts($event),$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
-                                 v-model="nodeInfo.cabinetId" @open="checkNodeRoom()"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                    <span class="required-symbol"
-                          v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">*</span>
-                    <div class="form-control_error-msg"
-                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
-                        <@spring.message 'validate.common.required'/>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 机柜起始位置 -->
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'node.cabinetStart'/></div>
-                <div class="col-sm-9">
-                    <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
-                                 v-model="nodeInfo.cabinetStart" @open="checkCabStart()"
-                                 @blur="$v.nodeInfo.uSize.$touch()"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                    <span class="required-symbol"
-                          v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">*</span>
-                    <div class="form-control_error-msg"
-                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">
-                        <@spring.message 'validate.common.required'/>
-                    </div>
-                </div>
-            </div>
-
             <!-- 在线状态 -->
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'common.onLineState'/></div>
@@ -232,6 +166,82 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 位置信息 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><@spring.message 'node.position.information'/>:</div>
+                <div class="col-sm-9">
+
+                    <div class="add-box2">
+
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'node.uSize'/>(U)</div>
+                            <div class="col-sm-8">
+                                <input type="text" class="form-control"
+                                       :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
+                                       v-model.trim="$v.nodeInfo.uSize.$model"
+                                       placeholder="<@spring.message 'node.uSize'/>(U)"/>
+                                <span class=""
+                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
+                                <div class="form-control_error-msg"
+                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
+                                    <@spring.message 'validate.common.positiveInteger'/>
+                                </div>
+                                <div class="form-control_error-msg"
+                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
+                                    <@spring.message 'validate.common.required'/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'node.room.name'/></div>
+                            <div class="col-sm-8">
+                                <multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
+                                             :show-labels="false"
+                                             @close="getCabinets($event),$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()"
+                                             v-model="nodeInfo.nodeRoom" @open="checkUsize()"
+                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'node.cabinet.name'/></div>
+                            <div class="col-sm-8">
+                                <multiselect :options="cabinets" label="name" :disabled="disabledFlag"
+                                             :show-labels="false"
+                                             @close="getStarts($event),$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
+                                             v-model="nodeInfo.cabinetId" @open="checkNodeRoom()"
+                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                <span class="add-box2-required-symbol"
+                                      v-if="nodeInfo.nodeRoom != null">*</span>
+                                <div class="form-control_error-msg"
+                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
+                                    <@spring.message 'validate.common.required'/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'node.cabinetStart'/></div>
+                            <div class="col-sm-8" style="position:relative;">
+                                <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
+                                             v-model="nodeInfo.cabinetStart" @open="checkCabStart()"
+                                             @blur="$v.nodeInfo.uSize.$touch()"
+                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                <span class="add-box2-required-symbol"
+                                      v-if="nodeInfo.nodeRoom != null">*</span>
+                                <div class="form-control_error-msg"
+                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">
+                                    <@spring.message 'validate.common.required'/>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
 
             <!-- snmp端口 -->
             <div class="form-group" v-show="nodeInfo.type != null && nodeInfo.type.code == 2">
@@ -303,5 +313,31 @@
 </div>
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
 <#include "/js/modules/node/nodeInfo.js">
+
+<style>
+    .add-box2 {
+        font-size: 13px;
+        border: 1px solid #cccccc;
+        width: 90%;
+        border-radius: 4px;
+        padding: 15px 0 0 0;
+    }
+
+    .add-box2 .form-group {
+        margin-bottom: 15px;
+    }
+
+
+    /*添加框中必填提示*的style*/
+    .add-box2-required-symbol{
+        position: absolute;
+        display: inline-block;
+        top: 7px;
+        left: 205px;
+        color: #f57f6c;
+        font-size: 20px;
+    }
+
+</style>
 </body>
 </html>

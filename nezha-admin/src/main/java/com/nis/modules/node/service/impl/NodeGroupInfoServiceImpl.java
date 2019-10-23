@@ -418,4 +418,17 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
         return list == null || list.size() < 1;
     }
+
+    /**
+     * 根据节点组ID 获取包含的节点个数
+     * @param id
+     * @return
+     */
+    @Override
+    public Integer getNodeCount(Long id) {
+        // 判断是否为叶子节点组 暂未
+        // 获取当前节点组包含的节点个数
+        Integer nodeCount = nodegroupInfoDao.getNodeCount(id);
+        return nodeCount;
+    }
 }

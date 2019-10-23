@@ -74,6 +74,7 @@ public enum RCode {
 	NODEGROUP_PARENTIDS_NOT_MODIFIED(202012, "nodegroup_parentids_not_modified"), // 节点组pidS不许修改
 	NODEGROUP_PARENT_SYSTEM_NOT_EQUALS(202013, "nodegroup_parent_system_not_equals"), // 父级级节点组系统ID不同
 	NODEGROUP_NOT_EXISTS_THIS_SYSTEM(202014, "nodegroup_not_exists_this_system"),     // 节点组不在这个业务系统中
+	NODEGROUP_ID_ISNULL(202015, "nodegroup_id_isnull"),            // 节点组id不能为Null
 
 	NODEROOM_NAME_DUPLICATE(203001, "roomname_duplicate_error"),   // 机房名称重复
 	NODEROOM_ROW_OCCUPIED(203002,"row_occupied_error"),            // 机房行号已被占用

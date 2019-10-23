@@ -49,4 +49,9 @@
         SELECT ni.*,(SELECT NAME FROM nodegroup_info WHERE id = ni.pid) AS pname FROM nodegroup_info ni WHERE ni.id =
          #{id} AND ni.del_flag = 0
     </select>
+
+    <!-- 查询当前节点组下包含的节点数 -->
+    <select id="getNodeCount" resultType="integer">
+        SELECT COUNT(1) FROM node_group_rel ngr WHERE ngr.group_id = #{id} AND ngr.del_flag = 0
+    </select>
 </mapper>

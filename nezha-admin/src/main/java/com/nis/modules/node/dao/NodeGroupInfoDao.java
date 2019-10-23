@@ -25,4 +25,7 @@ public interface NodeGroupInfoDao extends BaseMapper<NodeGroupInfoEntity> {
 
     // 节点组详情查询
     NodeGroupInfoEntity detail(Long id);
+
+    // 获取当前节点组包含的节点个数
+    Integer getNodeCount(Long id);
 }

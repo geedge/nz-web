@@ -76,7 +76,8 @@ class NodeGroupInfoController {
     @PutMapping("/update")
     public R update(@RequestBody NodeGroupInfoEntity nodegroupInfo) {
         ValidateUtils.is(nodegroupInfo).notNull(RCode.NOT_NULL_ERROR)
-                .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL);
+                .and(nodegroupInfo.getName()).notNull(RCode.NODEGROUP_NAME_ISNULL)
+                .and(nodegroupInfo.getId()).notNull(RCode.NODEGROUP_ID_ISNULL);
         nodegroupInfoService.updateNodeGroupInfo(nodegroupInfo);
         return R.ok();
     }
@@ -87,7 +88,7 @@ class NodeGroupInfoController {
     public R groupNameCheck(Long id, String name, Long pid, Long systemId) {
         ValidateUtils.is(name).notNull(RCode.NODEGROUP_NAME_ISNULL).and(pid).notNull(RCode.NODEGROUP_PID_ISNULL);
 
-        if (nodegroupInfoService.groupNameCheck(id, name, pid,systemId)) {
+        if (nodegroupInfoService.groupNameCheck(id, name, pid, systemId)) {
             return R.ok();
         }
         return R.error(RCode.NODEGROUP_NAME_DUPLICATE);//节点组名称重复错误
@@ -126,5 +127,18 @@ class NodeGroupInfoController {
 
         PageUtils page = nodegroupInfoService.assList(params);
         return R.ok(page);
+    }
+
+
+    /**
+     * 获取当前节点组包含的节点个数
+     *
+     * @return
+     */
+    @GetMapping("/getNodeCount")
+    public R getNodeCount(Long id) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_ID_ISNULL);
+        Integer nodeCount = nodegroupInfoService.getNodeCount(id);
+        return R.ok(nodeCount);
     }
 }

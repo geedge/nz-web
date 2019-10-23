@@ -35,5 +35,8 @@ public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
     PageUtils assList(Map<String, Object> params);
 
     boolean isCurrentSystem(Long [] ids);
+
+    // 根据当前节点组ID获取包含的节点个数
+    Integer getNodeCount(Long id);
 }
 
