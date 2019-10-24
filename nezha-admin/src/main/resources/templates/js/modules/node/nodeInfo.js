@@ -23,7 +23,7 @@ $(function () {
             {label: "test", name: 'state', width: 60, sortable: false, hidden: true}//此列用作获取状态值
         ],
         viewrecords: true,
-        height: top.$(".content").height()-130,
+        height: typeof(isGroup) != "undefined" && isGroup ? top.$(".content").height()-167 : top.$(".content").height()-130,
         rowNum: 15,
 		rowList : [15,30,50],
         /*height: 385,

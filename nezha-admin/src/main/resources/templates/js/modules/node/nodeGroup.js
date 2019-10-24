@@ -1,4 +1,5 @@
 <script>
+var isGroup = true;
     //  定义为 nodegroup 的私有组件
 let groupTree = Vue.component('groupTree', {
     template: "#treeTemplate",
