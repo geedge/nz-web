@@ -52,6 +52,7 @@ $(function () {
 // Vue.component("select-panel", pannel);
 // Vue.component("left-tree", znodeTree);
 Vue.component("nz-node-selector",selector);
+Vue.component("nz-detect-addtype",addType)
 // Vue.component("right-table",gqGridTable);
 
 var nameRepeat = function (name, deteSet) {
@@ -118,7 +119,9 @@ var vm = new Vue({
         nodeOrGroupEmptyMsg:"",
         deteTypeIsNull:false,
         userGroupsEmpty:false,
-        selectorReset:true
+        selectorReset:true,
+        openAddTypeWindow:false,
+        typeId:null
     },
     created: function () {
         this.getSetState();
@@ -336,6 +339,25 @@ var vm = new Vue({
             });
             var ps3 = new PerfectScrollbar('.nodeTree');
         },
+        openAddTypePannel: function () {
+            var index = layer.open({
+                area: ['1000px', '100%'],
+                shade: 0,
+                title: "",
+                type: 1,
+                maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
+                content: $("#add-type-layer-view"),
+                zIndex: layer.zIndex,
+                success: function(layero){
+                    layer.setTop(layero); //重点2
+                },
+            });
+            var ps3 = new PerfectScrollbar('.nodeTree');
+        },
         getTabDatas:function(tabData){
             vm.nodeInfosChecked=tabData;
         },
@@ -455,6 +477,10 @@ var vm = new Vue({
             temp.$nextTick(() => {
                 temp.selectorReset = true
             });
+        },
+        openAddDetectType:function(index){
+            this.openAddTypeWindow=true;
+            this.openAddTypePannel();
         }
     },
     watch:{

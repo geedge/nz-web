@@ -4,7 +4,9 @@
 <head>
     <title><@spring.message 'deteSet'/></title>
     <link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/addDetectType.css">
     <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css">
+
 </head>
 <#include "/header.html">
 <body>
@@ -58,7 +60,11 @@
                                  :allow-empty="false"
                                  :show-labels="false"
                                  @select="getDeteTypeDetail"
-                    ></multiselect>
+                    >
+                        <div slot="afterList">
+                            <div style="height: 25px;line-height:25px;text-align: center;" @click="openAddDetectType"><i class="glyphicon glyphicon-plus"></i></div>
+                        </div>
+                    </multiselect>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg" v-if="$v.deteSet.typeId.$dirty && !$v.deteSet.typeId.required">
                         <@spring.message 'validate.common.required'/>
@@ -68,6 +74,12 @@
                     </div>
                 </div>
             </div>
+            <div v-show="openAddTypeWindow" id="add-type-layer-view">
+                <nz-detect-addtype
+                        :type-id="typeId"
+                ></nz-detect-addtype>
+            </div>
+
             <div class="form-group" v-show="typeParams !=null && typeParams.length>0">
                 <div class="col-sm-2 control-label"><@spring.message 'validate.deteSet.param'/>:</div>
                 <div class="col-sm-9">
@@ -183,10 +195,11 @@
 </div>
 
 </body>
-
+<#include "/modules/detect/addTypeTemplate.html"/>
 <#include "/modules/common/template.html"/>
 <#include "main.html"/>
 <#include "/js/modules/common/componets.js"/>
+<#include "/js/modules/detect/addType.js"/>
 <#include "/js/modules/detect/main.js"/>
 <#include "/js/modules/detect/deteSet.js"/>
 </html>

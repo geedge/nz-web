@@ -1,0 +1,355 @@
+<script type="text/x-template" id="addTypeTemplate">
+    <div class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-sm-2 control-label">名称:</div>
+                <div class="col-sm-9"><!--名称-->
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| !$v.deteType.name.nameRepeat}"
+                           v-model.trim="$v.deteType.name.$model"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.required">
+                        必填项
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat">
+                        名称重复
+                    </div>
+                </div>
+            </div>
+            <div class="form-group"> <!--监测方式-->
+                <div class="col-sm-2 control-label">监测方式:</div>
+                <div class="col-sm-9">
+                    <multiselect v-model="defaultMethod" :options="deteMethods" placeholder="..." track-by="code"
+                                 label="value" :searchable="false"  :allow-empty="false"
+                                 :show-labels="false"></multiselect>
+                </div>
+
+            </div>
+            <div class="form-group"><!--监测间隔-->
+                <div class="col-sm-2 control-label">监测间隔:</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer}"
+                           v-model.trim="$v.deteType.deteInterval.$model"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer">整数类型
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group"><!--内容-->
+                <div class="col-sm-2 control-label">内容:</div>
+                <div class="col-sm-9">
+                    <textarea v-model.trim="$v.deteType.content.$model" class="form-control"></textarea>
+                </div>
+            </div>
+
+            <div class="form-group"><!--元数据-->
+                <div class="col-sm-2 control-label">元数据:</div>
+                <div class="col-sm-9">
+                    <div class="add-box">
+                        <div class="add-box_head">
+                				<span class="add-box_head_meta">
+                					<span>Field-Type</span>
+                                    <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
+                				</span>
+                            <span class="add-box_head_meta">
+                					<span>Data-Type</span>
+                                <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
+                				</span>
+                            <span>Name</span>
+                        </div>
+                        <div class="add-meta-box_rows">
+                            <div class="add-box_row"
+
+                                 v-for="(meta,index) in deteType.deteTypeMetas"
+                                 :class="{'danger':meta.passFlag!=undefined&&!meta.passFlag}"
+                                 v-if="meta.delFlag=='0'" >
+                                <!--<div style="width:800px;height:1px;margin:0px auto;padding:0px;background-color:black;overflow:hidden;"></div>-->
+                                <div class="add-box_row1_meta">
+                                    <span class="add-box_tag1">{{meta.fieldType.value}}</span>
+                                </div>
+                                <div class="add-box_row1_meta">
+                                    <span class="add-box_tag2">{{meta.dataType.value}}</span>
+                                </div>
+                                <span class="add-box_name" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
+                                <span class="add-box_op" @click="openMetaWindow(index)"><i class="fa fa-pencil-square-o"></i></span>
+                                <span class="add-box_del" @click="delMeta(index)"><i class="fa fa-trash-o"></i></span>
+
+                            </div>
+                        </div>
+                        <div class="add-box_foot">
+                            <span @click="openMetaWindow()"><i class="fa fa-plus"></i></span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label">参数:</div>
+                <div class="col-sm-9">
+                    <div class="add-box" >
+                        <div class="add-box_head">
+                            <span class="add-box_head_param">Name</span>
+                            <span>Default</span>
+                        </div>
+                        <div class="add-param-box_rows" id="r-dete-param-container">
+                            <template v-for="(param,index) in deteType.deteTypeParams">
+                                <nz-add-param
+                                    :dete-param="param"
+                                    :index="index"
+                                    :dete-params="deteType.deteTypeParams"
+                                    @ask-for-swap="swapParam"
+                                    @del-param="delParam"
+                                ></nz-add-param>
+                            </template>
+
+                        </div>
+                        <div class="add-box_foot">
+                            <span @click="addParam"><i class="fa fa-plus"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--<div class="form-group">
+                <div class="col-sm-2 control-label">I18n Code:</div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control&#45;&#45;error': $v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required }"
+                           v-model.trim="$v.deteType.i18nCode.$model"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required"><@spring.message
+                        'validate.common.required'/>
+                    </div>
+
+                </div>
+            </div>-->
+
+            <div class="form-group"><!--备注-->
+                <div class="col-sm-2 control-label">备注:</div>
+                <div class="col-sm-9">
+                    <textarea v-model.trim="$v.deteType.remark.$model" class="form-control"></textarea>
+                </div>
+            </div>
+        </form>
+
+        <div id="metaWindow" style="height:100%;display:none;">
+            <nz-add-meta
+                ref="addMetaWindow"
+                :dete-metas="deteType.deteTypeMetas"
+                :dete-method="defaultMethod"
+                :field-types="fieldTypes"
+                :data-types="dataTypes"
+                :dic-types="dicTypes"
+            ></nz-add-meta>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="addDetectMata">
+    <div style="height:100%">
+        <!-- meta列表 -->
+        <div class="meta-win_list"  >
+            <template v-for="(meta,index) in deteMetas" v-if="reset">
+                <detect-meta
+                        ref="r-detect-meta"
+                        :dete-meta="meta"
+                        :dete-metas="deteMetas"
+                        :index="index"
+                        :dete-method="deteMethod"
+                        :field-types="fieldTypes"
+                        :data-types="dataTypes"
+                        :dic-types="dicTypes"
+                        :del-meta="delMeta"
+                        @up-meta="getOpMeta"
+                        @swap-meta="swapMeta"
+                ></detect-meta>
+            </template>
+            <!-- 新增按钮 -->
+            <div class="meta-win_list-foot">
+                <span @click="addMeta"><i class="fa fa-plus"></i></span>
+            </div>
+        </div>
+        <!-- meta详情 -->
+        <div class="meta-details" id="meta-details" >
+
+        </div>
+    </div>
+
+    </div>
+
+</script>
+
+<script type="text/x-template" id="detectMata">
+    <div>
+        <div class="meta-win_item" v-id:[metaDomIdKey]="index">
+            <span v-show="deteMeta.delFlag=='1'" style="display: inline-block" @click="recSelf"><i class="fa fa-undo"></i>&nbsp;&nbsp;</span>
+            <div class="meta-win_item_name" style="display: inline-block"
+                 :class="{'meta-win_item_name_unpass':deteMeta.passFlag!=null&&deteMeta.passFlag!=undefined&&!deteMeta.passFlag,'meta-win_item_name_del':deteMeta.delFlag=='1'}">{{deteMeta.name}}</div>
+            <div style="text-align:right;">
+                <span style="color: red;position:absolute;top:2px;left:2px;" class="myicon-new" v-show="deteMeta.new"></span>
+                <span class="add-box_tag1">{{deteMeta.fieldType.value}}</span>
+                <span class="add-box_tag2">{{deteMeta.dataType.value}}</span>
+            </div>
+        </div>
+        <div v-id:[metaDetailDomIdKey]="index"  class="r-dete-meta-detail" >
+            <div>
+                <form class="form-horizontal" >
+                    <div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'common.name'/>:</div>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control  nameEvent" v-model="$v.deteMeta.name.$model"/>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.name.$dirty&&!$v.deteMeta.name.required"><@spring.message 'validate.common.required'/></div>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.name.$dirty&&!$v.deteMeta.name.inPageNameRepeat"><@spring.message 'validate.deteType.name.repeat'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'deteType.fieldType'/>:</div>
+                            <div class="col-sm-9">
+                                <multiselect
+                                        :options="fieldTypes"
+                                        placeholder="..."
+                                        track-by="code"
+                                        label="value"
+                                        :searchable="false"
+                                        :allow-empty="false"
+                                        v-model="$v.deteMeta.fieldType.$model"
+                                        :show-labels="false">
+                                    <template slot="option" slot-scope="props">
+                                        <div>
+                                            <span style="font-weight: bold;">{{props.option.value}}</span>
+                                            <span style="font-size: 2px">{{props.option.remark}}</span>
+                                        </div>
+                                    </template>
+
+                                </multiselect>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.fieldType.$dirty&&!$v.deteMeta.fieldType.required"><@spring.message 'validate.common.required'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'deteType.dataType'/>:</div>
+                            <div class="col-sm-9">
+                                <multiselect
+                                        :options="dataTypes"
+                                        placeholder="..."
+                                        track-by="code"
+                                        label="value"
+                                        v-model="$v.deteMeta.dataType.$model"
+                                        :searchable="false"
+                                        :allow-empty="false"
+                                        :show-labels="false">
+                                    <template slot="option" slot-scope="props">
+                                        <div>
+                                            <span style="font-weight: bold;">{{props.option.value}}</span>
+                                            <span style="font-size: 2px">{{props.option.remark}}</span>
+                                        </div>
+                                    </template>
+                                </multiselect>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.dataType.$dirty&&!$v.deteMeta.dataType.required"><@spring.message 'validate.common.required'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'deteType.dataLenth'/>:</div>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="$v.deteMeta.dataLenth.$model"/>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.dataLenth.$dirty&&!$v.deteMeta.dataLenth.required"><@spring.message 'validate.common.required'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group" v-show="deteMethod.code=='2'">
+                            <div class="col-sm-3 control-label">OID:</div>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="$v.deteMeta.oid.$model"/>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="deteMethod.code=='2'&&$v.deteMeta.oid.$dirty&&!$v.deteMeta.oid.required"><@spring.message 'validate.common.required'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'deteType.unit'/>:</div>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" v-model="$v.deteMeta.unit.$model"/>
+                                <span class="required-symbol_meta-model">*</span>
+                                <div class="form-control_error-msg" v-if="$v.deteMeta.unit.$dirty&&!$v.deteMeta.unit.required"><@spring.message 'validate.common.required'/></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message 'deteType.dicType'/>:</div>
+                            <div class="col-sm-9">
+                                <multiselect
+                                        :options="dicTypes"
+                                        placeholder="..."
+                                        :searchable="false"
+                                        value="dataType"
+                                        v-model="$v.deteMeta.dicType.$model"
+                                        :show-labels="false">
+                                    <template slot="option" slot-scope="props">
+                                            <div :id="'position'+props.option.type+index" style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>
+                                            <div style="line-height: 30px"id="title" @mouseenter="mouseAt(props.option.type)" @mouseleave="mouseout">{{props.option.type}}</div>
+                                            <div :id="'items'+props.option.type" style="display:none;">
+                                                <div style="color: white;" v-for="mapping in props.option.mappings">
+                                                    {{mapping.val}}:{{mapping.mapping}}
+                                                </div>
+                                            </div>
+                                    </template>
+
+                                </multiselect>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-3 control-label"><@spring.message "common.remark"/>:</div>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" v-model="$v.deteMeta.remark.$model"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group form-group_opbox_meta-model" >
+                            <div>
+                                <!--                        <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 45px; padding: 3px 0;" @click="saveOrUpdate"><i class="fa fa-check"></i></button>-->
+                                <div style="display:inline-block;width:130px;"></div>
+                                <button title="删除" @click="delSelf(index)" type="button" class="btn btn-danger" style="width: 45px; padding: 3px 0;"><i class="fa fa-trash-o"></i></button>
+                                <!--                        <button title="恢复" @click="recMeta($event)" type="button" class="btn btn-success" style="width: 45px; padding: 3px 0;display: none;"><i class="fa fa-undo"></i></button>-->
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <pre>{{$v.deteMeta}}</pre>
+            </div>
+            <div class="shadow"></div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="addDetectParam" >
+    <div draggable="true" :index="index">
+        <div class="add-box_row" v-show="!editSwitch" v-id:[listPreKey]="index" :class="{'text-disabled':deteParam.delFlag=='1'}">
+            <div class="add-box_row1_param">
+                <span>{{deteParam.name}}</span>
+            </div>
+            <span class="add-box_name">{{deteParam.defVal}}</span>
+            <span class="add-box_op" :id="'add-box_op_edit_'+index" @click="editSelf"><i class="fa fa-pencil-square-o"></i></span>
+            <span :class="{'add-box_del':deteParam.delFlag=='0','add-box_rec':deteParam.delFlag=='1'}" @click="deteParam.delFlag=='0'?delSelf():recSelf()"><i :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1'}"></i></span>
+        </div>
+        <div class="add-box_row" v-show="editSwitch" v-id:[editPreKey]="index">
+            <div :id="'r-layer-warn-defval-'+index" >
+
+            </div>
+            <form class="form-inline">
+                <div class="form-group form-group-left">
+                    <input type="text" :id="'r-param-name-input-'+index" :class="{'form-control--error':$v.deteParam.name.$dirty&&(!$v.deteParam.name.required||!$v.deteParam.name.inPageNameRepeat)}" class="form-control"  placeholder="请输入名称" v-model="$v.deteParam.name.$model">
+
+                </div>
+                <div class="form-group form-group-right">
+                    <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
+                </div>
+                <span class="add-box_ok" @click="submitSelf"><i class="glyphicon glyphicon-ok"></i></span>
+            </form>
+        </div>
+    </div>
+
+</script>
