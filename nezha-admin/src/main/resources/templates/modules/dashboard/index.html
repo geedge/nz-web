@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<#import "/spring.ftl" as spring>
+<html>
+<head>
+<title>仪表盘</title>
+<link rel="stylesheet" href="${request.contextPath}/statics/css/dashboard.css">
+<#include "/header.html">
+</head>
+<style>
+</style>
+<body>
+<div id='dashboardView'>
+	<!-- 仪表盘操作以及展示页面 -->
+	<div v-show="!dashboardSetting">
+		<div class="grid-btn">	
+			<div class="input-group col-sm-2" style="float:right !important">
+				<span class="input-group-addon" @click="$('#filterTime').click();"><i class="fa fa-calendar"></i></span>
+				<input type="text" class="form-control" id='filterTime' readonly  placeholder='时间选择' style="width:300px;margin-bottom:0px">
+			</div>
+			<a class="btn btn-default" id="add" title="<@spring.message 'common.add'/>" @click="dashboardSetting=true"><i class="glyphicon glyphicon-plus"></i></a>
+			<a class="btn btn-default"  title="<@spring.message 'common.edit'/>"><i class="glyphicon glyphicon-floppy-disk"></i></i></a>
+			<a class="btn btn-default"  title="<@spring.message 'mission.start'/>"><i class="glyphicon glyphicon-refresh"></i></a>
+		</div>
+		<hr/>
+		<!-- 图表展示区 -->
+		<input style="display:none" id="dashboardId"/>
+		<div class="demo" id="showPanel"> 
+			<div class='gridster'>
+				<ul id='dashboardChartsShow'>
+					<li data-row='1' data-col='5' data-sizex='5' data-sizey='4'>
+						<header style='position:relative'>
+							<a class='btn btn-default dropdown-toggle' data-toggle='dropdown' style='display:block;border:none;width:33.3%;margin:0 auto'>
+								<div style='text-align: center;'>
+									<span>ttt</span> <span class='caret'></span>
+								</div>
+							</a>
+							<ul class='dropdown-menu' style='width:150px;left:50%;margin-left:-75px;background:#ffffff;position:absolute;' role='menu'>
+								<li><a href='#' onclick=''>修改</a></li>
+								<li class='divider'></li>
+								<li><a href='#' onclick=''>删除</a></li>
+							</ul>
+						</header>
+						<div id='' style='width: 200px;height:200px;overflow-y:auto;' class='right-bottom'></div>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+	<!-- 仪表盘配置界面 -->
+	<#include "/modules/dashboard/setting.html"/>
+</div>
+
+</body>
+
+<#include "/js/modules/dashboard/dashboard.js"/>
+</html>

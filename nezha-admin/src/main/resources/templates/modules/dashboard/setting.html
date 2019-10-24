@@ -1,0 +1,404 @@
+<html>
+<head>
+	<meta name="decorator" content="default"/>	
+</head>
+<body>
+	<div class="container" v-show='dashboardSetting'>
+    <!-- 工具栏 -->
+	<div class="panel">
+		<!-- 面板展示栏  -->
+		<div class="panel-title">
+		</div>
+		<div class="panel-tools pull-right">
+				<!-- 返回操作 -->
+				<a title="" class="btn btn-default" @click="dashboardSetting=false">
+					<i class="fa fa-arrow-left"></i>
+				</a>
+				<!-- 保存操作 -->
+				<a title="" class="btn btn-default" onclick="savePanelInfo()">
+					<i class="glyphicon glyphicon-floppy-disk"></i>
+				</a>
+				<a title="" class="btn btn-default" onclick="setThresholdValue()">
+					<i class="fa fa-desktop"></i>
+				</a>
+		</div>
+	</div>
+    
+    <!-- 图表头 标题名称以及描述信息 -->
+    <div style="height: 20px;background-color: #F5F5F5;text-align: center;">
+    	<span id="panelDescribe"><i class="icon-exclamation-sign" title=""></i></span>
+    	<span id="panelTitle"></span>
+    </div>
+    
+    <!-- 图表展示位置 -->
+    <div class="top" id="chart" v-show="dashboard.chartType.code==1"></div>
+    <div class="top" id="tableChart" v-show="dashboard.chartType.code==2"></div>
+    <div class="top" id="singleChart" v-show="dashboard.chartType.code==3"></div>
+    <hr/>
+    
+    <!-- 配置设置 -->
+    <form id="panelConfigForm">
+    	<input style="display:none" name="dashboardId" id="dashboardId" value=""/>
+    	<input style="display:none" name="chartId" id="chartId" value=""/>
+    	<input style="display:none" id="chartType"  value=""/>
+    	<input style="display:none" name="dbInfo.type" value="" id="dbInfoId"/>
+	    <div class="bottom">
+	        <div class="left">
+	            <div class="btn btn-one btn-picture" :style='{backgroundImage:(query?"url(${request.contextPath}/statics/images/query.png)":"url(${request.contextPath}/statics/images/query-active.png)"),backgroundSize: "cover",backgroundRepeat: "noRepeat"}' @click='changeSetShow(1)'></div>
+	            <div class="btn btn-two btn-picture" :style='{backgroundImage:(chart?"url(${request.contextPath}/statics/images/chart.png)":"url(${request.contextPath}/statics/images/chart-active.png)"),backgroundSize: "cover",backgroundRepeat: "noRepeat"}' @click='changeSetShow(2)'></div>
+	            <div class="btn btn-three btn-picture" :style='{backgroundImage:(set?"url(${request.contextPath}/statics/images/set.png)":"url(${request.contextPath}/statics/images/set-active.png)"),backgroundSize: "cover",backgroundRepeat: "noRepeat"}' @click='changeSetShow(3)'></div>
+	        </div>
+	        
+	        <!-- 数据库类型选项 -->
+	        <div class="right ri-flex chart1"  id='databaseChoose' v-show="!query">
+	            <div class="right_top">
+	               	数据库: <multiselect class="input-medium required formatSelect" placeholder="DatabaseType" v-model="dashboard.databaseType" :options="databaseType" label="value" :show-labels="false"></multiselect>
+					<span title="" id="addNewQuery" class="btn btn-default" onclick="addNewQuery()" style="position: relative;top: 0px;right: 20px;float:right">
+						<i class='glyphicon glyphicon-plus'></i>
+					</span>
+	            </div>
+            	<div class="right-bottom">
+	                <div class="box-parent">
+	                    <div class="box-child">
+	                        <div class="box">
+		                        <div style="height:40px;background-color: #B0C4DE;text-align: center;">
+		                        <label style="position: relative;top: 10px;float:left;left:5px">名称:</label>
+		                        <input  class="input-mini required" onblur="changeLegend(this)" name='' value="series 1" style="position: relative;top: 8px;float:left;left:8px"/>
+			                        <span title="" class="btn btn-default" onclick="removeQuery(this)" style="position: relative;top: 4px;right: 20px;float:right">
+										<i class='fa fa-trash-o'></i>
+									</span>
+							    </div>
+	                           <textarea id="0" rows="" cols="" style='width:100%;height:200px' class='userSql' onblur="queryData(this)" name=""></textarea>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	        
+	        
+	        <!-- 图表类型配置选项 -->
+	        
+	        <div class="right ri-flex chart1"  id='chartTypeChoose'  v-show="!chart">
+	            <div class="right_top">
+	            	图表类型: <multiselect class="input-medium required formatSelect" placeholder="ChartType" v-model="dashboard.chartType" :options="chartType" title="" label="value" :show-labels="false"></multiselect>
+	            </div>
+	            
+	            <!-- 点、线、柱图设置区域 -->
+	            <div class="right-bottom statisticalChart" v-show="dashboard.chartType.code==1">
+	                <div class="box-parent">
+	                    <div class="box-child">
+	                        <div class="box">
+	                            <ul>
+	                                <li class="title">图表类型</li>
+	                                <li class="list">
+	                                    <div class="li-left">折线：</div>
+	                                    <span class='chooseOption'><input id="isLine" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">圆点：</div>
+	                                    <span class='chooseOption'><input id="isScatter" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">柱状：</div>
+	                                    <span class='chooseOption'><input id="isBar" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                </li>
+	                            </ul>
+	                            <ul>
+	                                <li class="title">样式</li>
+	                                <li class="list">
+	                                    <div class="li-left">填充颜色：</div>
+								        <span class='chooseOption'>
+								        	<multiselect class="input-small required formatSelect" v-model="chartStatistical.fill" :options="fills" :show-labels="false"></multiselect>
+								        </span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">线宽:</div>
+	                                    <span class='chooseOption'>
+											<multiselect class="input-small required formatSelect" v-model="chartStatistical.lineWidth" :options="lineWidths"  :show-labels="false"></multiselect>
+										</span>
+	                                </li>
+	                            </ul>
+	                        </div>
+	                        <div class="box">
+								 <ul>
+	                                <li class="title">左Y轴:</li>
+	                                <li class="list">
+	                                    <div class="li-left">展示：</div>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch'  id="leftYOpen" name="chartStatistical.yaxes"></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">名称：</div>
+	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setLeftYName(this)" placeholder="value" name="" value=""/></span>
+	                                </li>
+	                            </ul>
+	                            <ul>
+	                                <li class="title">右Y轴:</li>
+	                                <li class="list">
+	                                    <div class="li-left">展示：</div>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="rightYOpen"></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">名称：</div>
+	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setRightYName(this)" name="" value=""/></span>
+	                                </li>
+	                            </ul>
+	                            <ul>
+	                                <li class="title">X轴:</li>
+	                                <li class="list">
+	                                    <div class="li-left">展示：</div>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="xOpen"  name=""></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">名称：</div>
+	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setXName(this)" placeholder="time" name="" value=""/></span>
+	                                </li>
+	                            </ul>
+							</div>
+	                        <div class="box">
+	                        		 <div></div>
+									 <ul>
+		                                <li class="list">
+		                                    <div class="li-left">展示设置：</div>
+		                                    <span class='chooseOption'><input id="legendShow" data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' ></span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">X轴位置：</div>
+		                                     <span class='chooseOption'>
+								        	 	<multiselect class="input-small required formatSelect" v-model="chartStatistical.legendXPosition" :options="legendXPositions" label="value" :show-labels="false"></multiselect>
+								        	 </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">Y轴位置：</div>
+		                                     <span class='chooseOption'>
+								        	 	<multiselect class="input-small required formatSelect" v-model="chartStatistical.legendYPosition" :options="legendYPositions" label="value" :show-labels="false"></multiselect>
+								             </span>
+		                                </li>
+		                            </ul>
+							</div>
+	                    </div>
+	                </div>
+	            </div>
+	            
+	            <!-- 表格图设置区域  -->
+	             <div class="right-bottom tableChart" v-show="dashboard.chartType.code==3">
+	                <div class="box-parent">
+	                    <div class="box-child">
+	                        <div class="box">
+	                            <ul>
+	                                <li class="title"></li>
+	                                <li class="list">
+	                                    <div class="li-left">分页：</div>
+	                                    <span class='chooseOption'><input id="isPaging" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name="" value="" ></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">分页数量：</div>
+	                                    <span class='chooseOption'><input  class="input-mini required"  placeholder="10" id="tablePageSize" name="" onblur="setPageSize(this)" value="" disabled/></span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">字体大小：</div>
+	                                    <span class='chooseOption'><input id="tableFontSize" onblur="setTableFontSize(this)" class="input-mini required"  placeholder="5" name="" value="" /></span>
+	                                </li>
+	                            </ul>
+	                           <ul>
+	                                <li class="title"></li>
+	                                <li class="list">
+	                                    <div class="li-left">值：</div>
+								        <span class='chooseOption'>
+								        	<input  class="input-mini required"  placeholder="" name="" value="Value" disabled/>
+								        </span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">名称:</div>
+	                                    <span class='chooseOption'>
+											<input  class="input-mini required"  placeholder="Value" name="" value=""/>
+										</span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">小数位:</div>
+	                                    <span class='chooseOption'>
+											<input  class="input-mini required"  placeholder="2" id="decimal" name="" value="" onkeyup="this.value=this.value.replace(/\D/g,'')"/>
+										</span>
+	                                </li>
+	                            </ul>
+	                            <ul>
+	                                <li class="title"></li>
+	                                <li class="list">
+	                                    <div class="li-left">时间：</div>
+								        <span class='chooseOption'>
+								        	<input  class="input-normal required"  placeholder="" name="" value="Time" disabled/>
+								        </span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">名称:</div>
+	                                    <span class='chooseOption'>
+											<input  class="input-normal required"  placeholder="Time" name="" value="" />
+										</span>
+	                                </li>
+	                                <li class="list">
+	                                    <div class="li-left">时间格式:</div>
+	                                    <span class='chooseOption'>
+											<multiselect class="input-large required formatSelect" v-model="chartTable.timeFormat" :options="timeFormats" label="value" :show-labels="false"></multiselect>
+										</span>
+	                                </li>
+	                            </ul>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	            
+	            <!-- 单值图配置区域 -->
+		        <div class="right-bottom singleChart" v-show="dashboard.chartType.code==2">
+		                <div class="box-parent">
+		                    <div class="box-child">
+		                        <div class="box">
+		                            <ul>
+		                                <li class="title"></li>
+		                                <li class="list">
+		                                    <div class="li-left">字体大小：</div>
+		                                    <span class='chooseOption'><input id="singleFontSize"  class="input-mini required"  placeholder="" name="" value="" /></span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">小数位：</div>
+		                                    <span class='chooseOption'><input id="singleDecimal"  class="input-mini required"  placeholder="" name="" value=""/></span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">字体颜色：</div>
+		                                    <span class='chooseOption'><input  class="input-mini required singleColor"  placeholder="" name="" value=""/></span>
+		                                </li>
+		                            </ul>
+		                           <ul>
+		                                <li class="title"></li>
+		                                <li class="list">
+		                                    <div class="li-left">名称：</div>
+									        <span class='chooseOption'>
+									        	<input  class="input-mini required"  placeholder="" name="" value="" />
+									        </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">字体大小：</div>
+									        <span class='chooseOption'>
+									        	<input  class="input-mini required" id="singlePrefixFontSize" placeholder="" name="" value=""/>
+									        </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">字体颜色:</div>
+		                                    <span class='chooseOption'>
+												<input  class="input-mini required singleColor"  placeholder="" name="" value="" />
+											</span>
+		                                </li>
+		                            </ul>
+		                            <ul>
+		                                <li class="title"></li>
+		                                <li class="list">
+		                                    <div class="li-left">名称：</div>
+									        <span class='chooseOption'>
+									        	<input  class="input-mini required"  placeholder="" name="" value=""/>
+									        </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">字体大小：</div>
+									        <span class='chooseOption'>
+									        	<input  class="input-mini required" id="singleSuffixFontSize" placeholder="" name="" value=""/>
+									        </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">字体颜色:</div>
+		                                    <span class='chooseOption'>
+												<input id="colorPrefix" class="input-mini required singleColor"  placeholder="" name="" value=""/>
+											</span>
+		                                </li>
+		                            </ul>
+		                        </div>
+		                        
+		                        <div class="box">
+		            				<ul>
+		                                <li class="title"></li>
+		                                <li class="list">
+		                                    <div class="li-left">展示：</div>
+									        <span class='chooseOption'>
+									        	<input id="isGauge" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value="" >
+									        </span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">最小值:</div>
+		                                    <span class='chooseOption'>
+												<input  class="input-mini required"  placeholder="" name="" value="" />
+											</span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">最大值:</div>
+		                                    <span class='chooseOption'>
+												<input  class="input-mini required"  placeholder="" name="" value="" />
+											</span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">阈值:</div>
+		                                    <span class='chooseOption'>
+												<input id="isThreshold" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value=""  >
+											</span>
+		                                </li>
+		                                <li class="list">
+		                                    <div class="li-left">刻度:</div>
+		                                    <span class='chooseOption'>
+												<input id="isAxisLabelShow" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value="" >
+											</span>
+		                                </li>
+		                            </ul>
+		                            
+		                            <ul id="thresholdConfig" >
+		                            <li class="title">
+		                            	阈值
+		                            </li>
+		                            		<li class="list thresholdConfig">
+		                                    <div class="li-left">范围:</div>
+		                                    <span class=''>
+												<input  class="input-mini required"  placeholder="" name="" value="" />
+											</span>
+											<div class="li-left">颜色:</div>
+											<span class="meta-box__delbtn chooseOption"><a href="javascript:void(0)" title='' style='text-decoration:none;' onclick=''><font color="red" class="" style="font-size:30px;">×</font></a></span>
+		                                    <span class='chooseOption'>
+												<input  class="input-mini required singleColor"  placeholder="" name="" value="#333333" />
+											</span>
+		                                </li>
+		                            	<li class="list" style="text-align:center">
+		                                	<span title="" id="" class="btn btn-default" style="text-align:center">
+												<i class='glyphicon glyphicon-plus'></i>
+											</span>
+		                                </li>
+		                            </ul>
+		            			</div>
+		                    </div>
+		                </div>
+		            </div>
+		        </div>  
+		        
+		          <!-- chart框设置选项 -->
+		        <div class="right ri-flex chart1"  id='setting'  v-show="!set">
+		            <div class="right_top">
+		            </div>
+		            <div class="right-bottom">
+		                <div class="box-parent">
+		                    <div class="box-child">
+		                        <div class="box">
+		                          	<ul>
+		                                <li class="list">
+		                                    <div class="li-left">标题：</div>
+		                                    <span class='chooseOption'><input name="title" class="input-medium" type="text" placeholder="" maxlength="50"  value=''></span>
+		                                </li>
+		                            </ul>
+		                            <ul>
+		                                <li class="list">
+		                                    <div class="li-left">描述：</div>
+		                                    <span class='chooseOption'><textarea style="height:30px" name="describe" ></textarea></span>
+		                                </li>
+		                            </ul>
+		                        </div>
+		                    </div>
+		                </div>
+		            </div>
+		        </div>      
+	        </div>  
+    </form>
+</div>
+</body>
+</html>
