@@ -44,12 +44,15 @@
                         </div>
                     </td>
                 </tr>
+                <tr v-show="noRoomTip">
+                	<td>暂无数据</td>
+                </tr>
             </table>
         </div>
     </div>
 
     <!-- 行列表区域 -->
-    <div class="ranks">
+    <div class="ranks" v-show="!noRoomTip">
         <!--<div style="background-color: greenyellow;position: absolute;top: 0px;left: 0px;">
         </div>-->
         <div class="ranks-rows">
@@ -60,7 +63,9 @@
         <div class="ranks-body">
             <table>
                 <tr>
-                    <td v-for="n in rowList[0].length"><div class="ranks-col">{{n}}</div></td>
+                	<template v-if="rowList[0] !== undefined && rowList[0].length > 0">
+	                    <td v-for="n in rowList[0].length"><div class="ranks-col">{{n}}</div></td>
+                	</template>
                 </tr>
                 <tr v-for="item,index in rowList">
                     <td v-for="cab in item" :key="item.id">

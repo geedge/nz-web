@@ -168,7 +168,8 @@ var data = {
     cabs: [],           // 当前机房包含机柜集合
     rowList: [],        // 行列表数据
     readFlag: null,     // 控制表单readonly选项值
-    occUbit: null       // 机柜校验 前台提示行列信息
+    occUbit: null,      // 机柜校验 前台提示行列信息
+    noRoomTip: false
 };
 
 
@@ -213,7 +214,12 @@ var vm = new Vue({
                 async: false,
                 dataType: "json",
                 success: function (r) {
-                    data.roomList = r.page.list;
+                    if (!r.page.list) {
+                    	data.noRoomTip = true;
+                    } else {
+                    	data.roomList = r.page.list;
+                    	data.noRoomTip = false;
+                    }
                 }
             });
         },
@@ -270,19 +276,23 @@ var vm = new Vue({
             if (vm.q.name != null) {
                 page += "&name=" + vm.q.name;
             }
-
             $.ajax({
                 type: "GET",
                 url: baseURL + "room/list?limit=999" + page,
                 async: false,
                 dataType: "json",
                 success: function (r) {
-                    vm.roomList = r.page.list;
+                	if (r.page.list.length == 0) {
+                		vm.roomList = [];
+                		vm.noRoomTip = true;
+                	} else {
+                		vm.roomList = r.page.list;
+                		// 查询之后刷新行列表区域
+                		vm.showRowList(vm.roomList[0]);
+                		vm.noRoomTip = false;
+                	}
                 }
             });
-            // 查询之后刷新行列表区域
-            console.info(vm.roomList[0])
-            vm.showRowList(vm.roomList[0]);
         },
         reset: function () {
             vm.q.name = vm.q.addr = null;
@@ -458,6 +468,9 @@ var vm = new Vue({
         },
         // 展示右侧行列区
         showRowList: function (room) {
+        	if (typeof(room) == 'undefined') {
+        		return;
+        	}
             data.room = room; // 赋值行列 页面循环
             $.ajax({
                 type: "GET",
