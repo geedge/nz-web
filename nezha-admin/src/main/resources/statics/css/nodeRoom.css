@@ -1,27 +1,29 @@
 /*按钮的显示与隐藏*/
 .myoption-open {
     display: inline-block;
+    float: right;
 }
 
 .myoption-close {
     display: none;
 }
-
+.table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+	border-top: 0;	
+}
 /*左侧机房*/
 .room {
-    width: 20%;
-    height: 500px;
+    width: 220px;;
+    /* height: 500px; */
     float: left;
-    margin-right: 50px;
+    margin-right: 15px;
     position: relative;
     overflow: hidden;
 }
 
 /* 左侧机房的背景高亮*/
 .tr-higHlight {
-    background-color: #F5F5F5;
+    background-color: #eee;
 }
-
 .tr-normal {
     background-color: #FFFFFF;
 }
@@ -29,48 +31,114 @@
 
 /*右侧行列表*/
 .ranks {
-    width: 70%;
+    width: calc(100% - 235px);
     float: left;
     position: relative;
+    /* height: 500px; */
+    overflow: auto;
 }
 
 /*行展示*/
-.cols {
+.ranks-rows {
     position: absolute;
-    top: 0px;
-    left: 0px;
+    top: 20px;
 }
-
+.ranks-row {
+	height: 140px;
+	line-height: 140px;
+	text-align: center;
+}
+.ranks-body {
+	padding-left: 15px;
+}
+.ranks-col {
+	text-align: center;
+}
+.ranks-row, .ranks-col {
+	color: #888;
+	font-size: 12px;
+}
 /*机柜块*/
 .cab {
-    height: 100px;
-    width: 100px;
-    margin: 20px 10px;
+    height: 120px;
+    width: 80px;
+    margin: 10px;
+    /* margin: 20px 10px; */
     /*background-color: #c4e3f3;*/
-    line-height: 105px;
+    line-height: 120px;
     text-align: center;
-    border: 2px solid #337ab7;
-    border-radius: 20px;
+    /* border: 1px solid #337ab7; */
+	border: 1px solid #555;
+    /* border-radius: 20px; */
     float: left;
     position: relative
 }
-
-/*机柜详情按钮*/
-.cab-detail-option {
-    width: 20px;
-    height: 20px;
-    position: absolute;
-    line-height: 20px;
-    right: 10px;
-    bottom: 5px;
+.cab-add>i {
+	color: #777;
+	cursor: pointer;
+}
+.cab_nocab {
+	border: 1px dashed #999;
+}
+.cab-name {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	width: 70px;
+	display: inline-block;
+	line-height: 14px;
 }
 
 /*机柜修改删除按钮*/
 .cab-but {
     float: right;
     position: absolute;
-    bottom: -10px;
-    right: 0px;
+    bottom: 2px;
+    right: 5px;
+    color: #999;
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 14px;
 }
 
+.areas {
+	margin-bottom: 5px;
+}
+.btn-area {
+	background-color: white;
+	padding: 6px 10px;
+	border: 1px solid #ccc;
+	color: #888;
+	outline:none;
+}
+.btn-area_left {
+	border-radius: 4px 0 0 4px;
+	border-right: 0;
+}
+.btn-area_right {
+	border-radius: 0 4px 4px 0;
+}
+.btn-area_active {
+	background-color: #3c8dbc;
+	color: white;
+	border-color: #3c8dbc;
+}
 
+.tr-op {
+	color: #999;
+	display: inline-block;
+	margin-right: 4px;
+	font-size: 13px;
+}
+.tr-op i {
+	cursor: pointer;
+}
+.tr-item {
+	color: #337ab7;
+	
+}
+.content {
+	 height: 100%;
+	 position: relative;
+	 padding-right: 2px;
+}

@@ -9,16 +9,12 @@
 <div id="roomTestApp" v-cloak>
 
     <!-- 搜索条件 -->
-    <div style="width: 100%;float: left;" class="tools">
-        <div class="form-group">
-            <div class="btn-group">
-                <!-- code 为 astana 1 , almaty 2 -->
-                <button v-for="item in addrList" :id="'but'+item.code" class="btn btn-default"
-                        @click="query(item.code)" :value="item.value">{{item.value}}
-                </button>
-            </div>
+    <div class="tools">
+    	<div class="form-group areas">
+	   		<button v-for="(item,index) in addrList" :id="'but'+item.code" class="btn-area" :class="[index==0 ? 'btn-area_left' : '', index==addrList.length-1 ? 'btn-area_right' : '', item.code==q.addr ? 'btn-area_active' : '']"
+	           	@click="query(item.code, $event)" :value="item.value">{{item.value}}
+	        </button>
         </div>
-
         <div class="form-group">
             <input type="text" class="form-control input-medium" v-model="q.name" @keyup.enter="query(null)"
                    placeholder="机房名称">
@@ -26,28 +22,24 @@
 
         <!-- 功能按钮 -->
         <a class="btn btn-default" title="搜索" @click="query(null)"><i class="fa fa-search"></i></a>
-        <a class="btn btn-default" @click="reset" title="重置"><i class="fa fa-refresh"></i></a>
-        <a class="btn btn-primary" @click="addRoom" title="添加"><i class="fa fa-plus"></i></a>
     </div>
-
+	<div style="clear: both;"></div>
     <!-- 左侧机房列表和右侧行列表区域 -->
     <div class="main">
 
     <!-- 左侧机房名称列表 -->
     <div class="room" id="roomList">
-        <div class="content" style="height: 500px;">
+        <!-- <a class="btn btn-primary" @click="addRoom" title="添加"><i class="fa fa-plus"></i></a> -->
+        <div class="content">
             <table class="table table-hover">
-                <tr class="tr-normal">
-                    <td>机房名称</td>
-                </tr>
-                <tr class="tr-normal" v-for="item in roomList" :id="'tr'+item.id" @click="showRowList(item)">
-                    <td @mouseenter="" @mouseleave="">
+                <tr :class="[room.id==item.id ? 'tr-higHlight' : 'tr-normal']" v-for="item in roomList" :id="'tr'+item.id" @click="showRowList(item)">
+                    <td @mouseenter="showRoomOption(item.id)" @mouseleave="closeRoomOption(item.id)">
                         <div style="float: left">
-                            <a href="#" @click="showRowList(item)">{{item.name}}</a>
+                            <span class="tr-item" @click="showRowList(item)">{{item.name}}</span>
                         </div>
-                        <div class="" style="float: right;" :id="'option'+item.id">
-                            <a class="" href="#" @click="updateRoom(item)"><i class="fa fa-pencil"></i></a>
-                            <a class="" href="#" @click="delRoom(item)"><i class="fa fa-trash-o"></i></a>
+                        <div :class="[room.id==item.id ? 'myoption-open' : 'myoption-close']" :id="'option'+item.id">
+                            <span class="tr-op" @click="updateRoom(item)"><i class="fa fa-pencil"></i></span>
+                            <span class="tr-op" @click="delRoom(item)"><i class="fa fa-trash-o"></i></span>
                         </div>
                     </td>
                 </tr>
@@ -59,51 +51,42 @@
     <div class="ranks">
         <!--<div style="background-color: greenyellow;position: absolute;top: 0px;left: 0px;">
         </div>-->
-        <div class="cols">
-            <div v-for="item,index in rowList" style="height: 150px;line-height: 180px;text-align: center;">
+        <div class="ranks-rows">
+            <div class="ranks-row" v-for="item,index in rowList">
                 {{index+1}}
             </div>
         </div>
-        <div style="overflow:auto hidden;margin-left: 20px">
-            <table style="margin-bottom: 15px">
+        <div class="ranks-body">
+            <table>
                 <tr>
-                    <td v-for="n in rowList[0].length">
-                        <div>
-                            <div style="width: 80%;text-align: center;">
-                                {{n}}
-                            </div>
-                        </div>
-                    </td>
+                    <td v-for="n in rowList[0].length"><div class="ranks-col">{{n}}</div></td>
                 </tr>
                 <tr v-for="item,index in rowList">
                     <td v-for="cab in item" :key="item.id">
-                        <div style="width: 150px;height: 150px;position: relative">
-                            <div class="cab">
+                        <div class="cab" :class="[checkCab(cab) ? 'cab_nocab' : '']" @mouseenter="showCabOption(cab)" @mouseleave="showCabOption(cab)">
 
-                                <!-- 该位置暂无机柜 展示图标 -->
-                                <div v-if="checkCab(cab)">
-                                    <a href="#" @click="addCab(cab)">
-                                        <i class="fa fa-plus fa-2x" aria-hidden="true"></i></a>
-                                </div>
+                            <!-- 该位置暂无机柜 展示图标 -->
+                            <template v-if="checkCab(cab)">
+                                <span class="cab-add" @click="addCab(cab)">
+                                    <i class="fa fa-plus" aria-hidden="true"></i>
+                                </span>
+                            </template>
 
-                                <!-- 存在机柜 展示机柜名称 -->
-                                <div v-else>
-                                    <b>{{getCabName(cab)}}</b>
-                                    <div class="cab-detail-option">
-                                        <a href="#" title="详细操作" @click="showCabOption(cab.id)">
-                                            <i class="fa fa-ellipsis-h" aria-hidden="true"></i></a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 机柜 修改/删除 按钮 -->
-                            <div v-if="!checkCab(cab)" class="myoption-close cab-but" :id="'cab'+cab.id">
-                                <a class="btn btn-primary" @click="updateCab(cab)"><i
-                                        class="fa fa-pencil"></i></a>
-                                <a class="btn btn-primary" @click="delCab(cab)"><i
-                                        class="fa fa-trash-o"></i></a>
-                            </div>
+                            <!-- 存在机柜 展示机柜名称 -->
+                            <template v-else>
+                                <span class="cab-name" :title="getCabName(cab)">{{getCabName(cab)}}</span>
+                            </template>
+	                        <!-- 机柜 修改/删除 按钮 -->
+	                        <div v-if="!checkCab(cab)" class="myoption-close cab-but" :id="'cab'+cab.id">
+	                            <span class="tr-op" @click="updateCab(cab)">
+	                            	<i class="fa fa-pencil"></i>
+	                            </span>
+	                            <span class="tr-op" @click="delCab(cab)">
+	                            	<i class="fa fa-trash-o"></i>
+	                            </span>
+	                        </div>
                         </div>
+
                     </td>
                 </tr>
             </table>
@@ -112,7 +95,7 @@
 </div>
 
     <!-- 机房表单 -->
-    <div v-show="!showRoomFrom" id="roomForm" class="panel panel-default">
+    <div v-show="!showRoomFrom" id="roomForm" class="">
 
         <form class="form-horizontal">
             <!-- 名称 -->
@@ -220,7 +203,7 @@
     </div>
 
     <!-- 机柜表单 -->
-    <div v-show="!showCabFrom" id="cabForm" class="panel panel-default">
+    <div style="display:none;"id="cabForm" class="">
 
         <form class="form-horizontal">
             <!-- 名称 -->
@@ -258,7 +241,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'node.cabinet.uSize'/></div>
                 <div class="col-sm-9">
                     <input type="text" v-model="nodeCabinet.ubit" class="form-control"
-                           :class="{'form-control--error': $v.nodeCabinet.ubit.$dirty && !$v.nodeCabinet.ubit.minValue || !$v.nodeCabinet.ubit.integer}"
+                           :class="{'form-control--error': $v.nodeCabinet.ubit.$dirty && (!$v.nodeCabinet.ubit.minValue || !$v.nodeCabinet.ubit.integer || !$v.nodeCabinet.ubit.required)}"
                            @blur="$v.nodeCabinet.ubit.$touch" placeholder="<@spring.message 'node.cabinet.uSize'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg"
@@ -301,9 +284,14 @@
 </div>
 </body>
 <!--<script src="${request.contextPath}/statics/js/modules/node/roomTest.js"></script>-->
-<link rel="stylesheet" href="${request.contextPath}/statics/css/nodeRoom.css">
+<!-- <link rel="stylesheet" href="${request.contextPath}/statics/css/nodeRoom.css"> -->
 <#include "/js/modules/node/roomTest.js">
 <script>
-    var perfect = new PerfectScrollbar('#roomList');
+$(function(){
+    var perfect = new PerfectScrollbar('.content');
+    $(".room").css("height",top.$(".content").height()-60);
+    $(".ranks").css("height",top.$(".content").height()-60);
+    
+})
 </script>
 </html>

@@ -253,7 +253,11 @@ var vm = new Vue({
                 }
             });
         },
-        query: function (addr) {
+        query: function (addr, event) {
+        	if (event && $(event.currentTarget).hasClass("btn-area_active")) {
+        		addr = null;
+        		vm.q.addr = null;
+        	}
             layer.closeAll('page');
             var page = ""; // 临时查询条件 并不存在该条件查询
             if (addr != null) {
@@ -277,6 +281,7 @@ var vm = new Vue({
                 }
             });
             // 查询之后刷新行列表区域
+            console.info(vm.roomList[0])
             vm.showRowList(vm.roomList[0]);
         },
         reset: function () {
@@ -489,11 +494,11 @@ var vm = new Vue({
                 }
             }
             // data.rowList = Object.assign(data.rowList, data.rowList)
-            console.log(data.rowList)
+            /*console.log(data.rowList)*/
         },
         open: function (title, content) {
             layer.open({
-                area: ['50%', '100%'],
+                area: ['550px', '100%'],
                 shade: 0,
                 title: title,
                 type: 1,
@@ -519,39 +524,33 @@ var vm = new Vue({
             $("#option" + roomId).removeClass("myoption-close").addClass("myoption-open");
         },
         closeRoomOption: function (roomId) {
-            $("#option" + roomId).removeClass("myoption-open").addClass("myoption-close");
+        	if (data.room.id != roomId) {
+        		$("#option" + roomId).removeClass("myoption-open").addClass("myoption-close");
+        	}
         },
-        showCabOption: function (cabId) {
-            if ($("#cab" + cabId).hasClass("myoption-close")) {
-                $("#cab" + cabId).removeClass("myoption-close").addClass("myoption-open");
+        showCabOption: function (cab) {
+        	if (this.checkCab(cab)) {return;}
+            if ($("#cab" + cab.id).hasClass("myoption-close")) {
+                $("#cab" + cab.id).removeClass("myoption-close").addClass("myoption-open");
             } else {
-                $("#cab" + cabId).removeClass("myoption-open").addClass("myoption-close");
+                $("#cab" + cab.id).removeClass("myoption-open").addClass("myoption-close");
             }
         }
-    },
+/*        showCabOption: function (cabId) {
+        	console.info(cabId);
+        	if ($("#cab" + cabId).hasClass("myoption-close")) {
+        		$("#cab" + cabId).removeClass("myoption-close").addClass("myoption-open");
+        	} else {
+        		$("#cab" + cabId).removeClass("myoption-open").addClass("myoption-close");
+        	}
+        }
+*/    },
     created: function () {
         // 1. 初始化实例查询机房列表
         this.getRooms();
         this.getRoomAddrs();
         // 2.默认展开第一个机房的行列图
         this.showRowList(data.roomList[0])
-    },
-    mounted: function () {
-        // 1.默认机房列表第一条高亮
-        $("#tr" + data.roomList[0].id).removeClass("tr-normal").addClass("tr-higHlight");
-    },
-    watch: {
-        "room": function (newValue, oldValue) {
-            // 监听点击的机房  改变高亮样式
-            if (oldValue != null) {
-                $("#tr" + oldValue.id).removeClass("tr-higHlight").addClass("tr-normal");
-            }
-            if ($("#tr" + newValue.id).hasClass("tr-higHlight")) {
-                return;
-            } else {
-                $("#tr" + newValue.id).removeClass("tr-normal").addClass("tr-higHlight");
-            }
-        }
     },
     computed: {}
 });
