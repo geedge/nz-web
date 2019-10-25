@@ -416,14 +416,15 @@ var vm = new Vue({
                 vm.deteSet.nodeIds.push(v.uuid);
             })
 
+
             if(vm.paramVals!=null && vm.paramVals.length>0){
                 var params="";
-                $.each(vm.paramVals, function (i, v) {
-                    params+=(v+",");
-                })
+                for (var i=0;i<vm.typeParams.length;i++){
+                    params+=(vm.paramVals[i]+",");
+                }
             }
-
             vm.deteSet.params=params.substr(0,params.length-1);
+            console.log(vm.deteSet.params)
             console.log(vm.deteSet.viewerId)
             $.each(vm.viewers,function(i,v){
                 if(v.checked){
@@ -441,12 +442,7 @@ var vm = new Vue({
             }
 
             vm.getDeteTypeDetail(vm.deteSet.typeId,null);
-            console.log('paramVals')
-            console.log(vm.deteSet.params)
-            vm.paramVals=vm.deteSet.params.split(",");
-
-            console.log(vm.paramVals)
-            console.log(vm.paramVals.length)
+            vm.paramVals =vm.deteSet.params.split(',');
             if(vm.deteSet.viewLevel=='1'){
                 vm.deteSet.viewerId=[];
                 $.each(vm.viewers,function(index,item){
@@ -458,7 +454,6 @@ var vm = new Vue({
                         }
                     }
                 })
-                console.log(JSON.stringify(vm.viewers))
             }
 
         },
