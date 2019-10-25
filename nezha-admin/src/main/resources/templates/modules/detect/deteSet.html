@@ -70,7 +70,7 @@
                                  @select="getDeteTypeDetail"
                     >
                         <div slot="afterList">
-                            <div style="height: 25px;line-height:25px;text-align: center; font-size:13px;" @click="openAddDetectType"><i class="fa fa-plus"></i></div>
+                            <div class="select-add"><i class="fa fa-plus" @click="openAddDetectType"></i></div>
                         </div>
                     </multiselect>
                     <span class="required-symbol">*</span>
@@ -95,7 +95,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/>:</div>
                 <div class="col-sm-9">
                     <!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
-                    <div class="add-box" :class="{'form-control--error': nodeOrGroupEmpty}">
+                    <div class="add-box add-box-first" :class="{'form-control--error': nodeOrGroupEmpty}">
                         <div class="add-box_head">
                         	<@spring.message 'common.nodeGroup'/>
                         </div>

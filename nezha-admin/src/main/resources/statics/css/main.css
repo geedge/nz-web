@@ -7,6 +7,12 @@ html { overflow-x:hidden; }
 [v-cloak]{
 	display: none !important;
 }
+
+/*jqgrid第一列复选框位置改为垂直居中*/
+.table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+	vertical-align: middle;
+}
+
 /*取消input边框阴影*/
 .form-control {
 	-webkit-box-shadow: none;

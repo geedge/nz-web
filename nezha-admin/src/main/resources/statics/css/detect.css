@@ -32,7 +32,7 @@
 	text-overflow: ellipsis;
 }
 
-.add-box:first-of-type {
+.add-box-first {
 	margin-bottom: 15px;
 }
 .add-box_head {
@@ -92,4 +92,13 @@
 
 .table-row-able{
     background-color: white;
+}
+.select-add>i {
+	cursor: pointer;
+}
+.select-add {
+	height: 25px;
+	line-height:25px;
+	text-align: center; 
+	font-size:13px;
 }
