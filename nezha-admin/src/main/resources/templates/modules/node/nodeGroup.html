@@ -4,10 +4,15 @@
 <head>
     <title>节点组管理</title>
     <#include "/header.html">
+    <style>
+    .ztree {
+    	padding: 1px 0 0 6px !important;
+    }
+    </style>
 </head>
 <body>
 
-<div id="app" class="" style="width: 22%; display: inline-block;padding-left: 15px;float:left" v-cloak>
+<div id="app" class="" style="width: 250px;display: inline-block;padding-left: 15px;float:left" v-cloak>
 
     <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
         <@spring.message 'system.system'/>
@@ -20,7 +25,6 @@
             :node="item"
             @addrootgroup="add"
             ref="gtree"> <!-- ref 为获取 组件 或 dom 时使用 -->
-
     </group-tree>
 
     <!-- 添加 / 修改 表单 -->

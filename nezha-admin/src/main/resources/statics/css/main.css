@@ -4,7 +4,9 @@ html { overflow-x:hidden; }
 .form-horizontal .control-label {
 	word-break: break-all;
 }
-
+[v-cloak]{
+	display: none !important;
+}
 /*取消input边框阴影*/
 .form-control {
 	-webkit-box-shadow: none;
