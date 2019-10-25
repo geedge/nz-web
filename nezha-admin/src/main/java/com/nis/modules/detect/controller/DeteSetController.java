@@ -123,10 +123,10 @@ public class DeteSetController {
         if(deteSetInfoService.checkNameExists(deteSetInfo.getName(),deteSetInfo.getId())){
             throw new NZException(RCode.SET_NAME_EXISTS);
         }
-        if(deteSetInfo.getNodeGroupIds()!=null && !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
+        if(deteSetInfo.getNodeGroupIds()!=null && deteSetInfo.getNodeGroupIds().length>0&& !nodeGroupInfoService.isCurrentSystem(deteSetInfo.getNodeGroupIds())){
             throw new NZException(RCode.SET_NODEGROUP_ISNOT_CURRENTSYSTEM);
         }
-        if(deteSetInfo.getNodeIds()!=null&& !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
+        if(deteSetInfo.getNodeIds()!=null&&deteSetInfo.getNodeIds().length>0&& !systemNodeRelService.isCurrentSystem(deteSetInfo.getNodeIds())){
             throw new NZException(RCode.SET_NODE_ISNOT_CURRENTSYSTEM);
         }
         if(!deteSetInfoService.checkTypeExists(deteSetInfo.getTypeId())){

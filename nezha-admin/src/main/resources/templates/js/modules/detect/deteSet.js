@@ -145,7 +145,7 @@ var vm = new Vue({
             viewLevel: {
                 required
             },
-            viewerId: {},
+            viewerId: [],
             remark: {},
             i18nCode: {},
             nodeGroupIds: {},
@@ -415,6 +415,7 @@ var vm = new Vue({
             $.each(vm.nodeInfosChecked, function (i, v) {
                 vm.deteSet.nodeIds.push(v.uuid);
             })
+
             if(vm.paramVals!=null && vm.paramVals.length>0){
                 var params="";
                 $.each(vm.paramVals, function (i, v) {
@@ -423,6 +424,7 @@ var vm = new Vue({
             }
 
             vm.deteSet.params=params.substr(0,params.length-1);
+            console.log(vm.deteSet.viewerId)
             $.each(vm.viewers,function(i,v){
                 if(v.checked){
                     vm.deteSet.viewerId.push(v.code);
@@ -439,8 +441,14 @@ var vm = new Vue({
             }
 
             vm.getDeteTypeDetail(vm.deteSet.typeId,null);
+            console.log('paramVals')
+            console.log(vm.deteSet.params)
             vm.paramVals=vm.deteSet.params.split(",");
+
+            console.log(vm.paramVals)
+            console.log(vm.paramVals.length)
             if(vm.deteSet.viewLevel=='1'){
+                vm.deteSet.viewerId=[];
                 $.each(vm.viewers,function(index,item){
                     for(var i=0;i<vm.deteSet.viewer.length;i++){
                         var viewer=vm.deteSet.viewer[i];

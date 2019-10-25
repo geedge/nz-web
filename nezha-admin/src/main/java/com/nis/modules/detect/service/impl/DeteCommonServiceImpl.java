@@ -116,7 +116,12 @@ public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImp
     }
 
     public boolean checkNameExists(String name,Long id){
-        return checkFieldExists(id,"name",name);
+        List<T> list = this.list(new QueryWrapper<T>()
+                .ne(id!=null,"id",id)
+                .eq("name", name)
+                .ne("state",'1'));
+
+        return list!=null&&list.size()>0;
     }
 
     public boolean checkFieldIsValide(String type,String code){
