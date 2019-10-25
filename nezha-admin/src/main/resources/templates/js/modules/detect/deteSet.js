@@ -43,6 +43,14 @@ $(function () {
         gridComplete: function () {
             //隐藏grid底部滚动条
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+        },
+        onSelectAll: function(rowids, status) {
+            if (status) {
+                toolsBtnHandle();
+            }
+        },
+        onSelectRow: function(rowid,status) {
+            toolsBtnHandle();
         }
     });
     var ps1 = new PerfectScrollbar('.psNg');
@@ -83,6 +91,8 @@ var nameRepeat = function (name, deteSet) {
 var vm = new Vue({
     el: "#deteSet",
     data: {
+        single:true,
+        multi:true,
         showList: true,
         setStateArr: [],
         nodeTypesArr: [],
@@ -123,7 +133,8 @@ var vm = new Vue({
         openAddTypeWindow:false,
         typeId:null,
         layerId:null,
-        layerReset:true
+        layerReset:true,
+        isUpdate:false
     },
     created: function () {
         this.getSetState();
@@ -189,12 +200,14 @@ var vm = new Vue({
             }).trigger("reloadGrid");
         },
         reload: function () {
+            vm.single=vm.multi=true;
             vm.query();
         },
         add: function () {
             vm.showList = false;
             this.reset();
             vm.resetSelector();
+            vm.isUpdate=false;
         },
         update: function () {
             var id = getSelectedRow();
@@ -204,6 +217,7 @@ var vm = new Vue({
             this.reset();
             vm.showList = false;
             vm.getInfo(id);
+            vm.isUpdate=true;
 
         },
         getInfo: function (id) {
@@ -238,7 +252,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.deteSet),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert('<@spring.message "common.success"/>', function (index) {
+                        layer.msg('<@spring.message "common.success"/>', function (index) {
                             vm.nodeInfoData = [];
                             vm.nodeGroupsChecked = [];
                             vm.nodeInfosChecked = [];
@@ -247,7 +261,7 @@ var vm = new Vue({
                     } else {
                         var cloneObj = eval("(" + cloneStr + ")");
                         vm.deteSet = cloneObj;
-                        alert(r.msg);
+                        layer.msg(r.msg);
                     }
                 }
             });
@@ -270,11 +284,11 @@ var vm = new Vue({
                     if(xhr.status==200){
                         var response=JSON.parse(xhr.response);
                         if(response.code==200){
-                            alert('<@spring.message "common.success"/>', function (index) {
+                            layer.msg('<@spring.message "common.success"/>', function (index) {
                                 vm.query();
                             });
                         }else{
-                            alert(response.msg);
+                            layer.msg(response.msg);
                         }
                     }
                 }
@@ -424,8 +438,7 @@ var vm = new Vue({
                 }
             }
             vm.deteSet.params=params.substr(0,params.length-1);
-            console.log(vm.deteSet.params)
-            console.log(vm.deteSet.viewerId)
+            vm.deteSet.viewerId=[];
             $.each(vm.viewers,function(i,v){
                 if(v.checked){
                     vm.deteSet.viewerId.push(v.code);
@@ -443,8 +456,8 @@ var vm = new Vue({
 
             vm.getDeteTypeDetail(vm.deteSet.typeId,null);
             vm.paramVals =vm.deteSet.params.split(',');
+
             if(vm.deteSet.viewLevel=='1'){
-                vm.deteSet.viewerId=[];
                 $.each(vm.viewers,function(index,item){
                     for(var i=0;i<vm.deteSet.viewer.length;i++){
                         var viewer=vm.deteSet.viewer[i];

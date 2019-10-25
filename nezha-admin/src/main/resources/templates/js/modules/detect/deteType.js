@@ -43,6 +43,14 @@ $(function () {
         gridComplete: function () {
             //隐藏grid底部滚动条
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+        },
+        onSelectAll: function(rowids, status) {
+            if (status) {
+                toolsBtnHandle();
+            }
+        },
+        onSelectRow: function(rowid,status) {
+            toolsBtnHandle();
         }
     });
 });
@@ -54,6 +62,8 @@ var vm = new Vue({
         params: {
             name: ''
         },
+        single:true,
+        multi:true,
         showList: true,
         title: 'title',
         deteMethodsArr:[],
@@ -73,6 +83,7 @@ var vm = new Vue({
             }).trigger("reloadGrid");
         },
         reload: function () {
+            vm.single=vm.multi=true;
             vm.query();
         },
         add: function () {
