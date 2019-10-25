@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.modules.node.entity.AvailCabinetEntity;
+import com.nis.modules.node.entity.NodeGroupInfoEntity;
+import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 
 import java.util.List;
@@ -44,5 +46,12 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
     public void getTagName(List<NodeInfoEntity> nodeInfoEntities);
 
 	PageUtils querySelectableNodeBySystemId(Map<String, Object> params);
+
+    /**
+     * 根据节点UUID 获取所属节点组集合
+     * @param uuid
+     * @return
+     */
+    List<NodeGroupRelEntity> getGroupsById(Long uuid);
 }
 

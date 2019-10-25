@@ -6,13 +6,16 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.node.entity.AvailCabinetEntity;
+import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
 import com.nis.modules.node.service.NodeInfoService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,4 +119,15 @@ public class NodeInfoController {
         return R.ok(map);
     }
 
+
+    /**
+     * 根据节点UUID 查询所属节点组集合
+     * @param uuid
+     * @return
+     */
+    @GetMapping("/getGroupsById")
+    public R getGroupsById(Long uuid){
+        ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
+        return R.ok(nodeInfoService.getGroupsById(uuid));
+    }
 }
