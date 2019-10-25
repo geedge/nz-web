@@ -105,7 +105,12 @@ tbody > tr > th {font-weight: normal; }
 	padding:20px 2px 0px 2px;
 }
 .col-xs-6{padding-left: 0px;padding-right: 0px;}
-.form-horizontal .form-group {margin-left:0px;margin-right:0px;}
+.form-horizontal .form-group {
+	margin-left:0px;
+	margin-right:0px;
+
+}
+
 .form-horizontal{
 	width:550px;padding-top:20px;
 }
@@ -301,3 +306,93 @@ tbody > tr > th {font-weight: normal; }
 	background-color: #41B883;
 	color: white;
 }
+
+/* add-box组件 */
+/* 自定义框组件 */
+.add-box { /*整体*/
+	font-size: 13px;
+	border: 1px solid #cccccc;
+	width: 90%;
+	border-radius: 4px;
+}
+.add-box_first { /*当有两个add-box在一起时，第一个add-box加上此class*/
+	margin-bottom: 15px;
+}
+.add-box_head { /*标题*/
+	 border-bottom: 1px solid #cccccc;
+	 padding: 7px 10px 4px 10px;
+}
+.add-box_body { /*内容，高度根据内部dom自动撑开*/
+	padding: 3px 0;
+	position: relative;
+}
+.add-box_body_160 { /*高度160px*/
+	height: 160px;
+}
+.add-box_row { /*每行内容*/
+    line-height: 23px;
+    position: relative;
+    padding: 3px 8px 3px 10px;
+    border-bottom: 1px solid white;
+}
+.add-box_cell { /*行内单元格*/
+	display: inline-block;
+}
+.add-box_cell_25 {
+	width: 25%;
+}
+.add-box_cell_30 {
+	width: 30%;
+}
+.add-box_cell_40 {
+	width: 40%;
+}
+.add-box_cell_45 {
+	width: 45%;
+}
+.add-box_cell_50 {
+	width: 50%;
+}
+.add-box_cell_60 {
+	width: 60%;
+}
+.add-box_cell_75 {
+	width: 75%;
+}
+.add-box_input {
+	height: 26px;
+}
+.add-box_tag1, .add-box_tag2 { /*自定义标签*/
+    font-size: 12px;
+    display: inline-block;
+    color: white;
+    line-height: 18px;
+    padding: 0 5px;
+    border-radius: 4px;
+}
+.add-box_tag1 {
+    background-color: #3c8dbc;
+}
+.add-box_tag2 {
+    background-color: #55c8c3;
+}
+/* .add-box_head .add-box_cell { head内的cell的文字稍稍偏右一点
+	padding-left: 3px;
+} */
+.add-box_ops { /*行末的按钮区域*/
+	position: absolute;
+	right: 10px;
+	color: #777777;
+}
+.add-box_ops>i {
+	cursor: pointer;
+}
+.add-box_foot { /*组件脚部，主要用来放'+'按钮*/
+	height: 23px;
+	line-height: 23px;
+	text-align: center;
+}
+.add-box_foot>i {
+	cursor: pointer;
+}
+/* add-box组件end */

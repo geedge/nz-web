@@ -51,39 +51,34 @@
                 <div class="col-sm-9">
                     <div class="add-box">
                         <div class="add-box_head">
-                				<span class="add-box_head_meta">
-                					<span>Field-Type</span>
-                                    <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
-                				</span>
-                            <span class="add-box_head_meta">
-                					<span>Data-Type</span>
+                			<span class="add-box_cell add-box_cell_25">Field-Type
                                 <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
-                				</span>
-                            <span>Name</span>
+                			</span>
+                            <span class="add-box_cell add-box_cell_25">Data-Type
+                                <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
+                			</span>
+                            <span class="add-box_cell">Name</span>
                         </div>
-                        <div class="add-meta-box_rows">
+                        <div class="add-box_body add-box_body_160">
                             <div class="add-box_row"
-
                                  v-for="(meta,index) in deteType.deteTypeMetas"
                                  :class="{'danger2':meta.passFlag!=undefined&&!meta.passFlag}"
                                  v-if="meta.delFlag=='0'" >
-                                <!--<div style="width:800px;height:1px;margin:0px auto;padding:0px;background-color:black;overflow:hidden;"></div>-->
-                                <div class="add-box_row1_meta">
+                                <div class="add-box_cell add-box_cell_25">
                                     <span class="add-box_tag1">{{meta.fieldType.value}}</span>
                                 </div>
-                                <div class="add-box_row1_meta">
+                                <div class="add-box_cell add-box_cell_25">
                                     <span class="add-box_tag2">{{meta.dataType.value}}</span>
                                 </div>
-                                <span class="add-box_name" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
-                                <span class="add-box_op" >
-                                    <i @click="openMetaWindow(index)" class="fa fa-pencil-square-o"></i>
+                                <span class="add-box_cell" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
+                                <span class="add-box_ops" >
+                                    <i @click="openMetaWindow(index)" class="fa fa-pencil"></i>
                                     <i @click="delMeta(index)"  class="fa fa-trash-o"></i>
                                 </span>
-
                             </div>
                         </div>
                         <div class="add-box_foot">
-                            <span @click="openMetaWindow()"><i class="fa fa-plus"></i></span>
+                            <i @click="openMetaWindow()" class="fa fa-plus"></i>
                         </div>
 
                     </div>
@@ -95,12 +90,12 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label">参数:</div>
                 <div class="col-sm-9">
-                    <div class="add-box" >
+                    <div class="add-box">
                         <div class="add-box_head">
-                            <span class="add-box_head_param">Name</span>
-                            <span>Default</span>
+                            <span class="add-box_cell add-box_cell_45">Name</span>
+                            <span class="add-box_cell">Default</span>
                         </div>
-                        <div class="add-param-box_rows" id="r-dete-param-container">
+                        <div class="add-box_body" id="r-dete-param-container">
                             <template v-for="(param,index) in deteType.deteTypeParams">
                                 <nz-add-param
                                     :dete-param="param"
@@ -111,15 +106,12 @@
                                     @del-param="delParam"
                                 ></nz-add-param>
                             </template>
-
                         </div>
                         <div class="add-box_foot">
-                            <span @click="addParam"><i class="fa fa-plus"></i></span>
+                            <i @click="addParam" class="fa fa-plus"></i>
                         </div>
                     </div>
-                    <div class="form-control_error-msg" v-if="!paramRequired">
-                        必填项
-                    </div>
+                    <div class="form-control_error-msg" v-if="!paramRequired">必填项</div>
                 </div>
             </div>
             <!--<div class="form-group">
@@ -348,12 +340,10 @@
 <script type="text/x-template" id="addDetectParam" >
     <div draggable="true" :index="index">
         <div class="add-box_row" v-show="!editSwitch" v-id:[listPreKey]="index" :class="{'text-disabled':deteParam.delFlag=='1'}">
-            <div class="add-box_row1_param">
-                <span>{{deteParam.name}}</span>
-            </div>
+            <div class="add-box_cell add-box_cell_45">{{deteParam.name}}</div>
             <span class="add-box_name">{{deteParam.defVal}}</span>
-            <span class="add-box_op"  >
-                <i @click="editSelf" class="fa fa-pencil-square-o" :id="'add-box_op_edit_'+index"></i>
+            <span class="add-box_ops"  >
+                <i @click="editSelf" class="fa fa-pencil" :id="'add-box_op_edit_'+index"></i>
                 <i @click="deteParam.delFlag=='0'?delSelf():recSelf()" :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1'}"></i>
             </span>
 <!--            <span :class="{'add-box_del':deteParam.delFlag=='0','add-box_rec':deteParam.delFlag=='1'}" ></span>-->
@@ -363,14 +353,16 @@
 
             </div>
             <form class="form-inline">
-                <div class="form-group form-group-left">
-                    <input type="text" :id="'r-param-name-input-'+index" :class="{'form-control--error':$v.deteParam.name.$dirty&&(!$v.deteParam.name.required||!$v.deteParam.name.inPageNameRepeat)}" class="form-control"  placeholder="请输入名称" v-model="$v.deteParam.name.$model">
-
-                </div>
-                <div class="form-group form-group-right">
-                    <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
-                </div>
-                <span class="add-box_op" @click="submitSelf" style="right: 0px"><i class="fa fa-check"></i></span>
+				<div class="add-box_cell add-box_cell_45">
+                	<input type="text" :id="'r-param-name-input-'+index" :class="{'form-control--error':$v.deteParam.name.$dirty&&(!$v.deteParam.name.required||!$v.deteParam.name.inPageNameRepeat)}" class="form-control add-box_input"  placeholder="请输入名称" v-model="$v.deteParam.name.$model">
+				</div>
+				<div class="add-box_cell add-box_cell_45">
+                    <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control add-box_input"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
+				</div>
+                <span class="add-box_ops">
+					<i @click="submitSelf" class="fa fa-check"></i>
+					<i @click="submitSelf" class="fa fa-trash-o"></i>
+				</span>
             </form>
         </div>
     </div>

@@ -2,7 +2,7 @@
 $(function(){
     var ps1 = new PerfectScrollbar('.meta-win_list');
     // var ps2 = new PerfectScrollbar('.add-param-box_rows');
-    var ps3 = new PerfectScrollbar('.add-meta-box_rows');
+    var ps3 = new PerfectScrollbar('.add-box_body_160');
 })
 Vue.use(window.vuelidate.default);
 Vue.component('multiselect', window.VueMultiselect.default);

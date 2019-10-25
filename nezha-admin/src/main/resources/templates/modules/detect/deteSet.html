@@ -5,7 +5,7 @@
     <title><@spring.message 'deteSet'/></title>
     <link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
     <link rel="stylesheet" href="${request.contextPath}/statics/css/addDetectType.css">
-    <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css">
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css?">
 
 </head>
 <#include "/header.html">
@@ -86,8 +86,14 @@
             <div class="form-group" v-show="typeParams !=null && typeParams.length>0">
                 <div class="col-sm-2 control-label"><@spring.message 'validate.deteSet.param'/>:</div>
                 <div class="col-sm-9">
-                <div class="add-box2">
-	                <label-input v-for="param,index in typeParams" :def-val="param.defVal" :label="param.name" v-model="paramVals[index]"></label-input>
+                <div class="add-box">
+                	<div class="add-box_head">
+						<span class="add-box_cell add-box_cell_30">名称</span>
+						<span class="add-box_cell add-box_cell_60">值</span>
+					</div>
+					<div class="add-box_body">
+	                	<label-input v-for="param,index in typeParams" :def-val="param.defVal" :label="param.name" v-model="paramVals[index]"></label-input>
+                	</div>
                 </div>
                 </div>
             </div>
@@ -95,14 +101,14 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/>:</div>
                 <div class="col-sm-9">
                     <!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
-                    <div class="add-box add-box-first" :class="{'form-control--error': nodeOrGroupEmpty}">
+                    <div class="add-box add-box_first" :class="{'form-control--error': nodeOrGroupEmpty}">
                         <div class="add-box_head">
-                        	<@spring.message 'common.nodeGroup'/>
+                        	<span class="add-box_cell"><@spring.message 'common.nodeGroup'/></span>
                         </div>
-                        <div class="add-box_rows psNg">
+                        <div class="add-box_body add-box_body_160 psNg">
 	                        <div class="add-box_row" v-for="ng,index in nodeGroupsChecked">
-	                            <span class="add-box_row_item">{{ng.absolutePath}}</span>
-	                            <span class="add-box_op">
+	                            <span class="add-box_cell">{{ng.absolutePath}}</span>
+	                            <span class="add-box_ops">
 	                            	<i @click="unCheckGroup(ng)" class="fa fa-trash-o"></i>
 	                            </span>
 	                        </div>
@@ -113,13 +119,13 @@
                     </div>
                     <div class="add-box" :class="{'form-control--error': nodeOrGroupEmpty}">
                         <div class="add-box_head">
-                            <@spring.message 'common.node'/>
+                            <span class="add-box_cell"><@spring.message 'common.node'/></span>
                         </div>
                         <div>
-                            <div class="add-box_rows psN">
+                            <div class="add-box_body add-box_body_160 psN">
 		                        <div class="add-box_row" v-for="ni,index in nodeInfosChecked">
-	                                <span class="add-box_row_item">{{ni.ip}}</span>
-	                                <span class="add-box_op">
+	                                <span class="add-box_cell">{{ni.ip}}</span>
+	                                <span class="add-box_ops">
 	                                	<i @click="unCheckNodeInfo(ni)" class="fa fa-trash-o"></i>
 	                                </span>
 		                        </div>
@@ -161,9 +167,9 @@
 	                    </template>
                     </div>
                     <div class="add-box" v-show="deteSet.viewLevel==1">
-                    	<div class="add-box_rows add-box_ug" :class="{'form-control--error': deteSet.viewLevel==1&&userGroupsEmpty}">
+                    	<div class="add-box_body" :class="{'form-control--error': deteSet.viewLevel==1&&userGroupsEmpty}">
 	                        <div class="add-box_row" v-for="viewer in viewers" v-if="viewers ==null || viewers.length > 0">
-	                             <span class="add-box_row_item"><input type="checkbox" :value="viewer.code"  v-model="viewer.checked"> {{viewer.value}}</span>
+	                             <span class="add-box_cell"><input type="checkbox" :value="viewer.code"  v-model="viewer.checked"> {{viewer.value}}</span>
 	                        </div>
 	                        <span class="help-block" v-else>
 	                                <@spring.message 'validate.common.noUsergroupInSysView'/>
