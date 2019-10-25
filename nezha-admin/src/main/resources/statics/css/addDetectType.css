@@ -63,28 +63,28 @@
     right: 30px;
     color: #777777;
     cursor: pointer;
-    top:10px;
+    /*top:10px;*/
 }
 .add-box_del {
     position: absolute;
     right: 10px;
     color: red;
     cursor: pointer;
-    top:10px;
+    /*top:10px;*/
 }
 .add-box_rec {
     position: absolute;
     right: 10px;
     color: lightgreen;
     cursor: pointer;
-    top:10px;
+    /*top:10px;*/
 }
 
 .add-box_ok {
     position: absolute;
     right: 10px;
     cursor: pointer;
-    top:10px;
+    /*top:10px;*/
 }
 
 .add-box_foot {

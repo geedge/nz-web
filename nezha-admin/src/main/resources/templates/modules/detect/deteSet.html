@@ -11,6 +11,14 @@
 <#include "/header.html">
 <body>
 <div id="deteSet" v-cloak>
+    <div v-show="openAddTypeWindow" id="add-type-layer-view">
+        <nz-detect-addtype
+                v-if="layerReset"
+                :type-id="typeId"
+                :parent-layer-id="layerId"
+                :reload-func="closeAddType"
+        ></nz-detect-addtype>
+    </div>
     <div v-show="showList">
         <div class="tools">
             <div class="form-group">
@@ -62,7 +70,7 @@
                                  @select="getDeteTypeDetail"
                     >
                         <div slot="afterList">
-                            <div style="height: 25px;line-height:25px;text-align: center;" @click="openAddDetectType"><i class="glyphicon glyphicon-plus"></i></div>
+                            <div style="height: 25px;line-height:25px;text-align: center; font-size:13px;" @click="openAddDetectType"><i class="fa fa-plus"></i></div>
                         </div>
                     </multiselect>
                     <span class="required-symbol">*</span>
@@ -73,11 +81,6 @@
                         <@spring.message 'validate.deteSet.pickTypeFirst'/>
                     </div>
                 </div>
-            </div>
-            <div v-show="openAddTypeWindow" id="add-type-layer-view">
-                <nz-detect-addtype
-                        :type-id="typeId"
-                ></nz-detect-addtype>
             </div>
 
             <div class="form-group" v-show="typeParams !=null && typeParams.length>0">

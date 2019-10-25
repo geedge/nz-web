@@ -75,8 +75,10 @@
                                     <span class="add-box_tag2">{{meta.dataType.value}}</span>
                                 </div>
                                 <span class="add-box_name" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
-                                <span class="add-box_op" @click="openMetaWindow(index)"><i class="fa fa-pencil-square-o"></i></span>
-                                <span class="add-box_del" @click="delMeta(index)"><i class="fa fa-trash-o"></i></span>
+                                <span class="add-box_op" >
+                                    <i @click="openMetaWindow(index)" class="fa fa-pencil-square-o"></i>
+                                    <i @click="delMeta(index)"  class="fa fa-trash-o"></i>
+                                </span>
 
                             </div>
                         </div>
@@ -84,6 +86,9 @@
                             <span @click="openMetaWindow()"><i class="fa fa-plus"></i></span>
                         </div>
 
+                    </div>
+                    <div class="form-control_error-msg" v-if="!metaRequired">
+                        必填项
                     </div>
                 </div>
             </div>
@@ -99,6 +104,7 @@
                             <template v-for="(param,index) in deteType.deteTypeParams">
                                 <nz-add-param
                                     :dete-param="param"
+                                    ref="r-detect-param"
                                     :index="index"
                                     :dete-params="deteType.deteTypeParams"
                                     @ask-for-swap="swapParam"
@@ -110,6 +116,9 @@
                         <div class="add-box_foot">
                             <span @click="addParam"><i class="fa fa-plus"></i></span>
                         </div>
+                    </div>
+                    <div class="form-control_error-msg" v-if="!paramRequired">
+                        必填项
                     </div>
                 </div>
             </div>
@@ -134,17 +143,28 @@
                     <textarea v-model.trim="$v.deteType.remark.$model" class="form-control"></textarea>
                 </div>
             </div>
+
+            <div class="form-group form-group_opbox">
+                <div>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate">
+                        <i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i
+                            class="fa fa-reply"></i></button>
+                </div>
+            </div>
         </form>
 
         <div id="metaWindow" style="height:100%;display:none;">
             <nz-add-meta
-                ref="addMetaWindow"
-                :dete-metas="deteType.deteTypeMetas"
-                :dete-method="defaultMethod"
-                :field-types="fieldTypes"
-                :data-types="dataTypes"
-                :dic-types="dicTypes"
+                    ref="addMetaWindow"
+                    :dete-metas="deteType.deteTypeMetas"
+                    :dete-method="defaultMethod"
+                    :field-types="fieldTypes"
+                    :data-types="dataTypes"
+                    :dic-types="dicTypes"
             ></nz-add-meta>
+
         </div>
     </div>
 </script>
@@ -170,7 +190,7 @@
             </template>
             <!-- 新增按钮 -->
             <div class="meta-win_list-foot">
-                <span @click="addMeta"><i class="fa fa-plus"></i></span>
+                <span  @click="addMeta"><i class="fa fa-plus"></i></span>
             </div>
         </div>
         <!-- meta详情 -->
@@ -178,9 +198,6 @@
 
         </div>
     </div>
-
-    </div>
-
 </script>
 
 <script type="text/x-template" id="detectMata">
@@ -290,13 +307,17 @@
                                         v-model="$v.deteMeta.dicType.$model"
                                         :show-labels="false">
                                     <template slot="option" slot-scope="props">
-                                            <div :id="'position'+props.option.type+index" style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>
-                                            <div style="line-height: 30px"id="title" @mouseenter="mouseAt(props.option.type)" @mouseleave="mouseout">{{props.option.type}}</div>
-                                            <div :id="'items'+props.option.type" style="display:none;">
-                                                <div style="color: white;" v-for="mapping in props.option.mappings">
-                                                    {{mapping.val}}:{{mapping.mapping}}
+<!--                                            <div :id="'position'+props.option.type+index" style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>-->
+                                            <div style="line-height: 30px" :id="'r-dictype-option-'+props.option.type+'-'+index" @mouseenter="mouseAt(props.option.type)" @mouseleave="mouseout">{{props.option.type}}</div>
+                                                <div :id="'r-dictype-option-detail-'+props.option.type+'-'+index" style="display: none;">
+                                                    <div style="color: white;" v-for="mapping in props.option.mappings">
+                                                        {{mapping.val}}:{{mapping.mapping}}
+                                                    </div>
                                                 </div>
-                                            </div>
+<!--                                            </div>-->
+                                    </template>
+                                    <template slot="singleLabel" slot-scope="props">
+                                        <div>{{props.option.type}}</div>
                                     </template>
 
                                 </multiselect>
@@ -318,7 +339,6 @@
                         </div>
                     </div>
                 </form>
-                <pre>{{$v.deteMeta}}</pre>
             </div>
             <div class="shadow"></div>
         </div>
@@ -332,8 +352,11 @@
                 <span>{{deteParam.name}}</span>
             </div>
             <span class="add-box_name">{{deteParam.defVal}}</span>
-            <span class="add-box_op" :id="'add-box_op_edit_'+index" @click="editSelf"><i class="fa fa-pencil-square-o"></i></span>
-            <span :class="{'add-box_del':deteParam.delFlag=='0','add-box_rec':deteParam.delFlag=='1'}" @click="deteParam.delFlag=='0'?delSelf():recSelf()"><i :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1'}"></i></span>
+            <span class="add-box_op"  >
+                <i @click="editSelf" class="fa fa-pencil-square-o" :id="'add-box_op_edit_'+index"></i>
+                <i @click="deteParam.delFlag=='0'?delSelf():recSelf()" :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1'}"></i>
+            </span>
+<!--            <span :class="{'add-box_del':deteParam.delFlag=='0','add-box_rec':deteParam.delFlag=='1'}" ></span>-->
         </div>
         <div class="add-box_row" v-show="editSwitch" v-id:[editPreKey]="index">
             <div :id="'r-layer-warn-defval-'+index" >
@@ -347,7 +370,7 @@
                 <div class="form-group form-group-right">
                     <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
                 </div>
-                <span class="add-box_ok" @click="submitSelf"><i class="glyphicon glyphicon-ok"></i></span>
+                <span class="add-box_op" @click="submitSelf" style="right: 0px"><i class="fa fa-check"></i></span>
             </form>
         </div>
     </div>

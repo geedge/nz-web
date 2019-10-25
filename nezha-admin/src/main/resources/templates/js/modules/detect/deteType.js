@@ -89,39 +89,6 @@ var vm = new Vue({
             console.log("update-->"+vm.typeId);
             vm.showList=false;
         },
-        saveOrUpdate: function () {
-
-            if (vm.validate()) { //在下方定义的validate方法
-                return;
-            }
-            var cloneStr=JSON.stringify(vm.deteType);
-            var url = vm.deteType.id == null ? "deteType/save" : "deteType/update";
-            var method = vm.deteType.id == null ? "POST" : "PUT";
-
-            //处理json数据
-            vm.formatDeteTypeToSimple();
-
-
-            $.ajax({
-                type: method,
-                url: baseURL + url,
-                contentType: "application/json",
-                data: JSON.stringify(vm.deteType),
-                success: function (r) {
-                    if (r.code === 200) {
-                        alert('<@spring.message "common.success"/>', function (index) {
-                            vm.reload();
-                        });
-                    } else {
-                        var cloneObj=eval("(" + cloneStr + ")");
-                        vm.deteType=cloneObj;
-                        alert(r.msg);
-                    }
-                }
-            });
-
-
-        },
         del: function (event) {
             var ids = getSelectedRows();
             if (ids == null) {

@@ -121,7 +121,9 @@ var vm = new Vue({
         userGroupsEmpty:false,
         selectorReset:true,
         openAddTypeWindow:false,
-        typeId:null
+        typeId:null,
+        layerId:null,
+        layerReset:true
     },
     created: function () {
         this.getSetState();
@@ -341,7 +343,7 @@ var vm = new Vue({
         },
         openAddTypePannel: function () {
             var index = layer.open({
-                area: ['1000px', '100%'],
+                area: ['600px', '100%'],
                 shade: 0,
                 title: "",
                 type: 1,
@@ -353,9 +355,11 @@ var vm = new Vue({
                 content: $("#add-type-layer-view"),
                 zIndex: layer.zIndex,
                 success: function(layero){
-                    layer.setTop(layero); //重点2
+                    layero.find(".layui-layer-close").removeClass('layui-layer-close2');
+                    layero.find(".layui-layer-close").addClass('layui-layer-close1');
                 },
             });
+            this.layerId=index;
             var ps3 = new PerfectScrollbar('.nodeTree');
         },
         getTabDatas:function(tabData){
@@ -478,9 +482,21 @@ var vm = new Vue({
                 temp.selectorReset = true
             });
         },
+        resetAddTypeLayer: function () {//强制刷新dom
+            var temp = this;
+            temp.layerReset = false;
+            temp.$nextTick(() => {
+                temp.layerReset = true
+            });
+        },
         openAddDetectType:function(index){
             this.openAddTypeWindow=true;
             this.openAddTypePannel();
+        },
+        closeAddType:function(){
+            layer.closeAll();
+            this.resetAddTypeLayer();
+            this.getDeteTypes();
         }
     },
     watch:{

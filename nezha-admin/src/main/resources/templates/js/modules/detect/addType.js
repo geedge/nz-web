@@ -215,10 +215,13 @@ var meta=Vue.extend({
             this.deteMeta.delFlag='0';
             this.removeShadow();
         },
-        validate:function(){
+        validate:function(errContainer){
             var temp=this;
             temp.$v.deteMeta.$touch();
             temp.deteMeta.passFlag=!temp.$v.deteMeta.$error;
+            if(errContainer!=undefined&&errContainer instanceof Array){
+                errContainer.push(temp.$v.deteMeta.$error);
+            }
         },
         addShadow:function(){
             $(this.metaDetailDomSelector+">.shadow").show();
@@ -227,23 +230,15 @@ var meta=Vue.extend({
             $(this.metaDetailDomSelector+">.shadow").hide();
         },
         mouseAt: function(id) {
-            layer.open({
-                type: 4,
-                content: [$("#items" + id).html(), "#position"+id+this.index],
+            layer.tips($("#r-dictype-option-detail-"+id+'-'+this.index).html(),"#r-dictype-option-"+id+'-'+this.index,{
                 tips: [4, "#41B883"],
                 closeBtn: 0,
                 shade: 0
-            })
+            });
         },
         mouseout: function(){
             layer.closeAll("tips");
         },
-        // warnNameRepeat:function(){
-        //     this.nameRepeat=true;
-        // },
-        // removeNameRepeatWarn:function(){
-        //     this.nameRepeat=false;
-        // }
 
     },
     computed: {},
@@ -346,6 +341,7 @@ var addMeta=Vue.extend({
     },
     methods: {
         addMeta:function(){
+
             var name='TEMP-'+this.counter;
             var meta={
                 id: null,
@@ -411,21 +407,6 @@ var addMeta=Vue.extend({
             // }
 
         },
-        // nameRepeatCheck:function(name){
-        //     console.info("name type-->"+(typeof name))
-        //     var temp=this;
-        //     var componets=temp.$refs['r-detect-meta'];
-        //     if(name!=undefined&&name!=null&&name!=''&&typeof name=='string'){
-        //         for (let index in temp.deteMetas){
-        //             var meta=temp.deteMetas[index];
-        //             if(meta.name==name){
-        //                 componets[index].warnNameRepeat();
-        //             }else{
-        //                 componets[index].removeNameRepeatWarn();
-        //             }
-        //         }
-        //     }
-        // }
 
     },
     computed: {},
@@ -438,7 +419,6 @@ var addMeta=Vue.extend({
         // }
     },
     mounted: function () {
-
     }
 })
 
@@ -584,9 +564,9 @@ var addParam=Vue.extend({
         submitSelf:function(){
             var temp=this;
 
-            temp.$v.deteParam.$touch();
 
-            if(temp.$v.deteParam.$error){
+
+            if(temp.validate()){
                 temp.showNameWarningMsg();
                 temp.showDefValWarningMsg();
                 return ;
@@ -595,6 +575,15 @@ var addParam=Vue.extend({
             temp.editSwitch=false;
             temp.listDom.parent().attr("draggable",'true');
 
+        },
+        validate:function(errContainer){
+            var temp=this;
+            temp.$v.deteParam.$touch();
+            if(errContainer!=undefined&&errContainer instanceof Array){
+                errContainer.push(temp.$v.deteParam.$error);
+            }
+
+            return temp.$v.deteParam.$error;
         },
         showNameWarningMsg:function(){
             var temp =this;
@@ -665,6 +654,13 @@ var addType=Vue.extend({
     props: {
         typeId:{
 
+        },
+        parentLayerId:{
+
+        },
+        reloadFunc:{
+            type:Function,
+            required:true
         }
     },
     data: function () {
@@ -687,7 +683,9 @@ var addType=Vue.extend({
             fieldTypes:[],
             dataTypes:[],
             dicTypes:[],
-            reset:true
+            reset:true,
+            metaRequired:true,
+            paramRequired:true
         }
     },
     validations:{
@@ -703,7 +701,7 @@ var addType=Vue.extend({
             },
             content: {},
             i18nCode: {
-                required
+
             },
             remark: {}
         }
@@ -764,10 +762,16 @@ var addType=Vue.extend({
             });
         },
         openMetaWindow: function(i) {
+            var temp=this;
+            $("#metaWindow").appendTo($('body'))
+            if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
+                var parentLayer = $("#layui-layer" + temp.parentLayerId).get(0);
+                var oldParentLeft = parentLayer.style.left;
+            }
             var metaComponets=this.$refs.addMetaWindow.$refs["r-detect-meta"];
             var index = layer.open({
                 area: ['600px', '100%'],
-                shade: 0,
+                shade: 0.01,
                 title: "元数据",
                 type: 1,
                 maxmin: false,
@@ -777,8 +781,10 @@ var addType=Vue.extend({
                 move: false,
                 content: $("#metaWindow"),
                 zIndex: layer.zIndex,
-                success: function(layero){
-                    layer.setTop(layero); //重点2
+                success: function(layero,index){
+                    if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
+                        parentLayer.style.left='250px';
+                    }
                 },
                 cancel:function(){
                     if(metaComponets!=null&&metaComponets!=undefined&&metaComponets.length>0){
@@ -787,9 +793,13 @@ var addType=Vue.extend({
                         }
                     }
 
+                    if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
+                        parentLayer.style.left=oldParentLeft;
+                    }
+
                 }
             });
-
+            console.log(index)
             if(typeof(i)=="number"){
                 metaComponets[i].metaDomClick();
             }
@@ -834,6 +844,7 @@ var addType=Vue.extend({
             $.each(temp.deteType.deteTypeMetas, function (i, v) {
                 temp.deteType.deteTypeMetas[i].fieldType = v.fieldType.code;
                 temp.deteType.deteTypeMetas[i].dataType = v.dataType.code;
+                temp.deteType.deteTypeMetas[i].dicType=v.dicType.type;
             });
         },
         formatDeteTypeToObject: function () {
@@ -892,7 +903,88 @@ var addType=Vue.extend({
                 temp.reset = true
             });
         },
+        saveOrUpdate:function(){
+            var temp=this;
+            if(temp.validate()){
+                return ;
+            }
 
+            var cloneStr=JSON.stringify(temp.deteType);
+            var url = temp.deteType.id == null ? "deteType/save" : "deteType/update";
+            var method = temp.deteType.id == null ? "POST" : "PUT";
+
+            //处理json数据
+            temp.formatDeteTypeToSimple();
+            console.log(temp.deteType)
+
+            $.ajax({
+                type: method,
+                url: baseURL + url,
+                contentType: "application/json",
+                data: JSON.stringify(temp.deteType),
+                success: function (r) {
+                    if (r.code === 200) {
+                        temp.reload();
+                    } else {
+                        var cloneObj=eval("(" + cloneStr + ")");
+                        temp.deteType=cloneObj;
+                        layer.msg(r.msg);
+                    }
+                }
+            });
+        },
+        reload:function(){
+            this.reloadFunc();
+        },
+        validate:function(){
+            var temp=this;
+            temp.$v.deteType.$touch();
+            var typeError=temp.$v.deteType.$error;
+
+            var metaErrorArr=[]
+            var metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
+            if(metaComponets!=null&&metaComponets!=undefined&&metaComponets.length>0){
+                for(let componet of metaComponets){
+                    componet.validate(metaErrorArr);
+                }
+            }
+            var paramErrorArr=[];
+            var paramComponets=temp.$refs['r-detect-param'];
+            if(paramComponets!=null&&paramComponets!=undefined&&paramComponets.length>0){
+                for(let componet of paramComponets){
+                    componet.validate(paramErrorArr);
+                }
+            }
+            var metaError=false;
+            if(metaErrorArr.length<=0){
+                temp.metaRequired=false;
+                metaError=true;
+            }else{
+                temp.metaRequired=true;
+                for (let err of metaErrorArr){
+                    if(err){
+                        metaError=true;
+                        break;
+                    }
+                }
+            }
+
+            var paramError=false;
+            if(paramErrorArr.length<=0){
+                temp.paramRequired=false;
+                paramError=true;
+            }else{
+                temp.paramRequired=true;
+                for (let err of paramErrorArr){
+                    if(err){
+                        paramError=true;
+                        break;
+                    }
+                }
+            }
+            console.log(typeError+"|"+metaError+"|"+paramError);
+            return typeError||metaError||paramError;
+        }
     },
     computed: {},
     watch: {
