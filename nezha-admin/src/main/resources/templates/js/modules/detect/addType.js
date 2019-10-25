@@ -763,12 +763,11 @@ var addType=Vue.extend({
         },
         openMetaWindow: function(i) {
             var temp=this;
-            $("#metaWindow").appendTo($('body'))
             if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
+                $("#metaWindow").appendTo($('body'))
                 var parentLayer = $("#layui-layer" + temp.parentLayerId).get(0);
                 var oldParentLeft = parentLayer.style.left;
             }
-            var metaComponets=this.$refs.addMetaWindow.$refs["r-detect-meta"];
             var index = layer.open({
                 area: ['600px', '100%'],
                 shade: 0.01,
@@ -787,6 +786,7 @@ var addType=Vue.extend({
                     }
                 },
                 cancel:function(){
+                    var metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
                     if(metaComponets!=null&&metaComponets!=undefined&&metaComponets.length>0){
                         for(let componet of metaComponets){
                             componet.validate();
@@ -799,7 +799,6 @@ var addType=Vue.extend({
 
                 }
             });
-            console.log(index)
             if(typeof(i)=="number"){
                 metaComponets[i].metaDomClick();
             }
