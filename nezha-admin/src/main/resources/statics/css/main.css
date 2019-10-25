@@ -333,7 +333,7 @@ tbody > tr > th {font-weight: normal; }
 	height: 160px;
 }
 .add-box_row { /*每行内容*/
-    line-height: 23px;
+    line-height: 22px;
     position: relative;
     padding: 3px 8px 3px 10px;
     border-bottom: 1px solid white;
