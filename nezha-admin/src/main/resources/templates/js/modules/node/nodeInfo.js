@@ -1389,7 +1389,7 @@ var vm = new Vue({
             }
 
             // 7.关于起始位置提示
-            if(data.starts.length < 1){
+            if(data.starts.length < 1 && data.nodeInfo.nodeRoom != null){
                 data.cabStartTitle = "<@spring.message 'node.notEnough.position'/>";
             }else{
                 data.cabStartTitle = "<@spring.message 'common.pleaseSelect'/>";

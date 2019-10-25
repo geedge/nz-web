@@ -184,7 +184,7 @@
                                        v-model.trim="$v.nodeInfo.uSize.$model"
                                        placeholder="<@spring.message 'node.uSize'/>(U)"/>
                                 <span class="add-box2-required-symbol"
-                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
+                                      v-if="nodeInfo.nodeRoom != null">*</span><!--$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired-->
                                 <div class="form-control_error-msg"
                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
                                     <@spring.message 'validate.common.positiveInteger'/>
