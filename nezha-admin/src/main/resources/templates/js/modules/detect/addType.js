@@ -768,6 +768,7 @@ var addType=Vue.extend({
                 var parentLayer = $("#layui-layer" + temp.parentLayerId).get(0);
                 var oldParentLeft = parentLayer.style.left;
             }
+            var metaComponets=null;
             var index = layer.open({
                 area: ['600px', '100%'],
                 shade: 0.01,
@@ -786,7 +787,7 @@ var addType=Vue.extend({
                     }
                 },
                 cancel:function(){
-                    var metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
+                    metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
                     if(metaComponets!=null&&metaComponets!=undefined&&metaComponets.length>0){
                         for(let componet of metaComponets){
                             componet.validate();
