@@ -438,4 +438,13 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
         }
     }
 
+    public boolean checkNameExists(String name,Long id){
+        List<DeteSetInfoEntity> list = this.list(new QueryWrapper<DeteSetInfoEntity>()
+                .ne(id!=null,"id",id)
+                .eq("name", name)
+                .ne("state",'1'));
+
+        return list!=null&&list.size()>0;
+    }
+
 }
