@@ -8,11 +8,24 @@
     .ztree {
     	padding: 1px 0 0 6px !important;
     }
+    .nodeList{
+        width: calc(100% - 250px);    /*根据页面宽度变化而变化*/
+        display: inline-block;
+        float:left
+    }
+    .content{
+        position: relative;
+        width: 250px;
+        display: inline-block;
+        padding-left: 15px;
+        float:left;
+        height: 100%;
+    }
     </style>
 </head>
 <body>
 
-<div id="app" class="" style="width: 250px;display: inline-block;padding-left: 15px;float:left" v-cloak>
+<div id="nodeGroupApp" class="content" v-cloak>
 
     <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
         <@spring.message 'system.system'/>
@@ -25,6 +38,7 @@
             :node="item"
             @addrootgroup="add"
             ref="gtree"> <!-- ref 为获取 组件 或 dom 时使用 -->
+
     </group-tree>
 
     <!-- 添加 / 修改 表单 -->
@@ -97,7 +111,7 @@
 </div>
 
 <!-- 节点列表 -->
-<div id="nodeInfoApp" class="" style="width: 77%;display: inline-block;float:left" v-cloak>
+<div id="nodeInfoApp" class="nodeList" v-cloak>
 
     <div class="form-group">
         <a class="" href="#" style="font-size: 16px;"><@spring.message 'node.list'/></a>
@@ -194,5 +208,9 @@
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeGroup.js"></script>-->
 <#include "/js/modules/node/nodeGroup.js">
 <#include "/js/modules/node/nodeInfo.js">
+<script>
+    // 滚动条
+    // var perfect = new PerfectScrollbar('.content');
+</script>
 </body>
 </html>

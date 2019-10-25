@@ -92,7 +92,6 @@ let groupTree = Vue.component('groupTree', {
         },
         // 鼠标划过展示功能按钮
         addHoverDom: function (treeId, treeNode) {
-            //var node = this.node;
             var parent = this.$parent;
             var sObj = $("#" + treeNode.tId + "_span");
             if (treeNode.editNameFlag || $("#addBtn_" + treeNode.tId).length > 0 || treeNode.allowSub == 0) { // 可以让不可添加的按钮隐藏
@@ -210,7 +209,7 @@ var nameCheck = function (value, nodeGroup) {
 }
 
 var vue = new Vue({
-    el: "#app",
+    el: "#nodeGroupApp",
     data: this.data,
     validations: {
         nodeGroup: {
@@ -255,6 +254,7 @@ var vue = new Vue({
                     parentGroup: null
                 };
                 vue.nodeGroup.parentGroup = node;
+                vue.$set(vue.nodeGroup.parentGroup,"name",node.nodeTitle);
             }
             vue.count = 1;
             this.open("<@spring.message 'common.add'/>");
@@ -342,7 +342,7 @@ var vue = new Vue({
         },
         open: function (title) {
             layer.open({
-                area: ['50%', '100%'],
+                area: ['550px', '100%'],
                 shade: 0,
                 title: title,
                 type: 1,

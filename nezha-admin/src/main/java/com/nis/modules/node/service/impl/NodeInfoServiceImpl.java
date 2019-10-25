@@ -10,16 +10,14 @@ import com.nis.modules.node.dao.NodeGroupRelDao;
 import com.nis.modules.node.dao.NodeInfoDao;
 import com.nis.modules.node.dao.NodeRoomDao;
 import com.nis.modules.node.entity.*;
-import com.nis.modules.node.service.NodeCabinetService;
-import com.nis.modules.node.service.NodeGroupInfoService;
-import com.nis.modules.node.service.NodeInfoService;
-import com.nis.modules.node.service.SystemNodeRelService;
+import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.org.apache.xalan.internal.lib.NodeInfo;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +57,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     // 机柜service
     @Autowired
     private NodeCabinetService nodeCabinetService;
+
+    @Autowired
+    private NodeGroupRelService nodeGroupRelService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -328,16 +329,30 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             this.checkTypeAndTag(nodeInfoEntity);
 
             //3. IP地址转换 IP整数
+            Date now = new Date();
+            Long systemId = ShiroUtils.getCurrSystemId();
             nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
             if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
                 //4. 密码加密 base64
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
             }
-            nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
-            nodeInfoEntity.setOpTime(new Date());
+            nodeInfoEntity.setOperator(systemId);
+            nodeInfoEntity.setOpTime(now);
 
             //5. 入库
             nodeInfoDao.save(nodeInfoEntity);
+
+            //6.判断是否选择节点组
+            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroupIds())){
+                List<NodeGroupRelEntity> list = new ArrayList<>();
+                for (Long groupId : nodeInfoEntity.getGroupIds()) {
+                    list.add(new NodeGroupRelEntity(groupId, nodeInfoEntity.getUuid(), systemId, now));
+                }
+                // 在此处添加
+                if (list != null && list.size() > 0) {
+                    nodeGroupRelService.saveBatch(list);
+                }
+            }
         } else {
             throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
         }
@@ -450,16 +465,31 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             this.checkTypeAndTag(nodeInfoEntity);
 
             //3 IP地址转换 IP整数
+            Date now = new Date();
+            Long systemId = ShiroUtils.getCurrSystemId();
             nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
             //4. 密码加密 base64
             if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
             }
-            nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
-            nodeInfoEntity.setOpTime(new Date());
+            nodeInfoEntity.setOperator(systemId);
+            nodeInfoEntity.setOpTime(now);
 
             //5. 入库
             update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+            //6.判断是否给节点指定节点组
+            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroupIds())){
+                // 先删除
+                nodeGroupRelService.remove(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+                // 再添加
+                List<NodeGroupRelEntity> list = new ArrayList<>();
+                for (Long groupId : nodeInfoEntity.getGroupIds()) {
+                    list.add(new NodeGroupRelEntity(groupId, nodeInfoEntity.getUuid(), systemId, now));
+                }
+                if (list != null && list.size() > 0) {
+                    nodeGroupRelService.saveBatch(list);
+                }
+            }
         } else {
             throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
         }
@@ -672,5 +702,16 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         this.getTagName(queryNodeBySystemId);
         page.setRecords(queryNodeBySystemId);
         return new PageUtils(page);
+    }
+
+    /**
+     * 根据节点UUID 获取所属节点组集合
+     * @param uuid
+     * @return
+     */
+    @Override
+    public List<NodeGroupRelEntity> getGroupsById(Long uuid) {
+        List<NodeGroupRelEntity> list = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", uuid));
+        return list;
     }
 }

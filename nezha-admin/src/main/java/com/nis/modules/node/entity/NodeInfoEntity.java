@@ -120,7 +120,19 @@ public class NodeInfoEntity implements Serializable {
     private String tagName;
 
 
+    /**
+     * 节点组IDS 节点添加/修改选择节点组
+     */
+    @TableField(exist = false)
+    private List<Long> groupIds;
 
+    public List<Long> getGroupIds() {
+        return groupIds;
+    }
+
+    public void setGroupIds(List<Long> groupIds) {
+        this.groupIds = groupIds;
+    }
 
     public Long getId() {
         return id;

@@ -4,8 +4,10 @@
 <head>
     <title>节点管理</title>
     <#include "/header.html">
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/detect.css">
 </head>
 <body>
+<!-- 节点APP -->
 <div id="nodeInfoApp" v-cloak>
 
     <!-- 列表  查询 -->
@@ -143,11 +145,11 @@
             </div>
 
             <!-- 设备标签 -->
-            <div class="form-group">
+            <div class="form-group"><!-- @open="checkNodeType()" -->
                 <div class="col-sm-2 control-label"><@spring.message 'node.tag'/></div>
                 <div class="col-sm-9">
                     <multiselect :options="nodeTags" label="value" :show-labels="false" :disabled="disabledFlag"
-                                 v-model="nodeInfo.tag" @open="checkNodeType()"
+                                 v-model="nodeInfo.tag"
                                  placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                 </div>
             </div>
@@ -169,7 +171,7 @@
 
             <!-- 位置信息 -->
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'node.position.information'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'node.position.information'/></div>
                 <div class="col-sm-9">
 
                     <div class="add-box2">
@@ -181,7 +183,7 @@
                                        :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
                                        v-model.trim="$v.nodeInfo.uSize.$model"
                                        placeholder="<@spring.message 'node.uSize'/>(U)"/>
-                                <span class=""
+                                <span class="add-box2-required-symbol"
                                       v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">*</span>
                                 <div class="form-control_error-msg"
                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
@@ -194,24 +196,26 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <!-- 机房 -->
+                        <div class="form-group"> <!-- @open="checkUsize()" ,$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch() -->
                             <div class="col-sm-3 control-label"><@spring.message 'node.room.name'/></div>
                             <div class="col-sm-8">
                                 <multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
                                              :show-labels="false"
-                                             @close="getCabinets($event),$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()"
-                                             v-model="nodeInfo.nodeRoom" @open="checkUsize()"
+                                             @close="getCabinets($event)"
+                                             v-model="nodeInfo.nodeRoom"
                                              placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <!-- 机柜 -->
+                        <div class="form-group"> <!-- @open="checkNodeRoom()  ,$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()" -->
                             <div class="col-sm-3 control-label"><@spring.message 'node.cabinet.name'/></div>
                             <div class="col-sm-8">
                                 <multiselect :options="cabinets" label="name" :disabled="disabledFlag"
                                              :show-labels="false"
-                                             @close="getStarts($event),$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
-                                             v-model="nodeInfo.cabinetId" @open="checkNodeRoom()"
+                                             @close="getStarts($event)"
+                                             v-model="nodeInfo.cabinetId"
                                              placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                                 <span class="add-box2-required-symbol"
                                       v-if="nodeInfo.nodeRoom != null">*</span>
@@ -222,17 +226,18 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <!-- 起始位置 -->
+                        <div class="form-group"><!--  @open="checkCabStart()" -->
                             <div class="col-sm-3 control-label"><@spring.message 'node.cabinetStart'/></div>
                             <div class="col-sm-8" style="position:relative;">
                                 <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
-                                             v-model="nodeInfo.cabinetStart" @open="checkCabStart()"
+                                             v-model="nodeInfo.cabinetStart"
                                              @blur="$v.nodeInfo.uSize.$touch()"
-                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                             :placeholder="cabStartTitle"></multiselect>
                                 <span class="add-box2-required-symbol"
                                       v-if="nodeInfo.nodeRoom != null">*</span>
                                 <div class="form-control_error-msg"
-                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired || !$v.nodeInfo.cabinetStart.startRequired">
+                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
                                     <@spring.message 'validate.common.required'/>
                                 </div>
                             </div>
@@ -294,6 +299,29 @@
                 </div>
             </div>
 
+            <!-- 选择节点组 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label">节点组</div>
+                <div class="col-sm-9">
+                    <div class="add-box">
+                        <div class="add-box_head">
+                            节点组
+                        </div>
+                        <div class="add-box_rows psNg">
+                            <div class="add-box_row" v-for="item in checkedGroups">
+                                <span class="add-box_row_item">{{item.absolutePath}}</span>
+                                <span class="add-box_op">
+	                            	<i @click="unCheckGroup(item)" class="fa fa-trash-o"></i>
+	                            </span>
+                            </div>
+                        </div>
+                        <div class="add-box_foot">
+                            <i @click="showNodeGroups" class="fa fa-plus"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <pre v-show="disabledFlag" style="text-align: center;color: red">此节点已和其他业务系统建立联系,点击保存和当前系统再次建立联系</pre>
 
             <!-- 保存 / 返回 -->
@@ -309,8 +337,123 @@
         </form>
 
     </div>
+
+    <!-- 节点组tree -->
+    <div v-show="!showGroupTree" id="groupTree" style="margin: 10px 0px 0px 30px">
+
+        <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
+            <@spring.message 'system.system'/>
+            <div style="clear:both"></div>
+        </div>
+        <template v-for="item in systems" >
+            <group-tree1
+                    :zNodes="item.nodegroups"
+                    :node="item"
+                    @addrootgroup="addNodeGroup"
+                    ref="gtree"
+                    @tree-select="selectedTreeDatas"
+                    @tree-unselect="unSelectedTreeDatas"> <!-- ref 为获取 组件 或 dom 时使用 -->
+
+            </group-tree1>
+        </template>
+    </div>
+
+
+    <!-- 添加 / 修改 表单 -->
+    <div v-show="!showGroupForm" id="groupForm">
+        <div class="panel panel-default">
+            <form class="form-horizontal">
+
+                <!-- 上级节点组 -->
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.parent.group'/></div>
+                    <div class="col-sm-9">
+                        <input disabled type="text" class="form-control"
+                               v-model.trim="nodeGroupDto.parentGroup.name"
+                               placeholder="<@spring.message 'nodegroup.parent.group'/>"/>
+                        <span class="required-symbol">*</span>
+                    </div>
+                </div>
+
+                <!-- 业务系统 -->
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'system.system'/></div>
+                    <div class="col-sm-9">
+                        <input disabled type="text" class="form-control" v-model.trim="system.name"
+                               placeholder="<@spring.message 'system.system'/>"/>
+                    </div>
+                </div>
+
+                <!-- 节点组名称 -->
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control"
+                               :class="{'form-control--error': $v.nodeGroupDto.name.$dirty && !$v.nodeGroupDto.name.required}"
+                               v-model.trim="$v.nodeGroupDto.name.$model"
+                               placeholder="<@spring.message 'nodegroup.name'/>"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg"
+                             v-if="$v.nodeGroupDto.name.$dirty && !$v.nodeGroupDto.name.required">
+                            <@spring.message 'validate.common.required'/>
+                        </div>
+                        <div class="form-control_error-msg"
+                             v-if="$v.nodeGroupDto.name.$dirty && !$v.nodeGroupDto.name.groupNameCheck">
+                            <@spring.message 'validate.common.name.repeat'/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 备注 -->
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" v-model.trim="nodeGroupDto.remark"
+                               placeholder="<@spring.message 'common.remark'/>"/>
+                    </div>
+                </div>
+            </form>
+
+            <!-- 保存 / 返回 -->
+            <div class="form-group_opbox" style="margin-bottom: 20px">
+                <div>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"
+                            style="width: 55px" @click="saveOrUpdateGroup"><i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning"
+                            style="width: 55px" @click="closeGroupForm"><i class="fa fa-reply"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
-</div>
+
+<!-- 节点组树结构模板 -->
+<template id="treeTemplate">
+    <div class="mytree-item">
+
+        <!-- 业务系统名称 + 添加按钮 -->
+        <div>
+            <span :id="'icon' + node.id" class="mytreeicon mytreeicon-open" @click="showTree(node)"></span>
+            <span class="mytree-subtitle" @mouseenter="showBtn(node)" @mouseleave="hideBtn(node)">
+                    <a :title="node.name" @click="showTree(node)">{{node.name}}</a>
+                <!-- 添加按钮 -->
+		           	<span :id="'icon2' + node.id" class="mytreeicon mytreeicon-add_unact" @mouseenter="showBtn2(node)"
+                          @mouseleave="hideBtn2(node)" @click="addRootGroup"
+                          title="<@spring.message 'common.add'/><@spring.message 'nodegroup.root.group'/>"></span>
+	           	</span>
+        </div>
+
+        <!-- 树 div -->
+        <div style="clear:both"></div>
+        <div class="mytree-box" :id="'box' + node.id">
+            <ul :id="'treeDemo'+node.id" class="ztree"></ul>
+        </div>
+        <div style="clear:both"></div>
+
+    </div>
+</template>
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
 <#include "/js/modules/node/nodeInfo.js">
 
@@ -339,5 +482,9 @@
     }
 
 </style>
+<script>
+    // 选择节点组DIV滚动条
+    var perfect = new PerfectScrollbar('.psNg');
+</script>
 </body>
 </html>
