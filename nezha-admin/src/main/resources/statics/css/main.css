@@ -384,7 +384,7 @@ tbody > tr > th {font-weight: normal; }
 } */
 .add-box_ops { /*行末的按钮区域*/
 	position: absolute;
-	right: 10px;
+	right: 15px;
 	color: #777777;
 }
 .add-box_ops>i {
