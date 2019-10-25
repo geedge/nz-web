@@ -311,7 +311,7 @@ var vm = new Vue({
                 addr: null,
                 remarks: null
             }
-            this.open("添加", "roomForm");
+            this.open("添加机房", "roomForm");
         },
         addCab: function (room) { // 当前机房
             layer.closeAll('page');
@@ -331,18 +331,18 @@ var vm = new Vue({
             vm.$set(vm.nodeCabinet, "roomName", room.name);
             vm.$set(vm.nodeCabinet, "roomRow", room.row);
             vm.$set(vm.nodeCabinet, "roomCol", room.col);
-            this.open("添加", "cabForm");
+            this.open("添加机柜", "cabForm");
         },
         updateRoom: function (room) {
             vm.$v.nodeRoom.$reset();    //进入新增页面时，将校验触发状态清空($dirty=true -> false)
             this.getRoomInfo(room.id);
-            this.open("修改", "roomForm");
+            this.open("修改机房", "roomForm");
         },
         updateCab: function (cabinet) {
             vm.$v.nodeCabinet.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
             vm.$set(vm, "readFlag", true);
             this.getCabInfo(cabinet.id);
-            this.open("修改", "cabForm");
+            this.open("修改机柜", "cabForm");
         },
         delRoom: function (room) {
             confirm("确认删除吗?", function () {
