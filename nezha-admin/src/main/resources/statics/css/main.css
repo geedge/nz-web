@@ -183,6 +183,9 @@ tbody > tr > th {font-weight: normal; }
 .form-group_opbox {
 	text-align: center;
 }
+.form-group_opbox .btn {
+	padding: 4px 12px;
+}
 .form-group_opbox > div {
 	display: inline-block;
 }
