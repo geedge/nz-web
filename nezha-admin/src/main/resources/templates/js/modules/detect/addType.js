@@ -683,7 +683,8 @@ var addType=Vue.extend({
             fieldTypes:[],
             dataTypes:[],
             dicTypes:[],
-            reset:true,
+            metaReset:true,
+            paramReset:true,
             metaRequired:true,
             paramRequired:true
         }
@@ -763,9 +764,10 @@ var addType=Vue.extend({
         },
         openMetaWindow: function(i) {
             var temp=this;
+            var parentLayer=null;
             if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
                 $("#metaWindow").appendTo($('body'))
-                var parentLayer = $("#layui-layer" + temp.parentLayerId).get(0);
+                parentLayer= $("#layui-layer" + temp.parentLayerId).get(0);
                 var oldParentLeft = parentLayer.style.left;
             }
             var metaComponets=null;
@@ -894,13 +896,21 @@ var addType=Vue.extend({
         },
         delParam:function(index){
             var temp=this;
-            temp.deteType.deteTypeParams.splice(index,1)
+            temp.deteType.deteTypeParams.splice(index,1);
+            temp.resetParamDom();
         },
-        resetDom: function () {//强制刷新dom
+        resetMetaDom: function () {//强制刷新dom
             var temp = this;
-            temp.reset = false;
+            temp.metaReset = false;
             temp.$nextTick(() => {
-                temp.reset = true
+                temp.metaReset = true
+            });
+        },
+        resetParamDom:function(){
+            var temp = this;
+            temp.paramReset = false;
+            temp.$nextTick(() => {
+                temp.paramReset = true
             });
         },
         saveOrUpdate:function(){

@@ -17,6 +17,16 @@ $(function () {
                 }
             },
             {label: '<@spring.message "param"/>', name: 'params', sortable: false, width: 100},
+            {
+                label: '告警',
+                sortable: false,
+                width: 100,
+                formatter:function(value, options, rowData){
+                    var tdId="td-warn-"+rowData.id;
+                    return '<div id='+tdId+'>222</div>'
+                }
+            },
+
             {label: '<@spring.message "common.opTime"/>', name: 'opTime', sortable: true, width: 100},
             {label: '<@spring.message "common.remark"/>', name: 'remark', sortable: false, width: 100},
         ],
@@ -363,7 +373,7 @@ var vm = new Vue({
                 type: 1,
                 maxmin: false,
                 scrollbar: false,
-                offset: 'r',
+                offset: 'l',
                 closeBtn: 1,
                 move: false,
                 content: $("#add-type-layer-view"),
