@@ -287,6 +287,8 @@ var groupTree1 = Vue.component('groupTree1', {
         });
         if (currSys.id > 1) { // 当前不是global
             $("#box" + this.node.id).show();
+            // 如果只是一条数据的话 默认展开 图标状态转换
+            $("#icon" + this.node.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
         }else{
             $("#box" + this.node.id).hide();
         }
