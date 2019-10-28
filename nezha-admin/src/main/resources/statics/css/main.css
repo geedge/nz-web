@@ -22,7 +22,9 @@ html { overflow-x:hidden; }
 .ps__thumb-y {
 	background-color: #ddd;
 }
-
+.ps__rail-y {
+	z-index: 99999;
+}
 .content-header {
 	position: relative;
 	padding: 0 0 3px 8px
@@ -111,8 +113,12 @@ tbody > tr > th {font-weight: normal; }
 
 }
 
-.form-horizontal{
-	width:550px;padding-top:20px;
+.form-horizontal {
+	width: 550px;
+	padding-top: 20px;
+}
+.form-horizontal_400 {
+	width: 400px;
 }
 .form-horizontal .form-control {
 	display: inline-block;
@@ -122,7 +128,7 @@ tbody > tr > th {font-weight: normal; }
 .form-control_error-msg {
 	color: #f57f6c;
 }
-.required-symbol, .required-symbol_meta-model {
+.required-symbol, .required-symbol_400 {
     color: #f57f6c;
     font-size: 20px;
     display: inline-block;
@@ -132,11 +138,8 @@ tbody > tr > th {font-weight: normal; }
 .required-symbol {
 	left: 370px;
 }
-.required-symbol_meta-model {
+.required-symbol_400 {
 	left: 270px;
-}
-.required-symbol {
-	left: 370px;
 }
 .multiselect {
 	border-radius: 4px;

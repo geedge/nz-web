@@ -1,6 +1,6 @@
 <script type="text/x-template" id="addTypeTemplate">
-    <div class="panel panel-default">
-        <div class="panel-heading">{{title}}</div>
+    <div :class="{'panel panel-default':typeNotLayer}" style="overflow-x: hidden">
+        <div v-show="typeNotLayer" class="panel-heading">{{title}}</div>
         <form class="form-horizontal">
             <div class="form-group">
                 <div class="col-sm-2 control-label">名称:</div>
@@ -182,7 +182,7 @@
             </template>
             <!-- 新增按钮 -->
             <div class="meta-win_list-foot">
-                <span  @click="addMeta"><i class="fa fa-plus"></i></span>
+                <i @click="addMeta" class="fa fa-plus"></i>
             </div>
         </div>
         <!-- meta详情 -->
@@ -206,13 +206,13 @@
         </div>
         <div v-id:[metaDetailDomIdKey]="index"  class="r-dete-meta-detail" >
             <div>
-                <form class="form-horizontal" >
+                <form class="form-horizontal form-horizontal_400" >
                     <div>
                         <div class="form-group">
                             <div class="col-sm-3 control-label"><@spring.message 'common.name'/>:</div>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control  nameEvent" v-model="$v.deteMeta.name.$model"/>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.name.$dirty&&!$v.deteMeta.name.required"><@spring.message 'validate.common.required'/></div>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.name.$dirty&&!$v.deteMeta.name.inPageNameRepeat"><@spring.message 'validate.deteType.name.repeat'/></div>
                             </div>
@@ -237,7 +237,7 @@
                                     </template>
 
                                 </multiselect>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.fieldType.$dirty&&!$v.deteMeta.fieldType.required"><@spring.message 'validate.common.required'/></div>
                             </div>
                         </div>
@@ -260,7 +260,7 @@
                                         </div>
                                     </template>
                                 </multiselect>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.dataType.$dirty&&!$v.deteMeta.dataType.required"><@spring.message 'validate.common.required'/></div>
                             </div>
                         </div>
@@ -268,7 +268,7 @@
                             <div class="col-sm-3 control-label"><@spring.message 'deteType.dataLenth'/>:</div>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control" v-model="$v.deteMeta.dataLenth.$model"/>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.dataLenth.$dirty&&!$v.deteMeta.dataLenth.required"><@spring.message 'validate.common.required'/></div>
                             </div>
                         </div>
@@ -276,7 +276,7 @@
                             <div class="col-sm-3 control-label">OID:</div>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control" v-model="$v.deteMeta.oid.$model"/>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="deteMethod.code=='2'&&$v.deteMeta.oid.$dirty&&!$v.deteMeta.oid.required"><@spring.message 'validate.common.required'/></div>
                             </div>
                         </div>
@@ -284,7 +284,7 @@
                             <div class="col-sm-3 control-label"><@spring.message 'deteType.unit'/>:</div>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control" v-model="$v.deteMeta.unit.$model"/>
-                                <span class="required-symbol_meta-model">*</span>
+                                <span class="required-symbol_400">*</span>
                                 <div class="form-control_error-msg" v-if="$v.deteMeta.unit.$dirty&&!$v.deteMeta.unit.required"><@spring.message 'validate.common.required'/></div>
                             </div>
                         </div>

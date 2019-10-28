@@ -695,7 +695,8 @@ var addType=Vue.extend({
             metaReset:true,
             paramReset:true,
             metaRequired:true,
-            paramRequired:true
+            paramRequired:true,
+            typeNotLayer: true
         }
     },
     validations:{
@@ -728,6 +729,9 @@ var addType=Vue.extend({
             temp.getDataTypes();
             temp.getDicTypes();
             temp.initDeteType();
+            if (temp.$parent.typeNotLayer == false) {
+            	temp.typeNotLayer = false;
+            }
         },
         initDeteType:function(){
             var temp=this;
@@ -777,9 +781,9 @@ var addType=Vue.extend({
             if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
                 $("#metaWindow").appendTo($('body'))
                 parentLayer= $("#layui-layer" + temp.parentLayerId).get(0);
-                var oldParentLeft = parentLayer.style.left;
             }
             var metaComponets=null;
+            $(parentLayer).animate({right: "600px"}, "normal");
             var index = layer.open({
                 area: ['600px', '100%'],
                 shade: 0.01,
@@ -794,7 +798,7 @@ var addType=Vue.extend({
                 zIndex: layer.zIndex,
                 success: function(layero,index){
                     if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
-                        parentLayer.style.left='250px';
+                        $(parentLayer).animate({right: "600px"});
                     }
                 },
                 cancel:function(){
@@ -806,9 +810,11 @@ var addType=Vue.extend({
                     }
 
                     if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
-                        parentLayer.style.left=oldParentLeft;
+                    	$(parentLayer).animate({right: 0}, "normal");
                     }
-
+                },
+                end: function() {
+                	$("html").css("overflow-y", "hidden");
                 }
             });
             if(typeof(i)=="number"){

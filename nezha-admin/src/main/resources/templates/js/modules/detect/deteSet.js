@@ -144,7 +144,8 @@ var vm = new Vue({
         typeId:null,
         layerId:null,
         layerReset:true,
-        isUpdate:false
+        isUpdate:false,
+        typeNotLayer: false
     },
     created: function () {
         this.getSetState();
@@ -347,7 +348,7 @@ var vm = new Vue({
             vm.deteTypeIsNull=false;
             vm.showNodeSelect = true;
             var index = layer.open({
-                area: ['50%', '100%'],
+                area: ['610px', '100%'],
                 shade: 0,
                 title: "<@spring.message 'common.selectNodeOrNodeGroup'/>",
                 type: 1,
@@ -367,9 +368,9 @@ var vm = new Vue({
         },
         openAddTypePannel: function () {
             var index = layer.open({
-                area: ['600px', '100%'],
+                area: ['540px', '100%'],
                 shade: 0,
-                title: "",
+                title: "监测类别",
                 type: 1,
                 maxmin: false,
                 scrollbar: false,
@@ -377,13 +378,14 @@ var vm = new Vue({
                 closeBtn: 1,
                 move: false,
                 content: $("#add-type-layer-view"),
-                zIndex: layer.zIndex,
-                success: function(layero){
-                    layero.find(".layui-layer-close").removeClass('layui-layer-close2');
-                    layero.find(".layui-layer-close").addClass('layui-layer-close1');
-                },
+                end: function() {
+                	$("html").css("overflow-y", "auto");
+                }
             });
-            this.layerId=index;
+            this.layerId = index;
+            addType.typeNotLayer = false;
+            $("#layui-layer" + index).get(0).style.left = "unset";
+            $("#layui-layer" + index).get(0).style.right = "0";
             var ps3 = new PerfectScrollbar('.nodeTree');
         },
         getTabDatas:function(tabData){

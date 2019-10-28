@@ -1,14 +1,3 @@
-/*滚动条颜色*/
-.ps__thumb-y {
-    background-color: #ddd;
-}
-/*将滚动条放在最顶层*/
-.ps__rail-y{
-    top: 32px;
-    right: 0px;
-    height: 135px;
-    z-index:99999;
-}
 .metatype-question {
     display: inline-block;
     margin-left: 2px;
@@ -24,9 +13,6 @@
     display:inline-block;
     padding-top: 18px;
     width: 400px;
-}
-.meta-details .form-horizontal {
-    width:400px;
 }
 .meta-win_list{
     float:left;
@@ -46,6 +32,9 @@
     border-bottom: 1px solid #ffffff;
     position: relative;
     top:3px;
+}
+.meta-win_list-foot>i {
+	cursor: pointer;
 }
 .meta-win_item {
     padding: 15px 7px 7px 15px;
