@@ -1,9 +1,6 @@
 <script >
 $(function () {
 
-    // 选择节点组滚动条
-    var psNg = new PerfectScrollbar('.psNg');
-
     $("#jqGrid").jqGrid({
         url: baseURL + '/node/list',
         datatype: "json",
@@ -767,6 +764,7 @@ var vm = new Vue({
             // 重新获取可用机柜信息
             this.getRooms();
             // 初始化 节点组信息
+            vm.systems = [];
             vm.checkedGroups = [];
             // 默认在线状态为上线
             vm.nodeStates.some(item=>{
@@ -786,6 +784,8 @@ var vm = new Vue({
                 return;
             }
             vm.showList = false;
+            // 初始化 节点组信息
+            vm.systems = [];
             vm.checkedGroups = [];
             vm.title = "<@spring.message 'common.edit'/>";
             // 查询详情
@@ -916,6 +916,8 @@ var vm = new Vue({
                 },
                 page: 1
             }).trigger("reloadGrid");
+            // 销毁组件
+            vm.systems = [];
             layer.closeAll();
         },
         getTags: function () {

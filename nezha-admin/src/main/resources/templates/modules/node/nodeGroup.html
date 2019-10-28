@@ -19,11 +19,10 @@
         display: inline-block;
         padding-left: 15px;
         float:left;
-        height: 100%;
     }
     </style>
 </head>
-<body>
+<body style="position: relative;">
 
 <div id="nodeGroupApp" class="content" v-cloak>
 
@@ -209,6 +208,12 @@
 <#include "/js/modules/node/nodeGroup.js">
 <#include "/js/modules/node/nodeInfo.js">
 <script>
+    var groupPrefect = new PerfectScrollbar('.content');
+    window.onload = function () {
+        var h = document.documentElement.clientHeight;// 可见区域高度
+        var ngApp =  document.getElementById("nodeGroupApp");
+        ngApp.style.height = h + 'px';
+    }
 </script>
 </body>
 </html>
