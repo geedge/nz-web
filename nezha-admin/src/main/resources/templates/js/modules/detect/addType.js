@@ -181,6 +181,9 @@ var meta=Vue.extend({
             temp.metaDetailDom=$(temp.metaDetailDomSelector);
             temp.metaDom.off("click").on("click",temp.metaDomClick)
             temp.metaDetailDom.appendTo($("#meta-details"));
+            if(temp.deteMeta.bestNew!=undefined&&temp.deteMeta.bestNew!=null&&temp.deteMeta.bestNew){
+                temp.metaDomClick();
+            }
             if(temp.deteMeta.delFlag=='1'){
                 temp.addShadow();
             }
@@ -361,8 +364,14 @@ var addMeta=Vue.extend({
                 remark: '',
                 delFlag: '0',
                 new:true,
+                bestNew:true,
                 passFlag:true
             };
+
+            for (let meta of this.deteMetas){
+                meta.bestNew=false;
+            }
+
             this.deteMetas.push(meta);
             this.counter++;
         },

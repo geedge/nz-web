@@ -373,7 +373,7 @@ var vm = new Vue({
                 type: 1,
                 maxmin: false,
                 scrollbar: false,
-                offset: 'l',
+                offset: 'r',
                 closeBtn: 1,
                 move: false,
                 content: $("#add-type-layer-view"),
