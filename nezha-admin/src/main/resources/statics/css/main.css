@@ -340,6 +340,7 @@ tbody > tr > th {font-weight: normal; }
 }
 .add-box_cell { /*行内单元格*/
 	display: inline-block;
+	vertical-align:top;
 }
 .add-box_cell_25 {
 	width: 25%;
@@ -364,6 +365,7 @@ tbody > tr > th {font-weight: normal; }
 }
 .add-box_input {
 	height: 26px;
+	
 }
 .add-box_tag1, .add-box_tag2 { /*自定义标签*/
     font-size: 12px;
@@ -387,6 +389,14 @@ tbody > tr > th {font-weight: normal; }
 	right: 15px;
 	color: #777777;
 }
+.add-box_required-symbol{
+    position: absolute;
+    display: inline-block;
+    top: 10px;
+    left: 295px;
+    color: #f57f6c;
+    font-size: 20px;
+}
 .add-box_ops>i {
 	cursor: pointer;
 }
@@ -397,5 +407,17 @@ tbody > tr > th {font-weight: normal; }
 }
 .add-box_foot>i {
 	cursor: pointer;
+}
+.add-box .multiselect__select { /*组件内部multiselect样式*/
+	height: 26px;
+}
+.add-box .multiselect__tags {
+	height: 26px;
+	padding-top: 5px;
+}
+.add-box .multiselect__option {
+	padding: 10px;
+	min-height: 30px;
+	font-size: 13px;
 }
 /* add-box组件end */

@@ -173,8 +173,76 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.position.information'/></div>
                 <div class="col-sm-9">
-
-                    <div class="add-box2">
+                
+					<div class="add-box">
+						<div class="add-box_body">
+							<div class="add-box_row">
+								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.uSize'/>(U)</span>
+								<span class="add-box_cell add-box_cell_60">
+									<input type="text" class="form-control add-box_input"
+                                       :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
+                                       v-model.trim="$v.nodeInfo.uSize.$model"
+                                       placeholder="<@spring.message 'node.uSize'/>(U)"/>
+	                                <span class="add-box_required-symbol"
+	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+	                                <div class="form-control_error-msg"
+	                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
+	                                    <@spring.message 'validate.common.positiveInteger'/>
+	                                </div>
+	                                <div class="form-control_error-msg"
+	                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
+	                                    <@spring.message 'validate.common.required'/>
+	                                </div>
+								</span>
+							</div>
+							<div class="add-box_row">
+								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.room.name'/></span>
+								<span class="add-box_cell add-box_cell_60">
+									<multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
+                                             :show-labels="false"
+                                             class="add-box_input"
+                                             @close="getCabinets($event)"
+                                             v-model="nodeInfo.nodeRoom"
+                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+								</span>
+							</div>
+							<div class="add-box_row">
+								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinet.name'/></span>
+								<span class="add-box_cell add-box_cell_60">
+									<multiselect :options="cabinets" label="name" :disabled="disabledFlag"
+                                             :show-labels="false"
+                                             class="add-box_input"
+                                             @close="getStarts($event)"
+                                             v-model="nodeInfo.cabinetId"
+                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+	                                <span class="add-box_required-symbol"
+	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+	                                <div class="form-control_error-msg"
+	                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
+	                                    <@spring.message 'validate.common.required'/>
+	                                </div>
+								</span>
+							</div>
+							<div class="add-box_row">
+								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinetStart'/></span>
+								<span class="add-box_cell add-box_cell_60">
+									<multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
+                                             v-model="nodeInfo.cabinetStart"
+                                             class="add-box_input"
+                                             @blur="$v.nodeInfo.uSize.$touch()"
+                                             :placeholder="cabStartTitle"></multiselect>
+	                                <span class="add-box_required-symbol"
+	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+	                                <div class="form-control_error-msg"
+	                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
+	                                    <@spring.message 'validate.common.required'/>
+	                                </div>
+								</span>
+							</div>
+						</div>
+					</div>
+					
+                    <!-- <div class="add-box2">
 
                         <div class="form-group">
                             <div class="col-sm-3 control-label"><@spring.message 'node.uSize'/>(U)</div>
@@ -183,8 +251,8 @@
                                        :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
                                        v-model.trim="$v.nodeInfo.uSize.$model"
                                        placeholder="<@spring.message 'node.uSize'/>(U)"/>
-                                <span class="add-box2-required-symbol"
-                                      v-if="nodeInfo.nodeRoom != null">*</span><!--$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired-->
+                                <span class="add-box_required-symbol"
+                                      v-if="nodeInfo.nodeRoom != null">*</span>$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired
                                 <div class="form-control_error-msg"
                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
                                     <@spring.message 'validate.common.positiveInteger'/>
@@ -196,8 +264,8 @@
                             </div>
                         </div>
 
-                        <!-- 机房 -->
-                        <div class="form-group"> <!-- @open="checkUsize()" ,$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch() -->
+                        机房
+                        <div class="form-group"> @open="checkUsize()" ,$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()
                             <div class="col-sm-3 control-label"><@spring.message 'node.room.name'/></div>
                             <div class="col-sm-8">
                                 <multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
@@ -208,8 +276,8 @@
                             </div>
                         </div>
 
-                        <!-- 机柜 -->
-                        <div class="form-group"> <!-- @open="checkNodeRoom()  ,$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()" -->
+                        机柜
+                        <div class="form-group"> @open="checkNodeRoom()  ,$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
                             <div class="col-sm-3 control-label"><@spring.message 'node.cabinet.name'/></div>
                             <div class="col-sm-8">
                                 <multiselect :options="cabinets" label="name" :disabled="disabledFlag"
@@ -217,7 +285,7 @@
                                              @close="getStarts($event)"
                                              v-model="nodeInfo.cabinetId"
                                              placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                                <span class="add-box2-required-symbol"
+                                <span class="add-box_required-symbol"
                                       v-if="nodeInfo.nodeRoom != null">*</span>
                                 <div class="form-control_error-msg"
                                      v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
@@ -226,15 +294,15 @@
                             </div>
                         </div>
 
-                        <!-- 起始位置 -->
-                        <div class="form-group"><!--  @open="checkCabStart()" -->
+                        起始位置
+                        <div class="form-group"> @open="checkCabStart()"
                             <div class="col-sm-3 control-label"><@spring.message 'node.cabinetStart'/></div>
                             <div class="col-sm-8" style="position:relative;">
                                 <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
                                              v-model="nodeInfo.cabinetStart"
                                              @blur="$v.nodeInfo.uSize.$touch()"
                                              :placeholder="cabStartTitle"></multiselect>
-                                <span class="add-box2-required-symbol"
+                                <span class="add-box_required-symbol"
                                       v-if="nodeInfo.nodeRoom != null">*</span>
                                 <div class="form-control_error-msg"
                                      v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
@@ -243,7 +311,7 @@
                             </div>
                         </div>
 
-                    </div>
+                    </div> -->
                 </div>
             </div>
 
@@ -305,12 +373,14 @@
                 <div class="col-sm-9">
                     <div class="add-box">
                         <div class="add-box_head">
-                            节点组
+                            <span class="add-box_cell add-box_cell_30">业务系统</span>
+                            <span class="add-box_cell add-box_cell_60">节点组</span>
                         </div>
-                        <div class="add-box_rows psNg">
+                        <div class="add-box_body psNg">
                             <div class="add-box_row" v-for="item in checkedGroups">
-                                <span class="add-box_row_item">{{item.absolutePath}}</span>
-                                <span class="add-box_op">
+                                <span class="add-box_cell add-box_cell_30">{{item.absolutePath}}</span>
+                                <span class="add-box_cell add-box_cell_60">{{item.absolutePath}}</span>
+                                <span class="add-box_ops">
 	                            	<i @click="unCheckGroup(item)" class="fa fa-trash-o"></i>
 	                            </span>
                             </div>
@@ -457,31 +527,6 @@
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
 <#include "/js/modules/node/nodeInfo.js">
 
-<style>
-    .add-box2 {
-        font-size: 13px;
-        border: 1px solid #cccccc;
-        width: 90%;
-        border-radius: 4px;
-        padding: 15px 0 0 0;
-    }
-
-    .add-box2 .form-group {
-        margin-bottom: 15px;
-    }
-
-
-    /*添加框中必填提示*的style*/
-    .add-box2-required-symbol{
-        position: absolute;
-        display: inline-block;
-        top: 7px;
-        left: 205px;
-        color: #f57f6c;
-        font-size: 20px;
-    }
-
-</style>
 <script>
     // 选择节点组DIV滚动条
     var perfect = new PerfectScrollbar('.psNg');
