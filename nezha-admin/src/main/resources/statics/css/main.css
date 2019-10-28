@@ -339,8 +339,9 @@ tbody > tr > th {font-weight: normal; }
     border-bottom: 1px solid white;
 }
 .add-box_cell { /*行内单元格*/
+	padding-top: 2px;
 	display: inline-block;
-	vertical-align:top;
+	vertical-align: top;
 }
 .add-box_cell_25 {
 	width: 25%;
@@ -365,7 +366,7 @@ tbody > tr > th {font-weight: normal; }
 }
 .add-box_input {
 	height: 26px;
-	
+	margin-top: -2px;
 }
 .add-box_tag1, .add-box_tag2 { /*自定义标签*/
     font-size: 12px;
