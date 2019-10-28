@@ -1,5 +1,9 @@
 <script >
 $(function () {
+
+    // 选择节点组滚动条
+    var psNg = new PerfectScrollbar('.psNg');
+
     $("#jqGrid").jqGrid({
         url: baseURL + '/node/list',
         datatype: "json",
