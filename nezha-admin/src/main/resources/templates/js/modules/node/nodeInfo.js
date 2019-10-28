@@ -118,7 +118,8 @@ var groupTree1 = Vue.component('groupTree1', {
                     beforeEditName: this.beforeEditName,     // 点击编辑时触发，用来判断该节点是否能编辑
                     onCheck: this.zTreeOnCheck               // 选中时触发
                 }
-            }
+            },
+            zTree:null      // 当前ztreeobject
         };
     },
     methods: {
@@ -142,8 +143,8 @@ var groupTree1 = Vue.component('groupTree1', {
                 }
             });
             // 生成树结构
-            var tree = $.fn.zTree.init($("#treeDemo" + this.node.id), this.setting, this.znodes);
-            tree.expandAll(true);
+            this.zTree = $.fn.zTree.init($("#treeDemo" + this.node.id), this.setting, this.znodes);
+            this.zTree.expandAll(true);
         },
         // 删除
         beforeRemove: function (treeId, treeNode) {
@@ -194,7 +195,10 @@ var groupTree1 = Vue.component('groupTree1', {
         },
         zTreeOnCheck:function(event, treeId, treeNode){
             if(treeNode.checked){
-                treeNode.absolutePath = this.node.name + "-> " + this.getNodePath(treeNode);
+                // 节点页面展示业务系统名
+                treeNode.systemName = this.node.name;
+                // 节点页面展示节点组层级路径
+                treeNode.absoluteGroupPath = this.getNodePath(treeNode);
                 this.$emit("tree-select", treeNode);
             }else{
                 this.$emit("tree-unselect", treeNode);
@@ -202,17 +206,17 @@ var groupTree1 = Vue.component('groupTree1', {
         },
         forUpdateNode:function(nodeIds){ // 修改时调用此方法
             var temp = this;
-            var treeObj = $.fn.zTree.getZTreeObj("treeDemo"+temp.node.id);
             nodeIds.forEach(item=>{
-                var nodeObj = treeObj.getNodesByParam("id", item.groupId, null);
+                var nodeObj = this.zTree.getNodesByParam("id", item.groupId, null);
                 if(nodeObj.length >0){
                     // 1. 将节点组名称层级关系传递父组件
                     var currNode = nodeObj[0];
-                    currNode.absolutePath = temp.node.name + "-> " + temp.getNodePath(currNode);
+                    currNode.systemName = this.node.name;
+                    currNode.absoluteGroupPath = temp.getNodePath(currNode);
                     temp.$emit("tree-select", currNode);
                     // 2. 节点状态选中
                     currNode.checked = true;
-                    treeObj.updateNode(currNode, true);
+                    this.zTree.updateNode(currNode, true);
                 }
             });
         },
@@ -231,15 +235,10 @@ var groupTree1 = Vue.component('groupTree1', {
             }else{
                 this.showCurrTree(this.node);
             }
-            if (node.tId == undefined || node.tId == null) { //解决更新操作中 找不到关联节点的问题
-                node = this.zTree.getNodeByParam("id", node.id, null);
-            }
-            node.checked = false;
-            var treeObj = $.fn.zTree.getZTreeObj("treeDemo"+this.node.id);
-            treeObj.updateNode(node, false);
+            this.zTree.checkNode(node,false,true);
         },
         myFilter:function(node){
-            return (node.showCurrTree != undefined);
+           // return (node.showCurrTree != undefined);
         },
         // 一下是 展示/样式相关方法
         showTree: function (item) {
@@ -287,18 +286,6 @@ var groupTree1 = Vue.component('groupTree1', {
             }
         });
         if (currSys.id > 1) { // 当前不是global
-            $("#box" + this.node.id).show();
-        }else{
-            $("#box" + this.node.id).hide();
-        }
-    },
-    updated:function(){
-        console.log("updated 重新挂载")
-        this.init();
-        // 过滤节点是否存在showCurrTree属性  存在则展开节点当前树结构
-        var treeObj = $.fn.zTree.getZTreeObj("treeDemo"+this.node.id);
-        var nodes = treeObj.getNodesByFilter(this.myFilter); // 查找节点集合
-        if(nodes.length > 0){
             $("#box" + this.node.id).show();
         }else{
             $("#box" + this.node.id).hide();
@@ -577,6 +564,7 @@ var data = {
     showGroupForm:true,  // nodeGroup  form 展示与隐藏
     title: "<@spring.message 'common.add'/>",
     cabStartTitle:"<@spring.message 'common.pleaseSelect'/>",
+    uSizeValidateFlag:false,   // 节点高度提示信息标识
     nodeList: [],
     q: {
         name: null, type: null, state: null, ip: null, tag: null
@@ -637,8 +625,8 @@ var data = {
         name: null
     },
     currentZIndex:null,  // 当前弹出层zIndex值
-    checkedGroups:[],    // 当前节点选中的节点组
-    currSystem: null     // 当前业务系统ID
+    checkedGroups:[],    // 当前节点选中的节点组   数据为ztree 节点数据 包含ztree node 属性
+    currSystem: null,     // 当前业务系统ID
 };
 
 Vue.config.devtools = true;
@@ -1028,6 +1016,13 @@ var vm = new Vue({
                 })
             }
         },
+        checkUsize:function(){
+            if(vm.nodeInfo.uSize == ""){
+                vm.uSizeValidateFlag = true;
+                //vm.rooms = vm.cabinets = vm.starts = [];
+                //vm.nodeInfo.nodeRoom = vm.nodeInfo.cabinetId = vm.nodeInfo.uSize = null;
+            }
+        },
        /* checkUsize: function () {
             if (vm.nodeInfo.uSize == null || vm.nodeInfo.uSize == '') { // 节点高度为null
                 alert("<@spring.message 'node.pleaseWrite.uSize'/>!");
@@ -1081,26 +1076,19 @@ var vm = new Vue({
         },
         // group
         showNodeGroups:function () {
+            if(vm.systems != null && vm.systems.length > 0){
+                if(vm.checkedGroups != null && vm.checkedGroups.length > 0){
+                     vm.checkedGroups.forEach(item=>{
+                         $("#box" + item.systemId).show();
+                     })
+                }
+                vm.showGroupTree = false;
+                this.openGroupTree("选择节点组");
+                return;
+            }
+
             // 获取菜单数据
             vm.getSystems();
-
-            // 选择的节点组有数据的情况  再次打开应该回显
-            if(vm.checkedGroups.length > 0){
-                vm.systems.forEach(function (item, index) {
-                    // 如果业务系统存在节点组
-                    if(item.nodegroups.length > 0){
-                        item.nodegroups.forEach(function (group, index1) {
-                            vm.checkedGroups.forEach(function(checkGroup){
-                                if(checkGroup.id == group.id){
-                                    checkGroup.name = checkGroup.nodeTitle; // 因为名称已经是处理之后的字符串了
-                                    checkGroup.showCurrTree = true;             // 选中的节点所属的树展开
-                                    item.nodegroups.splice(index1,1,checkGroup);
-                                }
-                            })
-                        })
-                    }
-                });
-            }
             vm.showGroupTree = false;
             this.openGroupTree("选择节点组");
         },
@@ -1246,7 +1234,6 @@ var vm = new Vue({
             // 调用组件 取消选中
             for (let i = 0; i < vm.$refs.gtree.length; i++) {
                 var refObj = vm.$refs.gtree[i];
-                nodeGroup.showCurrTree = true;
                 refObj.uncheckTreeData(nodeGroup);
             }
             // 判断当前节点组的弹层是否存在
@@ -1333,6 +1320,7 @@ var vm = new Vue({
                 }
                 return;
             }
+            vm.uSizeValidateFlag = false;
             // 3. 开始处理数据变化  先清空起始位置
             vm.starts = [];
             // 4.重新发起请求

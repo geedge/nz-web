@@ -387,6 +387,8 @@ var vue = new Vue({
                 $("#box" + item.id).hide();
             });
         }else{
+            // 其他业务系统展开树结构
+            $("#box" + data.systems[0].id).show();
             // 如果只是一条数据的话 默认展开 图标状态转换
             $("#icon" + data.systems[0].id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
         }

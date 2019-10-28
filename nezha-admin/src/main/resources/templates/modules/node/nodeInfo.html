@@ -261,6 +261,9 @@
                                      v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
                                     <@spring.message 'validate.common.required'/>
                                 </div>
+                                <div class="form-control_error-msg" v-if="uSizeValidateFlag">
+                                    <@spring.message 'validate.node.pickUsizeFirst'/>
+                                </div>
                             </div>
                         </div>
 
@@ -270,7 +273,7 @@
                             <div class="col-sm-8">
                                 <multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
                                              :show-labels="false"
-                                             @close="getCabinets($event)"
+                                             @open="checkUsize" @close="getCabinets($event)"
                                              v-model="nodeInfo.nodeRoom"
                                              placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
                             </div>
@@ -378,8 +381,8 @@
                         </div>
                         <div class="add-box_body psNg">
                             <div class="add-box_row" v-for="item in checkedGroups">
-                                <span class="add-box_cell add-box_cell_30">{{item.absolutePath}}</span>
-                                <span class="add-box_cell add-box_cell_60">{{item.absolutePath}}</span>
+                                <span class="add-box_cell add-box_cell_30">{{item.systemName}}</span>
+                                <span class="add-box_cell add-box_cell_60">{{item.absoluteGroupPath}}</span>
                                 <span class="add-box_ops">
 	                            	<i @click="unCheckGroup(item)" class="fa fa-trash-o"></i>
 	                            </span>
