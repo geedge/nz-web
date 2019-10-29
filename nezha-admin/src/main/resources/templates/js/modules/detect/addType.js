@@ -797,6 +797,7 @@ var addType=Vue.extend({
                 content: $("#metaWindow"),
                 zIndex: layer.zIndex,
                 success: function(layero,index){
+                    metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
                     if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
                         $(parentLayer).animate({right: "600px"});
                     }
@@ -1011,7 +1012,9 @@ var addType=Vue.extend({
             return typeError||metaError||paramError;
         }
     },
-    computed: {},
+    computed: {
+
+    },
     watch: {
         typeId:function(){
             this.getTypeInfo();
