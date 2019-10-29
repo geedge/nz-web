@@ -111,9 +111,9 @@
 		        }
 		    },
 		    legend:{
-		    	show:true,
-		    	x:"center",
-		    	y:"top"
+		    	show:vm.chartStatistical.legend==1?true:false,
+		    	x:vm.chartStatistical.legendXPosition.code?vm.chartStatistical.legendXPosition.code:"center",
+		    	y:vm.chartStatistical.legendYPosition.code?vm.chartStatistical.legendYPosition.code:"top"
 		    },
 		    toolbox:{
                 feature:{
@@ -130,7 +130,7 @@
 		    },
 		    xAxis: [
 		        {
-		        	name:"Time",
+		        	name:vm.chartStatistical.xaxisName?vm.chartStatistical.xaxisName:"Time",
 		        	type:'time'
 		        }
 		    ],
@@ -138,13 +138,13 @@
 		        {
 		        	show:true,
 		            type: 'value',
-		            name: "Value",
+		            name: vm.chartStatistical.yaxesName?vm.chartStatistical.yaxesName:"Value",
 		            position: 'left'
 		        },
 		        {
 		        	show:false,
 		            type: 'value',
-		            name:"Value",
+		            name:vm.chartStatistical.yaxisName?vm.chartStatistical.yaxisName:"Value",
 		            position: 'right'
 		        }
 		    ],
@@ -157,228 +157,327 @@
         singleChart=echarts.init(document.getElementById('singleChart'));
 		var angle = [220, -40]
 		singleOption = {
-		    backgroundColor: '#fff',
-		    tooltip: {
-		        show: false,
-		        formatter: "{a} <br/>{b} : {c}%"
-		    },
-		    series: [{
-		        name: '最外层环仪表盘',
-		        type: "gauge",
-		        min: 0,
-		        max: 100,
-		        startAngle: 220,
-		        endAngle: -40,
-		        splitNumber: 20,
-		        axisLine: {
-		            lineStyle: {
-		                color: [
-		                    [1, "#c1c3c5"]
-		                ],
-		                width: 10,
-		                opacity:1
-		            }
-		        },
-		        axisTick: {
-		            show:false,
-		            lineStyle: {
-		                color: "#fff",
-		                width: 2,
-		            },
-		            length: 0,
-		            splitNumber: 1
-		        },
-		        axisLabel: {
-		            show:true,
-		            distance: -40,
-		            textStyle: {
-		                color: "#bbb"
-		            },
-		            rich: {
-		                a: {
-		                    color: '#fbe010'
-		                },
-		                b: {
-		                    color: '#3fa7dc'
-		                }
-		            }
-		        },
-		        splitLine: {
-		            show: true,
-		            length: 10,
-		            lineStyle: {
-		                color: '#fff',
-		                width: 2
-		            }
-		        },
-		        itemStyle: {
-		            normal: {
-		                color: "#818488",
-		                shadowColor: 'rgba(0, 0, 0, 0.5)',
-		                shadowBlur: 10
-		            }
-		        },
-		        detail: {
-		            formatter: function(v) {
-		            	return singleFormat(v);
-		            },
-		            offsetCenter:[0, "10%"],
-		            textStyle: {
-		                fontSize: 50,
-		                color: "#333"
-		            },
-		            rich:{
-		                a:{
-		                    fontSize:30,
-		                    color:'#000',
-		                    textShadowOffsetX:10
-		                },
-		                b:{
-		                    fontSize:60,
-		                    color:'#000'
-		                }
-		            }
-		        },
-		        title: {
-		            show: false
-		        },
-		        pointer: {
-		            show:true,
-		            length: '85%'
-		        },
-		        data: [{
-		            value: singleValue
-		        }]
-		    },{
-		        name: "内环仪表盘四段颜色",
-		        type: "gauge",
-		        min: 0,
-		        max: 100,
-		        radius: '69%',
-		        startAngle: 220,
-		        endAngle: -40,
-		        splitNumber: 10,
-		        axisLine: {
-		            lineStyle: {
-		                color: [[0.6, '#fb5310'],[0.85, '#fbe010'],[1, "#00ff00"]],
-		                width: 30,
-		                opacity:1
-		            }
-		        },
-		        axisTick: {
-		            show: true
-		        },
-		        axisLabel: {
-		            show: false
-		        },
-		        splitLine: {
-		            show: true,
-		            length: 15,
-		            lineStyle: {
-		                color: '#fff',
-		                width: 2
-		            }
-		        },
-		        pointer: {
-		            length: 0
-		        },
-		        detail: {
-		            show: false
-		        },
-		    }]
-		}
+			    backgroundColor: '#fff',
+			    tooltip: {
+			        show: false,
+			        formatter: "{a} <br/>{b} : {c}%"
+			    },
+			    series: [{
+			        name: '最外层环仪表盘',
+			        type: "gauge",
+			        min: vm.chartSingle.minValue?vm.chartSingle.minValue:0,
+			        max: vm.chartSingle.maxValue?vm.chartSingle.maxValue:100,
+			        startAngle: 220,
+			        endAngle: -40,
+			        splitNumber: 20,
+			        axisLine: {
+			            lineStyle: {
+			                color: [
+			                    [1, "#c1c3c5"]
+			                ],
+			                width: 10,
+			                opacity:vm.chartSingle.isGauge==1?1:0
+			            }
+			        },
+			        axisTick: {
+			            show:false,
+			            lineStyle: {
+			                color: "#fff",
+			                width: 2,
+			            },
+			            length: 0,
+			            splitNumber: 1
+			        },
+			        axisLabel: {
+			            show:vm.chartSingle.isScale==1?true:false,
+			            distance: -40,
+			            textStyle: {
+			                color: "#bbb"
+			            },
+			            rich: {
+			                a: {
+			                    color: '#fbe010'
+			                },
+			                b: {
+			                    color: '#3fa7dc'
+			                }
+			            }
+			        },
+			        splitLine: {
+			            show: vm.chartSingle.isScale==1?true:false,
+			            length: 10,
+			            lineStyle: {
+			                color: '#fff',
+			                width: 2
+			            }
+			        },
+			        itemStyle: {
+			            normal: {
+			                color: "#818488",
+			                shadowColor: 'rgba(0, 0, 0, 0.5)',
+			                shadowBlur: 10
+			            }
+			        },
+			        detail: {
+			            formatter: function(v) {
+			            	return singleFormat(v);
+			            },
+			            offsetCenter:vm.chartSingle.isGauge==1?[0, "50%"]:[0, "10%"],
+			            textStyle: {
+			                fontSize: vm.chartSingle.valueFontSize?vm.chartSingle.valueFontSize:50,
+			                color: vm.chartSingle.colorValue?vm.chartSingle.colorValue:"#333"
+			            },
+			            rich:{
+			                a:{
+			                    fontSize:vm.chartSingle.isGauge==1?vm.chartSingle.valueFontSize:vm.chartSingle.prefixFontSize?vm.chartSingle.prefixFontSize:30,
+			                    color:vm.chartSingle.colorPrefix?vm.chartSingle.colorPrefix:'#000',
+			                    textShadowOffsetX:10
+			                },
+			                b:{
+			                    fontSize:vm.chartSingle.isGauge==1?vm.chartSingle.valueFontSize:vm.chartSingle.suffixFontSize?vm.chartSingle.suffixFontSize:60,
+			                    color:vm.chartSingle.colorSuffix?vm.chartSingle.colorSuffix:'#000'
+			                }
+			            }
+			        },
+			        title: {
+			            show:false
+			        },
+			        pointer:{
+			            show:vm.chartSingle.isGauge==1?true:false,
+			            length: '85%'
+			        },
+			        data: [{
+			            value: singleValue
+			        }]
+			    },{
+			        name: "内环仪表盘四段颜色",
+			        type: "gauge",
+			        min: 0,
+			        max: 100,
+			        radius: '69%',
+			        startAngle: 220,
+			        endAngle: -40,
+			        splitNumber: 10,
+			        axisLine: {
+			            lineStyle: {
+			                color: [[0.6, '#fb5310'],[0.85, '#fbe010'],[1, "#00ff00"]],
+			                width: 30,
+			                opacity:vm.chartSingle.isThreshold==1?1:0
+			            }
+			        },
+			        axisTick: {
+			            show: vm.chartSingle.isThreshold==1?true:false
+			        },
+			        axisLabel: {
+			            show: false
+			        },
+			        splitLine: {
+			            show: vm.chartSingle.isThreshold==1?true:false,
+			            length: 15,
+			            lineStyle: {
+			                color: '#fff',
+			                width: 2
+			            }
+			        },
+			        pointer: {
+			            length: 0
+			        },
+			        detail: {
+			            show: false
+			        },
+			    }]
+			}
 		singleChart.setOption(singleOption);
 		/* 仪表盘对应配置修改  */
 		function singleFormat(v){
-			return '{a| prefix} '+v+' {b| suffix}';
+			return '{a| '+vm.chartSingle.prefix+'} '+v+' {b| '+vm.chartSingle.suffix+'}';
 		}
 		
 		// 是否为线图
 	    $("#isLine").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='';
+			    })
 	        }else{
-	        	
+	        	$("#isScatter").bootstrapSwitch('state', false);
+		        $("#isBar").bootstrapSwitch('state', false);
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='line';
+			    })
+			    vm.showType='line';
+	        	vm.chartStatistical.points=0;
+	        	vm.chartStatistical.bars=0;
+	        	vm.chartStatistical.lines=1;
 	        }
 	    })
 		
 	    //是否为柱图
 	    $("#isBar").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='';
+			    })
 	        }else{
-	        	
+	        	$("#isScatter").bootstrapSwitch('state', false);
+		        $("#isLine").bootstrapSwitch('state', false);
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='bar';
+			    })
+			    vm.showType='bar';
+	        	vm.chartStatistical.points=0;
+	        	vm.chartStatistical.bars=1;
+	        	vm.chartStatistical.lines=0;
 	        }
 	    })
 	    
 	    //是否为点图
 	    $("#isScatter").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='';
+			    })
 	        }else{
-	        	
+		        $("#isLine").bootstrapSwitch('state', false);
+		        $("#isBar").bootstrapSwitch('state', false);
+	        	option.series.forEach(function(value,key,arr){
+			    	value.type='scatter';
+			    })
+			    vm.showType='scatter';
+	        	vm.chartStatistical.points=1;
+	        	vm.chartStatistical.bars=0;
+	        	vm.chartStatistical.lines=0;
 	        }
 	    })
 	    
 	    //左Y轴是否开启
 	    $("#leftYOpen").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.yAxis[0].show=false;
+	        	vm.chartStatistical.yaxes=0;
+	        	/*$('.leftY').each(function(){
+	        		$(this).bootstrapSwitch('state', false);
+	        	})*/
 	        }else{
-	        	
+	        	option.yAxis[0].show=true;
+	        	vm.chartStatistical.yaxes=1;
 	        }
 	    })
 	    
 	    //左Y轴是否开启
 	    $("#rightYOpen").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.yAxis[1].show=false;
+	        	vm.chartStatistical.yaxis=0;
+	        	/*$('.rightY').each(function(){
+	        		$(this).bootstrapSwitch('state', false);
+	        	})*/
 	        }else{
-	        	
+	        	option.yAxis[1].show=true;
+	        	vm.chartStatistical.yaxis=1;
 	        }
 	    })
 	    
 	    //X轴是否开启
 	    $("#xOpen").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
-	        	
+	    	if(!state){
+	        	option.xAxis[0].show=false;
+	        	vm.chartStatistical.xaxis=0;
+	        	/*$('.xOption').each(function(){
+	        		$(this).bootstrapSwitch('state', false);
+	        	})*/
 	        }else{
-	        	
+	        	option.xAxis[0].show=true;
+	        	vm.chartStatistical.xaxis=1;
 	        }
 	    })
 	    
 	    //legend是否展示
 		$("#legendShow").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
+			if(!state){
+	        	option.legend.show=false;
+	        	vm.chartStatistical.legend=0;
 	        }else{
+	        	option.legend.show=true;
+	        	vm.chartStatistical.legend=1;
 	        }
 	    })
 	    
 	    //分页是否使用
-	    $("#isPaging").bootstrapSwitch("onSwitchChange",function(event,state){
+	    /*$("#isPaging").bootstrapSwitch("onSwitchChange",function(event,state){
 	        if(!state){
 	        }else{
 	        }
-	    })
+	    })*/
 	    
 	    //是否启用仪表盘
 	    $("#isGauge").bootstrapSwitch("onSwitchChange",function(event,state){
 	        if(!state){
+	        	singleOption.series[0].pointer.show=false;
+	        	singleOption.series[0].axisLine.lineStyle.opacity=0;
+	        	singleOption.series[0].detail.offsetCenter=[0,"10%"];
+	        	singleOption.series[0].detail.rich.a.fontSize=vm.chartSingle.prefixFontSize;
+	        	singleOption.series[0].detail.rich.b.fontSize=vm.chartSingle.suffixFontSize;
+	        	$("#singlePrefixFontSize").attr("disabled",false);
+	        	$("#singleSuffixFontSize").attr("disabled",false);
+	        	singleOption.series[0].axisTick.show=false;
+	        	singleOption.series[0].splitLine.show=false;
+	        	$("#isAxisLabelShow").bootstrapSwitch('state', false);
+	        	$("#isThreshold").bootstrapSwitch('state', false);
+	        	singleOption.series[0].axisLabel.show=false;
+	        	singleOption.series[1].axisTick.show=false;
+	        	singleOption.series[1].splitLine.show=false;
+	        	singleOption.series[1].axisLine.lineStyle.opacity=0;
+	        	vm.chartSingle.isGauge=0;
 	        }else{
+	        	singleOption.series[0].pointer.show=true;
+	        	singleOption.series[0].axisLine.lineStyle.opacity=1;
+	        	singleOption.series[0].detail.offsetCenter=[0,"50%"];
+	        	singleOption.series[0].detail.textStyle.fontSize=20;
+	        	singleOption.series[0].detail.rich.a.fontSize=20;
+	        	singleOption.series[0].detail.rich.b.fontSize=20;
+	        	$("#singlePrefixFontSize").attr("disabled",true);
+	        	$("#singleSuffixFontSize").attr("disabled",true);
+	        	singleOption.series[0].axisTick.show=true;
+	        	singleOption.series[0].splitLine.show=true;
+	        	vm.chartSingle.isGauge=1;
+	        	vm.chartSingle.valueFontSize=20;
 	        }
 	    })
 	    
 	    //是否显示阈值
 	    $("#isThreshold").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
+	    	//如果未开启仪表盘功能 则不允许开启
+	    	if(vm.chartSingle.isGauge==0){
+	    		$(this).bootstrapSwitch('state', false);
+	    		return;
+	    	}
+	        if(state){
+	        	singleOption.series[1].axisTick.show=true;
+	        	singleOption.series[1].splitLine.show=true;
+	        	singleOption.series[1].axisLine.lineStyle.opacity=1;
+	        	vm.chartSingle.isThreshold=1;
 	        }else{
+	        	singleOption.series[1].axisTick.show=false;
+	        	singleOption.series[1].splitLine.show=false;
+	        	singleOption.series[1].axisLine.lineStyle.opacity=0;
+	        	vm.chartSingle.isThreshold=0;
 	        }
 	    })
 	    
 	    //是否显示详细刻度
 	    $("#isAxisLabelShow").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
+	    	//如果未开启仪表盘功能 则不允许开启
+	    	if(vm.chartSingle.isGauge==0){
+	    		$(this).bootstrapSwitch('state', false);
+	    		return;
+	    	}
+	        if(state){
+	        	singleOption.series[0].axisLabel.show=true;
+	        	vm.chartSingle.isScale=1;
 	        }else{
+	        	singleOption.series[0].axisLabel.show=false;
+	        	vm.chartSingle.isScale=0;
 	        }
 	    })
 	    
@@ -424,16 +523,52 @@
 			chartType:[],
 			dashboard:{
 				databaseType:'',
-				chartType:''
+				chartType:'',
+				title:'',
+				describe:''
 			},
 			chartStatistical:{
 				lineWidth:1,
 				fill:1,
 				legendXPosition:{},
-				legendYPosition:{}
+				legendYPosition:{},
+				lines:1,
+				points:0,
+				bars:0,
+				yaxes:0,
+				legend:1,
+				yaxes:1,
+				xaxis:1,
+				yaxis:0,
+				yaxisName:'',
+				yaxesName:'',
+				xaxisName:''
 			},
+			showType:"line",
 			chartTable:{
 				timeFormat:''
+			},
+			chartSingle:{
+				colorValue:'#333333',
+				valueFontSize:50,
+				decimal:0,
+				prefix:'',
+				prefixFontSize:30,
+				colorPrefix:'#333333',
+				suffix:'',
+				suffixFontSize:60,
+				colorSuffix:'#333333',
+				isGauge:0,
+				minValue:0,
+				maxValue:100,
+				isThreshold:0,
+				isScale:0,
+				fontSizeDis:1,
+				thresholdValues:[
+					{color:'#ff0000',value:0.6},
+					{color:'#ffff00',value:0.8},
+					{color:'#00ff00',value:1}
+				]
 			},
 			lineWidths:[1,2,3,4,5,6,7,8,9],
 			fills:[1,2,3,4,5,6,7,8,9],
@@ -452,6 +587,9 @@
 						databaseType.push(r.data[i]);
 					}
 					vm.databaseType = databaseType;
+					if(vm.dashboard.databaseType==''||vm.dashboard.databaseType==undefined){
+						vm.dashboard.databaseType=databaseType[0];
+					}
 				});
 			},
 			getChartType: function(event) {
@@ -500,6 +638,83 @@
 					vm.legendYPositions = legendYPosition;
 				});
 			},
+			/*点线柱图相关*/
+			//设置左Y轴名称
+			setLeftYName:function(){
+				option.yAxis[0].name=vm.chartStatistical.yaxesName;
+				myChart.setOption(option);
+			},
+			//设置右Y轴名称
+			setRightYName:function(){
+				option.yAxis[1].name=vm.chartStatistical.yaxisName;
+				myChart.setOption(option);
+			},
+			//设置X轴名称
+			setXName:function(){
+				option.xAxis[0].name=vm.chartStatistical.xaxisName;
+				myChart.setOption(option);
+			},
+			/*单值图相关*/
+			//设置仪表盘最大值
+			setSingleMaxValue:function (){
+				singleOption.series[0].max=vm.chartSingle.maxValue;
+				singleChart.setOption(singleOption);
+			},
+			//设置仪表盘最小值
+			setSingleMinValue:function (){
+				singleOption.series[0].min=vm.chartSingle.minValue;
+				singleChart.setOption(singleOption);
+			},
+			//设置数值字体大小
+			setSingleFontSize:function(){
+				singleOption.series[0].detail.textStyle.fontSize=vm.chartSingle.valueFontSize;
+				if(vm.chartSingle.isGauge==1){
+					singleOption.series[0].detail.rich.a.fontSize=vm.chartSingle.valueFontSize;
+					singleOption.series[0].detail.rich.b.fontSize=vm.chartSingle.valueFontSize;
+				}
+				singleChart.setOption(singleOption);
+			},
+			//设置前缀文字大小
+			setSinglePrefixFontSize:function(){
+				singleOption.series[0].detail.rich.a.fontSize=vm.chartSingle.prefixFontSize;
+				singleChart.setOption(singleOption);
+			},
+			//设置后缀文字大小
+			setSingleSuffixFontSize:function(){
+				singleOption.series[0].detail.rich.b.fontSize=vm.chartSingle.suffixFontSize;
+				singleChart.setOption(singleOption);
+			},
+			//设置值颜色
+			setSingleColor:function(ele){
+				vm.chartSingle.colorValue=$(this.$refs.singleColor).val();
+				singleOption.series[0].detail.textStyle.color=vm.chartSingle.colorValue;
+				singleChart.setOption(singleOption);
+			},
+			//设置前缀值颜色
+			setSingleColorPrefix:function(ele){
+				vm.chartSingle.colorPrefix=$(this.$refs.colorPrefix).val();
+				singleOption.series[0].detail.rich.a.color=vm.chartSingle.colorPrefix;
+				singleChart.setOption(singleOption);
+			},
+			//设置后缀值颜色
+			setSingleColorSuffix:function(ele){
+				vm.chartSingle.colorSuffix=$(this.$refs.colorSuffix).val();
+				singleOption.series[0].detail.rich.b.color=vm.chartSingle.colorSuffix;
+				singleChart.setOption(singleOption);
+			},
+			//设置单值图小数点保留位数
+			setSingleDecimal:function(){
+				singleOption.series[0].data=[{"value":Number(10).toFixed(vm.chartSingle.decimal)}];
+				singleChart.setOption(singleOption);
+			},
+			//删除阈值
+			removeThreshold:function(index){
+				vm.chartSingle.thresholdValues.splice(index,1)
+			},
+			//新增阈值
+			addThreshold:function(){
+				vm.chartSingle.thresholdValues.push({color:'#00ff00',value:1})
+			},
 			changeSetShow:function(val){
 				vm.query=true;
 				vm.set=true;
@@ -520,6 +735,32 @@
 			this.getLegendXPosition();
 			this.getTimeFormat();
 			this.getChartType();
+		},
+		watch:{
+			'chartStatistical':{
+				handler(newVal,oldVal){
+					option.legend.x=vm.chartStatistical.legendXPosition.code;
+					option.legend.y=vm.chartStatistical.legendYPosition.code;
+					option.series.forEach(function(value,key,arr){
+				    	if(value.type=='line'){
+				    		value.areaStyle.opacity=(vm.chartStatistical.fill-1)/10;
+				    	}
+				    })
+				    option.series.forEach(function(value,key,arr){
+				    	if(value.type=='line'){
+				    		value.lineStyle.width=vm.chartStatistical.lineWidth;
+				    	}
+				    })
+					myChart.setOption(option);
+				},
+				deep:true
+			},
+			'chartSingle':{
+				handler(newVal,oldVal){
+					singleChart.setOption(singleOption);
+				},
+				deep:true
+			}
 		}
 	})
 </script>

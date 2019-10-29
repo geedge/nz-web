@@ -26,14 +26,14 @@
     
     <!-- 图表头 标题名称以及描述信息 -->
     <div style="height: 20px;background-color: #F5F5F5;text-align: center;">
-    	<span id="panelDescribe"><i class="icon-exclamation-sign" title=""></i></span>
-    	<span id="panelTitle"></span>
+    	<span id="panelDescribe" v-show="dashboard.describe"><i class="fa fa-exclamation-circle" :title='dashboard.describe'></i></span>
+    	<span id="panelTitle">{{dashboard.title}}</span>
     </div>
     
     <!-- 图表展示位置 -->
     <div class="top" id="chart" v-show="dashboard.chartType.code==1"></div>
-    <div class="top" id="tableChart" v-show="dashboard.chartType.code==2"></div>
-    <div class="top" id="singleChart" v-show="dashboard.chartType.code==3"></div>
+    <div class="top" id="tableChart" v-show="dashboard.chartType.code==3"></div>
+    <div class="top" id="singleChart" v-show="dashboard.chartType.code==2"></div>
     <hr/>
     
     <!-- 配置设置 -->
@@ -52,7 +52,7 @@
 	        <!-- 数据库类型选项 -->
 	        <div class="right ri-flex chart1"  id='databaseChoose' v-show="!query">
 	            <div class="right_top">
-	               	数据库: <multiselect class="input-medium required formatSelect" placeholder="DatabaseType" v-model="dashboard.databaseType" :options="databaseType" label="value" :show-labels="false"></multiselect>
+	               	数据库: <multiselect class="input-medium required formatSelect" placeholder="DatabaseType" open-direction="bottom" v-model="dashboard.databaseType" :options="databaseType" label="value" :show-labels="false"></multiselect>
 					<span title="" id="addNewQuery" class="btn btn-default" onclick="addNewQuery()" style="position: relative;top: 0px;right: 20px;float:right">
 						<i class='glyphicon glyphicon-plus'></i>
 					</span>
@@ -80,7 +80,7 @@
 	        
 	        <div class="right ri-flex chart1"  id='chartTypeChoose'  v-show="!chart">
 	            <div class="right_top">
-	            	图表类型: <multiselect class="input-medium required formatSelect" placeholder="ChartType" v-model="dashboard.chartType" :options="chartType" title="" label="value" :show-labels="false"></multiselect>
+	            	图表类型: <multiselect class="input-medium required formatSelect" placeholder="ChartType" v-model="dashboard.chartType" open-direction="bottom" :options="chartType" title="" label="value" :show-labels="false"></multiselect>
 	            </div>
 	            
 	            <!-- 点、线、柱图设置区域 -->
@@ -92,15 +92,15 @@
 	                                <li class="title">图表类型</li>
 	                                <li class="list">
 	                                    <div class="li-left">折线：</div>
-	                                    <span class='chooseOption'><input id="isLine" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                    <span class='chooseOption'><input id="isLine" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name="" v-model="chartStatistical.lines" :checked="chartStatistical.lines==1?'checked':''"></span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">圆点：</div>
-	                                    <span class='chooseOption'><input id="isScatter" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                    <span class='chooseOption'><input id="isScatter" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name="" v-model="chartStatistical.points" :checked="chartStatistical.points==1?'checked':''"></span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">柱状：</div>
-	                                    <span class='chooseOption'><input id="isBar" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""></span>
+	                                    <span class='chooseOption'><input id="isBar" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name="" v-model="chartStatistical.bars" :checked="chartStatistical.bars==1?'checked':''"></span>
 	                                </li>
 	                            </ul>
 	                            <ul>
@@ -108,13 +108,13 @@
 	                                <li class="list">
 	                                    <div class="li-left">填充颜色：</div>
 								        <span class='chooseOption'>
-								        	<multiselect class="input-small required formatSelect" v-model="chartStatistical.fill" :options="fills" :show-labels="false"></multiselect>
+								        	<multiselect class="input-small required formatSelect" open-direction="bottom" v-model="chartStatistical.fill" :options="fills" :show-labels="false"></multiselect>
 								        </span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">线宽:</div>
 	                                    <span class='chooseOption'>
-											<multiselect class="input-small required formatSelect" v-model="chartStatistical.lineWidth" :options="lineWidths"  :show-labels="false"></multiselect>
+											<multiselect class="input-small required formatSelect" open-direction="bottom" v-model="chartStatistical.lineWidth" :options="lineWidths"  :show-labels="false"></multiselect>
 										</span>
 	                                </li>
 	                            </ul>
@@ -124,33 +124,33 @@
 	                                <li class="title">左Y轴:</li>
 	                                <li class="list">
 	                                    <div class="li-left">展示：</div>
-	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch'  id="leftYOpen" name="chartStatistical.yaxes"></span>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch'  id="leftYOpen" v-model="chartStatistical.yaxes"></span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">名称：</div>
-	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setLeftYName(this)" placeholder="value" name="" value=""/></span>
+	                                    <span class='chooseOption'><input  class="input-mini required" placeholder="" v-model='chartStatistical.yaxesName' @blur='setLeftYName()'/></span>
 	                                </li>
 	                            </ul>
 	                            <ul>
 	                                <li class="title">右Y轴:</li>
 	                                <li class="list">
 	                                    <div class="li-left">展示：</div>
-	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="rightYOpen"></span>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="rightYOpen" v-model='chartStatistical.yaxis'></span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">名称：</div>
-	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setRightYName(this)" name="" value=""/></span>
+	                                    <span class='chooseOption'><input  class="input-mini required" @blur='setRightYName()' v-model='chartStatistical.yaxisName'/></span>
 	                                </li>
 	                            </ul>
 	                            <ul>
 	                                <li class="title">X轴:</li>
 	                                <li class="list">
 	                                    <div class="li-left">展示：</div>
-	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="xOpen"  name=""></span>
+	                                    <span class='chooseOption'><input data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' id="xOpen"  name="" v-model='chartStatistical.xaxis'></span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">名称：</div>
-	                                    <span class='chooseOption'><input  class="input-mini required" onblur="setXName(this)" placeholder="time" name="" value=""/></span>
+	                                    <span class='chooseOption'><input  class="input-mini required" placeholder="" @blur='setXName()' v-model='chartStatistical.xaxisName'/></span>
 	                                </li>
 	                            </ul>
 							</div>
@@ -159,7 +159,7 @@
 									 <ul>
 		                                <li class="list">
 		                                    <div class="li-left">展示设置：</div>
-		                                    <span class='chooseOption'><input id="legendShow" data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' ></span>
+		                                    <span class='chooseOption'><input id="legendShow" data-on-color='success' data-off-color='danger' type="checkbox" name="" class='switch' v-model="chartStatistical.legend" :checked="chartStatistical.legend==1?'checked':''"></span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">X轴位置：</div>
@@ -252,59 +252,59 @@
 		                    <div class="box-child">
 		                        <div class="box">
 		                            <ul>
-		                                <li class="title"></li>
+		                                <li class="title">值</li>
 		                                <li class="list">
 		                                    <div class="li-left">字体大小：</div>
-		                                    <span class='chooseOption'><input id="singleFontSize"  class="input-mini required"  placeholder="" name="" value="" /></span>
+		                                    <span class='chooseOption'><input id="singleFontSize"  class="input-mini required"  placeholder=""  v-model='chartSingle.valueFontSize' @blur="setSingleFontSize()"/></span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">小数位：</div>
-		                                    <span class='chooseOption'><input id="singleDecimal"  class="input-mini required"  placeholder="" name="" value=""/></span>
+		                                    <span class='chooseOption'><input id="singleDecimal"  class="input-mini required"  placeholder="" v-model='chartSingle.decimal' @blur='setSingleDecimal()'/></span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">字体颜色：</div>
-		                                    <span class='chooseOption'><input  class="input-mini required singleColor"  placeholder="" name="" value=""/></span>
+		                                    <span class='chooseOption'><input  class="input-mini required singleColor" ref='singleColor' placeholder="" v-model='chartSingle.colorValue' @blur='setSingleColor(this)'/></span>
 		                                </li>
 		                            </ul>
 		                           <ul>
-		                                <li class="title"></li>
+		                                <li class="title">前缀</li>
 		                                <li class="list">
 		                                    <div class="li-left">名称：</div>
 									        <span class='chooseOption'>
-									        	<input  class="input-mini required"  placeholder="" name="" value="" />
+									        	<input  class="input-mini required"  placeholder="" v-model='chartSingle.prefix' />
 									        </span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">字体大小：</div>
 									        <span class='chooseOption'>
-									        	<input  class="input-mini required" id="singlePrefixFontSize" placeholder="" name="" value=""/>
+									        	<input  class="input-mini required" id="singlePrefixFontSize" v-model='chartSingle.prefixFontSize' @blur="setSinglePrefixFontSize()"/>
 									        </span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">字体颜色:</div>
 		                                    <span class='chooseOption'>
-												<input  class="input-mini required singleColor"  placeholder="" name="" value="" />
+												<input  class="input-mini required singleColor"  v-model='chartSingle.colorPrefix' @blur="setSingleColorPrefix(this)" ref="colorPrefix"/>
 											</span>
 		                                </li>
 		                            </ul>
 		                            <ul>
-		                                <li class="title"></li>
+		                                <li class="title">后缀</li>
 		                                <li class="list">
 		                                    <div class="li-left">名称：</div>
 									        <span class='chooseOption'>
-									        	<input  class="input-mini required"  placeholder="" name="" value=""/>
+									        	<input  class="input-mini required"  v-model='chartSingle.suffix'/>
 									        </span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">字体大小：</div>
 									        <span class='chooseOption'>
-									        	<input  class="input-mini required" id="singleSuffixFontSize" placeholder="" name="" value=""/>
+									        	<input  class="input-mini required" id="singleSuffixFontSize" v-model='chartSingle.suffixFontSize' @blur="setSingleSuffixFontSize()"/>
 									        </span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">字体颜色:</div>
 		                                    <span class='chooseOption'>
-												<input id="colorPrefix" class="input-mini required singleColor"  placeholder="" name="" value=""/>
+												<input id="colorPrefix" class="input-mini required singleColor"  v-model='chartSingle.colorSuffix' @blur="setSingleColorSuffix(this)" ref="colorSuffix"/>
 											</span>
 		                                </li>
 		                            </ul>
@@ -312,56 +312,58 @@
 		                        
 		                        <div class="box">
 		            				<ul>
-		                                <li class="title"></li>
+		                                <li class="title">仪表盘</li>
 		                                <li class="list">
-		                                    <div class="li-left">展示：</div>
+		                                    <div class="li-left">展示</div>
 									        <span class='chooseOption'>
-									        	<input id="isGauge" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value="" >
+									        	<input id="isGauge" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" v-model='chartSingle.isGauge' :checked="chartSingle.isGauge==1?'checked':''">
 									        </span>
 		                                </li>
 		                                <li class="list">
-		                                    <div class="li-left">最小值:</div>
+		                                    <div class="li-left">最小值</div>
 		                                    <span class='chooseOption'>
-												<input  class="input-mini required"  placeholder="" name="" value="" />
+												<input  class="input-mini required"  v-model='chartSingle.minValue' @blur='setSingleMinValue()'/>
 											</span>
 		                                </li>
 		                                <li class="list">
-		                                    <div class="li-left">最大值:</div>
+		                                    <div class="li-left">最大值</div>
 		                                    <span class='chooseOption'>
-												<input  class="input-mini required"  placeholder="" name="" value="" />
+												<input  class="input-mini required"  v-model='chartSingle.maxValue' @blur='setSingleMaxValue()'/>
 											</span>
 		                                </li>
 		                                <li class="list">
-		                                    <div class="li-left">阈值:</div>
+		                                    <div class="li-left">阈值</div>
 		                                    <span class='chooseOption'>
-												<input id="isThreshold" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value=""  >
+ 												<input id="isThreshold" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" v-model='chartSingle.isThreshold' :checked="chartSingle.isThreshold==1?'checked':''" >
 											</span>
 		                                </li>
 		                                <li class="list">
-		                                    <div class="li-left">刻度:</div>
+		                                    <div class="li-left">刻度</div>
 		                                    <span class='chooseOption'>
-												<input id="isAxisLabelShow" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" name=""  value="" >
+												<input id="isAxisLabelShow" data-on-color='success' data-off-color='danger' class='switch' type="checkbox" v-model='chartSingle.isScale' :checked="chartSingle.isScale==1?'checked':''">
 											</span>
 		                                </li>
 		                            </ul>
 		                            
-		                            <ul id="thresholdConfig" >
-		                            <li class="title">
-		                            	阈值
-		                            </li>
+		                            <ul id="thresholdConfig" v-show="chartSingle.isThreshold==1">
+			                            <li class="title">
+			                            	阈值
+			                            </li>
+			                            <template v-for="thresholdValue,index in chartSingle.thresholdValues">
 		                            		<li class="list thresholdConfig">
-		                                    <div class="li-left">范围:</div>
-		                                    <span class=''>
-												<input  class="input-mini required"  placeholder="" name="" value="" />
-											</span>
-											<div class="li-left">颜色:</div>
-											<span class="meta-box__delbtn chooseOption"><a href="javascript:void(0)" title='' style='text-decoration:none;' onclick=''><font color="red" class="" style="font-size:30px;">×</font></a></span>
-		                                    <span class='chooseOption'>
-												<input  class="input-mini required singleColor"  placeholder="" name="" value="#333333" />
-											</span>
-		                                </li>
+			                                    <div class="li-left">范围</div>
+			                                    <span class=''>
+													<input  class="input-mini required"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].value'/>
+												</span>
+												<div class="li-left">颜色</div>
+												<span class="meta-box__delbtn chooseOption"><a href="javascript:void(0)" title='' style='text-decoration:none;' @click="removeThreshold(index)"><font color="red" class="" style="font-size:30px;">×</font></a></span>
+			                                    <span class='chooseOption'>
+													<input  class="input-mini required singleColor"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].color'/>
+												</span>
+			                                </li>
+		                                </template>
 		                            	<li class="list" style="text-align:center">
-		                                	<span title="" id="" class="btn btn-default" style="text-align:center">
+		                                	<span title="" id="" class="btn btn-default" style="text-align:center" @click='addThreshold()'>
 												<i class='glyphicon glyphicon-plus'></i>
 											</span>
 		                                </li>
@@ -382,14 +384,14 @@
 		                        <div class="box">
 		                          	<ul>
 		                                <li class="list">
-		                                    <div class="li-left">标题：</div>
-		                                    <span class='chooseOption'><input name="title" class="input-medium" type="text" placeholder="" maxlength="50"  value=''></span>
+		                                    <div class="li-left">标题</div>
+		                                    <span class='chooseOption'><input name="title" class="input-medium" type="text" placeholder="" maxlength="50"  v-model='dashboard.title'></span>
 		                                </li>
 		                            </ul>
 		                            <ul>
 		                                <li class="list">
-		                                    <div class="li-left">描述：</div>
-		                                    <span class='chooseOption'><textarea style="height:30px" name="describe" ></textarea></span>
+		                                    <div class="li-left">描述</div>
+		                                    <span class='chooseOption'><textarea style="height:30px" name="describe" v-model='dashboard.describe'></textarea></span>
 		                                </li>
 		                            </ul>
 		                        </div>
