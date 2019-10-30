@@ -1,4 +1,5 @@
 <script>
+	var echartsDefaultData=true; //此标记代表 echarts图使用的是假数据
 	$(function(){
 		//初始化时间范围选择
 		var rangesConf = {};
@@ -299,16 +300,20 @@
 	        	option.series.forEach(function(value,key,arr){
 			    	value.type='';
 			    })
+			    if(vm.chartStatistical.points==0&&vm.chartStatistical.bars==0&&vm.chartStatistical.lines==1){
+			    	$("#isLine").bootstrapSwitch('state', true);
+			    }
 	        }else{
-	        	$("#isScatter").bootstrapSwitch('state', false);
-		        $("#isBar").bootstrapSwitch('state', false);
-	        	option.series.forEach(function(value,key,arr){
-			    	value.type='line';
-			    })
 			    vm.showType='line';
 	        	vm.chartStatistical.points=0;
 	        	vm.chartStatistical.bars=0;
 	        	vm.chartStatistical.lines=1;
+	        	$("#isScatter").bootstrapSwitch('state', false);
+		        $("#isBar").bootstrapSwitch('state', false);
+		        option.series.forEach(function(value,key,arr){
+			    	value.type='line';
+			    })
+			    myChart.setOption(option);
 	        }
 	    })
 		
@@ -318,16 +323,20 @@
 	        	option.series.forEach(function(value,key,arr){
 			    	value.type='';
 			    })
+			    if(vm.chartStatistical.points==0&&vm.chartStatistical.lines==0&&vm.chartStatistical.bars==1){
+			    	$("#isBar").bootstrapSwitch('state', true);
+			    }
 	        }else{
-	        	$("#isScatter").bootstrapSwitch('state', false);
-		        $("#isLine").bootstrapSwitch('state', false);
-	        	option.series.forEach(function(value,key,arr){
-			    	value.type='bar';
-			    })
 			    vm.showType='bar';
 	        	vm.chartStatistical.points=0;
 	        	vm.chartStatistical.bars=1;
 	        	vm.chartStatistical.lines=0;
+	        	$("#isScatter").bootstrapSwitch('state', false);
+		        $("#isLine").bootstrapSwitch('state', false);
+		        option.series.forEach(function(value,key,arr){
+			    	value.type='bar';
+			    })
+		        myChart.setOption(option);
 	        }
 	    })
 	    
@@ -337,16 +346,20 @@
 	        	option.series.forEach(function(value,key,arr){
 			    	value.type='';
 			    })
+			    if(vm.chartStatistical.bars==0&&vm.chartStatistical.lines==0&&vm.chartStatistical.points==1){
+			    	$("#isScatter").bootstrapSwitch('state', true);
+			    }
 	        }else{
-		        $("#isLine").bootstrapSwitch('state', false);
-		        $("#isBar").bootstrapSwitch('state', false);
-	        	option.series.forEach(function(value,key,arr){
-			    	value.type='scatter';
-			    })
 			    vm.showType='scatter';
 	        	vm.chartStatistical.points=1;
 	        	vm.chartStatistical.bars=0;
 	        	vm.chartStatistical.lines=0;
+	        	$("#isLine").bootstrapSwitch('state', false);
+		        $("#isBar").bootstrapSwitch('state', false);
+		        option.series.forEach(function(value,key,arr){
+			    	value.type='scatter';
+			    })
+		        myChart.setOption(option);
 	        }
 	    })
 	    
@@ -404,11 +417,15 @@
 	    })
 	    
 	    //分页是否使用
-	    /*$("#isPaging").bootstrapSwitch("onSwitchChange",function(event,state){
+	    $("#isPaging").bootstrapSwitch("onSwitchChange",function(event,state){
 	        if(!state){
+	        	$("#tablePageSize").attr("disabled",true);
+	        	vm.chartTable.scroll=0;
 	        }else{
+	        	$("#tablePageSize").attr("disabled",false);
+	        	vm.chartTable.scroll=1;
 	        }
-	    })*/
+	    })
 	    
 	    //是否启用仪表盘
 	    $("#isGauge").bootstrapSwitch("onSwitchChange",function(event,state){
@@ -527,6 +544,14 @@
 				title:'',
 				describe:''
 			},
+			userSqls:[{
+				dbId:'',		// 数据库连接信息
+				sql:'',		// 用户自定义sql查询语句
+				chartId:'',		// 图表ID
+				type:'',		// 图表类型
+				vTime:'',		// 时间变量字段
+				describe:'series 1'   //查询数据描述
+			}],
 			chartStatistical:{
 				lineWidth:1,
 				fill:1,
@@ -546,7 +571,13 @@
 			},
 			showType:"line",
 			chartTable:{
-				timeFormat:''
+				timeFormat:'',
+				scroll:0,
+				pageSize:10,
+				fontSize:5,
+				vName:'Value',
+				decimal:0,
+				tName:'Time'
 			},
 			chartSingle:{
 				colorValue:'#333333',
@@ -707,13 +738,127 @@
 				singleOption.series[0].data=[{"value":Number(10).toFixed(vm.chartSingle.decimal)}];
 				singleChart.setOption(singleOption);
 			},
+			//设置阈值颜色
+			setThresholdColor:function(index){
+				vm.chartSingle.thresholdValues[index].color=event.target.value;
+				this.resetThresholdColor();
+			},
+			resetThresholdColor:function(){
+				var newA=[];
+				for(var i=0;i<vm.chartSingle.thresholdValues.length;i++){
+					var newB=[];
+					newB.push(vm.chartSingle.thresholdValues[i].value);
+					newB.push(vm.chartSingle.thresholdValues[i].color);
+					newA.push(newB);
+				}
+				singleOption.series[1].axisLine.lineStyle.color=newA;
+				singleChart.setOption(singleOption);
+			},
 			//删除阈值
 			removeThreshold:function(index){
-				vm.chartSingle.thresholdValues.splice(index,1)
+				var tvs=[];
+				tvs=vm.chartSingle.thresholdValues;
+				tvs.splice(index,1)
+				vm.chartSingle.thresholdValues=[];
+				this.$nextTick(()=>{
+					vm.chartSingle.thresholdValues = tvs;
+					this.resetThresholdColor();
+			    })
 			},
 			//新增阈值
 			addThreshold:function(){
-				vm.chartSingle.thresholdValues.push({color:'#00ff00',value:1})
+				vm.chartSingle.thresholdValues.push({color:'#00ff00',value:1});
+				this.resetThresholdColor();
+			},
+			//修改用户sql 设置legend
+			changeLegend:function(index){
+				vm.userSqls[index].describe=event.target.value;
+			},
+			//删除用户sql
+			removeQuery:function(index){
+				vm.userSqls.splice(index,1)
+			},
+			//用户填写完sql获取后台数据信息
+			queryData:function(index){
+				var sql=event.target.value;
+				//判断输入框是否有sql 没有的话不进行后台数据查询  且将echarts中的数据清空
+				if(sql!=''&&sql!=undefined){
+					$.ajax({
+						type:"GET",
+					    url: baseURL + "dashboard/queryData",
+					    data:{'sql':sql},
+					    success: function(r){
+					    	console.log(r)
+					    	if(vm.dashboard.chartType.code==1){
+			            		//判断是否替换假数据
+			            		if(echartsDefaultData){
+			            			//数据为动态的时候将echarts数据状态修改
+			            			echartsDefaultData=false;
+			            			var data=[];
+			            			for(var i=0;i<r.result.length;i++){
+			            				var d={value:[r.result[i].time,r.result[i].value]}
+			            				data.push(d);
+			            			}
+			            		    option.series.find( element => element.id == index).data=data;
+			 	 	                myChart.setOption(option);
+			            		}else{
+			            			var seriesData=option.series.find( element => element.id == index);
+			            			//可能为重复的数据操作 需要进行判断
+			            			if(seriesData==''||seriesData==undefined){
+			            				var data=[];
+				            			for(var i=0;i<r.result.length;i++){
+				            				var d={value:[r.result[i].time,r.result[i].value]}
+				            				data.push(d);
+				            			}
+			            				var data={
+			    	            				id:index,
+			    	    			            name:'',
+			    	    			            type:showType,
+			    	    			            yAxisIndex: 0,
+			    	    			            showSymbol: false,
+			    	    	                    lineStyle:{
+			    	    	                        width:1
+			    	    	                    },
+			    	    	                    areaStyle:{
+			    	    	                        opacity:0
+			    	    	                    },
+			    	    			            data:data
+			    	    			        }
+			    	            			option.series.push(data);
+			            			}else{
+			            				console.log("数据之前就已经创建")
+			            				var data=[];
+				            			for(var i=0;i<r.result.length;i++){
+				            				var d={value:[r.result[i].time,r.result[i].value]}
+				            				data.push(d);
+				            			}
+			            				seriesData.data=data;
+			            			}
+			            			myChart.setOption(option);
+			            		}
+		            		}else if(vm.dashboard.chartType.code==2){
+		            			console.log("进入设置单值图动态数据")
+		            			var decimal = vm.chartSingle.decimal;
+		            			singleValue=r.result[0].value;
+		            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
+		            			singleChart.setOption(singleOption);
+		            		}else if(vm.dashboard.chartType.code==3){
+		            			console.log("进入设置表格动态数据")
+		            		}
+						}
+					});
+				}
+			},
+			//新增用户sql填写
+			addNewQuery:function(){
+				vm.userSqls.push({
+					dbId:'',		
+					sql:'',		
+					chartId:'',		
+					type:'',		
+					vTime:'',		
+					describe:'series'+ (vm.userSqls.length+1)  
+				})
 			},
 			changeSetShow:function(val){
 				vm.query=true;
@@ -758,6 +903,29 @@
 			'chartSingle':{
 				handler(newVal,oldVal){
 					singleChart.setOption(singleOption);
+					this.$nextTick(function(){
+						$('.singleColor').each(function() {
+				            $(this).minicolors({
+				                control: $(this).attr('data-control') || 'hue',
+				                defaultValue: $(this).attr('data-defaultValue') || '',
+				                inline: $(this).attr('data-inline') === 'true',
+				                letterCase: $(this).attr('data-letterCase') || 'lowercase',
+				                opacity: $(this).attr('data-opacity'),
+				                position: $(this).attr('data-position') || 'bottom left',
+				                change: function(hex, opacity) {
+				                    if (!hex)
+				                        return;
+				                    if (opacity)
+				                        hex += ', ' + opacity;
+				                    try {
+				                        console.log(hex);
+				                    } catch (e) {
+				                    }
+				                },
+				                theme: 'bootstrap'
+				            });
+				        });
+					});
 				},
 				deep:true
 			}

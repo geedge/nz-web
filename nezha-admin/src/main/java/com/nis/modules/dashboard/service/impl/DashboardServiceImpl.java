@@ -139,4 +139,12 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 			throw new NZException(RCode.DASHBOARD_USERSQL_ERROR);
 		}
 	}
+
+	@Override
+	public List<ChartSeriesEntity> queryData(String sql, String timeFormat, Integer chartType) {
+		
+		List<ChartSeriesEntity> resultDatas = baseMapper.selectResultData(sql);
+		System.out.println(JSON.toJSONString(resultDatas));
+		return resultDatas;
+	}
 }

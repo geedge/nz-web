@@ -5,7 +5,7 @@
 <body>
 	<div class="container" v-show='dashboardSetting'>
     <!-- 工具栏 -->
-	<div class="panel">
+	<div class="panel" style="margin-bottom: 0px !important">
 		<!-- 面板展示栏  -->
 		<div class="panel-title">
 		</div>
@@ -32,7 +32,20 @@
     
     <!-- 图表展示位置 -->
     <div class="top" id="chart" v-show="dashboard.chartType.code==1"></div>
-    <div class="top" id="tableChart" v-show="dashboard.chartType.code==3"></div>
+    <div class="top" id="tableChart" v-show="dashboard.chartType.code==3">
+    	<table id='tablePanel' :style="{fontSize: chartTable.fontSize + 'px' }" class='table table-striped table-bordered table-condensed'>
+    		<thead>
+	    		<tr>
+	    			<th class='' id='tableColumnTime'>{{chartTable.vName}}</th><th class='' id='tableColumnValue'>{{chartTable.tName}}</th>
+	    		</tr>
+	    	</thead>
+	    	<tbody>
+	    		<template >
+	    			<!-- <tr><td style='width:50%'>"+tableData[i].formatTime+"</td><td>"+(tableData[i].value).toFixed(decimal)+"</td></tr> -->
+	    		</template>
+	    	</tbody>
+	    </table>
+    </div>
     <div class="top" id="singleChart" v-show="dashboard.chartType.code==2"></div>
     <hr/>
     
@@ -52,27 +65,29 @@
 	        <!-- 数据库类型选项 -->
 	        <div class="right ri-flex chart1"  id='databaseChoose' v-show="!query">
 	            <div class="right_top">
-	               	数据库: <multiselect class="input-medium required formatSelect" placeholder="DatabaseType" open-direction="bottom" v-model="dashboard.databaseType" :options="databaseType" label="value" :show-labels="false"></multiselect>
-					<span title="" id="addNewQuery" class="btn btn-default" onclick="addNewQuery()" style="position: relative;top: 0px;right: 20px;float:right">
+	             <!--  	数据库: <multiselect class="input-medium required formatSelect" :allow-empty='false' placeholder="DatabaseType" open-direction="bottom" v-model="dashboard.databaseType" :options="databaseType" label="value" :show-labels="false"></multiselect>   --> 
+					<span title="" id="addNewQuery" class="btn btn-default" @click="addNewQuery()" style="position: relative;top: 0px;right: 20px;float:right" v-show='dashboard.chartType.code==1'>
 						<i class='glyphicon glyphicon-plus'></i>
 					</span>
 	            </div>
-            	<div class="right-bottom">
-	                <div class="box-parent">
-	                    <div class="box-child">
-	                        <div class="box">
-		                        <div style="height:40px;background-color: #B0C4DE;text-align: center;">
-		                        <label style="position: relative;top: 10px;float:left;left:5px">名称:</label>
-		                        <input  class="input-mini required" onblur="changeLegend(this)" name='' value="series 1" style="position: relative;top: 8px;float:left;left:8px"/>
-			                        <span title="" class="btn btn-default" onclick="removeQuery(this)" style="position: relative;top: 4px;right: 20px;float:right">
-										<i class='fa fa-trash-o'></i>
-									</span>
-							    </div>
-	                           <textarea id="0" rows="" cols="" style='width:100%;height:200px' class='userSql' onblur="queryData(this)" name=""></textarea>
-	                        </div>
-	                    </div>
-	                </div>
-	            </div>
+            	
+	            	<div class="right-bottom" v-for="userSql,index in userSqls">
+		                <div class="box-parent">
+		                    <div class="box-child">
+		                        <div class="box">
+			                        <div style="height:40px;background-color: #B0C4DE;text-align: center;">
+			                        <label style="position: relative;top: 10px;float:left;left:5px">名称:</label>
+			                        <input  class="input-mini required" @blur="changeLegend(index)" :value="userSql.describe" style="position: relative;top: 8px;float:left;left:8px"/>
+				                        <span title="" class="btn btn-default" @click="removeQuery(index)" style="position: relative;top: 4px;right: 20px;float:right" :key="userSql.describe" v-show='userSqls.length>1'>
+											<i class='fa fa-trash-o'></i>
+										</span>
+								    </div>
+		                           <textarea id="0" rows="" cols="" style='width:100%;height:200px' class='userSql' @blur="queryData(index)" name="">{{userSql.sql}}</textarea>
+		                        </div>
+		                    </div>
+		                </div>
+		            </div>
+	            
 	        </div>
 	        
 	        
@@ -80,7 +95,7 @@
 	        
 	        <div class="right ri-flex chart1"  id='chartTypeChoose'  v-show="!chart">
 	            <div class="right_top">
-	            	图表类型: <multiselect class="input-medium required formatSelect" placeholder="ChartType" v-model="dashboard.chartType" open-direction="bottom" :options="chartType" title="" label="value" :show-labels="false"></multiselect>
+	            	图表类型: <multiselect class="input-medium required formatSelect" :allow-empty='false' placeholder="ChartType" v-model="dashboard.chartType" open-direction="bottom" :options="chartType" title="" label="value" :show-labels="false"></multiselect>
 	            </div>
 	            
 	            <!-- 点、线、柱图设置区域 -->
@@ -108,13 +123,13 @@
 	                                <li class="list">
 	                                    <div class="li-left">填充颜色：</div>
 								        <span class='chooseOption'>
-								        	<multiselect class="input-small required formatSelect" open-direction="bottom" v-model="chartStatistical.fill" :options="fills" :show-labels="false"></multiselect>
+								        	<multiselect class="input-small required formatSelect" :allow-empty='false' open-direction="bottom" v-model="chartStatistical.fill" :options="fills" :show-labels="false"></multiselect>
 								        </span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">线宽:</div>
 	                                    <span class='chooseOption'>
-											<multiselect class="input-small required formatSelect" open-direction="bottom" v-model="chartStatistical.lineWidth" :options="lineWidths"  :show-labels="false"></multiselect>
+											<multiselect class="input-small required formatSelect" :allow-empty='false' open-direction="bottom" v-model="chartStatistical.lineWidth" :options="lineWidths"  :show-labels="false"></multiselect>
 										</span>
 	                                </li>
 	                            </ul>
@@ -164,13 +179,13 @@
 		                                <li class="list">
 		                                    <div class="li-left">X轴位置：</div>
 		                                     <span class='chooseOption'>
-								        	 	<multiselect class="input-small required formatSelect" v-model="chartStatistical.legendXPosition" :options="legendXPositions" label="value" :show-labels="false"></multiselect>
+								        	 	<multiselect class="input-small required formatSelect" :allow-empty='false' v-model="chartStatistical.legendXPosition" :options="legendXPositions" label="value" :show-labels="false"></multiselect>
 								        	 </span>
 		                                </li>
 		                                <li class="list">
 		                                    <div class="li-left">Y轴位置：</div>
 		                                     <span class='chooseOption'>
-								        	 	<multiselect class="input-small required formatSelect" v-model="chartStatistical.legendYPosition" :options="legendYPositions" label="value" :show-labels="false"></multiselect>
+								        	 	<multiselect class="input-small required formatSelect" :allow-empty='false' v-model="chartStatistical.legendYPosition" :options="legendYPositions" label="value" :show-labels="false"></multiselect>
 								             </span>
 		                                </li>
 		                            </ul>
@@ -196,7 +211,7 @@
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">字体大小：</div>
-	                                    <span class='chooseOption'><input id="tableFontSize" onblur="setTableFontSize(this)" class="input-mini required"  placeholder="5" name="" value="" /></span>
+	                                    <span class='chooseOption'><input id="tableFontSize"  class="input-mini required"  placeholder="5" v-model='chartTable.fontSize' /></span>
 	                                </li>
 	                            </ul>
 	                           <ul>
@@ -210,13 +225,13 @@
 	                                <li class="list">
 	                                    <div class="li-left">名称:</div>
 	                                    <span class='chooseOption'>
-											<input  class="input-mini required"  placeholder="Value" name="" value=""/>
+											<input  class="input-mini required"  placeholder="Value" v-model='chartTable.vName'/>
 										</span>
 	                                </li>
 	                                <li class="list">
 	                                    <div class="li-left">小数位:</div>
 	                                    <span class='chooseOption'>
-											<input  class="input-mini required"  placeholder="2" id="decimal" name="" value="" onkeyup="this.value=this.value.replace(/\D/g,'')"/>
+											<input  class="input-mini required"  placeholder="2" id="decimal" v-model='chartTable.decimal' onkeyup="this.value=this.value.replace(/\D/g,'')"/>
 										</span>
 	                                </li>
 	                            </ul>
@@ -231,7 +246,7 @@
 	                                <li class="list">
 	                                    <div class="li-left">名称:</div>
 	                                    <span class='chooseOption'>
-											<input  class="input-normal required"  placeholder="Time" name="" value="" />
+											<input  class="input-normal required"  placeholder="Time" v-model='chartTable.tName' />
 										</span>
 	                                </li>
 	                                <li class="list">
@@ -349,19 +364,17 @@
 			                            <li class="title">
 			                            	阈值
 			                            </li>
-			                            <template v-for="thresholdValue,index in chartSingle.thresholdValues">
-		                            		<li class="list thresholdConfig">
-			                                    <div class="li-left">范围</div>
-			                                    <span class=''>
-													<input  class="input-mini required"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].value'/>
-												</span>
-												<div class="li-left">颜色</div>
-												<span class="meta-box__delbtn chooseOption"><a href="javascript:void(0)" title='' style='text-decoration:none;' @click="removeThreshold(index)"><font color="red" class="" style="font-size:30px;">×</font></a></span>
-			                                    <span class='chooseOption'>
-													<input  class="input-mini required singleColor"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].color'/>
-												</span>
-			                                </li>
-		                                </template>
+	                            		<li class="list thresholdConfig" v-for="thresholdValue,index in chartSingle.thresholdValues">
+		                                    <div class="li-left">范围</div>
+		                                    <span class=''>
+												<input  class="input-mini required"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].value' @blur='resetThresholdColor()'/>
+											</span>
+											<div class="li-left">颜色</div>
+											<span class="meta-box__delbtn chooseOption"><a href="javascript:void(0)" title='' style='text-decoration:none;' @click="removeThreshold(index)"><font color="red" class="" style="font-size:30px;" v-show="chartSingle.thresholdValues.length>1">×</font></a></span>
+		                                    <span class='chooseOption'>
+												<input  class="input-mini required singleColor"  placeholder="" name="" v-model='chartSingle.thresholdValues[index].color' @blur='setThresholdColor(index)'/>
+											</span>
+		                                </li>
 		                            	<li class="list" style="text-align:center">
 		                                	<span title="" id="" class="btn btn-default" style="text-align:center" @click='addThreshold()'>
 												<i class='glyphicon glyphicon-plus'></i>

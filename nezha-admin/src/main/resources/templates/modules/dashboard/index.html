@@ -12,7 +12,7 @@
 <div id='dashboardView'>
 	<!-- 仪表盘操作以及展示页面 -->
 	<div v-show="!dashboardSetting">
-		<div class="grid-btn">	
+		<div class="grid-btn" style='margin-bottom: 5px;'>	
 			<div class="input-group col-sm-2" style="float:right !important">
 				<span class="input-group-addon" @click="$('#filterTime').click();"><i class="fa fa-calendar"></i></span>
 				<input type="text" class="form-control" id='filterTime' readonly  placeholder='时间选择' style="width:300px;margin-bottom:0px">
@@ -21,7 +21,7 @@
 			<a class="btn btn-default"  title="<@spring.message 'common.edit'/>"><i class="glyphicon glyphicon-floppy-disk"></i></i></a>
 			<a class="btn btn-default"  title="<@spring.message 'mission.start'/>"><i class="glyphicon glyphicon-refresh"></i></a>
 		</div>
-		<hr/>
+		<hr style='margin-top: 0px; margin-bottom: 0px;'/>
 		<!-- 图表展示区 -->
 		<input style="display:none" id="dashboardId"/>
 		<div class="demo" id="showPanel"> 

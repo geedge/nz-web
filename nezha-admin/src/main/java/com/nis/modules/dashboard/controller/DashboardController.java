@@ -19,6 +19,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.dashboard.entity.ChartEntity;
+import com.nis.modules.dashboard.entity.ChartSeriesEntity;
 import com.nis.modules.dashboard.entity.DashboardEntity;
 import com.nis.modules.dashboard.service.DashboardService;
 import com.nis.modules.sys.controller.AbstractController;
@@ -89,5 +90,13 @@ public class DashboardController extends AbstractController {
 		ValidateUtils.is(dashboard.getWidth()).notNull(RCode.DASHBOARD_WIDTH_NULL);
 		dashboardService.modifyDashboard(dashboard);
 		return R.ok();
+	}
+	
+	@GetMapping("/queryData")
+	@ResponseBody
+	@ApiOperation(httpMethod="GET",value="根据用户sql查询信息", notes="仪表盘属性")
+	public R queryData(String sql,String timeFormat,Integer chartType) {
+		List<ChartSeriesEntity> queryDatas = dashboardService.queryData(sql,timeFormat,chartType);
+		return R.ok().put("result", queryDatas);
 	}
 }
