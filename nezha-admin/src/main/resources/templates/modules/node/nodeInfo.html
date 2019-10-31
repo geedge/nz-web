@@ -84,7 +84,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.nodeInfo.name.$dirty && !$v.nodeInfo.name.required}"
+                           :class="{'form-control--error': $v.nodeInfo.name.$dirty && (!$v.nodeInfo.name.required || !$v.nodeInfo.name.nameCheck)}"
                            v-model.trim="$v.nodeInfo.name.$model"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
@@ -112,7 +112,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'node.ipAddress'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control" id="ipAddress"
-                           :class="{'form-control--error': $v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required || !$v.nodeInfo.ip.ipAddress}"
+                           :class="{'form-control--error': $v.nodeInfo.ip.$dirty && !$v.nodeInfo.ip.required || !$v.nodeInfo.ip.ipAddress || !$v.nodeInfo.ip.ipCheck}"
                            v-model.trim="$v.nodeInfo.ip.$model"
                            placeholder="<@spring.message 'node.ipAddress'/>"/>
                     <span class="required-symbol">*</span>
@@ -141,6 +141,9 @@
                     <div class="form-control_error-msg" v-if="$v.nodeInfo.type.$dirty && !$v.nodeInfo.type.required">
                         <@spring.message 'validate.common.required'/>
                     </div>
+                    <div class="form-control_error-msg" v-if="nodeTypeValidateFlag">
+                        请先选择设备类型
+                    </div>
                 </div>
             </div>
 
@@ -150,7 +153,13 @@
                 <div class="col-sm-9">
                     <multiselect :options="nodeTags" label="value" :show-labels="false" :disabled="disabledFlag"
                                  v-model="nodeInfo.tag"
-                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                 @open="checkNodeType"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>">
+
+                        <div slot="afterList" v-show="nodeInfo.type != null">
+                            <div class="select-add" style="margin-top: 10px"><i class="fa fa-plus" @click="openNodeTagForm"></i></div>
+                        </div>
+                    </multiselect>
                 </div>
             </div>
 
@@ -173,148 +182,78 @@
             <div class="form-group">
                 <div class="col-sm-2 control-label"><@spring.message 'node.position.information'/></div>
                 <div class="col-sm-9">
-                
-					<div class="add-box">
-						<div class="add-box_body">
-							<div class="add-box_row">
-								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.uSize'/>(U)</span>
-								<span class="add-box_cell add-box_cell_60">
+
+                    <div class="add-box">
+                        <div class="add-box_body">
+                            <div class="add-box_row">
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.uSize'/>(U)</span>
+                                <span class="add-box_cell add-box_cell_60">
 									<input type="text" class="form-control add-box_input"
-                                       :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
-                                       v-model.trim="$v.nodeInfo.uSize.$model"
-                                       placeholder="<@spring.message 'node.uSize'/>(U)"/>
+                                           :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
+                                           v-model.trim="$v.nodeInfo.uSize.$model"
+                                           placeholder="<@spring.message 'node.uSize'/>(U)"/>
 	                                <span class="add-box_required-symbol"
-	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+                                          v-if="nodeInfo.nodeRoom != null">*</span>
+                                    <div class="form-control_error-msg" v-if="uSizeValidateFlag">
+                                        <@spring.message 'validate.node.pickUsizeFirst'/>
+                                    </div>
 	                                <div class="form-control_error-msg"
-	                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
+                                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
 	                                    <@spring.message 'validate.common.positiveInteger'/>
 	                                </div>
 	                                <div class="form-control_error-msg"
-	                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
+                                         v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
 	                                    <@spring.message 'validate.common.required'/>
 	                                </div>
 								</span>
-							</div>
-							<div class="add-box_row">
-								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.room.name'/></span>
-								<span class="add-box_cell add-box_cell_60">
+                            </div>
+                            <div class="add-box_row">
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.room.name'/></span>
+                                <span class="add-box_cell add-box_cell_60">
 									<multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
-                                             :show-labels="false"
-                                             class="add-box_input"
-                                             @close="getCabinets($event)"
-                                             v-model="nodeInfo.nodeRoom"
-                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                                 :show-labels="false"
+                                                 class="add-box_input"
+                                                 @close="getCabinets($event)" @open="checkUsize"
+                                                 v-model="nodeInfo.nodeRoom"
+                                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
 								</span>
-							</div>
-							<div class="add-box_row">
-								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinet.name'/></span>
-								<span class="add-box_cell add-box_cell_60">
+                            </div>
+                            <div class="add-box_row">
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinet.name'/></span>
+                                <span class="add-box_cell add-box_cell_60">
 									<multiselect :options="cabinets" label="name" :disabled="disabledFlag"
-                                             :show-labels="false"
-                                             class="add-box_input"
-                                             @close="getStarts($event)"
-                                             v-model="nodeInfo.cabinetId"
-                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
+                                                 :show-labels="false"
+                                                 class="add-box_input"
+                                                 @close="getStarts($event)"  @open="checkUsize"
+                                                 v-model="nodeInfo.cabinetId"
+                                                 placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
 	                                <span class="add-box_required-symbol"
-	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+                                          v-if="nodeInfo.nodeRoom != null">*</span>
 	                                <div class="form-control_error-msg"
-	                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
+                                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
 	                                    <@spring.message 'validate.common.required'/>
 	                                </div>
 								</span>
-							</div>
-							<div class="add-box_row">
-								<span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinetStart'/></span>
-								<span class="add-box_cell add-box_cell_60">
+                            </div>
+                            <div class="add-box_row">
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinetStart'/></span>
+                                <span class="add-box_cell add-box_cell_60">
 									<multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
-                                             v-model="nodeInfo.cabinetStart"
-                                             class="add-box_input"
-                                             @blur="$v.nodeInfo.uSize.$touch()"
-                                             :placeholder="cabStartTitle"></multiselect>
+                                                 v-model="nodeInfo.cabinetStart"
+                                                 class="add-box_input"
+                                                 @blur="$v.nodeInfo.uSize.$touch()"  @open="checkUsize"
+                                                 :placeholder="cabStartTitle"></multiselect>
 	                                <span class="add-box_required-symbol"
-	                                      v-if="nodeInfo.nodeRoom != null">*</span>
+                                          v-if="nodeInfo.nodeRoom != null">*</span>
 	                                <div class="form-control_error-msg"
-	                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
+                                         v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
 	                                    <@spring.message 'validate.common.required'/>
 	                                </div>
 								</span>
-							</div>
-						</div>
-					</div>
-					
-                    <!-- <div class="add-box2">
-
-                        <div class="form-group">
-                            <div class="col-sm-3 control-label"><@spring.message 'node.uSize'/>(U)</div>
-                            <div class="col-sm-8">
-                                <input type="text" class="form-control"
-                                       :class="{'form-control--error': $v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue || !$v.nodeInfo.uSize.integer}"
-                                       v-model.trim="$v.nodeInfo.uSize.$model"
-                                       placeholder="<@spring.message 'node.uSize'/>(U)"/>
-                                <span class="add-box_required-symbol"
-                                      v-if="nodeInfo.nodeRoom != null">*</span>$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired
-                                <div class="form-control_error-msg"
-                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.minValue  || !$v.nodeInfo.uSize.integer">
-                                    <@spring.message 'validate.common.positiveInteger'/>
-                                </div>
-                                <div class="form-control_error-msg"
-                                     v-if="$v.nodeInfo.uSize.$dirty && !$v.nodeInfo.uSize.sizeRequired">
-                                    <@spring.message 'validate.common.required'/>
-                                </div>
-                                <div class="form-control_error-msg" v-if="uSizeValidateFlag">
-                                    <@spring.message 'validate.node.pickUsizeFirst'/>
-                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        机房
-                        <div class="form-group"> @open="checkUsize()" ,$v.nodeInfo.cabinetId.$touch(),$v.nodeInfo.uSize.$touch()
-                            <div class="col-sm-3 control-label"><@spring.message 'node.room.name'/></div>
-                            <div class="col-sm-8">
-                                <multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
-                                             :show-labels="false"
-                                             @open="checkUsize" @close="getCabinets($event)"
-                                             v-model="nodeInfo.nodeRoom"
-                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                            </div>
-                        </div>
-
-                        机柜
-                        <div class="form-group"> @open="checkNodeRoom()  ,$v.nodeInfo.cabinetStart.$touch(),$v.nodeInfo.uSize.$touch()"
-                            <div class="col-sm-3 control-label"><@spring.message 'node.cabinet.name'/></div>
-                            <div class="col-sm-8">
-                                <multiselect :options="cabinets" label="name" :disabled="disabledFlag"
-                                             :show-labels="false"
-                                             @close="getStarts($event)"
-                                             v-model="nodeInfo.cabinetId"
-                                             placeholder="<@spring.message 'common.pleaseSelect'/>"></multiselect>
-                                <span class="add-box_required-symbol"
-                                      v-if="nodeInfo.nodeRoom != null">*</span>
-                                <div class="form-control_error-msg"
-                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetId.cabRequired">
-                                    <@spring.message 'validate.common.required'/>
-                                </div>
-                            </div>
-                        </div>
-
-                        起始位置
-                        <div class="form-group"> @open="checkCabStart()"
-                            <div class="col-sm-3 control-label"><@spring.message 'node.cabinetStart'/></div>
-                            <div class="col-sm-8" style="position:relative;">
-                                <multiselect :options="starts" :show-labels="false" :disabled="disabledFlag"
-                                             v-model="nodeInfo.cabinetStart"
-                                             @blur="$v.nodeInfo.uSize.$touch()"
-                                             :placeholder="cabStartTitle"></multiselect>
-                                <span class="add-box_required-symbol"
-                                      v-if="nodeInfo.nodeRoom != null">*</span>
-                                <div class="form-control_error-msg"
-                                     v-if="$v.nodeInfo.cabinetId.$dirty && !$v.nodeInfo.cabinetStart.startRequired">
-                                    <@spring.message 'validate.common.required'/>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div> -->
                 </div>
             </div>
 
@@ -418,23 +357,24 @@
             <@spring.message 'system.system'/>
             <div style="clear:both"></div>
         </div>
-        <template v-for="item in systems" >
-            <group-tree1
-                    :zNodes="item.nodegroups"
-                    :node="item"
-                    @addrootgroup="addNodeGroup"
-                    ref="gtree"
-                    @tree-select="selectedTreeDatas"
-                    @tree-unselect="unSelectedTreeDatas"> <!-- ref 为获取 组件 或 dom 时使用 -->
 
-            </group-tree1>
-        </template>
+        <group-tree1
+                v-for="item in systems"
+                :zNodes="item.nodegroups"
+                :node="item"
+                :currentSystem="currentSystem"
+                @addrootgroup="addNodeGroup"
+                ref="gtree"
+                @tree-select="selectedTreeDatas"
+                @tree-unselect="unSelectedTreeDatas"> <!-- ref 为获取 组件 或 dom 时使用 -->
+
+        </group-tree1>
     </div>
 
 
-    <!-- 添加 / 修改 表单 -->
-    <div v-show="!showGroupForm" id="groupForm">
-        <div class="panel panel-default">
+    <!--  节点组 添加 / 修改 表单 -->
+    <div v-show="!showGroupForm" id="groupForm" style="overflow-x: hidden">
+        <div class="">
             <form class="form-horizontal">
 
                 <!-- 上级节点组 -->
@@ -462,7 +402,7 @@
                     <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
                     <div class="col-sm-9">
                         <input type="text" class="form-control"
-                               :class="{'form-control--error': $v.nodeGroupDto.name.$dirty && !$v.nodeGroupDto.name.required}"
+                               :class="{'form-control--error': $v.nodeGroupDto.name.$dirty && (!$v.nodeGroupDto.name.required || !$v.nodeGroupDto.name.groupNameCheck)}"
                                v-model.trim="$v.nodeGroupDto.name.$model"
                                placeholder="<@spring.message 'nodegroup.name'/>"/>
                         <span class="required-symbol">*</span>
@@ -500,6 +440,49 @@
         </div>
     </div>
 
+
+    <!--  node tags 添加 / 修改 表单 -->
+    <div v-show="!showNodeTagsForm" id="nodeTagsForm" style="overflow-x: hidden">
+        <form class="form-horizontal">
+
+            <!-- 当前设备类型 -->
+            <div class="form-group" v-show="!showNodeTagsForm">
+                <div class="col-sm-2 control-label"><@spring.message 'node.type'/></div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeTag.relationNodeType" disabled/>
+                </div>
+            </div>
+
+            <!-- 标签名称 -->
+            <div class="form-group" v-show="!showNodeTagsForm">
+                <div class="col-sm-2 control-label"><@spring.message 'node.tagName'/></div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.nodeTag.value.$dirty && !$v.nodeTag.value.required || !$v.nodeTag.value.nodeTagValueCheck}"
+                           v-model.trim="$v.nodeTag.value.$model"
+                           placeholder="<@spring.message 'node.tagName'/>"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg" v-if="$v.nodeTag.value.$dirty && !$v.nodeTag.value.required">
+                        <@spring.message 'validate.common.required'/>
+                    </div>
+                    <div class="form-control_error-msg" v-if="$v.nodeTag.value.$dirty && !$v.nodeTag.value.nodeTagValueCheck">
+                        <@spring.message 'validate.common.name.repeat'/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group form-group_opbox">
+                <div>
+                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"
+                            style="width: 55px" @click="saveNodeTag"><i class="fa fa-check"></i></button>
+                    <div style="display:inline-block;width:10px;"></div>
+                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning"
+                            style="width: 55px" @click="closeNodeTagForm"><i class="fa fa-reply"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+
 </div>
 
 <!-- 节点组树结构模板 -->
@@ -534,5 +517,10 @@
     // 选择节点组DIV滚动条
     var perfect = new PerfectScrollbar('.psNg');
 </script>
+<style>
+    .ztree {
+        padding: 1px 0 0 6px !important;
+    }
+</style>
 </body>
 </html>

@@ -394,7 +394,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
             //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
             if ((list == null || list.size() == 0) ||
-                    (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+                    (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
                 flag = true;
             }
             return flag;
@@ -409,6 +409,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      * @Return
      * @Exception
      */
+    @Override
     public boolean isCurrentSystem(Long[] ids) {
         Long currSystemId = ShiroUtils.getCurrSystemId();
         QueryWrapper<NodeGroupInfoEntity> nodeGroupInfoQueryWrapper = new QueryWrapper<NodeGroupInfoEntity>();

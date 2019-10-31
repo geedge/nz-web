@@ -133,4 +133,25 @@ public class SysDictController extends AbstractController {
         return R.ok();
     }
 
+
+    /**
+     *  name type 相同下 value 值不能重复
+     * @param id     修改使用
+     * @param name   字典名称
+     * @param type   字典类型
+     * @param value  字典值
+     * @return
+     */
+    @GetMapping("/dictValueCheck")
+    public R dictValueCheck(Long id, String name, String type, String value){
+        ValidateUtils.is(name).notNull(RCode.SYS_DICT_NAME_ISNULL)
+                .and(type).notNull(RCode.SYS_DICT_TYPE_ISNULL)
+                .and(value).notNull(RCode.SYS_DICT_VALUE_ISNULL);
+        if (sysDictService.dictValueCheck(id,name,type,value)) {
+            return R.ok();
+        }
+        // 字典值重复
+        return R.error(RCode.SYS_DICT_VALUE_DUPLICATE);
+    }
+
 }

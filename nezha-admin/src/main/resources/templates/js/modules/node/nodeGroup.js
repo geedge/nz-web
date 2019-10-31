@@ -342,7 +342,7 @@ var vue = new Vue({
         },
         open: function (title) {
             layer.open({
-                area: ['550px', '100%'],
+                area: ['540px', '100%'],
                 shade: 0,
                 title: title,
                 type: 1,

@@ -124,14 +124,14 @@ public class NodeInfoEntity implements Serializable {
      * 节点组IDS 节点添加/修改选择节点组
      */
     @TableField(exist = false)
-    private List<Long> groupIds;
+    private List<NodeGroupInfoEntity> groups;
 
-    public List<Long> getGroupIds() {
-        return groupIds;
+    public List<NodeGroupInfoEntity> getGroups() {
+        return groups;
     }
 
-    public void setGroupIds(List<Long> groupIds) {
-        this.groupIds = groupIds;
+    public void setGroups(List<NodeGroupInfoEntity> groups) {
+        this.groups = groups;
     }
 
     public Long getId() {

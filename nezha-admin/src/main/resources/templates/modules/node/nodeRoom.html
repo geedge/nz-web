@@ -54,7 +54,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required}"
+                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && (!$v.nodeRoom.name.required || !$v.nodeRoom.name.nameCheck)}"
                            v-model.trim="nodeRoom.name" @blur="$v.nodeRoom.name.$touch"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>

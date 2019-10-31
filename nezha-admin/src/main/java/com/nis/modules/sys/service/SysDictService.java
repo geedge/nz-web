@@ -32,6 +32,15 @@ public interface SysDictService extends IService<SysDictEntity> {
 	boolean update(SysDictEntity dict);
 	
 	void updateLangCache();
-	
+
+    /**
+     *  name type 下 value 值不能重复
+     * @param id
+     * @param name   字典名称
+     * @param type   字典类型
+     * @param value  字典值
+     * @return
+     */
+    boolean dictValueCheck(Long id, String name, String type, String value);
 }
 

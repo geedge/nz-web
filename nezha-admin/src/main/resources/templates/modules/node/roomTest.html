@@ -110,7 +110,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required}"
+                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required || !$v.nodeRoom.name.roomNameCheck}"
                            v-model.trim="nodeRoom.name" @blur="$v.nodeRoom.name.$touch"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
@@ -219,7 +219,7 @@
                 <div class="col-sm-9">
                     <input type="text" v-model.trim="nodeCabinet.name" @blur="$v.nodeCabinet.name.$touch"
                            class="form-control"
-                           :class="{'form-control--error': $v.nodeCabinet.name.$dirty && !$v.nodeCabinet.name.required}"
+                           :class="{'form-control--error': $v.nodeCabinet.name.$dirty && (!$v.nodeCabinet.name.required || !$v.nodeCabinet.name.cabNameCheck)}"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
                     <div class="form-control_error-msg"

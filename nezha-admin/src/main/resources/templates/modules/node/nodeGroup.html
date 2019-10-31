@@ -9,40 +9,41 @@
     	padding: 1px 0 0 6px !important;
     }
     .nodeList{
-        width: calc(100% - 250px);    /*根据页面宽度变化而变化*/
+        width: calc(100% - 400px);    /*根据页面宽度变化而变化*/
         display: inline-block;
         float:left
     }
     .content{
         position: relative;
-        width: 250px;
+        min-width: 400px;
         display: inline-block;
         padding-left: 15px;
         float:left;
     }
     </style>
 </head>
-<body style="position: relative;">
+<body>
 
-<div id="nodeGroupApp" class="content" v-cloak>
+<div id="nodeGroupApp" v-cloak>
+    <div class="content" id="groupTree">
+        <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
+            <@spring.message 'system.system'/>
+            <div style="clear:both"></div>
+        </div>
+        <group-tree
+                v-for="item in systems"
+                :key="item.id"
+                :zNodes="item.nodegroups"
+                :node="item"
+                @addrootgroup="add"
+                ref="gtree"> <!-- ref 为获取 组件 或 dom 时使用 -->
 
-    <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
-        <@spring.message 'system.system'/>
-        <div style="clear:both"></div>
+        </group-tree>
     </div>
-    <group-tree
-            v-for="item in systems"
-            :key="item.id"
-            :zNodes="item.nodegroups"
-            :node="item"
-            @addrootgroup="add"
-            ref="gtree"> <!-- ref 为获取 组件 或 dom 时使用 -->
-
-    </group-tree>
 
     <!-- 添加 / 修改 表单 -->
-    <div v-show="showForm" id="form">
-        <div class="panel panel-default">
+    <div v-show="showForm" id="form" style="overflow-x: hidden  ">
+        <div class="">
             <form class="form-horizontal">
 
                 <!-- 上级节点组 -->
@@ -70,7 +71,7 @@
                     <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
                     <div class="col-sm-9">
                         <input type="text" class="form-control"
-                               :class="{'form-control--error': $v.nodeGroup.name.$dirty && !$v.nodeGroup.name.required}"
+                               :class="{'form-control--error': $v.nodeGroup.name.$dirty && (!$v.nodeGroup.name.required || !$v.nodeGroup.name.nameCheck)}"
                                v-model.trim="$v.nodeGroup.name.$model"
                                placeholder="<@spring.message 'nodegroup.name'/>"/>
                         <span class="required-symbol">*</span>
@@ -211,9 +212,19 @@
     var groupPrefect = new PerfectScrollbar('.content');
     window.onload = function () {
         var h = document.documentElement.clientHeight;// 可见区域高度
-        var ngApp =  document.getElementById("nodeGroupApp");
-        ngApp.style.height = h + 'px';
+        var groupTree =  document.getElementById("groupTree");
+        groupTree.style.height = h + 'px';
     }
+
+    // 浏览器大小发生改变 待用
+    var resizeTimer = null;
+    $(window).bind('resize', function (){
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function(){
+            console.log("窗口发生改变了哟！");
+            // console.log(document.documentElement.clientWidth)
+        } , 100);
+    });
 </script>
 </body>
 </html>

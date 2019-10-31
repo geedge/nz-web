@@ -220,7 +220,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
                 int count = this.count(new QueryWrapper<NodeCabinetEntity>().eq("room_id", entity.getId()).eq(
                         "room_row", i));
 
-                if (id != null && roomId == entity.getId() && roomRow - i == 0) {  // 修改的机柜 在这个机房中 在这一行中
+                if (id != null && roomId.equals(entity.getId()) && roomRow - i == 0) {  // 修改的机柜 在这个机房中 在这一行中
                     if (count - roomCols == 0) {  // 如果该行已满 但修改仍要找出该位置
                         count++;                  // ++是为了让下面的判断不生效
                     }
@@ -237,7 +237,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
                 }
                 List<Integer> colsByRow = nodeCabinetDao.getColsByRow(entity.getId(), i);
 
-                if (id != null && roomId == entity.getId() && roomRow - i == 0) {  // 修改的机柜 在这个机房中 在这一行中
+                if (id != null && roomId.equals(entity.getId()) && roomRow - i == 0) {  // 修改的机柜 在这个机房中 在这一行中
                     for (int j = 0; j < colsByRow.size(); j++) {
                         if (colsByRow.get(j) - roomCol == 0) {
                             colsByRow.remove(j);
@@ -287,7 +287,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
         if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId() == id)) {
+                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
             flag = true;
         }
         return flag;

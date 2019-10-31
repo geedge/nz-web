@@ -124,4 +124,24 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		}
 	}
 
+
+	/**
+	 *  name type 下 value 值不能重复
+	 * @param id
+	 * @param name   字典名称
+	 * @param type   字典类型
+	 * @param value  字典值
+	 * @return
+	 */
+	@Override
+	public boolean dictValueCheck(Long id, String name, String type, String value) {
+		List<SysDictEntity> list = this.list(new QueryWrapper<SysDictEntity>().eq("name", name).eq("type", type).eq("value", value));
+
+		boolean flag = false;
+		if (list == null || list.size() == 0 || (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
+			flag = true;
+		}
+		return flag;
+	}
+
 }

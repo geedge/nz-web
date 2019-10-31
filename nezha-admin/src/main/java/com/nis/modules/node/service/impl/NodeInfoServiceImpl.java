@@ -101,6 +101,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         return new PageUtils(page);
     }
 
+    @Override
     public void getTagName(List<NodeInfoEntity> nodeInfoEntities) {
         Map<String, Object> map = new HashMap();
         map.put("type", Constant.DICT_NODE_TAG_TYPE + Constant.NODE_TYPE_SERVER); // 节点类型为 server
@@ -184,7 +185,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (checkFieldExist(uuid, "ip", ip)) {   // 通过
                 return R.ok();
             } else {                                          // 其他业务系统已存在 返回详情
-                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", ip));
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", ip).ne("state", 3));
                 NodeInfoEntity nodeDetail = this.detail(node.getUuid());
                 List<SystemInfoEntity> systemInfo = nodeDetail.getSystemInfo();
                 for (SystemInfoEntity entity : systemInfo) {
@@ -207,7 +208,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
         List<NodeInfoEntity> list = this.list(new QueryWrapper<NodeInfoEntity>().eq(column, colValue).ne("state", 3));
         boolean flag = false;
 
-        if (list == null || list.size() == 0 || (list != null && list.size() == 1 && list.get(0).getUuid() == uuid)) {
+        if (list == null || list.size() == 0 || (list != null && list.size() == 1 && list.get(0).getUuid().equals(uuid))) {
             flag = true;
         }
         return flag;
@@ -280,7 +281,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             } else {
 
                 // 如果此节点和自身业务系统存在关系 则不让添加
-                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()));
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()).ne("state", 3));
                 List<SystemNodeRelEntity> systemInfo = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", node.getUuid()));
                 for (SystemNodeRelEntity entity : systemInfo) {
                     if (entity.getSystemId() - ShiroUtils.getCurrSystemId() == 0) {
@@ -342,15 +343,27 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             //5. 入库
             nodeInfoDao.save(nodeInfoEntity);
 
-            //6.判断是否选择节点组
-            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroupIds())){
-                List<NodeGroupRelEntity> list = new ArrayList<>();
-                for (Long groupId : nodeInfoEntity.getGroupIds()) {
-                    list.add(new NodeGroupRelEntity(groupId, nodeInfoEntity.getUuid(), systemId, now));
+            //6.判断是否选择节点组s
+            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())){
+                // 1. 维护和节点组的关联关系
+                List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+                List<SystemNodeRelEntity> sysRelList = new ArrayList<>();
+
+                for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                    groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
+
+                    // 选择的节点组是global的话 则不维护 节点和当前业务系统由节点自己维护
+                    if(!Constant.GLOBAL_ID.equals(group.getSystemId())){
+                        sysRelList.add(new SystemNodeRelEntity(group.getSystemId(), nodeInfoEntity.getUuid(), systemId, now));
+                    }
                 }
                 // 在此处添加
-                if (list != null && list.size() > 0) {
-                    nodeGroupRelService.saveBatch(list);
+                if (CollectionUtils.isNotEmpty(groupRelList)) {
+                    nodeGroupRelService.saveBatch(groupRelList);
+                }
+                // 2. 维护节点和节点组业务系统的关系  注: 只有golbal 下需要维护
+                if(ShiroUtils.isGlobal() && CollectionUtils.isNotEmpty(sysRelList)){
+                    systemNodeRelService.saveBatch(sysRelList);
                 }
             }
         } else {
@@ -419,7 +432,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 this.updateNode(nodeInfoEntity);
             } else {
                 // 维护关系
-                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()));
+                NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()).ne("state", 3));
                 List<SystemNodeRelEntity> systemInfo = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", node.getUuid()));
                 for (SystemNodeRelEntity entity : systemInfo) {
                     if (entity.getSystemId() - ShiroUtils.getCurrSystemId() == 0) {
@@ -478,16 +491,16 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             //5. 入库
             update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
             //6.判断是否给节点指定节点组
-            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroupIds())){
+            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())){
                 // 先删除
                 nodeGroupRelService.remove(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
                 // 再添加
-                List<NodeGroupRelEntity> list = new ArrayList<>();
-                for (Long groupId : nodeInfoEntity.getGroupIds()) {
-                    list.add(new NodeGroupRelEntity(groupId, nodeInfoEntity.getUuid(), systemId, now));
+                List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+                for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                    groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
                 }
-                if (list != null && list.size() > 0) {
-                    nodeGroupRelService.saveBatch(list);
+                if (CollectionUtils.isNotEmpty(groupRelList)) {
+                    nodeGroupRelService.saveBatch(groupRelList);
                 }
             }
         } else {
@@ -583,7 +596,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
                     // 2.3 根据得到的节点信息 得到占用的位置
                     for (NodeInfoEntity nodeInfo : nodeInfos) {
-                        if (nodeInfo.getUuid() == uuid) { // 修改的情况下
+                        if (nodeInfo.getUuid().equals(uuid)) { // 修改的情况下
                             continue;
                         }
                         for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetStart() + nodeInfo.getuSize(); i++) {

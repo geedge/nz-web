@@ -37,7 +37,13 @@ public enum RCode {
 
 	SYS_I18N_DUPLICATE(105001, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
 	SYS_I18N_NOSUCHLANG(105002, "no such lang"), //不合法的lang
-	
+
+
+	SYS_DICT_NAME_ISNULL(106001,"sys_dict_name_isnull"),       // 字典名称不能为空
+	SYS_DICT_TYPE_ISNULL(106002,"sys_dict_type_isnull"),       // 字典类型不能为空
+	SYS_DICT_VALUE_ISNULL(106003,"sys_dict_value_isnull"),     // 字典值不能为空
+	SYS_DICT_VALUE_DUPLICATE(106004,"sys_dict_value_duplicate"),// 字典值重复
+
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 
 	NODE_IPADDRESS_FORMAT(201001, "ipaddress_format_error"),       // ip 地址不合法 格式错误

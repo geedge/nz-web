@@ -33,6 +33,7 @@ public class NodeGroupRelServiceImpl extends ServiceImpl<NodeGroupRelDao, NodeGr
 	* @Return
 	* @Exception
 	*/
+	@Override
 	public Integer queryCount(Long nodeGroupId,String type){
 		return this.baseMapper.queryCountByGroupId(nodeGroupId, type);
 	}
