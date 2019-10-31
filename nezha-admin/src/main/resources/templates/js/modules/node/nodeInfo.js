@@ -840,6 +840,8 @@ var vm = new Vue({
             vm.title = "<@spring.message 'common.edit'/>";
             // 查询详情
             this.getInfo(uuid);
+            // 查询当前系统
+            vm.getCurrentSystem();
             // 查询是否关联节点组
             this.getNodeGroupsById(uuid);
         },
@@ -1078,6 +1080,18 @@ var vm = new Vue({
                 })
             }
         },
+        getCurrentSystem:function(){
+            // 获取当前业务系统ID
+            $.ajax({
+                type: "GET",
+                url: baseURL + "system/detail",
+                async: false,
+                dataType: "json",
+                success: function (r) {
+                    vm.currentSystem = r.data;
+                }
+            });
+        },
         checkUsize:function(){
             if(vm.nodeInfo.uSize == ""){
                 // 节点高度提示标识
@@ -1131,15 +1145,7 @@ var vm = new Vue({
             // 获取菜单数据
             vm.getSystems();
             // 获取当前业务系统ID
-            $.ajax({
-                type: "GET",
-                url: baseURL + "system/detail",
-                async: false,
-                dataType: "json",
-                success: function (r) {
-                    vm.currentSystem = r.data;
-                }
-            });
+            vm.getCurrentSystem();
             vm.showGroupTree = false;
             this.openGroupTree("<@spring.message 'common.selectNodeGroup'/>");
         },
