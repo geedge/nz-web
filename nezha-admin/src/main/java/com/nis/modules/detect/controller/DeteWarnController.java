@@ -60,7 +60,7 @@ public class DeteWarnController {
     public R save(@RequestBody DeteWarnInfoEntity deteWarnInfoEntity) {
         ValidateUtils.is(deteWarnInfoEntity.getName()).notNull(RCode.WARN_NAME_ISNULL);
         ValidateUtils.is(deteWarnInfoEntity.getDeteTypeId()).notNull(RCode.WARN_TYPE_ISNULL);
-        if(!deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),null)){
+        if(deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),null)){
             throw new NZException(RCode.WARN_NAME_EXISTS);
         }
         if(!deteWarnInfoService.checkTriggerTypeIsValide(deteWarnInfoEntity)){
@@ -69,10 +69,15 @@ public class DeteWarnController {
         if(!deteWarnInfoService.checkWarnModeIsValide(deteWarnInfoEntity)){
             throw new NZException(RCode.WARN_WARNMODE_INVALID);
         }
-        if(!deteWarnInfoService.checkStatTypeIsValide(deteWarnInfoEntity)){
+        //告警模式为汇总时校验统计方式
+        if("2".equals(deteWarnInfoEntity.getWarnMode())&& !deteWarnInfoService.checkStatTypeIsValide(deteWarnInfoEntity)){
             throw new NZException(RCode.WARN_STATTYPE_INVALID);
         }
-        if(!deteWarnInfoService.checkSymbolIsValide(deteWarnInfoEntity)){
+        //触发方式为阈值触发时校验比较符是否合法
+        if("1".equals(deteWarnInfoEntity.getTriggerType()) && !deteWarnInfoService.checkSymbolIsValide(deteWarnInfoEntity)){
+            throw new NZException(RCode.WARN_SYMBOL_INVALID);
+        }
+        if("1".equals(deteWarnInfoEntity.getTriggerType()) && !deteWarnInfoService.checkThresholdIsValide(deteWarnInfoEntity)){
             throw new NZException(RCode.WARN_SYMBOL_INVALID);
         }
         if(!deteWarnInfoService.checkWarnLevelIsValide(deteWarnInfoEntity)){
@@ -84,9 +89,9 @@ public class DeteWarnController {
         if(!deteWarnInfoService.checkCallbackContentIsValide(deteWarnInfoEntity)){
             throw new NZException(RCode.WARN_CALLBACKCONTENT_ISNULL);
         }
-        if(!deteWarnInfoService.checkViewLevelValide(deteWarnInfoEntity.getViewLevel())){
-            throw new NZException(RCode.VIEWLEVEL_INVALID);
-        }
+//        if(!deteWarnInfoService.checkViewLevelValide(deteWarnInfoEntity.getViewLevel())){
+//            throw new NZException(RCode.VIEWLEVEL_INVALID);
+//        }
 
         if(!deteWarnInfoService.checkTypeExists(deteWarnInfoEntity.getDeteTypeId())){
             throw new NZException(RCode.WARN_TYPE_NOTEXISTS);

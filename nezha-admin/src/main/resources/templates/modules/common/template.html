@@ -1,10 +1,10 @@
 <script type="text/x-template" id="rTable">
     <div>
-        <table class="r-table" id="r-tab-id">
+        <table class="r-table" :id="'r-tab-'+tabNo+'-id'">
 			<thead>
             	<tr>
                 	<th width="30px"></th>
-                	<th width="30px"><span class="r-checkbox checkbox_false_full" id="r-tab-checkall"/></th>
+                	<th width="30px"><span class="r-checkbox checkbox_false_full" :id="'r-tab-'+tabNo+'-checkall'"/></th>
                 	<th v-for="cm,index in colModel" class="r-tab-th" v-width="cm.width">{{cm.name}}</th>
             	</tr>
 			</thead>
@@ -19,7 +19,7 @@
                             :refKey="trRefKey"
                             @checkRow="checkRow"
                             @unCheckRow="unCheckRow"
-
+                            :tab-no="tabNo"
                     ></r-tr>
                 </template>
                 <template v-if="tableData.length==0"  >
@@ -33,10 +33,10 @@
 </script>
 
 <script type="text/x-template" id="rRow">
-    <tr v-id:[trId] = "index" class="" >
+    <tr :id="'tab-'+tabNo+'-'+trId+'-'+index" class="" >
         <td>{{index+1}} </td>
-        <td><span :id="trId+'-'+index+'-checkbox'" class="r-checkbox checkbox_false_full" :title="rowData.trRemark"/></td>
-        <td v-for="cm,i in colModel" v-id:[tdId]="i" v-html="cm.formatter==undefined||cm.formatter==null?rowData[cm.field]:cm.formatter(rowData)"></td>
+        <td><span :id="'tab-'+tabNo+'-'+trId+'-'+index+'-checkbox'" class="r-checkbox checkbox_false_full" :title="rowData.trRemark"/></td>
+        <td v-for="cm,i in colModel" :id="'tab-'+tabNo+'-tr-'+index+'-'+tdId+'-'+i" v-html="cm.formatter==undefined||cm.formatter==null?rowData[cm.field]:cm.formatter(rowData)"></td>
     </tr>
 </script>
 

@@ -98,6 +98,7 @@
                         <div class="add-box_body" id="r-dete-param-container">
                             <template v-for="(param,index) in deteType.deteTypeParams">
                                 <nz-add-param
+                                    v-if="paramReset"
                                     :dete-param="param"
                                     ref="r-detect-param"
                                     :index="index"
@@ -361,7 +362,7 @@
 				</div>
                 <span class="add-box_ops">
 					<i @click="submitSelf" class="fa fa-check"></i>
-					<i @click="submitSelf" class="fa fa-trash-o"></i>
+					<i @click="delSelf" class="fa fa-trash-o"></i>
 				</span>
             </form>
         </div>

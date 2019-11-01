@@ -1,0 +1,200 @@
+<script type="text/x-template" id="warnWindows">
+    <div>
+        <nz-warn
+                v-for="(value,key) in containerInfos"
+                :key="key"
+                :cap="value[0]"
+                :set-id="value[1]"
+                :close-all-tab="closeTabs"
+                ref="nzwarn"
+        ></nz-warn>
+    </div>
+</script>
+
+<script type="text/x-template" id="warnWindow">
+    <div >
+        <span v-show="state==1||state==2" :id="headSpan+setId"><i :class="{'fa fa-angle-double-right':state==1,'fa fa-angle-double-down':state==2}"></i>&nbsp;{{setWarns.length}}个告警</span>
+        <div :id="bodyTab+setId" v-show="state==2">
+            <div class="tools" style="text-align: right">
+                <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+                <a :disabled="single" class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+                <a :disabled="multi" class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+            </div>
+            <nz-table
+                    :table-data="setWarns"
+                    :col-model="colModel"
+                    :tab-no="setId"
+                    @selectedDatasChange="getSelectDatas"
+            ></nz-table>
+        </div>
+        <div :id="footDiv+setId" v-show="state==3" class="panel panel-default">
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'common.name'/>:</div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control"
+                               :class="{'form-control--error': $v.deteWarn.name.$dirty && (!$v.deteWarn.name.required || !$v.deteWarn.name.nameRepeat)}"
+                               v-model.trim="$v.deteWarn.name.$model"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="$v.deteWarn.name.$dirty && !$v.deteWarn.name.required"><@spring.message 'validate.common.required'/>
+                        </div>
+                        <div class="form-control_error-msg" v-if="$v.deteWarn.name.$dirty && !$v.deteWarn.name.nameRepeat"><@spring.message 'validate.common.name.repeat'/>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">告警字段:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="$v.deteWarn.metaId.$model"
+                                     :options="deteMetas"
+                                     :class="{'form-control--error': $v.deteWarn.metaId.$dirty && !$v.deteWarn.metaId.required}"
+                                     placeholder="..."
+                                     track-by="id"
+                                     label="name"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="$v.deteWarn.metaId.$dirty && !$v.deteWarn.metaId.required"><@spring.message 'validate.common.required'/></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">告警模式:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="defaultWarnMode"
+                                     :options="warnModes"
+                                     placeholder="..."
+                                     track-by="code"
+                                     label="value"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                    </div>
+                </div>
+                <div class="form-group" v-show="defaultWarnMode.code=='2'">
+                    <div class="col-sm-2 control-label">统计方式:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="defaultStatType"
+                                     :options="statTypes"
+                                     placeholder="..."
+                                     track-by="code"
+                                     label="value"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">触发条件:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="defaultTrigger"
+                                     :options="triggerTypes"
+                                     placeholder="..."
+                                     track-by="code"
+                                     label="value"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                    </div>
+                </div>
+                <div class="form-group" v-show="defaultTrigger.code=='1'">
+                    <div class="col-sm-2 control-label">阈值:</div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control"
+                               :class="{'form-control--error':defaultTrigger.code=='1'&& $v.deteWarn.threshold.$dirty && !$v.deteWarn.threshold.required}"
+                               v-model.trim="$v.deteWarn.threshold.$model"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="defaultTrigger.code=='1'&&$v.deteWarn.threshold.$dirty && !$v.deteWarn.threshold.required"><@spring.message 'validate.common.required'/></div>
+                    </div>
+                </div>
+                <div class="form-group" v-show="defaultTrigger.code=='1'">
+                    <div class="col-sm-2 control-label">比较符:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="defaultSymbol"
+                                     :options="symbols"
+                                     placeholder="..."
+                                     track-by="code"
+                                     label="value"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">告警级别:</div>
+                    <div class="col-sm-9">
+                        <multiselect v-model="defaultWarnLevel"
+                                     :options="warnLevels"
+                                     placeholder="..."
+                                     track-by="code"
+                                     label="value"
+                                     :searchable="false"
+                                     :allow-empty="false"
+                                     :show-labels="false"
+                        >
+                        </multiselect>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">告警提示:</div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control"
+                               :class="{'form-control--error': $v.deteWarn.tips.$dirty && !$v.deteWarn.tips.required}"
+                               v-model.trim="$v.deteWarn.tips.$model"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="$v.deteWarn.tips.$dirty && !$v.deteWarn.tips.required"><@spring.message 'validate.common.required'/>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">回调方式:</div>
+                    <div class="col-sm-9">
+                        <div style="margin-bottom: 10px;">
+                            <template v-for="cbt in callbackTypes">
+                                <label class="radio-inline">
+                                    <input type="radio" :value="cbt.code" v-model="$v.deteWarn.callbackType.$model" /> {{cbt.value}}
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" v-show="deteWarn.callbackType!='0'">
+                    <div class="col-sm-2 control-label">回调内容:</div>
+                    <div class="col-sm-9">
+                        <textarea v-model.trim="$v.deteWarn.callbackContent.$model" class="form-control"></textarea>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="deteWarn.callbackType!='0' && $v.deteWarn.callbackContent.$dirty && !$v.deteWarn.callbackContent.required"><@spring.message 'validate.common.required'/></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'common.remark'/>:</div>
+                    <div class="col-sm-9">
+                        <textarea v-model.trim="$v.deteWarn.remark.$model" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="form-group form-group_opbox">
+                    <div>
+                        <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate">
+                            <i class="fa fa-check"></i></button>
+                        <div style="display:inline-block;width:10px;"></div>
+                        <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i
+                                class="fa fa-reply"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</script>

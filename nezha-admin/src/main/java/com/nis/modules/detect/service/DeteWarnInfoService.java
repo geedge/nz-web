@@ -32,4 +32,6 @@ public interface DeteWarnInfoService extends DeteCommonService<DeteWarnInfoEntit
      boolean checkCallbackTypeIsValide(DeteWarnInfoEntity deteWarnInfoEntity);
 
      boolean checkCallbackContentIsValide(DeteWarnInfoEntity deteWarnInfoEntity);
+
+    boolean checkThresholdIsValide(DeteWarnInfoEntity deteWarnInfoEntity);
 }

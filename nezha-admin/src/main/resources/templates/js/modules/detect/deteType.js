@@ -89,6 +89,7 @@ var vm = new Vue({
         add: function () {
             vm.showList=false;
             vm.typeId=null;
+            this.$refs['nz-add-type'].initDeteType();
         },
         update: function () {
 
@@ -97,6 +98,7 @@ var vm = new Vue({
                 return;
             }
             vm.typeId=id;
+            this.$refs['nz-add-type'].initDeteType();
             console.log("update-->"+vm.typeId);
             vm.showList=false;
         },
@@ -113,7 +115,7 @@ var vm = new Vue({
                     data: JSON.stringify(ids),
                     success: function (r) {
                         if (r.code == 200) {
-                            alert('<@spring.message "common.success"/>', function (index) {
+                            alert('<@spring.message "common.success"/>', function () {
                                 vm.reload();
                             });
                         } else {

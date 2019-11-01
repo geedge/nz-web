@@ -1,0 +1,701 @@
+<script>
+var nameRepeat = function (name, deteWarn) {
+    if (helpers.req(name) && helpers.req(deteWarn)) {
+        var params = "?name=" + name;
+        if (deteWarn.id) {
+            params += "&id=" + deteWarn.id;
+        }
+        var flag = true;
+        $.ajax({
+            type: "get",
+            url: baseURL + "/deteWarn/nameCheck" + params,
+            async: false, //关闭异步，否则会在执行完ajax前就跳到下一段代码
+            dataType: "json",
+            success: function (r) {
+                if (r.code != 200) {
+                    flag = false;
+                }
+            }
+        });
+        return flag;
+    } else {
+        return true;
+    }
+
+}
+var warnComponet = Vue.extend({
+    template:"#warnWindow",
+    components:{
+        'nz-table':rTable,
+    },
+    props:{
+        cap:{
+            type:String,
+            required:true
+        },
+        setId:{
+            type:Number,
+            required:true
+        },
+        closeAllTab:{
+            type:Function
+        }
+        // parentColLen:{
+        //     type:Number,
+        //     required:true
+        // }
+    },
+    data: function(){
+        return {
+            single:true,
+            multi:true,
+            setWarns:[],
+            setDetail:{},
+            state:2,//1,告警个数 2，告警列表 3，编辑告警
+            counter:0,
+            colModel:[
+                {name: "名称", field: "name", width: 120},
+                {name: "触发方式", field: "triggerType", width: 120},
+                {name: "告警模式", field: "warnMode", width: 120,formatter:function(rowData){
+                        return rowData.warnMode;
+                    }},
+                {name: "回调方式", field: "callbackType", width: 120,formatter:function(rowData){
+                        return rowData.callbackType;
+                    }},
+
+                {name: "操作时间", field: "opTime", width: 240},
+                {name: "备注", field: "remark", width: 240}
+            ],
+            headSpan:'warn-span-',
+            headSpanSelector:'',
+            bodyTab:'warn-tab-',
+            bodyTabSelector:'',
+            footDiv:'warn-div-',
+            footDivSelector:'',
+            overcoat:'',
+            selectedWarns:[],
+            deteWarn:{
+                id:null,
+                name:'',
+                deteTypeId:null,
+                deteSetIds:[],
+                metaId:'',
+                triggerType:'',
+                warnMode:'',
+                statType:'',
+                symbol:'',
+                threshold:'',
+                tips:'',
+                warnLevel:'',
+                callbackType:'0',
+                callbackContent:'',
+                viewLevel:'',
+                remark:''
+            },
+            deteMetas:[],
+            triggerTypes:[],
+            defaultTrigger:{},
+            warnModes:[],
+            defaultWarnMode:{},
+            statTypes:[],
+            defaultStatType:{},
+            symbols:[],
+            defaultSymbol:{},
+            warnLevels:[],
+            defaultWarnLevel:{},
+            callbackTypes:[],
+            defaultCallbackType:{},
+            viewLevels:[],
+            defaultViewLevel:{}
+
+        }
+
+    },
+    created: function () {
+        this.initData();
+    },
+    validations:function() {
+        var temp=this;
+        var validate={
+            name:{
+                required,
+                nameRepeat
+            },
+            tips:{
+                required,
+            },
+            metaId:{
+                required
+            },
+            threshold:{},
+            callbackType:{},
+            callbackContent:{},
+            remark:{}
+        }
+        if(typeof temp.defaultTrigger!='undefined' && temp.defaultTrigger.code=='1'){
+            validate.threshold={required}
+        }
+        if(typeof temp.deteWarn!='undefined' && typeof temp.deteWarn.callbackType!='undefined'&&temp.deteWarn.callbackType!='0'){
+            validate.callbackContent={required};
+        }
+        return {
+            deteWarn:validate
+        }
+    },
+    methods: {
+        initData:function(){
+            var temp=this;
+            temp.loadWarns();
+            temp.loadSetDetail();
+            temp.loadTriggerTypes();
+            temp.loadWarnModes();
+            temp.loadStateTypes();
+            temp.loadSymbols();
+            temp.loadWarnLevels();
+            temp.loadCallbackTypes();
+            temp.loadViewLevels();
+        },
+        initDom:function(){
+            var temp=this;
+            temp.headSpanSelector='#'+temp.headSpan+temp.setId;
+            temp.bodyTabSelector='#'+temp.bodyTab+temp.setId;
+
+            $("#"+temp.cap).append($(temp.headSpanSelector));
+            $(temp.headSpanSelector).bind('click',temp.clickSelf)
+            $(temp.headSpanSelector).bind('mouseover',temp.mouseOverSelf)
+            $(temp.headSpanSelector).bind('mouseout',temp.mouseOutSelf)
+
+            var parentTr=$("#"+temp.cap).parents('tr');
+            var colSpan=parentTr.children('td').length;
+            temp.overcoat='constom-td-'+temp.setId;
+            var emptyTr='<tr style="background-color: aliceblue;"><td colspan="'+colSpan+'" id="'+temp.overcoat+'"></td></tr>';
+            parentTr.after($(emptyTr))
+
+            $("#"+temp.overcoat).append($(temp.bodyTabSelector));
+            temp.tabUp();
+
+            temp.footDivSelector='#'+temp.footDiv+temp.setId;
+
+        },
+        reset:function(){
+            var temp=this;
+            temp.deteWarn={
+                name:'',
+                deteTypeId:this.setDetail.type.id,
+                deteSetIds:[this.setId],
+                metaId:'',
+                triggerType:'',
+                warnMode:'',
+                statType:'',
+                symbol:'',
+                threshold:'',
+                tips:'',
+                warnLevel:'',
+                callbackType:'0',
+                callbackContent:'',
+                viewLevel:'',
+                remark:''
+            }
+            temp.$v.deteWarn.$reset();
+            temp.setDefaultValue();
+        },
+        loadWarns:function(){
+            var temp=this;
+            $.ajax({
+                url: baseURL + "/deteWarn/list?setId="+temp.setId,
+                type:'get',
+                sync:true,
+                timeout:10000,
+                beforeSend:function(XMLHttpRequest){
+                },
+                success:function(data,textStatus){
+                    temp.setWarns=data.data.list;
+                },
+                error:function(XMLHttpRequest,textStatus,errorThrown){
+                }
+            })
+        },
+        loadSetDetail:function(){
+            var temp=this;
+            $.ajax({
+                url: baseURL + "/deteSet/detail?id="+temp.setId,
+                type:'get',
+                sync:false,
+                timeout:10000,
+                success:function(data,textStatus){
+                    temp.setDetail=data.data;
+                    temp.loadDeteMetas();
+                }
+            })
+        },
+        mouseOverSelf:function(){
+            var temp=this;
+            $("#"+temp.cap).get(0).style.cursor='pointer'
+        },
+        mouseOutSelf:function(){
+            var temp=this;
+            $("#"+temp.cap).get(0).style.cursor='default'
+        },
+        clickSelf:function(event) {
+            event.stopPropagation()
+            var temp = this;
+            if(temp.counter%2==1){
+                temp.tabDown();
+            }else{
+                temp.tabUp();
+            }
+        },
+        tabDown:function(){
+            var temp=this;
+            if(temp.state==1){
+                temp.touchBrothor();
+                temp.state=2;
+                $("#"+temp.overcoat).parent().show();
+                temp.counter++;
+            }
+
+        },
+        tabUp:function(){
+            var temp=this;
+            if(temp.state==2){
+                temp.state=1;
+                $("#"+temp.overcoat).parent().hide();
+                temp.counter++;
+            }
+
+        },
+        touchBrothor:function(){
+            this.closeAllTab();
+        },
+        loadDeteMetas: function () {
+            var temp=this;
+            $.ajax({
+                url: baseURL + "deteType/detail?id=" + temp.setDetail.type.id,
+                type:'get',
+                sync:false,
+                timeout:10000,
+                success:function(r){
+                    temp.deteMetas = r.data.deteTypeMetas;
+                }
+            })
+        },
+        loadTriggerTypes:function(){
+            var temp=this;
+            temp.triggerTypes=[];
+            $.getJSON(baseURL + "sys/dict/all?type=triggerType&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("1"==dic.code){
+                    //     temp.defaultTrigger=m;
+                    // }
+                    temp.triggerTypes.push(m);
+                }
+            });
+        },
+        loadWarnModes:function(){
+            var temp=this;
+            temp.warnModes=[];
+            $.getJSON(baseURL + "sys/dict/all?type=warnMode&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("1"==dic.code){
+                    //     temp.defaultWarnMode=m;
+                    // }
+                    temp.warnModes.push(m);
+                }
+            });
+        },
+        loadStateTypes:function(){
+            var temp=this;
+            temp.statTypes=[];
+            $.getJSON(baseURL + "sys/dict/all?type=statType&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("1"==dic.code){
+                    //     temp.defaultStatType=m;
+                    // }
+                    temp.statTypes.push(m);
+                }
+            });
+        },
+        loadSymbols:function(){
+            var temp=this;
+            temp.symbols=[];
+            $.getJSON(baseURL + "sys/dict/all?type=symbol&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("1"==dic.code){
+                    //     temp.defaultSymbol=m;
+                    // }
+                    temp.symbols.push(m);
+                }
+            });
+        },
+        loadWarnLevels:function(){
+            var temp=this;
+            temp.warnLevels=[];
+            $.getJSON(baseURL + "sys/dict/all?type=warnLevel&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("3"==dic.code){
+                    //     temp.defaultWarnLevel=m;
+                    // }
+                    temp.warnLevels.push(m);
+                }
+            });
+        },
+        loadCallbackTypes:function(){
+            var temp=this;
+            temp.callbackTypes=[];
+            $.getJSON(baseURL + "sys/dict/all?type=callbackType&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("0"==dic.code){
+                    //     temp.defaultCallbackType=m;
+                    // }
+                    temp.callbackTypes.push(m);
+                }
+            });
+        },
+        loadViewLevels:function(){
+            var temp=this;
+            temp.viewLevels=[];
+            $.getJSON(baseURL + "sys/dict/all?type=viewLevel&_" + $.now(), function (r) {
+                for (let dic of r.data) {
+                    var m={
+                        code:dic.code,
+                        value:dic.value,
+                    }
+                    // if("1"==dic.code){
+                    //     temp.defaultViewLevel=m;
+                    // }
+                    temp.viewLevels.push(m);
+                }
+            });
+        },
+        setDefaultValue:function(){
+            var temp=this;
+            for (let m of temp.triggerTypes){
+                if('1'==m.code){
+                    temp.defaultTrigger=m;
+                }
+            }
+            for (let m of temp.warnModes){
+                if('1'==m.code){
+                    temp.defaultWarnMode=m;
+                }
+            }
+            for (let m of temp.statTypes){
+                if('1'==m.code){
+                    temp.defaultStatType=m;
+                }
+            }
+            for (let m of temp.symbols){
+                if('1'==m.code){
+                    temp.defaultSymbol=m;
+                }
+            }
+            for (let m of temp.warnLevels){
+                if('3'==m.code){
+                    temp.defaultWarnLevel=m;
+                }
+            }
+            for (let m of temp.callbackTypes){
+                if('0'==m.code){
+                    temp.defaultCallbackType=m;
+                }
+            }
+            for (let m of temp.viewLevels){
+                if('1'==m.code){
+                    temp.defaultViewLevel=m;
+                }
+            }
+
+        },
+        add:function(){
+            var temp=this;
+            temp.reset();
+            temp.openEditLayer();
+        },
+        update:function(){
+            var temp=this;
+            temp.reset();
+
+            temp.getWarnDetail();
+
+            temp.openEditLayer();
+        },
+        getWarnDetail:function(){
+            var temp=this;
+            var warn=temp.selectedWarns[0];
+            $.ajax({
+                type: 'get',
+                url: baseURL + 'deteWarn/detail?id='+warn.id,
+                contentType: "application/json",
+                success: function (r) {
+                    if (r.code === 200) {
+                        temp.deteWarn=r.data;
+                        temp.formatDeteSetToObject()
+                    }
+                }
+            });
+        },
+        del:function(){
+            var temp=this;
+            var ids=[];
+            for (let m  of temp.selectedWarns){
+                ids.push(m.id);
+            }
+            if(ids.length<1){
+                return ;
+            }
+            confirm("<@spring.message 'common.confirmDelete'/>", function (index) {
+                $.ajax({
+                    type: "DELETE",
+                    url: baseURL + "/deteWarn/delete",
+                    contentType: "application/json",
+                    data: JSON.stringify(ids),
+                    success: function (r) {
+                        if (r.code == 200) {
+                            alert('<@spring.message "common.success"/>', function (index) {
+                                temp.reload();
+                            });
+                        } else {
+                            alert(r.msg);
+                        }
+                    }
+                });
+
+            })
+        },
+        saveOrUpdate:function(){
+            var temp=this;
+            if(temp.validate()){
+                return ;
+            }
+            var cloneStr = JSON.stringify(temp.deteWarn);
+
+            var url = temp.deteWarn.id == null ? "deteWarn/save" : "deteWarn/update";
+            var method = temp.deteWarn.id == null ? "POST" : "PUT";
+
+            //处理json数据
+            temp.formatDeteSetToSimple();
+            console.log("submit data-->" + JSON.stringify(temp.deteWarn))
+            $.ajax({
+                type: method,
+                url: baseURL + url,
+                contentType: "application/json",
+                data: JSON.stringify(temp.deteWarn),
+                success: function (r) {
+                    if (r.code === 200) {
+                        alert('<@spring.message "common.success"/>', function (index) {
+                            temp.reset();
+                            temp.reload();
+                        });
+                    } else {
+                        var cloneObj = eval("(" + cloneStr + ")");
+                        temp.deteWarn = cloneObj;
+                        alert(r.msg);
+                    }
+                }
+            });
+
+        },
+        reload:function(){
+            layer.closeAll('page');
+            this.loadWarns();
+        },
+        validate:function(){
+            var temp=this;
+            temp.$v.deteWarn.$touch();
+            return temp.$v.deteWarn.$error;
+        },
+        formatDeteSetToSimple:function(){
+            var temp=this;
+            temp.deteWarn.metaId=temp.deteWarn.metaId.id;
+            temp.deteWarn.warnMode=temp.defaultWarnMode.code;
+            if(temp.defaultWarnMode.code=='2'){
+                console.log('statType-->'+temp.defaultStatType.code)
+                temp.deteWarn.statType=temp.defaultStatType.code;
+            }
+
+            temp.deteWarn.triggerType=temp.defaultTrigger.code;
+            if(temp.defaultTrigger.code=='1'){//阈值触发
+                temp.deteWarn.symbol=temp.defaultSymbol.code;
+            }
+
+            temp.deteWarn.warnLevel=temp.defaultWarnLevel.code;
+        },
+        formatDeteSetToObject:function(){
+            var temp=this;
+            for (let m of temp.deteMetas){
+                console.log(temp.deteWarn)
+                if(temp.deteWarn.metaId==m.id){
+                    temp.deteWarn.metaId=m;
+                }
+            }
+            for (let m of temp.triggerTypes){
+                if(temp.deteWarn.triggerType==m.code){
+                    temp.defaultTrigger=m;
+                }
+            }
+            for (let m of temp.warnModes){
+                if(temp.deteWarn.warnMode==m.code){
+                    temp.defaultWarnMode=m;
+                }
+            }
+            for (let m of temp.statTypes){
+                if(temp.deteWarn.statType==m.code){
+                    temp.defaultStatType=m;
+                }
+            }
+            for (let m of temp.symbols){
+                if(temp.deteWarn.symbol==m.code){
+                    temp.defaultSymbol=m;
+                }
+            }
+            for (let m of temp.warnLevels){
+                if(temp.deteWarn.warnLevel==m.code){
+                    temp.defaultWarnLevel=m;
+                }
+            }
+            for (let m of temp.callbackTypes){
+                if(temp.deteWarn.callbackType==m.code){
+                    temp.defaultCallbackType=m;
+                }
+            }
+            for (let m of temp.viewLevels){
+                if(temp.deteWarn.viewLevel==m.code){
+                    temp.defaultViewLevel=m;
+                }
+            }
+        },
+        getSelectDatas:function(selected,unselected){
+            var temp=this;
+            temp.selectedWarns=selected;
+        },
+
+        openEditLayer:function(){
+            var temp=this;
+            var title=temp.setDetail.type.name+" > "+temp.setDetail.name+" > 告警";
+            var index = layer.open({
+                area: ['600px', '100%'],
+                shade: 0.01,
+                title: title,
+                type: 1,
+                maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
+                content: $(temp.footDivSelector),
+                zIndex: layer.zIndex,
+                success: function(layero,index){
+
+                },
+                cancel:function(){
+
+                },
+                end: function() {
+                    $("html").css("overflow-y", "hidden");
+                }
+            });
+        }
+    },
+    watch:{
+        selectedWarns:function(){
+            var temp=this;
+            if(temp.selectedWarns.length>0){
+                temp.multi=false;
+                temp.single=false;
+                if(temp.selectedWarns.length>1){
+                    temp.single=true;
+                }
+            }else{
+                temp.multi=true;
+                temp.single=true;
+            }
+        }
+        // viewers:{
+        //     handler(){
+        //     },
+        //     deep:true
+        // }
+    },
+    mounted() {
+        this.initDom();
+    }
+
+})
+
+var warnComponets=Vue.extend({
+        template:'#warnWindows',
+        props:{
+
+        },
+        components:{
+            'nz-warn':warnComponet,
+        },
+        data:function(){
+            return {
+                containerInfos:new Map(),
+                multi:true
+            }
+        },
+        created: function () {
+            var temp=this;
+            temp.init();
+        },
+        validations: {
+
+        },
+        methods: {
+            init:function(){
+                var temp=this;
+                $(".td-warn-win").each(function(index,e){
+                    var setId=parseInt($(e).attr('setId'));
+                    var id=$(e).attr('id');
+                    temp.containerInfos.set(id,setId);
+                });
+            },
+            closeTabs:function(){
+                var temp=this;
+                var componets=temp.$refs.nzwarn;
+                for (let componet of componets){
+                    componet.tabUp();
+                }
+            }
+        },
+        watch:{
+            // viewers:{
+            //     handler(){
+            //     },
+            //     deep:true
+            // }
+        },
+        mounted() {
+
+        }
+    })
+
+
+
+    </script>

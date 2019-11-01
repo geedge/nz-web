@@ -252,13 +252,14 @@ public class DeteSetInfoServiceImpl extends DeteCommonServiceImpl<DeteSetInfoDao
     @Transactional(rollbackFor = Exception.class)
     public void deleteByTypeId(Long typeId){
         List<DeteSetInfoEntity> setInfos = this.list(new QueryWrapper<DeteSetInfoEntity>().eq("type_id", typeId));
-        Long[] setIds=new Long[setInfos.size()];
-        for(int i=0;i<setInfos.size();i++){
-            DeteSetInfoEntity deteSetInfoEntity = setInfos.get(i);
-            setIds[i]=deteSetInfoEntity.getId();
+        if(setInfos.size()>0){
+            Long[] setIds=new Long[setInfos.size()];
+            for(int i=0;i<setInfos.size();i++){
+                DeteSetInfoEntity deteSetInfoEntity = setInfos.get(i);
+                setIds[i]=deteSetInfoEntity.getId();
+            }
+            this.changeStateByIds(setIds,Constant.DELFLAG_TRUE );
         }
-        this.changeStateByIds(setIds,Constant.DELFLAG_TRUE );
-
     }
 
     @Override

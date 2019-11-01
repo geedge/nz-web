@@ -735,6 +735,7 @@ var addType=Vue.extend({
         },
         initDeteType:function(){
             var temp=this;
+            temp.$v.deteType.$reset();
             console.log("typeId-->"+temp.typeId)
             if(temp.typeId==null){
                temp.deteType={
@@ -762,6 +763,7 @@ var addType=Vue.extend({
         },
         getDeteMethods:function(){
             var temp=this;
+            temp.deteMethods=[];
             $.getJSON(baseURL + "sys/dict/all?type=dtmethond&_" + $.now(), function (r) {
                 for (let dic of r.data) {
                     var m={
@@ -798,19 +800,19 @@ var addType=Vue.extend({
                 zIndex: layer.zIndex,
                 success: function(layero,index){
                     metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
-                    if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
+                    if(!temp.parentLayerId){
                         $(parentLayer).animate({right: "600px"});
                     }
                 },
                 cancel:function(){
                     metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
-                    if(metaComponets!=null&&metaComponets!=undefined&&metaComponets.length>0){
+                    if(typeof metaComponets!='undefined'&&metaComponets!=null&&metaComponets.length>0){
                         for(let componet of metaComponets){
                             componet.validate();
                         }
                     }
 
-                    if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null){
+                    if(typeof temp.parentLayerId!='undefined'&&temp.parentLayerId!=null){
                     	$(parentLayer).animate({right: 0}, "normal");
                     }
                 },
@@ -954,7 +956,7 @@ var addType=Vue.extend({
                     } else {
                         var cloneObj=eval("(" + cloneStr + ")");
                         temp.deteType=cloneObj;
-                        layer.msg(r.msg);
+                        alert(r.msg);
                     }
                 }
             });
@@ -1017,7 +1019,7 @@ var addType=Vue.extend({
     },
     watch: {
         typeId:function(){
-            this.getTypeInfo();
+            this.initDeteType();
         }
     },
     mounted: function () {

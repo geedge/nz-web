@@ -123,9 +123,13 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
         Long setId = null;
         try {
             typeId = Long.parseLong((String) params.get("typeId"));
+        } catch (Exception e) {
+
+        }
+        try {
             setId = Long.parseLong((String) params.get("setId"));
         } catch (Exception e) {
-            //do nothing
+
         }
         String name = (String) params.get("name");
         IPage<DeteWarnInfoEntity> page = new Query<DeteWarnInfoEntity>().getPage(params);
@@ -181,8 +185,11 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
                 warnInfo.setDeteType(deteTypeInfoEntity);
             }
         }
-        DeteTypeMetaEntity meta = deteTypeMetaService.getById(warnInfo.getMetaId());
-        warnInfo.setMeta(meta);
+        if(warnInfo!=null){
+            DeteTypeMetaEntity meta = deteTypeMetaService.getById(warnInfo.getMetaId());
+            warnInfo.setMeta(meta);
+        }
+
 
         return warnInfo;
     }
@@ -230,6 +237,15 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
     public boolean checkCallbackContentIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
         if(deteWarnInfoEntity.getCallbackType()!=null&& !"0".equals(deteWarnInfoEntity.getCallbackType())){
             return StringUtils.isNotBlank(deteWarnInfoEntity.getCallbackContent());
+        }else{
+            return true;
+        }
+    }
+
+    @Override
+    public boolean checkThresholdIsValide(DeteWarnInfoEntity deteWarnInfoEntity) {
+        if(deteWarnInfoEntity.getTriggerType()!=null && "1".equals(deteWarnInfoEntity.getTriggerType())){
+            return StringUtils.isNotBlank(deteWarnInfoEntity.getThreshold());
         }else{
             return true;
         }

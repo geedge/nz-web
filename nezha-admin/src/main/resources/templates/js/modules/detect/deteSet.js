@@ -23,7 +23,7 @@ $(function () {
                 width: 100,
                 formatter:function(value, options, rowData){
                     var tdId="td-warn-"+rowData.id;
-                    return '<div id='+tdId+'>222</div>'
+                    return '<div class="td-warn-win" setId='+rowData.id+' id='+tdId+'></div>'
                 }
             },
 
@@ -53,6 +53,18 @@ $(function () {
         gridComplete: function () {
             //隐藏grid底部滚动条
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+            // $(".td-warn-win").each(function(index,e){
+            //
+            //     var setId=parseInt($(e).attr('setId'));
+            //     var id=$(e).attr('id');
+            //     new warmComponet({
+            //         propsData:{
+            //             trIndex:index,
+            //             setId:setId
+            //         }
+            //     }).$mount('#'+id)
+            // });
+            new warnComponets().$mount('#warnSpace');
         },
         onSelectAll: function(rowids, status) {
             if (status) {
@@ -67,11 +79,10 @@ $(function () {
     var ps2 = new PerfectScrollbar('.psN');
 });
 
-// Vue.component("select-panel", pannel);
-// Vue.component("left-tree", znodeTree);
 Vue.component("nz-node-selector",selector);
-Vue.component("nz-detect-addtype",addType)
-// Vue.component("right-table",gqGridTable);
+Vue.component("nz-detect-addtype",addType);
+// Vue.component("nz-warn",warmComponet);
+
 
 var nameRepeat = function (name, deteSet) {
     if (helpers.req(name) && helpers.req(deteSet)) {
@@ -263,7 +274,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.deteSet),
                 success: function (r) {
                     if (r.code === 200) {
-                        layer.msg('<@spring.message "common.success"/>', function (index) {
+                        alert('<@spring.message "common.success"/>', function (index) {
                             vm.nodeInfoData = [];
                             vm.nodeGroupsChecked = [];
                             vm.nodeInfosChecked = [];
@@ -272,7 +283,7 @@ var vm = new Vue({
                     } else {
                         var cloneObj = eval("(" + cloneStr + ")");
                         vm.deteSet = cloneObj;
-                        layer.msg(r.msg);
+                        alert(r.msg);
                     }
                 }
             });
@@ -295,11 +306,11 @@ var vm = new Vue({
                     if(xhr.status==200){
                         var response=JSON.parse(xhr.response);
                         if(response.code==200){
-                            layer.msg('<@spring.message "common.success"/>', function (index) {
+                            alert('<@spring.message "common.success"/>', function (index) {
                                 vm.query();
                             });
                         }else{
-                            layer.msg(response.msg);
+                            alert(response.msg);
                         }
                     }
                 }

@@ -14,6 +14,7 @@ var rRow = Vue.extend({
     template: "#rRow",
     components: {},
     props: {
+        tabNo:{},
         rowData: {
             type: Object,
             required: true
@@ -67,8 +68,11 @@ var rRow = Vue.extend({
 
             temp.ref=temp.refKey+temp.rowData[temp.identification];
 
-            temp.trSelector = "#" + this.trId + "-" + this.index;
+            temp.trSelector = "#tab-"+temp.tabNo+"-" + this.trId + "-" + this.index;
             temp.checkboxSelector = temp.trSelector + "-checkbox";
+
+            console.log(temp.trSelector)
+            console.log(temp.checkboxSelector)
 
             temp.trDom = $(temp.trSelector);
             temp.checkboxDom = $(temp.checkboxSelector);
@@ -210,6 +214,9 @@ var rTable = Vue.extend({
         "r-tr": rRow
     },
     props: {
+        tabNo:{
+            default:'1'
+        },
         tableData: {
             type: Array,
             required: true
@@ -232,7 +239,7 @@ var rTable = Vue.extend({
             disabledSize:0,
             trReset: true,
             colLen: null,
-            checkboxSelector: '#r-tab-checkall',
+            checkboxSelector: '',
             checkboxDom: null,
             checkboxDomParent: null,
             checkedKeyPre: 'rtab',
@@ -248,6 +255,7 @@ var rTable = Vue.extend({
             var temp = this;
             temp.resetTab();
             temp.getDisabledSize();
+            temp.checkboxSelector="#r-tab-"+temp.tabNo+"-checkall";
             temp.checkboxDom = $(temp.checkboxSelector);
             temp.checkboxDomParent = $(temp.checkboxSelector).parent();
             temp.bindDomEvent();
