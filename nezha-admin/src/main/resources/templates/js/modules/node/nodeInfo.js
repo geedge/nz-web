@@ -1329,8 +1329,12 @@ var vm = new Vue({
                     if(vm.currentZIndex != null){
                         layer.close(vm.currentZIndex);
                     }
+                    vm.groupTreeLayerId = null;
                 }
             });
+            if(vm.groupTreeLayerId != null){
+                return;
+            }
             vm.groupTreeLayerId = index;
             $("#layui-layer" + index).get(0).style.left = "unset";
             $("#layui-layer" + index).get(0).style.right = "0";
