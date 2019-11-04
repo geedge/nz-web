@@ -9,4 +9,5 @@ public class ChartSeriesEntity implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private Double value;
 	private Date time;
+	private String formatTime;
 }

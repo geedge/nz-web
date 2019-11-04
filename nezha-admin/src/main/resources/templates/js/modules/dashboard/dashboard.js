@@ -530,30 +530,6 @@
 	//引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
 	var required = window.validators.required;
 	
-	function dateFtt(fmt,date){ //author: meizz 
-		console.log("111111111")
-		console.log(date)
-		console.log(typeof(date))
-		console.log(fmt)
-		date=new Date(date);
-		console.log(date)
-		 var o = { 
-			 "M+" : date.getMonth()+1,     //月份 
-			 "d+" : date.getDate(),     //日 
-			 "h+" : date.getHours(),     //小时 
-			 "m+" : date.getMinutes(),     //分 
-			 "s+" : date.getSeconds(),     //秒 
-			 "q+" : Math.floor((date.getMonth()+3)/3), //季度 
-			 "S" : date.getMilliseconds()    //毫秒 
-		 }; 
-		 if(/(y+)/.test(fmt)) 
-		 fmt=fmt.replace(RegExp.$1, (date.getFullYear()+"").substr(4 - RegExp.$1.length)); 
-		 for(var k in o) 
-		 if(new RegExp("("+ k +")").test(fmt)) 
-		 fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length))); 
-		 return fmt;
-	}
-	
 	var vm = new Vue({
 		el:'#dashboardView',
 		data:{
@@ -804,13 +780,14 @@
 			},
 			//用户填写完sql获取后台数据信息
 			queryData:function(index){
+				console.log("查询数据")
 				var sql=event.target.value;
 				//判断输入框是否有sql 没有的话不进行后台数据查询  且将echarts中的数据清空
 				if(sql!=''&&sql!=undefined){
 					$.ajax({
 						type:"GET",
 					    url: baseURL + "dashboard/queryData",
-					    data:{'sql':sql},
+					    data:{'sql':sql,'timeFormat':vm.chartTable.timeFormat.code,'chartType':vm.dashboard.chartType.code},
 					    success: function(r){
 					    	console.log(r)
 					    	if(vm.dashboard.chartType.code==1){
@@ -898,12 +875,9 @@
 				}
 			},
 			dateF:function(){
-				if(vm.tableDatas.length<1){
-					return;
-				}
-				console.log('格式化时间格式')
-				var a=dateFtt(vm.chartTable.timeFormat.code,vm.tableDatas[0].time);
-				console.log(a)
+				var t=(this.$refs.userSql)[0]
+				console.log(t)
+				console.log(this.$refs.userSql)
 			}
 		},
 		created: function(){

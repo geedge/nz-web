@@ -14,6 +14,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.modules.dashboard.utils.DateUtils;
+import com.nis.modules.dashboard.utils.TimeUtils;
 import com.nis.common.utils.RCode;
 import com.nis.modules.dashboard.dao.DashboardDao;
 import com.nis.modules.dashboard.entity.ChartEntity;
@@ -142,9 +144,17 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 
 	@Override
 	public List<ChartSeriesEntity> queryData(String sql, String timeFormat, Integer chartType) {
-		
+		if(sql != null && !sql.isEmpty()) {
+			sql=sql.replace("&lt;","<").replace("&gt;", ">");
+		}else {
+			return new ArrayList<ChartSeriesEntity>();
+		}
 		List<ChartSeriesEntity> resultDatas = baseMapper.selectResultData(sql);
-		System.out.println(JSON.toJSONString(resultDatas));
+		if(timeFormat != null && !timeFormat.isEmpty()&& chartType==3) {
+			for(ChartSeriesEntity resultData : resultDatas) {
+				resultData.setFormatTime(DateUtils.formatDate(resultData.getTime(),timeFormat));
+			}
+		}
 		return resultDatas;
 	}
 }
