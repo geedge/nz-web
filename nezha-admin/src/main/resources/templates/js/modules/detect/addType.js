@@ -817,7 +817,9 @@ var addType=Vue.extend({
                     }
                 },
                 end: function() {
-                	$("html").css("overflow-y", "hidden");
+                	if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
+                		$("html").css("overflow-y", "hidden");
+                	}
                 }
             });
             if(typeof(i)=="number"){
