@@ -139,8 +139,17 @@ public class SystemInfoController extends AbstractController {
 	@RequestMapping(value = "nodes", method = RequestMethod.GET)
 	@ApiOperation(httpMethod = "GET", response = R.class, value = "查询业务系统下的节点")
 	public R nodes(@RequestParam Map<String, Object> params){
-		ValidateUtils.is(params.get("id")).notNull(RCode.NOT_NULL_ERROR);
-		params.put("id", Long.valueOf((String)params.get("id")));
+		Long id = null;
+		if (ShiroUtils.isGlobal()) {
+			if (params.get("id") == null || CommonUtil.isNull(params.get("id").toString())) {
+				id = ShiroUtils.getCurrSystemId();
+			} else {
+				id = Long.valueOf((String)params.get("id"));
+			}
+		} else {
+			id = ShiroUtils.getCurrSystemId();
+		}
+		params.put("id", id);
 		
 		PageUtils queryPageBySystemId = nodeInfoService.queryPageBySystemId(params);
 		return R.ok(queryPageBySystemId);

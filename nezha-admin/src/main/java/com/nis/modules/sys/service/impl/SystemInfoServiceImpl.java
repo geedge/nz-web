@@ -225,10 +225,10 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		}
 		
 		//修改节点关联
-		if (CommonUtil.isNull(systemInfo.getAddUuids())) {
+		if (!CommonUtil.isNull(systemInfo.getAddUuids())) {
 			saveNodeRel(systemInfo);
 		}
-		if (CommonUtil.isNull(systemInfo.getRemoveUuids())) {
+		if (!CommonUtil.isNull(systemInfo.getRemoveUuids())) {
 			deleteNodeRel(systemInfo);
 		}
 		
@@ -431,7 +431,7 @@ public class SystemInfoServiceImpl extends ServiceImpl<SystemInfoDao, SystemInfo
 		queryParam.setType(Constant.PM_TYPE_DETESET);
 		queryParam.setViewLevel(Constant.VIEWLEVEL_SYS);
 		queryParam.setQueryColumn(Constant.DETESET_NODE_RELTYPE_NODE + "");
-		queryParam.setUuids(entity.getUuids());
+		queryParam.setUuids(entity.getRemoveUuids());
 		List<DeteSetNodeRelEntity> queryBySystemId2 = deteSetNodeService.queryBySystemId(queryParam);
 		if (!CommonUtil.isNull(queryBySystemId2)) {
 			for (DeteSetNodeRelEntity en : queryBySystemId2) {

@@ -7,7 +7,10 @@ html { overflow-x:hidden; }
 [v-cloak]{
 	display: none !important;
 }
-
+.layui-layer-title {
+	border-top: 1px solid rgb(238, 238, 238);
+	border-right: 1px solid rgb(238, 238, 238);
+}
 /*jqgrid第一列复选框位置改为垂直居中*/
 .table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
 	vertical-align: middle;
@@ -65,7 +68,7 @@ html { overflow-x:hidden; }
 
 .content-header {
 	position: relative;
-	padding: 0 0 3px 8px
+	padding: 0 0 3px 8px;
 }
 
 .content-header>.breadcrumb {
@@ -203,6 +206,8 @@ tbody > tr > th {font-weight: normal; }
 }
 .form-text {
 	padding-top: 7px;
+}
+.form-text i {
 	cursor: pointer;
 }
 .grid-btn_advanced {
