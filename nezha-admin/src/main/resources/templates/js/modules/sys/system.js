@@ -80,8 +80,8 @@ var nodeRelComponent = Vue.extend({
             type: Array,
             required: true
         },
-        selectedTotalCount: Number,
-		selectableTotalCount: Number
+        initSelectedTotalCount: Number,
+        initSelectableTotalCount: Number
 	},
 	data: function () {
 		return {
@@ -94,6 +94,8 @@ var nodeRelComponent = Vue.extend({
 			selectableIPEnd: '',
 			selectedCount: 0,
 			selectableCount: 0,
+			selectedTotalCount: null,
+			selectableTotalCount: null,
 			selectedNodesAdd: [], //新增的已分配节点
 			selectableNodesAdd: [], //新增的可分配节点（从已分配节点里删除的）
 			colModel: [
@@ -179,10 +181,6 @@ var nodeRelComponent = Vue.extend({
 				$(tmp[i]).addClass("new-node");
 				$("#" + toSelector + "-box").find("tbody").prepend(tmp[i]);
 			}
-			//已选数量和总数量控制
-			this.countControll();
-			//更新序号
-			this.refreshRowIndex();
 			//同步数组数据
 			this.selectedNodesAdd = [];
 			this.selectableNodesAdd = [];
@@ -193,6 +191,10 @@ var nodeRelComponent = Vue.extend({
 			$("#selectable-box").find(".new-node").each(function(index) {
 				vmTemp.selectableNodesAdd.push($(this).attr("uuid"));
 			});
+			//已选数量和总数量控制
+			this.countControll();
+			//更新序号
+			this.refreshRowIndex();
 			//将数据传递给父组件
 			this.$emit("node-change", [this.selectedNodesAdd, this.selectableNodesAdd]);
 		},
