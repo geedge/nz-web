@@ -13,11 +13,15 @@ public interface DashboardService extends IService<DashboardEntity>{
 
 	List<DashboardEntity> queryAllDashboards();
 	
+	DashboardEntity queryDashboardById(Long id);
+	
 	void removeDashboardById(Long id);
 	
 	void addDashboard(DashboardEntity dashboard);
 	
 	void modifyDashboard(DashboardEntity dashboard);
+	
+	void modifyDashboards(List<DashboardEntity> dashboards);
 	
 	void validateDashboardData(DashboardEntity dashboard);
 	

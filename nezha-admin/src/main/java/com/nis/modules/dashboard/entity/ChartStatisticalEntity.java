@@ -1,6 +1,7 @@
 package com.nis.modules.dashboard.entity;
 
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.Data;
 
@@ -19,8 +20,9 @@ public class ChartStatisticalEntity implements Serializable{
 	 private String    xaxisName;  			// X轴自定义名称
 	 private Integer   legend=0;      		// 是否展示legend 
 	 private String    legendXPosition;     	// legendX设置位置
-	 private String    legendYPXosition;     	// legendY设置位置
+	 private String    legendYPosition;     	// legendY设置位置
 	 private String    descr;                 // 描述信息
-	 private String[]  userSqls;      			// 用户sql
+	 private List<UserSql>  userSqls;      			// 用户sql
 	 private String    series;       			//  结果数据
+	 private String    describe;
 }

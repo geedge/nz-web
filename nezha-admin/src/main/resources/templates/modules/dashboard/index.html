@@ -18,7 +18,7 @@
 				<input type="text" class="form-control" id='filterTime' readonly  placeholder="<@spring.message 'dashboard.chooseTime'/>" style="width:300px;margin-bottom:0px">
 			</div>
 			<a class="btn btn-default" id="add" title="<@spring.message 'common.add'/>" @click="dashboardSetting=true"><i class="glyphicon glyphicon-plus"></i></a>
-			<a class="btn btn-default"  title="<@spring.message 'common.edit'/>"><i class="glyphicon glyphicon-floppy-disk"></i></i></a>
+			<a class="btn btn-default"  title="<@spring.message 'common.edit'/>" @click="modifyPosition()" ><i class="glyphicon glyphicon-floppy-disk"></i></i></a>
 			<a class="btn btn-default"  title="<@spring.message 'common.refresh'/>"><i class="glyphicon glyphicon-refresh"></i></a>
 		</div>
 		<hr style='margin-top: 0px; margin-bottom: 0px;'/>
@@ -27,21 +27,23 @@
 		<div class="demo" id="showPanel"> 
 			<div class='gridster'>
 				<ul id='dashboardChartsShow'>
-					<li data-row='1' data-col='5' data-sizex='5' data-sizey='4'>
-						<header style='position:relative'>
-							<a class='btn btn-default dropdown-toggle' data-toggle='dropdown' style='display:block;border:none;width:33.3%;margin:0 auto'>
-								<div style='text-align: center;'>
-									<span>ttt</span> <span class='caret'></span>
-								</div>
-							</a>
-							<ul class='dropdown-menu' style='width:150px;left:50%;margin-left:-75px;background:#ffffff;position:absolute;' role='menu'>
-								<li><a href='#' onclick=''><@spring.message 'common.edit'/></a></li>
-								<li class='divider'></li>
-								<li><a href='#' onclick=''><@spring.message 'common.delete'/></a></li>
-							</ul>
-						</header>
-						<div id='' style='width: 200px;height:200px;overflow-y:auto;' class='right-bottom'></div>
-					</li>
+					<template v-for='dashboard,index in dashboards'>
+						<li :data-row='dashboard.x' :data-col='dashboard.y' :data-sizex='dashboard.width/150' :data-sizey='dashboard.height/150' :id="dashboard.id">
+							<header style='position:relative'>
+								<a class='btn btn-default dropdown-toggle' data-toggle='dropdown' style='display:block;border:none;width:33.3%;margin:0 auto'>
+									<div style='text-align: center;'>
+										<span>{{dashboard.name}}</span> <span class='caret'></span>
+									</div>
+								</a>
+								<ul class='dropdown-menu' style='width:150px;left:50%;margin-left:-75px;background:#ffffff;position:absolute;' role='menu'>
+									<li><a href='#' @click='modifyDashboard(dashboard.id)'><@spring.message 'common.edit'/></a></li>
+									<li class='divider'></li>
+									<li><a href='#' @click='removeDashboard(dashboard.id)'><@spring.message 'common.delete'/></a></li>
+								</ul>
+							</header>
+							<div :id="dashboard.name"  style='width: 200px;height:200px;overflow-y:auto;' class='right-bottom'></div>
+						</li>
+					</template>
 				</ul>
 			</div>
 		</div>

@@ -1,6 +1,7 @@
 package com.nis.modules.dashboard.entity;
 
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.Data;
 
@@ -15,6 +16,8 @@ public class ChartTableEntity implements Serializable{
     private Integer decimal;	 	//小数位格式化
     private String timeFormat;   	//时间格式化
     private Integer pageSize;    	//表格分页数量
-    private String[] userSqls;      // 用户sql
+    private List<UserSql> userSqls;      // 用户sql
 	private String series;       	//  结果数据
+	private String describe;
+
 }

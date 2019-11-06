@@ -1,6 +1,8 @@
 package com.nis.modules.dashboard.entity;
 
 import java.io.Serializable;
+import java.util.List;
+
 import lombok.Data;
 @Data
 public class ChartSingleEntity implements Serializable{
@@ -26,6 +28,8 @@ public class ChartSingleEntity implements Serializable{
 	private Integer maxValue;   		//最大值
 	private Integer minValue;   		//最小值
 	private String threshold;  			//阈值
-	private String[] userSqls;   		// 用户sql
+	private List<UserSql> userSqls;   		// 用户sql
 	private String series;   			//  结果数据
+	private String describe;
+	private List<ThresholdValueEntity> thresholdValues;
 }

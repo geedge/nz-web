@@ -44,6 +44,14 @@ public class DashboardController extends AbstractController {
 		return R.ok().put("data", dashboards);
 	}
 	
+	@GetMapping("/querySingleDashboard")
+	@ResponseBody
+	@ApiOperation(httpMethod="GET",value="查询单个仪表盘信息", notes="id")
+	public R querySingleDashboard(@RequestParam Long id) {
+		DashboardEntity dashboard = dashboardService.queryDashboardById(id);
+		return R.ok().put("data", dashboard);
+	}
+	
 	@DeleteMapping("/delete")
 	@ApiImplicitParam(name = "id", value = "id值", required = false, dataType = "long", defaultValue="")
 	@ApiOperation(httpMethod="DELETE",value="删除仪表盘信息", notes="仪表盘ID")
@@ -82,13 +90,15 @@ public class DashboardController extends AbstractController {
 	@ApiOperation(httpMethod="PUT",value="修改仪表盘位置大小信息", notes="仪表盘各项属性")
 	@RequiresPermissions("dashboard:dashboard:update")
 	@ResponseBody
-	public R modifyShape(@RequestBody DashboardEntity dashboard) {
-		ValidateUtils.is(dashboard.getId()).notNull(RCode.DASHBOARD_ID_NULL);
-		ValidateUtils.is(dashboard.getX()).notNull(RCode.DASHBOARD_X_NULL);
-		ValidateUtils.is(dashboard.getY()).notNull(RCode.DASHBOARD_Y_NULL);
-		ValidateUtils.is(dashboard.getHeight()).notNull(RCode.DASHBOARD_HEIGHT_NULL);
-		ValidateUtils.is(dashboard.getWidth()).notNull(RCode.DASHBOARD_WIDTH_NULL);
-		dashboardService.modifyDashboard(dashboard);
+	public R modifyShape(@RequestBody List<DashboardEntity> dashboards) {
+		for(DashboardEntity dashboard:dashboards) {
+			ValidateUtils.is(dashboard.getId()).notNull(RCode.DASHBOARD_ID_NULL);
+			ValidateUtils.is(dashboard.getX()).notNull(RCode.DASHBOARD_X_NULL);
+			ValidateUtils.is(dashboard.getY()).notNull(RCode.DASHBOARD_Y_NULL);
+			ValidateUtils.is(dashboard.getHeight()).notNull(RCode.DASHBOARD_HEIGHT_NULL);
+			ValidateUtils.is(dashboard.getWidth()).notNull(RCode.DASHBOARD_WIDTH_NULL);
+		}
+		dashboardService.modifyDashboards(dashboards);
 		return R.ok();
 	}
 	

@@ -3,10 +3,10 @@ package com.nis.modules.dashboard.entity;
 import java.util.List;
 
 public enum ChartType {
-	PIE(1,"pie","/images/icn-pie.png","chartType.pie","chart_pie"),
-	STATISTICAL(2,"statistical","/images/icn-graph-panel.png","chartType.statistical","chart_statistical"),
-	SINGLE(3,"single","/images/icn-singlestat-panel.png","chartType.single","chart_single"),
-	TABLE(4,"table","/images/icn-table-panel.png","chartType.table","chart_table"),
+	STATISTICAL(1,"statistical","/images/icn-graph-panel.png","chartType.statistical","chart_statistical"),
+	SINGLE(2,"single","/images/icn-singlestat-panel.png","chartType.single","chart_single"),
+	TABLE(3,"table","/images/icn-table-panel.png","chartType.table","chart_table"),
+	PIE(4,"pie","/images/icn-pie.png","chartType.pie","chart_pie"),
 	TEXT(5,"text","/images/icn-text-panel.png","chartType.text","chart_text");
 	
 	private int chartTypeId;

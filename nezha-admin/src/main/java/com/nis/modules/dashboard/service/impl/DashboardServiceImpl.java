@@ -25,6 +25,7 @@ import com.nis.modules.dashboard.entity.ChartStatisticalEntity;
 import com.nis.modules.dashboard.entity.ChartTableEntity;
 import com.nis.modules.dashboard.entity.ChartType;
 import com.nis.modules.dashboard.entity.DashboardEntity;
+import com.nis.modules.dashboard.entity.UserSql;
 import com.nis.modules.dashboard.service.DashboardService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
@@ -43,15 +44,15 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		s.eq("system_id",currSystemId);
 		List<DashboardEntity> dashboardEntitys = baseMapper.selectList(s);
 		for (DashboardEntity dashboardEntity : dashboardEntitys) {
-			String[] userSqls=null;
+			List<UserSql> userSqls=null;
 			switch(ChartType.getChartNameByTypeId(Integer.valueOf(dashboardEntity.getChartType()))) {
 			case STATISTICAL:
 				ChartStatisticalEntity chartStatisticalEntity = JSON.parseObject(dashboardEntity.getData(), ChartStatisticalEntity.class);
 				userSqls = chartStatisticalEntity.getUserSqls();
 				List<List<ChartSeriesEntity>> seriess=new ArrayList<List<ChartSeriesEntity>>();
-				for (String userSql : userSqls) {
+				for (UserSql userSql : userSqls) {
 					// 验证用户输入sql是否有问题
-					List<ChartSeriesEntity> chartStatisticalSeries = baseMapper.selectResultData(userSql);
+					List<ChartSeriesEntity> chartStatisticalSeries = baseMapper.selectResultData(userSql.getSql());
 					seriess.add(chartStatisticalSeries);
 				}
 				String series = JSON.toJSONString(seriess);
@@ -63,7 +64,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 			case SINGLE:
 				ChartSingleEntity chartSingleEntity = JSON.parseObject(dashboardEntity.getData(), ChartSingleEntity.class);
 				userSqls = chartSingleEntity.getUserSqls();
-				List<ChartSeriesEntity> chartSingleSeries = baseMapper.selectResultData(userSqls[0]);
+				List<ChartSeriesEntity> chartSingleSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
 				String singleResult = JSON.toJSONString(chartSingleSeries);
 				chartSingleEntity.setSeries(singleResult);
 				String chartSingleEntityData = JSON.toJSONString(chartSingleEntity);
@@ -73,7 +74,7 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 			case TABLE:
 				ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
 				userSqls = chartTableEntity.getUserSqls();
-				List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls[0]);
+				List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
 				String tableResult = JSON.toJSONString(chartTableSeries);
 				chartTableEntity.setSeries(tableResult);
 				String chartTableEntityData = JSON.toJSONString(chartTableEntity);
@@ -87,6 +88,51 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		return dashboardEntitys;
 	}
 
+	public DashboardEntity queryDashboardById(Long id) {
+		DashboardEntity dashboardEntity = baseMapper.selectById(id);
+		List<UserSql> userSqls=null;
+		switch(ChartType.getChartNameByTypeId(Integer.valueOf(dashboardEntity.getChartType()))) {
+		case STATISTICAL:
+			ChartStatisticalEntity chartStatisticalEntity = JSON.parseObject(dashboardEntity.getData(), ChartStatisticalEntity.class);
+			userSqls = chartStatisticalEntity.getUserSqls();
+			List<List<ChartSeriesEntity>> seriess=new ArrayList<List<ChartSeriesEntity>>();
+			for (UserSql userSql : userSqls) {
+				// 验证用户输入sql是否有问题
+				List<ChartSeriesEntity> chartStatisticalSeries = baseMapper.selectResultData(userSql.getSql());
+				seriess.add(chartStatisticalSeries);
+			}
+			String series = JSON.toJSONString(seriess);
+			chartStatisticalEntity.setSeries(series);
+			String chartStatisticalEntityData = JSON.toJSONString(chartStatisticalEntity);
+			dashboardEntity.setData(chartStatisticalEntityData);
+			logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
+			break;
+		case SINGLE:
+			ChartSingleEntity chartSingleEntity = JSON.parseObject(dashboardEntity.getData(), ChartSingleEntity.class);
+			userSqls = chartSingleEntity.getUserSqls();
+			List<ChartSeriesEntity> chartSingleSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
+			String singleResult = JSON.toJSONString(chartSingleSeries);
+			chartSingleEntity.setSeries(singleResult);
+			String chartSingleEntityData = JSON.toJSONString(chartSingleEntity);
+			dashboardEntity.setData(chartSingleEntityData);
+			logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
+			break;
+		case TABLE:
+			ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
+			userSqls = chartTableEntity.getUserSqls();
+			List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
+			String tableResult = JSON.toJSONString(chartTableSeries);
+			chartTableEntity.setSeries(tableResult);
+			String chartTableEntityData = JSON.toJSONString(chartTableEntity);
+			dashboardEntity.setData(chartTableEntityData);
+			logger.info("dashboardEntity data info "+JSON.toJSONString(dashboardEntity));
+			break;
+		default:
+			break;
+		}
+		return dashboardEntity;
+	}
+	
 	@Override
 	@Transactional(readOnly = false)
 	public void removeDashboardById(Long id) {
@@ -96,6 +142,11 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 	@Override
 	@Transactional(readOnly = false)
 	public void addDashboard(DashboardEntity dashboard) {
+		dashboard.setX(1);
+		dashboard.setY(1);
+		dashboard.setHeight(300);
+		dashboard.setWidth(300);
+		dashboard.setSystemId(ShiroUtils.getCurrSystemId());
 		dashboard.setOperator();
 		dashboard.setOptime();
 		baseMapper.insert(dashboard);
@@ -110,8 +161,18 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 	}
 
 	@Override
+	@Transactional(readOnly = false)
+	public void modifyDashboards(List<DashboardEntity> dashboards) {
+		for(DashboardEntity dashboard:dashboards) {
+			dashboard.setOperator();
+			dashboard.setOptime();
+			baseMapper.updateById(dashboard);
+		}
+	}
+	
+	@Override
 	public void validateDashboardData(DashboardEntity dashboard) {
-		String[] userSqls = null;
+		List<UserSql> userSqls = null;
 		String data = dashboard.getData();
 		switch(ChartType.getChartNameByTypeId(Integer.valueOf(dashboard.getChartType()))) {
 		case STATISTICAL:
@@ -133,9 +194,9 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 		logger.info("start validate  userSql");
 		ValidateUtils.is(userSqls).notNull(RCode.DASHBOARD_USERSQL_NULL);
 		try {
-			for (String userSql : userSqls) {
+			for (UserSql userSql : userSqls) {
 				// 验证用户输入sql是否有问题
-				baseMapper.selectResultData(userSql);
+				baseMapper.selectResultData(userSql.getSql());
 			}
 		}catch(Exception e) {
 			throw new NZException(RCode.DASHBOARD_USERSQL_ERROR);
