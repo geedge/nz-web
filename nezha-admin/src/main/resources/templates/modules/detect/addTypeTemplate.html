@@ -211,7 +211,7 @@
 <script type="text/x-template" id="detectMata">
     <div>
         <div class="meta-win_item" v-id:[metaDomIdKey]="index">
-            <span v-show="deteMeta.delFlag=='1'" style="display: inline-block" @click="recSelf"><i class="fa fa-undo"></i>&nbsp;&nbsp;</span>
+            <span v-show="deteMeta.delFlag=='1'" style="display: inline-block;cursor:pointer;" @click="recSelf"><i class="fa fa-undo"></i>&nbsp;&nbsp;</span>
             <div class="meta-win_item_name" style="display: inline-block"
                  :class="{'meta-win_item_name_unpass':deteMeta.passFlag!=null&&deteMeta.passFlag!=undefined&&!deteMeta.passFlag,'meta-win_item_name_del':deteMeta.delFlag=='1'}">{{deteMeta.name}}</div>
             <div style="text-align:right;">
