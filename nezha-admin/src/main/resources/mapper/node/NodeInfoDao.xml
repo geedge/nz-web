@@ -8,6 +8,7 @@
         ni.name,
         ni.host_name,
         ni.ip,
+        ni.ip_long,
         ni.uuid,
         ni.type,
         ni.tag,
@@ -89,7 +90,7 @@
         <result property="cabinetInfo.name" column="cab_name"/>
 
         <!--  一对多 关联系统表 -->
-        <collection property="systemInfo" column="uuid" select="querySystemByUuid"
+        <collection property="systemInfo" column="uuid" select="querySystemsByUuid"
                     ofType="com.nis.modules.sys.entity.SystemInfoEntity">
             <id property="id" column="id"/>
             <result property="name" column="name"/>
@@ -223,7 +224,7 @@
 
             system_node_rel snr ON tempni.uuid = snr.uuid
 
-            WHERE snr.system_id = #{params.systemId}
+            WHERE snr.system_id = #{params.systemId} AND snr.del_flag = 0
         </if>
 
 
@@ -294,7 +295,7 @@
 
             system_node_rel snr ON tempni.uuid = snr.uuid
 
-            WHERE snr.system_id = #{params.systemId}
+            WHERE snr.system_id = #{params.systemId} AND snr.del_flag = 0
         </if>
 
     </select>
@@ -326,7 +327,7 @@
 
 
 
-    <select id="querySystemByUuid" resultType="com.nis.modules.sys.entity.SystemInfoEntity">
+    <select id="querySystemsByUuid" resultType="com.nis.modules.sys.entity.SystemInfoEntity">
         SELECT si.id,si.name FROM system_info si
 		LEFT JOIN system_node_rel snr ON si.id = snr.system_id
 		WHERE snr.uuid = #{uuid} AND si.del_flag = 0 AND snr.del_flag = 0
