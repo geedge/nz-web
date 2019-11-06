@@ -17,11 +17,11 @@ public class SystemNodeRelServiceImpl extends ServiceImpl<SystemNodeRelDao, Syst
     @Override
     public boolean isCurrentSystem(Long[] nodeIds) {
         Long currSystemId = ShiroUtils.getCurrSystemId();
-        QueryWrapper<SystemNodeRelEntity> systemNodeRelQueryWrapper=new QueryWrapper<SystemNodeRelEntity>();
-        systemNodeRelQueryWrapper.in("uuid",nodeIds);
-        systemNodeRelQueryWrapper.eq("system_id",currSystemId);
+        QueryWrapper<SystemNodeRelEntity> systemNodeRelQueryWrapper = new QueryWrapper<SystemNodeRelEntity>();
+        systemNodeRelQueryWrapper.in("uuid", nodeIds);
+        systemNodeRelQueryWrapper.eq("system_id", currSystemId);
         List<SystemNodeRelEntity> list = this.list(systemNodeRelQueryWrapper);
 
-        return list!=null && list.size()==nodeIds.length;
+        return list != null && list.size() == nodeIds.length;
     }
 }

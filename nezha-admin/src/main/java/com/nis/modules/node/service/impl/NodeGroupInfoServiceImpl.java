@@ -57,8 +57,8 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
      */
     @Override
     public List<SystemInfoEntity> getSysNodeGroups() {
-        // 进行权限判断
-        if (ShiroUtils.isGlobal()) {// global 权限 看到所有的节点组信息
+        // 进行权限判断   global 权限 看到所有的节点组信息
+        if (ShiroUtils.isGlobal()) {
             List<SystemInfoEntity> systemInfoEntities = systemInfoDao.querySystemInfosWithNodeGroup(null);
             for (SystemInfoEntity systemInfoEntity : systemInfoEntities) {
                 handleEntity(systemInfoEntity.getNodegroups());

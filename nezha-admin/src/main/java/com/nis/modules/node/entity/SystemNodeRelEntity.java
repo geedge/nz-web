@@ -6,6 +6,7 @@ import jdk.nashorn.internal.objects.annotations.Constructor;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * 业务系统和节点关联关系实体
@@ -57,5 +58,22 @@ public class SystemNodeRelEntity {
         this.uuid = uuid;
         this.operator = operator;
         this.opTime = opTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof SystemNodeRelEntity)) {
+            return false;
+        }
+        SystemNodeRelEntity that = (SystemNodeRelEntity) o;
+        return this.getSystemId().equals(that.getSystemId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.getId(), this.getSystemId(), this.getUuid());
     }
 }

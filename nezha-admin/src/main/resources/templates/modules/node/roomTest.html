@@ -13,16 +13,16 @@
     <div class="tools">
     	<div class="form-group areas">
 	   		<button v-for="(item,index) in addrList" :id="'but'+item.code" class="btn-area" :class="[index==0 ? 'btn-area_left' : '', index==addrList.length-1 ? 'btn-area_right' : '', item.code==q.addr ? 'btn-area_active' : '']"
-	           	@click="query(item.code, $event)" :value="item.value">{{item.value}}
+	           	@click="query(item.code, $event)" :value="item.value" :title="item.value">{{item.value}}
 	        </button>
         </div>
         <div class="form-group">
             <input type="text" class="form-control input-medium" v-model="q.name" @keyup.enter="query(null)"
-                   placeholder="机房名称">
+                   placeholder="<@spring.message 'node.room.name'/>">
         </div>
 
         <!-- 功能按钮 -->
-        <a class="btn btn-default btn-search" title="搜索" @click="query(null)"><i class="fa fa-search"></i></a>
+        <a class="btn btn-default btn-search" title="<@spring.message 'common.search'/>" @click="query(null)"><i class="fa fa-search"></i></a>
     	<a class="btn btn-primary" @click="addRoom" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
     </div>
 	<div style="clear: both;"></div>
@@ -37,16 +37,16 @@
                 <tr :class="[room.id==item.id ? 'tr-higHlight' : 'tr-normal']" v-for="item in roomList" :id="'tr'+item.id" @click="showRowList(item)">
                     <td @mouseenter="showRoomOption(item.id)" @mouseleave="closeRoomOption(item.id)">
                         <div style="float: left">
-                            <span class="tr-item" @click="showRowList(item)">{{item.name}}</span>
+                            <span class="tr-item" @click="showRowList(item)"><a href="#" style="text-decoration:none">{{item.name}}</a></span>
                         </div>
                         <div :class="[room.id==item.id ? 'myoption-open' : 'myoption-close']" :id="'option'+item.id">
-                            <span class="tr-op" @click="updateRoom(item)"><i class="fa fa-pencil"></i></span>
-                            <span class="tr-op" @click="delRoom(item)"><i class="fa fa-trash-o"></i></span>
+                            <span class="tr-op" @click="updateRoom(item)" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil"></i></span>
+                            <span class="tr-op" @click="delRoom(item)" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></span>
                         </div>
                     </td>
                 </tr>
                 <tr v-show="noRoomTip">
-                	<td>暂无数据</td>
+                	<td><@spring.message 'common.noData'/></td>
                 </tr>
             </table>
         </div>
@@ -74,7 +74,7 @@
 
                             <!-- 该位置暂无机柜 展示图标 -->
                             <template v-if="checkCab(cab)">
-                                <span class="cab-add" @click="addCab(cab)">
+                                <span class="cab-add" @click="addCab(cab)" title="<@spring.message 'common.add'/>">
                                     <i class="fa fa-plus" aria-hidden="true"></i>
                                 </span>
                             </template>
@@ -85,10 +85,10 @@
                             </template>
 	                        <!-- 机柜 修改/删除 按钮 -->
 	                        <div v-if="!checkCab(cab)" class="myoption-close cab-but" :id="'cab'+cab.id">
-	                            <span class="tr-op" @click="updateCab(cab)">
+	                            <span class="tr-op" @click="updateCab(cab)" title="<@spring.message 'common.edit'/>">
 	                            	<i class="fa fa-pencil"></i>
 	                            </span>
-	                            <span class="tr-op" @click="delCab(cab)">
+	                            <span class="tr-op" @click="delCab(cab)" title="<@spring.message 'common.delete'/>">
 	                            	<i class="fa fa-trash-o"></i>
 	                            </span>
 	                        </div>
@@ -110,7 +110,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && !$v.nodeRoom.name.required || !$v.nodeRoom.name.roomNameCheck}"
+                           :class="{'form-control--error': $v.nodeRoom.name.$dirty && (!$v.nodeRoom.name.required || !$v.nodeRoom.name.roomNameCheck)}"
                            v-model.trim="nodeRoom.name" @blur="$v.nodeRoom.name.$touch"
                            placeholder="<@spring.message 'common.name'/>"/>
                     <span class="required-symbol">*</span>
@@ -235,10 +235,10 @@
 
             <!--机房名称-->
             <div class="form-group">
-                <div class="col-sm-2 control-label">机房名称</div>
+                <div class="col-sm-2 control-label"><@spring.message 'node.room.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" v-model.trim="nodeCabinet.roomName" class="form-control"
-                           placeholder="机房名称" readonly="false"/>
+                           placeholder="<@spring.message 'node.room.name'/>" readonly="false"/>
                     <span class="required-symbol">*</span>
                 </div>
             </div>

@@ -3,6 +3,7 @@ package com.nis.modules.node.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.node.entity.NodeInfoEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -37,4 +38,6 @@ public interface NodeInfoDao extends BaseMapper<NodeInfoEntity> {
     // 查询详情
     NodeInfoEntity detail(@Param("uuid")Long uuid);
 
+    // 根据节点的UUID 查询所属业务系统集合
+    List<SystemInfoEntity> querySystemsByUuid(Long uuid);
 }

@@ -51,7 +51,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
     @Override
     public NodeCabinetEntity detail(Long id) {
         NodeCabinetEntity nodeCabinet = nodeCabinetDao.detail(id);
-        if(nodeCabinet == null){
+        if (nodeCabinet == null) {
             throw new NZException(RCode.NODECABINET_NOT_EXISTS);
         }
         return nodeCabinet;
@@ -169,9 +169,9 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
             return R.ok();
         }
 
-        if(ubit >= occPosition){
+        if (ubit >= occPosition) {
             return R.ok();
-        }else{
+        } else {
             return R.error(RCode.NODECABINET_UBIT_OCCUPIED).put("data", occPosition);
         }
     }
@@ -190,7 +190,7 @@ public class NodeCabinetServiceImpl extends ServiceImpl<NodeCabinetDao, NodeCabi
         Integer roomCol = null;
         if (id != null) { // 修改的情况  需要将位置加入现有位置中
             NodeCabinetEntity cab = this.getById(id);
-            if(cab == null){
+            if (cab == null) {
                 throw new NZException(RCode.NODECABINET_NOT_EXISTS);// 机柜不存在异常
             }
             roomId = cab.getRoomId();

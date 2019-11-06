@@ -126,8 +126,19 @@ public class NodeInfoController {
      * @return
      */
     @GetMapping("/getGroupsById")
-    public R getGroupsById(Long uuid){
+    public R getGroupsById(Long uuid) {
         ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
         return R.ok(nodeInfoService.getGroupsById(uuid));
+    }
+
+    /**
+     * 根据节点的UUID 查询所属业务系统集合
+     * @param uuid
+     * @return
+     */
+    @GetMapping("/querySystemsByUuid")
+    public R querySystemByUuid(Long uuid) {
+        ValidateUtils.is(uuid).notNull(RCode.NODE_UUID_ISNULL);
+        return R.ok(nodeInfoService.querySystemsByUuid(uuid));
     }
 }

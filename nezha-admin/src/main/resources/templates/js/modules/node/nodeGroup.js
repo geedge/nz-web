@@ -1,6 +1,6 @@
 <script>
 var isGroup = true;
-    //  定义为 nodegroup 的私有组件
+//  定义为 nodegroup 的私有组件
 let groupTree = Vue.component('groupTree', {
     template: "#treeTemplate",
     props: {
@@ -386,7 +386,7 @@ var vue = new Vue({
                 // 开始隐藏
                 $("#box" + item.id).hide();
             });
-        }else{
+        } else {
             // 其他业务系统展开树结构
             $("#box" + data.systems[0].id).show();
             // 如果只是一条数据的话 默认展开 图标状态转换

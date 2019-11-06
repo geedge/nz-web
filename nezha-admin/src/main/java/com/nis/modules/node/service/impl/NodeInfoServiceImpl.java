@@ -12,11 +12,13 @@ import com.nis.modules.node.dao.NodeRoomDao;
 import com.nis.modules.node.entity.*;
 import com.nis.modules.node.service.*;
 import com.nis.modules.node.util.IpCovert;
+import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.org.apache.xalan.internal.lib.NodeInfo;
+import oracle.net.aso.s;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -26,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service("nodeInfoService")
@@ -60,6 +64,9 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     @Autowired
     private NodeGroupRelService nodeGroupRelService;
+
+    @Autowired
+    private SystemInfoDao systemInfoDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -247,9 +254,41 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                     throw new NZException(RCode.NODE_SYSTEM_REL_EXISTS);  // 节点和业务系统已经关联
                 }
 
-                // 维护系统中间表  只维护global
-                SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(Constant.GLOBAL_ID, nodeInfoEntity.getUuid(), Constant.GLOBAL_ID, new Date());
-                systemNodeRelService.save(nodeRelEntity);
+                Date now = new Date();
+                Long systemId = ShiroUtils.getCurrSystemId();
+
+                // 节点业务系统关联实体集合
+                List<SystemNodeRelEntity> sysRelList = new ArrayList<>();
+                // 添加节点和global的关系
+                sysRelList.add(new SystemNodeRelEntity(Constant.GLOBAL_ID, nodeInfoEntity.getUuid(), systemId, now));
+
+                // 1.判断是否选择节点组
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())) {
+
+                    List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+
+                    for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                        groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
+                        sysRelList.add(new SystemNodeRelEntity(group.getSystemId(), nodeInfoEntity.getUuid(), systemId, now));
+                    }
+
+                    if (CollectionUtils.isNotEmpty(groupRelList)) {
+                        nodeGroupRelService.saveBatch(groupRelList);
+                    }
+                }
+
+                // 2.判断是否选择了业务系统
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getSystems())) {
+                    for (SystemInfoEntity systemInfo : nodeInfoEntity.getSystems()) {
+                        sysRelList.add(new SystemNodeRelEntity(systemInfo.getId(), nodeInfoEntity.getUuid(), systemId, now));
+                    }
+                }
+
+                // 去重 根据 systemId
+                Set systemRels = new HashSet(sysRelList);
+
+                // 维护关系
+                systemNodeRelService.saveBatch(systemRels);
             } else {
                 // ip 已存在 抛异常
                 throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
@@ -292,6 +331,20 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(ShiroUtils.getCurrSystemId(), node.getUuid(),
                         ShiroUtils.getCurrSystemId(), new Date());
                 systemNodeRelService.save(nodeRelEntity);
+
+                // 如果选择了节点组 则维护和节点组的关系
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())) {
+                    // 1. 维护和节点组的关联关系
+                    List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+
+                    for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                        groupRelList.add(new NodeGroupRelEntity(group.getId(), node.getUuid(), ShiroUtils.getCurrSystemId(), new Date()));
+                    }
+                    // 2.在此处批量添加
+                    if (CollectionUtils.isNotEmpty(groupRelList)) {
+                        nodeGroupRelService.saveBatch(groupRelList);
+                    }
+                }
             }
         }
     }
@@ -299,6 +352,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     // 添加节点正常操作  名称校验 机柜校验 密码加密 入库 并返回当前的UUID序列值
     @Transactional(rollbackFor = Exception.class)
     public void saveNode(NodeInfoEntity nodeInfoEntity) {
+        // 1. 名称校验
         if (this.nodeNameCheck(null, nodeInfoEntity.getName())) {
 
             //2. 校验可用机柜
@@ -330,42 +384,16 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             this.checkTypeAndTag(nodeInfoEntity);
 
             //3. IP地址转换 IP整数
-            Date now = new Date();
-            Long systemId = ShiroUtils.getCurrSystemId();
             nodeInfoEntity.setIpLong(IpCovert.ipToLong(nodeInfoEntity.getIp()));
             if (nodeInfoEntity.getPassword() != null && StringUtils.isNotBlank(nodeInfoEntity.getPassword())) {
                 //4. 密码加密 base64
                 nodeInfoEntity.setPassword(Base64.getEncoder().encodeToString(nodeInfoEntity.getPassword().getBytes()));
             }
-            nodeInfoEntity.setOperator(systemId);
-            nodeInfoEntity.setOpTime(now);
+            nodeInfoEntity.setOperator(ShiroUtils.getCurrSystemId());
+            nodeInfoEntity.setOpTime(new Date());
 
             //5. 入库
             nodeInfoDao.save(nodeInfoEntity);
-
-            //6.判断是否选择节点组s
-            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())){
-                // 1. 维护和节点组的关联关系
-                List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
-                List<SystemNodeRelEntity> sysRelList = new ArrayList<>();
-
-                for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
-                    groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
-
-                    // 选择的节点组是global的话 则不维护 节点和当前业务系统由节点自己维护
-                    if(!Constant.GLOBAL_ID.equals(group.getSystemId())){
-                        sysRelList.add(new SystemNodeRelEntity(group.getSystemId(), nodeInfoEntity.getUuid(), systemId, now));
-                    }
-                }
-                // 在此处添加
-                if (CollectionUtils.isNotEmpty(groupRelList)) {
-                    nodeGroupRelService.saveBatch(groupRelList);
-                }
-                // 2. 维护节点和节点组业务系统的关系  注: 只有golbal 下需要维护
-                if(ShiroUtils.isGlobal() && CollectionUtils.isNotEmpty(sysRelList)){
-                    systemNodeRelService.saveBatch(sysRelList);
-                }
-            }
         } else {
             throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
         }
@@ -421,6 +449,53 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
                 // 正常修改操作
                 this.updateNode(nodeInfoEntity);
+
+                Date now = new Date();
+                Long systemId = ShiroUtils.getCurrSystemId();
+
+                // 当前关联的节点组
+                List<NodeGroupRelEntity> currRelList = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+
+                // 节点业务系统关联实体集合
+                List<SystemNodeRelEntity> sysRelList = new ArrayList<>();
+                // 添加节点和global的关系
+                sysRelList.add(new SystemNodeRelEntity(Constant.GLOBAL_ID, nodeInfoEntity.getUuid(), systemId, now));
+
+                // 判断是否选择节点组  1. 原来没有节点组,选择了节点组  2.原来有节点组 删除了
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups()) || CollectionUtils.isNotEmpty(currRelList)) {
+
+                    // 先删除
+                    nodeGroupRelService.remove(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+
+                    if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())) {
+                        // 再添加
+                        List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+
+                        for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                            groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
+                            sysRelList.add(new SystemNodeRelEntity(group.getSystemId(), nodeInfoEntity.getUuid(), systemId, now));
+                        }
+
+                        nodeGroupRelService.saveBatch(groupRelList);
+                    }
+                }
+
+                // 2. 判断业务系统
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getSystems())) {
+                    for (SystemInfoEntity systemInfo : nodeInfoEntity.getSystems()) {
+                        sysRelList.add(new SystemNodeRelEntity(systemInfo.getId(), nodeInfoEntity.getUuid(), systemId, now));
+                    }
+                }
+
+                // 去重 根据 systemId
+                Set systemRels = new HashSet(sysRelList);
+
+                // 先删除
+                systemNodeRelService.remove(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
+
+                // 再维护关系
+                systemNodeRelService.saveBatch(systemRels);
+
             } else {
                 // ip 已存在 抛异常
                 throw new NZException(RCode.NODE_IPADDRESS_DUPLICATE);
@@ -430,8 +505,46 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
             if (this.checkFieldExist(nodeInfoEntity.getUuid(), "ip", nodeInfoEntity.getIp())) {
                 // 正常修改操作
                 this.updateNode(nodeInfoEntity);
+
+                // 获取本系统的节点组
+                List<SystemInfoEntity> systemInfoEntities = systemInfoDao.querySystemInfosWithNodeGroup(ShiroUtils.getCurrSystemId());
+                List<NodeGroupInfoEntity> nodegroups = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(systemInfoEntities)) {
+                    SystemInfoEntity systemInfoEntity = systemInfoEntities.get(0);
+                    nodegroups = systemInfoEntity.getNodegroups();
+                }
+                List<Long> groupIds = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(nodegroups)) {
+                    for (NodeGroupInfoEntity group : nodegroups) {
+                        groupIds.add(group.getId());
+                    }
+                }
+                // 当前和此节点关联的节点组
+                List<NodeGroupRelEntity> currRelList = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(groupIds)) {
+                    currRelList = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()).in("group_id", groupIds));
+                }
+
+                // 判断是否选择节点组  1. 原来没有节点组,选择了节点组 2.原来有节点组 删除了
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups()) || CollectionUtils.isNotEmpty(currRelList)) {
+                    // 先删除此节点选中本系统内的节点组
+                    if (CollectionUtils.isNotEmpty(groupIds)) {
+                        // 删除本系统内关联的节点组
+                        nodeGroupRelService.remove(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()).in("group_id", groupIds));
+                    }
+
+                    // 再添加
+                    if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())) {
+                        List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+
+                        for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                            groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), ShiroUtils.getCurrSystemId(), new Date()));
+                        }
+                        nodeGroupRelService.saveBatch(groupRelList);
+                    }
+                }
             } else {
-                // 维护关系
+                // 维护关系 IP在其他业务系统存在的情况
                 NodeInfoEntity node = this.getOne(new QueryWrapper<NodeInfoEntity>().eq("ip", nodeInfoEntity.getIp()).ne("state", 3));
                 List<SystemNodeRelEntity> systemInfo = systemNodeRelService.list(new QueryWrapper<SystemNodeRelEntity>().eq("uuid", node.getUuid()));
                 for (SystemNodeRelEntity entity : systemInfo) {
@@ -443,6 +556,15 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                 SystemNodeRelEntity nodeRelEntity = new SystemNodeRelEntity(ShiroUtils.getCurrSystemId(), node.getUuid(),
                         ShiroUtils.getCurrSystemId(), new Date());
                 systemNodeRelService.save(nodeRelEntity);
+
+                // 如果选择了节点组 则维护关系  这种情况肯定没有选择当前业务系统的节点组 有的话就存在该系统 不会产生此情况
+                if (CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())) {
+                    List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
+                    for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
+                        groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), ShiroUtils.getCurrSystemId(), new Date()));
+                    }
+                    nodeGroupRelService.saveBatch(groupRelList);
+                }
             }
         }
     }
@@ -451,7 +573,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public void updateNode(NodeInfoEntity nodeInfoEntity) {
         if (this.nodeNameCheck(nodeInfoEntity.getUuid(), nodeInfoEntity.getName())) {
 
-            // 3. 校验可用机柜
+            // 1. 校验可用机柜
             if (nodeInfoEntity.getCabinetId() != null && nodeInfoEntity.getCabinetId() > 0) { // 指定了 机柜
                 // 指定机柜的情况下 必须指定机柜起始位置
                 if (nodeInfoEntity.getCabinetStart() == null) {
@@ -463,7 +585,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
                     throw new NZException(RCode.NODECABINET_NOT_EXISTS);
                 }
 
-                // 查询该机柜的可选起始位置
+                // 2.查询该机柜的可选起始位置
                 List<Integer> starts = this.checkPosition(nodeInfoEntity);
 
                 if (starts == null) {
@@ -490,19 +612,6 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
             //5. 入库
             update(nodeInfoEntity, new UpdateWrapper<NodeInfoEntity>().eq("uuid", nodeInfoEntity.getUuid()));
-            //6.判断是否给节点指定节点组
-            if(CollectionUtils.isNotEmpty(nodeInfoEntity.getGroups())){
-                // 先删除
-                nodeGroupRelService.remove(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", nodeInfoEntity.getUuid()));
-                // 再添加
-                List<NodeGroupRelEntity> groupRelList = new ArrayList<>();
-                for (NodeGroupInfoEntity group : nodeInfoEntity.getGroups()) {
-                    groupRelList.add(new NodeGroupRelEntity(group.getId(), nodeInfoEntity.getUuid(), systemId, now));
-                }
-                if (CollectionUtils.isNotEmpty(groupRelList)) {
-                    nodeGroupRelService.saveBatch(groupRelList);
-                }
-            }
         } else {
             throw new NZException(RCode.NODE_NAME_DUPLICATE);// 名称重复
         }
@@ -719,6 +828,7 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
 
     /**
      * 根据节点UUID 获取所属节点组集合
+     *
      * @param uuid
      * @return
      */
@@ -726,5 +836,17 @@ public class NodeInfoServiceImpl extends ServiceImpl<NodeInfoDao, NodeInfoEntity
     public List<NodeGroupRelEntity> getGroupsById(Long uuid) {
         List<NodeGroupRelEntity> list = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("uuid", uuid));
         return list;
+    }
+
+    /**
+     * 根据节点的UUID 查询所属业务系统集合
+     *
+     * @param uuid
+     * @return
+     */
+    @Override
+    public List<SystemInfoEntity> querySystemsByUuid(Long uuid) {
+        List<SystemInfoEntity> systems = nodeInfoDao.querySystemsByUuid(uuid);
+        return systems;
     }
 }

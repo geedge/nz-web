@@ -15,7 +15,8 @@ import java.util.Map;
  */
 public interface NodeGroupRelService extends IService<NodeGroupRelEntity> {
 
-	List<NodeGroupRelEntity> queryBySystemId(Long id);
-	Integer queryCount(Long nodeGroupId,String type);
+    List<NodeGroupRelEntity> queryBySystemId(Long id);
+
+    Integer queryCount(Long nodeGroupId, String type);
 }
 

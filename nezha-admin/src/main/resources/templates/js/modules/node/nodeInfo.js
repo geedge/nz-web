@@ -80,7 +80,7 @@ var groupTree1 = Vue.component('groupTree1', {
         },
         selectedNodeId: "",
         node: null,         // 代表节点信息 包含业务系统和包含的节点组
-        currentsystem:""    // 当前的业务系统
+        currentsystem: ""    // 当前的业务系统
     },
     data() {
         return {
@@ -104,8 +104,8 @@ var groupTree1 = Vue.component('groupTree1', {
                         pIdKey: "pid",
                         rootPId: 0
                     },
-                    key:{
-                        title:"nodeTitle" // 因为name 拼接了带有html的字段 所以默认的title 会展示html标签
+                    key: {
+                        title: "nodeTitle" // 因为name 拼接了带有html的字段 所以默认的title 会展示html标签
                     }
                 },
                 check: {
@@ -114,14 +114,14 @@ var groupTree1 = Vue.component('groupTree1', {
                     nocheckInherit: true,
                     chkboxType: {"Y": "", "N": ""}
                 },
-                callback:{
+                callback: {
                     beforeRemove: this.beforeRemove,         // 删除callback
                     beforeCheck: this.beforeCheck,           // 修改callback
                     beforeEditName: this.beforeEditName,     // 点击编辑时触发，用来判断该节点是否能编辑
                     onCheck: this.zTreeOnCheck               // 选中时触发
                 }
             },
-            zTree:null      // 当前ztreeobject
+            zTree: null      // 当前ztreeobject
         };
     },
     methods: {
@@ -130,7 +130,7 @@ var groupTree1 = Vue.component('groupTree1', {
             // 获取当前的集合
             this.znodes.forEach(item => {
                 this.$set(item,"nodeTitle",item.name);
-                if(item.allowAss == 1){ // 证明是叶子节点
+                if (item.allowAss == 1){ // 证明是叶子节点
                     var count = "";
                     $.ajax({
                         type: "GET",
@@ -188,21 +188,21 @@ var groupTree1 = Vue.component('groupTree1', {
             this.$parent.updateNodeGroup(treeNode);
             return false;
         },
-        beforeCheck:function(treeId, treeNode){          // 选择前判断是否可选
+        beforeCheck: function(treeId, treeNode){          // 选择前判断是否可选
             if(treeNode.allowAss == "1"){ // 允许选择
                 return true;
             }
             layer.msg("此节点组不支持分配节点");
             return false;
         },
-        zTreeOnCheck:function(event, treeId, treeNode){
-            if(treeNode.checked){
+        zTreeOnCheck: function(event, treeId, treeNode){
+            if (treeNode.checked) {
                 // 节点页面展示业务系统名
                 treeNode.systemName = this.node.name;
                 // 节点页面展示节点组层级路径
                 treeNode.absoluteGroupPath = this.getNodePath(treeNode);
                 this.$emit("tree-select", treeNode);
-            }else{
+            } else {
                 this.$emit("tree-unselect", treeNode);
             }
         },
@@ -210,7 +210,7 @@ var groupTree1 = Vue.component('groupTree1', {
             var temp = this;
             nodeIds.forEach(item=>{
                 var nodeObj = this.zTree.getNodesByParam("id", item.groupId, null);
-                if(nodeObj.length >0){
+                if (nodeObj.length >0){
                     // 1. 将节点组名称层级关系传递父组件
                     var currNode = nodeObj[0];
                     currNode.systemName = this.node.name;
@@ -223,18 +223,18 @@ var groupTree1 = Vue.component('groupTree1', {
             });
         },
         getNodePath: function(treeNode){ // 递归拼接节点组层级关系
-            if(treeNode==null)return "";
+            if (treeNode==null) return "";
             var nodeName = treeNode.nodeTitle;
             var pNode = treeNode.getParentNode();
-            if(pNode!=null){
+            if (pNode!=null){
                 nodeName = this.getNodePath(pNode) +"/"+ nodeName;
             }
             return nodeName;
         },
-        uncheckTreeData:function(node){
-            if(node.systemId != this.node.id){
+        uncheckTreeData: function(node){
+            if (node.systemId != this.node.id){
                 return;
-            }else{
+            } else {
                 this.showCurrTree(this.node);
             }
             var nodes = this.zTree.getNodesByParam("id",node.id,null);
@@ -242,7 +242,7 @@ var groupTree1 = Vue.component('groupTree1', {
                 this.zTree.checkNode(nodes[i],false,true);
             }
         },
-        myFilter:function(node){
+        myFilter: function(node){
            // return (node.showCurrTree != undefined);
         },
         // 一下是 展示/样式相关方法
@@ -254,7 +254,7 @@ var groupTree1 = Vue.component('groupTree1', {
                 $("#icon" + item.id).removeClass("mytreeicon-close").addClass("mytreeicon-open");
             }
         },
-        showCurrTree:function(item){
+        showCurrTree: function(item){
             $("#box" + item.id).show(200);
         },
         showBtn: function (item) {
@@ -270,10 +270,10 @@ var groupTree1 = Vue.component('groupTree1', {
             $("#icon2" + item.id).removeClass("mytreeicon-add_act").addClass("mytreeicon-add_unact");
         },
     },
-    watch:{
-        "znodes":function(newValue,oldValue){
+    watch: {
+        "znodes": function(newValue,oldValue) {
             // 当长度发生变化时  更新该树 也就是添加和删除操作的时候
-            if(newValue.length != oldValue.length){
+            if (newValue.length != oldValue.length) {
                 console.log(this.node.name +  "  tree should update")
                 // 之前选中的节点集合
                 var checkedNodes = this.zTree.getCheckedNodes();
@@ -301,11 +301,11 @@ var groupTree1 = Vue.component('groupTree1', {
             $("#box" + this.node.id).show();
             // 如果只是一条数据的话 默认展开 图标状态转换
             $("#icon" + this.node.id).removeClass("mytreeicon-open").addClass("mytreeicon-close");
-        }else{
+        } else {
             $("#box" + this.node.id).hide();
         }
     },
-    updated:function(){
+    updated: function(){
         // console.log("data 数据更新")
     }
 });
@@ -575,8 +575,8 @@ var groupNameCheck = function (value, nodeGroup) {
     }
 }
 // 节点标签value值唯一校验
-var nodeTagValueCheck = function(value,nodeTag){
-    if(helpers.req(value)){
+var nodeTagValueCheck = function(value,nodeTag) {
+    if (helpers.req(value)){
         var flag = true;
         var params = "?name=" + nodeTag.name + "&type=" + nodeTag.type + "&value=" + nodeTag.value;
         $.ajax({
@@ -591,20 +591,20 @@ var nodeTagValueCheck = function(value,nodeTag){
             }
         });
         return flag;
-    }else{
+    } else {
         return true;
     }
 }
 
 var data = {
-    showList: true,      // 节点列表的显示与隐藏
-    showGroupTree:true,  // nodeGroups tree 展示与隐藏
-    showGroupForm:true,  // nodeGroup  form 展示与隐藏
-    showNodeTagsForm:true,// node tags form 展示与隐藏
+    showList: true,        // 节点列表的显示与隐藏
+    showGroupTree: true,   // nodeGroups tree 展示与隐藏
+    showGroupForm: true,   // nodeGroup  form 展示与隐藏
+    showNodeTagsForm: true,// node tags form 展示与隐藏
     title: "<@spring.message 'common.add'/>",
-    cabStartTitle:"<@spring.message 'common.pleaseSelect'/>",
-    uSizeValidateFlag:false,   // 节点高度提示信息标识
-    nodeTypeValidateFlag:false,// 节点类型提示信息标识
+    cabStartTitle: "<@spring.message 'common.pleaseSelect'/>",
+    uSizeValidateFlag: false,   // 节点高度提示信息标识
+    nodeTypeValidateFlag: false,// 节点类型提示信息标识
     nodeList: [],
     q: {
         name: null, type: null, state: null, ip: null, tag: null
@@ -633,11 +633,12 @@ var data = {
         snmpPort: null,
         snmpCommunity: null,
         remark: null,
-        nodeRoom: null
+        nodeRoom: null,
+        systems: []
     },
     nodeInfoDto: null,
-    nodeGroup: null,         // 节点组页面搜索使用
-    nodeGroupDto:{           // 节点添加选择节点组  表单绑定对象
+    nodeGroup: null,          // 节点组页面搜索使用
+    nodeGroupDto: {           // 节点添加选择节点组  表单绑定对象
         name: null,
         id: null,
         systemId: null,
@@ -648,33 +649,35 @@ var data = {
             name: null
         }
     },
-    nodeTag:{
-        value:null,
-        name:null,
-        type:null,
-        code:null,
-        relationNodeType:null // 关联的节点类型
+    nodeTag: {
+        value: null,
+        name: null,
+        type: null,
+        code: null,
+        relationNodeType: null // 关联的节点类型
     }, // 设备标签对象
-    isAdvancedSearch: false, // 高级搜索状态控制
-    disabledFlag: false,     // 表单锁定状态控制
-    oldNodeInfos: [],        // 增加/修改 回显旧对象数组
+    isAdvancedSearch: false,  // 高级搜索状态控制
+    disabledFlag: false,      // 表单锁定状态控制
+    oldNodeInfos: [],         // 增加/修改 回显旧对象数组
     ipFlag: true, // IP 标识 存在其他业务系统则为 true,
     showIp: true,
     selectFlag1: false,
     selectItems1: ["IP", "<@spring.message 'common.name'/>"],
     selectedItem1: "IP",
     // single  multi 控制工具栏单选 多选可点击状态
-    single:true,
-    multi:true,
-    systems: null,  // 业务系统和节点组集合
+    single: true,
+    multi: true,
+    systemsContainGroups: null,  // 业务系统和节点组集合
     system: {       // 当前业务系统  节点组添加修改时使用
         id: null,
         name: null
     },
-    currentZIndex:null,  // 当前弹出层zIndex值 弹出节点组页面后再弹出节点组操作时用于关闭节点组表单
-    checkedGroups:[],    // 当前节点选中的节点组   数据为ztree 节点数据 包含ztree node 属性
-    currentSystem: null,     // 当前业务系统ID
-    groupTreeLayerId:null    // 节点组树的layerId
+    currentZIndex: null,      // 当前弹出层zIndex值 弹出节点组页面后再弹出节点组操作时用于关闭节点组表单
+    checkedGroups: [],        // 当前节点选中的节点组   数据为ztree 节点数据 包含ztree node 属性
+    currentSystem: null,      // 当前业务系统ID
+    groupTreeLayerId: null,   // 节点组树的layerId
+    systemList: null,         // 业务系统集合
+    selectedSystems: []       // 选中的业务系统
 };
 
 Vue.config.devtools = true;
@@ -713,13 +716,14 @@ var vm = new Vue({
                 required, groupNameCheck
             }
         },
-        nodeTag:{
-            value:{
+        nodeTag: {
+            value: {
                 required, nodeTagValueCheck
             }
         }
     },
     methods: {
+        // node
         query: function () {
             this.reload();
         },
@@ -782,6 +786,19 @@ var vm = new Vue({
                     return true;
                 }
             });
+
+            // 先置空
+            vm.selectedSystems = [];
+            // 查询所属业务系统
+            $.ajax({
+                type: "GET",
+                url: baseURL + "node/querySystemsByUuid?uuid=" + uuid,
+                async: false,
+                dataType: "json",
+                success: function (r) {
+                    vm.selectedSystems = r.data;
+                }
+            });
         },
         add: function () {
             vm.$v.nodeInfo.$reset(); // 进入新增页面时，将校验的触发状态清空($dirty=true -> false)
@@ -814,7 +831,8 @@ var vm = new Vue({
             // 重新获取可用机柜信息
             this.getRooms();
             // 初始化 节点组信息
-            vm.systems = [];
+            vm.systemsContainGroups = [];
+            vm.selectedSystems = [];
             vm.checkedGroups = [];
             // 默认在线状态为上线
             vm.nodeStates.some(item=>{
@@ -822,7 +840,12 @@ var vm = new Vue({
                     vm.nodeInfo.state = item;
                     return true;
                 }
-            })
+            });
+            // 是global 的情况下可以选择业务系统
+            if (vm.currentSystem.id == "1") {
+                // 获取业务系统列表
+                vm.getSystemList();
+            }
         },
         update: function () {
             vm.$v.nodeInfo.$reset(); // 进入修改页面时，将校验触发状态清空($dirty=true -> false)
@@ -835,9 +858,14 @@ var vm = new Vue({
             }
             vm.showList = false;
             // 初始化 节点组信息
-            vm.systems = [];
+            vm.systemsContainGroups = [];
             vm.checkedGroups = [];
             vm.title = "<@spring.message 'common.edit'/>";
+            // 是global 的情况下可以选择业务系统
+            if (vm.currentSystem.id == "1") {
+                // 获取业务系统列表
+                vm.getSystemList();
+            }
             // 查询详情
             this.getInfo(uuid);
             // 查询当前系统
@@ -930,13 +958,15 @@ var vm = new Vue({
             vm.$set(vm.nodeInfoDto, 'tag', vm.nodeInfo.tag == null ? null : vm.nodeInfo.tag.code);
             vm.$set(vm.nodeInfoDto, 'state', vm.nodeInfo.state.code);
             vm.$set(vm.nodeInfoDto, 'cabinetId', vm.nodeInfo.cabinetId == null ? null : vm.nodeInfo.cabinetId.id);
-            if(vm.checkedGroups.length > 0){
+            if (vm.checkedGroups.length > 0) {
                 /*var groupIds = vm.checkedGroups.map(function(item) {
                     return item.id;
                 });*/
                 vm.$set(vm.nodeInfoDto , 'groups', vm.checkedGroups);
             }
-
+            if (vm.selectedSystems.length > 0) {
+                vm.$set(vm.nodeInfoDto, 'systems', vm.selectedSystems);
+            }
            $.ajax({
                 type: vm.nodeInfo.uuid == null ? "POST" : "PUT",
                 url: baseURL + url,
@@ -969,7 +999,7 @@ var vm = new Vue({
                 page: 1
             }).trigger("reloadGrid");
             // 销毁组件
-            vm.systems = [];
+            vm.systemsContainGroups = [];
             layer.closeAll();
         },
         getTags: function () {
@@ -1045,17 +1075,17 @@ var vm = new Vue({
                     return true;
                 }
             });
-            if(vm.nodeInfo.cabinetId == null){
+            if (vm.nodeInfo.cabinetId == null) {
                 vm.cabStartTitle = "<@spring.message 'common.pleaseSelect'/>";
                 return;
             }
-            if(vm.starts.length < 1){ // 没有起始位置可选
+            if (vm.starts.length < 1) { // 没有起始位置可选
                 vm.cabStartTitle = "<@spring.message 'node.notEnough.position'/>";
             }else{
                 vm.cabStartTitle = "<@spring.message 'common.pleaseSelect'/>";
             }
         },
-        getNodeGroupsById:function(uuid){ // 根据节点ID获取所属节点组集合
+        getNodeGroupsById: function(uuid){ // 根据节点ID获取所属节点组集合
             var groups;
             $.ajax({
                 type: "GET",
@@ -1067,9 +1097,9 @@ var vm = new Vue({
                 }
             });
             // 该节点包含节点组
-            if(groups != undefined && groups != null && groups.length > 0){
+            if (groups != undefined && groups != null && groups.length > 0) {
                 // 生成组件
-                vm.getSystems();
+                vm.getSystemsContainGroups();
                 // 在DOM更新之后指定nextTick中的函数
                 this.$nextTick(()=>{
                         for (let i = 0; i < vm.$refs.gtree.length; i++) {
@@ -1080,7 +1110,7 @@ var vm = new Vue({
                 })
             }
         },
-        getCurrentSystem:function(){
+        getCurrentSystem: function(){
             // 获取当前业务系统ID
             $.ajax({
                 type: "GET",
@@ -1088,20 +1118,31 @@ var vm = new Vue({
                 async: false,
                 dataType: "json",
                 success: function (r) {
-                    vm.currentSystem = r.data;
+                    data.currentSystem = r.data;
                 }
             });
         },
-        checkUsize:function(){
-            if(vm.nodeInfo.uSize == ""){
+        getSystemList: function() { // 获取业务系统集合 (节点选择业务系统使用)
+            $.ajax({
+                type: "GET",
+                url: baseURL + "system/list?limit=999",
+                async: false,
+                dataType: "json",
+                success: function (r) {
+                    vm.systemList = r.data.list;
+                }
+            });
+        },
+        checkUsize: function(){
+            if (vm.nodeInfo.uSize == "") {
                 // 节点高度提示标识
                 vm.uSizeValidateFlag = true;
                 //vm.rooms = vm.cabinets = vm.starts = [];
                 //vm.nodeInfo.nodeRoom = vm.nodeInfo.cabinetId = vm.nodeInfo.uSize = null;
             }
         },
-        checkNodeType:function(){
-            if(vm.nodeInfo.type == null){
+        checkNodeType: function(){
+            if (vm.nodeInfo.type == null) {
                 vm.nodeTypeValidateFlag = true;
             }
         },
@@ -1113,7 +1154,7 @@ var vm = new Vue({
             vm.$v.nodeGroupDto.$touch();
             return !vm.$v.nodeGroupDto.$error;
         },
-        validateNodeTag:function(){
+        validateNodeTag: function(){
             vm.$v.nodeTag.$touch();
             return !vm.$v.nodeTag.$error;
         },
@@ -1130,9 +1171,9 @@ var vm = new Vue({
         	this.selectedItem1 = item;
         },
         // group
-        showNodeGroups:function () {
-            if(vm.systems != null && vm.systems.length > 0){
-                if(vm.checkedGroups != null && vm.checkedGroups.length > 0){
+        showNodeGroups: function () {
+            if (vm.systemsContainGroups != null && vm.systemsContainGroups.length > 0) {
+                if (vm.checkedGroups != null && vm.checkedGroups.length > 0) {
                      vm.checkedGroups.forEach(item=>{
                          $("#box" + item.systemId).show();
                      })
@@ -1143,20 +1184,18 @@ var vm = new Vue({
             }
 
             // 获取菜单数据
-            vm.getSystems();
-            // 获取当前业务系统ID
-            vm.getCurrentSystem();
+            vm.getSystemsContainGroups();
             vm.showGroupTree = false;
             this.openGroupTree("<@spring.message 'common.selectNodeGroup'/>");
         },
-        getSystems:function(){ // 获取菜单数据 包含业务系统和节点组信息
+        getSystemsContainGroups: function(){ // 获取菜单数据 包含业务系统和节点组信息
             $.ajax({
                 type: "GET",
                 url: baseURL + "nodegroup/list",
                 async: false,
                 dataType: "json",
                 success: function (r) {
-                    vm.systems = r.data.list;
+                    vm.systemsContainGroups = r.data.list;
                 }
             });
         },
@@ -1170,6 +1209,9 @@ var vm = new Vue({
                     vm.system = r.data;
                 }
             });
+        },
+        existSystemName: function(sysName) {
+            return vm.systemNames.indexOf(sysName);
         },
         addNodeGroup: function (nodeGroup, isRoot) {
             vm.$v.nodeGroupDto.$reset();
@@ -1203,7 +1245,7 @@ var vm = new Vue({
             }
             this.openGroupForm("<@spring.message 'common.add'/>");
         },
-        deleteNodeGroup:function(nodeGroup){
+        deleteNodeGroup: function(nodeGroup){
             // 1. 删除节点组
             var form = new FormData();
             form.append("id", nodeGroup.id);
@@ -1218,7 +1260,7 @@ var vm = new Vue({
                     if (r.code == 200) {
                         alert("<@spring.message 'common.success'/>", function (index) {
                             // 从新挂载节点组tree
-                            vm.getSystems();
+                            vm.getSystemsContainGroups();
                         });
                     } else {
                         alert(r.msg);
@@ -1249,7 +1291,7 @@ var vm = new Vue({
             vm.nodeGroupDto.parentGroup = nodeGroup.getParentNode() == null ? {name: "<@spring.message 'nodegroup.root.group'/>", id: 0} : nodeGroup.getParentNode();
             this.openGroupForm("<@spring.message 'common.edit'/>");
         },
-        saveOrUpdateGroup:function(){
+        saveOrUpdateGroup: function(){
             if (!this.validateGroup()) {
                 return;
             }
@@ -1275,7 +1317,7 @@ var vm = new Vue({
                             // 关闭当前弹出层
                             vm.closeGroupForm();
                             // 从新挂载节点组tree
-                            vm.getSystems();
+                            vm.getSystemsContainGroups();
                         });
                     } else {
                         alert(r.msg);
@@ -1283,20 +1325,20 @@ var vm = new Vue({
                 }
             });
         },
-        selectedTreeDatas:function(nodeGroup){
+        selectedTreeDatas: function(nodeGroup){
             // 接收子组件传出选中的节点组
             vm.checkedGroups = vm.checkedGroups.concat(nodeGroup);
         },
-        unSelectedTreeDatas:function(nodeGroup){
+        unSelectedTreeDatas: function(nodeGroup){
             // 子组件撤销传出的 absoluteGroupPath 和 systemName
             vm.checkedGroups.some(function(item,index){
-                if(item.id == nodeGroup.id){
+                if (item.id == nodeGroup.id) {
                     vm.checkedGroups.splice(index,1);
                     return true;
                 }
             });
         },
-        unCheckGroup:function(nodeGroup){  // 从选中节点组中移除某个节点组
+        unCheckGroup: function(nodeGroup){  // 从选中节点组中移除某个节点组
             // 在数组中移除元素
             vm.checkedGroups.splice(vm.checkedGroups.indexOf(nodeGroup),1)
             // 调用组件 取消选中
@@ -1305,7 +1347,7 @@ var vm = new Vue({
                 refObj.uncheckTreeData(nodeGroup);
             }
             // 判断当前节点组的弹层是否存在
-            if(vm.showGroupTree) {
+            if (vm.showGroupTree) {
                 vm.showGroupTree = false;
                 this.openGroupTree("<@spring.message 'common.selectNodeGroup'/>");
             }
@@ -1326,22 +1368,22 @@ var vm = new Vue({
                 end:function () {
                     vm.showGroupTree = true;
                     // 判断当前是否存在节点组表单弹框 存在则一并关闭
-                    if(vm.currentZIndex != null){
+                    if (vm.currentZIndex != null) {
                         layer.close(vm.currentZIndex);
                     }
                     vm.groupTreeLayerId = null;
                 }
             });
-            if(vm.groupTreeLayerId != null){
+            if (vm.groupTreeLayerId != null) {
                 return;
             }
             vm.groupTreeLayerId = index;
             $("#layui-layer" + index).get(0).style.left = "unset";
             $("#layui-layer" + index).get(0).style.right = "0";
         },
-        openGroupForm:function(title){
+        openGroupForm: function(title){
            var groupTreeLayerId = null;
-            if(vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
+            if (vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
                 groupTreeLayerId= $("#layui-layer" + vm.groupTreeLayerId).get(0);
             }
             $(groupTreeLayerId).animate({right: "500px"});
@@ -1357,17 +1399,17 @@ var vm = new Vue({
                 closeBtn: 1,
                 move: false,
                 content: $("#groupForm"), // 本页面的元素
-                success:function(){ // 弹出后回调
-                    if(vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
+                success: function(){ // 弹出后回调
+                    if (vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
                         $(groupTreeLayerId).animate({right: "500px"});
                     }
                 },
-                cancel:function(){ // 返回回调
+                cancel: function(){ // 返回回调
                     if(vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
                         $(groupTreeLayerId).animate({right: ""});
                     }
                 },
-                end:function(){ // 销毁回调
+                end: function(){ // 销毁回调
                     $("html").css("overflow-y", "hidden");
                 }
             });
@@ -1375,8 +1417,8 @@ var vm = new Vue({
             vm.currentZIndex = index;
             return index;
         },
-        closeGroupForm:function(){
-            if(vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
+        closeGroupForm: function(){
+            if (vm.groupTreeLayerId != undefined && vm.groupTreeLayerId != null) {
                 var groupTreeLayerId = "";
                 groupTreeLayerId= $("#layui-layer" + vm.groupTreeLayerId).get(0);
                 $(groupTreeLayerId).animate({right: ""});
@@ -1385,19 +1427,19 @@ var vm = new Vue({
             }
         },
         // tag
-        openNodeTagForm:function(){
-            if(vm.nodeInfo.type == null){
+        openNodeTagForm: function() {
+            if (vm.nodeInfo.type == null) {
                 return;
             }
             // 清空状态
             vm.$v.nodeTag.$reset();
             vm.showNodeTagsForm = false;
             vm.nodeTag = {
-                    value:null,
-                    name:null,
-                    type:null,
-                    code:null,
-                    relationNodeType:null // 关联的节点类型
+                    value: null,
+                    name: null,
+                    type: null,
+                    code: null,
+                    relationNodeType: null // 关联的节点类型
             }
             // 回显当前设备类型
             vm.nodeTag.relationNodeType = vm.nodeInfo.type.value;
@@ -1409,7 +1451,7 @@ var vm = new Vue({
             var index = layer.open({
                 area: ['500px', '100%'],
                 shade: 0.001,
-                title: "设备标签",
+                title: "<@spring.message 'node.tag'/>",
                 type: 1,
                 fixed: false,
                 maxmin: false,
@@ -1418,16 +1460,16 @@ var vm = new Vue({
                 closeBtn: 1,
                 move: false,
                 content: $("#nodeTagsForm"), // 本页面的元素
-                end:function () {
+                end: function () {
                     vm.showNodeTagsForm = true;
                 }
             });
         },
-        closeNodeTagForm:function(){
+        closeNodeTagForm: function(){
             vm.showNodeTagsForm = true;
             layer.closeAll();
         },
-        saveNodeTag : function(){
+        saveNodeTag: function(){
             if (!this.validateNodeTag()) {
                 return;
             }
@@ -1448,7 +1490,7 @@ var vm = new Vue({
                     }
                 }
             });
-        }
+        },
     },
     created: function () {
         // 从字典中获取节点类型的集合
@@ -1461,6 +1503,8 @@ var vm = new Vue({
         $.getJSON(baseURL + "sys/dict/all?name=nodeTag", function (r) {
             vm.queryTags = r.data;
         });
+        // 获取当前业务系统ID
+        this.getCurrentSystem();
     },
     watch: {
         "nodeInfo.uSize": function (newValue, oldValue) {
@@ -1543,9 +1587,9 @@ var vm = new Vue({
             }
 
             // 7.关于起始位置提示
-            if(data.starts.length < 1 && data.nodeInfo.nodeRoom != null){
+            if (data.starts.length < 1 && data.nodeInfo.nodeRoom != null) {
                 data.cabStartTitle = "<@spring.message 'node.notEnough.position'/>";
-            }else{
+            } else {
                 data.cabStartTitle = "<@spring.message 'common.pleaseSelect'/>";
             }
         },
@@ -1565,12 +1609,19 @@ var vm = new Vue({
         		$(".ad-search-label").css("border-bottom", "1px solid #ccc");
         	}
         },
-        "nodeInfo.type":function(newValue,oldValue){
-            if(newValue == null){
+        "nodeInfo.type": function(newValue, oldValue){
+            if (newValue == null) {
                 vm.nodeTags = [];
             }
         }
     },
-    computed: {}
+    computed: {
+        systemNames: function() {
+            return vm.selectedSystems.map(function (item) {
+                return item.name;
+            });
+        },
+    },
+    mounted() {}
 });
 </script>

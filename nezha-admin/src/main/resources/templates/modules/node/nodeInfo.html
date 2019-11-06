@@ -142,7 +142,7 @@
                         <@spring.message 'validate.common.required'/>
                     </div>
                     <div class="form-control_error-msg" v-if="nodeTypeValidateFlag">
-                        请先选择设备类型
+                        <@spring.message 'validate.node.pickTypeFirst'/>
                     </div>
                 </div>
             </div>
@@ -208,7 +208,7 @@
 								</span>
                             </div>
                             <div class="add-box_row">
-                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.room.name'/></span>
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'common.nodeRoom'/></span>
                                 <span class="add-box_cell add-box_cell_60">
 									<multiselect :options="rooms" label="roomName" :disabled="disabledFlag"
                                                  :show-labels="false"
@@ -219,7 +219,7 @@
 								</span>
                             </div>
                             <div class="add-box_row">
-                                <span class="add-box_cell add-box_cell_30"><@spring.message 'node.cabinet.name'/></span>
+                                <span class="add-box_cell add-box_cell_30"><@spring.message 'common.cabinet'/></span>
                                 <span class="add-box_cell add-box_cell_60">
 									<multiselect :options="cabinets" label="name" :disabled="disabledFlag"
                                                  :show-labels="false"
@@ -263,7 +263,7 @@
                 <div class="col-sm-2 control-label"><@spring.message 'node.snmpPort'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
-                           :class="{'form-control&#45;&#45;error':  $v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric}"
+                           :class="{'form-control--error':  $v.nodeInfo.snmpPort.$dirty && !$v.nodeInfo.snmpPort.numeric}"
                            v-model.trim="$v.nodeInfo.snmpPort.$model"
                            placeholder="<@spring.message 'node.snmpPort'/>"/>
                     <div class="form-control_error-msg"
@@ -309,18 +309,30 @@
                 </div>
             </div>
 
+            <!-- 选择业务系统 -->
+            <div class="form-group" v-if="currentSystem.id == 1">
+                <div class="col-sm-2 control-label"><@spring.message 'system.system'/></div>
+                <div class="col-sm-9" id="system">
+                    <multiselect v-if="systemList != null" :options="systemList" label="name" track-by="id"
+                                 :show-labels="false" :disabled="disabledFlag" :multiple="true" :taggable="true"
+                                 v-model="selectedSystems"
+                                 placeholder="<@spring.message 'common.pleaseSelect'/>">
+                    </multiselect>
+                </div>
+            </div>
+
             <!-- 选择节点组 -->
             <div class="form-group">
-                <div class="col-sm-2 control-label">节点组</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.nodeGroup'/></div>
                 <div class="col-sm-9">
                     <div class="add-box">
                         <div class="add-box_head">
-                            <span class="add-box_cell add-box_cell_30">业务系统</span>
-                            <span class="add-box_cell add-box_cell_60">节点组</span>
+                            <span class="add-box_cell add-box_cell_30"><@spring.message 'system.system'/></span>
+                            <span class="add-box_cell add-box_cell_60"><@spring.message 'common.nodeGroup'/></span>
                         </div>
                         <div class="add-box_body add-box_body_160 psNg">
                             <div class="add-box_row" v-for="item in checkedGroups">
-                                <span class="add-box_cell add-box_cell_30">{{item.systemName}}</span>
+                                <span class="add-box_cell add-box_cell_30"><span :class="existSystemName(item.systemName) =='-1' ? 'add-box_tag1' : 'add-box_tag3'">{{item.systemName}}</span></span>
                                 <span class="add-box_cell add-box_cell_60">{{item.absoluteGroupPath}}</span>
                                 <span class="add-box_ops">
 	                            	<i @click="unCheckGroup(item)" class="fa fa-trash-o"></i>
@@ -359,7 +371,8 @@
         </div>
 
         <group-tree1
-                v-for="item in systems"
+                v-for="item in systemsContainGroups"
+                :key="item.id"
                 :zNodes="item.nodegroups"
                 :node="item"
                 :currentSystem="currentSystem"
@@ -520,6 +533,13 @@
 <style>
     .ztree {
         padding: 1px 0 0 6px !important;
+    }
+    /* 下拉框插件高度自动增长 */
+    .multiselect{
+        height: auto;
+    }
+    .multiselect__tags{
+        height: auto !important;
     }
 </style>
 </body>

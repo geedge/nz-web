@@ -376,7 +376,7 @@ tbody > tr > th {font-weight: normal; }
 	height: 26px;
 	margin-top: -2px;
 }
-.add-box_tag1, .add-box_tag2 { /*自定义标签*/
+.add-box_tag1, .add-box_tag2, .add-box_tag3 { /*自定义标签*/
     font-size: 12px;
     display: inline-block;
     color: white;
@@ -389,6 +389,9 @@ tbody > tr > th {font-weight: normal; }
 }
 .add-box_tag2 {
     background-color: #55c8c3;
+}
+.add-box_tag3 { /* 下拉框插件vuemultiselect选中tag颜色 */
+	background-color: #41b883;
 }
 /* .add-box_head .add-box_cell { head内的cell的文字稍稍偏右一点
 	padding-left: 3px;

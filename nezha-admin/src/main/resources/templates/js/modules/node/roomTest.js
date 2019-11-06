@@ -169,7 +169,7 @@ var data = {
     rowList: [],        // 行列表数据
     readFlag: null,     // 控制表单readonly选项值
     occUbit: null,      // 机柜校验 前台提示行列信息
-    noRoomTip: false
+    noRoomTip: false    // 机房暂无数据flag
 };
 
 
@@ -311,7 +311,7 @@ var vm = new Vue({
                 addr: null,
                 remarks: null
             }
-            this.open("添加机房", "roomForm");
+            this.open("<@spring.message 'common.add'/><@spring.message 'common.nodeRoom'/>", "roomForm");
         },
         addCab: function (room) { // 当前机房
             layer.closeAll('page');
@@ -331,21 +331,21 @@ var vm = new Vue({
             vm.$set(vm.nodeCabinet, "roomName", room.name);
             vm.$set(vm.nodeCabinet, "roomRow", room.row);
             vm.$set(vm.nodeCabinet, "roomCol", room.col);
-            this.open("添加机柜", "cabForm");
+            this.open("<@spring.message 'common.add'/><@spring.message 'common.cabinet'/>", "cabForm");
         },
         updateRoom: function (room) {
             vm.$v.nodeRoom.$reset();    //进入新增页面时，将校验触发状态清空($dirty=true -> false)
             this.getRoomInfo(room.id);
-            this.open("修改机房", "roomForm");
+            this.open("<@spring.message 'common.edit'/><@spring.message 'common.nodeRoom'/>", "roomForm");
         },
         updateCab: function (cabinet) {
             vm.$v.nodeCabinet.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
             vm.$set(vm, "readFlag", true);
             this.getCabInfo(cabinet.id);
-            this.open("修改机柜", "cabForm");
+            this.open("<@spring.message 'common.edit'/><@spring.message 'common.cabinet'/>", "cabForm");
         },
         delRoom: function (room) {
-            confirm("确认删除吗?", function () {
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 var form = new FormData();
                 form.append("ids", room.id);
                 $.ajax({
@@ -357,7 +357,7 @@ var vm = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert("成功", function () {
+                            alert("<@spring.message 'common.success'/>", function () {
                                 vm.reload();
                                 vm.showRowList(vm.roomList[0])
                             });
@@ -369,7 +369,7 @@ var vm = new Vue({
             });
         },
         delCab: function (cabinet) {
-            confirm("确认删除吗?", function () {
+            confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 var form = new FormData();
                 form.append("ids", cabinet.id);
                 $.ajax({
@@ -382,7 +382,7 @@ var vm = new Vue({
                     data: form,
                     success: function (r) {
                         if (r.code == 200) {
-                            alert("成功", function () {
+                            alert("<@spring.message 'common.success'/>", function () {
                                 vm.reload();
                             });
                         } else {
@@ -412,7 +412,7 @@ var vm = new Vue({
                 data: JSON.stringify(vm.nodeRoom),
                 success: function (r) {
                     if (r.code === 200) {
-                        alert("成功", function () {
+                        alert("<@spring.message 'common.success'/>", function () {
                             // 刷新当前行列表区域
                             vm.showRowList(data.nodeRoom);
                             vm.reload();

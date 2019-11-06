@@ -7,6 +7,7 @@ import com.nis.modules.node.entity.AvailCabinetEntity;
 import com.nis.modules.node.entity.NodeGroupInfoEntity;
 import com.nis.modules.node.entity.NodeGroupRelEntity;
 import com.nis.modules.node.entity.NodeInfoEntity;
+import com.nis.modules.sys.entity.SystemInfoEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
     // 查询业务系统的节点列表
     PageUtils queryPageBySystemId(Map<String, Object> params);
 
-    public void getTagName(List<NodeInfoEntity> nodeInfoEntities);
+    void getTagName(List<NodeInfoEntity> nodeInfoEntities);
 
 	PageUtils querySelectableNodeBySystemId(Map<String, Object> params);
 
@@ -53,5 +54,12 @@ public interface NodeInfoService extends IService<NodeInfoEntity> {
      * @return
      */
     List<NodeGroupRelEntity> getGroupsById(Long uuid);
+
+    /**
+     * 根据节点的UUID 查询所属业务系统集合
+     * @param uuid
+     * @return
+     */
+    List<SystemInfoEntity> querySystemsByUuid(Long uuid);
 }
 

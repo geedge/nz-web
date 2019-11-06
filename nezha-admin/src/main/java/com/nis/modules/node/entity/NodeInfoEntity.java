@@ -126,6 +126,20 @@ public class NodeInfoEntity implements Serializable {
     @TableField(exist = false)
     private List<NodeGroupInfoEntity> groups;
 
+    /**
+     * 业务系统集合
+     */
+    @TableField(exist = false)
+    private List<SystemInfoEntity> systems;
+
+    public List<SystemInfoEntity> getSystems() {
+        return systems;
+    }
+
+    public void setSystems(List<SystemInfoEntity> systems) {
+        this.systems = systems;
+    }
+
     public List<NodeGroupInfoEntity> getGroups() {
         return groups;
     }
