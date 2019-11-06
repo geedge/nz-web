@@ -44,6 +44,8 @@ public enum RCode {
 	SYS_DICT_VALUE_ISNULL(106003,"sys_dict_value_isnull"),     // 字典值不能为空
 	SYS_DICT_VALUE_DUPLICATE(106004,"sys_dict_value_duplicate"),// 字典值重复
 
+	SYS_DOWNLOAD_NO_FILE(107001,"sys_download_no_file"), //下载文件不存在
+
 	NODE_ERROR(200000, "node_error"), //20xxxx，设备类（节点、节点组、机房、机柜）通用错误
 
 	NODE_IPADDRESS_FORMAT(201001, "ipaddress_format_error"),       // ip 地址不合法 格式错误
@@ -115,7 +117,8 @@ public enum RCode {
 
 	DETE_ERROR(300000, "dete_error"), //30xxxx，监测类（类别、设置、告警）通用错误
 	VIEWLEVEL_INVALID(300001,"viewlevel_invalid"),
-	BUILDIN_CONFIG(300002,"BUILDIN_CONFIG"),//内置配置，不允许修改
+	BUILDIN_CONFIG(300002,"buildin_config"),//内置配置，不允许修改
+	DETE_UPLOAD_FILE_ISNULL(300003,"dete_upload_file_isnull"),//上传的文件为空
 	/**
 	 * 301xxx 监测类别相关异常
 	 * 302xxx 监测设置相关异常

@@ -99,7 +99,6 @@ var vm = new Vue({
             }
             vm.typeId=id;
             this.$refs['nz-add-type'].initDeteType();
-            console.log("update-->"+vm.typeId);
             vm.showList=false;
         },
         del: function (event) {

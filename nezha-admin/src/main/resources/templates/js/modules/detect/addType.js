@@ -600,10 +600,10 @@ var addParam=Vue.extend({
                 $("#r-param-name-input-"+temp.index).blur();
                 var msg='';
                 if(temp.$v.deteParam.name.$dirty&&!temp.$v.deteParam.name.required){
-                    msg="<div class=\"form-control_error-msg\">必填项</div>"
+                    msg="<div class=\"form-control_error-msg\"><@spring.message 'validate.common.required'/></div>"
                 }
                 if(temp.$v.deteParam.name.$dirty&&!temp.$v.deteParam.name.inPageNameRepeat){
-                    msg="<div class=\"form-control_error-msg\">名称重复</div>"
+                    msg="<div class=\"form-control_error-msg\"><@spring.message 'validate.common.name.repeat'/></div>"
                 }
                 if(temp.editSwitch){
                     layer.tips(msg, "#r-param-name-input-"+temp.index,{
@@ -622,7 +622,7 @@ var addParam=Vue.extend({
                 $("#r-param-defval-input-"+this.index).blur();
                 var msg='';
                 if(temp.$v.deteParam.defVal.$dirty&&!temp.$v.deteParam.defVal.required){
-                    msg="<div class=\"form-control_error-msg\">必填项</div>"
+                    msg="<div class=\"form-control_error-msg\"><@spring.message 'validate.common.required'/></div>"
                 }
                 if(temp.editSwitch){
                     layer.tips(msg, "#r-param-defval-input-"+temp.index,{
@@ -658,7 +658,8 @@ var addType=Vue.extend({
     template:"#addTypeTemplate",
     components: {
         "nz-add-meta":addMeta,
-        "nz-add-param":addParam
+        "nz-add-param":addParam,
+        "nz-fileupload":fileUpload
     },
     props: {
         typeId:{
@@ -674,7 +675,7 @@ var addType=Vue.extend({
     },
     data: function () {
         return {
-            title:"监测类别",
+            title:"<@spring.message 'deteType'/>",
             deteType:{
                 id: null,
                 name: '',
@@ -685,7 +686,7 @@ var addType=Vue.extend({
                 i18nCode: '',
                 remark: '',
                 deteTypeMetas: [],
-                deteTypeParams: []
+                deteTypeParams: [],
             },
             deteMethods:[],
             defaultMethod:{},
@@ -694,9 +695,20 @@ var addType=Vue.extend({
             dicTypes:[],
             metaReset:true,
             paramReset:true,
+            uploadReset:true,
+            metaDirty:false,
             metaRequired:true,
+            paramDirty:false,
             paramRequired:true,
-            typeNotLayer: true
+            typeNotLayer: true,//判断是否是在layer中打开，
+            isUpdate:false, //是否是更新操作，更新不容许修改监测方式
+            file:null,
+            acceptFile:".sh",
+            hasOldFile:false,
+            oldFile:{
+                filePath:'',
+                remark:'No File'
+            }
         }
     },
     validations:{
@@ -736,8 +748,8 @@ var addType=Vue.extend({
         initDeteType:function(){
             var temp=this;
             temp.$v.deteType.$reset();
-            console.log("typeId-->"+temp.typeId)
             if(temp.typeId==null){
+                temp.isUpdate=false;
                temp.deteType={
                    id: null,
                    name: '',
@@ -748,11 +760,16 @@ var addType=Vue.extend({
                    i18nCode: '',
                    remark: '',
                    deteTypeMetas: [],
-                   deteTypeParams: []
+                   deteTypeParams: [],
                }
             }else{
+                temp.isUpdate=true;
                 temp.getTypeInfo();
             }
+
+            temp.resetMetaDom();
+            temp.resetParamDom();
+            temp.resetFileUploadDom();
         },
         getTypeInfo: function () {
             var temp=this;
@@ -779,6 +796,7 @@ var addType=Vue.extend({
         },
         openMetaWindow: function(i) {
             var temp=this;
+            temp.metaDirty=true;
             var parentLayer=null;
             if(temp.parentLayerId!=undefined&&temp.parentLayerId!=null) {
                 $("#metaWindow").appendTo($('body'))
@@ -789,7 +807,7 @@ var addType=Vue.extend({
             var index = layer.open({
                 area: ['600px', '100%'],
                 shade: 0.01,
-                title: "元数据",
+                title: "<@spring.message 'deteType.meta'/>",
                 type: 1,
                 maxmin: false,
                 scrollbar: false,
@@ -802,6 +820,10 @@ var addType=Vue.extend({
                     metaComponets=temp.$refs.addMetaWindow.$refs['r-detect-meta'];
                     if(!temp.parentLayerId){
                         $(parentLayer).animate({right: "600px"});
+                    }
+
+                    if(temp.deteType.deteTypeMetas.length<1){
+                        temp.$refs.addMetaWindow.addMeta();
                     }
                 },
                 cancel:function(){
@@ -866,7 +888,9 @@ var addType=Vue.extend({
             $.each(temp.deteType.deteTypeMetas, function (i, v) {
                 temp.deteType.deteTypeMetas[i].fieldType = v.fieldType.code;
                 temp.deteType.deteTypeMetas[i].dataType = v.dataType.code;
-                temp.deteType.deteTypeMetas[i].dicType=v.dicType.type;
+                if(typeof v.dicType!='undefined' && v.dicType!=null){
+                    temp.deteType.deteTypeMetas[i].dicType=v.dicType.type;
+                }
             });
         },
         formatDeteTypeToObject: function () {
@@ -875,15 +899,45 @@ var addType=Vue.extend({
                 for (var i = 0; i < temp.fieldTypes.length; i++) {
                     if (temp.fieldTypes[i].code == value.fieldType) {
                         temp.deteType.deteTypeMetas[index].fieldType = temp.fieldTypes[i];
+                        break;
                     }
                 }
 
                 for (var i = 0; i < temp.dataTypes.length; i++) {
                     if (temp.dataTypes[i].code == value.dataType) {
                         temp.deteType.deteTypeMetas[index].dataType = temp.dataTypes[i];
+                        break;
+                    }
+                }
+
+                for (var i = 0; i < temp.dicTypes.length; i++){
+                    if(temp.dicTypes[i].type == value.dicType){
+                        temp.deteType.deteTypeMetas[index].dicType=temp.dicTypes[i];
+                        break;
                     }
                 }
             });
+            if(temp.deteType.method=='1'){
+                temp.hasOldFile=true;
+                if(typeof temp.deteType.content != 'undefined'&&temp.deteType.content!=null&&temp.deteType.content!=''){
+                    try {
+                        var file=JSON.parse(temp.deteType.content);
+                        temp.oldFile.filePath=file.filePath;
+                        temp.oldFile.remark=file.fileName;
+                    }catch (e) {
+                        temp.oldFile.filePath='';
+                        temp.oldFile.remark='No File';
+                    }
+
+                }else{
+                    temp.oldFile.filePath='';
+                    temp.oldFile.remark='No File';
+                }
+            }else{
+                temp.hasOldFile=false;
+                temp.oldFile.filePath='';
+                temp.oldFile.remark='No File';
+            }
         },
         delMeta:function(index){
             var temp=this;
@@ -905,6 +959,7 @@ var addType=Vue.extend({
         },
         addParam:function(){
             var temp=this;
+            temp.paramDirty=true;
             var param={
                 id:null,
                 name:'',
@@ -933,6 +988,13 @@ var addType=Vue.extend({
                 temp.paramReset = true
             });
         },
+        resetFileUploadDom:function(){
+            var temp = this;
+            temp.uploadReset = false;
+            temp.$nextTick(() => {
+                temp.uploadReset = true
+            });
+        },
         saveOrUpdate:function(){
             var temp=this;
             if(temp.validate()){
@@ -945,13 +1007,16 @@ var addType=Vue.extend({
 
             //处理json数据
             temp.formatDeteTypeToSimple();
-            console.log(temp.deteType)
-
+            let formData=new FormData;
+            formData.append('deteTypeInfo',JSON.stringify(temp.deteType))
+            formData.append('file',temp.file);
             $.ajax({
                 type: method,
                 url: baseURL + url,
-                contentType: "application/json",
-                data: JSON.stringify(temp.deteType),
+                // contentType: "application/json",
+                contentType:false,
+                processData:false,
+                data:formData,
                 success: function (r) {
                     if (r.code === 200) {
                         temp.reload();
@@ -968,7 +1033,7 @@ var addType=Vue.extend({
         },
         validate:function(){
             var temp=this;
-            temp.$v.deteType.$touch();
+            temp.touchType();
             var typeError=temp.$v.deteType.$error;
 
             var metaErrorArr=[]
@@ -1012,8 +1077,29 @@ var addType=Vue.extend({
                     }
                 }
             }
-            console.log(typeError+"|"+metaError+"|"+paramError);
-            return typeError||metaError||paramError;
+            var uploadError=false;
+            if(temp.deteType.method=='1'&&!temp.isUpdate) {
+                var uploadComponet = temp.$refs.scriptUpload;
+                if (typeof uploadComponet != "undefined") {
+                    uploadError = uploadComponet.error;
+                }
+            }
+
+            console.log(typeError+"|"+metaError+"|"+paramError+"|"+uploadError);
+            return typeError||metaError||paramError||uploadError;
+        },
+        touchType:function(){
+            var temp=this;
+            temp.$v.deteType.$touch();
+            temp.metaDirty=true;
+            temp.paramDirty=true;
+            if(temp.deteType.method=='1'&&!temp.isUpdate){
+                var uploadComponet=temp.$refs.scriptUpload;
+                if(typeof uploadComponet != "undefined"){
+                    uploadComponet.touch();
+                }
+            }
+
         }
     },
     computed: {
@@ -1022,6 +1108,20 @@ var addType=Vue.extend({
     watch: {
         typeId:function(){
             this.initDeteType();
+        },
+        'deteType.deteTypeMetas':function(){
+            if(this.deteType.deteTypeMetas.length<1){
+                this.metaRequired=false;
+            }else{
+                this.metaRequired=true;
+            }
+        },
+        'deteType.deteTypeParams':function(){
+            if(this.deteType.deteTypeParams.length<1){
+                this.paramRequired=false;
+            }else{
+                this.paramRequired=true;
+            }
         }
     },
     mounted: function () {

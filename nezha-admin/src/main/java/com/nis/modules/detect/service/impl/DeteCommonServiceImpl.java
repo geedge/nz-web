@@ -1,5 +1,6 @@
 package com.nis.modules.detect.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -10,6 +11,7 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.detect.entity.DeteTypeInfoEntity;
 import com.nis.modules.detect.service.DeteCommonService;
 import com.nis.modules.detect.service.DeteTypeInfoService;
+import com.nis.modules.mission.utils.FileUtil;
 import com.nis.modules.sys.entity.PermissionInfoEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.UserUsergroupEntity;
@@ -18,7 +20,11 @@ import com.nis.modules.sys.service.UserUsergroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.env.Environment;
+import org.springframework.util.ResourceUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.*;
 
 public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImpl<M ,T> implements DeteCommonService<T> , ApplicationRunner {
@@ -29,6 +35,8 @@ public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImp
     private SysDictService sysDictService;
     @Autowired
     private DeteTypeInfoService deteTypeInfoService;
+    @Autowired
+    private Environment environment;
 
     public static Map<String,Set<String>> sysDic=new HashMap<String, Set<String>>();
 
@@ -158,5 +166,95 @@ public class DeteCommonServiceImpl<M extends BaseMapper<T>,T> extends ServiceImp
             sysDic.put(type,codes);
         }
     }
+    @Override
+    public String getUploadFileJson(MultipartFile file){
 
+        Map<String,String> map=new HashMap<String,String>();
+        String originalFilename = file.getOriginalFilename();
+        map.put("fileName",originalFilename);
+
+        long size = file.getSize();
+        String formetSize = new FileUtil().FormetFileSize(size);
+
+        map.put("fileSize",formetSize);
+
+//        String rootPath=null;
+//        try{
+//            rootPath= ResourceUtils.getURL("classpath:").getPath();
+//            System.out.println(rootPath);
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+
+        String configUploadPath= environment.getProperty("upload.path");
+
+//        String uploadPath=rootPath+configUploadPath;
+        map.put("uploadPath",configUploadPath);
+
+        String fileName=configUploadPath+ FileUtil.addTimeTagForUploadFileName(originalFilename);
+
+        map.put("filePath",fileName);
+
+        return JSON.toJSONString(map);
+    }
+    @Override
+    public void uploadFile(String jsonInfo,MultipartFile file){
+
+        Map<String,String> map=JSON.parseObject(jsonInfo,HashMap.class);
+
+        String rootPath=null;
+        try{
+            rootPath= ResourceUtils.getURL("classpath:").getPath();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        String uploadPath=rootPath+map.get("uploadPath");
+        String filePath=map.get("filePath");
+
+        File uploadDir=new File(uploadPath);
+        if(!uploadDir.exists()){
+            uploadDir.mkdirs();
+        }else{//存在同名文件/文件夹
+            if(!uploadDir.isDirectory()){//是一个同名文件
+                uploadDir.delete();
+                uploadDir.mkdirs();
+            }
+        }
+
+        File destFile=new File(rootPath+filePath);
+        if(destFile.exists()){
+            destFile.delete();
+        }
+        try{
+            file.transferTo(destFile);
+
+        }catch (Exception e){
+            System.out.println(e);
+            e.printStackTrace();
+        }
+
+    }
+
+    public void delUploadFile(String jsonInfo){
+        try {
+            Map<String,String> map=JSON.parseObject(jsonInfo,HashMap.class);
+            String filePath = map.get("filePath");
+
+            String rootPath=null;
+            try{
+                rootPath= ResourceUtils.getURL("classpath:").getPath();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
+            File file=new File(rootPath+filePath);
+            if(file.exists()){
+                file.delete();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
 }

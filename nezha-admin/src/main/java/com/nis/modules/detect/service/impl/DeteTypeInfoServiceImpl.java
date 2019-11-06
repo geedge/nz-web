@@ -14,6 +14,7 @@ import com.nis.modules.detect.entity.DeteTypeMetaEntity;
 import com.nis.modules.detect.entity.DeteTypeParamEntity;
 import com.nis.modules.detect.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.impl.auth.NTLMEngineException;
 import org.slf4j.Logger;
@@ -23,7 +24,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.channels.MulticastChannel;
 import java.util.*;
 
 @Service("deteTypeInfoService")
@@ -69,12 +72,18 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveEntity(DeteTypeInfoEntity deteTypeInfo) {
+    public void saveEntity(DeteTypeInfoEntity deteTypeInfo,MultipartFile file) {
         Long userId = ShiroUtils.getUserId();//操作员
         deteTypeInfo.setOperator(userId);
         Date date = new Date(); //操作时间
         deteTypeInfo.setOpTime(date);
         deteTypeInfo.setBuildIn(Constant.SYSTEM_BUILDIN_NO);
+        if(Constant.DETE_DETEMETHOD_SCRIPT.equals(deteTypeInfo.getMethod())){
+
+            String content=this.getUploadFileJson(file);
+            this.uploadFile(content,file);
+            deteTypeInfo.setContent(content);
+        }
 
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
 
@@ -132,7 +141,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateEntity(DeteTypeInfoEntity deteTypeInfo) {
+    public void updateEntity(DeteTypeInfoEntity deteTypeInfo,MultipartFile file) {
         DeteTypeInfoEntity old = this.getById(deteTypeInfo.getId());
         List<DeteTypeMetaEntity> deteTypeMetas = deteTypeInfo.getDeteTypeMetas();
         List<DeteTypeParamEntity> deteTypeParams = deteTypeInfo.getDeteTypeParams();
@@ -142,7 +151,14 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         deteTypeInfo.setOpTime(date);
         deteTypeInfo.setTableName(old.getTableName());
         deteTypeInfo.setBuildIn(old.getBuildIn());//buildIn 字段不允许修改
-
+        if(Constant.DETE_DETEMETHOD_SCRIPT.equals(deteTypeInfo.getMethod())&&file!=null&&!file.isEmpty()){
+            if(StringUtils.isNotBlank(old.getContent())){
+                this.delUploadFile(old.getContent());//删除旧文件
+            }
+            String content=this.getUploadFileJson(file);
+            this.uploadFile(content,file);
+            deteTypeInfo.setContent(content);
+        }
         //需要修改表字段
         List<DeteTypeMetaEntity> metaUpdateList = new ArrayList<DeteTypeMetaEntity>();
         //需要添加表字段
@@ -302,11 +318,16 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
     public void deleteEntity(Long... ids) {
         Long userId = ShiroUtils.getUserId();
         Date date=new Date();
-        //drop对应的表
+
         for (Long id :ids){
             DeteTypeInfoEntity oldType = this.getById(id);
             if(oldType!=null&& StringUtils.isNotBlank(oldType.getTableName())&&checkTablesExists(oldType.getTableName())){
+                //drop对应的表
                 this.dropTable(oldType.getTableName());
+                //如果是脚本监测，删除脚本
+                if(Constant.DETE_DETEMETHOD_SCRIPT.equals(oldType.getMethod())){
+                    this.delUploadFile(oldType.getContent());
+                }
             }
 
         }
@@ -509,13 +530,17 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
      * @Return
      * @Exception
      */
-    public void validatePassDate(DeteTypeInfoEntity deteTypeInfo) {
+    public void validatePassDate(DeteTypeInfoEntity deteTypeInfo, MultipartFile file) {
         ValidateUtils.is(deteTypeInfo).notNull(RCode.DETE_ERROR);
 
         if(!checkDeteMethodIsValide(deteTypeInfo)){
             throw new NZException(RCode.TYPE_METHOD_INVALID);
         }
-
+        if(Constant.DETE_DETEMETHOD_SCRIPT.equals(deteTypeInfo.getMethod())){
+            if(!StringUtils.isNotBlank(deteTypeInfo.getContent()) && (file==null||file.isEmpty())){
+                throw new NZException(RCode.DETE_UPLOAD_FILE_ISNULL);
+            }
+        }
         if(!checkFieldTypeIsValide(deteTypeInfo)){
             throw new NZException(RCode.META_FIELDTYPE_INVALID);
         }

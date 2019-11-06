@@ -42,7 +42,7 @@
         <div class="panel-heading">{{title}}</div>
         <form class="form-horizontal">
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.name'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
                            :class="{'form-control--error': $v.deteSet.name.$dirty && (!$v.deteSet.name.required || !$v.deteSet.name.nameRepeat)}"
@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'deteType'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'deteType'/></div>
                 <div class="col-sm-9">
                     <multiselect v-model="$v.deteSet.typeId.$model"
                                  :value="deteSet.typeId"
@@ -98,7 +98,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.selectNodeOrNodeGroup'/></div>
                 <div class="col-sm-9">
                     <!--                    <a  class="btn btn-default" href="#" @click="openNodePannel">节点/节点组</a>-->
                     <div class="add-box add-box_first" :class="{'form-control--error': nodeOrGroupEmpty}">
@@ -150,14 +150,14 @@
 
 
             <!-- <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.i18nCode'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.i18nCode'/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control" v-model.trim="$v.deteSet.i18nCode.$model"/>
                 </div>
             </div> -->
 
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.viewPermission'/></div>
                 <div class="col-sm-9">
                 	<div style="margin-bottom: 10px;">
 	                    <template v-for="vl in viewLevels">
@@ -183,7 +183,7 @@
             </div>
 
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.remark'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'common.remark'/></div>
                 <div class="col-sm-9">
                     <textarea v-model.trim="$v.deteSet.remark.$model" class="form-control"></textarea>
                 </div>

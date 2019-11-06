@@ -54,17 +54,17 @@ var warnComponet = Vue.extend({
             state:2,//1,告警个数 2，告警列表 3，编辑告警
             counter:0,
             colModel:[
-                {name: "名称", field: "name", width: 120},
-                {name: "触发方式", field: "triggerType", width: 120},
-                {name: "告警模式", field: "warnMode", width: 120,formatter:function(rowData){
+                {name: "<@spring.message 'common.name'/>", field: "name", width: 120},
+                {name: "<@spring.message 'detect.triggerType'/>", field: "triggerType", width: 120},
+                {name: "<@spring.message 'detect.warnMode'/>", field: "warnMode", width: 120,formatter:function(rowData){
                         return rowData.warnMode;
                     }},
-                {name: "回调方式", field: "callbackType", width: 120,formatter:function(rowData){
+                {name: "<@spring.message 'deteWarn.callbackType'/>", field: "callbackType", width: 120,formatter:function(rowData){
                         return rowData.callbackType;
                     }},
 
-                {name: "操作时间", field: "opTime", width: 240},
-                {name: "备注", field: "remark", width: 240}
+                {name: "<@spring.message 'common.opTime'/>", field: "opTime", width: 240},
+                {name: "<@spring.message 'common.remark'/>", field: "remark", width: 240}
             ],
             headSpan:'warn-span-',
             headSpanSelector:'',

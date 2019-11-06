@@ -29,7 +29,7 @@
         <div class="panel-heading">{{title}}</div>
         <form class="form-horizontal">
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message "metaMapping.type"/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message "metaMapping.type"/></div>
                 <div class="col-sm-9">
                     <input type="text" class="form-control"
                            :class="{'form-control--error': $v.metaMappings.type.$dirty && !$v.metaMappings.type.required}"
@@ -45,7 +45,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'param'/>:</div>
+                <div class="col-sm-2 control-label"><@spring.message 'param'/></div>
                 <div class="col-sm-9" >
                     <div style="width:90%; padding:8px 0px 4px 0px;">
                             <div style="position:relative;" v-for="mapping,index in metaMappings.mappings">

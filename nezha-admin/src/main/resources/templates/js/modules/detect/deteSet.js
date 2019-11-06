@@ -18,7 +18,7 @@ $(function () {
             },
             {label: '<@spring.message "param"/>', name: 'params', sortable: false, width: 100},
             {
-                label: '告警',
+                label: '<@spring.message "deteWarn"/>',
                 sortable: false,
                 width: 100,
                 formatter:function(value, options, rowData){
@@ -53,18 +53,14 @@ $(function () {
         gridComplete: function () {
             //隐藏grid底部滚动条
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
-            // $(".td-warn-win").each(function(index,e){
-            //
-            //     var setId=parseInt($(e).attr('setId'));
-            //     var id=$(e).attr('id');
-            //     new warmComponet({
-            //         propsData:{
-            //             trIndex:index,
-            //             setId:setId
-            //         }
-            //     }).$mount('#'+id)
-            // });
-            new warnComponets().$mount('#warnSpace');
+            console.log('set2')
+            console.log($("#warnSpace").get(0))
+            if(typeof $("#warnSpace").get(0)!='undefined'){
+                new warnComponets().$mount('#warnSpace');//这种方式挂载会将挂载的element替换掉，并不是在内部挂载！！！
+                $('body').append("<div id='warnSpace'></div>")
+            }
+            console.log('set3')
+            console.log($("#warnSpace").get(0))
         },
         onSelectAll: function(rowids, status) {
             if (status) {
@@ -81,7 +77,6 @@ $(function () {
 
 Vue.component("nz-node-selector",selector);
 Vue.component("nz-detect-addtype",addType);
-// Vue.component("nz-warn",warmComponet);
 
 
 var nameRepeat = function (name, deteSet) {

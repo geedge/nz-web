@@ -1,5 +1,6 @@
 package com.nis.modules.detect.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
@@ -22,7 +23,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -59,29 +62,33 @@ public class DeteTypeController {
         return R.ok(deteTypeInfo);
     }
 
-    @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE)
+//    @PostMapping(value = "/save", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/save")
     @ResponseBody
     @ApiOperation(value = "保存监测类别")
-    public R save(@RequestBody DeteTypeInfoEntity deteTypeInfo) {
-        deteTypeInfoService.validatePassDate(deteTypeInfo);
+    public R save(@RequestParam(value="deteTypeInfo",required = true) String jsonTypeInfo,@RequestParam(value="file",required = false) MultipartFile file) {
+        DeteTypeInfoEntity deteTypeInfo= JSON.parseObject(jsonTypeInfo,DeteTypeInfoEntity.class);
+        deteTypeInfoService.validatePassDate(deteTypeInfo,file);
         if(deteTypeInfo.getDeteInterval()==null||deteTypeInfo.getDeteInterval()<0){
             deteTypeInfo.setDeteInterval(60);
         }
-        deteTypeInfoService.saveEntity(deteTypeInfo);
+        deteTypeInfoService.saveEntity(deteTypeInfo,file);
 
         return R.ok();
     }
 
 
-    @PutMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/update")
+//    @PutMapping(value = "/update", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     @ApiOperation(value = "更新监测类别")
-    public R update(@RequestBody DeteTypeInfoEntity deteTypeInfo) {
+    public R update(@RequestParam(value="deteTypeInfo",required = true) String jsonTypeInfo,@RequestParam(value="file",required = false) MultipartFile file) {
+        DeteTypeInfoEntity deteTypeInfo= JSON.parseObject(jsonTypeInfo,DeteTypeInfoEntity.class);
         if(deteTypeInfoService.isBuildIn(deteTypeInfo)){ //内置配置，不允许修改
             throw new NZException(RCode.BUILDIN_CONFIG);
         }
-        deteTypeInfoService.validatePassDate(deteTypeInfo);
-        deteTypeInfoService.updateEntity(deteTypeInfo);
+        deteTypeInfoService.validatePassDate(deteTypeInfo,file);
+        deteTypeInfoService.updateEntity(deteTypeInfo,file);
         return R.ok();
     }
 
@@ -176,4 +183,5 @@ public class DeteTypeController {
             return R.ok("true");
         }
     }
+
 }

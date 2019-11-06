@@ -24,7 +24,7 @@
                 </template>
                 <template v-if="tableData.length==0"  >
                     <tr>
-                        <td :colspan="colLen" class="text-center">暂无数据</td>
+                        <td :colspan="colLen" class="text-center"><@spring.message 'common.noData'/></td>
                     </tr>
                 </template>
             </tbody>
@@ -61,6 +61,25 @@
         </div>
     </div>
 </script>
+
 <script id="nzTree" type="text/x-template">
 	<ul id="beTree" class="ztree"></ul>
+</script>
+
+<script type="text/x-template" id="fileInput">
+    <div >
+        <div class="col-sm-2 control-label"><@spring.message 'common.scriptFile'/></div>
+        <div class="col-sm-9">
+            <div class="input-group">
+                <input :id='viewInputId' class="form-control"   @click="viewInputClick" />
+                <div class="input-group-btn" style="right: 31px;">
+                    <button type="button" class="btn btn-default" @click="selectBtnClick"><i class="fa fa-file-text"></i></button>
+                    <button type="button" class="btn btn-default" @click="historyFileClick" :disabled="!hasOld||oldFile.filePath==''" :title="oldFile.remark"><i class="fa fa-download"></i></button>
+                </div>
+                <input type="file" :name="name" :id='fileInputId'  @input="$emit('input', $event.target.files[0])"  :accept="accept" @change="fileInput($event)" style="display: none">
+            </div>
+            <span class="required-symbol">*</span>
+            <div class="form-control_error-msg" v-if="dirty&&!required"><@spring.message 'validate.common.required'/></div>
+        </div>
+    </div>
 </script>

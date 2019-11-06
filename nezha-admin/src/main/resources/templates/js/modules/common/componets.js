@@ -601,13 +601,13 @@ var selector = Vue.extend({
             treeSelectedKeyPre:"tree-checked-",
             key: "uuid", //数据的唯一标识
             colModel: [
-                {name: "名称", field: "name", width: 120},
+                {name: "<@spring.message 'common.name'/>", field: "name", width: 120},
                 {name: "IP", field: "ip", width: 120},
-                {name: "类型", field: "type", width: 70,formatter:function(rowData){
-                        return rowData["type"]=='1'?"服务器":"网元";
+                {name: "<@spring.message 'node.type'/>", field: "type", width: 70,formatter:function(rowData){
+                        return rowData["type"]=='1'?"<@spring.message 'node.type.server'/>":"<@spring.message 'node.type.net'/>";
                     }},
-                {name: "状态", field: "state", width: 60,formatter:function(rowData){
-                        return rowData["state"]=='1'?"在线":"<span style='color:#cccccc;'>下线</span>";
+                {name: "<@spring.message 'common.status'/>", field: "state", width: 60,formatter:function(rowData){
+                        return rowData["state"]=='1'?"<@spring.message 'common.onLine'/>":"<span style='color:#cccccc;'><@spring.message 'common.offLine'/></span>";
                     }}
             ],
             treeData: [],
@@ -806,4 +806,156 @@ var selector = Vue.extend({
 
     }
 })
-</script>
+
+var fileUpload = Vue.extend({
+    template: "#fileInput",
+    components: {},
+    props: {
+        name:{
+            type:String,
+            default:'file'
+        },
+        accept:{
+            type:String,
+            default:'.*'
+        },
+        hasOld:{
+            type:Boolean,
+            default:false
+        },
+        oldFile:{
+            type:Object  //{filePath:String,remark:String}
+        }
+    },
+    data: function () {
+        return {
+            value:null,
+            viewInputId:'location',
+            viewInputSelector:'',
+            fileInputId:'i-file',
+            fileInputSelector:'',
+            dirty:false,
+            required:true,
+            error:false
+
+        };
+    },
+    validations: function() {
+
+    },
+    created: function () {
+        var temp=this;
+    },
+    methods: {
+        init:function(){
+            var temp=this;
+            temp.viewInputSelector='#'+temp.viewInputId;
+            temp.fileInputSelector='#'+temp.fileInputId;
+        },
+        fileInput:function(event){
+            var temp=this;
+            if(event.target.files.length<1){
+                temp.required=false;
+                temp.error=true;
+            }else{
+                temp.error=false;
+                temp.required=true;
+            }
+            $(temp.viewInputSelector).val('')
+            var text=$(temp.fileInputSelector).val();
+            $(temp.viewInputSelector).val(text);
+            temp.value=text;
+        },
+        viewInputClick:function(){
+            var temp=this;
+            temp.fileInputClick();
+        },
+        selectBtnClick:function(){
+            var temp=this;
+            temp.fileInputClick();
+        },
+        fileInputClick:function(){
+            var temp=this;
+            temp.dirty=true;
+            $(temp.fileInputSelector).click();
+        },
+        reset:function(){
+            var temp=this;
+            temp.dirty=false;
+            temp.required=true;
+            temp.error=false;
+        },
+        touch:function(){
+            var temp=this;
+            temp.dirty=true;
+        },
+        historyFileClick:function(){
+            var temp=this;
+            // window.location.href=baseURL+'sys/download?fileName='+encodeURI(temp.oldFile.remark)+"&filePath="+encodeURI(temp.oldFile.filePath)
+            var url=baseURL+'sys/download?fileName='+encodeURI(temp.oldFile.remark)+"&filePath="+encodeURI(temp.oldFile.filePath);
+            // var elemIF = document.createElement('iframe')
+            // elemIF.src = url
+            // elemIF.style.display = 'none'
+            // document.body.appendChild(elemIF);
+            // var form=document.createElement('form');
+            // form.style.display='none'
+            // form.action=baseURL+'sys/download?fileName=';
+            // form.method='GET';
+            // var fileNameInput=document.createElement("input");
+            // fileNameInput.type='hidden';
+            // fileNameInput.name='fileName';
+            // fileNameInput.value=temp.oldFile.remark;
+            // var filePathInput=document.createElement("input");
+            // filePathInput.type='hidden';
+            // filePathInput.name='filePath';
+            // filePathInput.value=temp.oldFile.filePath;
+            // $(form).append($(fileNameInput))
+            // $(form).append($(filePathInput))
+            // $('body').append($(form));
+            // form.submit();
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.responseType = "blob";
+            xhr.onload = function () {
+                if (this.status === 200) {
+                    var URL = window.URL || window.webkitURL;  //兼容处理
+                    var content = this.response;
+                    var aTag = document.createElement('a');
+                    var blob = new Blob([content]);
+                    var headerName = xhr.getResponseHeader("Content-disposition");
+                    var fileName = decodeURIComponent(headerName).substring(20);
+                    if(fileName==''){
+                        alert("<@spring.message 'common.noFile'/>")
+                        return;
+                    }
+                    aTag.download = fileName;
+                    aTag.href = URL.createObjectURL(blob);
+                    aTag.click();
+                    URL.revokeObjectURL(blob);
+                }
+            };
+            xhr.send()
+
+        }
+    },
+    computed: {},
+    watch: {
+        value:{
+            handler:function(){
+                if(this.value==null||this.value==''||typeof this.value =='undefined'){
+                    this.required=false;
+                    this.error=true;
+                }
+            },
+            immediate: true
+        }
+    },
+
+    mounted: function () {
+        this.init();
+    }
+})
+
+
+    </script>
