@@ -1,0 +1,88 @@
+<script type="text/x-template" id="nodeRelTemplate">
+	<div>
+		<div class="box">
+			<div class="title">已分配</div>
+			<div class="tools">
+				<div class="form-group">
+					<input :active="selectedRange + ''" @click="inputTouch(0, $event)" v-model="selectedIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
+					<span class="conn-symbol">-</span>
+					<input :active="selectedRange + ''" @click="inputTouch(0, $event)" v-model="selectedIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
+				</div>
+				<div class="form-group">
+					<input :active="!selectedRange + ''" @click="inputTouch(1, $event)" v-model="selectedIP" type="text" class="form-control input-medium" placeholder="IP">
+				</div>
+				<div class="btn-groups">
+					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+				</div>
+			</div>
+			<div style="clear:both"></div>
+			<div id="selected-box" class="node-box" :style="'height:' + height + 'px'">
+				 <table class="r-table">
+					<thead>
+		            	<tr>
+		                	<th max-width="47px"></th>
+		                	<th width="30px"><span class="r-checkbox checkbox_false_full" id="selected-checkall" @click="checkAll"/></th>
+		                	<th width="120px" class="r-tab-th">IP</th>
+		                	<th class="r-tab-th">类型</th>
+		                	<th class="r-tab-th">状态</th>
+		            	</tr>
+					</thead>
+		            <tbody>
+						<template v-for="(selected,index) in selectedNodes">
+		            		<tr :class="{'new-node': selected.newNode}" class="selected" @click="check" :uuid="selected.uuid" :id="'selected-' + selected.uuid" :iplong="selected.ipLong">
+								<td>{{index+1}}</td>
+								<td><span class="r-checkbox checkbox_false_full"></span></td>
+								<td v-for="(item) in colModel" v-html="typeof item.formatter == 'undefined' || item.formatter == null ? selected[item.field] : item.formatter(selected)"></td>
+							</tr>
+						</template>
+		            </tbody>
+		        </table>
+			</div>
+			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectedCount}}</span>&nbsp;/&nbsp;{{selectedTotalCount == null ? initSelectedTotalCount : selectedTotalCount}}</div>
+		</div>
+		<div class="box">
+			<div class="title">可分配</div>
+			<div class="tools">
+				<div class="form-group">
+					<input :active="selectableRange + ''" @click="inputTouch(0, $event)" v-model="selectableIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
+					<span class="conn-symbol">-</span>
+					<input :active="selectableRange + ''" @click="inputTouch(0, $event)" v-model="selectableIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
+				</div>
+				<div class="form-group">
+					<input :active="!selectableRange + ''" @click="inputTouch(1, $event)" v-model="selectableIP" type="text" class="form-control input-medium" placeholder="IP">
+				</div>
+				<div class="btn-groups">
+					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+				</div>
+			</div>
+			<div style="clear:both"></div>
+			<div id="selectable-box" class="node-box" :style="'height:' + height + 'px'">
+				 <table class="r-table">
+					<thead>
+		            	<tr>
+		                	<th max-width="47px"></th>
+		                	<th width="30px"><span class="r-checkbox checkbox_false_full" id="selectable-checkall" @click="checkAll"/></th>
+		                	<th class="r-tab-th">IP</th>
+		                	<th class="r-tab-th">类型</th>
+		                	<th class="r-tab-th">状态</th>
+		            	</tr>
+					</thead>
+		            <tbody>
+						<template v-for="(selectable,index) in selectableNodes">
+		            		<tr :class="{'new-node': selectable.newNode}" class="selectable" @click="check" :uuid="selectable.uuid" :id="'selectable-' + selectable.uuid" :iplong="selectable.ipLong">
+								<td>{{index+1}}</td>
+								<td><span class="r-checkbox checkbox_false_full"></span></td>
+								<td v-for="(item) in colModel" v-html="typeof item.formatter == 'undefined' || item.formatter == null ? selectable[item.field] : item.formatter(selectable)"></td>
+							</tr>
+						</template>
+		            </tbody>
+		        </table>
+			</div>
+			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectableCount}}</span>&nbsp;/&nbsp;{{selectableTotalCount == null ? initSelectableTotalCount : selectableTotalCount}}</div>
+		</div>
+		<span class="box_toright myicon-right1" @click="nodeRelChange(0)"></span>
+		<span class="box_toleft myicon-left1" @click="nodeRelChange(1)"></span>
+	</div>
+</script>

@@ -118,6 +118,7 @@ var nodeRelComponent = Vue.extend({
 									break;
 								}
 							}
+							break;
 						}
 					}
 				}
@@ -150,6 +151,7 @@ var nodeRelComponent = Vue.extend({
 									break;
 								}
 							}
+							break;
 						}
 					}
 				}
