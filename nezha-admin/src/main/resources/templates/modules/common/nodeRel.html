@@ -39,7 +39,7 @@
 		            </tbody>
 		        </table>
 			</div>
-			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectedCount}}</span>&nbsp;/&nbsp;{{selectedTotalCount == null ? initSelectedTotalCount : selectedTotalCount}}</div>
+			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectedCount}}</span>&nbsp;/&nbsp;{{selectedTotalCount}}</div>
 		</div>
 		<div class="box">
 			<div class="title">可分配</div>
@@ -80,7 +80,7 @@
 		            </tbody>
 		        </table>
 			</div>
-			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectableCount}}</span>&nbsp;/&nbsp;{{selectableTotalCount == null ? initSelectableTotalCount : selectableTotalCount}}</div>
+			<div class="box_counter">已选&nbsp;&nbsp;<span>{{selectableCount}}</span>&nbsp;/&nbsp;{{selectableTotalCount}}</div>
 		</div>
 		<span class="box_toright myicon-right1" @click="nodeRelChange(0)"></span>
 		<span class="box_toleft myicon-left1" @click="nodeRelChange(1)"></span>

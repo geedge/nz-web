@@ -10,9 +10,7 @@ var nodeRelComponent = Vue.extend({
 		initSelectableNodes: { //可分配节点
             type: Array,
             required: true
-        },
-        initSelectedTotalCount: Number, //初始的已分配数量
-        initSelectableTotalCount: Number //初始的可分配数量
+        }
 	},
 	data: function () {
 		return {
@@ -25,8 +23,8 @@ var nodeRelComponent = Vue.extend({
 			selectableIPEnd: '',
 			selectedCount: 0, //已分配列表中勾选的数量
 			selectableCount: 0, //可分配列表中勾选的数量
-			selectedTotalCount: null, //已分配总数
-			selectableTotalCount: null, //可分配总数
+			selectedTotalCount: 0, //已分配总数
+			selectableTotalCount: 0, //可分配总数
 			selectedNodes: [],
 			selectableNodes: [],
 			tempSelectedNodes: [],
@@ -256,10 +254,12 @@ var nodeRelComponent = Vue.extend({
 		initSelectedNodes: function(n, o) {
 			this.tempSelectedNodes = n;
 			this.selectedNodes = n;
+			this.selectedTotalCount = n.length;
 		},
 		initSelectableNodes: function(n, o) {
 			this.tempSelectableNodes = n;
 			this.selectableNodes = n;
+			this.selectableTotalCount = n.length;
 		}
 	}
 })
