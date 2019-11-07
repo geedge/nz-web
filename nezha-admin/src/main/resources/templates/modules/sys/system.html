@@ -5,73 +5,7 @@
 <title>业务系统管理</title>
 <#include "/header.html">
 <link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
-<style>
-.nodeRel {
-	display: none;
-	position: relative;
-}
-.box {
-	padding: 10px 10px 10px 16px;
-	width: 49.6%;
-	display: inline-block;
-}
-.title {
-	line-height: 30px;
-    text-align: center;
-    font-size: 16px;
-    margin-bottom: 8px;
-    width: 340px;
-}
-.tools .form-group {
-	margin-right: 0;
-}
-.form-control {
-	height: 28px;
-}
-.node-box {
-	font-size: 13px;
-	border: 1px solid #cccccc;
-	width: 340px;
-	border-radius: 4px;
-	position: relative;
-	padding: 5px;
-}
-.conn-symbol {
-	display: inline-block;
-	width: 12px;
-	text-align: center;
-}
-.box .btn {
-	padding: 5px 9px 4px 9px;
-	float: left; 
-	margin-left: 20px;
-	font-size: 12px;
-}
-.box_toleft {
-	display: block;
-	position: absolute;
-	top: calc(50% + 30px);
-	left: 364px;
-	cursor: pointer;
-}
-.box_toright {
-	display: block;
-	position: absolute;
-	top: 50%;
-	left: 364px;
-	cursor: pointer;
-}
-.box_counter {
-	font-size: 12px;
-	padding-top: 5px;
-}
-.box_counter>span {
-	color: #d9534f;
-}
-.new-node {
-	background-color: #f0fff0;
-}
-</style>
+<link rel="stylesheet" href="${request.contextPath}/statics/css/nodeRel.css">
 </head>
 <body>
 <div id="rrapp" v-cloak>
@@ -135,8 +69,8 @@
 	<div class="nodeRel" style="display: none;">
 		<node-rel-component
 			v-on:node-change="nodeChange"
-			:selected-nodes="selectedNodes"
-			:selectable-nodes="selectableNodes"
+			:init-selected-nodes="selectedNodes"
+			:init-selectable-nodes="selectableNodes"
 			:init-selected-total-count="selectedNodes.length"
 			:init-selectable-total-count="selectableNodes.length"
 		></node-rel-component>
@@ -148,14 +82,17 @@
 			<div class="title">已分配</div>
 			<div class="tools">
 				<div class="form-group">
-					<input v-model="selectedIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
+					<input :active="selectedRange + ''" @click="inputTouch(0, $event)" v-model="selectedIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
 					<span class="conn-symbol">-</span>
-					<input v-model="selectedIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
+					<input :active="selectedRange + ''" @click="inputTouch(0, $event)" v-model="selectedIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
 				</div>
 				<div class="form-group">
-					<input v-model="selectedIP" type="text" class="form-control input-medium" placeholder="IP">
+					<input :active="!selectedRange + ''" @click="inputTouch(1, $event)" v-model="selectedIP" type="text" class="form-control input-medium" placeholder="IP">
 				</div>
-				<a class="btn btn-default btn-search" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+				<div class="btn-groups">
+					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+				</div>
 			</div>
 			<div style="clear:both"></div>
 			<div id="selected-box" class="node-box" :style="'height:' + height + 'px'">
@@ -171,7 +108,7 @@
 					</thead>
 		            <tbody>
 						<template v-for="(selected,index) in selectedNodes">
-		            		<tr class="selected" @click="check" :uuid="selected.uuid" :id="'selected-' + selected.uuid">
+		            		<tr :class="{'new-node': selected.newNode}" class="selected" @click="check" :uuid="selected.uuid" :id="'selected-' + selected.uuid" :iplong="selected.ipLong">
 								<td>{{index+1}}</td>
 								<td><span class="r-checkbox checkbox_false_full"></span></td>
 								<td v-for="(item) in colModel" v-html="typeof item.formatter == 'undefined' || item.formatter == null ? selected[item.field] : item.formatter(selected)"></td>
@@ -186,14 +123,17 @@
 			<div class="title">可分配</div>
 			<div class="tools">
 				<div class="form-group">
-					<input v-model="selectableIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
+					<input :active="selectableRange + ''" @click="inputTouch(0, $event)" v-model="selectableIPStart" type="text" class="form-control input-medium" placeholder="IPStart">
 					<span class="conn-symbol">-</span>
-					<input v-model="selectableIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
+					<input :active="selectableRange + ''" @click="inputTouch(0, $event)" v-model="selectableIPEnd" type="text" class="form-control input-medium" placeholder="IPEnd">
 				</div>
 				<div class="form-group">
-					<input v-model="selectableIP" type="text" class="form-control input-medium" placeholder="IP">
+					<input :active="!selectableRange + ''" @click="inputTouch(1, $event)" v-model="selectableIP" type="text" class="form-control input-medium" placeholder="IP">
 				</div>
-				<a class="btn btn-default btn-search" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+				<div class="btn-groups">
+					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+				</div>
 			</div>
 			<div style="clear:both"></div>
 			<div id="selectable-box" class="node-box" :style="'height:' + height + 'px'">
@@ -209,7 +149,7 @@
 					</thead>
 		            <tbody>
 						<template v-for="(selectable,index) in selectableNodes">
-		            		<tr class="selectable" @click="check" :uuid="selectable.uuid" :id="'selectable-' + selectable.uuid">
+		            		<tr :class="{'new-node': selectable.newNode}" class="selectable" @click="check" :uuid="selectable.uuid" :id="'selectable-' + selectable.uuid" :iplong="selectable.ipLong">
 								<td>{{index+1}}</td>
 								<td><span class="r-checkbox checkbox_false_full"></span></td>
 								<td v-for="(item) in colModel" v-html="typeof item.formatter == 'undefined' || item.formatter == null ? selectable[item.field] : item.formatter(selectable)"></td>
@@ -224,6 +164,7 @@
 		<span class="box_toleft myicon-left1" @click="nodeRelChange(1)"></span>
 	</div>
 </script>
+<#include "/js/modules/common/nodeRel.js">
 <#include "/js/modules/sys/system.js">
 </body>
 </html>

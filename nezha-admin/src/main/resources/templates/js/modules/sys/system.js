@@ -68,167 +68,6 @@ $(function () {
     });
 });
 
-//分配节点组件
-var nodeRelComponent = Vue.extend({
-	template: "#nodeRelTemplate",
-	props: {
-		selectedNodes: { //已分配节点
-            type: Array,
-            required: true
-        },
-		selectableNodes: { //可分配节点
-            type: Array,
-            required: true
-        },
-        initSelectedTotalCount: Number,
-        initSelectableTotalCount: Number
-	},
-	data: function () {
-		return {
-			height: top.$(".content").height()-220,
-			selectedIP: '',
-			selectedIPStart: '',
-			selectedIPEnd: '',
-			selectableIP: '',
-			selectableIPStart: '',
-			selectableIPEnd: '',
-			selectedCount: 0,
-			selectableCount: 0,
-			selectedTotalCount: null,
-			selectableTotalCount: null,
-			selectedNodesAdd: [], //新增的已分配节点
-			selectableNodesAdd: [], //新增的可分配节点（从已分配节点里删除的）
-			colModel: [
-	            {name: "IP", field: "ip", width: 120},
-	            {name: "类型", field: "type", width: 70,formatter:function(rowData){
-	            	return rowData["type"]=='1'?"服务器":"网元";
-	            }},
-	            {name: "状态", field: "state", width: 60,formatter:function(rowData){
-	            	return rowData["state"]=='1'?"在线":"<span style='color:#aaa;'>下线</span>";
-	            }}
-	        ],
-		}
-	},
-	methods: {
-		check: function(event, tr) { //节点列表的点击事件
-			if (!tr) {
-				var tr = event.currentTarget; //绑定了点击事件的tr
-			}
-			//列表中的checkbox是否打钩控制
-			if ($(tr).find(".r-checkbox").hasClass("checkbox_false_full")) {
-				$(tr).find(".r-checkbox").removeClass("checkbox_false_full").addClass("checkbox_true_full");
-				$(tr).addClass("success");
-			} else if ($(tr).find(".r-checkbox").hasClass("checkbox_true_full")) {
-				$(tr).find(".r-checkbox").removeClass("checkbox_true_full").addClass("checkbox_false_full");
-				$(tr).removeClass("success");
-			}
-			//已选数量控制
-			this.countControll();
-			//tr背景色、全选框控制
-			if ($(tr).parent().find(".success").length == 0) {
-				$(tr).parent().prev().find(".r-checkbox").removeClass("checkbox_false_part").removeClass("checkbox_true_part").addClass("checkbox_false_full");
-			} else if ($(tr).parent().find(".success").length < $(tr).parent().find("tr").length) {
-				$(tr).parent().prev().find(".r-checkbox").removeClass("checkbox_false_full").removeClass("checkbox_true_part").addClass("checkbox_false_part");
-			} else if ($(tr).parent().find(".success").length == $(tr).parent().find("tr").length) {
-				$(tr).parent().prev().find(".r-checkbox").removeClass("checkbox_false_full").removeClass("checkbox_false_part").addClass("checkbox_true_part");
-			}
-		},
-		checkAll: function(event) {
-			//全选框控制
-			if (!$(event.currentTarget).hasClass("checkbox_true_part")) {
-				$(event.currentTarget).removeClass("checkbox_false_full").removeClass("checkbox_false_part").addClass("checkbox_true_part");
-				$(event.currentTarget).parent().parent().parent().next().find("tr").removeClass("success").addClass("success");
-				$(event.currentTarget).parent().parent().parent().next().find(".r-checkbox").removeClass("checkbox_false_full").removeClass("checkbox_true_full").addClass("checkbox_true_full");
-			} else {
-				$(event.currentTarget).removeClass("checkbox_true_part").addClass("checkbox_false_full");
-				$(event.currentTarget).parent().parent().parent().next().find("tr").removeClass("success");
-				$(event.currentTarget).parent().parent().parent().next().find(".r-checkbox").removeClass("checkbox_true_full").addClass("checkbox_false_full");
-			}
-			//已选数量控制
-			this.countControll();
-		},
-		countControll: function() { //更新已选数量和总数的数字
-			this.selectedCount = $("#selected-box").find(".success").length;
-			this.selectableCount = $("#selectable-box").find(".success").length;
-			this.selectedTotalCount = $("#selected-box").find("tbody").find("tr").length;
-			this.selectableTotalCount = $("#selectable-box").find("tbody").find("tr").length;
-		},
-		nodeRelChange: function(flag, event) { //节点分配状态更改
-			if (flag == 0) { //取消分配
-				var fromSelector = "selected";
-				var toSelector = "selectable";
-			} else if (flag == 1) { //分配
-				var fromSelector = "selectable";
-				var toSelector = "selected";
-			}
-			$("#" + fromSelector + "-box").find("thead").find(".r-checkbox").removeClass("checkbox_false_part").removeClass("checkbox_true_part").addClass("checkbox_false_full");
-			var willChangeNode = $("#" + fromSelector + "-box").find(".success"); //所有将要改变的节点
-			this.copyNode($("#" + toSelector + "-box").find("tbody"), willChangeNode);//复制dom
-			$("#" + fromSelector + "-box").find(".success").remove(); //复制后删除自身
-			var changeNode = $("#" + toSelector + "-box").find(".success." + fromSelector); //改变后的节点所在tr
-			var tmp = [];
-			for (var i = 0; i < changeNode.length; i++) {
-				this.check(null, changeNode[i]);
-				$(changeNode[i]).removeClass(fromSelector).addClass(toSelector).removeClass("success");
-				if ($(changeNode[i]).hasClass("new-node")) {
-					$(changeNode[i]).removeClass("new-node");
-				} else {
-					tmp.push(changeNode[i]);
-					$(changeNode[i]).remove();
-				}
-			}
-			for (var i = tmp.length-1; i >= 0; i--) {
-				$(tmp[i]).addClass("new-node");
-				$("#" + toSelector + "-box").find("tbody").prepend(tmp[i]);
-			}
-			//同步数组数据
-			this.selectedNodesAdd = [];
-			this.selectableNodesAdd = [];
-			var vmTemp = this;
-			$("#selected-box").find(".new-node").each(function(index) {
-				vmTemp.selectedNodesAdd.push($(this).attr("uuid"));
-			});
-			$("#selectable-box").find(".new-node").each(function(index) {
-				vmTemp.selectableNodesAdd.push($(this).attr("uuid"));
-			});
-			//已选数量和总数量控制
-			this.countControll();
-			//更新序号
-			this.refreshRowIndex();
-			//将数据传递给父组件
-			this.$emit("node-change", [this.selectedNodesAdd, this.selectableNodesAdd]);
-		},
-		copyNode: function(container, nodes) { //复制节点dom
-			var trs = $(container).find("tr");
-			if (trs.length == 0) {
-				container.append(nodes);
-			} else {
-				for (var i = 0; i < trs.length; i++) {
-					if (!$(trs[i]).hasClass("new-node")) {
-						$(trs[i]).before(nodes);
-						break;
-					}
-				}
-			}
-		},
-		refreshRowIndex: function() { //更新序号
-			var selectedTrs = $("#selected-box").find("tbody").find("tr");
-			var selectableTrs = $("#selectable-box").find("tbody").find("tr");
-			var objects = [selectedTrs, selectableTrs];
-			for (var i = 0; i < objects.length; i++) {
-				for (var j = 0; j < objects[i].length; j++) {
-					$(objects[i][j]).children(":first").text(j+1);
-				}
-			}
-		}
-	},
-	mounted: function() {
-		//box内滚动条
-		var ps1 = new PerfectScrollbar('#selected-box');
-		var ps2 = new PerfectScrollbar('#selectable-box');
-	}
-})
-Vue.component('node-rel-component', nodeRelComponent)
 
 //引用vuelidate组件
 Vue.use(window.vuelidate.default);
@@ -315,7 +154,7 @@ var vm = new Vue({
             vm.title = "<@spring.message 'common.edit'/>";
             vm.getInfo(id);
 		},
-		getInfo: function(id){
+		getInfo: function(id) {
 			$.get(baseURL + "system/detail?id=" + id, function(r){
                 vm.system = r.data;
                 vm.system.usergroupIds = [];
@@ -325,7 +164,7 @@ var vm = new Vue({
             });
 			var vm_tmp = this;
 			$.ajax({
-	            url: baseURL + "/system/nodes?id=" + id,
+	            url: baseURL + "/system/nodes?limit=9999&id=" + id,
 	            type: "GET",
 	            async: false,
 	            success: function (r) {
@@ -415,7 +254,7 @@ var vm = new Vue({
 		nodeChange: function(data) {
 			this.system.addUuids = data[0];
 			this.system.removeUuids = data[1];
-			this.system.nodeNum = $("#selected-box").find("tbody").find("tr").length;
+			this.system.nodeNum = data[2];
 		},
 		reload: function (event) {
 			vm.single = vm.multi = true;
