@@ -204,6 +204,9 @@ tbody > tr > th {font-weight: normal; }
 .iconbtn-danger {
 	color: #d9534f;
 }
+.iconbtn-default {
+	color: #777;
+}
 .form-text {
 	padding-top: 7px;
 }

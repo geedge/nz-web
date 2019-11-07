@@ -1,7 +1,7 @@
 <script>
 //分配节点组件
 var nodeRelComponent = Vue.extend({
-	template: "#nodeRelTemplate",
+	template: "#nodeRelTemplate", //位于/modules/common/nodeRel.html
 	props: {
 		initSelectedNodes: { //已分配节点
             type: Array,
@@ -122,6 +122,8 @@ var nodeRelComponent = Vue.extend({
 				}
 				this.selectableNodes = addToSelectableNodes.concat(this.selectableNodes);
 				this.tempSelectableNodes = addToSelectableNodes.concat(this.tempSelectableNodes);
+				this.sortRow(0, this.selectableNodes);
+				this.sortRow(1, this.tempSelectableNodes);
 			} else if (flag == 1) { //分配
 				var willChangeNodeDom = $("#selectable-box").find(".success"); //所有将要改变的节点
 				var addToSelectedNodes = [];
@@ -155,6 +157,8 @@ var nodeRelComponent = Vue.extend({
 				}
 				this.selectedNodes = addToSelectedNodes.concat(this.selectedNodes);
 				this.tempSelectedNodes = addToSelectedNodes.concat(this.tempSelectedNodes);
+				this.sortRow(2, this.selectedNodes);
+				this.sortRow(3, this.tempSelectedNodes);
 			}
 			$(".checkbox_true_part").removeClass("checkbox_true_part").addClass("checkbox_false_full");
 			$(".checkbox_false_part").removeClass("checkbox_false_part").addClass("checkbox_false_full");
@@ -163,20 +167,8 @@ var nodeRelComponent = Vue.extend({
 			
 			//已选数量和总数量控制
 			this.countControll();
-			//更新序号
-			this.refreshRowIndex();
 			//将数据传递给父组件
 			this.$emit("node-change", [this.selectedNodesAdd, this.selectableNodesAdd, this.tempSelectedNodes.length]);
-		},
-		refreshRowIndex: function() { //更新序号
-			var selectedTrs = $("#selected-box").find("tbody").find("tr");
-			var selectableTrs = $("#selectable-box").find("tbody").find("tr");
-			var objects = [selectedTrs, selectableTrs];
-			for (var i = 0; i < objects.length; i++) {
-				for (var j = 0; j < objects[i].length; j++) {
-					$(objects[i][j]).children(":first").text(j+1);
-				}
-			}
 		},
 		inputTouch: function(position, event) { //搜索框点击事件
 			if (position == 0) { //范围搜索
@@ -199,11 +191,10 @@ var nodeRelComponent = Vue.extend({
 		},
 		searchIp: function(event) { //ip搜索
 			//TODO 校验
-			
 			var matchNodes = [];
-			if ($(event.currentTarget).parent().parent().find("#selected-box").length > 0) { //已分配
+			if ($(event.currentTarget).parent().parent().parent().find("#selected-box").length > 0) { //已分配
 				//搜索
-				var input = $(event.currentTarget).parent().find("[active=true]");
+				var input = $(event.currentTarget).parent().parent().find("[active=true]");
 				if (input.length > 1) { //范围搜索
 					var ipStart = $(input[0]).val();
 					var ipEnd = $(input[1]).val();
@@ -227,11 +218,35 @@ var nodeRelComponent = Vue.extend({
 						}
 					}
 				}
+			} else if ($(event.currentTarget).parent().parent().parent().find("#selectable-box").length > 0) { //已分配
+				//搜索
+				var input = $(event.currentTarget).parent().parent().find("[active=true]");
+				if (input.length > 1) { //范围搜索
+					var ipStart = $(input[0]).val();
+					var ipEnd = $(input[1]).val();
+					var ipStartLong = ipToNumber(ipStart);
+					var ipEndLong = ipToNumber(ipEnd);
+					this.selectableNodes = [];
+					for (var i = 0; i < this.tempSelectableNodes.length; i++) {
+						if (ipStartLong <= this.tempSelectableNodes[i].ipLong && ipEndLong >= this.tempSelectableNodes[i].ipLong) {
+							this.selectableNodes.push(this.tempSelectableNodes[i]);
+						}
+					}
+				} else if (input.length == 1) { //精确搜索
+					if (!this.selectableIP) {
+						this.selectableNodes = this.tempSelectableNodes;
+					} else {
+						this.selectableNodes = [];
+						for (var i = 0; i < this.tempSelectableNodes.length; i++) {
+							if (this.tempSelectableNodes[i].ip.indexOf(this.selectableIP) > -1) {
+								this.selectableNodes.push(this.tempSelectableNodes[i]);
+							}
+						}
+					}
+				}
 			}
 			//已选数量和总数量控制
 			this.countControll();
-			//更新序号
-			this.refreshRowIndex();
 		},
 		reset: function(event) {
 			if ($(event.currentTarget).parent().parent().parent().find("#selected-box").length > 0) { //已分配
@@ -242,6 +257,24 @@ var nodeRelComponent = Vue.extend({
 				this.selectableIP = '';
 				this.selectableIPStart = '';
 				this.selectableIPEnd = '';
+			}
+		},
+		sortRow: function(flag, nodes) { //列表重新排序，将新增的项置顶
+			var newNodes = [];
+			for (var i = nodes.length-1; i >= 0; i--) {
+				if (nodes[i].newNode) {
+					newNodes.unshift(nodes[i]);
+					nodes.splice(i, 1);
+				}
+			}
+			if (flag == 0) {
+				this.selectableNodes = newNodes.concat(nodes);
+			} else if (flag == 1) {
+				this.tempSelectableNodes = newNodes.concat(nodes);
+			} else if (flag == 2) {
+				this.selectedNodes = newNodes.concat(nodes);
+			} else if (flag == 3) {
+				this.tempSelectedNodes = newNodes.concat(nodes);
 			}
 		}
 	},
