@@ -69,6 +69,7 @@ public class DashboardController extends AbstractController {
 	@ResponseBody
 	public R save(@RequestBody DashboardEntity dashboard) {
 		// 验证用户传参数 是否能生成有效图形
+		ValidateUtils.is(dashboard.getName()).notNull(RCode.DASHBOARD_NAME_NULL);
 		dashboardService.validateDashboardData(dashboard);
 		dashboardService.addDashboard(dashboard);
 		return R.ok();

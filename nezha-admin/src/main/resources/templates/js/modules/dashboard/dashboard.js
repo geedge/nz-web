@@ -813,7 +813,7 @@
 			            				var data={
 			    	            				id:index,
 			    	    			            name:'',
-			    	    			            type:showType,
+			    	    			            type:vm.showType,
 			    	    			            yAxisIndex: 0,
 			    	    			            showSymbol: false,
 			    	    	                    lineStyle:{
@@ -954,6 +954,7 @@
 				}
 				data.userSqls=vm.userSqls;
 				data.describe=vm.dashboard.describe;
+				delete data.series;
 				formdata.data=JSON.stringify(data);
 				if(vm.dashboard.id!=null&&vm.dashboard.id!=undefined&&vm.dashboard.id!=''){
 					formdata.id=vm.dashboard.id;
@@ -964,8 +965,12 @@
 				    url: vm.dashboard.id == null?baseURL + "dashboard/save":baseURL + "dashboard/update",
 				    data:JSON.stringify(formdata),
 				    success: function(r){
-				    	vm.$refs.returnMenu.click();
-				    	vm.queryDashboards();
+				    	if(r.msg=='success'){
+				    		vm.$refs.returnMenu.click();
+					    	vm.queryDashboards();
+				    	}else{
+				    		layer.msg(r.msg)
+				    	}
 				    }
 				})
 			},

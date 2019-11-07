@@ -51,7 +51,7 @@
 										<tbody>
 											<template v-for="data,index in JSON.parse((JSON.parse(dashboard.data)).series)">
 											<tr>
-												<td style='width:50%'>{{data.time}}</td>
+												<td style='width:50%'>{{data.formatTime}}</td>
 												<!-- <td>{{(data.value).toFixed((JSON.parse(dashboard.data)).decimal)}}</td> -->
 												<td>{{data.value}}</td>
 											</tr>

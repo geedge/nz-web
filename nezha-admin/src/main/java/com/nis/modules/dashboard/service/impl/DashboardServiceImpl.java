@@ -75,6 +75,11 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 				ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
 				userSqls = chartTableEntity.getUserSqls();
 				List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
+				if(chartTableEntity.getTimeFormat() != null && !chartTableEntity.getTimeFormat() .isEmpty()) {
+					for(ChartSeriesEntity resultData : chartTableSeries) {
+						resultData.setFormatTime(DateUtils.formatDate(resultData.getTime(),chartTableEntity.getTimeFormat()));
+					}
+				}
 				String tableResult = JSON.toJSONString(chartTableSeries);
 				chartTableEntity.setSeries(tableResult);
 				String chartTableEntityData = JSON.toJSONString(chartTableEntity);
@@ -121,6 +126,11 @@ public class DashboardServiceImpl extends ServiceImpl<DashboardDao, DashboardEnt
 			ChartTableEntity chartTableEntity = JSON.parseObject(dashboardEntity.getData(), ChartTableEntity.class);
 			userSqls = chartTableEntity.getUserSqls();
 			List<ChartSeriesEntity> chartTableSeries = baseMapper.selectResultData(userSqls.get(0).getSql());
+			if(chartTableEntity.getTimeFormat() != null && !chartTableEntity.getTimeFormat() .isEmpty()) {
+				for(ChartSeriesEntity resultData : chartTableSeries) {
+					resultData.setFormatTime(DateUtils.formatDate(resultData.getTime(),chartTableEntity.getTimeFormat()));
+				}
+			}
 			String tableResult = JSON.toJSONString(chartTableSeries);
 			chartTableEntity.setSeries(tableResult);
 			String chartTableEntityData = JSON.toJSONString(chartTableEntity);
