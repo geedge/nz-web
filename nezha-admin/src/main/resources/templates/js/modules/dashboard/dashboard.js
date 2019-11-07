@@ -418,13 +418,14 @@
 	    
 	    //分页是否使用
 	    $("#isPaging").bootstrapSwitch("onSwitchChange",function(event,state){
-	        if(!state){
+	    	$("#isPaging").bootstrapSwitch('state', false);
+	       /* if(!state){
 	        	$("#tablePageSize").attr("disabled",true);
 	        	vm.chartTable.scroll=0;
 	        }else{
 	        	$("#tablePageSize").attr("disabled",false);
 	        	vm.chartTable.scroll=1;
-	        }
+	        }*/
 	    })
 	    
 	    //是否启用仪表盘
@@ -1061,13 +1062,11 @@
 				    success: function(r){
 				    	vm.dashboards=r.data;
 				    	vm.$nextTick(function () {
-			    	       
 				    		var statisticals=new Array();
 					    	for(var i=0;i<vm.dashboards.length;i++){
 					    		vm.dashboards[i].idName='chart'+vm.dashboards[i].id;
 								var datas=new Array();
 								var obj=JSON.parse(vm.dashboards[i].data);
-								console.log(obj)
 								// 折线图等 生成echarts
 				        		if(vm.dashboards[i].chartType==1){
 				        			var a=JSON.parse(obj.series);
@@ -1248,7 +1247,10 @@
 				        			        },
 				        			        detail: {
 				        			            formatter: function(v) {
-				        			            	return '{a| '+obj.prefix+'} '+v+' {b| '+obj.suffix+'}';
+				        			            	console.log(obj)
+				        			            	var prefix=obj.prefix;
+				        			            	var suffix=obj.suffix;
+				        			            	return '{a| '+prefix+'} '+v+' {b| '+suffix+'}';
 				        			            },
 				        			            offsetCenter:obj.isGauge==1?[0, "50%"]:[0, "10%"],
 				        			            textStyle: {
@@ -1327,8 +1329,6 @@
 				    	        	handle: 'header' //模块内定义拖动的元素<header>，这里也支持jquery选择器，如"span.drag_handle"
 				    	        }, 
 				    	        serialize_params: function($w, wgd) {
-				    	        	console.log($w)
-				    	        	console.log(wgd)
 				    	            return { id: $w[0].id, x: wgd.row, y: wgd.col,  width: wgd.size_x*150, height: wgd.size_y*150 }
 				    	         },
 				    	        helper: 'clone',
@@ -1366,10 +1366,10 @@
 	                contentType: 'application/json; charset=UTF-8',
 	                data: JSON.stringify(allChartInfos),//JSON.stringify(allChartInfos)
 	                success: function (result) {
-	                	
+	                	layer.msg("<@spring.message 'common.success'/>")
 	                },
 		            error : function(result) {
-		            	
+		            	layer.msg(result.msg)
 		            }
 	            })
 				
