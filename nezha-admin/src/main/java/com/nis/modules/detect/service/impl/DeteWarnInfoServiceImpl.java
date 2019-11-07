@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -47,11 +48,17 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveEntity(DeteWarnInfoEntity deteWarnInfoEntity) {
+    public void saveEntity(DeteWarnInfoEntity deteWarnInfoEntity,MultipartFile file) {
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();
         deteWarnInfoEntity.setOperator(userId);
         deteWarnInfoEntity.setOpTime(date);
+        if(Constant.DETE_WARN_CALLBACK_SCRIPT.equals(deteWarnInfoEntity.getCallbackType())){
+
+            String content=this.getUploadFileJson(file);
+            this.uploadFile(content,file);
+            deteWarnInfoEntity.setCallbackContent(content);
+        }
         this.save(deteWarnInfoEntity);
         Long deteTypeId = deteWarnInfoEntity.getDeteTypeId();
         Long[] deteSetIds = deteWarnInfoEntity.getDeteSetIds();
@@ -85,11 +92,17 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateEntity(DeteWarnInfoEntity deteWarnInfoEntity) {
+    public void updateEntity(DeteWarnInfoEntity deteWarnInfoEntity,MultipartFile file) {
         Long userId = ShiroUtils.getUserId();
         Date date = new Date();
         deteWarnInfoEntity.setOperator(userId);
         deteWarnInfoEntity.setOpTime(date);
+        if(Constant.DETE_WARN_CALLBACK_SCRIPT.equals(deteWarnInfoEntity.getCallbackType())&&file!=null&&!file.isEmpty()){
+
+            String content=this.getUploadFileJson(file);
+            this.uploadFile(content,file);
+            deteWarnInfoEntity.setCallbackContent(content);
+        }
         this.updateById(deteWarnInfoEntity);
     }
 
@@ -235,8 +248,16 @@ public class DeteWarnInfoServiceImpl extends DeteCommonServiceImpl<DeteWarnInfoD
     }
 
     public boolean checkCallbackContentIsValide(DeteWarnInfoEntity deteWarnInfoEntity){
-        if(deteWarnInfoEntity.getCallbackType()!=null&& !"0".equals(deteWarnInfoEntity.getCallbackType())){
+        if(deteWarnInfoEntity.getCallbackType()!=null&& Constant.DETE_WARN_CALLBACK_HTTP.equals(deteWarnInfoEntity.getCallbackType())){
             return StringUtils.isNotBlank(deteWarnInfoEntity.getCallbackContent());
+        }else{
+            return true;
+        }
+    }
+
+    public boolean checkCallbackScirptFileIsValide(DeteWarnInfoEntity deteWarnInfoEntity, MultipartFile file){
+        if(deteWarnInfoEntity.getCallbackType()!=null&& Constant.DETE_WARN_CALLBACK_SCRIPT.equals(deteWarnInfoEntity.getCallbackType())){
+            return file!=null&&!file.isEmpty();
         }else{
             return true;
         }

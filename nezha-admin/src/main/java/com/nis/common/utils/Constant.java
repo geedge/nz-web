@@ -225,6 +225,11 @@ public class Constant {
     public static final String DETE_DETEMETHOD_SNMP="2"; //snmp
     public static final String DETE_DETEMETHOD_INNER="3"; //内置
 
+    //监测告警 回调方式
+    public static final String DETE_WARN_CALLBACK_SCRIPT="1";
+    public static final String DETE_WARN_CALLBACK_HTTP="2";
+    public static final String DETE_WARN_CALLBACK_NONE="0";
+
     // 顶级节点组PID
     public static final Long NODEGROUP_TOP_PID = 0L;
 }

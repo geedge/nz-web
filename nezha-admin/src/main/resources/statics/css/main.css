@@ -349,6 +349,9 @@ tbody > tr > th {font-weight: normal; }
     padding: 3px 8px 3px 10px;
     border-bottom: 1px solid white;
 }
+.add-box_row:hover{
+    background-color: #f2f2f2;
+}
 .add-box_cell { /*行内单元格*/
 	padding-top: 2px;
 	display: inline-block;
@@ -434,5 +437,8 @@ tbody > tr > th {font-weight: normal; }
 	padding: 10px;
 	min-height: 30px;
 	font-size: 13px;
+}
+.btn-cursor-not-allowed{
+	cursor: not-allowed !important;
 }
 /* add-box组件end */

@@ -184,7 +184,7 @@ var meta=Vue.extend({
             if(temp.deteMeta.bestNew!=undefined&&temp.deteMeta.bestNew!=null&&temp.deteMeta.bestNew){
                 temp.metaDomClick();
             }
-            if(temp.deteMeta.delFlag=='1'){
+            if(temp.deteMeta.delFlag=='1'||temp.deteMethod.code=='3'){
                 temp.addShadow();
             }
         },
@@ -344,7 +344,9 @@ var addMeta=Vue.extend({
     },
     methods: {
         addMeta:function(){
-
+            if(this.deteMethod.code=='3'){
+                return ;
+            }
             var name='TEMP-'+this.counter;
             var meta={
                 id: null,
@@ -437,6 +439,10 @@ var addParam=Vue.extend({
 
     },
     props: {
+        deteMethod:{
+          type:Object,
+          required:true
+        },
         deteParam:{
             type:Object,
             required:true
@@ -487,7 +493,7 @@ var addParam=Vue.extend({
             temp.editSelector="#"+temp.editPreKey+"-"+temp.index;
             temp.listDom=$(temp.listSelector);
             temp.editDom=$(temp.editSelector);
-            if(temp.deteParam.new!=undefined&&temp.deteParam.new!=null&&temp.deteParam.new){
+            if(temp.deteParam.new!=undefined&&temp.deteParam.new!=null&&!temp.deteParam.isEdited){
                 temp.editSwitch=true;
                 temp.listDom.parent().attr("draggable",'false');
             }
@@ -529,18 +535,26 @@ var addParam=Vue.extend({
             event.target.style.backgroundColor='';
         },
         dropFunc:function(event){//将元素释放到当前元素中
+
+
             var event = event.originalEvent;
             var index = event.dataTransfer.getData("index");
             //重置背景色
             event.target.style.backgroundColor='';
-
-            this.$emit("ask-for-swap",index,this.index);
+            this.submitSelf();
+            console.log('swap')
+            if(!this.$v.deteParam.$error){
+                this.$emit("ask-for-swap",index,this.index);
+            }
 
             event.preventDefault();
             event.stopPropagation();
         },
         editSelf:function(){
             var temp=this;
+            if(temp.deteMethod.code=='3'){
+                return ;
+            }
             if(temp.deteParam.delFlag=='0'){
                 temp.editSwitch=true;
                 temp.listDom.parent().attr("draggable",'false');
@@ -551,6 +565,9 @@ var addParam=Vue.extend({
         },
         delSelf:function(e){
             var temp=this;
+            if(temp.deteMethod.code=='3'){
+                return ;
+            }
             var p=temp.deteParam;
             if(p.new!=undefined&&p.new!=null&&p.new){
                 temp.$emit("del-param",this.index);
@@ -573,8 +590,6 @@ var addParam=Vue.extend({
         submitSelf:function(){
             var temp=this;
 
-
-
             if(temp.validate()){
                 temp.showNameWarningMsg();
                 temp.showDefValWarningMsg();
@@ -582,6 +597,7 @@ var addParam=Vue.extend({
             }
 
             temp.editSwitch=false;
+            temp.deteParam.isEdited=true;
             temp.listDom.parent().attr("draggable",'true');
 
         },
@@ -690,6 +706,7 @@ var addType=Vue.extend({
             },
             deteMethods:[],
             defaultMethod:{},
+            innerMethod:null,
             fieldTypes:[],
             dataTypes:[],
             dicTypes:[],
@@ -708,7 +725,7 @@ var addType=Vue.extend({
             oldFile:{
                 filePath:'',
                 remark:'No File'
-            }
+            },
         }
     },
     validations:{
@@ -783,9 +800,14 @@ var addType=Vue.extend({
             temp.deteMethods=[];
             $.getJSON(baseURL + "sys/dict/all?type=dtmethond&_" + $.now(), function (r) {
                 for (let dic of r.data) {
+
                     var m={
                         code:dic.code,
                         value:dic.value,
+                    }
+                    if('3'==dic.code){
+                        temp.innerMethod=m;
+                        continue;
                     }
                     if("1"==dic.code){
                         temp.defaultMethod=m;
@@ -885,6 +907,7 @@ var addType=Vue.extend({
         },
         formatDeteTypeToSimple: function () {
             var temp=this;
+            temp.deteType.method=temp.deteType.method.code;
             $.each(temp.deteType.deteTypeMetas, function (i, v) {
                 temp.deteType.deteTypeMetas[i].fieldType = v.fieldType.code;
                 temp.deteType.deteTypeMetas[i].dataType = v.dataType.code;
@@ -895,6 +918,17 @@ var addType=Vue.extend({
         },
         formatDeteTypeToObject: function () {
             var temp=this;
+            if(temp.deteType.method=='3'){
+                temp.defaultMethod=temp.innerMethod;
+            }else{
+                for (let method of temp.deteMethods){
+                    if(temp.deteType.method==method.code){
+                        temp.defaultMethod=method;
+                        break;
+                    }
+                }
+            }
+
             $.each(temp.deteType.deteTypeMetas, function (index, value) {
                 for (var i = 0; i < temp.fieldTypes.length; i++) {
                     if (temp.fieldTypes[i].code == value.fieldType) {
@@ -940,7 +974,11 @@ var addType=Vue.extend({
             }
         },
         delMeta:function(index){
+            if(this.deteType.method=='3'){
+                return ;
+            }
             var temp=this;
+            temp.deteType.method=temp.defaultMethod.code;
             var meta=temp.deteType.deteTypeMetas[index];
             if(meta.new!=undefined&&meta.name!=null&&meta.new){
                 temp.deteType.deteTypeMetas.splice(index,1);
@@ -958,19 +996,37 @@ var addType=Vue.extend({
 
         },
         addParam:function(){
+            if(this.deteType.method=='3'){
+                return ;
+            }
             var temp=this;
             temp.paramDirty=true;
+
+            var paramLen=temp.deteType.deteTypeParams.length;
+            if(paramLen>0){
+                for (var i=0;i<paramLen;i++){
+                    temp.$refs['r-detect-param'][i].submitSelf();
+                    if(temp.$refs['r-detect-param'][i].$v.deteParam.$error){
+                        return;
+                    }
+                }
+            }
+
             var param={
                 id:null,
                 name:'',
                 defVal:'',
                 delFlag:'0',
-                new:true
+                new:true,
+                isEdited:false
             }
             temp.deteType.deteTypeParams.push(param);
         },
         delParam:function(index){
             var temp=this;
+            if(this.deteType.method=='3'){
+                return ;
+            }
             temp.deteType.deteTypeParams.splice(index,1);
             temp.resetParamDom();
         },
@@ -1085,7 +1141,6 @@ var addType=Vue.extend({
                 }
             }
 
-            console.log(typeError+"|"+metaError+"|"+paramError+"|"+uploadError);
             return typeError||metaError||paramError||uploadError;
         },
         touchType:function(){
@@ -1100,6 +1155,15 @@ var addType=Vue.extend({
                 }
             }
 
+        },
+        destoryUploadComponet:function(){
+            this.file=null;
+            this.acceptFile=".sh";
+            this.hasOldFile=false;
+            this.oldFile={
+                filePath:'',
+                remark:'No File'
+            }
         }
     },
     computed: {
@@ -1108,6 +1172,18 @@ var addType=Vue.extend({
     watch: {
         typeId:function(){
             this.initDeteType();
+        },
+        'deteType.method':{
+            handler:function(){
+                var temp=this;
+                if(temp.deteType.method=='3'){
+                    $('.input-control').each(function(i,v){
+                        v.disabled='disabled';
+                    })
+
+                }
+            },
+            immediate: true
         },
         'deteType.deteTypeMetas':function(){
             if(this.deteType.deteTypeMetas.length<1){

@@ -1,180 +1,184 @@
 <script type="text/x-template" id="addTypeTemplate">
-    <div :class="{'panel panel-default':typeNotLayer}" style="overflow-x: hidden">
-        <div v-show="typeNotLayer" class="panel-heading">{{title}}</div>
-        <form class="form-horizontal">
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
-                <div class="col-sm-9"><!--名称-->
-                    <input type="text" class="form-control"
-                           :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| !$v.deteType.name.nameRepeat}"
-                           v-model.trim="$v.deteType.name.$model"/>
-                    <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.required">
-                        <@spring.message 'validate.common.required'/>
+        <div :class="{'panel panel-default':typeNotLayer}" style="overflow-x: hidden">
+            <div v-show="typeNotLayer" class="panel-heading">{{title}}</div>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'common.name'/></div>
+                    <div class="col-sm-9"><!--名称-->
+                        <input type="text" class="form-control input-control"
+                               :class="{'form-control--error': $v.deteType.name.$dirty && !$v.deteType.name.required|| !$v.deteType.name.nameRepeat}"
+                               v-model.trim="$v.deteType.name.$model"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.required">
+                            <@spring.message 'validate.common.required'/>
+                        </div>
+                        <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat">
+                            名称重复
+                        </div>
                     </div>
-                    <div class="form-control_error-msg" v-if="$v.deteType.name.$dirty && !$v.deteType.name.nameRepeat">
-                        名称重复
+                </div>
+                <div class="form-group"> <!--监测方式-->
+                    <div class="col-sm-2 control-label"><@spring.message 'deteType.method'/></div>
+                    <div class="col-sm-9" style="z-index:1000;">
+                        <multiselect v-model="defaultMethod" :options="deteMethods" placeholder="..." track-by="code"
+                                     label="value" :searchable="false"  :allow-empty="false" :disabled="isUpdate"
+                                     :show-labels="false"></multiselect>
                     </div>
-                </div>
-            </div>
-            <div class="form-group"> <!--监测方式-->
-                <div class="col-sm-2 control-label"><@spring.message 'deteType.method'/></div>
-                <div class="col-sm-9" style="z-index:99999;">
-                    <multiselect v-model="defaultMethod" :options="deteMethods" placeholder="..." track-by="code"
-                                 label="value" :searchable="false"  :allow-empty="false" :disabled="isUpdate"
-                                 :show-labels="false"></multiselect>
-                </div>
 
-            </div>
-            <div class="form-group"><!--监测间隔-->
-                <div class="col-sm-2 control-label"><@spring.message 'deteType.deteInterval'/></div>
-                <div class="col-sm-9">
-                    <input type="text" class="form-control input-small input-with-unit"
-                           :class="{'form-control--error': $v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer}"
-                           v-model.trim="$v.deteType.deteInterval.$model"/>
-                    <span class="input-unit">s</span>
-<!--                    <span class="required-symbol">*</span>-->
-<!--                    <div class="form-control_error-msg"-->
-<!--                         v-if="$v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer">整数类型-->
-<!--                    </div>-->
                 </div>
-            </div>
-
-            <div class="form-group"><!--内容-->
-                <div v-if="defaultMethod.code=='2'">
-                    <div class="col-sm-2 control-label">OID</div>
-                    <div class="col-sm-9" >
-                        <input  v-model.trim="$v.deteType.content.$model" class="form-control"></input>
+                <div class="form-group"><!--监测间隔-->
+                    <div class="col-sm-2 control-label"><@spring.message 'deteType.deteInterval'/></div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control input-control input-small input-with-unit "
+                               :class="{'form-control--error input-control': $v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer}"
+                               v-model.trim="$v.deteType.deteInterval.$model"/>
+                        <span class="input-unit">s</span>
+                        <!--                    <span class="required-symbol">*</span>-->
+                        <div class="form-control_error-msg"
+                             v-if="$v.deteType.deteInterval.$dirty && !$v.deteType.deteInterval.integer">整数类型
+                        </div>
                     </div>
                 </div>
 
-                <template v-if="defaultMethod.code=='1'">
-                    <nz-fileupload
-                            v-if="uploadReset"
-                            :hasOld="hasOldFile"
-                            :oldFile="oldFile"
-                            :accept="acceptFile"
-                            v-model="file"
-                            ref="scriptUpload"
-                    ></nz-fileupload>
-                </template>
-            </div>
+                <div class="form-group"><!--内容-->
+                    <div v-if="defaultMethod.code=='2'">
+                        <div class="col-sm-2 control-label">OID</div>
+                        <div class="col-sm-9" >
+                            <input  v-model.trim="$v.deteType.content.$model" class="form-control input-control"></input>
+                        </div>
+                    </div>
 
-            <div class="form-group"><!--元数据-->
-                <div class="col-sm-2 control-label"><@spring.message 'deteType.meta'/></div>
-                <div class="col-sm-9">
-                    <div class="add-box">
-                        <div class="add-box_head">
+                    <template v-if="defaultMethod.code=='1'">
+                        <nz-fileupload
+                                v-if="uploadReset"
+                                :hasOld="hasOldFile"
+                                :oldFile="oldFile"
+                                :accept="acceptFile"
+                                v-model="file"
+                                ref="scriptUpload"
+                                @uploadComponetDestory="destoryUploadComponet"
+                        ></nz-fileupload>
+                    </template>
+                </div>
+
+                <div class="form-group"><!--元数据-->
+                    <div class="col-sm-2 control-label"><@spring.message 'deteType.meta'/></div>
+                    <div class="col-sm-9">
+                        <div class="add-box">
+                            <div class="add-box_head">
                 			<span class="add-box_cell add-box_cell_25">Field-Type
                                 <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
                 			</span>
-                            <span class="add-box_cell add-box_cell_25">Data-Type
-                                <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
+                                <span class="add-box_cell add-box_cell_25">Data-Type
+                                    <!-- <span class="metatype-question"><i class="fa fa-question-circle"></i></span> -->
                 			</span>
-                            <span class="add-box_cell">Name</span>
-                        </div>
-                        <div class="add-box_body add-box_body_160">
-                            <div class="add-box_row"
-                                 v-for="(meta,index) in deteType.deteTypeMetas"
-                                 :class="{'danger2':meta.passFlag!=undefined&&!meta.passFlag}"
-                                 v-if="meta.delFlag=='0'" >
-                                <div class="add-box_cell add-box_cell_25">
-                                    <span class="add-box_tag1">{{meta.fieldType.value}}</span>
-                                </div>
-                                <div class="add-box_cell add-box_cell_25">
-                                    <span class="add-box_tag2">{{meta.dataType.value}}</span>
-                                </div>
-                                <span class="add-box_cell" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
-                                <span class="add-box_ops" >
+                                <span class="add-box_cell">Name</span>
+                            </div>
+                            <div class="add-box_body add-box_body_160">
+                                <div class="add-box_row"
+                                     v-for="(meta,index) in deteType.deteTypeMetas"
+                                     :class="{'danger2':meta.passFlag!=undefined&&!meta.passFlag}"
+                                     v-if="meta.delFlag=='0'" >
+                                    <div class="add-box_cell add-box_cell_25">
+                                        <span class="add-box_tag1">{{meta.fieldType.value}}</span>
+                                    </div>
+                                    <div class="add-box_cell add-box_cell_25">
+                                        <span class="add-box_tag2">{{meta.dataType.value}}</span>
+                                    </div>
+                                    <span class="add-box_cell" :title="meta.name" v-html="meta.name.length>20?spliteName(meta.name):meta.name"></span>
+                                    <span class="add-box_ops" >
                                     <i @click="openMetaWindow(index)" class="fa fa-pencil"></i>
-                                    <i @click="delMeta(index)"  class="fa fa-trash-o"></i>
+                                    <i @click="delMeta(index)" :class="{'btn-cursor-not-allowed':deteType.method=='3'}" class="fa fa-trash-o"></i>
                                 </span>
+                                </div>
+                            </div>
+                            <div class="add-box_foot">
+                                <i @click="openMetaWindow()" class="fa fa-plus"></i>
+                            </div>
+
+                        </div>
+                        <div class="form-control_error-msg" v-if="metaDirty&&!metaRequired">
+                            <@spring.message 'validate.common.required'/>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-2 control-label"><@spring.message 'param'/></div>
+                    <div class="col-sm-9">
+                        <div class="add-box">
+                            <div class="add-box_head">
+                                <span class="add-box_cell add-box_cell_45">Name</span>
+                                <span class="add-box_cell">Default</span>
+                            </div>
+                            <div class="add-box_body" id="r-dete-param-container">
+                                <template v-for="(param,index) in deteType.deteTypeParams">
+                                    <nz-add-param
+                                            v-if="paramReset"
+                                            :dete-param="param"
+                                            ref="r-detect-param"
+                                            :index="index"
+                                            :dete-method="defaultMethod"
+                                            :dete-params="deteType.deteTypeParams"
+                                            @ask-for-swap="swapParam"
+                                            @del-param="delParam"
+                                    ></nz-add-param>
+                                </template>
+                            </div>
+                            <div class="add-box_foot">
+                                <i @click="addParam" class="fa fa-plus" :class="{'btn-cursor-not-allowed':deteType.method=='3'}"></i>
                             </div>
                         </div>
-                        <div class="add-box_foot">
-                            <i @click="openMetaWindow()" class="fa fa-plus"></i>
+                        <div class="form-control_error-msg" v-if="paramDirty&&!paramRequired"><@spring.message 'validate.common.required'/></div>
+                    </div>
+                </div>
+                <!--<div class="form-group">
+                    <div class="col-sm-2 control-label">I18n Code</div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control"
+                               :class="{'form-control&#45;&#45;error': $v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required }"
+                               v-model.trim="$v.deteType.i18nCode.$model"/>
+                        <span class="required-symbol">*</span>
+                        <div class="form-control_error-msg"
+                             v-if="$v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required"><@spring.message
+                            'validate.common.required'/>
                         </div>
 
                     </div>
-                    <div class="form-control_error-msg" v-if="metaDirty&&!metaRequired">
-                        <@spring.message 'validate.common.required'/>
+                </div>-->
+
+                <div class="form-group"><!--备注-->
+                    <div class="col-sm-2 control-label"><@spring.message 'common.remark'/> </div>
+                    <div class="col-sm-9">
+                        <textarea v-model.trim="$v.deteType.remark.$model" class="form-control input-control"></textarea>
                     </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="col-sm-2 control-label"><@spring.message 'param'/></div>
-                <div class="col-sm-9">
-                    <div class="add-box">
-                        <div class="add-box_head">
-                            <span class="add-box_cell add-box_cell_45">Name</span>
-                            <span class="add-box_cell">Default</span>
-                        </div>
-                        <div class="add-box_body" id="r-dete-param-container">
-                            <template v-for="(param,index) in deteType.deteTypeParams">
-                                <nz-add-param
-                                    v-if="paramReset"
-                                    :dete-param="param"
-                                    ref="r-detect-param"
-                                    :index="index"
-                                    :dete-params="deteType.deteTypeParams"
-                                    @ask-for-swap="swapParam"
-                                    @del-param="delParam"
-                                ></nz-add-param>
-                            </template>
-                        </div>
-                        <div class="add-box_foot">
-                            <i @click="addParam" class="fa fa-plus"></i>
-                        </div>
+
+                <div class="form-group form-group_opbox">
+                    <div>
+                        <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary input-control" style="width: 55px" @click="saveOrUpdate">
+                            <i class="fa fa-check"></i></button>
+                        <div style="display:inline-block;width:10px;"></div>
+                        <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i
+                                class="fa fa-reply"></i></button>
                     </div>
-                    <div class="form-control_error-msg" v-if="paramDirty&&!paramRequired"><@spring.message 'validate.common.required'/></div>
                 </div>
+            </form>
+
+            <div id="metaWindow" style="height:100%;display:none;">
+                <nz-add-meta
+                        v-if="metaReset"
+                        ref="addMetaWindow"
+                        :dete-metas="deteType.deteTypeMetas"
+                        :dete-method="defaultMethod"
+                        :field-types="fieldTypes"
+                        :data-types="dataTypes"
+                        :dic-types="dicTypes"
+                ></nz-add-meta>
+
             </div>
-            <!--<div class="form-group">
-                <div class="col-sm-2 control-label">I18n Code</div>
-                <div class="col-sm-9">
-                    <input type="text" class="form-control"
-                           :class="{'form-control&#45;&#45;error': $v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required }"
-                           v-model.trim="$v.deteType.i18nCode.$model"/>
-                    <span class="required-symbol">*</span>
-                    <div class="form-control_error-msg"
-                         v-if="$v.deteType.i18nCode.$dirty && !$v.deteType.i18nCode.required"><@spring.message
-                        'validate.common.required'/>
-                    </div>
-
-                </div>
-            </div>-->
-
-            <div class="form-group"><!--备注-->
-                <div class="col-sm-2 control-label"><@spring.message 'common.remark'/> </div>
-                <div class="col-sm-9">
-                    <textarea v-model.trim="$v.deteType.remark.$model" class="form-control"></textarea>
-                </div>
-            </div>
-
-            <div class="form-group form-group_opbox">
-                <div>
-                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate">
-                        <i class="fa fa-check"></i></button>
-                    <div style="display:inline-block;width:10px;"></div>
-                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i
-                            class="fa fa-reply"></i></button>
-                </div>
-            </div>
-        </form>
-
-        <div id="metaWindow" style="height:100%;display:none;">
-            <nz-add-meta
-                    v-if="metaReset"
-                    ref="addMetaWindow"
-                    :dete-metas="deteType.deteTypeMetas"
-                    :dete-method="defaultMethod"
-                    :field-types="fieldTypes"
-                    :data-types="dataTypes"
-                    :dic-types="dicTypes"
-            ></nz-add-meta>
-
+<!--            <div class="shadow" style="display: block;" v-show="deteType.method=='3'"></div>-->
         </div>
-    </div>
+
 </script>
 
 <script type="text/x-template" id="addDetectMata">
@@ -198,7 +202,7 @@
             </template>
             <!-- 新增按钮 -->
             <div class="meta-win_list-foot">
-                <i @click="addMeta" class="fa fa-plus"></i>
+                <i @click="addMeta" class="fa fa-plus" :class="{'btn-cursor-not-allowed':deteMethod.code=='3'}"></i>
             </div>
         </div>
         <!-- meta详情 -->
@@ -359,8 +363,8 @@
             <div class="add-box_cell add-box_cell_45">{{deteParam.name}}</div>
             <span class="add-box_name">{{deteParam.defVal}}</span>
             <span class="add-box_ops"  >
-                <i @click="editSelf" class="fa fa-pencil" :id="'add-box_op_edit_'+index"></i>
-                <i @click="deteParam.delFlag=='0'?delSelf():recSelf()" :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1'}"></i>
+                <i @click="editSelf" class="fa fa-pencil" :id="'add-box_op_edit_'+index" :class="{'btn-cursor-not-allowed':deteMethod.code=='3'}"></i>
+                <i @click="deteParam.delFlag=='0'?delSelf():recSelf()" :class="{'fa fa-trash-o':deteParam.delFlag=='0','fa fa-undo':deteParam.delFlag=='1','btn-cursor-not-allowed':deteMethod.code=='3'}"></i>
             </span>
 <!--            <span :class="{'add-box_del':deteParam.delFlag=='0','add-box_rec':deteParam.delFlag=='1'}" ></span>-->
         </div>
@@ -376,8 +380,8 @@
                     <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control add-box_input"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
 				</div>
                 <span class="add-box_ops">
-					<i @click="submitSelf" class="fa fa-check"></i>
-					<i @click="delSelf" class="fa fa-trash-o"></i>
+					<i @click="submitSelf" class="fa fa-check" ></i>
+					<i @click="delSelf" class="fa fa-trash-o " ></i>
 				</span>
             </form>
         </div>

@@ -51,6 +51,7 @@
                             and dwr.rel_type='2' and dwr.rel_id=#{setId}
                         </if>
                     )
+        order by dwi.warn_level desc,dwi.op_time desc
     </select>
 
 

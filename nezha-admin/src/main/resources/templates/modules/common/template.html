@@ -70,13 +70,13 @@
     <div >
         <div class="col-sm-2 control-label"><@spring.message 'common.scriptFile'/></div>
         <div class="col-sm-9">
-            <div class="input-group">
-                <input :id='viewInputId' class="form-control"   @click="viewInputClick" />
+            <div class="input-group" style="width: 98.2%">
+                <input :id='viewInputId' class="form-control input-control"   @click="viewInputClick" />
                 <div class="input-group-btn" style="right: 31px;">
-                    <button type="button" class="btn btn-default" @click="selectBtnClick"><i class="fa fa-file-text"></i></button>
-                    <button type="button" class="btn btn-default" @click="historyFileClick" :disabled="!hasOld||oldFile.filePath==''" :title="oldFile.remark"><i class="fa fa-download"></i></button>
+                    <button type="button" class="btn btn-default" @click="selectBtnClick" style="border-radius: 0"><i class="fa fa-file-text"></i></button>
+                    <button type="button" class="btn btn-default" @click="historyFileClick" :disabled="!hasOld||oldFile.filePath==''" :title="oldFile.remark" style="border-radius: 0px 4px 4px 0px;"><i class="fa fa-download"></i></button>
                 </div>
-                <input type="file" :name="name" :id='fileInputId'  @input="$emit('input', $event.target.files[0])"  :accept="accept" @change="fileInput($event)" style="display: none">
+                <input type="file" class="input-control" :name="name" :id='fileInputId'  @input="$emit('input', $event.target.files[0])"  :accept="accept" @change="fileInput($event)" style="display: none">
             </div>
             <span class="required-symbol">*</span>
             <div class="form-control_error-msg" v-if="dirty&&!required"><@spring.message 'validate.common.required'/></div>

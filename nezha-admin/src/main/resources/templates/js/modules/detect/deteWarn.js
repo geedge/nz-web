@@ -27,6 +27,7 @@ var warnComponet = Vue.extend({
     template:"#warnWindow",
     components:{
         'nz-table':rTable,
+        "nz-fileupload":fileUpload
     },
     props:{
         cap:{
@@ -46,6 +47,7 @@ var warnComponet = Vue.extend({
         // }
     },
     data: function(){
+        var temp=this;
         return {
             single:true,
             multi:true,
@@ -55,12 +57,41 @@ var warnComponet = Vue.extend({
             counter:0,
             colModel:[
                 {name: "<@spring.message 'common.name'/>", field: "name", width: 120},
-                {name: "<@spring.message 'detect.triggerType'/>", field: "triggerType", width: 120},
+                {name: "<@spring.message 'deteWarn.warnLevel'/>", field: "warnLevel", width: 120,formatter:function(rowData){
+                        for (let index in temp.warnLevels){
+                            var warnLevel=temp.warnLevels[index];
+                            if(rowData.warnLevel==warnLevel.code){
+                                return warnLevel.value;
+                            }
+                        }
+                        return 'undefinded';
+                    }},
+                {name: "<@spring.message 'detect.triggerType'/>", field: "triggerType", width: 120,formatter:function(rowData){
+                        for (let index in temp.triggerTypes){
+                            var triggerType=temp.triggerTypes[index];
+                            if(rowData.triggerType==triggerType.code){
+                                return triggerType.value;
+                            }
+                        }
+                        return 'undefinded';
+                    }},
                 {name: "<@spring.message 'detect.warnMode'/>", field: "warnMode", width: 120,formatter:function(rowData){
-                        return rowData.warnMode;
+                        for (let index in temp.warnModes){
+                            var warnMode=temp.warnModes[index];
+                            if(rowData.warnMode==warnMode.code){
+                                return warnMode.value;
+                            }
+                        }
+                        return 'undefinded';
                     }},
                 {name: "<@spring.message 'deteWarn.callbackType'/>", field: "callbackType", width: 120,formatter:function(rowData){
-                        return rowData.callbackType;
+                        for (let index in temp.callbackTypes){
+                            var callbackType=temp.callbackTypes[index];
+                            if(rowData.callbackType==callbackType.code){
+                                return callbackType.value;
+                            }
+                        }
+                        return 'undefinded';
                     }},
 
                 {name: "<@spring.message 'common.opTime'/>", field: "opTime", width: 240},
@@ -89,6 +120,7 @@ var warnComponet = Vue.extend({
                 warnLevel:'',
                 callbackType:'0',
                 callbackContent:'',
+                tempCallbackContent:'',//解决更新操作时，回调方式从脚本改为http的回显问题
                 viewLevel:'',
                 remark:''
             },
@@ -106,8 +138,15 @@ var warnComponet = Vue.extend({
             callbackTypes:[],
             defaultCallbackType:{},
             viewLevels:[],
-            defaultViewLevel:{}
-
+            defaultViewLevel:{},
+            uploadReset:true,
+            file:null,
+            acceptFile:".sh",
+            hasOldFile:false,
+            oldFile:{
+                filePath:'',
+                remark:'No File'
+            }
         }
 
     },
@@ -135,8 +174,8 @@ var warnComponet = Vue.extend({
         if(typeof temp.defaultTrigger!='undefined' && temp.defaultTrigger.code=='1'){
             validate.threshold={required}
         }
-        if(typeof temp.deteWarn!='undefined' && typeof temp.deteWarn.callbackType!='undefined'&&temp.deteWarn.callbackType!='0'){
-            validate.callbackContent={required};
+        if(typeof temp.deteWarn!='undefined' && typeof temp.deteWarn.callbackType!='undefined'&&temp.deteWarn.callbackType=='2'){
+            validate.tempCallbackContent={required};
         }
         return {
             deteWarn:validate
@@ -193,6 +232,7 @@ var warnComponet = Vue.extend({
                 warnLevel:'',
                 callbackType:'0',
                 callbackContent:'',
+                tempCallbackContent:'',
                 viewLevel:'',
                 remark:''
             }
@@ -204,7 +244,7 @@ var warnComponet = Vue.extend({
             $.ajax({
                 url: baseURL + "/deteWarn/list?setId="+temp.setId,
                 type:'get',
-                sync:true,
+                sync:false,
                 timeout:10000,
                 beforeSend:function(XMLHttpRequest){
                 },
@@ -273,7 +313,6 @@ var warnComponet = Vue.extend({
                 url: baseURL + "deteType/detail?id=" + temp.setDetail.type.id,
                 type:'get',
                 sync:false,
-                timeout:10000,
                 success:function(r){
                     temp.deteMetas = r.data.deteTypeMetas;
                 }
@@ -293,7 +332,7 @@ var warnComponet = Vue.extend({
                     // }
                     temp.triggerTypes.push(m);
                 }
-            });
+            })
         },
         loadWarnModes:function(){
             var temp=this;
@@ -309,7 +348,7 @@ var warnComponet = Vue.extend({
                     // }
                     temp.warnModes.push(m);
                 }
-            });
+            })
         },
         loadStateTypes:function(){
             var temp=this;
@@ -434,6 +473,7 @@ var warnComponet = Vue.extend({
             var temp=this;
             temp.reset();
             temp.openEditLayer();
+            temp.resetFileUploadDom();
         },
         update:function(){
             var temp=this;
@@ -442,6 +482,7 @@ var warnComponet = Vue.extend({
             temp.getWarnDetail();
 
             temp.openEditLayer();
+            temp.resetFileUploadDom();
         },
         getWarnDetail:function(){
             var temp=this;
@@ -498,12 +539,17 @@ var warnComponet = Vue.extend({
 
             //处理json数据
             temp.formatDeteSetToSimple();
-            console.log("submit data-->" + JSON.stringify(temp.deteWarn))
+
+            let formData=new FormData();
+            formData.append('deteWarnInfo',JSON.stringify(temp.deteWarn));
+            formData.append('file',temp.file);
+
             $.ajax({
                 type: method,
                 url: baseURL + url,
-                contentType: "application/json",
-                data: JSON.stringify(temp.deteWarn),
+                contentType: false,
+                processData:false,
+                data: formData,
                 success: function (r) {
                     if (r.code === 200) {
                         alert('<@spring.message "common.success"/>', function (index) {
@@ -526,7 +572,14 @@ var warnComponet = Vue.extend({
         validate:function(){
             var temp=this;
             temp.$v.deteWarn.$touch();
-            return temp.$v.deteWarn.$error;
+            var warnScripError=false;
+            var uploadComponet=temp.$refs.warnScriptUpload;
+            if(typeof uploadComponet != 'undefined'){
+                uploadComponet.touch();
+                warnScripError=uploadComponet.error;
+            }
+            console.log(temp.$v.deteWarn.$error+"|"+uploadComponet)
+            return temp.$v.deteWarn.$error||uploadComponet;
         },
         formatDeteSetToSimple:function(){
             var temp=this;
@@ -543,6 +596,8 @@ var warnComponet = Vue.extend({
             }
 
             temp.deteWarn.warnLevel=temp.defaultWarnLevel.code;
+
+            temp.deteWarn.callbackContent=temp.deteWarn.tempCallbackContent;
         },
         formatDeteSetToObject:function(){
             var temp=this;
@@ -587,6 +642,32 @@ var warnComponet = Vue.extend({
                     temp.defaultViewLevel=m;
                 }
             }
+
+            if(temp.deteWarn.callbackType=='1'){
+                temp.hasOldFile=true;
+                if(typeof temp.deteWarn.callbackContent != 'undefined'&&temp.deteWarn.callbackContent!=null&&temp.deteWarn.callbackContent!=''){
+                    try {
+                        var file=JSON.parse(temp.deteWarn.callbackContent);
+                        temp.oldFile.filePath=file.filePath;
+                        temp.oldFile.remark=file.fileName;
+                    }catch (e) {
+                        temp.oldFile.filePath='';
+                        temp.oldFile.remark='No File';
+                    }
+
+                }else{
+                    temp.oldFile.filePath='';
+                    temp.oldFile.remark='No File';
+                }
+            }else{
+                temp.hasOldFile=false;
+                temp.oldFile.filePath='';
+                temp.oldFile.remark='No File';
+            }
+            if(temp.deteWarn.callbackType=='2'){
+                temp.deteWarn.tempCallbackContent=temp.deteWarn.callbackContent;
+            }
+
         },
         getSelectDatas:function(selected,unselected){
             var temp=this;
@@ -618,6 +699,22 @@ var warnComponet = Vue.extend({
                     $("html").css("overflow-y", "hidden");
                 }
             });
+        },
+        resetFileUploadDom:function(){
+            var temp = this;
+            temp.uploadReset = false;
+            temp.$nextTick(() => {
+                temp.uploadReset = true
+            });
+        },
+        destoryUploadComponet:function(){
+            this.file=null;
+            // this.acceptFile=".sh";
+            // this.hasOldFile=false;
+            // this.oldFile={
+            //     filePath:'',
+            //     remark:'No File'
+            // }
         }
     },
     watch:{

@@ -152,9 +152,7 @@ public class DeteTypeInfoServiceImpl extends DeteCommonServiceImpl<DeteTypeInfoD
         deteTypeInfo.setTableName(old.getTableName());
         deteTypeInfo.setBuildIn(old.getBuildIn());//buildIn 字段不允许修改
         if(Constant.DETE_DETEMETHOD_SCRIPT.equals(deteTypeInfo.getMethod())&&file!=null&&!file.isEmpty()){
-            if(StringUtils.isNotBlank(old.getContent())){
-                this.delUploadFile(old.getContent());//删除旧文件
-            }
+            this.delUploadFile(old.getContent());//删除旧文件
             String content=this.getUploadFileJson(file);
             this.uploadFile(content,file);
             deteTypeInfo.setContent(content);

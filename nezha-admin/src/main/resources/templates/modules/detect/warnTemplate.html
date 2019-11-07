@@ -171,11 +171,25 @@
                     </div>
                 </div>
                 <div class="form-group" v-show="deteWarn.callbackType!='0'">
-                    <div class="col-sm-2 control-label"><@spring.message 'deteWarn.callbackContent'/></div>
-                    <div class="col-sm-9">
-                        <textarea v-model.trim="$v.deteWarn.callbackContent.$model" class="form-control"></textarea>
-                        <span class="required-symbol">*</span>
-                        <div class="form-control_error-msg" v-if="deteWarn.callbackType!='0' && $v.deteWarn.callbackContent.$dirty && !$v.deteWarn.callbackContent.required"><@spring.message 'validate.common.required'/></div>
+                    <template v-if="deteWarn.callbackType == '1'">
+                        <nz-fileupload
+                                v-if="uploadReset"
+                                :hasOld="hasOldFile"
+                                :oldFile="oldFile"
+                                :accept="acceptFile"
+                                v-model="file"
+                                ref="warnScriptUpload"
+                                @uploadComponetDestory="destoryUploadComponet"
+                        ></nz-fileupload>
+                    </template>
+
+                    <div v-if="deteWarn.callbackType == '2'">
+                        <div class="col-sm-2 control-label"><@spring.message 'deteWarn.callbackContent'/></div>
+                        <div class="col-sm-9">
+                            <input v-model.trim="$v.deteWarn.tempCallbackContent.$model" class="form-control"></input>
+                            <span class="required-symbol">*</span>
+                            <div class="form-control_error-msg" v-if="deteWarn.callbackType!='0' && $v.deteWarn.tempCallbackContent.$dirty && !$v.deteWarn.tempCallbackContent.required"><@spring.message 'validate.common.required'/></div>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">

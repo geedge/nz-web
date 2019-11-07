@@ -1,5 +1,6 @@
 package com.nis.modules.detect.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
@@ -14,6 +15,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -57,7 +59,9 @@ public class DeteWarnController {
     @PostMapping("/save")
     @ApiOperation("新增告警配置")
     @ResponseBody
-    public R save(@RequestBody DeteWarnInfoEntity deteWarnInfoEntity) {
+    public R save(@RequestParam(value="deteWarnInfo",required = true) String jsonWarnInfo,@RequestParam(value="file",required = false) MultipartFile file) {
+        DeteWarnInfoEntity deteWarnInfoEntity= JSON.parseObject(jsonWarnInfo,DeteWarnInfoEntity.class);
+
         ValidateUtils.is(deteWarnInfoEntity.getName()).notNull(RCode.WARN_NAME_ISNULL);
         ValidateUtils.is(deteWarnInfoEntity.getDeteTypeId()).notNull(RCode.WARN_TYPE_ISNULL);
         if(deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),null)){
@@ -89,6 +93,9 @@ public class DeteWarnController {
         if(!deteWarnInfoService.checkCallbackContentIsValide(deteWarnInfoEntity)){
             throw new NZException(RCode.WARN_CALLBACKCONTENT_ISNULL);
         }
+        if(!deteWarnInfoService.checkCallbackScirptFileIsValide(deteWarnInfoEntity,file)){
+            throw new NZException(RCode.DETE_UPLOAD_FILE_ISNULL);
+        }
 //        if(!deteWarnInfoService.checkViewLevelValide(deteWarnInfoEntity.getViewLevel())){
 //            throw new NZException(RCode.VIEWLEVEL_INVALID);
 //        }
@@ -102,7 +109,7 @@ public class DeteWarnController {
         }
 
 
-        deteWarnInfoService.saveEntity(deteWarnInfoEntity);
+        deteWarnInfoService.saveEntity(deteWarnInfoEntity,file);
         return R.ok();
     }
 
@@ -112,12 +119,13 @@ public class DeteWarnController {
     @PutMapping("/update")
     @ResponseBody
     @ApiOperation("修改告警配置")
-    public R update(@RequestBody DeteWarnInfoEntity deteWarnInfoEntity) {
+    public R update(@RequestParam(value="deteWarnInfo",required = true) String jsonWarnInfo,@RequestParam(value="file",required = false) MultipartFile file) {
+        DeteWarnInfoEntity deteWarnInfoEntity=JSON.parseObject(jsonWarnInfo,DeteWarnInfoEntity.class);
         ValidateUtils.is(deteWarnInfoEntity.getName()).notNull(RCode.WARN_NAME_ISNULL);
         if(deteWarnInfoService.checkNameExists(deteWarnInfoEntity.getName(),deteWarnInfoEntity.getId())){
             throw new NZException(RCode.WARN_NAME_EXISTS);
         }
-        deteWarnInfoService.updateEntity(deteWarnInfoEntity);
+        deteWarnInfoService.updateEntity(deteWarnInfoEntity,file);
         return R.ok();
     }
 

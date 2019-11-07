@@ -836,8 +836,8 @@ var fileUpload = Vue.extend({
             fileInputSelector:'',
             dirty:false,
             required:true,
-            error:false
-
+            error:false,
+            slot:0,
         };
     },
     validations: function() {
@@ -845,6 +845,9 @@ var fileUpload = Vue.extend({
     },
     created: function () {
         var temp=this;
+        temp.slot=Math.ceil(Math.random()*100000000);;
+        temp.viewInputId=temp.viewInputId+"-"+temp.slot;
+        temp.fileInputId=temp.fileInputId+"-"+temp.slot;
     },
     methods: {
         init:function(){
@@ -954,6 +957,9 @@ var fileUpload = Vue.extend({
 
     mounted: function () {
         this.init();
+    },
+    beforeDestroy:function(){
+        this.$emit('uploadComponetDestory');
     }
 })
 
