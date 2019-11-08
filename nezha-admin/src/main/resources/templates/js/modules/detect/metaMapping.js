@@ -37,9 +37,9 @@ $(function () {
             },
         ],
         viewrecords: true,
-        height: 385,
-        rowNum: 10,
-        rowList: [10, 30, 50],
+        height: top.$(".content").height()-130,
+        rowNum: 15,
+        rowList : [15,30,50],
         rownumbers: true,
         rownumWidth: 25,
         autowidth: true,
@@ -63,6 +63,14 @@ $(function () {
             // Merger(gridName, 'type');
             console.log($(".costomTable").parent().css("padding-left","0px"))
             console.log($(".costomTable").parent().css("padding-right","0px"))
+        },
+        onSelectAll: function(rowids, status) {
+            if (status) {
+                toolsBtnHandle();
+            }
+        },
+        onSelectRow: function(rowid,status) {
+            toolsBtnHandle();
         }
     });
 });
@@ -94,6 +102,8 @@ var typeRepeat = function (type, metaMappings) {
 var vm = new Vue({
         el: "#metaMapping",
         data: {
+            single:true,
+            multi:true,
             showList: true,
             params: {
                 type: '',
