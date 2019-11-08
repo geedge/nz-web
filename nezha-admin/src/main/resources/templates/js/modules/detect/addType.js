@@ -134,7 +134,7 @@ var meta=Vue.extend({
                         required
                     },
                     unit: {
-                        required
+
                     },
                     dicType: {},
                     remark: {}
@@ -159,7 +159,7 @@ var meta=Vue.extend({
                     },
                     oid: {},
                     unit: {
-                        required
+
                     },
                     dicType: {},
                     remark: {}
