@@ -21,10 +21,21 @@
         float:left;
     }
     </style>
-</head>
-<body>
 
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/nzNodeSelector.css">
+    <link rel="stylesheet" href="${request.contextPath}/statics/css/nodeRel.css">
+
+</head>
+<body style="position: relative;">
+
+<!--节点组-->
 <div id="nodeGroupApp" v-cloak>
+
+    <!-- 分配节点 -->
+    <a v-show="selectedNodeGroup != null && selectedNodeGroup.allowAss == 1" class="btn btn-primary"
+       @click="openNodeRel" style="position:absolute;right: 5px;top: 0;z-index: 99999">
+        <i class="fa"></i>&nbsp;<@spring.message 'nodegroup.assignNode'/>&nbsp;</a>
+
     <div class="content" id="groupTree">
         <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
             <@spring.message 'system.system'/>
@@ -108,6 +119,17 @@
             </div>
         </div>
     </div>
+
+
+    <!-- 分配节点 -->
+    <div class="nodeRel" style="display: none;">
+        <node-rel-component
+                v-on:node-change="nodeChange"
+                :init-selected-nodes="selectedNodes"
+                :init-selectable-nodes="selectableNodes"
+        ></node-rel-component>
+    </div>
+
 </div>
 
 <!-- 节点列表 -->
@@ -118,8 +140,8 @@
         <!-- 当前节点组 -->
         <a v-if="nodeGroup != null" class="" href="#" style="font-size: 16px;"> {{nodeGroup.nodeTitle}}</a>
         <!-- 分配节点 -->
-        <a v-if="nodeGroup != null && nodeGroup.allowAss == 1" class="btn btn-primary" @click="" style="float: right">
-            <i class="fa"></i>&nbsp;<@spring.message 'nodegroup.assignNode'/></a>
+        <!--<a v-if="nodeGroup != null && nodeGroup.allowAss == 1" class="btn btn-primary" @click="" style="float: right">
+            <i class="fa"></i>&nbsp;<@spring.message 'nodegroup.assignNode'/></a>-->
     </div>
 
     <!-- 列表  查询 -->
@@ -206,6 +228,10 @@
 
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeInfo.js"></script>-->
 <!--<script src="${request.contextPath}/statics/js/modules/node/nodeGroup.js"></script>-->
+
+<#include "/modules/common/nodeRel.html">
+<#include "/js/modules/common/nodeRel.js">
+
 <#include "/js/modules/node/nodeGroup.js">
 <#include "/js/modules/node/nodeInfo.js">
 <script>

@@ -153,7 +153,6 @@ let groupTree = Vue.component('groupTree', {
 });
 
 var data = {
-    ref: '',
     systems: [],
     nodegroups: [],
     showForm: false,
@@ -172,7 +171,13 @@ var data = {
         id: null,
         name: null
     },
-    count: 1
+    count: 1,
+    selectedNodeGroup: null,     // 当前选中的节点组
+    allNodes: [],                // 所有节点
+    selectedNodes: [],           // 已选节点
+    selectableNodes: [],         // 可选节点
+    addUuids: [],                // 节点组新维护的UUIDS
+    removeUuids: []              // 节点组需要解除的UUIDS
 }
 
 // 引用校验规则   所有校验规则见   https://vuelidate.netlify.com/#sub-v-values
@@ -223,6 +228,7 @@ var vue = new Vue({
     },
     methods: {
         getNodeInfos: function (node) {
+            vue.selectedNodeGroup = node;
             vm.nodeGroup = node;
             vm.query();
         },
@@ -365,6 +371,78 @@ var vue = new Vue({
             } else {
                 location.reload();
             }
+        },
+        nodeChange: function(data) {
+            vue.addUuids = data[0];
+            vue.removeUuids = data[1];
+        },
+        openNodeRel: function() {
+
+            // 置空
+            vue.selectedNodes = vue.selectableNodes = [];
+
+            // 已分配
+            $.ajax({
+                url: baseURL + "/node/list?groupId=" + vue.selectedNodeGroup.id +"&limit=9999&page=1",
+                type: "GET",
+                async: false,
+                success: function (r) {
+                    vue.selectedNodes = r.data.list;
+                }
+            });
+
+            // 可分配
+            $.ajax({
+                url: baseURL + "/nodegroup/assList?groupId=" + vue.selectedNodeGroup.id + "&systemId=" + vue.selectedNodeGroup.systemId + "&limit=9999&page=1",
+                type: "GET",
+                async: false,
+                success: function (r) {
+                    vue.selectableNodes = r.data.list;
+                }
+            });
+
+            layer.open({
+                area: ['740px', '100%'],
+                shade: 0.01,
+                title: "<@spring.message 'nodegroup.assignNode'/>",
+                type: 1,
+                maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
+                content: $(".nodeRel"),
+                end: function() {
+                    if (vue.addUuids.length > 0 || vue.removeUuids.length > 0) {
+                        confirm("<@spring.message 'common.confirmUpdateNodeRel'/>",function() {
+                            vue.assignNode();
+                        })
+                    }
+                }
+            });
+        },
+        assignNode: function() {
+            var form = new FormData();
+            form.append("id", vue.selectedNodeGroup.id);
+            form.append("addUuids", vue.addUuids);
+            form.append("removeUuids", vue.removeUuids);
+            $.ajax({
+                type: "POST",
+                url: baseURL + "nodegroup/assignNode",
+                processData: false,
+                contentType: false,
+                mimeType: "multipart/form-data",
+                data: form,
+                success: function (r) {
+                    if (r.code === 200) {
+                        alert("<@spring.message 'common.success'/>", function (index) {
+                            vm.query();
+                        });
+                    } else {
+                        alert(r.msg);
+                    }
+                }
+            });
         }
     },
     created: function () {

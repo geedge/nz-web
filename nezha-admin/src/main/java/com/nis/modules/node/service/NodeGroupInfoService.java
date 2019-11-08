@@ -38,5 +38,8 @@ public interface NodeGroupInfoService extends IService<NodeGroupInfoEntity> {
 
     // 根据当前节点组ID获取包含的节点个数
     Integer getNodeCount(Long id);
+
+    // 节点组 分配 / 移除 节点
+    void assignNode(Long id, Long[] addUuids, Long[] removeUuids);
 }
 

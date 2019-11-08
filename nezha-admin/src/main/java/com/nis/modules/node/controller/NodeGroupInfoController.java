@@ -141,4 +141,20 @@ class NodeGroupInfoController {
         Integer nodeCount = nodegroupInfoService.getNodeCount(id);
         return R.ok(nodeCount);
     }
+
+
+    /**
+     *  分配节点 / 移除节点
+     * @param id           节点组ID
+     * @param addUuids     要维护的节点UUIDS
+     * @param removeUuids  要移除的节点UUIDS
+     * @return
+     */
+    @PostMapping("/assignNode")
+    public R assignNode(Long id, Long[] addUuids, Long[] removeUuids) {
+        ValidateUtils.is(id).notNull(RCode.NODEGROUP_ID_ISNULL);
+
+        nodegroupInfoService.assignNode(id, addUuids, removeUuids);
+        return R.ok();
+    }
 }

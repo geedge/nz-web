@@ -19,6 +19,8 @@ import com.nis.modules.sys.dao.SystemInfoDao;
 import com.nis.modules.sys.entity.SystemInfoEntity;
 import com.nis.modules.sys.service.SystemInfoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.scripting.xmltags.ForEachSqlNode;
@@ -248,6 +250,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
                 if (id - nodeGroupInfo.getId() == 0) {
                     nodeGroup = nodeGroupInfo;
+                    break;
                 }
             }
             if (nodeGroup != null) {
@@ -279,7 +282,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
             }
         }
 
-        List<NodeGroupRelEntity> list = new ArrayList<>();
+       /* List<NodeGroupRelEntity> list = new ArrayList<>();
 
         Date now = new Date();
         Long systemId = ShiroUtils.getCurrSystemId();
@@ -294,7 +297,34 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         // 在此处添加
         if (list != null && list.size() > 0) {
             nodeGroupRelService.saveBatch(list);
+        }*/
+
+        // 当前节点组和节点关系集合
+        List<NodeGroupRelEntity> currentNodeGroupRels = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id));
+
+        // 去重
+        Set<Long> addUuidSet = new HashSet(Arrays.asList(uuids));
+
+        if (CollectionUtils.isNotEmpty(currentNodeGroupRels)) {
+            List<Long> currentNodeGroupRelUuids = new ArrayList<>();
+            for (NodeGroupRelEntity entity : currentNodeGroupRels) {
+                currentNodeGroupRelUuids.add(entity.getUuid());
+            }
+            // 重复则不添加
+            addUuidSet.addAll(currentNodeGroupRelUuids);
+            // 去除当前关系 剩余不重复的
+            addUuidSet.removeAll(currentNodeGroupRelUuids);
         }
+
+        Date now = new Date();
+        Long systemId = ShiroUtils.getCurrSystemId();
+
+        List<NodeGroupRelEntity> list = new ArrayList<>();
+        for (Long uuid : addUuidSet) {
+            list.add(new NodeGroupRelEntity(id, uuid, systemId, now));
+        }
+        // 入库
+        nodeGroupRelService.saveBatch(list);
     }
 
     /**
@@ -422,6 +452,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
     /**
      * 根据节点组ID 获取包含的节点个数
+     *
      * @param id
      * @return
      */
@@ -431,5 +462,90 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
         // 获取当前节点组包含的节点个数
         Integer nodeCount = nodegroupInfoDao.getNodeCount(id);
         return nodeCount;
+    }
+
+    /**
+     * 分配节点 / 移除节点
+     *
+     * @param id          节点组ID
+     * @param addUuids    要维护的节点UUIDS
+     * @param removeUuids 要移除的节点UUIDS
+     * @return
+     */
+    @Override
+    public void assignNode(Long id, Long[] addUuids, Long[] removeUuids) {
+        NodeGroupInfoEntity nodeGroup = this.getById(id);
+        if (nodeGroup == null) {
+            throw new NZException(RCode.NODEGROUP_NOT_EXISTS);
+        }
+
+        // 维护
+        if (ArrayUtils.isNotEmpty(addUuids)) {
+            List<SystemInfoEntity> sysNodeGroups = this.getSysNodeGroups();
+            NodeGroupInfoEntity group = null;
+            for (SystemInfoEntity entity : sysNodeGroups) {
+                for (NodeGroupInfoEntity nodeGroupInfo : entity.getNodegroups()) {
+                    if (id - nodeGroupInfo.getId() == 0) {
+                        group = nodeGroupInfo;
+                        break;
+                    }
+                }
+                if (group != null) {
+                    break;
+                }
+            }
+            if (Constant.NODEGROUP_REFUSE.equals(group.getAllowAss())) { // 节点组不可以分配节点
+                throw new NZException(RCode.NODEGROUP_ASSIG_REFUSE);
+            }
+
+            // 校验节点有效性
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", nodeGroup.getSystemId());
+            List<NodeInfoEntity> nodes = (List<NodeInfoEntity>) nodeInfoService.queryPageBySystemId(map).getList();
+            for (Long uuid : addUuids) {
+                boolean flag = false;
+                for (NodeInfoEntity node : nodes) {
+                    if (uuid.equals(node.getUuid())) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (!flag) {
+                    throw new NZException("Nodes with UUID " + uuid + " do not exist group's system", 201014);
+                }
+            }
+
+            // 当前节点组和节点关系集合
+            List<NodeGroupRelEntity> currentNodeGroupRels = nodeGroupRelService.list(new QueryWrapper<NodeGroupRelEntity>().eq("group_id", id));
+
+            // 去重
+            Set<Long> addUuidSet = new HashSet(Arrays.asList(addUuids));
+
+            if (CollectionUtils.isNotEmpty(currentNodeGroupRels)) {
+                List<Long> currentNodeGroupRelUuids = new ArrayList<>();
+                for (NodeGroupRelEntity entity : currentNodeGroupRels) {
+                    currentNodeGroupRelUuids.add(entity.getUuid());
+                }
+                // 重复则不添加
+                addUuidSet.addAll(currentNodeGroupRelUuids);
+                // 去除当前关系 剩余不重复的
+                addUuidSet.removeAll(currentNodeGroupRelUuids);
+            }
+
+            Date now = new Date();
+            Long systemId = ShiroUtils.getCurrSystemId();
+
+            List<NodeGroupRelEntity> list = new ArrayList<>();
+            for (Long uuid : addUuidSet) {
+                list.add(new NodeGroupRelEntity(id, uuid, systemId, now));
+            }
+            // 入库
+            nodeGroupRelService.saveBatch(list);
+        }
+
+        // 移除
+        if (ArrayUtils.isNotEmpty(removeUuids)) {
+            nodeGroupRelDao.delete(new QueryWrapper<NodeGroupRelEntity>().in("uuid", removeUuids).eq("group_id", id));
+        }
     }
 }

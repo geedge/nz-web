@@ -14,10 +14,10 @@
     margin-bottom: 8px;
     width: 340px;
 }
-.tools .form-group {
+.box .tools .form-group {
 	margin-right: 0;
 }
-.form-control {
+.box .form-control {
 	height: 28px;
 }
 .node-box {
