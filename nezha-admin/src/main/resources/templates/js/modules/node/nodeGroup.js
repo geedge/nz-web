@@ -18,7 +18,8 @@ let groupTree = Vue.component('groupTree', {
                     addHoverDom: this.addHoverDom,
                     removeHoverDom: this.removeHoverDom,
                     showIcon: false,
-                    nameIsHTML: true // 名称支持Html标签转换
+                    nameIsHTML: true, // 名称支持Html标签转换
+                    selectedMulti: false // 禁止选中多个节点
                 },
                 edit: {
                     enable: true,

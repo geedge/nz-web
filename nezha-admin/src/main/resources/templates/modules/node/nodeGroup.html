@@ -5,20 +5,20 @@
     <title>节点组管理</title>
     <#include "/header.html">
     <style>
-    .ztree {
-    	padding: 1px 0 0 6px !important;
-    }
     .nodeList{
-        width: calc(100% - 400px);    /*根据页面宽度变化而变化*/
         display: inline-block;
-        float:left
-    }
-    .content{
-        position: relative;
-        min-width: 400px;
-        display: inline-block;
-        padding-left: 15px;
         float:left;
+        width: calc(100% - 300px);    /*根据页面宽度变化而变化*/
+    }
+    .mytree {
+        position: relative;
+        display: inline-block;
+        float:left;
+        min-width: 400px;
+        padding-left: 15px;
+    }
+    .ztree {
+        padding: 1px 0 0 6px !important;
     }
     </style>
 
@@ -36,7 +36,7 @@
        @click="openNodeRel" style="position:absolute;right: 5px;top: 0;z-index: 99999">
         <i class="fa"></i>&nbsp;<@spring.message 'nodegroup.assignNode'/>&nbsp;</a>
 
-    <div class="content" id="groupTree">
+    <div class="mytree" id="groupTree">
         <div class="mytree-title"><span class="mytreeicon mytreeicon-close"></span>
             <@spring.message 'system.system'/>
             <div style="clear:both"></div>

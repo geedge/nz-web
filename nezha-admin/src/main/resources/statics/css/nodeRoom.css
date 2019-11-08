@@ -8,16 +8,22 @@
     display: none;
 }
 .table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
-	border-top: 0;	
+	border-top: 0;
 }
 /*左侧机房*/
 .room {
+	position: relative;
+	float: left;
+	overflow: hidden;
     width: 220px;;
     /* height: 500px; */
-    float: left;
     margin-right: 15px;
+}
+
+.room__content {
     position: relative;
-    overflow: hidden;
+    height: 100%;
+    padding-right: 2px;
 }
 
 /* 左侧机房的背景高亮*/
@@ -28,14 +34,18 @@
     background-color: #FFFFFF;
 }
 
+.tr-item {
+	color: #337ab7;
+}
+
 
 /*右侧行列表*/
 .ranks {
+	position: relative;
+	float: left;
+	overflow: auto;
     width: calc(100% - 235px);
-    float: left;
-    position: relative;
     /* height: 500px; */
-    overflow: auto;
 }
 
 /*行展示*/
@@ -55,61 +65,71 @@
 	text-align: center;
 }
 .ranks-row, .ranks-col {
-	color: #888;
 	font-size: 12px;
+	color: #888;
 }
 /*机柜块*/
 .cab {
+	position: relative;
+	float: left;
     height: 120px;
     width: 80px;
     margin: 10px;
+	line-height: 120px;
+	border: 1px solid #555;
+	text-align: center;
     /* margin: 20px 10px; */
     /*background-color: #c4e3f3;*/
-    line-height: 120px;
-    text-align: center;
     /* border: 1px solid #337ab7; */
-	border: 1px solid #555;
     /* border-radius: 20px; */
-    float: left;
-    position: relative
 }
 .cab-add>i {
 	color: #777;
 	cursor: pointer;
 }
-.cab_nocab {
+.cab_nocabdata {
 	border: 1px dashed #999;
 }
 .cab-name {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	width: 70px;
 	display: inline-block;
+	overflow: hidden;
+	width: 70px;
 	line-height: 14px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 /*机柜修改删除按钮*/
-.cab-but {
+.cab-option{
+	position: absolute;
+	right: 5px;
+	bottom: 2px;
     float: right;
-    position: absolute;
-    bottom: 2px;
-    right: 5px;
-    color: #999;
+	line-height: 14px;
+	cursor: pointer;
     font-size: 12px;
-    cursor: pointer;
-    line-height: 14px;
+	color: #999;
+}
+
+.cab-button {
+	display: inline-block;
+	margin-right: 4px;
+	font-size: 13px;
+	color: #999;
+}
+.cab-button i {
+	cursor: pointer;
 }
 
 .areas {
 	margin-bottom: 5px;
 }
 .btn-area {
-	background-color: white;
 	padding: 6px 10px;
 	border: 1px solid #ccc;
+    outline: none;
 	color: #888;
-	outline:none;
+	background-color: white;
 }
 .btn-area_left {
 	border-radius: 4px 0 0 4px;
@@ -122,23 +142,4 @@
 	background-color: #3c8dbc;
 	color: white;
 	border-color: #3c8dbc;
-}
-
-.tr-op {
-	color: #999;
-	display: inline-block;
-	margin-right: 4px;
-	font-size: 13px;
-}
-.tr-op i {
-	cursor: pointer;
-}
-.tr-item {
-	color: #337ab7;
-	
-}
-.content {
-	 height: 100%;
-	 position: relative;
-	 padding-right: 2px;
 }

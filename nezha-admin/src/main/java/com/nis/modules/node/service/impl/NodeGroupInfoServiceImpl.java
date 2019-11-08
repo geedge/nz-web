@@ -266,7 +266,7 @@ public class NodeGroupInfoServiceImpl extends ServiceImpl<NodeGroupInfoDao, Node
 
         // 校验节点有效性
         NodeGroupInfoEntity group = this.getById(id);
-        Map<String, Object> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>(1);
         map.put("id", group.getSystemId());
         List<NodeInfoEntity> nodes = (List<NodeInfoEntity>) nodeInfoService.queryPageBySystemId(map).getList();
         for (Long uuid : uuids) {

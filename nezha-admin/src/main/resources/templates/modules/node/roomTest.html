@@ -26,13 +26,10 @@
     	<a class="btn btn-primary" @click="addRoom" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
     </div>
 	<div style="clear: both;"></div>
-    <!-- 左侧机房列表和右侧行列表区域 -->
-    <div class="main">
-
     <!-- 左侧机房名称列表 -->
     <div class="room" id="roomList">
         <!-- <a class="btn btn-primary" @click="addRoom" title="添加"><i class="fa fa-plus"></i></a> -->
-        <div class="content">
+        <div class="room__content">
             <table class="table table-hover">
                 <tr :class="[room.id==item.id ? 'tr-higHlight' : 'tr-normal']" v-for="item in roomList" :id="'tr'+item.id" @click="showRowList(item)">
                     <td @mouseenter="showRoomOption(item.id)" @mouseleave="closeRoomOption(item.id)">
@@ -70,7 +67,7 @@
                 </tr>
                 <tr v-for="item,index in rowList">
                     <td v-for="cab in item" :key="item.id">
-                        <div class="cab" :class="[checkCab(cab) ? 'cab_nocab' : '']" @mouseenter="showCabOption(cab)" @mouseleave="showCabOption(cab)">
+                        <div class="cab" :class="[checkCab(cab) ? 'cab_nocabdata' : '']" @mouseenter="showCabOption(cab)" @mouseleave="showCabOption(cab)">
 
                             <!-- 该位置暂无机柜 展示图标 -->
                             <template v-if="checkCab(cab)">
@@ -84,11 +81,11 @@
                                 <span class="cab-name" :title="getCabName(cab)">{{getCabName(cab)}}</span>
                             </template>
 	                        <!-- 机柜 修改/删除 按钮 -->
-	                        <div v-if="!checkCab(cab)" class="myoption-close cab-but" :id="'cab'+cab.id">
-	                            <span class="tr-op" @click="updateCab(cab)" title="<@spring.message 'common.edit'/>">
+	                        <div v-if="!checkCab(cab)" class="myoption-close cab-option" :id="'cab'+cab.id">
+	                            <span class="cab-button" @click="updateCab(cab)" title="<@spring.message 'common.edit'/>">
 	                            	<i class="fa fa-pencil"></i>
 	                            </span>
-	                            <span class="tr-op" @click="delCab(cab)" title="<@spring.message 'common.delete'/>">
+	                            <span class="cab-button" @click="delCab(cab)" title="<@spring.message 'common.delete'/>">
 	                            	<i class="fa fa-trash-o"></i>
 	                            </span>
 	                        </div>
@@ -99,7 +96,6 @@
             </table>
         </div>
     </div>
-</div>
 
     <!-- 机房表单 -->
     <div v-show="!showRoomFrom" id="roomForm" class="">
@@ -294,7 +290,7 @@
 <#include "/js/modules/node/roomTest.js">
 <script>
 $(function(){
-    var perfect = new PerfectScrollbar('.content');
+    var perfect = new PerfectScrollbar('.room__content');
     $(".room").css("height",top.$(".content").height()-60);
     $(".ranks").css("height",top.$(".content").height()-60);
     
