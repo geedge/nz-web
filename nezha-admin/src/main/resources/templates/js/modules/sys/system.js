@@ -141,7 +141,7 @@ var vm = new Vue({
 			vm.$v.system.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.title = "<@spring.message 'common.add'/>";
-			vm.system = {name:null,remarks:null,id:null,usergroupIds:[],usergroups: []};
+			vm.system = {name:null,remarks:null,id:null,usergroupIds:[],usergroups: [],addUuids: [],removeUuids: [],nodeNum: 0};
 			vm.selectableNodes = vm.allNodes;
 		},
 		update: function () {
@@ -255,6 +255,7 @@ var vm = new Vue({
 			this.system.addUuids = data[0];
 			this.system.removeUuids = data[1];
 			this.system.nodeNum = data[2];
+			console.info(this.system.nodeNum)
 		},
 		reload: function (event) {
 			vm.single = vm.multi = true;

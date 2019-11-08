@@ -10,9 +10,9 @@ $(function () {
 			{ label: '<@spring.message "common.remark"/>', name: 'remark', width: 80 }
         ],
 		viewrecords: true,
-        height: 385,
-        rowNum: 10,
-		rowList : [10,30,50],
+		height: top.$(".content").height()-130,
+        rowNum: 15,
+		rowList : [15,30,50],
         rownumbers: true, 
         rownumWidth: 25, 
         autowidth:true,
@@ -94,8 +94,8 @@ var vm = new Vue({
 		add: function(){
 			vm.$v.usergroup.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
-			vm.title = "@spring.message 'common.add'/>";
-			vm.usergroup = {name:null,systems:[],users:[],remark:null,id:null};
+			vm.title = "<@spring.message 'common.add'/>";
+			vm.usergroup = {userIds: [],name:null,systems:[],users:[],remark:null,id:null,systemIds: []};
 		},
 		update: function () {
 			vm.$v.usergroup.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)

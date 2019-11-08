@@ -33,6 +33,10 @@ html { overflow-x:hidden; }
 	padding: 0 0 3px 8px
 }
 
+.input-xlarge {
+	width: 300px !important;
+	display: inline-block;
+}
 .input-large {
 	width: 220px !important;
 	display: inline-block;

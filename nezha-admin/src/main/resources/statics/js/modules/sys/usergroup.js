@@ -94,7 +94,7 @@ var vm = new Vue({
 			vm.$v.usergroup.$reset(); //进入新增页面时，将校验的触发状态清空($dirty=true -> false)
 			vm.showList = false;
 			vm.title = "新增";
-			vm.usergroup = {name:null,systems:[],users:[],remark:null,id:null};
+			vm.usergroup = {userIds: [],name:null,systems:[],users:[],remark:null,id:null,systemIds: []};
 		},
 		update: function () {
 			vm.$v.usergroup.$reset(); //进入新增页面时，将校验触发状态清空($dirty=true -> false)
