@@ -8,7 +8,7 @@
     .nodeList{
         display: inline-block;
         float:left;
-        width: calc(100% - 300px);    /*根据页面宽度变化而变化*/
+        width: calc(100% - 400px);    /*根据页面宽度变化而变化*/
     }
     .mytree {
         position: relative;
@@ -235,7 +235,7 @@
 <#include "/js/modules/node/nodeGroup.js">
 <#include "/js/modules/node/nodeInfo.js">
 <script>
-    var groupPrefect = new PerfectScrollbar('.content');
+    var groupPrefect = new PerfectScrollbar('.mytree');
     window.onload = function () {
         var h = document.documentElement.clientHeight;// 可见区域高度
         var groupTree =  document.getElementById("groupTree");
