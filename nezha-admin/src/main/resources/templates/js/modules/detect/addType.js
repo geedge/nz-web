@@ -764,7 +764,7 @@ var addType=Vue.extend({
         },
         initDeteType:function(){
             var temp=this;
-            temp.$v.deteType.$reset();
+            temp.resetType();
             if(temp.typeId==null){
                 temp.isUpdate=false;
                temp.deteType={
@@ -907,7 +907,7 @@ var addType=Vue.extend({
         },
         formatDeteTypeToSimple: function () {
             var temp=this;
-            temp.deteType.method=temp.deteType.method.code;
+            temp.deteType.method=temp.defaultMethod.code;
             $.each(temp.deteType.deteTypeMetas, function (i, v) {
                 temp.deteType.deteTypeMetas[i].fieldType = v.fieldType.code;
                 temp.deteType.deteTypeMetas[i].dataType = v.dataType.code;
@@ -1155,6 +1155,12 @@ var addType=Vue.extend({
                 }
             }
 
+        },
+        resetType:function(){
+            var temp=this;
+            temp.$v.deteType.$reset();
+            temp.metaDirty=false;
+            temp.paramDirty=false;
         },
         destoryUploadComponet:function(){
             this.file=null;

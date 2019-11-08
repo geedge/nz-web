@@ -578,8 +578,8 @@ var warnComponet = Vue.extend({
                 uploadComponet.touch();
                 warnScripError=uploadComponet.error;
             }
-            console.log(temp.$v.deteWarn.$error+"|"+uploadComponet)
-            return temp.$v.deteWarn.$error||uploadComponet;
+            console.log(temp.$v.deteWarn.$error+"|"+warnScripError)
+            return temp.$v.deteWarn.$error||warnScripError;
         },
         formatDeteSetToSimple:function(){
             var temp=this;
