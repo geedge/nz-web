@@ -966,8 +966,7 @@
 				    data:JSON.stringify(formdata),
 				    success: function(r){
 				    	if(r.msg=='success'){
-				    		vm.$refs.returnMenu.click();
-					    	vm.queryDashboards();
+				    		location.href=baseURL+'modules/dashboard/index.html'
 				    	}else{
 				    		layer.msg(r.msg)
 				    	}
@@ -1042,7 +1041,6 @@
          	 	                myChart.setOption(option);
         			        }
 				    	}	
-				    	
 				    	vm.dashboardSetting=true;
 				    }
 				})
@@ -1054,10 +1052,13 @@
 					    url: baseURL + "dashboard/delete",
 					    data:{"id":id},
 					    success: function(r){
-					    	vm.queryDashboards();
+					    	location.href=baseURL+'modules/dashboard/index.html'
 					    }
 					})
 				}
+			},
+			returnMenu:function(){
+				location.href=baseURL+'modules/dashboard/index.html'
 			},
 			queryDashboards:function(){
 				$.ajax({
