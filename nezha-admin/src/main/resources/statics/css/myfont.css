@@ -1,9 +1,9 @@
 @font-face {
   font-family: 'myicon';
   src:
-    url('../fonts/myfont/close-blue.ttf?o9oi7z') format('truetype'),
-    url('../fonts/myfont/close-blue.woff?o9oi7z') format('woff'),
-    url('../fonts/myfont/close-blue.svg?o9oi7z#close-blue') format('svg');
+    url('../fonts/myfont/fonts.ttf?o9oi7z') format('truetype'),
+    url('../fonts/myfont/fonts.woff?o9oi7z') format('woff'),
+    url('../fonts/myfont/fonts.svg?o9oi7z#fonts') format('svg');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -42,4 +42,8 @@
 
 .myicon-right2:before {
   content: "\e903";
+}
+
+.myicon-reset:before {
+  content: "\e904";
 }

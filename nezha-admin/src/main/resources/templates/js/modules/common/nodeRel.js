@@ -14,7 +14,7 @@ var nodeRelComponent = Vue.extend({
 	},
 	data: function () {
 		return {
-			height: top.$(".content").height()-220, //动态生成box的高度
+			height: top.$(".content").height()-250, //动态生成box的高度
 			selectedIP: '',
 			selectedIPStart: '',
 			selectedIPEnd: '',
@@ -248,7 +248,7 @@ var nodeRelComponent = Vue.extend({
 			//已选数量和总数量控制
 			this.countControll();
 		},
-		reset: function(event) {
+		searchReset: function(event) { //搜索条件重置
 			if ($(event.currentTarget).parent().parent().parent().find("#selected-box").length > 0) { //已分配
 				this.selectedIP = '';
 				this.selectedIPStart = '';
@@ -258,6 +258,11 @@ var nodeRelComponent = Vue.extend({
 				this.selectableIPStart = '';
 				this.selectableIPEnd = '';
 			}
+		},
+		nodeReset: function() { //重置此次操作
+			this.tempSelectedNodes = this.selectedNodes = this.initSelectedNodes;
+			this.tempSelectableNodes = this.selectableNodes = this.initSelectableNodes;
+			this.countControll();
 		},
 		sortRow: function(flag, nodes) { //列表重新排序，将新增的项置顶
 			var newNodes = [];
@@ -285,13 +290,12 @@ var nodeRelComponent = Vue.extend({
 	},
 	watch: {
 		initSelectedNodes: function(n, o) {
-			this.tempSelectedNodes = n;
-			this.selectedNodes = n;
+			//init数据拷贝，保证init不改变
+			this.tempSelectedNodes = this.selectedNodes = JSON.parse(JSON.stringify(n));
 			this.selectedTotalCount = n.length;
 		},
 		initSelectableNodes: function(n, o) {
-			this.tempSelectableNodes = n;
-			this.selectableNodes = n;
+			this.tempSelectableNodes = this.selectableNodes = JSON.parse(JSON.stringify(n));
 			this.selectableTotalCount = n.length;
 		}
 	}

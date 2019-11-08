@@ -55,6 +55,14 @@
 	left: 364px;
 	cursor: pointer;
 }
+.box_reset {
+	display: block;
+	position: absolute;
+	top: calc(50% + 60px);
+	left: 364px;
+	cursor: pointer;
+	color: #888;
+}
 .box_counter {
 	font-size: 12px;
 	padding-top: 5px;

@@ -13,7 +13,7 @@
 				</div>
 				<div class="btn-groups">
 					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
-					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+					<a @click="searchReset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
 				</div>
 			</div>
 			<div style="clear:both"></div>
@@ -54,7 +54,7 @@
 				</div>
 				<div class="btn-groups">
 					<a @click="searchIp" class="btn btn-default" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
-					<a @click="reset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
+					<a @click="searchReset" class="btn btn-default" title="<@spring.message 'common.reset'/>"><i class="fa fa-refresh"></i></a>
 				</div>
 			</div>
 			<div style="clear:both"></div>
@@ -84,5 +84,6 @@
 		</div>
 		<span class="box_toright myicon-right1" @click="nodeRelChange(0)"></span>
 		<span class="box_toleft myicon-left1" @click="nodeRelChange(1)"></span>
+		<span class="box_reset myicon-reset" @click="nodeReset"></span>
 	</div>
 </script>
