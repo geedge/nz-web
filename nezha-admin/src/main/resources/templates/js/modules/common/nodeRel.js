@@ -260,8 +260,8 @@ var nodeRelComponent = Vue.extend({
 			}
 		},
 		nodeReset: function() { //重置此次操作
-			this.tempSelectedNodes = this.selectedNodes = this.initSelectedNodes;
-			this.tempSelectableNodes = this.selectableNodes = this.initSelectableNodes;
+			this.tempSelectedNodes = this.selectedNodes = JSON.parse(JSON.stringify(this.initSelectedNodes));
+			this.tempSelectableNodes = this.selectableNodes = JSON.parse(JSON.stringify(this.initSelectableNodes));
 			this.countControll();
 		},
 		sortRow: function(flag, nodes) { //列表重新排序，将新增的项置顶
