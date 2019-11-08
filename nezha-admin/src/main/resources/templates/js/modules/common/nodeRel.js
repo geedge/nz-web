@@ -262,6 +262,9 @@ var nodeRelComponent = Vue.extend({
 		nodeReset: function() { //重置此次操作
 			this.tempSelectedNodes = this.selectedNodes = JSON.parse(JSON.stringify(this.initSelectedNodes));
 			this.tempSelectableNodes = this.selectableNodes = JSON.parse(JSON.stringify(this.initSelectableNodes));
+			this.selectedNodesAdd = [];
+			this.selectableNodesAdd = [];
+			this.$emit("node-change", [this.selectedNodesAdd, this.selectableNodesAdd, this.tempSelectedNodes.length]);
 			this.countControll();
 		},
 		sortRow: function(flag, nodes) { //列表重新排序，将新增的项置顶
