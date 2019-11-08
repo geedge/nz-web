@@ -416,6 +416,7 @@ var vue = new Vue({
                     if (vue.addUuids.length > 0 || vue.removeUuids.length > 0) {
                         confirm("<@spring.message 'common.confirmUpdateNodeRel'/>",function() {
                             vue.assignNode();
+                            vue.count++;
                         })
                     }
                 }
@@ -436,7 +437,8 @@ var vue = new Vue({
                 success: function (r) {
                     if (r.code === 200) {
                         alert("<@spring.message 'common.success'/>", function (index) {
-                            vm.query();
+                            // vm.query();
+                            vue.reload();
                         });
                     } else {
                         alert(r.msg);
