@@ -169,6 +169,7 @@ var vm = new Vue({
             hackReset();
             vm.reset();
             vm.newMapping = true;
+            vm.addMapping();
             $("#saveOrUpdate").unbind('click').bind('click',this.save)
         },
         toUpdate: function () {
