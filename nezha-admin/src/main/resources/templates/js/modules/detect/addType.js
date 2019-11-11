@@ -493,7 +493,7 @@ var addParam=Vue.extend({
             temp.editSelector="#"+temp.editPreKey+"-"+temp.index;
             temp.listDom=$(temp.listSelector);
             temp.editDom=$(temp.editSelector);
-            if(temp.deteParam.new!=undefined&&temp.deteParam.new!=null&&!temp.deteParam.isEdited){
+            if(typeof temp.deteParam.new!='undefined'&&temp.deteParam.new!=null&&!temp.deteParam.isEdited){
                 temp.editSwitch=true;
                 temp.listDom.parent().attr("draggable",'false');
             }

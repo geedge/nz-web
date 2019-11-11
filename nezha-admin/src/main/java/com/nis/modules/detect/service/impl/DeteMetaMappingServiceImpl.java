@@ -121,7 +121,7 @@ public class DeteMetaMappingServiceImpl extends DeteCommonServiceImpl<DeteTypeMe
                 updateCount++;
             }
         }
-        log.info("update deteTypeMetaMapping success! new[{}] , update[{}]"+saveCount,updateCount);
+        log.info("update deteTypeMetaMapping success! new[{}] , update[{}]",saveCount,updateCount);
 
     }
 
