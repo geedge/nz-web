@@ -676,7 +676,7 @@ var warnComponet = Vue.extend({
 
         openEditLayer:function(){
             var temp=this;
-            var title=temp.setDetail.type.name+" > "+temp.setDetail.name+" > 告警";
+            var title=temp.setDetail.type.name+" > "+temp.setDetail.name+" > <@spring.message 'deteWarn'/>";
             var index = layer.open({
                 area: ['600px', '100%'],
                 shade: 0.01,
