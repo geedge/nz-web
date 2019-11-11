@@ -61,8 +61,6 @@ $(function () {
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
             // var gridName = "jqGrid";
             // Merger(gridName, 'type');
-            console.log($(".costomTable").parent().css("padding-left", "0px"))
-            console.log($(".costomTable").parent().css("padding-right", "0px"))
         },
         onSelectAll: function (rowids, status) {
             if (status) {
@@ -195,7 +193,6 @@ var vm = new Vue({
             });
         },
         save: function () {
-            console.log('save--')
             if (vm.validate()) { //在下方定义的validate方法
                 return;
             }
@@ -204,7 +201,6 @@ var vm = new Vue({
             vm.saveOrUpdate(url, method);
         },
         update: function () {
-            console.log('update--')
             if (vm.validate()) { //在下方定义的validate方法
                 return;
             }
@@ -235,7 +231,6 @@ var vm = new Vue({
             if (types == null) {
                 return;
             }
-            console.log("types-->" + JSON.stringify(types))
             confirm("<@spring.message 'common.confirmDelete'/>", function () {
                 $.ajax({
                     url: baseURL + "/deteType/deleteDic",
@@ -261,7 +256,7 @@ var vm = new Vue({
             vm.touchMappings();
             var elementError = false;
             var componets = vm.$refs.metaMapping;
-            if (typeof componets != 'undefined' && componets.length > 1) {
+            if (typeof componets != 'undefined' && componets.length > 0) {
 
                 for (var i = 0; i < componets.length; i++) {
                     var componet = componets[i];
@@ -275,8 +270,6 @@ var vm = new Vue({
                 vm.mappingRequired = false;
                 elementError = true;
             }
-            console.log(vm.$v.metaMappings.$error + '|' + elementError)
-            console.log(vm.$v.metaMappings)
             return vm.$v.metaMappings.$error || elementError;
         },
         formatmetaMappingToSimple: function () {
@@ -505,8 +498,6 @@ Vue.component("meta-mapping", {
         delSelf: function (e) {
             var temp = this;
             var p = temp.metaMapping;
-            console.log('p-->')
-            console.log(p)
             if (typeof p.new != 'undefined' && p.new != null && p.new) {
                 temp.$emit("del-mapping", this.index);
             } else {

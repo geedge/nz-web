@@ -499,7 +499,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <div class="col-sm-2 control-label"><@spring.message 'deteType.defVal'/>:</div>
+                            <div class="col-sm-2 control-label"><@spring.message 'common.defVal'/>:</div>
                             <div class="col-sm-9">
                                 <input type="text"  class="form-control" :class="{'form-control--error': ($v.deteType.deteTypeParams.$each[index].defVal.$dirty && !$v.deteType.deteTypeParams.$each[index].defVal.required)}"  v-model.trim="$v.deteType.deteTypeParams.$each[index].defVal.$model" value="{{item.defVal}}"/>
                                 <span class="required-symbol">*</span>

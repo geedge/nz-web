@@ -374,10 +374,10 @@
             </div>
             <form class="form-inline">
 				<div class="add-box_cell add-box_cell_45">
-                	<input type="text" :id="'r-param-name-input-'+index" :class="{'form-control--error':$v.deteParam.name.$dirty&&(!$v.deteParam.name.required||!$v.deteParam.name.inPageNameRepeat)}" class="form-control add-box_input"  placeholder="请输入名称" v-model="$v.deteParam.name.$model">
+                	<input type="text" :id="'r-param-name-input-'+index" :class="{'form-control--error':$v.deteParam.name.$dirty&&(!$v.deteParam.name.required||!$v.deteParam.name.inPageNameRepeat)}" class="form-control add-box_input"  placeholder="<@spring.message 'common.input'/><@spring.message 'common.name'/>" v-model="$v.deteParam.name.$model">
 				</div>
 				<div class="add-box_cell add-box_cell_45">
-                    <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control add-box_input"  placeholder="请输入默认值" v-model="$v.deteParam.defVal.$model">
+                    <input type="text" :id="'r-param-defval-input-'+index" :class="{'form-control--error':$v.deteParam.defVal.$dirty&&!$v.deteParam.defVal.required}" class="form-control add-box_input"  placeholder="<@spring.message 'common.input'/><@spring.message 'common.defVal'/>" v-model="$v.deteParam.defVal.$model">
 				</div>
                 <span class="add-box_ops">
 					<i @click="submitSelf" class="fa fa-check" ></i>
