@@ -35,32 +35,6 @@
 	        endDate: rangesConf['今日'][1]
 		});
 		
-		// 初始化仪表盘拖拽
-		/*var gridster = $(".gridster > ul").gridster({
-	        widget_margins: [20, 20], // 模块的间距 [上下,左右]
-	        widget_base_dimensions: [150, 150], //模块的宽高 [宽,高]
-	        min_cols:6,     //设置最小列数
-	        max_cols:10,     //设置最大列数
-	        draggable: {
-	        	handle: 'header' //模块内定义拖动的元素<header>，这里也支持jquery选择器，如"span.drag_handle"
-	        }, 
-	        serialize_params: function($w, wgd) {
-	            return { chartId: $w[0].id, type:$w[0].type, x: wgd.row, y: wgd.col,  width: wgd.size_x*150, height: wgd.size_y*150 }
-	         },
-	        helper: 'clone',
-	        resize: {
-				enabled: true,
-				max_size: [10, 20],
-				min_size: [1, 1],
-				start: function (e, ui, $widget) {
-				},
-                resize: function (e, ui, $widget) {
-                },
-                stop: function (e, ui, $widget) {
-				}
-			},
-	    }).data('gridster');		*/
-		
 		var singleValue=10;
 		var now = +new Date(2019, 9, 3);
 		var oneDay = 24 * 3600 * 1000;
@@ -560,11 +534,10 @@
 				lines:1,
 				points:0,
 				bars:0,
-				yaxes:0,
+				yaxis:0,
 				legend:1,
 				yaxes:1,
 				xaxis:1,
-				yaxis:0,
 				yaxisName:'',
 				yaxesName:'',
 				xaxisName:''
@@ -608,7 +581,8 @@
 			timeFormats:[],
 			chart:false,
 			set:true,
-			query:true
+			query:true,
+			sqlFlag:false
 		},
 		methods:{
 			getDatabaseType: function(event) {
@@ -789,60 +763,67 @@
 					    url: baseURL + "dashboard/queryData",
 					    data:{'sql':sql,'timeFormat':vm.chartTable.timeFormat.code,'chartType':vm.dashboard.chartType.code},
 					    success: function(r){
-					    	if(vm.dashboard.chartType.code==1){
-			            		//判断是否替换假数据
-			            		if(echartsDefaultData){
-			            			//数据为动态的时候将echarts数据状态修改
-			            			echartsDefaultData=false;
-			            			var data=[];
-			            			for(var i=0;i<r.result.length;i++){
-			            				var d={value:[r.result[i].time,r.result[i].value]}
-			            				data.push(d);
-			            			}
-			            		    option.series.find( element => element.id == index).data=data;
-			 	 	                myChart.setOption(option);
-			            		}else{
-			            			var seriesData=option.series.find( element => element.id == index);
-			            			//可能为重复的数据操作 需要进行判断
-			            			if(seriesData==''||seriesData==undefined){
-			            				var data=[];
+					    	if(r.msg=='success'){
+						    	if(vm.dashboard.chartType.code==1){
+				            		//判断是否替换假数据
+				            		if(echartsDefaultData){
+				            			//数据为动态的时候将echarts数据状态修改
+				            			echartsDefaultData=false;
+				            			var data=[];
 				            			for(var i=0;i<r.result.length;i++){
 				            				var d={value:[r.result[i].time,r.result[i].value]}
 				            				data.push(d);
 				            			}
-			            				var data={
-			    	            				id:index,
-			    	    			            name:'',
-			    	    			            type:vm.showType,
-			    	    			            yAxisIndex: 0,
-			    	    			            showSymbol: false,
-			    	    	                    lineStyle:{
-			    	    	                        width:1
-			    	    	                    },
-			    	    	                    areaStyle:{
-			    	    	                        opacity:0
-			    	    	                    },
-			    	    			            data:data
-			    	    			        }
-			    	            			option.series.push(data);
-			            			}else{
-			            				var data=[];
-				            			for(var i=0;i<r.result.length;i++){
-				            				var d={value:[r.result[i].time,r.result[i].value]}
-				            				data.push(d);
+				            		    option.series[index].data=data;
+				 	 	                myChart.setOption(option);
+				            		}else{
+				            			var seriesData=option.series.find( element => element.id == index);
+				            			//可能为重复的数据操作 需要进行判断
+				            			if(seriesData==''||seriesData==undefined){
+				            				var data=[];
+					            			for(var i=0;i<r.result.length;i++){
+					            				var d={value:[r.result[i].time,r.result[i].value]}
+					            				data.push(d);
+					            			}
+				            				var data={
+				    	            				id:index,
+				    	    			            name:'',
+				    	    			            type:vm.showType,
+				    	    			            yAxisIndex: 0,
+				    	    			            showSymbol: false,
+				    	    	                    lineStyle:{
+				    	    	                        width:1
+				    	    	                    },
+				    	    	                    areaStyle:{
+				    	    	                        opacity:0
+				    	    	                    },
+				    	    			            data:data
+				    	    			        }
+				    	            			option.series.push(data);
+				            			}else{
+				            				var data=[];
+					            			for(var i=0;i<r.result.length;i++){
+					            				var d={value:[r.result[i].time,r.result[i].value]}
+					            				data.push(d);
+					            			}
+				            				seriesData.data=data;
 				            			}
-			            				seriesData.data=data;
-			            			}
-			            			myChart.setOption(option);
+				            			myChart.setOption(option);
+				            		}
+			            		}else if(vm.dashboard.chartType.code==2){
+			            			var decimal = vm.chartSingle.decimal;
+			            			singleValue=r.result[0].value;
+			            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
+			            			singleChart.setOption(singleOption);
+			            		}else if(vm.dashboard.chartType.code==3){
+			            			vm.tableDatas=r.result;
 			            		}
-		            		}else if(vm.dashboard.chartType.code==2){
-		            			var decimal = vm.chartSingle.decimal;
-		            			singleValue=r.result[0].value;
-		            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
-		            			singleChart.setOption(singleOption);
-		            		}else if(vm.dashboard.chartType.code==3){
-		            			vm.tableDatas=r.result;
-		            		}
+						    	vm.sqlFlag=true;
+						    }else{
+						    	vm.sqlFlag=false;
+						    	layer.msg(r.msg)
+						    }
+					    	
 						}
 					});
 				}
@@ -879,58 +860,7 @@
 					    url: baseURL + "dashboard/queryData",
 					    data:{'sql':sql,'timeFormat':vm.chartTable.timeFormat.code,'chartType':vm.dashboard.chartType.code},
 					    success: function(r){
-					    	if(vm.dashboard.chartType.code==1){
-			            		//判断是否替换假数据
-			            		if(echartsDefaultData){
-			            			//数据为动态的时候将echarts数据状态修改
-			            			echartsDefaultData=false;
-			            			var data=[];
-			            			for(var i=0;i<r.result.length;i++){
-			            				var d={value:[r.result[i].time,r.result[i].value]}
-			            				data.push(d);
-			            			}
-			            		    option.series.find( element => element.id == 0).data=data;
-			 	 	                myChart.setOption(option);
-			            		}else{
-			            			var seriesData=option.series.find( element => element.id == 0);
-			            			//可能为重复的数据操作 需要进行判断
-			            			if(seriesData==''||seriesData==undefined){
-			            				var data=[];
-				            			for(var i=0;i<r.result.length;i++){
-				            				var d={value:[r.result[i].time,r.result[i].value]}
-				            				data.push(d);
-				            			}
-			            				var data={
-			    	            				id:0,
-			    	    			            name:'',
-			    	    			            type:showType,
-			    	    			            yAxisIndex: 0,
-			    	    			            showSymbol: false,
-			    	    	                    lineStyle:{
-			    	    	                        width:1
-			    	    	                    },
-			    	    	                    areaStyle:{
-			    	    	                        opacity:0
-			    	    	                    },
-			    	    			            data:data
-			    	    			        }
-			    	            			option.series.push(data);
-			            			}else{
-			            				var data=[];
-				            			for(var i=0;i<r.result.length;i++){
-				            				var d={value:[r.result[i].time,r.result[i].value]}
-				            				data.push(d);
-				            			}
-			            				seriesData.data=data;
-			            			}
-			            			myChart.setOption(option);
-			            		}
-		            		}else if(vm.dashboard.chartType.code==2){
-		            			var decimal = vm.chartSingle.decimal;
-		            			singleValue=r.result[0].value;
-		            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
-		            			singleChart.setOption(singleOption);
-		            		}else if(vm.dashboard.chartType.code==3){
+					    	if(vm.dashboard.chartType.code==3){
 		            			vm.tableDatas=r.result;
 		            		}
 						}
@@ -938,6 +868,10 @@
 				}
 			},
 			savePanelInfo:function(){
+				if(!vm.sqlFlag){
+					layer.msg(" sql error ")
+					return
+				}
 				var formdata={};
 				formdata.name=vm.dashboard.title;
 				formdata.chartType=vm.dashboard.chartType.code;
@@ -979,6 +913,7 @@
 				    url: baseURL + "dashboard/querySingleDashboard",
 				    data:{"id":id},
 				    success: function(r){
+				    	vm.sqlFlag=true;
 				    	vm.dashboard.id=r.data.id;
 				    	vm.dashboard.title=r.data.name;
 				    	for(let v of vm.chartType) {  
@@ -1040,6 +975,8 @@
                 				option.series=nSeries;
          	 	                myChart.setOption(option);
         			        }
+				    	}else if(vm.dashboard.chartType.code==3){
+				    		vm.tableDatas=JSON.parse(obj.series);
 				    	}	
 				    	vm.dashboardSetting=true;
 				    }
@@ -1066,305 +1003,306 @@
 					contentType:'application/json',
 				    url: baseURL + "dashboard/list",
 				    success: function(r){
-				    	vm.dashboards=r.data;
-				    	vm.$nextTick(function () {
-				    		var statisticals=new Array();
-					    	for(var i=0;i<vm.dashboards.length;i++){
-					    		vm.dashboards[i].idName='chart'+vm.dashboards[i].id;
-								var datas=new Array();
-								var obj=JSON.parse(vm.dashboards[i].data);
-								// 折线图等 生成echarts
-				        		if(vm.dashboards[i].chartType==1){
-				        			var a=JSON.parse(obj.series);
-									console.log(a)
-									var nSeries=[];
-									for(var j=0;j<a.length;j++){
-										var userQueryResult=a[j];
-										var data=[];
-										for(var m=0;m<userQueryResult.length;m++){
-											var d={value:[userQueryResult[m].time,userQueryResult[m].value]}
-											data.push(d);
-										}
-										var data={
-											name:obj.userSqls[j].describe,
-											type:obj.lines==1?'line':obj.bars==1?'bar':obj.points==1?'scatter':'line',
-											yAxisIndex: 0,
-											showSymbol: false,
-											lineStyle:{
-												width:obj.linewidth
-											},
-											areaStyle:{
-												opacity:obj.fill/10
-											},
-											data:data
-										}
-										nSeries.push(data);
-									}
-				        			
-				        			// 基于准备好的dom，初始化echarts实例
-									var chartId=vm.dashboards[i].name;
-				        	        var mychart = echarts.init(document.getElementById(chartId));
-				
-				        			var colors = ['#5793f3', '#d14a61', '#DC143C'];
-				
-				        			option = {
-				        			    color: colors,
-				        			    tooltip: {
-				        			        trigger: 'item',
-				        			        axisPointer: {
-				        			            type: 'cross'
-				        			        }
-				        			    },
-				        			    legend:{
-				        			    	show:obj.legend==1?true:false,
-				        			    	x:obj.legendXPosition,
-				        			    	y:obj.legendYPosition
-				        			    },
-				        			    toolbox:{
-				        	                feature:{
-				        	                    dataZoom:{
-				        	                    	title:false
-				        	                    }
-				        	                }
-				        	            }, 
-				        	            dataZoom:[{
-				                            　　　　			type:"inside"         //详细配置可见echarts官网
-				                            　　			}],
-				        			    grid: {
-				        			        right: '20%'
-				        			    },
-				        			    xAxis: [
-				        			        {
-				        			        	name:obj.xaxisName,
-				        			        	type:'time'
-				        			        }
-				        			    ],
-				        			    yAxis: [
-				        			        {
-				        			        	show:obj.yaxes==1?true:false,
-				        			            type: 'value',
-				        			            name: obj.yaxesName,
-				        			            position: 'left',
-				        			            axisLine: {
-				        			                lineStyle: {
-				        			                 //   color: colors[1]
-				        			                }
-				        			            },
-				        			            axisLabel: {
-				        			                formatter: ''
-				        			            }
-				        			        },
-				        			        {
-				        			        	show:obj.yaxis==1?true:false,
-				        			            type: 'value',
-				        			            name: obj.yaxisName,
-				        			            position: 'right',
-				        			            axisLine: {
-				        			                lineStyle: {
-				        			                //    color: colors[1]
-				        			                }
-				        			            }
-				        			        }
-				        			    ],
-				        			    series: nSeries
-				        			};
-				        			// 使用刚指定的配置项和数据显示图表。
-				        	        mychart.setOption(option);
-				        	        statisticals.push(mychart);
-				        		}else if(vm.dashboards[i].chartType==3){
-				        			//这里是初始化表格
-				        		}else if(vm.dashboards[i].chartType==2){
-				        			var cA=[];
-				    				for(var m=0;i<obj.thresholdValues.length;m++){
-				    					if(obj.thresholdValues[m]==undefined || obj.thresholdValues[m]==''){
-				    						break;
-				    					}
-				    					var cB=[];
-				    					var tValue=obj.thresholdValues[m].value;
-				    					var tColor=obj.thresholdValues[m].color;
-				    					cB.push(tValue);
-				    					cB.push(tColor);
-				    					cA.push(cB);
-				    				}
-				        			var chartId=vm.dashboards[i].name;
-				        			var singleChart = echarts.init(document.getElementById(chartId));
-				        			var angle = [220, -40]
-				        			singleOption = {
-				        			    backgroundColor: '#fff',
-				        			    tooltip: {
-				        			        show: false,
-				        			        formatter: "{a} <br/>{b} : {c}%"
-				        			    },
-				        			    series: [{
-				        			        name: '最外层环仪表盘',
-				        			        type: "gauge",
-				        			        min: obj.minValue,
-				        			        max: obj.maxValue,
-				        			        startAngle: angle[0],
-				        			        endAngle: angle[1],
-				        			        splitNumber: 20,
-				        			        axisLine: {
-				        			            lineStyle: {
-				        			                color: [
-				        			                    [1, "#c1c3c5"]
-				        			                ],
-				        			                width: 10,
-				        			                opacity:obj.isGauge==1?1:0
-				        			            }
-				        			        },
-				        			        axisTick: {
-				        			            show:false,
-				        			            lineStyle: {
-				        			                color: "#fff",
-				        			                width: 2,
-				        			            },
-				        			            length: 0,
-				        			            splitNumber: 1
-				        			        },
-				        			        axisLabel: {
-				        			            show:obj.isScale==1?true:false,
-				        			            distance: -40,
-				        			            textStyle: {
-				        			                color: "#bbb"
-				        			            },
-				        			            rich: {
-				        			                a: {
-				        			                    color: '#fbe010'
-				        			                },
-				        			                b: {
-				        			                    color: '#3fa7dc'
-				        			                }
-				        			            }
-				        			        },
-				        			        splitLine: {
-				        			            show: obj.isScale==1?true:false,
-				        			            length: 10,
-				        			            lineStyle: {
-				        			                color: '#fff',
-				        			                width: 2
-				        			            }
-				        			        },
-				        			        itemStyle: {
-				        			            normal: {
-				        			                color: "#818488",
-				        			                shadowColor: 'rgba(0, 0, 0, 0.5)',
-				        			                shadowBlur: 10
-				        			            }
-				        			        },
-				        			        detail: {
-				        			            formatter: function(v) {
-				        			            	console.log(obj)
-				        			            	var prefix=obj.prefix;
-				        			            	var suffix=obj.suffix;
-				        			            	return '{a| '+prefix+'} '+v+' {b| '+suffix+'}';
-				        			            },
-				        			            offsetCenter:obj.isGauge==1?[0, "50%"]:[0, "10%"],
-				        			            textStyle: {
-				        			                fontSize: obj.valueFontSize,
-				        			                color: obj.colorValue
-				        			            },
-				        			            rich:{
-				        			                a:{
-				        			                    fontSize:obj.isGauge==1?obj.valueFontSize:obj.prefixFontSize,
-				        			                    color:obj.colorPrefix,
-				        			                    textShadowOffsetX:10
-				        			                },
-				        			                b:{
-				        			                    fontSize:obj.isGauge==1?obj.valueFontSize:obj.suffixFontSize,
-				        			                    color:obj.colorSuffix
-				        			                }
-				        			            }
-				        			        },
-				        			        title: {
-				        			            show: false
-				        			        },
-				        			        pointer: {
-				        			            show:obj.isGauge==1?true:false,
-				        			            length: '85%'
-				        			        },
-				        			        data: [{value: (JSON.parse(obj.series)[0].value).toFixed(obj.decimal)}]
-				        			    },{
-				        			        name: "内环仪表盘四段颜色",
-				        			        type: "gauge",
-				        			        min: 0,
-				        			        max: 100,
-				        			        radius: '69%',
-				        			        startAngle: angle[0],
-				        			        endAngle: angle[1],
-				        			        splitNumber: 10,
-				        			        axisLine: {
-				        			            lineStyle: {
-				        			                color: obj.isThreshold==1?cA:[],
-				        			                width: 30,
-				        			                opacity:obj.isThreshold==1?1:0
-				        			            }
-				        			        },
-				        			        axisTick: {
-				        			            show: obj.isThreshold==1?true:false
-				        			        },
-				        			        axisLabel: {
-				        			            show: false
-				        			        },
-				        			        splitLine: {
-				        			            show: obj.isThreshold==1?true:false,
-				        			            length: 15,
-				        			            lineStyle: {
-				        			                color: '#fff',
-				        			                width: 2
-				        			            }
-				        			        },
-				        			        pointer: {
-				        			            length: 0
-				        			        },
-				        			        detail: {
-				        			            show: false
-				        			        },
-				        			    }]
-				        			}
-				        			singleChart.setOption(singleOption);
-				        			statisticals.push(singleChart);
-				        		}
-							}
-				        	
-				    		gridster = $(".gridster > ul").gridster({
-				    	        widget_margins: [20, 20], // 模块的间距 [上下,左右]
-				    	        widget_base_dimensions: [150, 150], //模块的宽高 [宽,高]
-				    	        min_cols:6,     //设置最小列数
-				    	        max_cols:10,     //设置最大列数
-				    	        draggable: {
-				    	        	handle: 'header' //模块内定义拖动的元素<header>，这里也支持jquery选择器，如"span.drag_handle"
-				    	        }, 
-				    	        serialize_params: function($w, wgd) {
-				    	            return { id: $w[0].id, x: wgd.row, y: wgd.col,  width: wgd.size_x*150, height: wgd.size_y*150 }
-				    	         },
-				    	        helper: 'clone',
-				    	        resize: {
-				    				enabled: true,
-				    				max_size: [10, 20],
-				    				min_size: [1, 1],
-				    				start: function (e, ui, $widget) {
-				    				},
-				   	                resize: function (e, ui, $widget) {
-				   	                },
-				   	                stop: function (e, ui, $widget) {
-				    					$widget.find("div").eq(1).css('width',$widget[0].offsetWidth);
-				    					$widget.find("div").eq(1).css('height',$widget[0].offsetHeight);
-				    					
-				    					statisticals.forEach(function(value,key,arr){
-				    						$(value).resize()
-				    				    })
-				    					
-				    				}
-				    			},
-				    	    }).data('gridster');
-				    		
-			    	    })
+				    	vm.handleDashboards(r);
 				    }
 				})
 			},
+			handleDashboards:function(r){
+				vm.dashboards=r.data;
+		    	vm.$nextTick(function () {
+		    		var statisticals=new Array();
+			    	for(var i=0;i<r.data.length;i++){
+//			    		vm.dashboards[i].idName='chart'+vm.dashboards[i].id;
+						var datas=new Array();
+						var obj=JSON.parse(r.data[i].data);
+						// 折线图等 生成echarts
+		        		if(r.data[i].chartType==1){
+		        			var a=JSON.parse(obj.series);
+							var nSeries=[];
+							for(var j=0;j<a.length;j++){
+								var userQueryResult=a[j];
+								var data=[];
+								for(var m=0;m<userQueryResult.length;m++){
+									var d={value:[userQueryResult[m].time,userQueryResult[m].value]}
+									data.push(d);
+								}
+								var data={
+									name:obj.userSqls[j].describe,
+									type:obj.lines==1?'line':obj.bars==1?'bar':obj.points==1?'scatter':'line',
+									yAxisIndex: 0,
+									showSymbol: false,
+									lineStyle:{
+										width:obj.linewidth
+									},
+									areaStyle:{
+										opacity:obj.fill/10
+									},
+									data:data
+								}
+								nSeries.push(data);
+							}
+		        			
+		        			// 基于准备好的dom，初始化echarts实例
+							var chartId=r.data[i].name;
+		        	        var mychart = echarts.init(document.getElementById(chartId));
+		
+		        			var colors = ['#5793f3', '#d14a61', '#DC143C'];
+		
+		        			tOption = {
+		        			    color: colors,
+		        			    tooltip: {
+		        			        trigger: 'item',
+		        			        axisPointer: {
+		        			            type: 'cross'
+		        			        }
+		        			    },
+		        			    legend:{
+		        			    	show:obj.legend==1?true:false,
+		        			    	x:obj.legendXPosition,
+		        			    	y:obj.legendYPosition
+		        			    },
+		        			    toolbox:{
+		        	                feature:{
+		        	                    dataZoom:{
+		        	                    	title:false
+		        	                    }
+		        	                }
+		        	            }, 
+		        	            dataZoom:[{
+		                            　　　　			type:"inside"         //详细配置可见echarts官网
+		                            　　			}],
+		        			    grid: {
+		        			        right: '20%'
+		        			    },
+		        			    xAxis: [
+		        			        {
+		        			        	name:obj.xaxisName,
+		        			        	type:'time'
+		        			        }
+		        			    ],
+		        			    yAxis: [
+		        			        {
+		        			        	show:obj.yaxes==1?true:false,
+		        			            type: 'value',
+		        			            name: obj.yaxesName,
+		        			            position: 'left',
+		        			            axisLine: {
+		        			                lineStyle: {
+		        			                 //   color: colors[1]
+		        			                }
+		        			            },
+		        			            axisLabel: {
+		        			                formatter: ''
+		        			            }
+		        			        },
+		        			        {
+		        			        	show:obj.yaxis==1?true:false,
+		        			            type: 'value',
+		        			            name: obj.yaxisName,
+		        			            position: 'right',
+		        			            axisLine: {
+		        			                lineStyle: {
+		        			                //    color: colors[1]
+		        			                }
+		        			            }
+		        			        }
+		        			    ],
+		        			    series: nSeries
+		        			};
+		        			// 使用刚指定的配置项和数据显示图表。
+		        	        mychart.setOption(tOption);
+		        	        statisticals.push(mychart);
+		        		}else if(r.data[i].chartType==3){
+		        			//这里是初始化表格
+		        		}else if(r.data[i].chartType==2){
+		        			var cA=[];
+		    				for(var m=0;i<obj.thresholdValues.length;m++){
+		    					if(obj.thresholdValues[m]==undefined || obj.thresholdValues[m]==''){
+		    						break;
+		    					}
+		    					var cB=[];
+		    					var tValue=obj.thresholdValues[m].value;
+		    					var tColor=obj.thresholdValues[m].color;
+		    					cB.push(tValue);
+		    					cB.push(tColor);
+		    					cA.push(cB);
+		    				}
+		    				
+		    				var currentSingle=JSON.parse(JSON.parse(JSON.stringify(r.data[i].data)));
+		        			var chartId=r.data[i].name;
+		        			var singleChart = echarts.init(document.getElementById(chartId));
+		        			var angle = [220, -40]
+		        			tSingleOption = {
+		        			    backgroundColor: '#fff',
+		        			    tooltip: {
+		        			        show: false,
+		        			        formatter: "{a} <br/>{b} : {c}%"
+		        			    },
+		        			    series: [{
+		        			        name: '最外层环仪表盘',
+		        			        type: "gauge",
+		        			        min: obj.minValue,
+		        			        max: obj.maxValue,
+		        			        startAngle: angle[0],
+		        			        endAngle: angle[1],
+		        			        splitNumber: 20,
+		        			        axisLine: {
+		        			            lineStyle: {
+		        			                color: [
+		        			                    [1, "#c1c3c5"]
+		        			                ],
+		        			                width: 10,
+		        			                opacity:obj.isGauge==1?1:0
+		        			            }
+		        			        },
+		        			        axisTick: {
+		        			            show:false,
+		        			            lineStyle: {
+		        			                color: "#fff",
+		        			                width: 2,
+		        			            },
+		        			            length: 0,
+		        			            splitNumber: 1
+		        			        },
+		        			        axisLabel: {
+		        			            show:obj.isScale==1?true:false,
+		        			            distance: -40,
+		        			            textStyle: {
+		        			                color: "#bbb"
+		        			            },
+		        			            rich: {
+		        			                a: {
+		        			                    color: '#fbe010'
+		        			                },
+		        			                b: {
+		        			                    color: '#3fa7dc'
+		        			                }
+		        			            }
+		        			        },
+		        			        splitLine: {
+		        			            show: obj.isScale==1?true:false,
+		        			            length: 10,
+		        			            lineStyle: {
+		        			                color: '#fff',
+		        			                width: 2
+		        			            }
+		        			        },
+		        			        itemStyle: {
+		        			            normal: {
+		        			                color: "#818488",
+		        			                shadowColor: 'rgba(0, 0, 0, 0.5)',
+		        			                shadowBlur: 10
+		        			            }
+		        			        },
+		        			        detail: {
+		        			            formatter: function(v) {
+		        			            	console.log("~~~~~~~~~~~~~")
+		        			            	console.log(currentSingle)
+		        			            	return '{a| '+currentSingle.prefix+'} '+v+' {b| '+currentSingle.suffix+'}';
+		        			            },
+		        			            offsetCenter:obj.isGauge==1?[0, "50%"]:[0, "10%"],
+		        			            textStyle: {
+		        			                fontSize: obj.valueFontSize,
+		        			                color: obj.colorValue
+		        			            },
+		        			            rich:{
+		        			                a:{
+		        			                    fontSize:obj.isGauge==1?obj.valueFontSize:obj.prefixFontSize,
+		        			                    color:obj.colorPrefix,
+		        			                    textShadowOffsetX:10
+		        			                },
+		        			                b:{
+		        			                    fontSize:obj.isGauge==1?obj.valueFontSize:obj.suffixFontSize,
+		        			                    color:obj.colorSuffix
+		        			                }
+		        			            }
+		        			        },
+		        			        title: {
+		        			            show: false
+		        			        },
+		        			        pointer: {
+		        			            show:obj.isGauge==1?true:false,
+		        			            length: '85%'
+		        			        },
+		        			        data: [{value: (JSON.parse(obj.series)[0].value).toFixed(obj.decimal)}]
+		        			    },{
+		        			        name: "内环仪表盘四段颜色",
+		        			        type: "gauge",
+		        			        min: 0,
+		        			        max: 100,
+		        			        radius: '69%',
+		        			        startAngle: angle[0],
+		        			        endAngle: angle[1],
+		        			        splitNumber: 10,
+		        			        axisLine: {
+		        			            lineStyle: {
+		        			                color: obj.isThreshold==1?cA:[],
+		        			                width: 30,
+		        			                opacity:obj.isThreshold==1?1:0
+		        			            }
+		        			        },
+		        			        axisTick: {
+		        			            show: obj.isThreshold==1?true:false
+		        			        },
+		        			        axisLabel: {
+		        			            show: false
+		        			        },
+		        			        splitLine: {
+		        			            show: obj.isThreshold==1?true:false,
+		        			            length: 15,
+		        			            lineStyle: {
+		        			                color: '#fff',
+		        			                width: 2
+		        			            }
+		        			        },
+		        			        pointer: {
+		        			            length: 0
+		        			        },
+		        			        detail: {
+		        			            show: false
+		        			        },
+		        			    }]
+		        			}
+		        			singleChart.setOption(tSingleOption);
+		        			statisticals.push(singleChart);
+		        		}
+					}
+		        	
+		    		gridster = $(".gridster > ul").gridster({
+		    	        widget_margins: [20, 20], // 模块的间距 [上下,左右]
+		    	        widget_base_dimensions: [150, 150], //模块的宽高 [宽,高]
+		    	        min_cols:6,     //设置最小列数
+		    	        max_cols:10,     //设置最大列数
+		    	        draggable: {
+		    	        	handle: 'header' //模块内定义拖动的元素<header>，这里也支持jquery选择器，如"span.drag_handle"
+		    	        }, 
+		    	        serialize_params: function($w, wgd) {
+		    	            return { id: $w[0].id, x: wgd.row, y: wgd.col,  width: wgd.size_x*150, height: wgd.size_y*150 }
+		    	         },
+		    	        helper: 'clone',
+		    	        resize: {
+		    				enabled: true,
+		    				max_size: [10, 20],
+		    				min_size: [1, 1],
+		    				start: function (e, ui, $widget) {
+		    				},
+		   	                resize: function (e, ui, $widget) {
+		   	                },
+		   	                stop: function (e, ui, $widget) {
+		    					$widget.find("div").eq(1).css('width',$widget[0].offsetWidth-50);
+		    					$widget.find("div").eq(1).css('height',$widget[0].offsetHeight-50);
+		    					
+		    					statisticals.forEach(function(value,key,arr){
+		    						$(value).resize()
+		    				    })
+		    					
+		    				}
+		    			},
+		    	    }).data('gridster');
+	    	    })
+			},
 			modifyPosition:function(){
 				var allChartInfos = gridster.serialize();
-				console.log(allChartInfos);
 				$.ajax({
 	                type: "PUT",//方法类型
 	                dataType: "json",//预期服务器返回的数据类型
@@ -1435,6 +1373,64 @@
 				            });
 				        });
 					});
+				},
+				deep:true
+			},
+			'dashboardSetting':{
+				handler(newVal,oldVal){
+					if(newVal){
+						if(vm.chartStatistical.lines==1){
+							$("#isScatter").bootstrapSwitch('state', false);
+							$("#isLine").bootstrapSwitch('state', true);
+					        $("#isBar").bootstrapSwitch('state', false);
+						}else if(vm.chartStatistical.points==1){
+							$("#isScatter").bootstrapSwitch('state', true);
+							$("#isLine").bootstrapSwitch('state', false);
+					        $("#isBar").bootstrapSwitch('state', false);
+						}else if(vm.chartStatistical.bars==1){
+							$("#isScatter").bootstrapSwitch('state', false);
+							$("#isLine").bootstrapSwitch('state', false);
+					        $("#isBar").bootstrapSwitch('state', true);
+						}
+						if(vm.chartStatistical.yaxes==1){
+							$("#leftYOpen").bootstrapSwitch('state', true);
+						}else{
+							$("#leftYOpen").bootstrapSwitch('state', false);
+						}
+						if(vm.chartStatistical.legend==1){
+							$("#legendShow").bootstrapSwitch('state', true);					
+						}else{
+							$("#legendShow").bootstrapSwitch('state', false);
+						}
+						if(vm.chartStatistical.yaxis==1){
+							$("#rightYOpen").bootstrapSwitch('state', true);
+						}else{
+							$("#rightYOpen").bootstrapSwitch('state', false);
+						}
+						if(vm.chartStatistical.xaxis==1){
+							$("#xOpen").bootstrapSwitch('state', true);
+						}else{
+							$("#xOpen").bootstrapSwitch('state', false);
+						}
+						
+						if(vm.chartSingle.isGauge==1){
+							$("#isGauge").bootstrapSwitch('state', true);
+						}else{
+							$("#isGauge").bootstrapSwitch('state', true);
+						}
+						
+						if(vm.chartSingle.isThreshold==1){
+							$("#isThreshold").bootstrapSwitch('state', true);					
+						}else{
+							$("#isThreshold").bootstrapSwitch('state', true);
+						}
+						
+						if(vm.chartSingle.isScale==1){
+							$("#isAxisLabelShow").bootstrapSwitch('state', true);
+						}else{
+							$("#isAxisLabelShow").bootstrapSwitch('state', true);
+						}
+					}
 				},
 				deep:true
 			}

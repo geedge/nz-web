@@ -139,6 +139,11 @@
 	.singleColor{
 		width:105px !important;
 	}
+	.gridster .preview-holder {
+	  border: none !important;
+	  border-radius: 0 !important;
+	  background: #488bdc !important;
+	}
 	
 	.table-condensed th {padding: 0; text-align:center;}
 	.table-condensed td {padding: 0 0 0 10px;}
