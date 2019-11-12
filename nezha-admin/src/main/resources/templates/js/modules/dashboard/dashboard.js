@@ -472,30 +472,6 @@
 	        	vm.chartSingle.isScale=0;
 	        }
 	    })
-	    
-	    //初始化单值表颜色选择
-		$('.singleColor').each(function() {
-            $(this).minicolors({
-                control: $(this).attr('data-control') || 'hue',
-                defaultValue: $(this).attr('data-defaultValue') || '',
-                inline: $(this).attr('data-inline') === 'true',
-                letterCase: $(this).attr('data-letterCase') || 'lowercase',
-                opacity: $(this).attr('data-opacity'),
-                position: $(this).attr('data-position') || 'bottom left',
-                change: function(hex, opacity) {
-                    if (!hex)
-                        return;
-                    if (opacity)
-                        hex += ', ' + opacity;
-                    try {
-                        console.log(hex);
-                    } catch (e) {
-                    }
-                },
-                theme: 'bootstrap'
-            });
-
-        });
 	});
 
 	//注册select组件
@@ -710,7 +686,7 @@
 			},
 			//设置单值图小数点保留位数
 			setSingleDecimal:function(){
-				singleOption.series[0].data=[{"value":Number(10).toFixed(vm.chartSingle.decimal)}];
+				singleOption.series[0].data=[{"value":Number(singleValue).toFixed(vm.chartSingle.decimal)}];
 				singleChart.setOption(singleOption);
 			},
 			//设置阈值颜色
@@ -977,6 +953,11 @@
         			        }
 				    	}else if(vm.dashboard.chartType.code==3){
 				    		vm.tableDatas=JSON.parse(obj.series);
+				    	}else if(vm.dashboard.chartType.code==2){
+				    		var decimal = vm.chartSingle.decimal;
+	            			singleValue=a[0].value;
+	            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
+	            			singleChart.setOption(singleOption);
 				    	}	
 				    	vm.dashboardSetting=true;
 				    }
@@ -1360,6 +1341,8 @@
 				                opacity: $(this).attr('data-opacity'),
 				                position: $(this).attr('data-position') || 'bottom left',
 				                change: function(hex, opacity) {
+				                	console.log(hex)
+				                	console.log(opacity)
 				                    if (!hex)
 				                        return;
 				                    if (opacity)
