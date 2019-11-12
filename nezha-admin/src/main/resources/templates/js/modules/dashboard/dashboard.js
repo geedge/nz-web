@@ -957,7 +957,6 @@
 				    		var decimal = vm.chartSingle.decimal;
 	            			singleValue=a[0].value;
 	            			singleOption.series[0].data=[{"value":(singleValue).toFixed(decimal)}];
-	            			singleChart.setOption(singleOption);
 				    	}	
 				    	vm.dashboardSetting=true;
 				    }
@@ -1025,7 +1024,7 @@
 		        			
 		        			// 基于准备好的dom，初始化echarts实例
 							var chartId=r.data[i].name;
-		        	        var mychart = echarts.init(document.getElementById(chartId));
+		        	        var mychartHandle = echarts.init(document.getElementById(chartId));
 		
 		        			var colors = ['#5793f3', '#d14a61', '#DC143C'];
 		
@@ -1091,8 +1090,8 @@
 		        			    series: nSeries
 		        			};
 		        			// 使用刚指定的配置项和数据显示图表。
-		        	        mychart.setOption(tOption);
-		        	        statisticals.push(mychart);
+		        	        mychartHandle.setOption(tOption);
+		        	        statisticals.push(mychartHandle);
 		        		}else if(r.data[i].chartType==3){
 		        			//这里是初始化表格
 		        		}else if(r.data[i].chartType==2){
@@ -1111,7 +1110,7 @@
 		    				
 		    				var currentSingle=JSON.parse(JSON.parse(JSON.stringify(r.data[i].data)));
 		        			var chartId=r.data[i].name;
-		        			var singleChart = echarts.init(document.getElementById(chartId));
+		        			var singleChartHandle = echarts.init(document.getElementById(chartId));
 		        			var angle = [220, -40]
 		        			tSingleOption = {
 		        			    backgroundColor: '#fff',
@@ -1244,8 +1243,8 @@
 		        			        },
 		        			    }]
 		        			}
-		        			singleChart.setOption(tSingleOption);
-		        			statisticals.push(singleChart);
+		        			singleChartHandle.setOption(tSingleOption);
+		        			statisticals.push(singleChartHandle);
 		        		}
 					}
 		        	
@@ -1330,8 +1329,8 @@
 			},
 			'chartSingle':{
 				handler(newVal,oldVal){
-					singleChart.setOption(singleOption);
 					this.$nextTick(function(){
+						singleChart.setOption(singleOption);
 						$('.singleColor').each(function() {
 				            $(this).minicolors({
 				                control: $(this).attr('data-control') || 'hue',

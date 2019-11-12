@@ -14,9 +14,9 @@ $(function () {
 			{ label: '创建时间', name: 'opTime', width: 100}
         ],
 		viewrecords: true,
-        height: 385,
-        rowNum: 10,
-		rowList : [10,30,50],
+        height: top.$('.content').height()-130,
+        rowNum: 15,
+		rowList : [15,30,50],
         rownumbers: true, 
         rownumWidth: 25, 
         autowidth:true,
