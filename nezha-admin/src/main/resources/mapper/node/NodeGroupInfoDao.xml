@@ -18,9 +18,9 @@
 
 
     <select id="assList" resultType="com.nis.modules.node.entity.NodeInfoEntity">
-        SELECT t.name,t.host_name,t.ip,t.uuid,t.type,t.tag FROM
+        SELECT t.name,t.host_name,t.ip,t.ip_long,t.uuid,t.type,t.tag FROM
         (
-            SELECT ni.name,ni.host_name,ni.ip,ni.uuid,ni.type,ni.tag FROM system_node_rel snr
+            SELECT ni.name,ni.host_name,ni.ip,ni.ip_long,ni.uuid,ni.type,ni.tag FROM system_node_rel snr
             LEFT JOIN node_info ni ON snr.uuid = ni.uuid
             WHERE snr.system_id = #{params.systemId} AND snr.del_flag = 0 AND ni.state != 3
 

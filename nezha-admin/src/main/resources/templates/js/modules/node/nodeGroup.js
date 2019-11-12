@@ -402,6 +402,9 @@ var vue = new Vue({
                 }
             });
 
+            // 重置子组件选中数量
+            this.$refs.nodeRel.resetSelectedCount();
+
             layer.open({
                 area: ['740px', '100%'],
                 shade: 0.01,
@@ -428,6 +431,8 @@ var vue = new Vue({
             form.append("id", vue.selectedNodeGroup.id);
             form.append("addUuids", vue.addUuids);
             form.append("removeUuids", vue.removeUuids);
+            console.log(vue.addUuids)
+            console.log(vue.removeUuids)
             $.ajax({
                 type: "POST",
                 url: baseURL + "nodegroup/assignNode",
