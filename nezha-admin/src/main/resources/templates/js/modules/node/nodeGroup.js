@@ -235,8 +235,8 @@ var vue = new Vue({
         },
         add: function (node, isRoot) {
             vue.$v.nodeGroup.$reset();
+            vue.showForm = true;
             if (isRoot) { // 添加根节点组
-                vue.showForm = true;
                 // 获取当前权限
                 vue.system = node;
                 vue.nodeGroup = {
@@ -251,7 +251,6 @@ var vue = new Vue({
             } else {
                 // 获取节点组的业务系统 作为子节点组的业务系统
                 vue.getParentSystem(node.systemId);
-                vue.showForm = true;
                 vue.nodeGroup = {
                     name: null,
                     id: null,
@@ -261,7 +260,7 @@ var vue = new Vue({
                     parentGroup: null
                 };
                 vue.nodeGroup.parentGroup = node;
-                vue.$set(vue.nodeGroup.parentGroup,"name",node.nodeTitle);
+                vue.$set(vue.nodeGroup.parentGroup, "name", node.nodeTitle);
             }
             vue.count = 1;
             this.open("<@spring.message 'common.add'/>");
@@ -353,13 +352,12 @@ var vue = new Vue({
                 shade: 0,
                 title: title,
                 type: 1,
-                fixed: false,
                 maxmin: false,
                 scrollbar: false,
                 offset: 'r',
                 closeBtn: 1,
                 move: false,
-                content: $("#form") // 本页面的元素
+                content: $("#nodeGroupForm") // 本页面的元素
             });
         },
         validate: function () {
@@ -431,8 +429,6 @@ var vue = new Vue({
             form.append("id", vue.selectedNodeGroup.id);
             form.append("addUuids", vue.addUuids);
             form.append("removeUuids", vue.removeUuids);
-            console.log(vue.addUuids)
-            console.log(vue.removeUuids)
             $.ajax({
                 type: "POST",
                 url: baseURL + "nodegroup/assignNode",

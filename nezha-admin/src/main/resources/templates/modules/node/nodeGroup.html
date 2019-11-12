@@ -53,69 +53,67 @@
     </div>
 
     <!-- 添加 / 修改 表单 -->
-    <div v-show="showForm" id="form" style="overflow-x: hidden  ">
-        <div class="">
-            <form class="form-horizontal">
+    <div v-show="showForm" id="nodeGroupForm" style="overflow-x: hidden">
+        <form class="form-horizontal">
 
-                <!-- 上级节点组 -->
-                <div class="form-group">
-                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.parent.group'/></div>
-                    <div class="col-sm-9">
-                        <input disabled type="text" class="form-control"
-                               v-model.trim="nodeGroup.parentGroup.name"
-                               placeholder="<@spring.message 'nodegroup.parent.group'/>"/>
-                        <span class="required-symbol">*</span>
+            <!-- 上级节点组 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><@spring.message 'nodegroup.parent.group'/></div>
+                <div class="col-sm-9">
+                    <input disabled type="text" class="form-control"
+                           v-model.trim="nodeGroup.parentGroup.name"
+                           placeholder="<@spring.message 'nodegroup.parent.group'/>"/>
+                    <span class="required-symbol">*</span>
+                </div>
+            </div>
+
+            <!-- 业务系统 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><@spring.message 'system.system'/></div>
+                <div class="col-sm-9">
+                    <input disabled type="text" class="form-control" v-model.trim="system.name"
+                           placeholder="<@spring.message 'system.system'/>"/>
+                </div>
+            </div>
+
+            <!-- 节点组名称 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control"
+                           :class="{'form-control--error': $v.nodeGroup.name.$dirty && (!$v.nodeGroup.name.required || !$v.nodeGroup.name.nameCheck)}"
+                           v-model.trim="$v.nodeGroup.name.$model"
+                           placeholder="<@spring.message 'nodegroup.name'/>"/>
+                    <span class="required-symbol">*</span>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.required">
+                        <@spring.message 'validate.common.required'/>
+                    </div>
+                    <div class="form-control_error-msg"
+                         v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.nameCheck">
+                        <@spring.message 'validate.common.name.repeat'/>
                     </div>
                 </div>
+            </div>
 
-                <!-- 业务系统 -->
-                <div class="form-group">
-                    <div class="col-sm-2 control-label"><@spring.message 'system.system'/></div>
-                    <div class="col-sm-9">
-                        <input disabled type="text" class="form-control" v-model.trim="system.name"
-                               placeholder="<@spring.message 'system.system'/>"/>
-                    </div>
+            <!-- 备注 -->
+            <div class="form-group">
+                <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control" v-model.trim="nodeGroup.remark"
+                           placeholder="<@spring.message 'common.remark'/>"/>
                 </div>
+            </div>
+        </form>
 
-                <!-- 节点组名称 -->
-                <div class="form-group">
-                    <div class="col-sm-2 control-label"><@spring.message 'nodegroup.name'/></div>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control"
-                               :class="{'form-control--error': $v.nodeGroup.name.$dirty && (!$v.nodeGroup.name.required || !$v.nodeGroup.name.nameCheck)}"
-                               v-model.trim="$v.nodeGroup.name.$model"
-                               placeholder="<@spring.message 'nodegroup.name'/>"/>
-                        <span class="required-symbol">*</span>
-                        <div class="form-control_error-msg"
-                             v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.required">
-                            <@spring.message 'validate.common.required'/>
-                        </div>
-                        <div class="form-control_error-msg"
-                             v-if="$v.nodeGroup.name.$dirty && !$v.nodeGroup.name.nameCheck">
-                            <@spring.message 'validate.common.name.repeat'/>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 备注 -->
-                <div class="form-group">
-                    <div class="col-sm-2 control-label"> <@spring.message 'common.remark'/></div>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control" v-model.trim="nodeGroup.remark"
-                               placeholder="<@spring.message 'common.remark'/>"/>
-                    </div>
-                </div>
-            </form>
-
-            <!-- 保存 / 返回 -->
-            <div class="form-group_opbox" style="margin-bottom: 20px">
-                <div>
-                    <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"
-                            style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
-                    <div style="display:inline-block;width:10px;"></div>
-                    <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning"
-                            style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
-                </div>
+        <!-- 保存 / 返回 -->
+        <div class="form-group_opbox" style="margin-bottom: 20px">
+            <div>
+                <button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary"
+                        style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+                <div style="display:inline-block;width:10px;"></div>
+                <button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning"
+                        style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
             </div>
         </div>
     </div>
