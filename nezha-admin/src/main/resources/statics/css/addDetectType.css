@@ -70,7 +70,8 @@
     display:none;
     position:absolute;
     top:0%;
-    width:100%;
+    width:calc(100% - 180px);
+    left: 180px;
     height:100%;
     background-color: #fbfbfb;;
     z-index:1001;
