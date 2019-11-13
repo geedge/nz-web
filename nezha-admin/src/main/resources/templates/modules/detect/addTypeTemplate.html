@@ -319,11 +319,13 @@
                                         v-model="$v.deteMeta.dicType.$model"
                                         :show-labels="false">
                                     <template slot="option" slot-scope="props">
-<!--                                            <div :id="'position'+props.option.type+index" style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>-->
-                                            <div style="line-height: 30px" :id="'r-dictype-option-'+props.option.type+'-'+index" @mouseenter="mouseAt(props.option.type)" @mouseleave="mouseout">{{props.option.type}}</div>
+                                            <div style="position:absolute;top:20%;left:0;width:1px;height:1px;"></div>
+                                            <div style="line-height: 30px" :id="'r-dictype-option-'+props.option.type+'-'+index" @mouseenter="mouseAt(props.option.type, $event)" @mouseleave="mouseout">{{props.option.type}}</div>
                                                 <div :id="'r-dictype-option-detail-'+props.option.type+'-'+index" style="display: none;">
                                                     <div style="color: white;" v-for="mapping in props.option.mappings">
-                                                        {{mapping.val}}:{{mapping.mapping}}
+														<span style="display:inline-block; min-width:35px;">{{mapping.val}}</span>
+														<span style="display:inline-block; width:15px;">:</span>
+														<span style="display:inline-block; min-width:35px;">{{mapping.mapping}}</span>
                                                     </div>
                                                 </div>
 <!--                                            </div>-->

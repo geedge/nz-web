@@ -232,12 +232,18 @@ var meta=Vue.extend({
         removeShadow:function(){
             $(this.metaDetailDomSelector+">.shadow").hide();
         },
-        mouseAt: function(id) {
-            layer.tips($("#r-dictype-option-detail-"+id+'-'+this.index).html(),"#r-dictype-option-"+id+'-'+this.index,{
+        mouseAt: function(id, event) {
+            layer.tips($("#r-dictype-option-detail-"+id+'-'+this.index).html(), $(event.currentTarget).prev(), {
                 tips: [4, "#41B883"],
-                closeBtn: 0,
-                shade: 0
+                success: function(layi, i) {
+                	$(layi).css("z-index", "99999999")
+                }
             });
+            /*layer.tips($("#r-dictype-option-detail-"+id+'-'+this.index).html(),"#r-dictype-option-"+id+'-'+iii,{
+            	tips: [4, "#41B883"],
+            	closeBtn: 0,
+            	shade: 0
+            });*/
         },
         mouseout: function(){
             layer.closeAll("tips");
@@ -542,7 +548,6 @@ var addParam=Vue.extend({
             //重置背景色
             event.target.style.backgroundColor='';
             this.submitSelf();
-            console.log('swap')
             if(!this.$v.deteParam.$error){
                 this.$emit("ask-for-swap",index,this.index);
             }
