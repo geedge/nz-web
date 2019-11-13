@@ -73,6 +73,10 @@
 	        }
 	 	series.push(shamData);
 		/* 初始化点 线 柱图 */
+	 	var previewWidth = (top.$(".content").width()-50) + 'px';
+	 	var previewHeight = (top.$(".content").height()*0.35) + 'px';
+	 	document.getElementById("chart").style.width = previewWidth;
+	 	document.getElementById("chart").style.height = previewHeight;
         myChart = echarts.init(document.getElementById('chart'));
 
 		var colors = ['#5793f3', '#d14a61', '#DC143C'];
@@ -129,6 +133,8 @@
         myChart.setOption(option);
 		
         /* 初始化单值图  */
+        document.getElementById("singleChart").style.width = previewWidth;
+	 	document.getElementById("singleChart").style.height = previewHeight;
         singleChart=echarts.init(document.getElementById('singleChart'));
 		var angle = [220, -40]
 		singleOption = {
@@ -1269,9 +1275,6 @@
 		   	                resize: function (e, ui, $widget) {
 		   	                },
 		   	                stop: function (e, ui, $widget) {
-		    					$widget.find("div").eq(1).css('width',$widget[0].offsetWidth-50);
-		    					$widget.find("div").eq(1).css('height',$widget[0].offsetHeight-50);
-		    					
 		    					statisticals.forEach(function(value,key,arr){
 		    						$(value).resize()
 		    				    })
@@ -1279,6 +1282,9 @@
 		    				}
 		    			},
 		    	    }).data('gridster');
+		    		statisticals.forEach(function(value,key,arr){
+		    			$(value).resize()
+		    		})
 	    	    })
 			},
 			modifyPosition:function(){
@@ -1297,6 +1303,12 @@
 		            }
 	            })
 				
+			},
+			dbOpsShow: function(event) {
+				$(event.currentTarget).find(".db-ops").css("display", "inline-block");
+			},
+			dbOpsHide: function(event) {
+				$(event.currentTarget).find(".db-ops").css("display", "none");
 			}
 		},
 		created: function(){

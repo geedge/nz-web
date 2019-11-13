@@ -207,7 +207,7 @@ var warnComponet = Vue.extend({
             var parentTr=$("#"+temp.cap).parents('tr');
             var colSpan=parentTr.children('td').length;
             temp.overcoat='constom-td-'+temp.setId;
-            var emptyTr='<tr style="background-color: aliceblue;"><td colspan="'+colSpan+'" id="'+temp.overcoat+'"></td></tr>';
+            var emptyTr='<tr><td colspan="'+colSpan+'" id="'+temp.overcoat+'"></td></tr>';
             parentTr.after($(emptyTr))
 
             $("#"+temp.overcoat).append($(temp.bodyTabSelector));

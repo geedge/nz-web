@@ -33,7 +33,10 @@
 .tr-normal {
     background-color: #FFFFFF;
 }
-
+.tr-op {
+	color: #999;
+	cursor: pointer;
+}
 .tr-item {
 	color: #337ab7;
 }

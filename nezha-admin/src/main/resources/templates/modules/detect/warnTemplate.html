@@ -15,10 +15,10 @@
     <div >
         <span v-show="state==1||state==2" :id="headSpan+setId"><i :class="{'fa fa-angle-double-right':state==1,'fa fa-angle-double-down':state==2}"></i>&nbsp;{{setWarns.length}}个告警</span>
         <div :id="bodyTab+setId" v-show="state==2">
-            <div class="tools" style="text-align: right">
-                <a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
-                <a :disabled="single" class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
-                <a :disabled="multi" class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+            <div class="tools" style="text-align: left">
+                <a class="btn btn-default" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+                <a :disabled="single" class="btn btn-default" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+                <a :disabled="multi" class="btn btn-default" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
             </div>
             <nz-table
                     :table-data="setWarns"

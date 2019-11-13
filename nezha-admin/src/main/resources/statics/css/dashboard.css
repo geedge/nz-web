@@ -1,19 +1,8 @@
-	*{
-        margin: 0;
-        padding: 0;
-    }
-	.container{
-    width: 100% !important;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-    .container .top{
-        width: 1600px;
-        height: 389px;
+    .preview .top{
+        max-width: 1920px;
    /**     background: #fff6fc; **/
     }
-    .container .bottom{
+     .bottom{
     /**    margin-top: 10px; **/
         width: 100%;
         min-height: 500px;
@@ -21,14 +10,14 @@
         overflow: hidden;
         position: relative;
     }
-    .container .bottom .left{
+     .bottom .left{
     	width:80px;
         /** background: #eaffeb; **/
         position: absolute;
         left: 0;
         top: 0;
     }
-    .container .bottom .left .btn{
+     .bottom .left .btn{
         width: 60px;
         height: 60px;
         background: aliceblue;
@@ -39,33 +28,33 @@
         padding: 0px 0px;
         margin-left: 10px;
     }
-    .container .bottom .right{
+     .bottom .right{
         flex-grow: 1;
         margin-left: 80px;
       /**  background: #e3f6ff; **/
     }
-    .container .bottom .ri-flex{
+     .bottom .ri-flex{
         display: flex;
         flex-direction: column;
         flex-wrap: wrap;
     }
-    .container .bottom .right .right_top{
+     .bottom .right .right_top{
         height: 50px;
         width: 100%;
         line-height: 20px;
         font-size:20px;
     }
-    .container .bottom .right .right-bottom{
+     .bottom .right .right-bottom{
        /*  min-height: 500px; */
         max-height: 788px;
         overflow-y: scroll;
 
     }
-    .container .bottom .right .right-bottom .box-parent{
+     .bottom .right .right-bottom .box-parent{
         width: 100%;
         height: auto;
     }
-    .container .bottom .right .right-bottom .box{
+     .bottom .right .right-bottom .box{
         height: auto;
         background: #F5F5F5;
         margin-bottom: 30px;
@@ -135,16 +124,49 @@
 	    height: 15px;
 	    width: 18px;
 	}
-	
+	.table-striped>tbody>tr:nth-of-type(even) {
+	    background-color: white;
+	}
 	.singleColor{
 		width:105px !important;
 	}
 	.gridster .preview-holder {
 	  border: none !important;
 	  border-radius: 0 !important;
-	  background: #488bdc !important;
+	  background: #aaa !important;
 	}
-	
+	.db-content>li {
+	background-color: white;
+}
+.db-header {
+	text-align: center;
+	height: 22px;
+	margin-bottom: 10px;
+}
+.db-header:hover {
+	cursor: move;
+	background-color: #f0f0f0;
+}
+.db-title {
+	position: relative;
+	display: inline-block;
+}
+.db-title>span:first-child {
+	font-size: 16px;
+	display: inline-block;
+	line-height: 22px;
+}
+.db-ops {
+	position: absolute;
+	color: #aaa;
+	display: none;
+	font-size: 12px;
+	left: 100%;
+	width: 44px;
+}
+.db-ops>i {
+	cursor: pointer;
+}
 	.table-condensed th {padding: 0; text-align:center;}
 	.table-condensed td {padding: 0 0 0 10px;}
 	.table th {line-height: 36px; height:36px;}
