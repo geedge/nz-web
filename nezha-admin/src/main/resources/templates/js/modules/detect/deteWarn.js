@@ -678,7 +678,7 @@ var warnComponet = Vue.extend({
             var temp=this;
             var title=temp.setDetail.type.name+" > "+temp.setDetail.name+" > <@spring.message 'deteWarn'/>";
             var index = layer.open({
-                area: ['600px', '100%'],
+                area: ['550px', '100%'],
                 shade: 0.01,
                 title: title,
                 type: 1,

@@ -79,7 +79,13 @@
     opacity:.35;
     filter:alpha(opacity=70);
 }
-
+tbody .tools {
+	margin-bottom: 5px;
+}
+tbody .tools .btn {
+	padding: 4px 8px 3px 8px;
+	font-size: 12px;
+}
 .active{
     background-color: #F5F5F5;
 }
