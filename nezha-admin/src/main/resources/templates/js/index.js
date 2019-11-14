@@ -19,7 +19,7 @@ var menuItem = Vue.extend({
         '		<span>{{item.name}}</span>',
         '	</a>',
 
-        '	<a v-if="item.type === 1 && item.parentId != 0" :href="\'#\'+item.url"><i v-if="item.icon != null" :class="item.icon"></i><i v-else class="fa fa-circle-o"></i> {{item.name}}</a>',
+        '	<a v-if="item.type === 1 && item.parentId != 0" :href="\'#\'+item.url"><i v-if="item.icon != null && item.icon.length > 0" :class="item.icon"></i><i v-else class="fa fa-circle-o"></i> {{item.name}}</a>',
         '</li>'
     ].join('')
 });

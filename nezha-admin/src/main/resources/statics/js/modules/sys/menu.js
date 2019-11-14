@@ -137,6 +137,21 @@ var vm = new Vue({
                 alert("菜单URL不能为空");
                 return true;
             }
+        },
+        getIcon: function() { // 获取图标
+            var index = layer.open({
+                area: ['60%', '100%'],
+                shade: 0,
+                title: "获取图标",
+                type: 2,
+                fixed: false,
+                maxmin: false,
+                scrollbar: false,
+                offset: 'r',
+                closeBtn: 1,
+                move: false,
+                content: "http://localhost:8080/nezha-admin/modules/test/fontTest.html"
+            });
         }
     }
 });
