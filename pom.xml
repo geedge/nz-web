@@ -2,11 +2,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.nis</groupId>
-    <artifactId>nezha-web</artifactId>
+    <artifactId>nz-web</artifactId>
     <version>4.0.0</version>
     <packaging>pom</packaging>
 
-    <name>nezha-web</name>
+    <name>nz-web</name>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -15,8 +15,8 @@
 	</parent>
 
     <modules>
-        <module>nezha-common</module>
-        <module>nezha-admin</module>
+        <module>nz-common</module>
+        <module>nz-admin</module>
     </modules>
 
     <properties>

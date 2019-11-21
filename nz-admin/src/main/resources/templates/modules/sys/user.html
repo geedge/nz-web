@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<#import "/spring.ftl" as spring>
+<html>
+<head>
+<title>管理员列表</title>
+<#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+	<div v-show="showList">
+		<div class="grid-btn">
+			<div class="form-group col-sm-2">
+				<input type="text" class="form-control" v-model="q.username" @keyup.enter="query" placeholder="<@spring.message 'user.username'/>">
+			</div>
+			<a class="btn btn-default" @click="query" title="<@spring.message 'common.search'/>"><i class="fa fa-search"></i></a>
+			<#if shiro.hasPermission("sys:user:save")>
+			<a class="btn btn-primary" @click="add" title="<@spring.message 'common.add'/>"><i class="fa fa-plus"></i></a>
+			</#if>
+			<#if shiro.hasPermission("sys:user:update")>
+			<a class="btn btn-primary" @click="update" title="<@spring.message 'common.edit'/>"><i class="fa fa-pencil-square-o"></i></a>
+			</#if>
+			<#if shiro.hasPermission("sys:user:delete")>
+			<a class="btn btn-primary" @click="del" title="<@spring.message 'common.delete'/>"><i class="fa fa-trash-o"></i></a>
+			</#if>
+		</div>
+	    <table id="jqGrid"></table>
+	    <div id="jqGridPager"></div>
+    </div>
+
+	<div v-show="!showList" class="panel panel-default">
+		<div class="panel-heading">{{title}}</div>
+		<form class="form-horizontal">
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'user.username'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" :class="{'form-control--error': $v.user.username.$dirty && $v.user.username.$error}" v-model.trim="$v.user.username.$model"/>
+					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="$v.user.username.$dirty && !$v.user.username.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="$v.user.username.$dirty && !$v.user.username.checkName"><@spring.message 'validate.common.duplicate'/></div>
+				</div>
+			</div>
+			<!--<div class="form-group">
+				<div class="col-sm-2 control-label">所属部门</div>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" style="cursor:pointer;" v-model="user.deptName" @click="deptTree" readonly="readonly" placeholder="所属部门"/>
+				</div>
+			</div>-->
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'user.password'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control"  :class="{'form-control--error': user.userId == null && $v.user.password.$dirty && $v.user.password.$error}" v-model="$v.user.password.$model"/>
+					<span v-if="user.userId == null" class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="user.userId == null && $v.user.password.$dirty && !$v.user.password.required"><@spring.message 'validate.common.required'/></div>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'user.email'/></div>
+				<div class="col-sm-9">
+					<input type="text" class="form-control" v-model="user.email"/>
+					<span class="required-symbol">*</span>
+			        <div class="form-control_error-msg" v-if="$v.user.email.$dirty && !$v.user.email.required"><@spring.message 'validate.common.required'/></div>
+			        <div class="form-control_error-msg" v-if="$v.user.email.$dirty && !$v.user.email.email"><@spring.message 'validate.common.formaterror'/></div>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'user.role'/></div>
+				<div class="col-sm-9">
+					<template v-for="role in roleList">
+				    	<span class="form-cbx">
+				    		<input v-model="user.roleIdList" type="checkbox" :value="role.roleId"/>
+				    		<span :title="role.roleName">{{role.roleName}}</span>
+				    	</span>
+			    	</template>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-2 control-label"><@spring.message 'common.status'/></div>
+				<label class="radio-inline">
+					<input type="radio" name="status" value="0" v-model="user.status"/><@spring.message 'common.disabled'/>
+				</label>
+				<label class="radio-inline">
+					<input type="radio" name="status" value="1" v-model="user.status"/><@spring.message 'common.normal'/>
+				</label>
+			</div>
+			<div class="form-group form-group_opbox">
+				<div>
+					<button title="<@spring.message 'common.submit'/>" type="button" class="btn btn-primary" style="width: 55px" @click="saveOrUpdate"><i class="fa fa-check"></i></button>
+					<div style="display:inline-block;width:10px;"></div>
+					<button title="<@spring.message 'common.back'/>" type="button" class="btn btn-warning" style="width: 55px" @click="reload"><i class="fa fa-reply"></i></button>
+				</div> 
+			</div>
+		</form>
+	</div>
+</div>
+
+<!-- 选择部门 -->
+<!--<div id="deptLayer" style="display: none;padding:10px;">
+	<ul id="deptTree" class="ztree"></ul>
+</div>-->
+<#include "/js/modules/sys/user.js">
+</body>
+</html>

@@ -1,7 +1,7 @@
 version: '2'
 services:
-  nezha-admin:
-    image: nezha/admin
+  nz-admin:
+    image: nz/admin
     ports:
       - "8080:8080"
     environment:
