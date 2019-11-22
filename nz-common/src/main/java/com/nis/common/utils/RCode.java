@@ -36,9 +36,14 @@ public enum RCode {
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误
+	
+	SYSTEM_ID_ISNULL(600001,"system_id_isnull"),
+	SYSTEM_NAME_ISNULL(600002,"system_name_isnull"),
+	
 	ERROR(999, "error"); //通用错误/未知错误
 
-
+	
+	
 	private RCode(Integer code, String msg) {
 		this.code = code;
 		this.msg = msg;
