@@ -37,8 +37,15 @@ public enum RCode {
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误
 	
-	SYSTEM_ID_ISNULL(600001,"system_id_isnull"),
-	SYSTEM_NAME_ISNULL(600002,"system_name_isnull"),
+	SYSTEM_ID_ISNULL(600001,"System id can not be empty"),
+	SYSTEM_NAME_ISNULL(600002,"System name can not be empty"),
+	
+	MODULE_ID_ISNULL(700001,"Module id can not be empty"),
+	MODULE_ASSETID_ISNULL(700002,"Asset id can not be empty"),
+	MODULE_SYSTEMID_ISNULL(700003,"System id can not be empty"),
+	MODULE_HOST_ISNULL(700004,"Module host info can not be empty"),
+	MODULE_PORT_ISNULL(700005,"Module port info can not be empty"),
+	MODULE_PATH_ISNULL(700006,"Module path info can not be empty"),
 	
 	ERROR(999, "error"); //通用错误/未知错误
 

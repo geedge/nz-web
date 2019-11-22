@@ -28,9 +28,6 @@ public class SystemController extends AbstractController {
 	@Autowired
 	private SystemService systemService;
 	
-	/**
-	 * 所有配置列表
-	 */
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = systemService.queryPage(params);
