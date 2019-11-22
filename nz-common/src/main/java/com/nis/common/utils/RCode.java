@@ -47,6 +47,11 @@ public enum RCode {
 	MODULE_PORT_ISNULL(700005,"Module port info can not be empty"),
 	MODULE_PATH_ISNULL(700006,"Module path info can not be empty"),
 	
+	PROMSERVER_ID_ISNULL(800001,"PromServer id can not be empty"),
+	PROMSERVER_IDCID_ISNULL(800002,"Idc id can not be empty"),
+	PROMSERVER_TYPE_ISNULL(800003,"PromServer type can not be empty"),
+	PROMSERVER_HOST_ISNULL(800004,"PromServer host can not be empty"),
+	
 	ERROR(999, "error"); //通用错误/未知错误
 
 	

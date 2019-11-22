@@ -19,14 +19,14 @@ public class SystemServiceImpl extends ServiceImpl<SystemDao, SystemEntity> impl
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		Integer id = (Integer)params.get("id");
+		String id = (String)params.get("id");
 		String name = (String)params.get("name");
 		String remark = (String)params.get("remark");
 		
 		IPage<SystemEntity> page = this.page(
 			new Query<SystemEntity>().getPage(params),
 			new QueryWrapper<SystemEntity>()
-				.eq(id!=null,"id", id)
+				.eq(StringUtils.isNotBlank(id),"id", id)
 				.like(StringUtils.isNotBlank(name),"name", name)
 				.like(StringUtils.isNotBlank(remark), "remark",remark)
 		);
