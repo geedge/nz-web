@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -35,6 +36,7 @@ public class PromserverController extends AbstractController {
 	}
 	
 	@PostMapping
+	@SysLog("save promServer")
 	public R save(@RequestBody PromserverEntity promserverEntity) {
 		promserverService.validateParam(promserverEntity);
 		promserverService.save(promserverEntity);
@@ -42,6 +44,7 @@ public class PromserverController extends AbstractController {
 	}
 	
 	@PutMapping
+	@SysLog("update promServer")
 	public R modify(@RequestBody PromserverEntity promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 		promserverService.validateParam(promserverEntity);
@@ -50,6 +53,7 @@ public class PromserverController extends AbstractController {
 	}
 	
 	@DeleteMapping
+	@SysLog("delete promServer")
 	public R remove(@RequestBody Long[] ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROMSERVER_ID_ISNULL);
 		promserverService.removeByIds(Arrays.asList(ids));

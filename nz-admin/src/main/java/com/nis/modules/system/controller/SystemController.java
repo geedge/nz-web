@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -35,6 +36,7 @@ public class SystemController extends AbstractController {
 	}
 	
 	@PostMapping
+	@SysLog("save system")
 	public R save(@RequestBody SystemEntity systemEntity) {
 		ValidateUtils.is(systemEntity.getName()).notNull(RCode.SYSTEM_NAME_ISNULL);
 		systemService.save(systemEntity);
@@ -42,6 +44,7 @@ public class SystemController extends AbstractController {
 	}
 	
 	@PutMapping
+	@SysLog("update system")
 	public R modify(@RequestBody SystemEntity systemEntity) {
 		ValidateUtils.is(systemEntity.getId()).notNull(RCode.SYSTEM_ID_ISNULL);
 		ValidateUtils.is(systemEntity.getName()).notNull(RCode.SYSTEM_NAME_ISNULL);
@@ -50,6 +53,7 @@ public class SystemController extends AbstractController {
 	}
 	
 	@DeleteMapping
+	@SysLog("delete system")
 	public R remove(@RequestBody Long[] ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYSTEM_ID_ISNULL);
 		systemService.removeByIds(Arrays.asList(ids));

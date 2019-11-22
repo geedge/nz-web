@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -35,6 +36,7 @@ public class ModuleController extends AbstractController {
 	}
 	
 	@PostMapping
+	@SysLog("save module")
 	public R save(@RequestBody ModuleEntity moduleEntity) {
 		moduleService.validateParam(moduleEntity);
 		moduleService.save(moduleEntity);
@@ -42,6 +44,7 @@ public class ModuleController extends AbstractController {
 	}
 	
 	@PutMapping
+	@SysLog("update module")
 	public R modify(@RequestBody ModuleEntity moduleEntity) {
 		ValidateUtils.is(moduleEntity.getId()).notNull(RCode.MODULE_ID_ISNULL);
 		moduleService.validateParam(moduleEntity);
@@ -50,6 +53,7 @@ public class ModuleController extends AbstractController {
 	}
 	
 	@DeleteMapping
+	@SysLog("delete module")
 	public R remove(@RequestBody Long[] ids) {
 		ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
 		moduleService.removeByIds(Arrays.asList(ids));
