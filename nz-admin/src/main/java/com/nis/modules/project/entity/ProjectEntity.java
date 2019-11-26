@@ -1,4 +1,4 @@
-package com.nis.modules.system.entity;
+package com.nis.modules.project.entity;
 
 import javax.validation.constraints.NotBlank;
 
@@ -8,8 +8,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("system")
-public class SystemEntity {
+@TableName("project")
+public class ProjectEntity {
 	@TableId
 	private Integer id;
 	@NotBlank(message="参数名不能为空")

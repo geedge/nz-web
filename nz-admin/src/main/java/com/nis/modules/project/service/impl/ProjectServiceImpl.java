@@ -1,4 +1,4 @@
-package com.nis.modules.system.service.impl;
+package com.nis.modules.project.service.impl;
 
 import java.util.Map;
 
@@ -10,12 +10,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
-import com.nis.modules.system.dao.SystemDao;
-import com.nis.modules.system.entity.SystemEntity;
-import com.nis.modules.system.service.SystemService;
+import com.nis.modules.project.dao.ProjectDao;
+import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.service.ProjectService;
 
-@Service("systemService")
-public class SystemServiceImpl extends ServiceImpl<SystemDao, SystemEntity> implements SystemService {
+@Service("projectService")
+public class ProjectServiceImpl extends ServiceImpl<ProjectDao, ProjectEntity> implements ProjectService {
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -23,9 +23,9 @@ public class SystemServiceImpl extends ServiceImpl<SystemDao, SystemEntity> impl
 		String name = (String)params.get("name");
 		String remark = (String)params.get("remark");
 		
-		IPage<SystemEntity> page = this.page(
-			new Query<SystemEntity>().getPage(params),
-			new QueryWrapper<SystemEntity>()
+		IPage<ProjectEntity> page = this.page(
+			new Query<ProjectEntity>().getPage(params),
+			new QueryWrapper<ProjectEntity>()
 				.eq(StringUtils.isNotBlank(id),"id", id)
 				.like(StringUtils.isNotBlank(name),"name", name)
 				.like(StringUtils.isNotBlank(remark), "remark",remark)

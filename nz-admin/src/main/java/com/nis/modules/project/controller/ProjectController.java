@@ -1,4 +1,4 @@
-package com.nis.modules.system.controller;
+package com.nis.modules.project.controller;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -18,45 +18,45 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.controller.AbstractController;
-import com.nis.modules.system.entity.SystemEntity;
-import com.nis.modules.system.service.SystemService;
 
 @RestController
-@RequestMapping("/system")
-public class SystemController extends AbstractController {
+@RequestMapping("/project")
+public class ProjectController extends AbstractController {
 	
 	@Autowired
-	private SystemService systemService;
+	private ProjectService projectService;
 	
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
-		PageUtils page = systemService.queryPage(params);
+		PageUtils page = projectService.queryPage(params);
 		return R.ok().put("page", page);
 	}
 	
 	@PostMapping
-	@SysLog("save system")
-	public R save(@RequestBody SystemEntity systemEntity) {
-		ValidateUtils.is(systemEntity.getName()).notNull(RCode.SYSTEM_NAME_ISNULL);
-		systemService.save(systemEntity);
+	@SysLog("save project")
+	public R save(@RequestBody ProjectEntity systemEntity) {
+		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+		projectService.save(systemEntity);
 		return R.ok();
 	}
 	
 	@PutMapping
-	@SysLog("update system")
-	public R modify(@RequestBody SystemEntity systemEntity) {
-		ValidateUtils.is(systemEntity.getId()).notNull(RCode.SYSTEM_ID_ISNULL);
-		ValidateUtils.is(systemEntity.getName()).notNull(RCode.SYSTEM_NAME_ISNULL);
-		systemService.updateById(systemEntity);
+	@SysLog("update project")
+	public R modify(@RequestBody ProjectEntity systemEntity) {
+		ValidateUtils.is(systemEntity.getId()).notNull(RCode.PROJECT_ID_ISNULL);
+		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+		projectService.updateById(systemEntity);
 		return R.ok();
 	}
 	
 	@DeleteMapping
-	@SysLog("delete system")
+	@SysLog("delete project")
 	public R remove(@RequestBody Long[] ids) {
-		ValidateUtils.is(ids).notNull(RCode.SYSTEM_ID_ISNULL);
-		systemService.removeByIds(Arrays.asList(ids));
+		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
+		projectService.removeByIds(Arrays.asList(ids));
 		return R.ok();
 	}
 }

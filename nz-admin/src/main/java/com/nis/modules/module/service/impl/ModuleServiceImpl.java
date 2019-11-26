@@ -32,9 +32,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, ModuleEntity> imp
 
 	@Override
 	public void validateParam(ModuleEntity moduleEntity) {
-		ValidateUtils.is(moduleEntity.getAssetId()).notNull(RCode.MODULE_ASSETID_ISNULL);
-		ValidateUtils.is(moduleEntity.getHost()).notNull(RCode.MODULE_HOST_ISNULL);
-		ValidateUtils.is(moduleEntity.getSystemId()).notNull(RCode.MODULE_SYSTEMID_ISNULL);
+		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL);
+		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
 		ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
 		ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
 	}

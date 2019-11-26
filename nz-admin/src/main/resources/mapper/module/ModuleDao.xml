@@ -4,33 +4,29 @@
 	
 	<resultMap type="com.nis.modules.module.entity.ModuleEntity" id="moduleEntity">
         <result property="id" column="id"/>
-        <result property="assetId" column="asset_id"/>
-        <result property="systemId" column="system_id"/>
+        <result property="projectId" column="project_id"/>
         <result property="host" column="host"/>
         <result property="port" column="port"/>
         <result property="param" column="param"/>
         <result property="path" column="path"/>
+        <result property="remark" column="remark"/>
         
-        <association property="systemEntity" javaType="com.nis.modules.system.entity.SystemEntity">
-	    	<id column="system_id" property="id"/>
+        <association property="projectEntity" javaType="com.nis.modules.project.entity.ProjectEntity">
+	    	<id column="project_id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    </association>
     </resultMap>
 	
 	<select id="queryPage" resultMap="moduleEntity">
-       SELECT * FROM module m left join system s on m.system_id=s.id where 1=1
+       SELECT * FROM module m left join project p on m.project_id=p.id where 1=1
 
         <if test="params.id != null and params.id != ''">
             AND m.id = #{params.id}
         </if>
 
 		<if test="params.systemId != null and params.systemId != ''">
-            AND m.system_id = #{params.systemId}
-        </if>
-        
-        <if test="params.assetId != null and params.assetId != ''">
-            AND m.asset_id = #{params.id}
+            AND m.project_id = #{params.projectId}
         </if>
         
         <if test="params.port != null and params.port != ''">

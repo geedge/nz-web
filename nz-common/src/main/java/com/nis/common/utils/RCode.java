@@ -37,20 +37,25 @@ public enum RCode {
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误
 	
-	SYSTEM_ID_ISNULL(600001,"System id can not be empty"),
-	SYSTEM_NAME_ISNULL(600002,"System name can not be empty"),
+	PROJECT_ID_ISNULL(600001,"Project id can not be empty"),
+	PROJECT_NAME_ISNULL(600002,"Project name can not be empty"),
 	
 	MODULE_ID_ISNULL(700001,"Module id can not be empty"),
-	MODULE_ASSETID_ISNULL(700002,"Asset id can not be empty"),
-	MODULE_SYSTEMID_ISNULL(700003,"System id can not be empty"),
-	MODULE_HOST_ISNULL(700004,"Module host info can not be empty"),
-	MODULE_PORT_ISNULL(700005,"Module port info can not be empty"),
-	MODULE_PATH_ISNULL(700006,"Module path info can not be empty"),
+	MODULE_PROJECTID_ISNULL(700002,"Project id can not be empty"),
+	MODULE_NAME_ISNULL(700003,"Module name info can not be empty"),
+	MODULE_PORT_ISNULL(700004,"Module port info can not be empty"),
+	MODULE_PATH_ISNULL(700005,"Module path info can not be empty"),
 	
 	PROMSERVER_ID_ISNULL(800001,"PromServer id can not be empty"),
 	PROMSERVER_IDCID_ISNULL(800002,"Idc id can not be empty"),
 	PROMSERVER_TYPE_ISNULL(800003,"PromServer type can not be empty"),
 	PROMSERVER_HOST_ISNULL(800004,"PromServer host can not be empty"),
+	
+	ENDPOINT_ID_ISNULL(900001,"Endpoint id can not be empty"),
+	ENDPOINT_MODULEID_ISNULL(900002,"Module Id can not be empty"),
+	ENDPOINT_ASSETID_ISNULL(900003,"Asset Id can not be empty"),
+	ENDPOINT_PORT_ISNULL(900004,"Port can not be empty"),
+	ENDPOINT_PATH_ISNULL(900005,"Path can not be empty"),
 	
 	ERROR(999, "error"); //通用错误/未知错误
 

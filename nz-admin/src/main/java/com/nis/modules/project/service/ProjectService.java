@@ -1,12 +1,12 @@
-package com.nis.modules.system.service;
+package com.nis.modules.project.service;
 
 import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.system.entity.SystemEntity;
+import com.nis.modules.project.entity.ProjectEntity;
 
-public interface SystemService extends IService<SystemEntity> {
+public interface ProjectService extends IService<ProjectEntity> {
 	
 	PageUtils queryPage(Map<String, Object> params);
 	
