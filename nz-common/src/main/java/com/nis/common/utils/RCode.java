@@ -33,6 +33,43 @@ public enum RCode {
 	SYS_DICT_VALUE_DUPLICATE(106004,"sys_dict_value_duplicate"),// 字典值重复
 
 
+	IDC_IDCNAME_ISNULL(401001,"Idc name can not be empty"),              // 数据中心name不能为空
+	IDC_IDCID_ISNULL(401002,"Idc id can not be empty"),                  // 数据中心id不能为空
+	IDC_IDCPHONE_FORMAT(401003,"Idc phone format error , format such as 18201436079"), // 数据中心电话格式错误
+	IDC_PRINCIPAL_NOT_EXISTS(401004,"Idc principal does not exist"),     // 数据中心负责人不存在
+	IDC_NAME_DUPLICATE(401005,"Idc name duplicate"),                     // 数据中心名称重复
+	IDC_CABINETS_EXISTS(401006,"There are cabinets in the idc"),         // 数据中心内含有机柜
+	IDC_ASSETS_EXISTS(401007,"There are assets in the idc"),             // 数据中心内含有资产
+	IDC_NOT_EXISTS(401008,"Idc does not exist"),                         // 数据中心不存在
+	IDC_NOTHAS_CABINET(401009,"There is no this cabinet in the idc"),    // 数据中心中没有该机柜
+
+	IDC_CABINETNAME_ISNULL(402001, "Cabinet name can not be empty"),     // 机柜名称不能为空
+	IDC_CABINETID_ISNULL(402002, "Cabinet id can not be empty"),         // 机柜id不能为空
+	IDC_CABINETNAME_DUPLICATE(402003, "Cabinet name duplicate"),         // 机柜名称重复
+	IDC_CABINETUSIZE_MINIMUM(402004, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
+	IDC_CABINET_ASSETS_EXISTS(402005, "There are assets in the cabinet"),// 机柜中有资产
+
+
+	ASSET_ID_ISNULL(501001, "Asset id can not be empty"),                // 资产ID不能为空
+	ASSET_SN_ISNULL(501002, "Asset sequence name can not be empty"),     // 资产序列名不能为空
+	ASSET_HOST_ISNULL(501003, "Asset host can not be empty"),            // 资产主机地址不能为空
+	ASSET_HOST_FORMAT(501004, "Asset host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"),// 资产主机地址格式
+	ASSET_MAINTENANCEID_ISNULL(501005, "Asset maintenance id can not be empty"),// 资产维修记录ID不能为空
+	ASSET_NOT_EXIST(501006, "Asset does not exist"),                     // 资产不存在
+
+	ASSET_MODELNAME_ISNULL(502001, "Asset model name can not be null"),  // 资产型号名称不能为空
+	ASSET_MODELID_ISNULL(502002, "Asset model id can not be null"),      // 资产型号ID不能为空
+	ASSET_MODELNAME_DUPLICATE(502003, "Asset model name duplicate"),     // 资产型号名称重复
+	ASSET_MODELTYPE_NOTFOUND(502004, "Asset model type not found"),      // 资产型号类型未找到
+	ASSET_MODELRELATED_ASSET(502005, "There are assets in the model"),   // 资产型号关联资产
+	ASSET_MODEL_NOTFOUND(502006, "Asset model not found"),               // 资产型号未找到
+	ASSET_IDC_NOTFOUND(502007, "Asset idc not found"),                   // 数据中心未找到
+	ASSET_CABINET_NOTFOUND(502008, "Asset cabinet not found"),           // 机柜未找到
+	ASSET_HOST_DUPLICATE(502009, "Asset host duplicate"),                // 资产主机地址重复
+	ASSET_SN_DUPLICATE(502010, "Asset sequence name duplicate"),         // 资产序列名重复
+	ASSET_PURCHASEDATE_FORMAT(502011, "Asset purchase date format error, format such as yyyy-MM-dd(2019-02-03)"),// 资产购买日期格式错误
+	ASSET_PURCHASEDATE_UNAVAILABLE(502012, "Asset purchase date unavailable"),// 资产购买日期不可用,不合法
+	ASSET_STATE_NOTFOUND(502013, "Asset state not found"),                    // 资产状态未找到
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误

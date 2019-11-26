@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.AssetDao">
+
+    <resultMap type="com.nis.modules.asset.entity.Asset" id="assetWithModelIdcCab">
+        <result property="id" column="id"/>
+        <result property="sn" column="sn"/>
+        <result property="host" column="host"/>
+        <result property="state" column="state"/>
+        <result property="purchaseDate" column="purchase_date"/>
+        <result property="createAt" column="create_at"/>
+        <result property="updateAt" column="update_at"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+
+        <!--资产型号-->
+        <result property="model.id" column="model_id"/>
+        <result property="model.name" column="model_name"/>
+        <result property="model.vendor" column="model_vendor"/>
+        <result property="model.type" column="model_type"/>
+        <result property="model.remark" column="model_remark"/>
+
+        <!--数据中心-->
+        <result property="idc.id" column="idc_id"/>
+        <result property="idc.name" column="idc_name"/>
+        <result property="idc.location" column="idc_location"/>
+        <result property="idc.tel" column="idc_tel"/>
+        <result property="idc.principal" column="idc_principal"/>
+
+        <!-- 机柜-->
+        <result property="cabinet.id" column="cab_id"/>
+        <result property="cabinet.name" column="cab_name"/>
+        <result property="cabinet.idcId" column="cab_idcId"/>
+        <result property="cabinet.uSize" column="cab_uSize"/>
+        <result property="cabinet.remark" column="cab_remark"/>
+
+
+        <!--用户-->
+        <result property="createByUser.userId" column="su_user_id"/>
+        <result property="createByUser.username" column="su_username"/>
+        <result property="createByUser.password" column="su_password"/>
+        <result property="createByUser.salt" column="su_salt"/>
+        <result property="createByUser.email" column="su_email"/>
+        <result property="createByUser.status" column="su_status"/>
+        <result property="createByUser.createTime" column="su_createTime"/>
+
+
+        <result property="updateByUser.userId" column="su1_user_id"/>
+        <result property="updateByUser.username" column="su1_username"/>
+        <result property="updateByUser.password" column="su1_password"/>
+        <result property="updateByUser.salt" column="su1_salt"/>
+        <result property="updateByUser.email" column="su1_email"/>
+        <result property="updateByUser.status" column="su1_status"/>
+        <result property="updateByUser.createTime" column="su1_createTime"/>
+
+    </resultMap>
+
+    <sql id="asset_info_columns">
+       ass.id,
+       ass.sn,
+       ass.host,
+       ass.state,
+       ass.purchase_date,
+       ass.create_at,
+       ass.update_at,
+       /*ass.create_by,
+       ass.update_by,*/
+
+       /*资产型号*/
+       mo.id AS model_id,
+       mo.name AS model_name,
+       mo.vendor AS model_vendor,
+       mo.type AS model_type,
+       mo.remark AS model_remark,
+
+       /*数据中心*/
+       idc.id AS idc_id,
+       idc.name AS idc_name,
+       idc.location AS idc_location,
+       idc.tel AS idc_tel,
+       idc.principal AS idc_principal,
+
+       /*机柜*/
+       cab.id AS cab_id,
+       cab.name AS cab_name,
+       cab.idc_id AS cab_idcId,
+       cab.u_size AS cab_uSize,
+       cab.remark AS cab_remark,
+
+       /*用户*/
+       su.user_id AS su_user_id,
+       su.username AS su_username,
+       su.password AS su_password,
+       su.salt AS su_salt,
+       su.email AS su_email,
+       su.status AS su_status,
+       su.create_time AS su_createTime,
+
+       su1.user_id AS su1_user_id,
+       su1.username AS su1_username,
+       su1.password AS su1_password,
+       su1.salt AS su1_salt,
+       su1.email AS su1_email,
+       su1.status AS su1_status,
+       su1.create_time AS su1_createTime
+    </sql>
+
+
+    <select id="queryList" resultMap="assetWithModelIdcCab">
+        SELECT
+        <include refid="asset_info_columns"/>
+        FROM asset ass
+
+        LEFT join model mo ON ass.model_id = mo.id
+        LEFT JOIN idc idc ON ass.idc_id = idc.id
+        LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
+        LEFT JOIN sys_user su ON ass.create_by = su.user_id
+        LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
+
+
+        WHERE 1=1
+
+        <if test="params.id != null and params.id != ''">
+            AND ass.id = #{params.id}
+        </if>
+
+        <if test="params.modelId != null and params.modelId != ''">
+            AND ass.model_id = #{params.modelId}
+        </if>
+
+        <if test="params.idcId != null and params.idcId != ''">
+            AND ass.idc_id = #{params.idcId}
+        </if>
+
+        <if test="params.cabinetId != null and params.cabinetId != ''">
+            AND ass.cabinet_id = #{params.cabinetId}
+        </if>
+
+        <if test="params.state != null and params.state != ''">
+            AND ass.state = #{params.state}
+        </if>
+
+        <if test="params.host != null and params.host != ''">
+            AND ass.host like CONCAT('%', #{params.host}, '%')
+        </if>
+
+        <if test="params.sn != null and params.sn != ''">
+            AND ass.sn like CONCAT('%', #{params.sn}, '%')
+        </if>
+
+        <if test="params.purchaseDate != null and params.purchaseDate != ''">
+            AND ass.purchase_date like CONCAT('%', #{params.purchaseDate}, '%')
+        </if>
+    </select>
+
+</mapper>

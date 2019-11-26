@@ -1,6 +1,8 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,7 +17,7 @@ import java.util.Date;
  */
 @Data
 @TableName("asset")
-public class AssetEntity implements Serializable {
+public class Asset implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -56,7 +58,7 @@ public class AssetEntity implements Serializable {
     /**
      * 购买日期
      */
-    private Date purchaseDate;
+    private String purchaseDate;
 
     /**
      * 添加日期
@@ -77,4 +79,36 @@ public class AssetEntity implements Serializable {
      * 更新人
      */
     private Long updateBy;
+
+    /**
+     * 资产型号
+     */
+    @TableField(exist = false)
+    private Model model;
+
+
+    /**
+     * 数据中心
+     */
+    @TableField(exist = false)
+    private Idc idc;
+
+    /**
+     * 机柜
+     */
+    @TableField(exist = false)
+    private Cabinet cabinet;
+
+    /**
+     * 创建人
+     */
+    @TableField(exist = false)
+    private SysUserEntity createByUser;
+
+
+    /**
+     * 更新人
+     */
+    @TableField(exist = false)
+    private SysUserEntity updateByUser;
 }
