@@ -11,11 +11,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.project.dao.ProjectDao;
-import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 
 @Service("projectService")
-public class ProjectServiceImpl extends ServiceImpl<ProjectDao, ProjectEntity> implements ProjectService {
+public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> implements ProjectService {
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -23,9 +23,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, ProjectEntity> i
 		String name = (String)params.get("name");
 		String remark = (String)params.get("remark");
 		
-		IPage<ProjectEntity> page = this.page(
-			new Query<ProjectEntity>().getPage(params),
-			new QueryWrapper<ProjectEntity>()
+		IPage<Project> page = this.page(
+			new Query<Project>().getPage(params),
+			new QueryWrapper<Project>()
 				.eq(StringUtils.isNotBlank(id),"id", id)
 				.like(StringUtils.isNotBlank(name),"name", name)
 				.like(StringUtils.isNotBlank(remark), "remark",remark)

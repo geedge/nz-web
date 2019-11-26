@@ -18,7 +18,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.controller.AbstractController;
 
@@ -37,7 +37,7 @@ public class ProjectController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save project")
-	public R save(@RequestBody ProjectEntity systemEntity) {
+	public R save(@RequestBody Project systemEntity) {
 		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 		projectService.save(systemEntity);
 		return R.ok();
@@ -45,7 +45,7 @@ public class ProjectController extends AbstractController {
 	
 	@PutMapping
 	@SysLog("update project")
-	public R modify(@RequestBody ProjectEntity systemEntity) {
+	public R modify(@RequestBody Project systemEntity) {
 		ValidateUtils.is(systemEntity.getId()).notNull(RCode.PROJECT_ID_ISNULL);
 		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 		projectService.updateById(systemEntity);

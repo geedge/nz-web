@@ -4,11 +4,11 @@ import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.module.entity.ModuleEntity;
+import com.nis.modules.module.entity.Module;
 
-public interface ModuleService extends IService<ModuleEntity> {
+public interface ModuleService extends IService<Module> {
 	
 	PageUtils queryPage(Map<String, Object> params);
 	
-	void validateParam(ModuleEntity moduleEntity);
+	void validateParam(Module moduleEntity);
 }

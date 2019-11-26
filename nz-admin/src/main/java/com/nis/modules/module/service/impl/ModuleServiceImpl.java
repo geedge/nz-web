@@ -13,25 +13,25 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.module.dao.ModuleDao;
-import com.nis.modules.module.entity.ModuleEntity;
+import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 
 @Service("moduleService")
-public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, ModuleEntity> implements ModuleService {
+public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
 	
 	@Autowired
 	private ModuleDao moduleDao;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		IPage<ModuleEntity> page = new Query<ModuleEntity>().getPage(params);
-		List<ModuleEntity> datas = moduleDao.queryPage(page, params);
+		IPage<Module> page = new Query<Module>().getPage(params);
+		List<Module> datas = moduleDao.queryPage(page, params);
         page.setRecords(datas);
         return new PageUtils(page);
 	}
 
 	@Override
-	public void validateParam(ModuleEntity moduleEntity) {
+	public void validateParam(Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL);
 		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
 		ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);

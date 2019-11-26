@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
 <mapper namespace="com.nis.modules.endpoint.dao.EndpointDao">
 	
-	<resultMap type="com.nis.modules.endpoint.entity.EndpointEntity" id="endpointEntity">
+	<resultMap type="com.nis.modules.endpoint.entity.Endpoint" id="endpoint">
         <result property="id" column="id"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
@@ -11,18 +11,18 @@
         <result property="param" column="param"/>
         <result property="path" column="path"/>
         
-        <association property="moduleEntity" javaType="com.nis.modules.module.entity.ModuleEntity">
+        <association property="module" javaType="com.nis.modules.module.entity.Module">
 	    	<id column="module_id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    	
-	    	<association property="projectEntity" column="project_id" select="queryProject">
+	    	<association property="project" column="project_id" select="queryProject">
 		    	
 	    	</association>
 	    </association>
     </resultMap>
 	
-	<select id="queryPage" resultMap="endpointEntity">
+	<select id="queryPage" resultMap="endpoint">
        SELECT * FROM endpoint e left join module m on e.module_id=m.id 
        left join project p on m.project_id=p.id
        where 1=1 
@@ -43,7 +43,7 @@
        </if>
     </select>
 	
-	<select id="queryProject" resultType="com.nis.modules.project.entity.ProjectEntity">
+	<select id="queryProject" resultType="com.nis.modules.project.entity.Project">
        SELECT * FROM project where id=#{id}
         
     </select>

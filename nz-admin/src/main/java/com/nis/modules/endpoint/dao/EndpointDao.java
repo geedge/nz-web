@@ -8,11 +8,11 @@ import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.nis.modules.endpoint.entity.EndpointEntity;
+import com.nis.modules.endpoint.entity.Endpoint;
 
 @Mapper
-public interface EndpointDao  extends BaseMapper<EndpointEntity> {
+public interface EndpointDao  extends BaseMapper<Endpoint> {
 	
-	List<EndpointEntity> queryPage(IPage<EndpointEntity> page,@Param("params") Map<String, Object> params);
+	List<Endpoint> queryPage(IPage<Endpoint> page,@Param("params") Map<String, Object> params);
 	
 }

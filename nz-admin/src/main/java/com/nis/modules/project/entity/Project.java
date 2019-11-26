@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @TableName("project")
-public class ProjectEntity {
+public class Project {
 	@TableId
 	private Integer id;
 	@NotBlank(message="参数名不能为空")

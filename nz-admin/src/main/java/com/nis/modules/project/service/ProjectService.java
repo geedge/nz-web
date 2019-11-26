@@ -4,9 +4,9 @@ import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.entity.Project;
 
-public interface ProjectService extends IService<ProjectEntity> {
+public interface ProjectService extends IService<Project> {
 	
 	PageUtils queryPage(Map<String, Object> params);
 	

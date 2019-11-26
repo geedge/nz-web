@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @TableName("prom_server")
-public class PromserverEntity {
+public class Promserver {
 	@TableId
 	private Integer id;
 	@NotBlank(message="参数名不能为空")

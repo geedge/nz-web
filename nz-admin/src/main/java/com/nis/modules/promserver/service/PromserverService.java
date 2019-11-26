@@ -4,12 +4,12 @@ import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.promserver.entity.PromserverEntity;
+import com.nis.modules.promserver.entity.Promserver;
 
-public interface PromserverService extends IService<PromserverEntity> {
+public interface PromserverService extends IService<Promserver> {
 
 	PageUtils queryPage(Map<String, Object> params);
 	
-	void validateParam(PromserverEntity promserverEntity);
+	void validateParam(Promserver promserverEntity);
 	
 }

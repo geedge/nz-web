@@ -4,16 +4,16 @@ import javax.validation.constraints.NotBlank;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.project.entity.ProjectEntity;
+import com.nis.modules.project.entity.Project;
 
 import lombok.Data;
 
 @Data
 @TableName("module")
-public class ModuleEntity {
+public class Module {
 	@TableId
 	private Integer id;
-	private ProjectEntity projectEntity;
+	private Project project;
 	@NotBlank(message="参数名不能为空")
 	private Integer projectId;
 	@NotBlank(message="参数名不能为空")

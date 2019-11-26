@@ -18,7 +18,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.promserver.entity.PromserverEntity;
+import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.controller.AbstractController;
 
@@ -37,7 +37,7 @@ public class PromserverController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save promServer")
-	public R save(@RequestBody PromserverEntity promserverEntity) {
+	public R save(@RequestBody Promserver promserverEntity) {
 		promserverService.validateParam(promserverEntity);
 		promserverService.save(promserverEntity);
 		return R.ok();
@@ -45,7 +45,7 @@ public class PromserverController extends AbstractController {
 	
 	@PutMapping
 	@SysLog("update promServer")
-	public R modify(@RequestBody PromserverEntity promserverEntity) {
+	public R modify(@RequestBody Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 		promserverService.validateParam(promserverEntity);
 		promserverService.updateById(promserverEntity);

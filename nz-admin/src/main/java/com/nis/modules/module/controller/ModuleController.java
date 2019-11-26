@@ -18,7 +18,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.module.entity.ModuleEntity;
+import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.sys.controller.AbstractController;
 
@@ -37,7 +37,7 @@ public class ModuleController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save module")
-	public R save(@RequestBody ModuleEntity moduleEntity) {
+	public R save(@RequestBody Module moduleEntity) {
 		moduleService.validateParam(moduleEntity);
 		moduleService.save(moduleEntity);
 		return R.ok();
@@ -45,7 +45,7 @@ public class ModuleController extends AbstractController {
 	
 	@PutMapping
 	@SysLog("update module")
-	public R modify(@RequestBody ModuleEntity moduleEntity) {
+	public R modify(@RequestBody Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getId()).notNull(RCode.MODULE_ID_ISNULL);
 		moduleService.validateParam(moduleEntity);
 		moduleService.updateById(moduleEntity);

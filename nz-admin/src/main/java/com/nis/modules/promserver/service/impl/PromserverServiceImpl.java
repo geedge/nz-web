@@ -13,11 +13,11 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.PromserverEntity;
+import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 
 @Service("promserverService")
-public class PromserverServiceImpl extends ServiceImpl<PromserverDao, PromserverEntity> implements PromserverService{
+public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -26,9 +26,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		String host = (String)params.get("host");
 		String type = (String)params.get("type");
 		
-		IPage<PromserverEntity> page = this.page(
-			new Query<PromserverEntity>().getPage(params),
-			new QueryWrapper<PromserverEntity>()
+		IPage<Promserver> page = this.page(
+			new Query<Promserver>().getPage(params),
+			new QueryWrapper<Promserver>()
 				.eq(StringUtils.isNotBlank(id),"id", id)
 				.like(StringUtils.isNotBlank(host),"host", host)
 				.eq(StringUtils.isNotBlank(type), "type",type)
@@ -38,7 +38,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public void validateParam(PromserverEntity promserverEntity) {
+	public void validateParam(Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL);
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);

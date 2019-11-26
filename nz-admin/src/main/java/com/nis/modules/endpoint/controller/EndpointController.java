@@ -18,7 +18,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.endpoint.entity.EndpointEntity;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.sys.controller.AbstractController;
 
@@ -37,7 +37,7 @@ public class EndpointController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save endpoint")
-	public R save(@RequestBody EndpointEntity endpointEntity) {
+	public R save(@RequestBody Endpoint endpointEntity) {
 		endpointService.validateParam(endpointEntity);
 		endpointService.save(endpointEntity);
 		return R.ok();
@@ -45,7 +45,7 @@ public class EndpointController extends AbstractController {
 	
 	@PutMapping
 	@SysLog("update endpoint")
-	public R modify(@RequestBody EndpointEntity endpointEntity) {
+	public R modify(@RequestBody Endpoint endpointEntity) {
 		ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
 		endpointService.validateParam(endpointEntity);
 		endpointService.updateById(endpointEntity);

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
 <mapper namespace="com.nis.modules.module.dao.ModuleDao">
 	
-	<resultMap type="com.nis.modules.module.entity.ModuleEntity" id="moduleEntity">
+	<resultMap type="com.nis.modules.module.entity.Module" id="module">
         <result property="id" column="id"/>
         <result property="projectId" column="project_id"/>
         <result property="host" column="host"/>
@@ -11,14 +11,14 @@
         <result property="path" column="path"/>
         <result property="remark" column="remark"/>
         
-        <association property="projectEntity" javaType="com.nis.modules.project.entity.ProjectEntity">
+        <association property="project" javaType="com.nis.modules.project.entity.Project">
 	    	<id column="project_id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    </association>
     </resultMap>
 	
-	<select id="queryPage" resultMap="moduleEntity">
+	<select id="queryPage" resultMap="module">
        SELECT * FROM module m left join project p on m.project_id=p.id where 1=1
 
         <if test="params.id != null and params.id != ''">
