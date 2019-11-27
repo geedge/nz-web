@@ -42,7 +42,7 @@ public class YamlUtil {
 		y.dump(toCheck, osw); //写出为文件
 		
 		//校验
-		StringReader result = RuntimeUtil.run(null, null, new String[]{Configurations.getStringProperty("prom.root", "") + File.separator + "promtool", "check", "rules", file.getAbsolutePath()});
+		StringReader result = RuntimeUtil.run(null, null, new String[]{Configurations.getStringProperty("promtool.path", Constant.TOOL_PATH) + File.separator + "promtool", "check", "rules", file.getAbsolutePath()});
 		BufferedReader reader = new BufferedReader(result);
 		String line1 = reader.readLine();
 		if (!StringUtils.isBlank(line1)) {

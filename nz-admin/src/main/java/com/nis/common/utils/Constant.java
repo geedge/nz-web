@@ -90,9 +90,14 @@ public class Constant {
     public static final List<String> ALERT_LEVEL;
     
     /**
-     * 程序临时目录 
+     * 临时目录 
      */
     public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
+    
+    /**
+     * 工具目录 
+     */
+    public static final String TOOL_PATH = System.getProperty("user.dir") + File.separator + "tools";
     
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
