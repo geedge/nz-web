@@ -5,19 +5,19 @@ public enum RCode {
 	SUCCESS(200, "success"), //成功
 
 
-	SYS_ERROR(100000, "system_error"), //10xxxx，系统类（业务系统、用户组、权限等）通用错误以及其他系统内部错误
+	SYS_ERROR(100000, "system error"), //10xxxx，系统类（业务系统、用户组、权限等）通用错误以及其他系统内部错误
 
-	SYS_DB_DUPLICATERECORD(100001, "DUPLICATE_RECORD"), //数据库中已存在该记录
-	SYS_DB_AUTH(100002, "auth_error"), //没有权限
+	SYS_DB_DUPLICATERECORD(100001, "duplicate record"), //数据库中已存在该记录
+	SYS_DB_AUTH(100002, "Permission denied"), //没有权限
 
-	SYS_LOGIN_CAPTCHA(101001, "captcha_error"), //登录验证码错误
-	SYS_LOGIN_UNKNOWNACCOUNT(101003, "unknown_account_error"), //未知校验错误
-	SYS_LOGIN_USERPWD(101004, "user_or_pwd_error"), //账号或密码错误
-	SYS_LOGIN_LOCK(101005, "account_locked_error"), //账号被锁定
-	SYS_LOGIN_ACCOUNTAUTH(101006, "account_auth_error"), //账号验证失败
+	SYS_LOGIN_CAPTCHA(101001, "Captcha verification failed"), //登录验证码错误
+	SYS_LOGIN_UNKNOWNACCOUNT(101003, "Unknown error"), //未知校验错误
+	SYS_LOGIN_USERPWD(101004, "Incorrect username or password"), //账号或密码错误
+	SYS_LOGIN_LOCK(101005, "Locked account"), //账号被锁定
+	SYS_LOGIN_ACCOUNTAUTH(101006, "Incorrect username or password"), //账号验证失败
 
-	SYS_MENU_SYSMENUDEL(103001, "sysmenu del error"), //系统菜单，不能删除
-	SYS_MENU_DELSUB(103002, "del sub first error"), //请先删除子菜单或按钮
+	SYS_MENU_SYSMENUDEL(103001, "Delete system menu is not allowed"), //系统菜单，不能删除
+	SYS_MENU_DELSUB(103002, "Please delete the submenu first"), //请先删除子菜单或按钮
 	SYS_USER_OLDPWD(103003, "user oldpwd error"), //原密码不正确
 	SYS_USER_DELADMIN(103004, "del admin error"), //系统管理员不能删除
 	SYS_USER_CANNOTDEL(103005, "cannot del user error"), //当前用户不能删除
@@ -31,6 +31,17 @@ public enum RCode {
 	SYS_DICT_TYPE_ISNULL(106002,"sys_dict_type_isnull"),       // 字典类型不能为空
 	SYS_DICT_VALUE_ISNULL(106003,"sys_dict_value_isnull"),     // 字典值不能为空
 	SYS_DICT_VALUE_DUPLICATE(106004,"sys_dict_value_duplicate"),// 字典值重复
+
+	
+	ALERTRULE_ID_ISNULL(201000, "ID is required"), //告警规则ID不能为空
+	ALERTRULE_NAME_ISNULL(201001, "Alert name is required"), //告警规则名称不能为空
+	ALERTRULE_NAME_DUPLICATE(201002, "Alert name is duplicate"), //告警规则名称不能为空
+	ALERTRULE_EXPR_ISNULL(201003, "Expr is required"), //告警规则表达式不能为空
+	ALERTRULE_EXPR_ERROR(201004, "Expr syntax error"), //告警规则表达式不合法
+	ALERTRULE_LAST_ISNULL(201005, "Last is required"), //告警持续时间不能为空
+	ALERTRULE_LAST_ISNOTPOSITIVE(201006, "Last must be a positive number"), //告警持续时间必须是正数
+	ALERTRULE_SEVERITY_ISNULL(201007, "Severity is required"), //告警级别不能为空
+	ALERTRULE_SEVERITY_WRONG(201008, "Severity is incorrect"), //告警级别不合法
 
 
 	IDC_IDCNAME_ISNULL(401001,"Idc name can not be empty"),              // 数据中心name不能为空

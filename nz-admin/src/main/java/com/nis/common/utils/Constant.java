@@ -8,6 +8,7 @@
 
 package com.nis.common.utils;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,6 +87,13 @@ public class Constant {
     public static final String MYSQL = "mysql";
     public static final String POSTGRESQL = "postgresql";
     
+    public static final List<String> ALERT_LEVEL;
+    
+    /**
+     * 程序临时目录 
+     */
+    public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
+    
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -96,6 +104,16 @@ public class Constant {
 			e.printStackTrace();
 		}
 		DB_TYPE = databaseId;
+		
+		File tempPath = new File(TEMP_PATH);
+		if (!tempPath.isDirectory()) {
+			tempPath.mkdir();
+		}
+		
+		ALERT_LEVEL = new ArrayList<String>();
+		ALERT_LEVEL.add("warning");
+		ALERT_LEVEL.add("critical");
+		ALERT_LEVEL.add("emergency");
     }
     
     /**
@@ -232,4 +250,5 @@ public class Constant {
 
     // 顶级节点组PID
     public static final Long NODEGROUP_TOP_PID = 0L;
+    
 }
