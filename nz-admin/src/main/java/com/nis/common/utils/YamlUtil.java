@@ -2,14 +2,10 @@ package com.nis.common.utils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +16,6 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.po.AlertRulePO;
 
 
 public class YamlUtil {
@@ -103,7 +98,5 @@ public class YamlUtil {
 		
 		checkRule(alertRuleEntityToYamlMap(alertRule));*/
 		//File f = new File("C:/Users/song/git/nz-web/nz-admin/tmp/promRuleCheck1574821467589.yml");
-		File f = new File("d:/test.yml");
-		f.delete();
 	}
 }
