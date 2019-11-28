@@ -22,7 +22,7 @@ public class Cabinet implements Serializable {
      * 主键
      */
     @TableId
-    private Long id;
+    private Integer id;
 
     /**
      * 机柜名称
@@ -32,7 +32,7 @@ public class Cabinet implements Serializable {
     /**
      * 数据中心id
      */
-    private Long idcId;
+    private Integer idcId;
 
     /**
      * u位容量

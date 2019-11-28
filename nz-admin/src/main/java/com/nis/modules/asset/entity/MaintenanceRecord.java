@@ -28,7 +28,7 @@ public class MaintenanceRecord implements Serializable {
     /**
      * 资产id
      */
-    private Long assetId;
+    private Integer assetId;
 
     /**
      * 维修内容

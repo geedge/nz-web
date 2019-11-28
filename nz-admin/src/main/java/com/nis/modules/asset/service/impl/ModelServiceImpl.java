@@ -122,7 +122,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      * @param name
      * @return
      */
-    public boolean checkName(Long id, String name) {
+    public boolean checkName(Integer id, String name) {
         List<Model> list = this.list(new QueryWrapper<Model>().eq("name", name));
         boolean flag = false;
 

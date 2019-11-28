@@ -24,7 +24,7 @@ public class Model implements Serializable {
      * 主键
      */
     @TableId
-    private Long id;
+    private Integer id;
 
     /**
      * 型号名称

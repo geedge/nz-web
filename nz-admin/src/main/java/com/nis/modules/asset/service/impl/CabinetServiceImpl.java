@@ -90,7 +90,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     }
 
 
-    public boolean cabinetNameCheck(Long id, String name, Long idcId) {
+    public boolean cabinetNameCheck(Integer id, String name, Integer idcId) {
         // 1. 校验机房是否存在
         Idc idc = idcService.getById(idcId);
         if (idc == null) {

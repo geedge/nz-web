@@ -22,7 +22,7 @@ public class Idc implements Serializable {
      * 主键
      */
     @TableId
-    private Long id;
+    private Integer id;
 
     /**
      * 数据中心名称
@@ -42,5 +42,5 @@ public class Idc implements Serializable {
     /**
      * 机房负责人
      */
-    private Long principal;
+    private Integer principal;
 }

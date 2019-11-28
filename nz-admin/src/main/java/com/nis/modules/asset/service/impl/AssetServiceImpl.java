@@ -140,7 +140,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         this.removeByIds(Arrays.asList(ids));
     }
 
-    public boolean checkFieldExist(Long id, String column, String columnValue) {
+    public boolean checkFieldExist(Integer id, String column, String columnValue) {
         List<Asset> list = this.list(new QueryWrapper<Asset>().eq(column, columnValue));
         boolean flag = false;
 

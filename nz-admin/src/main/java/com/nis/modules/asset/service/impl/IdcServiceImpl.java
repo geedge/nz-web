@@ -122,7 +122,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
      * @param name
      * @return
      */
-    public boolean checkName(Long id, String name) {
+    public boolean checkName(Integer id, String name) {
         List<Idc> list = this.list(new QueryWrapper<Idc>().eq("name", name));
         boolean flag = false;
 

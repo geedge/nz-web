@@ -23,7 +23,7 @@ public class Asset implements Serializable {
     /**
      * 主键
      */
-    private Long id;
+    private Integer id;
 
     /**
      * 资产序列化 (唯一)
@@ -33,17 +33,17 @@ public class Asset implements Serializable {
     /**
      * 产品型号ID 与model表关联
      */
-    private Long modelId;
+    private Integer modelId;
 
     /**
      * 数据中心id
      */
-    private Long idcId;
+    private Integer idcId;
 
     /**
      * 机柜编号
      */
-    private Long cabinetId;
+    private Integer cabinetId;
 
     /**
      * 主机地址 ip
