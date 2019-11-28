@@ -188,7 +188,10 @@ public class Constant {
     //delFlag
     public static final String DELFLAG_TRUE = "1"; //删除
     public static final String DELFLAG_FALSE = "0"; //未删除
-    
+
+    public static final Integer AUTH_PASSWORD=1;//密码认证
+    public static final Integer AUTH_CERTIFICATE=2;//私钥证书认证
+
     //permission type
     public static final String PM_TYPE_DETESET = "2";
     public static final String PM_TYPE_DETEWARN = "3";

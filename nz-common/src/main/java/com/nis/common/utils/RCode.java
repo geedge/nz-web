@@ -43,6 +43,14 @@ public enum RCode {
 	ALERTRULE_SEVERITY_ISNULL(201007, "Severity is required"), //告警级别不能为空
 	ALERTRULE_SEVERITY_WRONG(201008, "Severity is incorrect"), //告警级别不合法
 
+	ACCOUNT_AUTHTYPE_ISNULL(301001,"Authentication type cannot be empty"),
+	ACCOUNT_AUTHTYPE_INVALIDE(301002,"Invalid authentication type"),
+	ACCOUNT_USER_ISNULL(301003,"Username cannot be empty"),
+	ACCOUNT_PWD_ISNULL(301004,"Login password cannot be empty"),
+	ACCOUNT_KEYFILE_ISNULL(301005,"Login certificate cannot be empty"),
+	ACCOUNT_PORT_ISNULL(301006,"Login port cannot be empty"),
+	ACCOUNT_ID_ISNULL(301007,"Account ID cannot be null"),
+	ACCOUNT_ID_INVALIDE(301008,"Account ID cannot be null"),
 
 	IDC_IDCNAME_ISNULL(401001,"Idc name can not be empty"),              // 数据中心name不能为空
 	IDC_IDCID_ISNULL(401002,"Idc id can not be empty"),                  // 数据中心id不能为空
