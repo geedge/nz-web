@@ -34,6 +34,8 @@ public class AlertRuleController {
 	
     @Autowired
     private AlertRuleService alertRuleService;
+    @Autowired
+    private YamlUtil yamlUtil;
 
     /**
      * 列表
@@ -42,7 +44,7 @@ public class AlertRuleController {
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = alertRuleService.queryPage(params);
 
-        return R.ok().put("page", page);
+        return R.ok(page);
     }
 
     /**
@@ -60,12 +62,12 @@ public class AlertRuleController {
     	}
     	//校验告警级别合法性
     	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-    		return R.error(RCode.ALERTRULE_SEVERITY_WRONG);
+    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
     	}
     	//校验expr
     	boolean checkRule = false;
     	try {
-			checkRule = YamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
+			checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
 		} catch (Exception e) {
 			logger.error("expr校验失败", e);
 		} finally {
@@ -95,12 +97,12 @@ public class AlertRuleController {
     	}
     	//校验告警级别合法性
     	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-    		return R.error(RCode.ALERTRULE_SEVERITY_WRONG);
+    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
     	}
     	//校验expr
     	boolean checkRule = false;
     	try {
-			checkRule = YamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
+			checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
 		} catch (Exception e) {
 			logger.error("expr校验失败", e);
 		} finally {
@@ -118,7 +120,7 @@ public class AlertRuleController {
      */
     @RequestMapping(value = "", method = RequestMethod.DELETE)
     public R delete(String ids){
-    	ValidateUtils.is(ids).notNull();
+    	ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
     	String[] split = ids.split(",");
 		alertRuleService.removeByIds(Arrays.asList(split));
 

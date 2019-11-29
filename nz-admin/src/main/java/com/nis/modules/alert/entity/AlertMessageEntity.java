@@ -1,7 +1,9 @@
 package com.nis.modules.alert.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.asset.entity.Asset;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -25,6 +27,11 @@ public class AlertMessageEntity implements Serializable {
 	@TableId
 	private Integer id;
 	/**
+	 * 主键们  eg:[1,2,3]
+	 */
+	@TableField(exist = false)
+	private String ids;
+	/**
 	 * 告警名
 	 */
 	private String alertName;
@@ -32,6 +39,16 @@ public class AlertMessageEntity implements Serializable {
 	 * 告警主机id
 	 */
 	private Integer assetId;
+	/**
+	 * 告警主机ip
+	 */
+	@TableField(exist = false)
+	private String host;
+	/**
+	 * 告警主机对象
+	 */
+	@TableField(exist = false)
+	private Asset asset;
 	/**
 	 * 告警级别
 	 */

@@ -41,7 +41,12 @@ public enum RCode {
 	ALERTRULE_LAST_ISNULL(201005, "Last is required"), //告警持续时间不能为空
 	ALERTRULE_LAST_ISNOTPOSITIVE(201006, "Last must be a positive number"), //告警持续时间必须是正数
 	ALERTRULE_SEVERITY_ISNULL(201007, "Severity is required"), //告警级别不能为空
-	ALERTRULE_SEVERITY_WRONG(201008, "Severity is incorrect"), //告警级别不合法
+	ALERTRULE_SEVERITY_INCORRECT(201008, "Severity is incorrect"), //告警级别不合法
+	
+	ALERTMSG_IDS_ISNULL(202000, "Ids is required"), //告警信息ids不能为空
+	ALERTMSG_STATE_ISNULL(202001, "State is required"), //告警信息state不能为空
+	ALERTMSG_STATE_INCORRECT(202002, "State is incorrect"), //告警信息state不合法
+	ALERTMSG_PARSE_ERROR(202003, "Data parse error"), //告警信息解析失败
 
 	ACCOUNT_AUTHTYPE_ISNULL(301001,"Authentication type cannot be empty"),
 	ACCOUNT_AUTHTYPE_INVALIDE(301002,"Invalid authentication type"),

@@ -23,7 +23,7 @@ import java.util.Date;
 
  */
 @Data
-@TableName("schedule_job")
+/*@TableName("schedule_job")*/
 public class ScheduleJobEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -35,7 +35,7 @@ public class ScheduleJobEntity implements Serializable {
 	/**
 	 * 任务id
 	 */
-	@TableId
+	/*@TableId*/
 	private Long jobId;
 
 	/**

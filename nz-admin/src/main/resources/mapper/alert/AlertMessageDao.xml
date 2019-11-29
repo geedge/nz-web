@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.alert.dao.AlertMessageDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.alert.entity.AlertMessageEntity" id="alertMessageMap">
+        <result property="id" column="id"/>
+        <result property="alertName" column="alert_name"/>
+        <result property="asset.id" column="asset_id"/>
+        <result property="asset.host" column="host"/>
+        <result property="severity" column="severity"/>
+        <result property="summary" column="summary"/>
+        <result property="description" column="description"/>
+        <result property="labels" column="labels"/>
+        <result property="startAt" column="start_at"/>
+        <result property="endAt" column="end_at"/>
+        <result property="state" column="state"/>
+    </resultMap>
+
+	<select id="list" resultMap="alertMessageMap">
+		SELECT am.id, am.alert_name, am.asset_id, a.host, am.severity, am.summary,
+			   am.description, am.labels, am.start_at, am.end_at, am.state
+		FROM alert_message am
+		LEFT JOIN asset a ON am.asset_id=a.id
+		WHERE 1=1
+		<if test="am.alertName != null and am.alertName != ''">
+			AND am.alert_name like concat('%', #{am.alertName}, '%')
+		</if>
+		<if test="am.host != null and am.host != ''">
+			AND a.host like concat('%', #{am.host}, '%')
+		</if>
+		<if test="am.severity != null and am.severity != ''">
+			AND am.severity=#{am.severity}
+		</if>
+		<if test="am.id != null and am.id != ''">
+			AND am.id=#{am.id}
+		</if>
+		<if test="am.state != null and am.state != ''">
+			AND am.state=#{am.state}
+		</if>
+		<if test="am.startAt != null">
+			AND am.start_at &gt;= #{am.startAt}
+		</if>
+		<if test="am.endAt != null">
+			AND am.start_at &lt;= #{am.endAt}
+		</if>
+	</select>
+
+</mapper>

@@ -87,8 +87,18 @@ public class Constant {
     public static final String MYSQL = "mysql";
     public static final String POSTGRESQL = "postgresql";
     
+    /**
+     * 告警等级
+     */
     public static final List<String> ALERT_LEVEL;
-    
+    /**
+     * 告警信息状态
+     */
+    public static final List<Integer> ALERTMESSAGE_STATE;
+    /**
+     * redis告警信息的key
+     */
+    public static final String REDIS_KEY_ALERTMESSAGE = "ALERT_MESSAGE";
     /**
      * 临时目录 
      */
@@ -119,6 +129,10 @@ public class Constant {
 		ALERT_LEVEL.add("warning");
 		ALERT_LEVEL.add("critical");
 		ALERT_LEVEL.add("emergency");
+		
+		ALERTMESSAGE_STATE = new ArrayList<Integer>();
+		ALERTMESSAGE_STATE.add(1);
+		ALERTMESSAGE_STATE.add(2);
     }
     
     /**

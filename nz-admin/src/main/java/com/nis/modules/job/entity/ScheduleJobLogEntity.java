@@ -22,14 +22,14 @@ import java.util.Date;
 
  */
 @Data
-@TableName("schedule_job_log")
+/*@TableName("schedule_job_log")*/
 public class ScheduleJobLogEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	/**
 	 * 日志id
 	 */
-	@TableId
+	/*@TableId*/
 	private Long logId;
 	
 	/**

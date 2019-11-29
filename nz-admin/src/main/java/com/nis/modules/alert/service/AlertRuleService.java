@@ -2,9 +2,13 @@ package com.nis.modules.alert.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 
@@ -21,5 +25,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	 * @return true:可用;false:不可用
 	 */
 	boolean checkName(AlertRuleEntity queryParam);
+	
+	List<AlertNameMapUserDTO> queryUserByAlertName(Set<String> alertNames);
 }
 

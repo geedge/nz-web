@@ -20,10 +20,10 @@ import java.util.Properties;
  *
 
  */
-@Configuration
+/*@Configuration*/
 public class ScheduleConfig {
 
-    @Bean
+    /*@Bean*/
     public SchedulerFactoryBean schedulerFactoryBean(DataSource dataSource) {
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
         factory.setDataSource(dataSource);

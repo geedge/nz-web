@@ -4,7 +4,7 @@ server:
     uri-encoding: UTF-8
     max-threads: 1000
     min-spare-threads: 30
-  port: 8081
+  port: 8088
   servlet:
     context-path: /nz-admin
 
@@ -34,12 +34,34 @@ spring:
   freemarker:
     suffix: .html
     request-context-attribute: request
+  mail:
+    #是否启用邮件通知 0关闭，1启用  默认启用
+    open: 1
+    host: 192.168.40.247
+    #发送者邮箱用户名
+    username: root
+    #发送者密钥
+    password: 111111
+    #发送者邮箱
+    from: root@puppet-foreman.com
+    default-encoding: utf-8
+    port: 25   #端口号465或587
+    protocol: smtp
+    properties:
+      mail:
+        debug:
+          false
+        smtp:
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
 
 nezha:
   cluster: false  #集群配置  true集群环境   false单机环境，还需打开pom.xml里的spring-session-data-redis注释
   globalSessionTimeout: 3600   #单机环境，session过期时间为60分钟
   redis:
     open: false  #是否开启redis缓存  true开启   false关闭
+  defaultLang: en
+  promtoolPath: c:/
 
 
 #mybatis

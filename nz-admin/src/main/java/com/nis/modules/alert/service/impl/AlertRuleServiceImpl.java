@@ -4,31 +4,28 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.alibaba.druid.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
-
 import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
-
-import freemarker.template.utility.StringUtil;
 
 
 @Service("alertRuleService")
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
-
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-    	boolean searchId = false;
-    	Object object = params.get("id");
-    	if (object != null && !StringUtils.isEmpty(object.toString())) {
-    		searchId = true;
+    	Integer searchId = null;
+    	if (params.get("id") != null && !StringUtils.isBlank(params.get("id").toString())) {
+    		searchId = Integer.parseInt(params.get("id").toString());
     	}
     	IPage<AlertRuleEntity> page = this.page(
                 new Query<AlertRuleEntity>().getPage(params),
@@ -36,7 +33,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 	.like(!StringUtils.isEmpty((String)params.get("alertName")), "alert_name", (String)params.get("alertName"))
                 	.like(!StringUtils.isEmpty((String)params.get("expr")), "expr", (String)params.get("expr"))
                 	.eq(!StringUtils.isEmpty((String)params.get("severity")), "severity", (String)params.get("severity"))
-                	.eq(searchId, "id", searchId ? Integer.parseInt(params.get("id").toString()) : "")
+                	.eq(searchId != null, "id", searchId)
         );
 
         return new PageUtils(page);
@@ -53,6 +50,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public List<AlertNameMapUserDTO> queryUserByAlertName(Set<String> alertNames) {
+		List<AlertNameMapUserDTO> mapping = baseMapper.queryUserByAlertName(alertNames);
+		return mapping;
 	}
 
 }

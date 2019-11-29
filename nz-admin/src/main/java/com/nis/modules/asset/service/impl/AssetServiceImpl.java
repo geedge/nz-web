@@ -62,6 +62,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         return new PageUtils(page);
     }
+    
+    public List<Asset> queryListByHosts(Collection<String> hosts) {
+    	List<Asset> assetList = assetDao.queryListByHosts(hosts);
+    	return assetList;
+    }
 
     @Override
     public void saveOrUpdateAsset(Asset asset) {

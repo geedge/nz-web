@@ -5,12 +5,11 @@ import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -19,6 +18,7 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
+import com.alibaba.druid.util.StringUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 
 @Configuration
@@ -26,14 +26,14 @@ import com.nis.common.smartvalidate.utils.CommonUtil;
 @ComponentScan
 public class LocaleConfig implements WebMvcConfigurer {
 
-	@Autowired
-	private Environment env;
+	@Value("${nezha.defaultLang}")
+	private String defaultLang;
 	
     @Bean
     public LocaleResolver localeResolver() {
         SessionLocaleResolver slr = new SessionLocaleResolver();
         // 默认语言
-        String defaultLang = env.getProperty("lang.default", "en");
+        defaultLang = StringUtils.isEmpty(defaultLang) ? "en" : defaultLang;
         slr.setDefaultLocale(new Locale(defaultLang));
         return slr;
     }

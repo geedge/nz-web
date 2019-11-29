@@ -115,7 +115,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if ((list == null || list.size() == 0) ||
-					(list != null && list.size() == 1 && list.get(0).getUserId().longValue() == user.getUserId().longValue())) {
+					(list.size() == 1 && list.get(0).getUserId().longValue() == user.getUserId().longValue())) {
 			dumpFlag = false;
 		}
 		return dumpFlag;

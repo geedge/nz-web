@@ -154,4 +154,15 @@
         </if>
     </select>
 
+	<select id="queryListByHosts" resultType="asset">
+		SELECT id, sn, host, state
+		FROM asset
+		<where>
+			host in
+			<foreach item="item" collection="collection" separator="," open="(" close=")" index="">
+				#{item}
+			</foreach>
+		</where>
+	</select>
+
 </mapper>

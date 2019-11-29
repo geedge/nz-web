@@ -12,15 +12,20 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import com.nis.modules.alert.entity.AlertRuleEntity;
 
-
+@Component
 public class YamlUtil {
 	
 	private static Yaml y;
+	
+	@Value("${nezha.promtoolPath}")
+	private String promtoolPath;
 	
 	static {
 		DumperOptions options = new DumperOptions();
@@ -28,7 +33,12 @@ public class YamlUtil {
 		y = new Yaml(options);
 	}
 
-	public static boolean checkRule(Map toCheck) throws Exception {
+	/**
+	 * @param toCheck 待校验的map
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean checkRule(Map toCheck) throws Exception {
 		boolean success = false;
 		
 		File file = new File(Constant.TEMP_PATH + File.separator + "promRuleCheck" + System.currentTimeMillis() + ".yml");
@@ -37,7 +47,7 @@ public class YamlUtil {
 		y.dump(toCheck, osw); //写出为文件
 		
 		//校验
-		StringReader result = RuntimeUtil.run(null, null, new String[]{Configurations.getStringProperty("promtool.path", Constant.TOOL_PATH) + File.separator + "promtool", "check", "rules", file.getAbsolutePath()});
+		StringReader result = RuntimeUtil.run(null, null, new String[]{promtoolPath + File.separator + "promtool", "check", "rules", file.getAbsolutePath()});
 		BufferedReader reader = new BufferedReader(result);
 		String line1 = reader.readLine();
 		if (!StringUtils.isBlank(line1)) {
@@ -55,6 +65,11 @@ public class YamlUtil {
 		return success;
 	}
 	
+	/**
+	 * 将告警规则实体类转化为符合prometheus告警规则格式的Map
+	 * @param alertRule
+	 * @return
+	 */
 	public static Map alertRuleEntityToYamlMap(AlertRuleEntity alertRule) {
 		Map toCheck = new HashMap();
 		
