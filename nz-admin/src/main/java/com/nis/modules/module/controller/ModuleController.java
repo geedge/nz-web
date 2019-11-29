@@ -32,7 +32,7 @@ public class ModuleController extends AbstractController {
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = moduleService.queryPage(params);
-		return R.ok().put("page", page);
+		return R.ok(page);
 	}
 	
 	@PostMapping

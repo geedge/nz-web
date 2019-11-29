@@ -32,7 +32,7 @@ public class PromserverController extends AbstractController {
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = promserverService.queryPage(params);
-		return R.ok().put("page", page);
+		return R.ok(page);
 	}
 	
 	@PostMapping

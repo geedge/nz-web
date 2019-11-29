@@ -23,7 +23,7 @@ public class PageUtils implements Serializable {
 	/**
 	 * 总记录数
 	 */
-	private int totalCount;
+	private int total;
 	/**
 	 * 每页记录数
 	 */
@@ -31,11 +31,11 @@ public class PageUtils implements Serializable {
 	/**
 	 * 总页数
 	 */
-	private int totalPage;
+	private int pages;
 	/**
 	 * 当前页数
 	 */
-	private int currPage;
+	private int pageNo;
 	/**
 	 * 列表数据
 	 */
@@ -44,16 +44,16 @@ public class PageUtils implements Serializable {
 	/**
 	 * 分页
 	 * @param list        列表数据
-	 * @param totalCount  总记录数
+	 * @param total  总记录数
 	 * @param pageSize    每页记录数
-	 * @param currPage    当前页数
+	 * @param pageNo    当前页数
 	 */
-	public PageUtils(List<?> list, int totalCount, int pageSize, int currPage) {
+	public PageUtils(List<?> list, int total, int pageSize, int pageNo) {
 		this.list = list;
-		this.totalCount = totalCount;
+		this.total = total;
 		this.pageSize = pageSize;
-		this.currPage = currPage;
-		this.totalPage = (int)Math.ceil((double)totalCount/pageSize);
+		this.pageNo = pageNo;
+		this.pages = (int)Math.ceil((double)total/pageSize);
 	}
 
 	/**
@@ -61,18 +61,18 @@ public class PageUtils implements Serializable {
 	 */
 	public PageUtils(IPage<?> page) {
 		this.list = page.getRecords();
-		this.totalCount = (int)page.getTotal();
+		this.total = (int)page.getTotal();
 		this.pageSize = (int)page.getSize();
-		this.currPage = (int)page.getCurrent();
-		this.totalPage = (int)page.getPages();
+		this.pageNo = (int)page.getCurrent();
+		this.pages = (int)page.getPages();
 	}
 
-	public int getTotalCount() {
-		return totalCount;
+	public int gettotal() {
+		return total;
 	}
 
-	public void setTotalCount(int totalCount) {
-		this.totalCount = totalCount;
+	public void settotal(int total) {
+		this.total = total;
 	}
 
 	public int getPageSize() {
@@ -83,20 +83,20 @@ public class PageUtils implements Serializable {
 		this.pageSize = pageSize;
 	}
 
-	public int getTotalPage() {
-		return totalPage;
+	public int getpages() {
+		return pages;
 	}
 
-	public void setTotalPage(int totalPage) {
-		this.totalPage = totalPage;
+	public void setpages(int pages) {
+		this.pages = pages;
 	}
 
-	public int getCurrPage() {
-		return currPage;
+	public int getpageNo() {
+		return pageNo;
 	}
 
-	public void setCurrPage(int currPage) {
-		this.currPage = currPage;
+	public void setpageNo(int pageNo) {
+		this.pageNo = pageNo;
 	}
 
 	public List<?> getList() {

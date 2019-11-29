@@ -32,7 +32,7 @@ public class ProjectController extends AbstractController {
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = projectService.queryPage(params);
-		return R.ok().put("page", page);
+		return R.ok(page);
 	}
 	
 	@PostMapping
