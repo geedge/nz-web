@@ -24,7 +24,6 @@ package com.nis.modules.romote.support;
 import com.jcraft.jsch.*;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.romote.util.*;
-import jdk.nashorn.internal.ir.Terminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
