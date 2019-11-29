@@ -18,6 +18,6 @@ public interface ModelService extends IService<Model> {
 
     void saveOrUpdateModel(Model model);
 
-    void delete(Long[] ids);
+    void delete(String ids);
 }
 

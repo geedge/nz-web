@@ -66,6 +66,7 @@ public enum RCode {
 	IDC_ASSETS_EXISTS(401007,"There are assets in the idc"),             // 数据中心内含有资产
 	IDC_NOT_EXISTS(401008,"Idc does not exist"),                         // 数据中心不存在
 	IDC_NOTHAS_CABINET(401009,"There is no this cabinet in the idc"),    // 数据中心中没有该机柜
+	IDC_ID_FORMAT(401010, "Id format error , type should be integer"),   // ID类型错误
 
 	IDC_CABINETNAME_ISNULL(402001, "Cabinet name can not be empty"),     // 机柜名称不能为空
 	IDC_CABINETID_ISNULL(402002, "Cabinet id can not be empty"),         // 机柜id不能为空
@@ -94,6 +95,7 @@ public enum RCode {
 	ASSET_PURCHASEDATE_FORMAT(502011, "Asset purchase date format error, format such as yyyy-MM-dd(2019-02-03)"),// 资产购买日期格式错误
 	ASSET_PURCHASEDATE_UNAVAILABLE(502012, "Asset purchase date unavailable"),// 资产购买日期不可用,不合法
 	ASSET_STATE_NOTFOUND(502013, "Asset state not found"),                    // 资产状态未找到
+	ASSET_ID_FORMAT(502014, "Id format error , type should be integer"),      // ID类型错误
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误

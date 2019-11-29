@@ -17,8 +17,9 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -73,7 +74,21 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
     }
 
     @Override
-    public void delete(Long[] ids) {
-        this.removeByIds(Arrays.asList(ids));
+    public void delete(String ids) {
+        // 1.类型转换
+        String[] idArr = ids.split(",");
+        List<Integer> delIds = new ArrayList<>();
+
+        for (String id : idArr) {
+            try {
+                delIds.add(Integer.parseInt(id));
+            } catch (NumberFormatException e) {
+                // ID转换异常
+                throw new NZException(RCode.ASSET_ID_FORMAT);
+            }
+        }
+
+        // 2.删除
+        this.removeByIds(delIds);
     }
 }

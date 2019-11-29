@@ -18,6 +18,6 @@ public interface IdcService extends IService<Idc> {
 
     void saveOrUpdateIdc(Idc idc);
 
-    void delete(Long[] ids);
+    void delete(String ids);
 }
 

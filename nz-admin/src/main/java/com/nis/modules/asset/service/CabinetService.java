@@ -18,6 +18,6 @@ public interface CabinetService extends IService<Cabinet> {
 
     void saveOrUpdateCabinet(Cabinet cabinet);
 
-    void delete(Long[] ids);
+    void delete(String ids);
 }
 

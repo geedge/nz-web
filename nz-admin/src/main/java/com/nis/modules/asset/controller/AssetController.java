@@ -116,7 +116,7 @@ public class AssetController {
      */
     @DeleteMapping
     @SysLog("delete asset")
-    public R delete(Long[] ids) {
+    public R delete(String ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
         assetService.delete(ids);

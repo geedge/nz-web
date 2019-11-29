@@ -18,5 +18,5 @@ public interface MaintenanceRecordService extends IService<MaintenanceRecord> {
 
     void saveOrUpdateMaintenance(MaintenanceRecord maintenance);
 
-    void delete(Long[] ids);
+    void delete(String ids);
 }

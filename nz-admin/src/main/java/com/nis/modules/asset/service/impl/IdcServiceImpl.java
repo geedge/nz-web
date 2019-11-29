@@ -20,7 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -93,26 +93,38 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     }
 
     @Override
-    public void delete(Long[] ids) {
+    public void delete(String ids) {
         // 1. 校验是否存在关联的机柜信息 资产信息
-        for (Long id : ids) {
-            int countCabinet = cabinetService.count(new QueryWrapper<Cabinet>().eq("idc_id", id));
+        String[] idArr = ids.split(",");
+        List<Integer> delIds = new ArrayList<>();
 
-            if (countCabinet > 0) {
-                // 数据中心下存在机柜
-                Idc idc = this.getById(id);
-                throw new NZException(idc.getName() + " related cabinets , not deletable", 401006);
-            }
+        for (String id : idArr) {
+            try {
+                delIds.add(Integer.parseInt(id));
 
-            int countAsset = assetService.count(new QueryWrapper<Asset>().eq("idc_id", id));
-            if (countAsset > 0) {
-                // 数据中心下存在资产
-                Idc idc = this.getById(id);
-                throw new NZException(idc.getName() + " related assets , not deletable", 401007);
+                int countCabinet = cabinetService.count(new QueryWrapper<Cabinet>().eq("idc_id", id));
+
+                if (countCabinet > 0) {
+                    // 数据中心下存在机柜
+                    Idc idc = this.getById(id);
+                    throw new NZException(idc.getName() + " related cabinets , not deletable", 401006);
+                }
+
+                int countAsset = assetService.count(new QueryWrapper<Asset>().eq("idc_id", id));
+                if (countAsset > 0) {
+                    // 数据中心下存在资产
+                    Idc idc = this.getById(id);
+                    throw new NZException(idc.getName() + " related assets , not deletable", 401007);
+                }
+            } catch (NumberFormatException e) {
+                // ID转换异常
+                throw new NZException(RCode.IDC_ID_FORMAT);
             }
         }
-        // 2. 进行逻辑删除
-        this.removeByIds(Arrays.asList(ids));
+
+
+        // 2. 删除
+        this.removeByIds(delIds);
     }
 
     /**

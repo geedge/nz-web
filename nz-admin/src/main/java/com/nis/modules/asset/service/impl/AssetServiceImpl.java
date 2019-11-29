@@ -62,10 +62,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         return new PageUtils(page);
     }
-    
+
+    @Override
     public List<Asset> queryListByHosts(Collection<String> hosts) {
-    	List<Asset> assetList = assetDao.queryListByHosts(hosts);
-    	return assetList;
+        List<Asset> assetList = assetDao.queryListByHosts(hosts);
+        return assetList;
     }
 
     @Override
@@ -140,9 +141,22 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
-    public void delete(Long[] ids) {
-        // 直接删除
-        this.removeByIds(Arrays.asList(ids));
+    public void delete(String ids) {
+        // 1.转换类型
+        String[] idArr = ids.split(",");
+        List<Integer> delIds = new ArrayList<>();
+
+        for (String id : idArr) {
+            try {
+                delIds.add(Integer.parseInt(id));
+            } catch (NumberFormatException e) {
+                // ID转换异常
+                throw new NZException(RCode.ASSET_ID_FORMAT);
+            }
+        }
+
+        // 2. 删除
+        this.removeByIds(delIds);
     }
 
     public boolean checkFieldExist(Integer id, String column, String columnValue) {

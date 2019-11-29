@@ -71,7 +71,7 @@ public class MaintenanceRecordController {
      */
     @DeleteMapping
     @SysLog("delete maintenanceRecord")
-    public R delete(Long[] ids) {
+    public R delete(String ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MAINTENANCEID_ISNULL);
 
         maintenanceRecordService.delete(ids);

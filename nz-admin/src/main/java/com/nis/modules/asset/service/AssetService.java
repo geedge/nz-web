@@ -22,5 +22,5 @@ public interface AssetService extends IService<Asset> {
 
     void saveOrUpdateAsset(Asset asset);
 
-    void delete(Long[] ids);
+    void delete(String ids);
 }

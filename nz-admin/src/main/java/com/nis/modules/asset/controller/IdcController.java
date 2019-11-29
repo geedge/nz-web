@@ -87,7 +87,7 @@ public class IdcController {
      */
     @DeleteMapping
     @SysLog("delete idc")
-    public R delete(Long[] ids) {
+    public R delete(String ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
 
         idcService.delete(ids);
