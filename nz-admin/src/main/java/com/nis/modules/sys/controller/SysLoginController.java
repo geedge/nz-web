@@ -117,7 +117,12 @@ public class SysLoginController extends AbstractController {
 		if(StringUtils.isBlank(requestToken)){
 			requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
 		}
-		redisTemplate.delete(requestToken);
+		try {
+			redisTemplate.delete(requestToken);
+		}catch (Exception e){
+			//do nothing
+		}
+
 
 		return R.ok();
 	}
