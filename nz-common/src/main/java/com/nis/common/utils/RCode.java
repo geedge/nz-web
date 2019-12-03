@@ -15,6 +15,7 @@ public enum RCode {
 	SYS_LOGIN_USERPWD(101004, "Incorrect username or password"), //账号或密码错误
 	SYS_LOGIN_LOCK(101005, "Locked account"), //账号被锁定
 	SYS_LOGIN_ACCOUNTAUTH(101006, "Incorrect username or password"), //账号验证失败
+	SYS_LOGIN_REQUIRED(101007, "Please log in to the system first"), //账号验证失败
 
 	SYS_MENU_SYSMENUDEL(103001, "Delete system menu is not allowed"), //系统菜单，不能删除
 	SYS_MENU_DELSUB(103002, "Please delete the submenu first"), //请先删除子菜单或按钮

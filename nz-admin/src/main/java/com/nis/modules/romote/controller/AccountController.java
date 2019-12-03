@@ -34,7 +34,7 @@ import com.nis.modules.romote.support.TerminalOneProcessor;
 import com.nis.modules.romote.support.TerminalSession;
 import com.nis.modules.romote.util.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
@@ -60,8 +60,9 @@ public class AccountController {
     @Autowired
     private TerminalContext terminalContext;
 
-    @Autowired
-    private Environment environment;
+    @Value("${nezha.uploadTempPath}")
+    private String configUploadPath;
+
     @Autowired
     private TerminalOneProcessor terminalOneProcessor;
 
@@ -98,21 +99,6 @@ public class AccountController {
         accountService.delete(ids);
         return R.ok();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -159,7 +145,11 @@ public class AccountController {
 
         return R.ok();
     }
-
+    @RequestMapping(value = "resize.do", method = RequestMethod.POST)
+    @ResponseBody
+    public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws Exception {
+        return terminalOneProcessor.resize(token, cols, rows, width, height);
+    }
     private void closeWithTokens(String ...tokens) throws IOException {
         for (String token:tokens){
             Account account = terminalContext.remove(token);
@@ -212,7 +202,6 @@ public class AccountController {
     @RequestMapping(value = "upload.do", method = RequestMethod.POST)
     @ResponseBody
     public R upload(HttpSession httpSession, String token, @RequestParam(value = "file", required = false) MultipartFile file, String path) {
-        String configUploadPath= environment.getProperty("upload.path");
         String rootPath=null;
         try{
             rootPath= ResourceUtils.getURL("classpath:").getPath();

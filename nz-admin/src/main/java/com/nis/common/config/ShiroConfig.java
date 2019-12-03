@@ -8,21 +8,23 @@
 
 package com.nis.common.config;
 
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.modules.sys.shiro.UserRealm;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
-import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.apache.shiro.web.session.mgt.ServletContainerSessionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 
-import com.nis.modules.sys.shiro.UserRealm;
-
+import javax.servlet.Filter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,7 +35,8 @@ import java.util.Map;
  */
 @Configuration
 public class ShiroConfig {
-
+    @Autowired
+    private RedisTemplate<String,String> redisTemplate;
     /**
      * 单机环境，session交给shiro管理
      */
@@ -73,7 +76,8 @@ public class ShiroConfig {
     public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
         ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
         shiroFilter.setSecurityManager(securityManager);
-        shiroFilter.setLoginUrl("/login.html");
+        shiroFilter.setLoginUrl("/sys/login");
+//        shiroFilter.setLoginUrl("/login.html");
         shiroFilter.setUnauthorizedUrl("/");
 
         Map<String, String> filterMap = new LinkedHashMap<>();
@@ -82,23 +86,30 @@ public class ShiroConfig {
         filterMap.put("/swagger-ui.html", "anon");
         filterMap.put("/webjars/**", "anon");
         filterMap.put("/swagger-resources/**", "anon");
-
         filterMap.put("/statics/**", "anon");
         filterMap.put("/login.html", "anon");
         filterMap.put("/sys/login", "anon");
         filterMap.put("/favicon.ico", "anon");
         filterMap.put("/captcha.jpg", "anon");
         filterMap.put("/api/**", "anon");
-        filterMap.put("/**", "authc");
+//        filterMap.put("/**", "authc");
+        filterMap.put("/**", "tokenCheckFilter");
+        Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
+
+        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate);
+        cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
+        shiroFilter.setFilters(cumstomFilterMap);
         shiroFilter.setFilterChainDefinitionMap(filterMap);
+
+
 
         return shiroFilter;
     }
-
-    @Bean("lifecycleBeanPostProcessor")
-    public LifecycleBeanPostProcessor lifecycleBeanPostProcessor() {
-        return new LifecycleBeanPostProcessor();
-    }
+     //将这个bean移到单独的配置类中，不然无法自动注入bean
+//    @Bean("lifecycleBeanPostProcessor")
+//    public LifecycleBeanPostProcessor lifecycleBeanPostProcessor() {
+//        return new LifecycleBeanPostProcessor();
+//    }
 
     @Bean
     public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {
