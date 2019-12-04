@@ -28,19 +28,19 @@ public class TokenCheckFilter extends AccessControlFilter {
     }
 
 
-    @Override
-    protected boolean preHandle(ServletRequest req, ServletResponse resp) throws Exception {
-        HttpServletRequest request=(HttpServletRequest) req;
-        HttpServletResponse response=(HttpServletResponse)resp;
-        //跨域请求标志
-        String origin = request.getHeader("Origin");
-        if(StringUtils.isNotBlank(origin)){
-            response.setHeader("Access-Control-Allow-Origin",origin);
-            response.setHeader("Access-Control-Allow-Credentials","true");
-        }
-
-        return super.preHandle(request, response);
-    }
+//    @Override
+//    protected boolean preHandle(ServletRequest req, ServletResponse resp) throws Exception {
+//        HttpServletRequest request=(HttpServletRequest) req;
+//        HttpServletResponse response=(HttpServletResponse)resp;
+//        //跨域请求标志
+//        String origin = request.getHeader("Origin");
+//        if(StringUtils.isNotBlank(origin)){
+//            response.setHeader("Access-Control-Allow-Origin",origin);
+//            response.setHeader("Access-Control-Allow-Credentials","true");
+//        }
+//
+//        return super.preHandle(request, response);
+//    }
 
     @Override
     protected boolean isAccessAllowed(ServletRequest req, ServletResponse resp, Object o) throws Exception {
