@@ -32,9 +32,9 @@ public class TokenCheckFilter extends AccessControlFilter {
         HttpServletRequest request=(HttpServletRequest) req;
         HttpServletResponse response=(HttpServletResponse)resp;
         ValueOperations<String, String> ops = redisTemplate.opsForValue();
-        String requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
+        String requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
         if(StringUtils.isBlank(requestToken)){
-            requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
+            requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
         }
 
         String value=ops.get(requestToken);
