@@ -62,6 +62,7 @@ nezha:
     open: false  #是否开启redis缓存  true开启   false关闭
   defaultLang: en
   promtoolPath: c:/
+  uploadTempPath: /upload/temp
 
 
 #mybatis
