@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.asset.entity.Asset;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -20,7 +21,7 @@ import java.util.Map;
 @Repository
 public interface AssetDao extends BaseMapper<Asset> {
 
-    List<Asset> queryList(IPage<Asset> page, Map<String, Object> params);
+    List<Asset> queryList(IPage<Asset> page, @Param("params")Map<String, Object> params);
 
 	List<Asset> queryListByHosts(Collection<String> hosts);
 }
