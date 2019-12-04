@@ -36,6 +36,10 @@ public class TokenCheckFilter extends AccessControlFilter {
         if(StringUtils.isBlank(requestToken)){
             requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
         }
+        if(StringUtils.isBlank(requestToken)){
+            response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_REQUIRED)).toString());
+            return false;
+        }
 
         String value=ops.get(requestToken);
 
