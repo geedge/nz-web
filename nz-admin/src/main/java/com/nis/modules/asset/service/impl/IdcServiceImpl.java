@@ -73,23 +73,17 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
 
     @Override
     public void saveOrUpdateIdc(Idc idc) {
-        // 1. 名称校验
-        if (this.checkName(idc.getId(), idc.getName())) {
-            // 2. 校验机房负责人是否存在
-            if (idc.getPrincipal() != null) {
-                SysUserEntity principal = sysUserService.getById(idc.getPrincipal());
-                if (principal == null) {
-                    // 负责人不存在
-                    throw new NZException(RCode.IDC_PRINCIPAL_NOT_EXISTS);
-                }
+        // 1. 校验机房负责人是否存在
+        if (idc.getPrincipal() != null) {
+            SysUserEntity principal = sysUserService.getById(idc.getPrincipal());
+            if (principal == null) {
+                // 负责人不存在
+                throw new NZException(RCode.IDC_PRINCIPAL_NOT_EXISTS);
             }
-
-            // 3. 入库
-            this.saveOrUpdate(idc);
-        } else {
-            // 名称重复
-            throw new NZException(RCode.IDC_NAME_DUPLICATE);
         }
+
+        // 2. 入库
+        this.saveOrUpdate(idc);
     }
 
     @Override
@@ -134,6 +128,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
      * @param name
      * @return
      */
+    @Override
     public boolean checkName(Integer id, String name) {
         List<Idc> list = this.list(new QueryWrapper<Idc>().eq("name", name));
         boolean flag = false;

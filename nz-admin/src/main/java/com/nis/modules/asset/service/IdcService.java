@@ -19,5 +19,7 @@ public interface IdcService extends IService<Idc> {
     void saveOrUpdateIdc(Idc idc);
 
     void delete(String ids);
+
+    boolean checkName(Integer id, String name);
 }
 

@@ -1,6 +1,7 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -56,6 +57,12 @@ public class CabinetController {
             ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM);
         }
 
+        // 校验名称重复
+        if (!cabinetService.cabinetNameCheck(cabinet.getId(), cabinet.getName(), cabinet.getIdcId())) {
+            // 名称重复
+            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
+        }
+
         cabinetService.saveOrUpdateCabinet(cabinet);
         return R.ok();
     }
@@ -75,6 +82,12 @@ public class CabinetController {
 
         if (cabinet.getuSize() != null) {
             ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM);
+        }
+
+        // 校验名称重复
+        if (!cabinetService.cabinetNameCheck(cabinet.getId(), cabinet.getName(), cabinet.getIdcId())) {
+            // 名称重复
+            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
         }
 
         cabinetService.saveOrUpdateCabinet(cabinet);

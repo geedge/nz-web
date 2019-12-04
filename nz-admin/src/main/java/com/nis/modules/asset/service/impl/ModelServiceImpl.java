@@ -82,20 +82,13 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Override
     public void saveOrUpdateModel(Model model) {
-        // 1. 校验名称
-        if (checkName(model.getId(), model.getName())) {
-
-            // 2.校验资产型号类型有效性
-            if (model.getType() != null) {
-                this.checkAssetTypeExist(model.getType());
-            }
-
-            // 3.入库
-            this.saveOrUpdate(model);
-        } else {
-            // 资产型号名称重复
-            throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
+        // 1.校验资产型号类型有效性
+        if (model.getType() != null) {
+            this.checkAssetTypeExist(model.getType());
         }
+
+        // 2.入库
+        this.saveOrUpdate(model);
     }
 
     @Override
@@ -132,6 +125,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      * @param name
      * @return
      */
+    @Override
     public boolean checkName(Integer id, String name) {
         List<Model> list = this.list(new QueryWrapper<Model>().eq("name", name));
         boolean flag = false;

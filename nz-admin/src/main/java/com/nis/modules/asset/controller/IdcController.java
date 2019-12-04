@@ -1,6 +1,7 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -54,6 +55,12 @@ public class IdcController {
             ValidateUtils.is(idc.getTel()).phone(RCode.IDC_IDCPHONE_FORMAT);
         }
 
+        // 校验名称重复
+        if (!idcService.checkName(idc.getId(), idc.getName())) {
+            // 名称重复
+            throw new NZException(RCode.IDC_NAME_DUPLICATE);
+        }
+
         idcService.saveOrUpdateIdc(idc);
         return R.ok();
     }
@@ -72,6 +79,12 @@ public class IdcController {
         // 电话格式校验
         if (StringUtils.isNotEmpty(idc.getTel())) {
             ValidateUtils.is(idc.getTel()).phone(RCode.IDC_IDCPHONE_FORMAT);
+        }
+
+        // 校验名称重复
+        if (!idcService.checkName(idc.getId(), idc.getName())) {
+            // 名称重复
+            throw new NZException(RCode.IDC_NAME_DUPLICATE);
         }
 
         idcService.saveOrUpdateIdc(idc);

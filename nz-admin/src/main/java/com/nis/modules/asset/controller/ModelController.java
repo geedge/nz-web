@@ -1,6 +1,7 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -43,6 +44,12 @@ public class ModelController {
     public R save(@RequestBody Model model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL);
 
+        // 校验名称重复
+        if (!modelService.checkName(model.getId(), model.getName())) {
+            // 资产型号名称重复
+            throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
+        }
+
         modelService.saveOrUpdateModel(model);
         return R.ok();
     }
@@ -59,6 +66,12 @@ public class ModelController {
     public R update(@RequestBody Model model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL);
+
+        // 校验名称重复
+        if (!modelService.checkName(model.getId(), model.getName())) {
+            // 资产型号名称重复
+            throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
+        }
 
         modelService.saveOrUpdateModel(model);
         return R.ok();

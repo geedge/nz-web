@@ -65,14 +65,8 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     public void saveOrUpdateCabinet(Cabinet cabinet) {
-        // 1. 机柜名称校验 同一个数据中心名称唯一
-        if (this.cabinetNameCheck(cabinet.getId(), cabinet.getName(), cabinet.getIdcId())) {
-            // 2. 入库
-            this.saveOrUpdate(cabinet);
-        } else {
-            // 名称重复
-            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
-        }
+        // 入库
+        this.saveOrUpdate(cabinet);
     }
 
     @Override
@@ -103,6 +97,15 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     }
 
 
+    /**
+     * 名称校验
+     *
+     * @param id
+     * @param name
+     * @param idcId
+     * @return
+     */
+    @Override
     public boolean cabinetNameCheck(Integer id, String name, Integer idcId) {
         // 1. 校验机房是否存在
         Idc idc = idcService.getById(idcId);

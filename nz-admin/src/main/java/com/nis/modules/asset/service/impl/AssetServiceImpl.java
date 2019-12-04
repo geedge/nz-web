@@ -72,72 +72,74 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Override
     public void saveOrUpdateAsset(Asset asset) {
         // 1. sn 唯一校验
-        if (this.checkFieldExist(asset.getId(), "sn", asset.getSn())) {
-            // 2. host地址唯一校验
-            if (this.checkFieldExist(asset.getId(), "host", asset.getHost())) {
-                // 3. 型号有效性校验
-                if (asset.getModelId() != null) {
-                    Model model = modelService.getById(asset.getModelId());
-                    if (model == null) {
-                        // 所选资产型号不存在
-                        throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
-                    }
-                }
-                // 4.数据中心有效性校验
-                Idc idc = idcService.getById(asset.getIdcId());
-                if (idc == null) {
-                    // 数据中心不存在
-                    throw new NZException(RCode.ASSET_IDC_NOTFOUND);
-                }
-                // 5.机柜有效性校验
-                if (asset.getCabinetId() != null) {
-                    Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
-                    if (cabinet == null) {
-                        // 机柜未找到
-                        throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
-                    }
-                    if (!idc.getId().equals(cabinet.getIdcId())) {
-                        // 数据中心与机柜不符  当前数据中心没有含有所选机柜
-                        throw new NZException(RCode.IDC_NOTHAS_CABINET);
-                    }
-                }
-                // 6. 状态有效性校验
-                if (asset.getState() != null) {
-                    Map<String, Object> map = new HashMap<>(1);
-
-                    map.put("type", "assetState");
-                    List<SysDictEntity> assetTypes = sysDictService.queryList(map);
-                    boolean flag = false;
-                    for (SysDictEntity dict : assetTypes) {
-                        if (String.valueOf(asset.getState()).equals(dict.getCode())) {
-                            flag = true;
-                        }
-                    }
-                    if (!flag) {
-                        // 未找到资产状态
-                        throw new NZException(RCode.ASSET_STATE_NOTFOUND);
-                    }
-                }
-
-                Date now = new Date();
-                if (asset.getId() == null) {
-                    asset.setCreateAt(now);
-                    asset.setCreateBy(ShiroUtils.getUserId());
-                }
-                if (asset.getState() == null) {
-                    asset.setState(1);
-                }
-                asset.setUpdateAt(now);
-                asset.setUpdateBy(ShiroUtils.getUserId());
-                this.saveOrUpdate(asset);
-            } else {
-                // host 重复
-                throw new NZException(RCode.ASSET_HOST_DUPLICATE);
-            }
-        } else {
-            // sn 重复
+        if (!this.checkFieldExist(asset.getId(), "sn", asset.getSn())) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
+
+        // 2. host地址唯一校验
+        if (!this.checkFieldExist(asset.getId(), "host", asset.getHost())) {
+            throw new NZException(RCode.ASSET_HOST_DUPLICATE);
+        }
+
+        // 3. 型号有效性校验
+        if (asset.getModelId() != null) {
+            Model model = modelService.getById(asset.getModelId());
+            if (model == null) {
+                // 所选资产型号不存在
+                throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
+            }
+        }
+
+        // 4.数据中心有效性校验
+        Idc idc = idcService.getById(asset.getIdcId());
+        if (idc == null) {
+            // 数据中心不存在
+            throw new NZException(RCode.ASSET_IDC_NOTFOUND);
+        }
+
+        // 5.机柜有效性校验
+        if (asset.getCabinetId() != null) {
+            Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
+            if (cabinet == null) {
+                // 机柜未找到
+                throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
+            }
+            if (!idc.getId().equals(cabinet.getIdcId())) {
+                // 数据中心与机柜不符  当前数据中心没有含有所选机柜
+                throw new NZException(RCode.IDC_NOTHAS_CABINET);
+            }
+        }
+
+        // 6. 状态有效性校验
+        if (asset.getState() != null) {
+            Map<String, Object> map = new HashMap<>(1);
+
+            map.put("type", "assetState");
+            List<SysDictEntity> assetTypes = sysDictService.queryList(map);
+            boolean flag = false;
+            for (SysDictEntity dict : assetTypes) {
+                if (String.valueOf(asset.getState()).equals(dict.getCode())) {
+                    flag = true;
+                }
+            }
+            if (!flag) {
+                // 未找到资产状态
+                throw new NZException(RCode.ASSET_STATE_NOTFOUND);
+            }
+        }
+
+        Date now = new Date();
+        if (asset.getId() == null) {
+            asset.setCreateAt(now);
+            asset.setCreateBy(ShiroUtils.getUserId());
+        }
+        if (asset.getState() == null) {
+            asset.setState(1);
+        }
+        asset.setUpdateAt(now);
+        asset.setUpdateBy(ShiroUtils.getUserId());
+
+        this.saveOrUpdate(asset);
     }
 
     @Override
