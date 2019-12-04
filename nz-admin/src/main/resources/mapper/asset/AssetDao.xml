@@ -103,7 +103,13 @@
        su1.salt AS su1_salt,
        su1.email AS su1_email,
        su1.status AS su1_status,
-       su1.create_time AS su1_createTime
+       su1.create_time AS su1_createTime,
+
+
+        /*module统计 关联endPoint表*/
+       	COUNT(DISTINCT ep.id) AS moduleNum,
+        /*alert统计 关联alert_rule表*/
+		COUNT(DISTINCT ar.id) AS alertNUm
     </sql>
 
 
@@ -118,8 +124,12 @@
         LEFT JOIN sys_user su ON ass.create_by = su.user_id
         LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
 
+        LEFT JOIN endpoint ep ON ass.id = ep.asset_id
+        LEFT JOIN alert_rule ar ON ass.id = ar.link_id AND ar.type = 3
 
-        WHERE 1=1
+        GROUP BY ass.id
+
+        HAVING 1=1
 
         <if test="params.id != null and params.id != ''">
             AND ass.id = #{params.id}

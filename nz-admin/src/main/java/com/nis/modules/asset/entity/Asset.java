@@ -111,4 +111,16 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private SysUserEntity updateByUser;
+
+    /**
+     * module统计 关联endpoinet 表
+     */
+    @TableField(exist = false)
+    private Integer moduleNum;
+
+    /**
+     *  alert统计
+     */
+    @TableField(exist = false)
+    private Integer alertNum;
 }
