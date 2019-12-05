@@ -85,6 +85,7 @@ public enum RCode {
 	ASSET_HOST_FORMAT(501004, "Asset host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"),// 资产主机地址格式
 	ASSET_MAINTENANCEID_ISNULL(501005, "Asset maintenance id can not be empty"),// 资产维修记录ID不能为空
 	ASSET_NOT_EXIST(501006, "Asset does not exist"),                     // 资产不存在
+	ASSET_MAINTENANCE_CONTENT_ISNULL(501007, "Asset maintenance content can not be empty"),// 资产维修记录内容不能为空
 
 	ASSET_MODELNAME_ISNULL(502001, "Asset model name can not be null"),  // 资产型号名称不能为空
 	ASSET_MODELID_ISNULL(502002, "Asset model id can not be null"),      // 资产型号ID不能为空

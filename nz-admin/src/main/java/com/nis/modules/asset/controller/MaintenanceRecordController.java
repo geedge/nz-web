@@ -47,20 +47,22 @@ public class MaintenanceRecordController {
     @PostMapping
     @SysLog("save maintenanceRecord")
     public R save(@RequestBody MaintenanceRecord maintenance) {
-        ValidateUtils.is(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL);
+        ValidateUtils.is(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
+                .and(maintenance.getContent()).notNull(RCode.ASSET_MAINTENANCE_CONTENT_ISNULL);
 
         maintenanceRecordService.saveOrUpdateMaintenance(maintenance);
         return R.ok();
     }
 
-    /*@PutMapping
+    @PutMapping
     public R update(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getId()).notNull(RCode.ASSET_MAINTENANCEID_ISNULL)
-                .and(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL);
+                .and(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
+                .and(maintenance.getContent()).notNull(RCode.ASSET_MAINTENANCE_CONTENT_ISNULL);
 
         maintenanceRecordService.saveOrUpdateMaintenance(maintenance);
         return R.ok();
-    }*/
+    }
 
 
     /**
@@ -69,12 +71,12 @@ public class MaintenanceRecordController {
      * @param ids
      * @return
      */
-    @DeleteMapping
+    /*@DeleteMapping
     @SysLog("delete maintenanceRecord")
     public R delete(String ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MAINTENANCEID_ISNULL);
 
         maintenanceRecordService.delete(ids);
         return R.ok();
-    }
+    }*/
 }

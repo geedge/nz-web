@@ -118,7 +118,7 @@
         <include refid="asset_info_columns"/>
         FROM asset ass
 
-        LEFT join model mo ON ass.model_id = mo.id
+        LEFT JOIN model mo ON ass.model_id = mo.id
         LEFT JOIN idc idc ON ass.idc_id = idc.id
         LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
         LEFT JOIN sys_user su ON ass.create_by = su.user_id

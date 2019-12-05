@@ -1,6 +1,5 @@
 package com.nis.modules.asset.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -13,7 +12,6 @@ import com.nis.modules.asset.entity.MaintenanceRecord;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.MaintenanceRecordService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,26 +29,20 @@ import java.util.Map;
 @Service("maintenance")
 public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordDao, MaintenanceRecord> implements MaintenanceRecordService {
 
+    // 资产 service
     @Autowired
     private AssetService assetService;
 
+    // 资产维修 dao
+    @Autowired
+    private MaintenanceRecordDao maintenanceRecordDao;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String id = null, assetId = null, content = null;
+        IPage<MaintenanceRecord> page = new Query<MaintenanceRecord>().getPage(params);
 
-        if (params != null && params.size() > 0) {
-            id = (String) params.get("id");
-            assetId = (String) params.get("assetId");
-            content = (String) params.get("content");
-        }
-
-        IPage<MaintenanceRecord> page = this.page(
-                new Query<MaintenanceRecord>().getPage(params),
-                new QueryWrapper<MaintenanceRecord>()
-                        .eq(StringUtils.isNotEmpty(id), "id", id)
-                        .eq(StringUtils.isNotEmpty(assetId), "asset_id", assetId)
-                        .like(StringUtils.isNotEmpty(content), "content", content)
-        );
+        List<MaintenanceRecord> maintenanceRecords = maintenanceRecordDao.queryList(page, params);
+        page.setRecords(maintenanceRecords);
 
         return new PageUtils(page);
     }
@@ -66,8 +58,17 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
         }
 
         Date now = new Date();
-        maintenance.setCreateAt(now);
-        maintenance.setCreateBy(ShiroUtils.getUserId());
+        Long userId = ShiroUtils.getUserId();
+
+        // 2. 添加的时候维护创建人
+        if (maintenance.getId() == null) {
+            maintenance.setCreateAt(now);
+            maintenance.setCreateBy(userId);
+        }
+
+        // 添加 修改都更新信息
+        maintenance.setUpdateAt(now);
+        maintenance.setUpdateBy(userId);
 
         // 2. 入库
         this.saveOrUpdate(maintenance);

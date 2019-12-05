@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.AlertType;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -18,7 +19,9 @@ import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -129,15 +132,16 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         Date now = new Date();
+        Long userId = ShiroUtils.getUserId();
         if (asset.getId() == null) {
             asset.setCreateAt(now);
-            asset.setCreateBy(ShiroUtils.getUserId());
+            asset.setCreateBy(userId);
         }
         if (asset.getState() == null) {
             asset.setState(1);
         }
         asset.setUpdateAt(now);
-        asset.setUpdateBy(ShiroUtils.getUserId());
+        asset.setUpdateBy(userId);
 
         this.saveOrUpdate(asset);
     }

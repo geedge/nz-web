@@ -1,7 +1,9 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -54,4 +56,24 @@ public class MaintenanceRecord implements Serializable {
      * 更新人
      */
     private Long updateBy;
+
+
+    /**
+     * 资产
+     */
+    @TableField(exist = false)
+    private Asset asset;
+
+    /**
+     * 创建人
+     */
+    @TableField(exist = false)
+    private SysUserEntity createByUser;
+
+
+    /**
+     * 更新人
+     */
+    @TableField(exist = false)
+    private SysUserEntity updateByUser;
 }
