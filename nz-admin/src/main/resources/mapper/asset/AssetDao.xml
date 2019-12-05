@@ -107,9 +107,9 @@
 
 
         /*module统计 关联endPoint表*/
-       	COUNT(DISTINCT ep.id) AS moduleNum,
+        (SELECT COUNT(ep.id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS moduleNum,
         /*alert统计 关联alert_rule表*/
-		COUNT(DISTINCT ar.id) AS alertNUm
+        (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum
     </sql>
 
 
@@ -124,12 +124,7 @@
         LEFT JOIN sys_user su ON ass.create_by = su.user_id
         LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
 
-        LEFT JOIN endpoint ep ON ass.id = ep.asset_id
-        LEFT JOIN alert_rule ar ON ass.id = ar.link_id AND ar.type = 3
-
-        GROUP BY ass.id
-
-        HAVING 1=1
+        WHERE 1=1
 
         <if test="params.id != null and params.id != ''">
             AND ass.id = #{params.id}
