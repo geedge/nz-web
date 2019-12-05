@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.module.entity.Module;
@@ -17,5 +18,6 @@ public class Endpoint {
 	private Integer port;
 	private String param;
 	private String path;
+	@TableField(exist = false)
 	private Module module;
 }
