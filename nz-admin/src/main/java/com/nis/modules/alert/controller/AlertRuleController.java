@@ -55,7 +55,9 @@ public class AlertRuleController {
     	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
     					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
     					.and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-    					.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL);
+    					.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
+						.and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
+		alertRuleService.validateTypeLink(alertRule.getType(),alertRule.getLinkId());
     	//校验名称重复
     	if (!alertRuleService.checkName(alertRule)) {
     		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
@@ -90,7 +92,9 @@ public class AlertRuleController {
 						.and(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL)
     					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
 						.and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-						.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL);
+						.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
+						.and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
+		alertRuleService.validateTypeLink(alertRule.getType(),alertRule.getLinkId());
     	//校验名称重复
     	if (!alertRuleService.checkName(alertRule)) {
     		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);

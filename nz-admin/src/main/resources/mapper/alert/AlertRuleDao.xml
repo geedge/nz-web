@@ -8,11 +8,13 @@
         <result property="id" column="id"/>
         <result property="alertName" column="alert_name"/>
         <result property="expr" column="expr"/>
-        <result property="f" column="f"/>
+        <result property="last" column="last"/>
+        <result property="type" column="type"/>
         <result property="severity" column="severity"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
+        <result property="linkId" column="link_id" />
     </resultMap>
     
     <resultMap type="com.nis.modules.alert.entity.AlertNameMapUserDTO" id="alertRuleMapUser">

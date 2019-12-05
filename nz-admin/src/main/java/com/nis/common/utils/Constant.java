@@ -208,6 +208,47 @@ public class Constant {
 
     public static final String AUTH_TOKEN_CODE="Authorization";
 
+    public enum AlertType{
+        ALERT_TYPE_ASSET(3,"asset"),
+        ALERT_TYPE_MODULE(2,"module"),
+        ALERT_TYPE_PROJECT(1,"project");
+
+        private Integer code;
+        private String type;
+        AlertType(Integer code,String type){
+            this.code=code;
+            this.type=type;
+        }
+
+        public static AlertType getAlertType(Integer code){
+            for (AlertType  type:AlertType.values()){
+                if (type.getCode()==code){
+                    return type;
+                }
+            }
+            return null;
+        }
+
+
+        public Integer getCode() {
+            return code;
+        }
+
+        public void setCode(Integer code) {
+            this.code = code;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getType() {
+            return type;
+        }
+    }
+
+
+
     //permission type
     public static final String PM_TYPE_DETESET = "2";
     public static final String PM_TYPE_DETEWARN = "3";

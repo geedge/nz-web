@@ -1,5 +1,6 @@
 package com.nis.modules.alert.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -31,6 +32,16 @@ public class AlertRuleEntity implements Serializable {
 	 * 告警名称
 	 */
 	private String alertName;
+
+	/**
+	 *告警类型
+	 * */
+	private Integer type;
+	/**
+	 * 关联Id
+	 * */
+	private Integer linkId;
+
 	/**
 	 * 运算表达式
 	 */
@@ -55,5 +66,8 @@ public class AlertRuleEntity implements Serializable {
 	 * 通知用户组
 	 */
 	private Integer receiver;
+
+	@TableField(exist = false)
+	private Object linkObject;
 
 }

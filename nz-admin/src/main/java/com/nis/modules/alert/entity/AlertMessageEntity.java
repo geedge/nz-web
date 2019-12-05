@@ -36,13 +36,16 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	private String alertName;
 	/**
-	 * 告警主机id
+	 * 告警类型
+	 * */
+	private Integer type;
+	/**
+	 * 告警类型关联id
 	 */
-	private Integer assetId;
+	private Integer linkId;
 	/**
 	 * 告警主机ip
 	 */
-	@TableField(exist = false)
 	private String host;
 	/**
 	 * 告警主机对象
@@ -77,5 +80,11 @@ public class AlertMessageEntity implements Serializable {
 	 * 状态
 	 */
 	private Integer state;
+
+	/**
+	 * linkId对应实体类
+	 * */
+	@TableField(exist = false)
+	private Object linkObject;
 
 }

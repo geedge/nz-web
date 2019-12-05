@@ -1,5 +1,11 @@
 package com.nis.modules.alert.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
+import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.service.ProjectService;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -24,10 +30,6 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.MailUtil;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
@@ -49,6 +51,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private AssetService assetService;
 	@Autowired
+	private ModuleService moduleService;
+	@Autowired
+	private ProjectService projectService;
+	@Autowired
 	private AlertRuleService alertRuleService;
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
@@ -56,7 +62,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private static Gson gson = new Gson();
 	
     @Override
-    public PageUtils queryPage(Map<String, Object> params) throws IllegalAccessException, InvocationTargetException {
+    public PageUtils queryPage(Map<String, Object> params)  {
     	try {
 			if (params.get("startAt") != null && !StringUtils.isBlank(params.get("startAt").toString())) {
 				Date searchStartAt = DateUtils.parseDate(params.get("startAt").toString(), "yyyy-MM-dd HH:mm:ss");
@@ -66,12 +72,44 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				Date searchEndAt = DateUtils.parseDate(params.get("endAt").toString(), "yyyy-MM-dd HH:mm:ss");
 				params.put("endAt", searchEndAt);
 			}
+
 		} catch (ParseException e) {}
+
+    	Integer searchId=resolveParamToInteger(params,"id");
+
+    	Integer searchType=resolveParamToInteger(params,"type");
+
+    	Integer searchLinkId=resolveParamToInteger(params,"linkId");
+
+    	Integer searchState=resolveParamToInteger(params,"state");
+
+		QueryWrapper<AlertMessageEntity> amQueryWrapper = new QueryWrapper<>();
+    	amQueryWrapper.eq(searchId!=null,"id",searchId);
+    	amQueryWrapper.eq(searchState!=null,"state",searchState);
+    	amQueryWrapper.like(StringUtils.isNotBlank((String)params.get("alertName")),"alert_name",(String)params.get("alertName"));
+    	amQueryWrapper.eq(searchType!=null,"type",searchType);
+    	amQueryWrapper.eq(searchType!=null&&searchLinkId!=null,"link_id",searchLinkId);
+    	amQueryWrapper.like(StringUtils.isNotBlank((String)params.get("host")),"host",(String)params.get("host"));
+    	amQueryWrapper.eq(StringUtils.isNotBlank((String)params.get("severity")),"severity",(String)params.get("severity"));
+
+    	IPage<AlertMessageEntity> page=this.page(new Query<AlertMessageEntity>().getPage(params),amQueryWrapper);
+
+		List<AlertMessageEntity> records = page.getRecords();
+
+		for (AlertMessageEntity am:records){
+			if(am.getType()!=null){
+				IService service=getServiceImpl(am.getType());
+				Object linkObject = service.getById(am.getLinkId());
+
+				am.setLinkObject(linkObject);
+			}
+		}
+
+
+//		AlertMessageEntity queryEntity = new AlertMessageEntity();
+//    	BeanUtils.populate(queryEntity, params);
     	
-    	AlertMessageEntity queryEntity = new AlertMessageEntity();
-    	BeanUtils.populate(queryEntity, params);
-    	
-    	IPage<AlertMessageEntity> page = baseMapper.list(new Query<AlertMessageEntity>().getPage(params), queryEntity);
+//    	IPage<AlertMessageEntity> page = baseMapper.list(new Query<AlertMessageEntity>().getPage(params), queryEntity);
     	
         return new PageUtils(page);
     }
@@ -79,8 +117,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     @Override
     public void saveBatch(AlertMessageReceiveDTO[] receiveData) throws Exception {
     	List<AlertMessageEntity> entities = new ArrayList<>();
-    	//取出所有的host，一次查询出assetId，再setId
-    	Set<String> hosts = new HashSet<>();
     	Set<String> alertNames = new HashSet<>();
     	
     	for (AlertMessageReceiveDTO dto : receiveData) {
@@ -95,21 +131,11 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     			ops.put(Constant.REDIS_KEY_ALERTMESSAGE, md5DigestAsHex, gson.toJson(receiveLabels));
     			//转化为入库的实体类
     			AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
-    			hosts.add(entity.getHost());
     			alertNames.add(entity.getAlertName());
     			entities.add(entity);
     		}
     	}
     	if (!CollectionUtils.isEmpty(entities)) {
-	    	List<Asset> queryListByHosts = assetService.queryListByHosts(hosts);
-	    	for (AlertMessageEntity entity : entities) {
-	    		for (Asset asset : queryListByHosts) {
-	    			if (entity.getHost().equals(asset.getHost())) {
-	    				entity.setAssetId(Integer.parseInt(asset.getId() + ""));
-	    				break;
-	    			}
-	    		}
-	    	}
 	    	this.saveBatch(entities);
     	
 	    	//邮件通知
@@ -141,6 +167,35 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		Object[] splitedIds = ids.split(",");
 		baseMapper.update(null, new UpdateWrapper<AlertMessageEntity>().in("id", splitedIds).set("state", alertMessage.getState()));
 		return true;
+	}
+	/**
+	 * 根据type获取相应service
+	 * */
+	private IService getServiceImpl(Integer typeId){
+		Constant.AlertType alertType = Constant.AlertType.getAlertType(typeId);
+		if(alertType==null){
+			throw new NZException(RCode.ALERTRULE_TYPE_INVALIDE);
+		}
+		switch (alertType){
+			case ALERT_TYPE_PROJECT:
+				return projectService;
+			case ALERT_TYPE_MODULE:
+				return moduleService;
+			case ALERT_TYPE_ASSET:
+				return assetService;
+		}
+		return null;
+	}
+
+	private Integer resolveParamToInteger(Map<String,Object> params,String paramName){
+		Integer param=null;
+		try {
+			if(params.get(paramName)!=null&&StringUtils.isNotBlank(params.get(paramName).toString())){
+				param=Integer.parseInt(params.get(paramName).toString());
+			}
+		}catch (NumberFormatException e){}
+
+		return param;
 	}
 
 }
