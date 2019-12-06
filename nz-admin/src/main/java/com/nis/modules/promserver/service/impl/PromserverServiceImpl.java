@@ -25,7 +25,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		String idcId = (String)params.get("idcId");
 		String host = (String)params.get("host");
 		String type = (String)params.get("type");
-		
+		String port = (String)params.get("port");
 		IPage<Promserver> page = this.page(
 			new Query<Promserver>().getPage(params),
 			new QueryWrapper<Promserver>()
@@ -33,6 +33,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				.like(StringUtils.isNotBlank(host),"host", host)
 				.eq(StringUtils.isNotBlank(type), "type",type)
 				.eq(StringUtils.isNotBlank(idcId), "idc_id",idcId)
+				.eq(StringUtils.isNotBlank(port), "port",port)
 		);
 		return new PageUtils(page);
 	}
@@ -42,6 +43,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL);
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);
+		ValidateUtils.is(promserverEntity.getPort()).notNull(RCode.PROMSERVER_PORT_ISNULL);
 	}
 
 }

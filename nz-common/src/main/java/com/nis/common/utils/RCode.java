@@ -118,6 +118,7 @@ public enum RCode {
 	PROMSERVER_IDCID_ISNULL(800002,"Idc id can not be empty"),
 	PROMSERVER_TYPE_ISNULL(800003,"PromServer type can not be empty"),
 	PROMSERVER_HOST_ISNULL(800004,"PromServer host can not be empty"),
+	PROMSERVER_PORT_ISNULL(800005,"PromServer port can not be empty"),
 	
 	ENDPOINT_ID_ISNULL(900001,"Endpoint id can not be empty"),
 	ENDPOINT_MODULEID_ISNULL(900002,"Module Id can not be empty"),

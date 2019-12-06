@@ -16,7 +16,7 @@ public class Promserver {
 	private Integer idcId;
 	@NotBlank(message="参数名不能为空")
 	private String host;
-	private String relabel;
 	@NotBlank(message="参数名不能为空")
 	private Integer type;
+	private Integer port;
 }
