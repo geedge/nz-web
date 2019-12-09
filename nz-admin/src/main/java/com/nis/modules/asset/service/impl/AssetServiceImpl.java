@@ -16,6 +16,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.romote.util.StringUtils;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -55,6 +56,29 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        String idcIds = null;
+        if (params != null && params.size() > 0) {
+            idcIds = (String) params.get("idcIds");
+        }
+
+        if (StringUtils.isNotEmpty(idcIds)) {
+            // 1. 清空idcid
+            params.put("idcId", null);
+            // 2. 校验idcids
+            String[] idcIdsArr = idcIds.split(",");
+            List<Integer> idcidList = new ArrayList<>();
+            for (String id : idcIdsArr) {
+                try {
+                    idcidList.add(Integer.parseInt(id));
+                } catch (NumberFormatException e) {
+                    // ID转换异常
+                    throw new NZException(RCode.IDC_ID_FORMAT);
+                }
+            }
+            // 3. 放回参数集合中
+            params.put("idcIds", idcidList);
+        }
+
         IPage<Asset> page = new Query<Asset>().getPage(params);
 
         List<Asset> assetEntities = assetDao.queryList(page, params);

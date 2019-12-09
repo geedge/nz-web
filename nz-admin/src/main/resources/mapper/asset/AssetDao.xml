@@ -138,6 +138,13 @@
             AND ass.idc_id = #{params.idcId}
         </if>
 
+        <if test="params.idcIds != null and params.idcIds.size > 0">
+            AND ass.idc_id IN
+            <foreach collection="params.idcIds" item="idcId" index="no" open="(" separator="," close=")">
+                #{idcId}
+            </foreach>
+        </if>
+
         <if test="params.cabinetId != null and params.cabinetId != ''">
             AND ass.cabinet_id = #{params.cabinetId}
         </if>
