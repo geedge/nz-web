@@ -63,9 +63,9 @@ public class AlertRuleController {
     		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
     	}
     	//校验告警级别合法性
-    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
-    	}
+//    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
+//    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
+//    	}
     	//校验expr
     	boolean checkRule = false;
     	try {
@@ -100,9 +100,9 @@ public class AlertRuleController {
     		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
     	}
     	//校验告警级别合法性
-    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
-    	}
+//    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
+//    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
+//    	}
     	//校验expr
     	boolean checkRule = false;
     	try {

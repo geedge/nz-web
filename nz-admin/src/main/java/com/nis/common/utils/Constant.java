@@ -90,7 +90,7 @@ public class Constant {
     /**
      * 告警等级
      */
-    public static final List<String> ALERT_LEVEL;
+//    public static final List<String> ALERT_LEVEL;
     /**
      * 告警信息状态
      */
@@ -125,10 +125,10 @@ public class Constant {
 			tempPath.mkdir();
 		}
 		
-		ALERT_LEVEL = new ArrayList<String>();
-		ALERT_LEVEL.add("warning");
-		ALERT_LEVEL.add("critical");
-		ALERT_LEVEL.add("emergency");
+//		ALERT_LEVEL = new ArrayList<String>();
+//		ALERT_LEVEL.add("warning");
+//		ALERT_LEVEL.add("critical");
+//		ALERT_LEVEL.add("emergency");
 		
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();
 		ALERTMESSAGE_STATE.add(1);
