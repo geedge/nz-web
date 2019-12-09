@@ -119,7 +119,15 @@ public enum RCode {
 	PROMSERVER_TYPE_ISNULL(800003,"PromServer type can not be empty"),
 	PROMSERVER_HOST_ISNULL(800004,"PromServer host can not be empty"),
 	PROMSERVER_PORT_ISNULL(800005,"PromServer port can not be empty"),
-	
+	PROMSERVER_REQUEST_FAILD(800007,"Qequest faild"),
+	PROMSERVER_PARAM_TIME_INVALIDE(800008,"Invalid parameter for time type"),
+	PROMSERVER_PARAM_QUERY_ISNULL(800006,"Parameter 'query' is required"),
+	PROMSERVER_PARAM_START_ISNULL(800009,"Parameter 'start' is required"),
+	PROMSERVER_PARAM_END_ISNULL(800010,"Parameter 'end' is required"),
+	PROMSERVER_PARAM_STEP_ISNULL(800011,"Parameter 'step' is required"),
+	PROMSERVER_PARAM_MATCH_ISNULL(800011,"Parameter 'match[]' is required"),
+
+
 	ENDPOINT_ID_ISNULL(900001,"Endpoint id can not be empty"),
 	ENDPOINT_MODULEID_ISNULL(900002,"Module Id can not be empty"),
 	ENDPOINT_ASSETID_ISNULL(900003,"Asset Id can not be empty"),

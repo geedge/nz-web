@@ -63,7 +63,12 @@ nezha:
   defaultLang: en
   promtoolPath: c:/
   uploadTempPath: /upload/temp
-
+  promApis: #配置说明： key--> PromProxyController方法名  value 请求的api 或正则表达式
+    query: /api/v1/query
+    queryRange: /api/v1/query_range
+    series: /api/v1/series
+    labels: /api/v1/labels
+    label: ^/api/v1/label/.+/values$
 
 #mybatis
 mybatis-plus:
