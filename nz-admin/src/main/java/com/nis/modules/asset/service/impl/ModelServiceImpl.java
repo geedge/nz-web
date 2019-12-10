@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -14,7 +15,6 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 数据中心    serviceImpl
+ * 资产型号    serviceImpl
  *
  * @author shizhendong
  * @date 2019-11-21
@@ -40,52 +40,25 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
     @Autowired
     private SysDictService sysDictService;
 
+    // 资产型号 dao
+    @Autowired
+    private ModelDao modelDao;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String id = null, name = null, vendor = null, type = null, remark = null;
 
-        if (params != null && params.size() > 0) {
-            id = (String) params.get("id");
-            name = (String) params.get("name");
-            vendor = (String) params.get("vendor");
-            type = (String) params.get("type");
-            remark = (String) params.get("remark");
-        }
+        IPage<Model> page = new Query<Model>().getPage(params);
 
-        IPage<Model> page = this.page(
-                new Query<Model>().getPage(params),
-                new QueryWrapper<Model>()
-                        .eq(StringUtils.isNotEmpty(id), "id", id)
-                        .eq(StringUtils.isNotEmpty(type), "type", type)
-                        .like(StringUtils.isNotEmpty(name), "name", name)
-                        .like(StringUtils.isNotEmpty(vendor), "vendor", vendor)
-                        .like(StringUtils.isNotEmpty(remark), "remark", remark)
-        );
+        List<Model> modelList = modelDao.queryList(page, params);
+        page.setRecords(modelList);
 
-        Map<String, Object> map = new HashMap<>(1);
-
-        map.put("type", "assetType");
-        List<SysDictEntity> assetTypes = sysDictService.queryList(map);
-
-        Map<String, String> assetTypesMap = new HashMap<>();
-        for (SysDictEntity dictEntity : assetTypes) {
-            assetTypesMap.put(dictEntity.getCode(), dictEntity.getValue());
-        }
-
-        for (Model model : page.getRecords()) {
-            if (model.getType() != null) {
-                model.setTypeName(assetTypesMap.get(String.valueOf(model.getType())));
-            }
-        }
         return new PageUtils(page);
     }
 
     @Override
     public void saveOrUpdateModel(Model model) {
-        // 1.校验资产型号类型有效性
-        if (model.getType() != null) {
-            this.checkAssetTypeExist(model.getType());
-        }
+        // 1.校验资产型号 厂商 类型 有效性
+        this.checkAssetVendorAndTypeExist(model);
 
         // 2.入库
         this.saveOrUpdate(model);
@@ -140,23 +113,35 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     /**
      * 资产类型有效性校验
-     *
-     * @param assetType
      */
-    public void checkAssetTypeExist(Integer assetType) {
+    public void checkAssetVendorAndTypeExist(Model model) {
         Map<String, Object> map = new HashMap<>(1);
-        map.put("type", "assetType");
+        map.put("type", Constant.DICT_ASSET_MODEL_TYPE); // 字典表中资产型号类型type值 assetType
 
         List<SysDictEntity> assetTypes = sysDictService.queryList(map);
         boolean flag = false;
         for (SysDictEntity entity : assetTypes) {
-            if (Integer.valueOf(entity.getCode()).equals(assetType)) {
+            if (Integer.valueOf(entity.getCode()).equals(model.getTypeCode())) {
                 flag = true;
             }
         }
         if (!flag) {
             // 资产类型未找到
             throw new NZException(RCode.ASSET_MODELTYPE_NOTFOUND);
+        }
+
+        flag = false;
+
+        map.put("type", Constant.DICT_ASSET_MODEL_VENDOR); // 字典表中资产型号厂商type值 vendor
+        List<SysDictEntity> vendors = sysDictService.queryList(map);
+        for (SysDictEntity entity : vendors) {
+            if (Integer.valueOf(entity.getCode()).equals(model.getVendorCode())) {
+                flag = true;
+            }
+        }
+        if (!flag) {
+            // 厂商未找到
+            throw new NZException(RCode.ASSET_VENDOR_NOTFOUND);
         }
     }
 

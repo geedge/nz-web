@@ -1,9 +1,9 @@
 package com.nis.modules.asset.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.sys.entity.SysDictEntity;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -34,13 +34,14 @@ public class Model implements Serializable {
     /**
      * 厂商
      */
-    private String vendor;
+    @TableField(value = "vendor")
+    private Integer vendorCode;
 
     /**
      * 类型
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
-    private Integer type;
+    @TableField(value = "type")
+    private Integer typeCode;
 
     /**
      * 备注
@@ -48,8 +49,14 @@ public class Model implements Serializable {
     private String remark;
 
     /**
-     * 码表翻译后的类型名称
+     * 厂商对象 (字典表)
      */
     @TableField(exist = false)
-    private String typeName;
+    private SysDictEntity vendor;
+
+    /**
+     * 资产类型对象 (字典表)
+     */
+    @TableField(exist = false)
+    private SysDictEntity type;
 }

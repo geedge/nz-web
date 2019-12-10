@@ -2,5 +2,72 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.nis.modules.asset.dao.ModelDao">
+    <resultMap type="com.nis.modules.asset.entity.Model" id="modelWithVendorAndType">
 
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="remark" column="remark"/>
+
+        <!--厂商-->
+        <result property="vendor.id" column="vendorId"/>
+        <result property="vendor.value" column="vendorValue"/>
+        <result property="vendor.code" column="vendorCode"/>
+        <result property="vendor.type" column="vendorType"/>
+
+        <!--类型-->
+        <result property="type.id" column="assetId"/>
+        <result property="type.value" column="assetValue"/>
+        <result property="type.code" column="assetCode"/>
+        <result property="type.type" column="assetType"/>
+    </resultMap>
+
+
+    <sql id="model_info_columns">
+          mo.id,
+          mo.name,
+          mo.remark,
+
+          /*厂商*/
+          dict.id AS vendorId,
+          dict.value AS vendorValue,
+          dict.code AS vendorCode,
+          dict.type AS vendorType,
+
+          /*资产类型*/
+          dict1.id AS assetId,
+          dict1.value AS assetValue,
+          dict1.code AS assetCode,
+          dict1.type AS assetType
+    </sql>
+
+    <select id="queryList" resultMap="modelWithVendorAndType">
+        SELECT
+        <include refid="model_info_columns"/>
+        FROM model mo
+
+        LEFT JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor'
+        LEFT JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType'
+
+        WHERE 1=1
+
+        <if test="params.id != null and params.id != ''">
+            AND mo.id = #{params.id}
+        </if>
+
+        <if test="params.name != null and params.name != ''">
+            AND mo.name like CONCAT('%', #{params.name}, '%')
+        </if>
+
+        <if test="params.vendorCode != null and params.vendorCode != ''">
+            AND mo.vendor = #{params.vendorCode}
+        </if>
+
+        <if test="params.typeCode != null and params.typeCode != ''">
+            AND mo.type = #{params.typeCode}
+        </if>
+
+        <if test="params.remark != null and params.remark != ''">
+            AND mo.remark like CONCAT('%', #{params.remark}, '%')
+        </if>
+    </select>
 </mapper>

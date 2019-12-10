@@ -51,6 +51,7 @@ public class AssetController {
     @SysLog("save asset")
     public R save(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
+                .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
@@ -86,6 +87,7 @@ public class AssetController {
     public R update(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
+                .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 

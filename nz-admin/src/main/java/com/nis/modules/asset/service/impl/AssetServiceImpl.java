@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -106,12 +107,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         // 3. 型号有效性校验
-        if (asset.getModelId() != null) {
-            Model model = modelService.getById(asset.getModelId());
-            if (model == null) {
-                // 所选资产型号不存在
-                throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
-            }
+        Model model = modelService.getById(asset.getModelId());
+        if (model == null) {
+            // 所选资产型号不存在
+            throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
         }
 
         // 4.数据中心有效性校验
@@ -138,7 +137,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (asset.getState() != null) {
             Map<String, Object> map = new HashMap<>(1);
 
-            map.put("type", "assetState");
+            map.put("type", Constant.DICT_ASSET_STATE_TYPE); // 字典表中资产状态 type 值 assetState
             List<SysDictEntity> assetTypes = sysDictService.queryList(map);
             boolean flag = false;
             for (SysDictEntity dict : assetTypes) {
@@ -150,6 +149,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 // 未找到资产状态
                 throw new NZException(RCode.ASSET_STATE_NOTFOUND);
             }
+        } else {
+            asset.setState(1);
         }
 
         Date now = new Date();
@@ -157,9 +158,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (asset.getId() == null) {
             asset.setCreateAt(now);
             asset.setCreateBy(userId);
-        }
-        if (asset.getState() == null) {
-            asset.setState(1);
         }
         asset.setUpdateAt(now);
         asset.setUpdateBy(userId);

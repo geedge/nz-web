@@ -321,5 +321,17 @@ public class Constant {
 
     // 顶级节点组PID
     public static final Long NODEGROUP_TOP_PID = 0L;
-    
+
+
+    // nz-web 新增常量
+
+    // 字典表中资产型号厂商type值
+    public static final String DICT_ASSET_MODEL_VENDOR = "vendor";
+
+    // 字典表中资产型号类型type值
+    public static final String DICT_ASSET_MODEL_TYPE  = "assetType";
+
+    // 字典表中资产状态 type 值
+    public static final String DICT_ASSET_STATE_TYPE = "assetState";
+
 }

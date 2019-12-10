@@ -103,6 +103,9 @@ public enum RCode {
 	ASSET_PURCHASEDATE_UNAVAILABLE(502012, "Asset purchase date unavailable"),// 资产购买日期不可用,不合法
 	ASSET_STATE_NOTFOUND(502013, "Asset state not found"),                    // 资产状态未找到
 	ASSET_ID_FORMAT(502014, "Id format error , type should be integer"),      // ID类型错误
+	ASSET_VENDOR_ISNULL(502015, "Model vendor can not be empty"),        // 厂商不能为空
+	ASSET_TYPE_ISNULL(502016, "Asset type can not be empty"),            // 资产类型不能为空
+	ASSET_VENDOR_NOTFOUND(502017, "Asset model vendor not found"),       // 资产型号厂商未找到
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误

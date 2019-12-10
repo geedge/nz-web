@@ -14,13 +14,6 @@
         <result property="createBy" column="create_by"/>
         <result property="updateBy" column="update_by"/>
 
-        <!--资产型号-->
-        <result property="model.id" column="model_id"/>
-        <result property="model.name" column="model_name"/>
-        <result property="model.vendor" column="model_vendor"/>
-        <result property="model.type" column="model_type"/>
-        <result property="model.remark" column="model_remark"/>
-
         <!--数据中心-->
         <result property="idc.id" column="idc_id"/>
         <result property="idc.name" column="idc_name"/>
@@ -54,25 +47,20 @@
         <result property="updateByUser.status" column="su1_status"/>
         <result property="updateByUser.createTime" column="su1_createTime"/>
 
+        <!--资产型号 select 调用下方查询sql -->
+        <association property="model" column="model_id" javaType="com.nis.modules.asset.entity.Model"
+                     select="getModelById"/>
     </resultMap>
 
     <sql id="asset_info_columns">
        ass.id,
        ass.sn,
+       ass.model_id,
        ass.host,
        ass.state,
        ass.purchase_date,
        ass.create_at,
        ass.update_at,
-       /*ass.create_by,
-       ass.update_by,*/
-
-       /*资产型号*/
-       mo.id AS model_id,
-       mo.name AS model_name,
-       mo.vendor AS model_vendor,
-       mo.type AS model_type,
-       mo.remark AS model_remark,
 
        /*数据中心*/
        idc.id AS idc_id,
@@ -118,7 +106,6 @@
         <include refid="asset_info_columns"/>
         FROM asset ass
 
-        LEFT JOIN model mo ON ass.model_id = mo.id
         LEFT JOIN idc idc ON ass.idc_id = idc.id
         LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
         LEFT JOIN sys_user su ON ass.create_by = su.user_id
@@ -165,6 +152,20 @@
             AND ass.purchase_date like CONCAT('%', #{params.purchaseDate}, '%')
         </if>
     </select>
+
+
+    <!--查询 model -->
+    <select id="getModelById" resultMap="com.nis.modules.asset.dao.ModelDao.modelWithVendorAndType">
+        SELECT
+        <include refid="com.nis.modules.asset.dao.ModelDao.model_info_columns"/>
+        FROM model mo
+
+        LEFT JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor'
+        LEFT JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType'
+
+        WHERE mo.id = #{id}
+    </select>
+
 
 	<select id="queryListByHosts" resultType="asset">
 		SELECT id, sn, host, state

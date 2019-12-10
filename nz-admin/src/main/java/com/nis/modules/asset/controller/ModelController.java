@@ -42,7 +42,9 @@ public class ModelController {
     @PostMapping
     @SysLog("save model")
     public R save(@RequestBody Model model) {
-        ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL);
+        ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
+                .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
+                .and(model.getTypeCode()).notNull(RCode.ASSET_TYPE_ISNULL);
 
         // 校验名称重复
         if (!modelService.checkName(model.getId(), model.getName())) {
@@ -65,7 +67,9 @@ public class ModelController {
     @SysLog("update model")
     public R update(@RequestBody Model model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL);
+                .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
+                .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
+                .and(model.getTypeCode()).notNull(RCode.ASSET_TYPE_ISNULL);
 
         // 校验名称重复
         if (!modelService.checkName(model.getId(), model.getName())) {
