@@ -30,7 +30,7 @@
             AND m.id = #{params.id}
         </if>
 
-		<if test="params.systemId != null and params.systemId != ''">
+		<if test="params.projectId != null and params.projectId != ''">
             AND m.project_id = #{params.projectId}
         </if>
         
