@@ -108,6 +108,8 @@ public class Constant {
      * 工具目录 
      */
     public static final String TOOL_PATH = System.getProperty("user.dir") + File.separator + "tools";
+
+    public static final List<String> SPECIAL_SYS_DICT;
     
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
@@ -133,6 +135,10 @@ public class Constant {
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();
 		ALERTMESSAGE_STATE.add(1);
 		ALERTMESSAGE_STATE.add(2);
+
+		SPECIAL_SYS_DICT = new ArrayList<String>();
+		SPECIAL_SYS_DICT.add("vendor");
+		SPECIAL_SYS_DICT.add("assetType");
     }
     
     /**

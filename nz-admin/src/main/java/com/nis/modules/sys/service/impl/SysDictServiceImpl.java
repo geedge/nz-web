@@ -12,7 +12,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -22,14 +25,11 @@ import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Service("sysDictService")
@@ -40,31 +40,37 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String name = (String)params.get("name");
-        String type = (String)params.get("type");
+//        String name = (String)params.get("value");
+//        String type = (String)params.get("type");
 
-        IPage<SysDictEntity> page = this.page(
-            new Query<SysDictEntity>().getPage(params),
-            new QueryWrapper<SysDictEntity>()
-                .like(StringUtils.isNotBlank(name),"name", name)
-                .eq(StringUtils.isNotBlank(type), "type", type)
-                .eq("del_flag", Constant.DELFLAG_FALSE)
-        );
+//        IPage<SysDictEntity> page = this.page(
+//            new Query<SysDictEntity>().getPage(params),
+//            new QueryWrapper<SysDictEntity>()
+//                .like(StringUtils.isNotBlank(name),"value", name)
+//                .eq(StringUtils.isNotBlank(type), "type", type)
+//                .eq("del_flag", Constant.DELFLAG_FALSE)
+//        );
+		IPage<SysDictEntity> page=this.page(new Query<SysDictEntity>().getPage(params));
+
+		List<SysDictEntity> list=this.baseMapper.querySysDictList(params);
+
+		page.setRecords(list);
 
         return new PageUtils(page);
     }
 
 	@Override
 	public List<SysDictEntity> queryList(Map<String, Object> params) {
-		String name = (String)params.get("name");
-        String type = (String)params.get("type");
+//		String name = (String)params.get("name");
+//        String type = (String)params.get("type");
         
-        QueryWrapper<SysDictEntity> wrapper = new QueryWrapper<>();
-        wrapper.eq(StringUtils.isNotBlank(name), "name", name)
-        		.eq(StringUtils.isNotBlank(type), "type", type)
-        		.eq("del_flag", Constant.DELFLAG_FALSE);
-        List<SysDictEntity> list = this.list(wrapper);
-        if (!CommonUtil.isNull(list)) {
+//        QueryWrapper<SysDictEntity> wrapper = new QueryWrapper<>();
+//        wrapper.eq(StringUtils.isNotBlank(name), "name", name)
+//        		.eq(StringUtils.isNotBlank(type), "type", type)
+//        		.eq("del_flag", Constant.DELFLAG_FALSE);
+//        List<SysDictEntity> list = this.list(wrapper);
+		List<SysDictEntity> list = this.baseMapper.querySysDictList(params);
+		if (!CommonUtil.isNull(list)) {
         	for (SysDictEntity s : list) {
         		if (!CommonUtil.isNull(s.getI18nCode())) {
         			String queryValue = i18nService.queryValue(s.getI18nCode());
@@ -77,9 +83,21 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 	}
 	
 	@Override
-	public boolean delete(List<Long> idList) {
+	public boolean delete(String ids) {
+
+    	String[] idArr=ids.split(",");
+    	ArrayList<Integer> delIds=new ArrayList<Integer>();
+    	for(String idStr:idArr){
+    		try {
+    			Integer id = Integer.parseInt(idStr);
+    			delIds.add(id);
+			}catch (NumberFormatException e){
+    			throw new NZException(RCode.SYS_DICT_ID_INVALIDE);
+			}
+		}
+
 		UpdateWrapper<SysDictEntity> wrapper = new UpdateWrapper<>();
-		wrapper.in("id", idList);
+		wrapper.in("id", delIds);
 		wrapper.eq("del_flag", Constant.DELFLAG_FALSE);
 		wrapper.set("del_flag", Constant.DELFLAG_TRUE);
 		wrapper.set("operator", ShiroUtils.getUserId());
@@ -98,13 +116,30 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 	
 	@Override
 	public boolean update(SysDictEntity dict) {
-		SysDictEntity old = getById(dict.getId());
+		SysDictEntity old =null;
+    	if(dict.getId()!=null){
+    		old = getById(dict.getId());
+		}else{
+    		old = this.baseMapper.selectOne(
+    				new QueryWrapper<SysDictEntity>()
+					.eq("type",dict.getType())
+					.eq("code",dict.getCode())
+				  );
+		}
+		if(old == null){
+			throw new NZException(RCode.SYS_ERROR);
+		}
+
+		dict.setId(old.getId());
+
 		boolean langUpdate = false;
 		//若更新了语言，刷新语言缓存
 		if (dict.getType().equals(Constant.DICT_NAME_LANG) && !old.getValue().equals(dict.getValue())) {
 			langUpdate = true;
 		}
+
 		updateById(dict);
+
 		if (langUpdate) {
 			updateLangCache();
 		}
@@ -143,5 +178,13 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		}
 		return flag;
 	}
+
+	@Override
+	public Integer queryMaxTypeCode(String type) {
+		Integer maxCode=this.baseMapper.getMaxTypeCode(type);
+		return maxCode;
+	}
+
+
 
 }

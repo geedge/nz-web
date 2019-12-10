@@ -3,11 +3,49 @@
 
 <mapper namespace="com.nis.modules.sys.dao.SysDictDao">
 
+	<resultMap id="sysDictResultMap" type="com.nis.modules.sys.entity.SysDictEntity">
+		<result column="id" property="id"></result>
+		<result column="name" property="name"></result>
+		<result column="code" property="code"></result>
+		<result column="value" property="value"></result>
+		<result column="i18n_code" property="i18nCode"></result>
+		<result column="order_num" property="orderNum"></result>
+		<result column="remark" property="remark"></result>
+		<result column="del_flag" property="delFlag"></result>
+		<result column="operator" property="operator"></result>
+		<result column="op_time" property="opTime"></result>
+		<association property="operatorUser" column="operator" select="queryUserById"></association>
+	</resultMap>
+
+
 	<select id="queryNodeImgList" resultType="sysDictEntity">
 		SELECT code,value
 		FROM sys_dict
 		<where>
 		    del_flag=0 and type='topo-img'
 		</where>
+	</select>
+
+	<select	id="querySysDictList" resultMap="sysDictResultMap">
+		select id,name,type,code,value,order_num,remark,operator,op_time
+		from sys_dict
+		<where>
+			del_flag=0
+			<if test="params.type != null and params.type != ''">
+				and type=#{params.type}
+			</if>
+			<if test="params.value != null and params.value != ''">
+				and value=#{params.value}
+			</if>
+		</where>
+		order by order_num
+	</select>
+
+	<select id="queryUserById" resultType="com.nis.modules.sys.entity.SysUserEntity">
+		select user_id,username from sys_user where user_id=#{id} and status=1
+	</select>
+
+	<select id="getMaxTypeCode" resultType="Integer">
+		select max(code) from sys_dict where del_flag='0' and type=#{type}
 	</select>
 </mapper>

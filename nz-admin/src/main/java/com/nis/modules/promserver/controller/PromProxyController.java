@@ -37,12 +37,12 @@ public class PromProxyController {
     @Autowired
     private PromApi promApi;
 
-    @GetMapping("/prom/**")
+    @RequestMapping(value = "/prom/**",method = {RequestMethod.GET,RequestMethod.POST})
     @ResponseBody
     public JSONObject promProxy(HttpServletRequest request,@RequestParam Map<String,Object> params){
         // /nz-admin/prom/api/v1/query_range
         String requestURI = request.getRequestURI();
-        String api=requestURI.split("/nz-admin/prom")[1];
+        String api=requestURI.split("/prom")[1];
         Set<Map.Entry<String, String>> entries = promApi.getPromApis().entrySet();
         boolean findFlag=false;
         JSONObject result=null;
@@ -61,6 +61,8 @@ public class PromProxyController {
         }
         return result;
     }
+
+
 
     // /api/v1/query
     public JSONObject query( String api,Map<String,Object> params){

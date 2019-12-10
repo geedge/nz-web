@@ -28,12 +28,14 @@ public enum RCode {
 	SYS_I18N_NOSUCHLANG(105002, "no such lang"), //不合法的lang
 
 
-	SYS_DICT_NAME_ISNULL(106001,"sys_dict_name_isnull"),       // 字典名称不能为空
-	SYS_DICT_TYPE_ISNULL(106002,"sys_dict_type_isnull"),       // 字典类型不能为空
-	SYS_DICT_VALUE_ISNULL(106003,"sys_dict_value_isnull"),     // 字典值不能为空
-	SYS_DICT_VALUE_DUPLICATE(106004,"sys_dict_value_duplicate"),// 字典值重复
+	SYS_DICT_NAME_ISNULL(106001,"Field 'name' is not null"),       // 字典名称不能为空
+	SYS_DICT_TYPE_ISNULL(106002,"Field 'type' is not null"),       // 字典类型不能为空
+	SYS_DICT_VALUE_ISNULL(106003,"Field 'type' is not null"),     // 字典值不能为空
+	SYS_DICT_CODE_ISNULL(106004,"Field 'code' is not null"),     // 字典值不能为空
+	SYS_DICT_VALUE_DUPLICATE(106005,"Field 'type' is duplicate"),// 字典值重复
+	SYS_DICT_ID_INVALIDE(106006,"Invalid system dictionary ID"),
+	SYS_DICT_ID_ISNULL(106007,"System dictionary ID is null"),
 
-	
 	ALERTRULE_ID_ISNULL(201000, "ID is required"), //告警规则ID不能为空
 	ALERTRULE_NAME_ISNULL(201001, "Alert name is required"), //告警规则名称不能为空
 	ALERTRULE_NAME_DUPLICATE(201002, "Alert name is duplicate"), //告警规则名称不能为空

@@ -27,7 +27,7 @@ public interface SysDictService extends IService<SysDictEntity> {
     
     List<SysDictEntity> queryList(Map<String, Object> params);
 
-	boolean delete(List<Long> asList);
+	boolean delete(String ids);
 	
 	boolean update(SysDictEntity dict);
 	
@@ -42,5 +42,8 @@ public interface SysDictService extends IService<SysDictEntity> {
      * @return
      */
     boolean dictValueCheck(Long id, String name, String type, String value);
+
+    Integer queryMaxTypeCode(String type);
+
 }
 
