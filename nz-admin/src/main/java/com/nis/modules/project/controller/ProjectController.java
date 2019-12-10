@@ -54,9 +54,10 @@ public class ProjectController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete project")
-	public R remove(@RequestBody Long[] ids) {
+	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
-		projectService.removeByIds(Arrays.asList(ids));
+		String[] split = ids.split(",");
+		projectService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }

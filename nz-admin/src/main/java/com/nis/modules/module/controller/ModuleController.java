@@ -54,9 +54,10 @@ public class ModuleController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete module")
-	public R remove(@RequestBody Long[] ids) {
+	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
-		moduleService.removeByIds(Arrays.asList(ids));
+		String[] split = ids.split(",");
+		moduleService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }

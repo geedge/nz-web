@@ -10,16 +10,21 @@
         <result property="param" column="param"/>
         <result property="path" column="path"/>
         <result property="remark" column="remark"/>
+        <result property="name" column="name"/>
         
-        <association property="project" javaType="com.nis.modules.project.entity.Project">
-	    	<id column="project_id" property="id"/>
+        <association property="project" columnPrefix="p_" javaType="com.nis.modules.project.entity.Project">
+	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    </association>
     </resultMap>
 	
 	<select id="queryPage" resultMap="module">
-       SELECT * FROM module m left join project p on m.project_id=p.id where 1=1
+       SELECT m.*,
+       p.id AS p_id,
+       p.name AS p_name,
+       p.remark AS p_remark 
+       FROM module m left join project p on m.project_id=p.id where 1=1
 
         <if test="params.id != null and params.id != ''">
             AND m.id = #{params.id}

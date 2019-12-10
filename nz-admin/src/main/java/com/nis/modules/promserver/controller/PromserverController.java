@@ -54,9 +54,10 @@ public class PromserverController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete promServer")
-	public R remove(@RequestBody Long[] ids) {
+	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROMSERVER_ID_ISNULL);
-		promserverService.removeByIds(Arrays.asList(ids));
+		String[] split = ids.split(",");
+		promserverService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }

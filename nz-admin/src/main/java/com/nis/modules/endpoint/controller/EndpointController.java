@@ -54,9 +54,10 @@ public class EndpointController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete endpoint")
-	public R remove(@RequestBody Long[] ids) {
+	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ENDPOINT_ID_ISNULL);
-		endpointService.removeByIds(Arrays.asList(ids));
+		String[] split = ids.split(",");
+		endpointService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }
