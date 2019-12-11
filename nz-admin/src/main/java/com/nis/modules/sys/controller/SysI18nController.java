@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.nis.common.exception.NZException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -79,10 +80,10 @@ public class SysI18nController {
     				 .and(sysI18n.getLang()).notNull()
     				 .and(sysI18n.getValue()).notNull();
     	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
-    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+    		throw new NZException(RCode.SYS_I18N_NOSUCHLANG);
     	}
     	if (sysI18nService.check(sysI18n)) { //检查是否重复，true为重复
-    		return R.error(RCode.SYS_I18N_DUPLICATE);
+			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		sysI18n.setOperator(ShiroUtils.getUserId());
     		sysI18n.setOpTime(new Date());
@@ -104,10 +105,10 @@ public class SysI18nController {
 					 .and(sysI18n.getValue()).notNull()
 					 .and(sysI18n.getId()).notNull();
     	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
-    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+			throw new NZException(RCode.SYS_I18N_NOSUCHLANG);
     	}
     	if (sysI18nService.check(sysI18n)) { //检查是否重复，true为重复
-    		return R.error(RCode.SYS_I18N_DUPLICATE);
+			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
 	    	sysI18n.setOpTime(new Date());
@@ -142,10 +143,10 @@ public class SysI18nController {
     	ValidateUtils.is(sysI18n.getCode()).notNull()
     				.and(sysI18n.getLang()).notNull();
     	if (!checkLang(sysI18n.getLang())) { //检查lang是否合法
-    		return R.error(RCode.SYS_I18N_NOSUCHLANG);
+			throw new NZException(RCode.SYS_I18N_NOSUCHLANG);
     	}
     	if (sysI18nService.check(sysI18n)) {
-    		return R.error(RCode.SYS_I18N_DUPLICATE);
+			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		return R.ok();
     	}

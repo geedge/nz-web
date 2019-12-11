@@ -3,6 +3,7 @@ package com.nis.modules.alert.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.exception.NZException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class AlertMessageController {
 			return R.ok(page);
 		} catch (Exception e) {
 			logger.error("查询告警信息失败", e);
-			return R.error();
+			throw new NZException(RCode.SYS_ERROR);
 		}
     }
 
@@ -64,7 +65,7 @@ public class AlertMessageController {
     					.and(alertMessage.getState()).notNull(RCode.ALERTMSG_STATE_ISNULL);
     	//校验state合法性
     	if (!Constant.ALERTMESSAGE_STATE.contains(alertMessage.getState())) {
-    		return R.error(RCode.ALERTMSG_STATE_INCORRECT);
+			throw new NZException(RCode.ALERTMSG_STATE_INCORRECT);
     	}
     	alertMessageService.updateByIds(alertMessage);
 

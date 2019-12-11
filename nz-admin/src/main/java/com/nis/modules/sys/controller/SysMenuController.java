@@ -132,13 +132,13 @@ public class SysMenuController extends AbstractController {
 	@RequiresPermissions("sys:menu:delete")
 	public R delete(long menuId){
 		if(menuId <= 31){
-			return R.error(RCode.SYS_MENU_SYSMENUDEL);
+			throw new NZException(RCode.SYS_MENU_SYSMENUDEL);
 		}
 
 		//判断是否有子菜单或按钮
 		List<SysMenuEntity> menuList = sysMenuService.queryListParentId(menuId);
 		if(menuList.size() > 0){
-			return R.error(RCode.SYS_MENU_DELSUB);
+			throw new NZException(RCode.SYS_MENU_DELSUB);
 		}
 
 		sysMenuService.delete(menuId);

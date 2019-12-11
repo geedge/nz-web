@@ -60,11 +60,11 @@ public class AlertRuleController {
 		alertRuleService.validateTypeLink(alertRule.getType(),alertRule.getLinkId());
     	//校验名称重复
     	if (!alertRuleService.checkName(alertRule)) {
-    		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
+			throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
     	}
     	//校验告警级别合法性
 //    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-//    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
+//    		throw new NZException(RCode.ALERTRULE_SEVERITY_INCORRECT);
 //    	}
     	//校验expr
     	boolean checkRule = false;
@@ -97,21 +97,21 @@ public class AlertRuleController {
 		alertRuleService.validateTypeLink(alertRule.getType(),alertRule.getLinkId());
     	//校验名称重复
     	if (!alertRuleService.checkName(alertRule)) {
-    		return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
+    		throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
     	}
     	//校验告警级别合法性
 //    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-//    		return R.error(RCode.ALERTRULE_SEVERITY_INCORRECT);
+//    		throw new NZException(RCode.ALERTRULE_SEVERITY_INCORRECT);
 //    	}
     	//校验expr
     	boolean checkRule = false;
     	try {
 			checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
 		} catch (Exception e) {
-			logger.error("expr校验失败", e);
+			logger.error("expr check faild", e);
 		} finally {
 			if (!checkRule) {
-				return R.error(RCode.ALERTRULE_EXPR_ERROR);
+				throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
 			}
 		}
     	
@@ -148,7 +148,7 @@ public class AlertRuleController {
 		if (alertRuleService.checkName(queryParam)) {
 			return R.ok();
 		} else {
-			return R.error(RCode.ALERTRULE_NAME_DUPLICATE);
+			throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
 		}
     }
 }

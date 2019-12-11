@@ -173,7 +173,7 @@ public class SysDictController extends AbstractController {
             return R.ok();
         }
         // 字典值重复
-        return R.error(RCode.SYS_DICT_VALUE_DUPLICATE);
+        throw new NZException(RCode.SYS_DICT_VALUE_DUPLICATE);
     }
 
 }

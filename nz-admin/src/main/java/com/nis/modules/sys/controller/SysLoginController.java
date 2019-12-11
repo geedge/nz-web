@@ -12,6 +12,7 @@ package com.nis.modules.sys.controller;
 import com.alibaba.fastjson.JSON;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -99,13 +100,13 @@ public class SysLoginController extends AbstractController {
 			ops.set(loginToken,value ,30, TimeUnit.MINUTES);
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
-			return R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
+			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
 		}catch (IncorrectCredentialsException e) {
-			return R.error(RCode.SYS_LOGIN_USERPWD);
+			throw new NZException(RCode.SYS_LOGIN_USERPWD);
 		}catch (LockedAccountException e) {
-			return R.error(RCode.SYS_LOGIN_LOCK);
+			throw new NZException(RCode.SYS_LOGIN_LOCK);
 		}catch (AuthenticationException e) {
-			return R.error(RCode.SYS_LOGIN_ACCOUNTAUTH);
+			throw new NZException(RCode.SYS_LOGIN_ACCOUNTAUTH);
 		}
 	}
 

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.nis.common.exception.NZException;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class AlertMessageReceiveController {
     	} catch (Exception e) {
     		Gson gson = new Gson();
 			logger.error("接收的告警信息转化entity失败:" + gson.toJson(receiveData), e);
-			return R.error(RCode.ALERTMSG_PARSE_ERROR);
+			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
 		}
 
         return R.ok();

@@ -22,6 +22,7 @@
 package com.nis.modules.romote.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -140,7 +141,7 @@ public class AccountController {
         try{
             closeWithTokens(tokens);
         }catch (Exception e){
-            return R.error();
+            throw new NZException(RCode.SYS_ERROR);
         }
 
         return R.ok();
@@ -189,7 +190,7 @@ public class AccountController {
             map.put("name",terminal.getUser()+"@"+terminal.getAsset().getHost());
             return R.ok(map);
         }
-        return R.error();
+        throw new NZException(RCode.SYS_ERROR);
     }
 
 
