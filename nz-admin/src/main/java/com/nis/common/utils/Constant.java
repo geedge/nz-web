@@ -137,8 +137,8 @@ public class Constant {
 		ALERTMESSAGE_STATE.add(2);
 
 		SPECIAL_SYS_DICT = new ArrayList<String>();
-		SPECIAL_SYS_DICT.add("vendor");
-		SPECIAL_SYS_DICT.add("assetType");
+		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_TYPE);
+		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_VENDOR);
     }
     
     /**
