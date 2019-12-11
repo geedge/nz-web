@@ -82,7 +82,7 @@ public enum RCode {
 
 
 	ASSET_ID_ISNULL(501001, "Asset id can not be empty"),                // 资产ID不能为空
-	ASSET_SN_ISNULL(501002, "Asset sequence name can not be empty"),     // 资产序列名不能为空
+	ASSET_SN_ISNULL(501002, "Asset serial number can not be empty"),     // 资产序列号不能为空
 	ASSET_HOST_ISNULL(501003, "Asset host can not be empty"),            // 资产主机地址不能为空
 	ASSET_HOST_FORMAT(501004, "Asset host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"),// 资产主机地址格式
 	ASSET_MAINTENANCEID_ISNULL(501005, "Asset maintenance id can not be empty"),// 资产维修记录ID不能为空
@@ -98,7 +98,7 @@ public enum RCode {
 	ASSET_IDC_NOTFOUND(502007, "Asset idc not found"),                   // 数据中心未找到
 	ASSET_CABINET_NOTFOUND(502008, "Asset cabinet not found"),           // 机柜未找到
 	ASSET_HOST_DUPLICATE(502009, "Asset host duplicate"),                // 资产主机地址重复
-	ASSET_SN_DUPLICATE(502010, "Asset sequence name duplicate"),         // 资产序列名重复
+	ASSET_SN_DUPLICATE(502010, "Asset serial number duplicate"),         // 资产序列号重复
 	ASSET_PURCHASEDATE_FORMAT(502011, "Asset purchase date format error, format such as yyyy-MM-dd(2019-02-03)"),// 资产购买日期格式错误
 	ASSET_PURCHASEDATE_UNAVAILABLE(502012, "Asset purchase date unavailable"),// 资产购买日期不可用,不合法
 	ASSET_STATE_NOTFOUND(502013, "Asset state not found"),                    // 资产状态未找到
