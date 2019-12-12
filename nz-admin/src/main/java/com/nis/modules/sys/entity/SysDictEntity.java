@@ -48,7 +48,7 @@ public class SysDictEntity implements Serializable {
 	 * 字典码
 	 */
 	@NotBlank(message="字典码不能为空")
-	private String code;
+	private Integer code;
 	/**
 	 * 字典值
 	 */

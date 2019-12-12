@@ -102,7 +102,7 @@ public class SysDictController extends AbstractController {
             dict.setName(dict.getValue());
         }
         //字典码，当字典类型为：vendor,assetType时，可以不填，后台根据已有最大code值 +1 填写
-        if( StringUtils.isBlank(dict.getCode()) && Constant.SPECIAL_SYS_DICT.contains(dict.getType())){
+        if( dict.getCode()==null && Constant.SPECIAL_SYS_DICT.contains(dict.getType())){
             Integer maxCode=sysDictService.queryMaxTypeCode(dict.getType());
             if(maxCode != null){
                 maxCode+=1;
@@ -110,7 +110,7 @@ public class SysDictController extends AbstractController {
                 maxCode=1;
             }
 
-            dict.setCode(maxCode+"");
+            dict.setCode(maxCode);
         }else{
             throw new NZException(RCode.SYS_DICT_CODE_ISNULL);
         }
