@@ -78,6 +78,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
             // 3. 放回参数集合中
             params.put("idcIds", idcidList);
+        } else {
+            // 4. 解决参数为空字符串问题
+            params.put("idcIds", null);
         }
 
         IPage<Asset> page = new Query<Asset>().getPage(params);
