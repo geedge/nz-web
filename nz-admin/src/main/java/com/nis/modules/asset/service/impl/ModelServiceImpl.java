@@ -121,7 +121,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         List<SysDictEntity> assetTypes = sysDictService.queryList(map);
         boolean flag = false;
         for (SysDictEntity entity : assetTypes) {
-            if (Integer.valueOf(entity.getCode()).equals(model.getTypeCode())) {
+            if (model.getTypeCode().equals(entity.getCode())) {
                 flag = true;
             }
         }
@@ -135,7 +135,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         map.put("type", Constant.DICT_ASSET_MODEL_VENDOR); // 字典表中资产型号厂商type值 vendor
         List<SysDictEntity> vendors = sysDictService.queryList(map);
         for (SysDictEntity entity : vendors) {
-            if (Integer.valueOf(entity.getCode()).equals(model.getVendorCode())) {
+            if (model.getVendorCode().equals(entity.getCode())) {
                 flag = true;
             }
         }

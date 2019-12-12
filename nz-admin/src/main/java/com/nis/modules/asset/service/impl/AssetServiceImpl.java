@@ -141,7 +141,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             List<SysDictEntity> assetTypes = sysDictService.queryList(map);
             boolean flag = false;
             for (SysDictEntity dict : assetTypes) {
-                if (String.valueOf(asset.getState()).equals(dict.getCode())) {
+                if (asset.getState().equals(dict.getCode())) {
                     flag = true;
                 }
             }
