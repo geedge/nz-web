@@ -1,7 +1,10 @@
 package com.nis.modules.promserver.service.impl;
 
+import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.annotation.CacheData;
+import com.nis.common.utils.MemeryCacheData;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +20,7 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 
 @Service("promserverService")
+@CacheData(cacheKey = MemeryCacheData.PROM_SERVER_CACHE)
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
 
 	@Override
@@ -44,6 +48,24 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);
 		ValidateUtils.is(promserverEntity.getPort()).notNull(RCode.PROMSERVER_PORT_ISNULL);
+	}
+
+	@Override
+	@CacheData(cacheKey = MemeryCacheData.PROM_SERVER_CACHE)
+	public void saveProm(Promserver promserver) {
+		this.save(promserver);
+	}
+
+	@Override
+	@CacheData(cacheKey = MemeryCacheData.PROM_SERVER_CACHE)
+	public void updateProm(Promserver promserver) {
+		this.updateById(promserver);
+	}
+
+	@Override
+	@CacheData(cacheKey = MemeryCacheData.PROM_SERVER_CACHE)
+	public void removePromByIds(String[] ids) {
+		this.removeByIds(Arrays.asList(ids));
 	}
 
 }

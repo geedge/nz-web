@@ -31,6 +31,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.*;
+import java.util.Base64;
 import java.util.List;
 
 import static com.nis.modules.romote.util.CommonUtils.notEmpty;
@@ -110,7 +111,7 @@ public class TerminalClient {
             case ACCOUNT:
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(terminal.getPwd());
+                session.setPassword(new String(Base64.getDecoder().decode(terminal.getPwd())));
                 break;
         }
         this.session.setServerAliveInterval(SERVER_ALIVE_INTERVAL);

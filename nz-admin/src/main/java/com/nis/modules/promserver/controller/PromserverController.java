@@ -3,6 +3,8 @@ package com.nis.modules.promserver.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.annotation.CacheData;
+import com.nis.modules.promserver.service.impl.PromserverServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +41,7 @@ public class PromserverController extends AbstractController {
 	@SysLog("save promServer")
 	public R save(@RequestBody Promserver promserverEntity) {
 		promserverService.validateParam(promserverEntity);
-		promserverService.save(promserverEntity);
+		promserverService.saveProm(promserverEntity);
 		return R.ok();
 	}
 	
@@ -48,7 +50,7 @@ public class PromserverController extends AbstractController {
 	public R modify(@RequestBody Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 		promserverService.validateParam(promserverEntity);
-		promserverService.updateById(promserverEntity);
+		promserverService.updateProm(promserverEntity);
 		return R.ok();
 	}
 	
@@ -57,7 +59,7 @@ public class PromserverController extends AbstractController {
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROMSERVER_ID_ISNULL);
 		String[] split = ids.split(",");
-		promserverService.removeByIds(Arrays.asList(split));
+		promserverService.removePromByIds(split);
 		return R.ok();
 	}
 }
