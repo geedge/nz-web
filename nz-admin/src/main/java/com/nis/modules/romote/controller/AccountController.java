@@ -108,7 +108,7 @@ public class AccountController {
 
     @RequestMapping(value = "ssh.do", method = RequestMethod.POST)
     @ResponseBody
-    public synchronized R ssh(HttpSession session, Account terminal) {
+    public synchronized R ssh(HttpSession session,@RequestBody Account terminal) {
 
         terminal = accountService.getById(terminal.getId());
 

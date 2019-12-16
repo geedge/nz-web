@@ -232,7 +232,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
                     break;
                 case ACCOUNT:
                     session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                    session.setPassword(Base64.getDecoder().decode(terminal.getPwd()));
+                    session.setPassword(new String(Base64.getDecoder().decode(terminal.getPwd())));
                     break;
             }
             session.setConfig("StrictHostKeyChecking", "no");
