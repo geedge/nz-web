@@ -11,9 +11,5 @@ public interface PromserverService extends IService<Promserver> {
 	PageUtils queryPage(Map<String, Object> params);
 	
 	void validateParam(Promserver promserverEntity);
-
-	void saveProm(Promserver promserver);
-	void updateProm(Promserver promserver);
-	void removePromByIds(String[] ids);
-
+	
 }

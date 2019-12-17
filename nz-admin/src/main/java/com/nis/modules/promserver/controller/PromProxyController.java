@@ -1,128 +1,43 @@
 package com.nis.modules.promserver.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.MemeryCacheData;
-import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.utils.HttpClientUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.*;
 
 @Controller
 @ConfigurationProperties(prefix = "nezha")
-@RequestMapping("/prom")
 public class PromProxyController {
 
     private Logger logger= LoggerFactory.getLogger(PromProxyController.class);
 
     @Autowired
     private PromserverService promserverService;
-    @Autowired
-    private PromserverProxyService promserverProxyService;
-
+    @Value("${spring.jackson.date-format}")
+    private String dateFormate;
     @Autowired
     private PromApi promApi;
-    @GetMapping(value="/api/v1/targets")
-    @ResponseBody
-    public R targets(@RequestParam Map<String,Object> params){
-        List<Object> allProms = MemeryCacheData.memeryCache.get(MemeryCacheData.PROM_SERVER_CACHE);
-        List<Promserver> promservers = new ArrayList<Promserver>();
-        //过滤idcId,减少查询的服务器数量
-        if(params.get("idcId") != null){
-            for(Object prom:allProms){
-                Promserver promserver=(Promserver)prom;
-                if(promserver.getType().intValue()== 2){
-                    if(promserver.getIdcId().intValue() == Integer.parseInt((String) params.get("idcId"))){
-                        promservers.add(promserver);
-                    }
-                }
 
-
-            }
-        }else{
-            for(Object prom:allProms){
-                Promserver promserver=(Promserver)prom;
-                if(promserver.getType().intValue()== 2){
-                    promservers.add(promserver);
-                }
-                promservers.add(promserver);
-            }
-        }
-
-        List<Map<String,Object>> list=new ArrayList<>();
-        HashMap<String, Object> result = new HashMap<>();
-        if(promservers.size()>0){
-            CountDownLatch latch=new CountDownLatch(promservers.size());
-
-            ExecutorService executorService = Executors.newFixedThreadPool(10);
-
-            BlockingQueue<Map<String,Object>> queue=new LinkedBlockingQueue<>();
-
-            for(int i=0;i<promservers.size();i++){
-
-                Promserver promserver=promservers.get(i);
-                executorService.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        String url=promserverProxyService.buildUrl("/api/v1/targets",null,promserver);
-                        try{
-                            JSONObject responseData = promserverProxyService.requestPromAPI(url);
-                            if (responseData != null){
-                                List<Map<String, Object>> activeTargets = promserverProxyService.formateTargetsData(responseData);
-                                queue.addAll(activeTargets);
-                            }
-                        }catch (Exception e ){
-                            e.printStackTrace();
-                        }finally {
-                            latch.countDown();
-                        }
-                    }
-                });
-
-            }
-
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            queue.drainTo(list);
-
-        }
-        //根据endpointId过滤返回数据
-        if(params.get("endpointId")!=null&&StringUtils.isNotBlank(((String)params.get("endpointId")))){
-           int endpointId=Integer.parseInt((String)params.get("endpointId"));
-
-            Iterator<Map<String, Object>> iterator = list.iterator();
-
-            while (iterator.hasNext()){
-                Map<String,Object> map=iterator.next();
-                if(endpointId != (int)map.get("endpointId")){
-                    iterator.remove();
-                }
-            }
-        }
-
-        result.put("list",list);
-        return R.ok(result);
-    }
-    @RequestMapping(value = "/**",method = {RequestMethod.GET,RequestMethod.POST})
+    @RequestMapping(value = "/prom/**",method = {RequestMethod.GET,RequestMethod.POST})
     @ResponseBody
     public JSONObject promProxy(HttpServletRequest request,@RequestParam Map<String,Object> params){
         // /nz-admin/prom/api/v1/query_range
@@ -157,12 +72,12 @@ public class PromProxyController {
         }
         //time 为非必填项，但格式只能为 rfc3339 | unix_timestamp
         if(params.containsKey("time")&&StringUtils.isNotBlank((String)params.get("time"))){
-            params.put("time",promserverProxyService.formatTimeToUnixTimestemp((String)params.get("time")));
+            params.put("time",formatTimeToUnixTimestemp((String)params.get("time")));
         }
 
-        String url=promserverProxyService.buildUrl(api,params,null);
+        String url=buildUrl(api,params);
 
-        return promserverProxyService.requestPromAPI(url);
+        return requestPromAPI(url);
     }
 
     // /api/v1/query_range
@@ -173,13 +88,13 @@ public class PromProxyController {
         }
 
         if(params.containsKey("start")&&StringUtils.isNotBlank((String)params.get("start"))){
-            params.put("start",promserverProxyService.formatTimeToUnixTimestemp((String)params.get("start")));
+            params.put("start",formatTimeToUnixTimestemp((String)params.get("start")));
         }else{
             throw new NZException(RCode.PROMSERVER_PARAM_START_ISNULL);
         }
 
         if(params.containsKey("end")&&StringUtils.isNotBlank((String)params.get("end"))){
-            params.put("end",promserverProxyService.formatTimeToUnixTimestemp((String)params.get("end")));
+            params.put("end",formatTimeToUnixTimestemp((String)params.get("end")));
         }else{
             throw new NZException(RCode.PROMSERVER_PARAM_END_ISNULL);
         }
@@ -190,8 +105,8 @@ public class PromProxyController {
             throw new NZException(RCode.PROMSERVER_PARAM_STEP_ISNULL);
         }
 
-        String url=promserverProxyService.buildUrl(api,params,null);
-        return promserverProxyService.requestPromAPI(url);
+        String url=buildUrl(api,params);
+        return requestPromAPI(url);
     }
 
     // /api/v1/series
@@ -208,14 +123,14 @@ public class PromProxyController {
 
 
         if(params.containsKey("start")&&StringUtils.isNotBlank((String)params.get("start"))){
-            params.put("start",promserverProxyService.formatTimeToUnixTimestemp((String)params.get("start")));
+            params.put("start",formatTimeToUnixTimestemp((String)params.get("start")));
         }
 
         if(params.containsKey("end")&&StringUtils.isNotBlank((String)params.get("end"))){
-            params.put("end",promserverProxyService.formatTimeToUnixTimestemp((String)params.get("end")));
+            params.put("end",formatTimeToUnixTimestemp((String)params.get("end")));
         }
-        String url=promserverProxyService.buildUrl(api,params,null);
-        return promserverProxyService.requestPromAPI(url);
+        String url=buildUrl(api,params);
+        return requestPromAPI(url);
     }
 
     // /api/v1/labels
@@ -228,11 +143,110 @@ public class PromProxyController {
         return defaultExcute(api,params);
     }
 
+    private JSONObject requestPromAPI(String url){
+        JSONObject jsonObject=null;
+        try{
+            jsonObject = HttpClientUtils.httpGet(url);
+            logger.info("request Prometheus Server query api with request:[{}]",url);
+
+        }catch (Exception e){
+            logger.error("request Prometheus Server query api with error {}",e);
+            throw new NZException(RCode.PROMSERVER_REQUEST_FAILD);
+        }
+        return jsonObject;
+    }
+
+    /**
+     * 随机获取数据库中配置的promServer 中的一个
+     * */
+    private String getPromServer(){
+
+        QueryWrapper<Promserver> psQueryWrapper = new QueryWrapper<>();
+        //服务器类型为center
+        psQueryWrapper.eq("type",1);
+        List<Promserver> list = promserverService.list(psQueryWrapper);
+
+        if(list != null && list.size() > 0){
+            int randomPos=new Random().nextInt(list.size());
+            Promserver ramdomServer=list.get(randomPos);
+            return ramdomServer.getHost()+":"+ramdomServer.getPort();
+        }else{
+            throw new NZException(RCode.PROMSERVER_HOST_ISNULL);
+        }
+
+    }
+
+
+    private String buildUrl(String baseUrl,Map<String,Object> params)  {
+        StringBuilder sb=new StringBuilder("http://");
+        String server=getPromServer();
+        sb.append(server); //ip+port
+        sb.append(baseUrl); //url
+        if(params!=null&&params.size()>0){
+            sb.append("?");
+            Set<Map.Entry<String, Object>> entries = params.entrySet();
+            boolean isArray=false;
+            for (Map.Entry<String,Object> entry:entries){
+                String key=entry.getKey();
+                Object value = entry.getValue();
+                String parseValue="";
+                if(value instanceof String){
+                    parseValue=(String)value;
+                    isArray=false;
+                }
+
+                if(value instanceof Long){
+                    parseValue=(Long)value+"";
+                    isArray=false;
+                }
+
+                if(value instanceof List){
+                    String temp="";
+                    for (String param:(List<String>)value){
+                        try {
+                            temp+=(URLEncoder.encode(key,"UTF-8")+"="+ URLEncoder.encode(param,"UTF-8")+"&");
+                        }catch (Exception e){
+                            logger.warn("urlencode faild");
+                        }
+                    }
+
+                    parseValue=temp;
+                    isArray=true;
+                }
+                if(isArray){
+                    sb.append(parseValue);
+                }else{
+                    try {
+                        sb.append((URLEncoder.encode(key,"UTF-8")+"="+parseValue+"&"));
+                    }catch (Exception e){
+                        logger.warn("urlencode faild");
+                    }
+
+                }
+
+            }
+            return sb.substring(0,sb.length()-1);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 将时间字符串转为unix 时间戳
+     * */
+    private Long formatTimeToUnixTimestemp(String time){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(dateFormate);
+        try {
+            Date date = simpleDateFormat.parse(time);
+            return date.getTime()/1000;
+        } catch (ParseException e) {
+            throw new NZException(RCode.PROMSERVER_PARAM_TIME_INVALIDE);
+        }
+    }
     /**
      * 反射执行对应方法
      * */
-    public JSONObject excuteMethod(String methodName, String api, Map<String, Object> params){
-        Class clazz= PromProxyController.class;
+    private JSONObject excuteMethod(String methodName,String api,Map<String,Object> params){
+        Class clazz=PromProxyController.class;
         JSONObject result=null;
         try {
             Method method = clazz.getMethod(methodName, String.class, Map.class);
@@ -245,17 +259,15 @@ public class PromProxyController {
 
         }catch (Exception e){
             result= defaultExcute(api,params);
-            e.printStackTrace();
         }
         return result;
     }
     /**
      * 没有配置时 走默认方法
      * */
-    public JSONObject defaultExcute(String api, Map<String, Object> params){
-        String url=promserverProxyService.buildUrl(api,params,null);
+    private JSONObject defaultExcute(String api,Map<String,Object> params){
+        String url=buildUrl(api,params);
 
-        return promserverProxyService.requestPromAPI(url);
+        return requestPromAPI(url);
     }
-
 }
