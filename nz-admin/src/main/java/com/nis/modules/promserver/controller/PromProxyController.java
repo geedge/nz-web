@@ -42,6 +42,7 @@ public class PromProxyController {
     public R targets(@RequestParam Map<String,Object> params){
         List<Object> allProms = MemeryCacheData.memeryCache.get(MemeryCacheData.PROM_SERVER_CACHE);
         List<Promserver> promservers = new ArrayList<Promserver>();
+        //过滤idcId,减少查询的服务器数量
         if(params.get("idcId") != null){
             for(Object prom:allProms){
                 Promserver promserver=(Promserver)prom;
@@ -62,6 +63,7 @@ public class PromProxyController {
                 promservers.add(promserver);
             }
         }
+
         List<Map<String,Object>> list=new ArrayList<>();
         HashMap<String, Object> result = new HashMap<>();
         if(promservers.size()>0){
@@ -102,9 +104,21 @@ public class PromProxyController {
 
             queue.drainTo(list);
 
-
-
         }
+        //根据endpointId过滤返回数据
+        if(params.get("endpointId")!=null&&StringUtils.isNotBlank(((String)params.get("endpointId")))){
+           int endpointId=Integer.parseInt((String)params.get("endpointId"));
+
+            Iterator<Map<String, Object>> iterator = list.iterator();
+
+            while (iterator.hasNext()){
+                Map<String,Object> map=iterator.next();
+                if(endpointId != (int)map.get("endpointId")){
+                    iterator.remove();
+                }
+            }
+        }
+
         result.put("list",list);
         return R.ok(result);
     }
