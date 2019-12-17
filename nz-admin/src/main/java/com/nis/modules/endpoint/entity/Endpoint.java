@@ -26,4 +26,8 @@ public class Endpoint {
 	private Asset asset;
 	@TableField(exist = false)
 	private Project project;
+	@TableField(exist = false)
+	private Number lastUpdate;
+	@TableField(exist = false)
+	private Integer state;
 }
