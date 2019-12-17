@@ -37,12 +37,12 @@ public class PromProxyController {
     @Autowired
     private PromApi promApi;
 
-    @RequestMapping(value = "/prom/**",method = {RequestMethod.GET,RequestMethod.POST})
+    @GetMapping("/prom/**")
     @ResponseBody
     public JSONObject promProxy(HttpServletRequest request,@RequestParam Map<String,Object> params){
         // /nz-admin/prom/api/v1/query_range
         String requestURI = request.getRequestURI();
-        String api=requestURI.split("/prom")[1];
+        String api=requestURI.split("/nz-admin/prom")[1];
         Set<Map.Entry<String, String>> entries = promApi.getPromApis().entrySet();
         boolean findFlag=false;
         JSONObject result=null;
@@ -61,8 +61,6 @@ public class PromProxyController {
         }
         return result;
     }
-
-
 
     // /api/v1/query
     public JSONObject query( String api,Map<String,Object> params){
@@ -143,6 +141,105 @@ public class PromProxyController {
         return defaultExcute(api,params);
     }
 
+    private JSONObject requestPromAPI(String url){
+        JSONObject jsonObject=null;
+        try{
+            jsonObject = HttpClientUtils.httpGet(url);
+            logger.info("request Prometheus Server query api with request:[{}]",url);
+
+        }catch (Exception e){
+            logger.error("request Prometheus Server query api with error {}",e);
+            throw new NZException(RCode.PROMSERVER_REQUEST_FAILD);
+        }
+        return jsonObject;
+    }
+
+    /**
+     * 随机获取数据库中配置的promServer 中的一个
+     * */
+    private String getPromServer(){
+
+        QueryWrapper<Promserver> psQueryWrapper = new QueryWrapper<>();
+        //服务器类型为center
+        psQueryWrapper.eq("type",1);
+        List<Promserver> list = promserverService.list(psQueryWrapper);
+
+        if(list != null && list.size() > 0){
+            int randomPos=new Random().nextInt(list.size());
+            Promserver ramdomServer=list.get(randomPos);
+            return ramdomServer.getHost()+":"+ramdomServer.getPort();
+        }else{
+            throw new NZException(RCode.PROMSERVER_HOST_ISNULL);
+        }
+
+    }
+
+
+    private String buildUrl(String baseUrl,Map<String,Object> params)  {
+        StringBuilder sb=new StringBuilder("http://");
+        String server=getPromServer();
+        sb.append(server); //ip+port
+        sb.append(baseUrl); //url
+        if(params!=null&&params.size()>0){
+            sb.append("?");
+            Set<Map.Entry<String, Object>> entries = params.entrySet();
+            boolean isArray=false;
+            for (Map.Entry<String,Object> entry:entries){
+                String key=entry.getKey();
+                Object value = entry.getValue();
+                String parseValue="";
+                if(value instanceof String){
+                    parseValue=(String)value;
+                    isArray=false;
+                }
+
+                if(value instanceof Long){
+                    parseValue=(Long)value+"";
+                    isArray=false;
+                }
+
+                if(value instanceof List){
+                    String temp="";
+                    for (String param:(List<String>)value){
+                        try {
+                            temp+=(URLEncoder.encode(key,"UTF-8")+"="+ URLEncoder.encode(param,"UTF-8")+"&");
+                        }catch (Exception e){
+                            logger.warn("urlencode faild");
+                        }
+                    }
+
+                    parseValue=temp;
+                    isArray=true;
+                }
+                if(isArray){
+                    sb.append(parseValue);
+                }else{
+                    try {
+                        sb.append((URLEncoder.encode(key,"UTF-8")+"="+parseValue+"&"));
+                    }catch (Exception e){
+                        logger.warn("urlencode faild");
+                    }
+
+                }
+
+            }
+            return sb.substring(0,sb.length()-1);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 将时间字符串转为unix 时间戳
+     * */
+    private Long formatTimeToUnixTimestemp(String time){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(dateFormate);
+        try {
+            Date date = simpleDateFormat.parse(time);
+            return date.getTime()/1000;
+        } catch (ParseException e) {
+            throw new NZException(RCode.PROMSERVER_PARAM_TIME_INVALIDE);
+        }
+    }
     /**
      * 反射执行对应方法
      * */
