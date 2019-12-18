@@ -118,7 +118,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
         JSONObject jsonObject=null;
         try{
             jsonObject = HttpClientUtils.httpGet(url);
-            logger.info("request Prometheus Server query api with request:[{}]",url);
+            logger.info("request Prometheus Server api with request:[{}]",url);
 
         }catch (Exception e){
             logger.error("request Prometheus Server query api with error {}",e);
@@ -230,6 +230,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
             }
 
         }catch (Exception e){
+            logger.warn("excute build-in method faild",e);
             result= defaultExcute(api,params);
         }
         return result;

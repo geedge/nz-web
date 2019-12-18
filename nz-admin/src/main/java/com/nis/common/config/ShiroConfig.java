@@ -97,6 +97,7 @@ public class ShiroConfig {
         filterMap.put("/favicon.ico", "anon");
         filterMap.put("/captcha.jpg", "anon");
         filterMap.put("/api/**", "anon");
+        filterMap.put("/terminal.ws","anon");
 //        filterMap.put("/**", "authc");
         filterMap.put("/**", "tokenCheckFilter");
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();

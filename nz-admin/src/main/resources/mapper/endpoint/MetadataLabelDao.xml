@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.endpoint.dao.MetadataLabelDao">
+
+    <select id="queryMetricIds" resultType="java.util.List">
+        SELECT metric_id FROM `metadata_label` where name=#{name} and value=#{value} GROUP BY metric_id
+    </select>
+
+    <select id="queryLabelNamesByMetricIds" resultType="java.util.Map">
+
+        select `name`,`value` from `metadata_label` where `metric_id` in
+        <foreach collection="metricIds" item="metricId" separator="," open="(" close=")">
+            #{metricId}
+        </foreach>
+        <if test="name != null and name != ''">
+            and `name` like concat('%',#{name},'%')
+        </if>
+    </select>
+    <select id="queryLabelNamesByMetricId" resultType="java.util.Map">
+
+        select `name`,`value` from `metadata_label` where `metric_id` =#{metricId}
+        <if test="name != null and name != ''">
+            and `name` like concat('%',#{name},'%')
+        </if>
+    </select>
+</mapper>

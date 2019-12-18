@@ -8,9 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -28,7 +26,7 @@ public class PromProxyController {
     @Autowired
     private PromApi promApi;
 
-    @GetMapping("/prom/**")
+    @RequestMapping(value = "/prom/**",method = {RequestMethod.GET,RequestMethod.POST})
     @ResponseBody
     public JSONObject promProxy(HttpServletRequest request,@RequestParam Map<String,Object> params){
         // /nz-admin/prom/api/v1/query_range
