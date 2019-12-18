@@ -27,7 +27,7 @@ public class Endpoint {
 	@TableField(exist = false)
 	private Project project;
 	@TableField(exist = false)
-	private Number lastUpdate;
+	private Long lastUpdate;
 	@TableField(exist = false)
 	private Integer state;
 }
