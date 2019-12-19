@@ -42,33 +42,37 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		List<Endpoint> datas = endpointDao.queryPage(page, params);
 		//获取相关lastUpdate以及state数据信息
 		String api = promApi.getPromApis().get("query");
-		if(datas!=null&&datas.size()>0) {
-			Map resultMap=new HashMap();
-			Map map =new HashMap();
-			map.put("query", "up");
-			JSONObject promeResult = promserverProxyService.query(api, map);
-			JSONObject promeObject = (JSONObject) promeResult.get("data");
-			JSONArray str = (JSONArray) promeObject.get("result");
-			if(str!=null&&str.size()>0) {
-				for(int i=0;i<str.size();i++) {
-					Map resultPromeMap = (Map) str.get(i);
-					JSONObject metric = (JSONObject) resultPromeMap.get("metric");
-					String jobName = (String) metric.get("job");
-					resultMap.put(jobName, resultPromeMap.get("value"));
+		try {
+			if(datas!=null&&datas.size()>0) {
+				Map resultMap=new HashMap();
+				Map map =new HashMap();
+				map.put("query", "up");
+				JSONObject promeResult = promserverProxyService.query(api, map);
+				JSONObject promeObject = (JSONObject) promeResult.get("data");
+				JSONArray str = (JSONArray) promeObject.get("result");
+				if(str!=null&&str.size()>0) {
+					for(int i=0;i<str.size();i++) {
+						Map resultPromeMap = (Map) str.get(i);
+						JSONObject metric = (JSONObject) resultPromeMap.get("metric");
+						String jobName = (String) metric.get("job");
+						resultMap.put(jobName, resultPromeMap.get("value"));
+					}
+				}
+				for(Endpoint data:datas) {
+					String jn="ed_"+data.getId();
+					JSONArray valueList = (JSONArray) resultMap.get(jn);
+					if(valueList!=null) {
+						BigDecimal time = (BigDecimal) valueList.get(0);
+						long timeStamp = time.longValue();
+						data.setLastUpdate(timeStamp);
+						String stateValue=(String)valueList.get(1);
+						Integer state = Integer.valueOf(stateValue);
+						data.setState(state);
+					}
 				}
 			}
-			for(Endpoint data:datas) {
-				String jn="ed_"+data.getId();
-				JSONArray valueList = (JSONArray) resultMap.get(jn);
-				if(valueList!=null) {
-					BigDecimal time = (BigDecimal) valueList.get(0);
-					long timeStamp = time.longValue();
-					data.setLastUpdate(timeStamp);
-					String stateValue=(String)valueList.get(1);
-					Integer state = Integer.valueOf(stateValue);
-					data.setState(state);
-				}
-			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
         page.setRecords(datas);
         return new PageUtils(page);
