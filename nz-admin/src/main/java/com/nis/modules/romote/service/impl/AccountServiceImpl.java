@@ -116,8 +116,8 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
 
         QueryWrapper<Account> accountQueryWrapper=new QueryWrapper<Account>();
         accountQueryWrapper.eq(StringUtils.isNotEmpty(id),"id",id);
-        accountQueryWrapper.eq(StringUtils.isNotEmpty(assetId),"assetId",assetId);
-        accountQueryWrapper.eq(StringUtils.isNotEmpty(authType),"authType",authType);
+        accountQueryWrapper.eq(StringUtils.isNotEmpty(assetId),"asset_id",assetId);
+        accountQueryWrapper.eq(StringUtils.isNotEmpty(authType),"auth_type",authType);
         accountQueryWrapper.eq(StringUtils.isNotEmpty(user),"user",user);
         IPage<Account> page=this.page(new Query<Account>().getPage(params),accountQueryWrapper);
 
