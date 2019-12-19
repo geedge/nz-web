@@ -178,4 +178,15 @@
 		</where>
 	</select>
 
+    <insert id="saveAsset">
+        INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, host, state, purchase_date, create_at, update_at, create_by, update_by)
+        VALUES
+        (NULL, #{asset.sn},#{asset.modelId},#{asset.idcId},#{asset.cabinetId},#{asset.host},
+         #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy})
+
+        <selectKey keyProperty="asset.id" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID();
+        </selectKey>
+    </insert>
+
 </mapper>

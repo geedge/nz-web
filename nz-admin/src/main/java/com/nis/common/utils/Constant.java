@@ -334,4 +334,7 @@ public class Constant {
     // 字典表中资产状态 type 值
     public static final String DICT_ASSET_STATE_TYPE = "assetState";
 
+    // 字典表中 account 认证类型的 type 值
+    public static final String DICT_ACCOUNT_AUTH_TYPE = "authType";
+
 }

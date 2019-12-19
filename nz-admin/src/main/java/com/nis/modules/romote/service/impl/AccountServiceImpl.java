@@ -99,9 +99,6 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
     @Autowired
     private SysDictService sysDictService;
 
-
-    private final String AUTH_TYPE_CODE="authType";
-
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 
@@ -140,7 +137,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
         //3.认证类型必须合法
         ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
         QueryWrapper<SysDictEntity> sysDictyQueryWrapper=new QueryWrapper<SysDictEntity>();
-        sysDictyQueryWrapper.eq("type",AUTH_TYPE_CODE);
+        sysDictyQueryWrapper.eq("type",Constant.DICT_ACCOUNT_AUTH_TYPE);
         sysDictyQueryWrapper.eq("value",account.getAuthType());
         List<SysDictEntity> authTypeList = sysDictService.list(sysDictyQueryWrapper);
         if(authTypeList==null||authTypeList.size()>0){

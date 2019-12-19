@@ -3,6 +3,8 @@ package com.nis.modules.asset.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.romote.entity.Account;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,7 +22,9 @@ public interface AssetService extends IService<Asset> {
     
     List<Asset> queryListByHosts(Collection<String> hosts);
 
-    void saveOrUpdateAsset(Asset asset);
+    void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys);
 
     void delete(String ids);
+
+    void validateAccount(Account account, MultipartFile file);
 }

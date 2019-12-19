@@ -2,11 +2,13 @@ package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.romote.entity.Account;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -123,4 +125,10 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private Integer alertNum;
+
+    /**
+     * account 集合
+     */
+    @TableField(exist = false)
+    private List<Account> accounts;
 }

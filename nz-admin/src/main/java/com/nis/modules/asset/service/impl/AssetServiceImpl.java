@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -17,12 +18,18 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.romote.entity.Account;
+import com.nis.modules.romote.service.AccountService;
 import com.nis.modules.romote.util.StringUtils;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -34,6 +41,8 @@ import java.util.*;
  */
 @Service("assetService")
 public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements AssetService {
+
+    private static Logger logger = LoggerFactory.getLogger(AssetServiceImpl.class);
 
     // 数据中心  service
     @Autowired
@@ -54,6 +63,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     // 资产  dao
     @Autowired
     private AssetDao assetDao;
+
+    @Autowired
+    private AccountService accountService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -98,7 +110,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
-    public void saveOrUpdateAsset(Asset asset) {
+    public void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys) {
         // 1. sn 唯一校验
         if (!this.checkFieldExist(asset.getId(), "sn", asset.getSn())) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
@@ -165,7 +177,38 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         asset.setUpdateAt(now);
         asset.setUpdateBy(userId);
 
-        this.saveOrUpdate(asset);
+        if (asset.getId() == null) {
+            assetDao.saveAsset(asset);
+        } else {
+            this.updateById(asset);
+        }
+        // this.saveOrUpdate(asset);
+        // 保存 accounts
+        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
+            int currSshKeys = 0;
+            for (int i = 0; i < asset.getAccounts().size(); i++) {
+                Account account = asset.getAccounts().get(i);
+                if (Constant.AUTH_CERTIFICATE.equals(account.getAuthType())) {
+                    try {
+                        // ssh 登录选择文件
+                        MultipartFile file = sshKeys[currSshKeys++];
+                        account.setPrivateKey(file.getBytes());
+                    } catch (Exception e) {
+                        logger.error("transfer ssh certificate error", e);
+                    }
+                }
+                if (StringUtils.isNotEmpty(account.getPwd())) {
+                    String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                    account.setPwd(encodePwd);
+                }
+                if (account.getId() == null) {
+                    account.setAssetId(asset.getId());
+                    accountService.save(account);
+                } else {
+                    accountService.updateById(account);
+                }
+            }
+        }
     }
 
     @Override
@@ -185,6 +228,33 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 2. 删除
         this.removeByIds(delIds);
+    }
+
+    @Override
+    public void validateAccount(Account account, MultipartFile file) {
+        //1.认证类型必须合法
+        ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
+        QueryWrapper<SysDictEntity> sysDictyQueryWrapper = new QueryWrapper<SysDictEntity>();
+        sysDictyQueryWrapper.eq("type", Constant.DICT_ACCOUNT_AUTH_TYPE); // authType 字典中的type值
+        sysDictyQueryWrapper.eq("value", account.getAuthType());
+
+        List<SysDictEntity> authTypeList = sysDictService.list(sysDictyQueryWrapper);
+
+        if (authTypeList == null || authTypeList.size() > 0) {
+            throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+        }
+
+        //2.用户名不能为空
+        ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
+
+        //3.密码登录，密码不能为空，证书登录，证书不能为空
+        if (Constant.AUTH_PASSWORD == account.getAuthType()) {
+            ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
+        } else {
+            ValidateUtils.is(file).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
+        }
+        //4.port 不能为空
+        ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
     }
 
     public boolean checkFieldExist(Integer id, String column, String columnValue) {
