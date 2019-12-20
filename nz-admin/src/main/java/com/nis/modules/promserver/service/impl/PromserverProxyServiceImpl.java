@@ -114,7 +114,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
         return defaultExcute(api,params);
     }
 
-    private JSONObject requestPromAPI(String url){
+    public JSONObject requestPromAPI(String url){
         JSONObject jsonObject=null;
         try{
             jsonObject = HttpClientUtils.httpGet(url);

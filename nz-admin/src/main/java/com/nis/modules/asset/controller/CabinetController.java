@@ -3,6 +3,7 @@ package com.nis.modules.asset.controller;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -54,7 +55,8 @@ public class CabinetController {
         if (cabinet.getuSize() == null) {
             cabinet.setuSize(1);
         } else {
-            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM);
+            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM)
+                    .max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
         }
 
         // 校验名称重复
@@ -81,7 +83,8 @@ public class CabinetController {
                 .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL);
 
         if (cabinet.getuSize() != null) {
-            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM);
+            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM)
+                    .max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
         }
 
         // 校验名称重复

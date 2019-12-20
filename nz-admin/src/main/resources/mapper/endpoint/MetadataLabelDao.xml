@@ -23,4 +23,12 @@
             and `name` like concat('%',#{name},'%')
         </if>
     </select>
+
+    <delete id="deleteByMetricIds">
+        delete from metadata_label
+        where metric_id in
+        <foreach collection="ids" item="ids" index="no" open="(" separator="," close=")">
+            #{ids}
+        </foreach>
+    </delete>
 </mapper>

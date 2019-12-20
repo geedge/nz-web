@@ -20,7 +20,7 @@ import java.util.Properties;
  *
 
  */
-/*@Configuration*/
+@Configuration
 public class ScheduleConfig {
 
     /*@Bean*/

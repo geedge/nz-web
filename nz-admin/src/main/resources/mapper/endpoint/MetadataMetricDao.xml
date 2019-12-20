@@ -9,4 +9,20 @@
         select `id` from `metadata_metric` where `metric`=#{metric}
     </select>
 
+    <resultMap type="com.nis.modules.endpoint.entity.MetadataMetric" id="metricWithLabels">
+        <result property="metric" column="metric"/>
+
+        <collection property="labels" ofType="com.nis.modules.endpoint.entity.MetadataLabel">
+            <result property="metricId" column="metric_id"/>
+            <result property="name" column="name"/>
+            <result property="value" column="value"/>
+        </collection>
+    </resultMap>
+
+
+    <select id="getLabelsWithMetric" resultMap="metricWithLabels">
+        SELECT  metric.metric,metric.id,label.name,label.value
+        FROM metadata_metric metric
+        LEFT JOIN metadata_label label on metric.id = label.metric_id
+    </select>
 </mapper>

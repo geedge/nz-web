@@ -16,4 +16,6 @@ public interface MetadataLabelDao extends BaseMapper<MetadataLabel> {
     List<Map<String, String>> queryLabelNamesByMetricIds(@Param("metricIds")List<Integer> metricIds, @Param("name") String name);
 
     List<Map<String, String>> queryLabelNamesByMetricId(@Param("metricId")Integer metricId, @Param("name") String name);
+
+    void deleteByMetricIds(@Param("ids") List ids);
 }

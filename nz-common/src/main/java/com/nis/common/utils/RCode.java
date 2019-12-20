@@ -80,6 +80,7 @@ public enum RCode {
 	IDC_CABINETNAME_DUPLICATE(402003, "Cabinet name duplicate"),         // 机柜名称重复
 	IDC_CABINETUSIZE_MINIMUM(402004, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
 	IDC_CABINET_ASSETS_EXISTS(402005, "There are assets in the cabinet"),// 机柜中有资产
+	IDC_CABINET_MAXU(402006, "The maximum U of current cabinet is 47"),  // 当前机柜最大U为47
 
 
 	ASSET_ID_ISNULL(501001, "Asset id can not be empty"),                // 资产ID不能为空
