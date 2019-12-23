@@ -1,6 +1,5 @@
 package com.nis.modules.endpoint.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
@@ -28,18 +27,14 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
     public PageUtils queryPage(Map<String, Object> params) {
 
         Integer moduleId=params.get("moduleId")==null?null:Integer.parseInt((String)params.get("moduleId"));
-        List<Integer> metricIds=null;
-        if(moduleId != null){
-            Module module = moduleService.getById(moduleId);
-            metricIds=labelService.queryMetricIds("module",module.getName());
-        }
-        QueryWrapper<MetadataMetric> metricQueryWrapper = new QueryWrapper<>();
+
+        String metric=params.get("metric")==null?null:(String)params.get("metric");
 
 
-        metricQueryWrapper.in(metricIds!=null&&metricIds.size()>0,"id",metricIds);
+        IPage<MetadataMetric> page = this.page(new Query<MetadataMetric>().getPage(params));
 
-        IPage<MetadataMetric> page = this.page(new Query<MetadataMetric>().getPage(params), metricQueryWrapper);
-
+        List<MetadataMetric> list=this.baseMapper.queryMetricList(moduleId,metric);
+        page.setRecords(list);
         return new PageUtils(page);
     }
 

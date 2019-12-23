@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.nis.modules.endpoint.dao.MetadataLabelDao">
 
-    <select id="queryMetricIds" resultType="java.util.List">
+    <select id="queryMetricIds" resultType="integer">
         SELECT metric_id FROM `metadata_label` where name=#{name} and value=#{value} GROUP BY metric_id
     </select>
 

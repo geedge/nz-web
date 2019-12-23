@@ -14,4 +14,6 @@ public interface MetadataMetricDao extends BaseMapper<MetadataMetric> {
     Integer queryIdByMetric(@Param("metric")String metric);
 
     List<MetadataMetric> getLabelsWithMetric();
+
+    List<MetadataMetric> queryMetricList(@Param("moduleId")Integer moduleId, @Param("metric") String metric);
 }

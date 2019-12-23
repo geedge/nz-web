@@ -25,4 +25,23 @@
         FROM metadata_metric metric
         LEFT JOIN metadata_label label on metric.id = label.metric_id
     </select>
+
+    <select id="queryMetricList" resultType="com.nis.modules.endpoint.entity.MetadataMetric">
+        select c.* from metadata_metric c where EXISTS(
+                select a.metric_id from
+                    metadata_label a
+                    <if test="moduleId != null">
+                        left join module b on a.value=b.name
+                    </if>
+                    where 1=1
+                    <if test="moduleId != null">
+                    and  a.name='module' and b.id=#{moduleId}
+                    </if>
+                    and c.id= a.metric_id
+                    GROUP BY a.metric_id
+        )
+        <if test="metric != null and metric != ''">
+            and  c.metric=#{metric}
+        </if>
+    </select>
 </mapper>
