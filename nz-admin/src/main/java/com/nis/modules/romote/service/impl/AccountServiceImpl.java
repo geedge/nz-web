@@ -167,13 +167,29 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
                 logger.error("transfer ssh certificate error",e);
             }
         }
-        if(StringUtils.isNotEmpty(account.getPwd())){
+        /*if(StringUtils.isNotEmpty(account.getPwd())){
             String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
             account.setPwd(encodePwd);
-        }
+        }*/
         if(account.getId()==null){
+            if(StringUtils.isNotEmpty(account.getPwd())){
+                String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                account.setPwd(encodePwd);
+            }
+
             this.save(account);
         }else{
+            // 修改参数含有密码
+            if(StringUtils.isNotEmpty(account.getPwd())){
+                Account accountEntity = this.getById(account.getId());
+
+                // 前台传参密码和数据库存储密码不对应 证明修改了密码
+               if(!account.getPwd().equals(accountEntity.getPwd())){
+                   String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                   account.setPwd(encodePwd);
+               }
+            }
+
             this.updateById(account);
         }
 

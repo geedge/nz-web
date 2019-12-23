@@ -182,7 +182,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         } else {
             this.updateById(asset);
         }
-        // this.saveOrUpdate(asset);
+
         // 保存 accounts
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
             int currSshKeys = 0;
@@ -197,14 +197,28 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         logger.error("transfer ssh certificate error", e);
                     }
                 }
-                if (StringUtils.isNotEmpty(account.getPwd())) {
-                    String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                    account.setPwd(encodePwd);
-                }
+
+                // 添加
                 if (account.getId() == null) {
+                    // 处理密码
+                    if (StringUtils.isNotEmpty(account.getPwd())) {
+                        String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                        account.setPwd(encodePwd);
+                    }
                     account.setAssetId(asset.getId());
+
                     accountService.save(account);
                 } else {
+                    // 修改参数含有密码
+                    if(StringUtils.isNotEmpty(account.getPwd())){
+                        Account accountEntity = accountService.getById(account.getId());
+                        // 前台传参密码和数据库存储密码不对应 证明修改了密码
+                        if(!account.getPwd().equals(accountEntity.getPwd())){
+                            String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                            account.setPwd(encodePwd);
+                        }
+                    }
+
                     accountService.updateById(account);
                 }
             }
