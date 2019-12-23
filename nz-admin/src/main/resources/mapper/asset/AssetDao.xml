@@ -50,6 +50,17 @@
         <!--资产型号 select 调用下方查询sql -->
         <association property="model" column="model_id" javaType="com.nis.modules.asset.entity.Model"
                      select="getModelById"/>
+
+        <!-- 一对多 关联account -->
+        <collection property="accounts" column="id" ofType="com.nis.modules.romote.entity.Account"
+                    select="getAccountsById">
+            <id property="id" column="id"/>
+            <result property="assetId" column="assetId"/>
+            <result property="authType" column="authType"/>
+            <result property="user" column="user"/>
+            <result property="pwd" column="pwd"/>
+            <result property="port" column="port"/>
+        </collection>
     </resultMap>
 
     <sql id="asset_info_columns">
@@ -164,6 +175,18 @@
         LEFT JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType'
 
         WHERE mo.id = #{id}
+    </select>
+
+    <!--查看 accounts-->
+    <select id="getAccountsById" resultType="com.nis.modules.romote.entity.Account">
+        SELECT
+            acc.id AS id,
+            acc.asset_id AS assetId,
+            acc.auth_type AS authType,
+            acc.user AS user,
+            acc.pwd AS pwd,
+            acc.port AS port
+         FROM account acc WHERE acc.asset_id = #{id}
     </select>
 
 
