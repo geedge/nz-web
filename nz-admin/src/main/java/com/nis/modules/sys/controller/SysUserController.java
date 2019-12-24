@@ -131,16 +131,19 @@ public class SysUserController extends AbstractController {
 	@SysLog("删除用户")
 	@RequestMapping("/delete")
 //	@RequiresPermissions("sys:user:delete")
-	public R delete(@RequestBody Long[] userIds){
-		if(ArrayUtils.contains(userIds, 1L)){
+//	public R delete(@RequestBody Long[] userIds){
+	public R delete(String userIds) {
+		ValidateUtils.is(userIds).notNull();
+		String[] split = userIds.split(",");
+		if(ArrayUtils.contains(split, "1")){
 			throw new NZException(RCode.SYS_USER_DELADMIN);
 		}
 		
-		if(ArrayUtils.contains(userIds, getUserId())){
+		if(ArrayUtils.contains(split, getUserId().toString())){
 			throw new NZException(RCode.SYS_USER_CANNOTDEL);
 		}
 
-		sysUserService.removeByIds(Arrays.asList(userIds));
+		sysUserService.removeByIds(Arrays.asList(split));
 		
 		return R.ok();
 	}

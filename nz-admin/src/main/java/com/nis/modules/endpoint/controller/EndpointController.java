@@ -1,6 +1,7 @@
 package com.nis.modules.endpoint.controller;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,18 +38,22 @@ public class EndpointController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save endpoint")
-	public R save(@RequestBody Endpoint endpointEntity) {
-		endpointService.validateParam(endpointEntity);
-		endpointService.save(endpointEntity);
+	public R save(@RequestBody List<Endpoint> endpointEntitys) {
+		for(Endpoint endpointEntity : endpointEntitys) {
+			endpointService.validateParam(endpointEntity);
+		}
+		endpointService.saveOrUpdateBatch(endpointEntitys);
 		return R.ok();
 	}
 	
 	@PutMapping
 	@SysLog("update endpoint")
-	public R modify(@RequestBody Endpoint endpointEntity) {
-		ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
-		endpointService.validateParam(endpointEntity);
-		endpointService.updateById(endpointEntity);
+	public R modify(@RequestBody List<Endpoint> endpointEntitys) {
+		for(Endpoint endpointEntity : endpointEntitys) {
+			ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
+			endpointService.validateParam(endpointEntity);
+		}
+		endpointService.saveOrUpdateBatch(endpointEntitys);
 		return R.ok();
 	}
 	
