@@ -1,6 +1,7 @@
 package com.nis.modules.endpoint.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -15,5 +16,5 @@ public interface MetadataMetricDao extends BaseMapper<MetadataMetric> {
 
     List<MetadataMetric> getLabelsWithMetric();
 
-    List<MetadataMetric> queryMetricList(@Param("moduleId")Integer moduleId, @Param("metric") String metric);
+    List<MetadataMetric> queryMetricList(IPage<MetadataMetric> page, @Param("moduleId") Integer moduleId, @Param("metric") String metric);
 }

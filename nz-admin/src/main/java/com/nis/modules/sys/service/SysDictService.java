@@ -9,6 +9,7 @@
 package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.RCode;
 import com.nis.modules.sys.entity.SysDictEntity;
 
 import com.nis.common.utils.PageUtils;
@@ -44,6 +45,12 @@ public interface SysDictService extends IService<SysDictEntity> {
     boolean dictValueCheck(Long id, String name, String type, String value);
 
     Integer queryMaxTypeCode(String type);
+
+    void checkSysDicValue(String type, String value, RCode errCode);
+
+    void checkSysDicCode(String type, Integer code, RCode errCode);
+
+    List<SysDictEntity> querySysDicByType(String type);
 
 }
 

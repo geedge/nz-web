@@ -336,6 +336,12 @@ public class Constant {
 
     // 字典表中 account 认证类型的 type 值
     public static final String DICT_ACCOUNT_AUTH_TYPE = "authType";
+    // 字典表中 account 认证类型的 type 值
+
+    public static final String DICT_CHART_TYPE = "chartType";
+
+    // 字典表中 account 认证类型的 type 值
+    public static final String DICT_EXPRESSION_TYPE = "exprType";
 
     // 目前机柜最大值限制
     public static final Integer CURRENT_CABINET_MAXU= 47;

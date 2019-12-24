@@ -26,6 +26,20 @@
 		</where>
 	</select>
 
+	<select	id="querySysDictListWithPage" resultMap="sysDictResultMap">
+		select id,name,type,code,value,order_num,remark,operator,op_time
+		from sys_dict
+		<where>
+			del_flag=0
+			<if test="params.type != null and params.type != ''">
+				and type=#{params.type}
+			</if>
+			<if test="params.value != null and params.value != ''">
+				and value=#{params.value}
+			</if>
+		</where>
+		order by order_num
+	</select>
 	<select	id="querySysDictList" resultMap="sysDictResultMap">
 		select id,name,type,code,value,order_num,remark,operator,op_time
 		from sys_dict

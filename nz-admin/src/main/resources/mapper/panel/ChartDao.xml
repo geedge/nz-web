@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.panel.dao.ChartDao">
+    
+    <resultMap id="chartResult" type="com.nis.modules.panel.entity.Chart">
+        <result property="id" column="id"></result>
+        <result property="title" column="title"></result>
+        <result property="span" column="span"></result>
+        <result property="height" column="height"></result>
+        <result property="createAt" column="create_at"></result>
+        <result property="type" column="type"></result>
+        <collection property="elements" column="id" select="queryChartElements" ></collection>
+    </resultMap>
+
+    <select id="queryCharts" resultMap="chartResult">
+
+        select * from chart where panel_id=#{panelId}
+
+        <if test="id != null ">
+            and id=#{id}
+        </if>
+
+        <if test="title != null and title != ''" >
+            and title=#{title}
+        </if>
+
+    </select>
+
+    <select id="queryChartElements" resultType="com.nis.modules.panel.entity.ChartElement">
+        select * from chart_element where chart_id=#{id}
+    </select>
+
+    <select id="queryChartIds" resultType="int">
+        select id from chart where panel_id in
+        <foreach collection="panelIds" open="(" close=")" separator="," item="panelId">
+            #{panelId}
+        </foreach>
+    </select>
+</mapper>

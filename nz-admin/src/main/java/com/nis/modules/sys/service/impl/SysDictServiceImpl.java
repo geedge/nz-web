@@ -52,7 +52,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 //        );
 		IPage<SysDictEntity> page=this.page(new Query<SysDictEntity>().getPage(params));
 
-		List<SysDictEntity> list=this.baseMapper.querySysDictList(params);
+		List<SysDictEntity> list=this.baseMapper.querySysDictListWithPage(page,params);
 
 		page.setRecords(list);
 
@@ -185,6 +185,37 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		return maxCode;
 	}
 
+	@Override
+	public void checkSysDicValue(String type, String value, RCode errCode) {
+		QueryWrapper<SysDictEntity> queryWrapper=new QueryWrapper<SysDictEntity>();
+		queryWrapper.eq("type",type);
+		queryWrapper.eq("value",value);
+		queryWrapper.eq("del_flag",0);
+		List<SysDictEntity> list = this.list(queryWrapper);
+		if(list==null ||list.size()<1){
+			throw new NZException(errCode);
+		}
+	}
+	@Override
+	public void checkSysDicCode(String type, Integer code, RCode errCode) {
+		QueryWrapper<SysDictEntity> queryWrapper=new QueryWrapper<SysDictEntity>();
+		queryWrapper.eq("type",type);
+		queryWrapper.eq("code",code);
+		queryWrapper.eq("del_flag",0);
+		List<SysDictEntity> list = this.list(queryWrapper);
+		if(list==null ||list.size()<1){
+			throw new NZException(errCode);
+		}
+	}
+
+	@Override
+	public List<SysDictEntity> querySysDicByType(String type) {
+		QueryWrapper<SysDictEntity> queryWrapper=new QueryWrapper<SysDictEntity>();
+		queryWrapper.eq("type",type);
+		queryWrapper.eq("del_flag",0);
+		List<SysDictEntity> list = this.list(queryWrapper);
+		return list;
+	}
 
 
 }

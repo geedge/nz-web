@@ -33,8 +33,10 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
 
         IPage<MetadataMetric> page = this.page(new Query<MetadataMetric>().getPage(params));
 
-        List<MetadataMetric> list=this.baseMapper.queryMetricList(moduleId,metric);
+        List<MetadataMetric> list=this.baseMapper.queryMetricList(page,moduleId,metric);
+
         page.setRecords(list);
+
         return new PageUtils(page);
     }
 

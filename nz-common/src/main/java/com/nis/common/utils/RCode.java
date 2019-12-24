@@ -140,7 +140,25 @@ public enum RCode {
 	ENDPOINT_ASSETID_ISNULL(900003,"Asset Id can not be empty"),
 	ENDPOINT_PORT_ISNULL(900004,"Port can not be empty"),
 	ENDPOINT_PATH_ISNULL(900005,"Path can not be empty"),
-	
+
+	PANEL_NAME_ISNULL(1000001,"Panel name can not be empty"),
+	PANEL_ID_ISNULL(1000002,"Panel ID can not be empty"),
+
+	CHART_TITLE_ISNULL(1100001,"Chart title can not be empty"),
+	CHART_SPAN_ISNULL(1100002,"Chart span can not be empty"),
+	CHART_HEIGHT_ISNULL(1100003,"Chart height can not be empty"),
+	CHART_TYPE_ISNULL(1100004,"Chart type can not be empty"),
+	CHART_CREATEAT_ISNULL(1100005,"Chart create time can not be empty"),
+	CHART_ELEMENT_ISNULL(1100006,"Chart element can not be empty"),
+	CHART_TYPE_INVALIDE(1100007,"Chart type is invalide"),
+	CHART_PANEL_ISNULL(1100008,"Panel is not exsits"),
+	CHART_NOTEXSITS(1100009,"Chart is not exsits"),
+
+	CHARTELEMENT_EXPRESSION_ISNULL(12000001,"Chart element expression can not be empty"),
+	CHARTELEMENT_TYPE_ISNULL(12000002,"Chart element type can not be empty"),
+	CHARTELEMENT_TYPE_INVALIDE(12000003,"Chart element type is invalide"),
+	CHARTELEMENT_NOTEXSITS(12000004,"chart element is not exists"),
+
 	ERROR(999, "error"); //通用错误/未知错误
 
 	

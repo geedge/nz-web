@@ -41,7 +41,7 @@
                     GROUP BY a.metric_id
         )
         <if test="metric != null and metric != ''">
-            and  c.metric=#{metric}
+            and  c.metric like concat('%',#{metric},'%')
         </if>
     </select>
 </mapper>
