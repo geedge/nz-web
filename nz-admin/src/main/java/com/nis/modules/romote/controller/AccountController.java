@@ -34,6 +34,8 @@ import com.nis.modules.romote.support.TerminalContext;
 import com.nis.modules.romote.support.TerminalOneProcessor;
 import com.nis.modules.romote.support.TerminalSession;
 import com.nis.modules.romote.util.CommonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -45,6 +47,8 @@ import org.springframework.web.socket.WebSocketSession;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,6 +58,8 @@ import java.util.Map;
 @Controller
 @RequestMapping("/account")
 public class AccountController {
+
+    private Logger logger = LoggerFactory.getLogger(AccountController.class);
 
     @Autowired
     private AccountService accountService;
@@ -205,7 +211,9 @@ public class AccountController {
     public R upload(HttpSession httpSession, String token, @RequestParam(value = "file", required = false) MultipartFile file, String path) {
         String rootPath=null;
         try{
-            rootPath= ResourceUtils.getURL("classpath:").getPath();
+            File temp=new File("");
+            rootPath = temp.getAbsolutePath();
+            logger.debug("项目根目录["+rootPath+"]");
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -222,6 +230,7 @@ public class AccountController {
         }
 
         File tempFile = new File(tmpPath, file.getOriginalFilename());
+        logger.debug("上传临时文件["+tempFile.getAbsolutePath()+"]");
         try {
             file.transferTo(tempFile);
             if (CommonUtils.isEmpty(path)) {
@@ -231,13 +240,13 @@ public class AccountController {
                     path = path.substring(0, path.lastIndexOf("/"));
                 }
             }
-
+            logger.debug("上传目录：["+path+"]");
             tempFile.delete();
             return terminalOneProcessor.upload(token, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
         } catch (Exception e) {
             e.printStackTrace();
+            throw new NZException(RCode.SYS_ERROR);
         }
-        return R.ok();
     }
 
 }

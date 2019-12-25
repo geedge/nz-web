@@ -31,7 +31,7 @@ public class Account {
             try {
                 return RSAUtils.decryptByPrivateKey(this.privateKey, Auth.getPrivateKey());
             } catch (Exception e) {
-                throw new RuntimeException("[JobX] getPrivateKey error!");
+                throw new RuntimeException("getPrivateKey error!");
             }
         }
         return null;

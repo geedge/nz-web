@@ -26,6 +26,8 @@ import com.nis.common.utils.R;
 import com.nis.modules.romote.service.impl.AccountServiceImpl;
 import com.nis.modules.romote.util.Constants;
 import com.nis.modules.romote.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +37,7 @@ import java.util.List;
 
 @Component
 public class TerminalOneProcessor {
-
+    private Logger logger= LoggerFactory.getLogger(TerminalOneProcessor.class);
     @Autowired
     private AccountServiceImpl termService;
 
@@ -79,6 +81,7 @@ public class TerminalOneProcessor {
 //    @MethodMark
     public R upload(String token, File file, String name, long size) {
         TerminalClient terminalClient = TerminalSession.get(token);
+        logger.debug("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
         boolean success = true;
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
@@ -90,6 +93,8 @@ public class TerminalOneProcessor {
             if (terminalClient != null) {
                 terminalClient.upload(file.getAbsolutePath(), name, size);
             }
+
+            logger.debug("上传完成");
         } catch (Exception e) {
             e.printStackTrace();
             success = false;

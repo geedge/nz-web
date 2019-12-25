@@ -150,7 +150,7 @@ public class TerminalClient {
                                 }
                                 pwd = message.replace(sendTempCmdId, "").replaceAll("\r\n.*", "") + "/";
                                 if (logger.isInfoEnabled()) {
-                                    logger.info("[JobX] Sftp upload file target path:{}", pwd);
+                                    logger.info(" Sftp upload file target path:{}", pwd);
                                 }
                             }
                         } else {
@@ -215,7 +215,7 @@ public class TerminalClient {
             Thread.sleep(100);
             sendTempCmd = false;
             if (pwd == null) {
-                throw new RuntimeException("[JobX] Sftp upload file target path error!");
+                throw new RuntimeException("Sftp upload file target path error!");
             }
             dst = dst.replaceFirst("\\./", pwd);
             pwd = null;

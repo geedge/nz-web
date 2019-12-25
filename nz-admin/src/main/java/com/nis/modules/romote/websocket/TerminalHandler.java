@@ -67,7 +67,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             final Account terminal = terminalContext.get(terminalToken);
             if (terminal != null) {
                 try {
-                    session.sendMessage(new TextMessage("Welcome to jobx Terminal! Connect Starting."));
+                    session.sendMessage(new TextMessage("Welcome to login Terminal! Connect Starting."));
                     getClient(session, terminal);
                     int cols = toInt(session.getAttributes().get("cols").toString());
                     int rows = toInt(session.getAttributes().get("rows").toString());

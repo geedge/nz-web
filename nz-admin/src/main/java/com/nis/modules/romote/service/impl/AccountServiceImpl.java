@@ -258,7 +258,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
                 return Account.AuthStatus.AUTH_FAIL;
             } else if (e.getMessage().toLowerCase().contains("unknownhostexception")) {
                 if (logger.isInfoEnabled()) {
-                    logger.info("[JobX]:error: DNS Lookup Failed ");
+                    logger.info("error: DNS Lookup Failed ");
                 }
                 return Account.AuthStatus.HOST_FAIL;
             } else if (e instanceof BadPaddingException) {//RSA解码错误..密码错误...
