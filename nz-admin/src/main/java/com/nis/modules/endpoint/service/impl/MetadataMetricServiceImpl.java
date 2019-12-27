@@ -25,8 +25,11 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        Integer moduleId=null;
+        try{
 
-        Integer moduleId=params.get("moduleId")==null?null:Integer.parseInt((String)params.get("moduleId"));
+            moduleId = params.get("moduleId")==null?null:Integer.parseInt((String)params.get("moduleId"));
+        }catch (NumberFormatException e){}
 
         String metric=params.get("metric")==null?null:(String)params.get("metric");
 
