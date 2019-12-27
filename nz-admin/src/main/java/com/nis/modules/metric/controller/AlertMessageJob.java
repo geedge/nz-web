@@ -108,11 +108,9 @@ public class AlertMessageJob extends QuartzJobBean {
             alertMessageDao.updateBatch(updateCacheKeys);
         }
 
-        for (String key : updateCacheKeys) {
-            cacheAlertMap.remove(key);
-        }
-
-        redisTemplate.delete(Constant.REDIS_KEY_ALERTMESSAGE);
-        opsForHash.putAll(Constant.REDIS_KEY_ALERTMESSAGE, cacheAlertMap);
+        String[] delKeys = new String[updateCacheKeys.size()];
+        updateCacheKeys.toArray(delKeys);
+        // 删除失效的key
+        opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, delKeys);
     }
 }
