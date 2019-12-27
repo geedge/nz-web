@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * 
  * 
@@ -18,5 +20,6 @@ import org.apache.ibatis.annotations.Param;
 public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
 	IPage<AlertMessageEntity> list(IPage<AlertMessageEntity> page, @Param("am") AlertMessageEntity object);
-	
+
+	void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
 }

@@ -47,4 +47,11 @@
 		</if>
 	</select>
 
+	<update id="updateBatch">
+		 UPDATE alert_message am SET am.state = 2
+		 WHERE am.hash_key IN
+		<foreach collection="hashKeys" item="hashKey" index="no" open="(" separator="," close=")">
+			#{hashKey}
+		</foreach>
+	</update>
 </mapper>

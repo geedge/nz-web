@@ -115,7 +115,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      * 资产类型有效性校验
      */
     public void checkAssetVendorAndTypeExist(Model model) {
-        Map<String, Object> map = new HashMap<>(1);
+        Map<String, Object> map = new HashMap<>(2);
         map.put("type", Constant.DICT_ASSET_MODEL_TYPE); // 字典表中资产型号类型type值 assetType
 
         List<SysDictEntity> assetTypes = sysDictService.queryList(map);

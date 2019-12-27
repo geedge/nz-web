@@ -1,5 +1,6 @@
 package com.nis.modules.metric.config;
 
+import com.nis.modules.metric.controller.AlertMessageJob;
 import com.nis.modules.metric.controller.MetricJob;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,29 +14,48 @@ public class MetricJobConfig {
     @Value("${nezha.metricJobCron}")
     private String metricJobCron;
 
-    /**
-     * 使用jobDetail包装job
-     *
-     * @return
-     */
-    @Bean
-    public JobDetail myCronJobDetail() {
-        return JobBuilder.newJob(MetricJob.class).withIdentity("metricJob").storeDurably().build();
-    }
+    // alert message 状态同步频率 配置文件获取
+    @Value("${nezha.alertMessageJobCron}")
+    private String alertMessageJobCron;
+
 
     /**
-     * 把jobDetail注册到Cron表达式的trigger上去
+     * metric 同步
      *
      * @return
      */
     @Bean
-    public Trigger CronJobTrigger() {
-        // 定义 cron 表达式
+    public JobDetail metricCronJobDetail() {
+        return JobBuilder.newJob(MetricJob.class).storeDurably().build();
+    }
+
+    @Bean
+    public Trigger metricCronJobTrigger() {
         CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(metricJobCron);// 0 0 0/1 * * ? * 一小时执行一次
 
         return TriggerBuilder.newTrigger()
-                .forJob(myCronJobDetail())
-                .withIdentity("metricJobTrigger", "group1")
+                .forJob(metricCronJobDetail())
+                .withSchedule(cronScheduleBuilder)
+                .build();
+    }
+
+
+    /**
+     * alert message 同步
+     *
+     * @return
+     */
+    @Bean
+    public JobDetail alertMessageCronJobDetail() {
+        return JobBuilder.newJob(AlertMessageJob.class).withIdentity("alertJob").storeDurably().build();
+    }
+
+    @Bean
+    public Trigger AlertCronJobTrigger() {
+        CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(alertMessageJobCron);
+
+        return TriggerBuilder.newTrigger()
+                .forJob(alertMessageCronJobDetail())
                 .withSchedule(cronScheduleBuilder)
                 .build();
     }

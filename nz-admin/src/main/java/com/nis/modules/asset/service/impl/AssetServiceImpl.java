@@ -150,7 +150,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 6. 状态有效性校验
         if (asset.getState() != null) {
-            Map<String, Object> map = new HashMap<>(1);
+            Map<String, Object> map = new HashMap<>(2);
 
             map.put("type", Constant.DICT_ASSET_STATE_TYPE); // 字典表中资产状态 type 值 assetState
             List<SysDictEntity> assetTypes = sysDictService.queryList(map);
