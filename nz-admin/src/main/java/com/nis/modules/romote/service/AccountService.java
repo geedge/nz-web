@@ -22,5 +22,5 @@ public interface AccountService extends IService<Account> {
 
     void saveOrUpdateAccount(Account account, MultipartFile file);
 
-    void delete(String ids);
+    void delete(Integer ... ids);
 }

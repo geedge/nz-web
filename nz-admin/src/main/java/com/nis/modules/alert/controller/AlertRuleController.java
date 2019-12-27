@@ -123,10 +123,9 @@ public class AlertRuleController {
      * 删除
      */
     @RequestMapping(value = "", method = RequestMethod.DELETE)
-    public R delete(String ids){
+    public R delete(@RequestParam Integer ... ids){
     	ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
-    	String[] split = ids.split(",");
-		alertRuleService.removeByIds(Arrays.asList(split));
+		alertRuleService.removeByIds(Arrays.asList(ids));
 
         return R.ok();
     }

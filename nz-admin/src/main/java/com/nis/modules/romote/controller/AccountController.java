@@ -101,8 +101,7 @@ public class AccountController {
     @DeleteMapping
     @ResponseBody
     @SysLog("delete accounts")
-    public R delete(@RequestParam String ids){
-        ValidateUtils.is(ids).notNull(RCode.ACCOUNT_ID_ISNULL);
+    public R delete(@RequestParam Integer ... ids){
         accountService.delete(ids);
         return R.ok();
     }

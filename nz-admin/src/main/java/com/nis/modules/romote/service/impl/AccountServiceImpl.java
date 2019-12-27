@@ -54,10 +54,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.crypto.BadPaddingException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.nis.modules.romote.util.CommonUtils.notEmpty;
 
@@ -196,18 +193,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
     }
 
     @Override
-    public void delete(String ids) {
-        String[] idArr=ids.split(",");
-        List<Integer> delIds=new ArrayList<Integer>();
-        for (String id : idArr){
-            try{
-               delIds.add(Integer.parseInt(id));
-            }catch(NumberFormatException e){
-                throw new NZException(RCode.ACCOUNT_ID_INVALIDE);
-            }
-        }
+    public void delete(Integer ... ids) {
 
-        this.removeByIds(delIds);
+        this.removeByIds(Arrays.asList(ids));
     }
 
     @Override
