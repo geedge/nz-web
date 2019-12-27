@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -19,7 +20,6 @@ import java.util.List;
 @Mapper
 public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
-	IPage<AlertMessageEntity> list(IPage<AlertMessageEntity> page, @Param("am") AlertMessageEntity object);
-
-	void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
+    void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
+    List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 }

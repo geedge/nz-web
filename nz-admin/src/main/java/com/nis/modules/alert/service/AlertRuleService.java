@@ -26,8 +26,11 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	 */
 	boolean checkName(AlertRuleEntity queryParam);
 	
-	List<AlertNameMapUserDTO> queryUserByAlertName(Set<String> alertNames);
 
 	void validateTypeLink(Integer type, Integer linkId);
+
+	List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds);
+
+
 }
 

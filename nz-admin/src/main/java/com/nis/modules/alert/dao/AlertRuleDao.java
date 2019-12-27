@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 
@@ -19,6 +20,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
 
-	List<AlertNameMapUserDTO> queryUserByAlertName(Set<String> alertNames);
-	
+	List<AlertNameMapUserDTO> queryUserByRuleIds(@Param("ruleIds")Set<Integer> ruleIds);
+
+    List<Integer> queryIdsByAlertName(@Param("alertName")String alertName);
 }

@@ -44,7 +44,7 @@ public class AlertMessageController {
     /**
      * 列表
      */
-    @RequestMapping(value = "", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.GET)
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page;
 		try {
@@ -59,7 +59,7 @@ public class AlertMessageController {
     /**
      * 修改
      */
-    @RequestMapping(value = "", method = RequestMethod.PUT)
+    @RequestMapping( method = RequestMethod.PUT)
     public R update(@RequestBody AlertMessageEntity alertMessage) {
     	ValidateUtils.is(alertMessage.getIds()).notNull(RCode.ALERTMSG_IDS_ISNULL)
     					.and(alertMessage.getState()).notNull(RCode.ALERTMSG_STATE_ISNULL);
@@ -75,7 +75,7 @@ public class AlertMessageController {
     /**
      * 删除
      */
-    @RequestMapping(value = "", method = RequestMethod.DELETE)
+    @RequestMapping( method = RequestMethod.DELETE)
     public R delete(String ids) {
     	ValidateUtils.is(ids).notNull();
     	String[] split = ids.split(",");

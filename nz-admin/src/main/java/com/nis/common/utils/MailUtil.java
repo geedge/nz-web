@@ -14,12 +14,14 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MailUtil {
-	
+	private Logger logger = LoggerFactory.getLogger(MailUtil.class);
 	@Value("${spring.mail.protocol}")
 	private String protocol; // SMTP服务器
 	@Value("${spring.mail.host}")
@@ -91,7 +93,7 @@ public class MailUtil {
 			transport.sendMessage(message, message.getAllRecipients());
 			transport.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("send to {} subject {} from {} faild with exception ",to.toString(),from,subject,e);
 		}
 	}
 }

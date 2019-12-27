@@ -53,6 +53,7 @@ public enum RCode {
 	ALERTMSG_STATE_ISNULL(202001, "State is required"), //告警信息state不能为空
 	ALERTMSG_STATE_INCORRECT(202002, "State is incorrect"), //告警信息state不合法
 	ALERTMSG_PARSE_ERROR(202003, "Data parse error"), //告警信息解析失败
+	ALERTMSG_SAVE_ERROR(202004, "Data save faild"), //告警信息解析失败
 
 	ACCOUNT_AUTHTYPE_ISNULL(301001,"Authentication type cannot be empty"),
 	ACCOUNT_AUTHTYPE_INVALIDE(301002,"Invalid authentication type"),

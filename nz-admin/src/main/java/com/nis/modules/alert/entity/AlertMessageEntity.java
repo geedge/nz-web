@@ -32,9 +32,9 @@ public class AlertMessageEntity implements Serializable {
 	@TableField(exist = false)
 	private String ids;
 	/**
-	 * 告警名
+	 * 告警规则id
 	 */
-	private String alertName;
+	private Integer ruleId;
 	/**
 	 * 告警类型
 	 * */
@@ -82,9 +82,17 @@ public class AlertMessageEntity implements Serializable {
 	private Integer state;
 
 	/**
+	 * redis hash key
+	 * */
+	private String hashKey;
+
+	/**
 	 * linkId对应实体类
 	 * */
 	@TableField(exist = false)
 	private Object linkObject;
+
+	@TableField(exist = false)
+	private AlertRuleEntity alertRule;
 
 }

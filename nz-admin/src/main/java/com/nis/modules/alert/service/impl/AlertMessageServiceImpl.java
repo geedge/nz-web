@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.exception.NZException;
@@ -9,9 +10,15 @@ import com.nis.modules.project.service.ProjectService;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.StringRedisConnection;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -19,12 +26,7 @@ import org.springframework.util.DigestUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -40,10 +42,12 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.entity.SysUserEntity;
 
+import javax.mail.SendFailedException;
+
 
 @Service("alertMessageService")
 public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertMessageEntity> implements AlertMessageService {
-
+	private Logger logger= LoggerFactory.getLogger(AlertMessageServiceImpl.class);
 	@Value("${spring.mail.open}")
 	private Integer sendEmail; //0不通知，1通知  默认通知
 	@Autowired
@@ -76,27 +80,22 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		} catch (ParseException e) {}
 
     	Integer searchId=resolveParamToInteger(params,"id");
+    	params.put("id",searchId);
 
     	Integer searchType=resolveParamToInteger(params,"type");
+		params.put("type",searchType);
 
     	Integer searchLinkId=resolveParamToInteger(params,"linkId");
+		params.put("linkId",searchLinkId);
 
     	Integer searchState=resolveParamToInteger(params,"state");
+		params.put("state",searchState);
 
-		QueryWrapper<AlertMessageEntity> amQueryWrapper = new QueryWrapper<>();
-    	amQueryWrapper.eq(searchId!=null,"id",searchId);
-    	amQueryWrapper.eq(searchState!=null,"state",searchState);
-    	amQueryWrapper.like(StringUtils.isNotBlank((String)params.get("alertName")),"alert_name",(String)params.get("alertName"));
-    	amQueryWrapper.eq(searchType!=null,"type",searchType);
-    	amQueryWrapper.eq(searchType!=null&&searchLinkId!=null,"link_id",searchLinkId);
-    	amQueryWrapper.like(StringUtils.isNotBlank((String)params.get("host")),"host",(String)params.get("host"));
-    	amQueryWrapper.eq(StringUtils.isNotBlank((String)params.get("severity")),"severity",(String)params.get("severity"));
+		IPage<AlertMessageEntity> page=this.page(new Query<AlertMessageEntity>().getPage(params));
 
-    	IPage<AlertMessageEntity> page=this.page(new Query<AlertMessageEntity>().getPage(params),amQueryWrapper);
+		List<AlertMessageEntity> alertMessages=this.baseMapper.list(page,params);
 
-		List<AlertMessageEntity> records = page.getRecords();
-
-		for (AlertMessageEntity am:records){
+		for (AlertMessageEntity am:alertMessages){
 			if(am.getType()!=null){
 				IService service=getServiceImpl(am.getType());
 				Object linkObject = service.getById(am.getLinkId());
@@ -104,46 +103,45 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				am.setLinkObject(linkObject);
 			}
 		}
+		page.setRecords(alertMessages);
 
-
-//		AlertMessageEntity queryEntity = new AlertMessageEntity();
-//    	BeanUtils.populate(queryEntity, params);
-    	
-//    	IPage<AlertMessageEntity> page = baseMapper.list(new Query<AlertMessageEntity>().getPage(params), queryEntity);
-    	
         return new PageUtils(page);
     }
 
     @Override
-    public void saveBatch(AlertMessageReceiveDTO[] receiveData) throws Exception {
+    public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
+    	logger.info("receive promethues alert message {}",receiveData==null?null:Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
-    	Set<String> alertNames = new HashSet<>();
-    	
-    	for (AlertMessageReceiveDTO dto : receiveData) {
-    		//取出labels，计算hash，查询redis看是否有重复
-    		Map receiveLabels = dto.getLabels();
-    		String md5DigestAsHex = DigestUtils.md5DigestAsHex(gson.toJson(receiveLabels).getBytes());
-    		HashOperations<String, String, String> ops = redisTemplate.opsForHash();
-    		if (!StringUtils.isBlank(ops.get(Constant.REDIS_KEY_ALERTMESSAGE, md5DigestAsHex))) {
-    			continue; //重复则跳过
-    		} else {
-    			//存入redis
-    			ops.put(Constant.REDIS_KEY_ALERTMESSAGE, md5DigestAsHex, gson.toJson(receiveLabels));
-    			//转化为入库的实体类
-    			AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
-    			alertNames.add(entity.getAlertName());
-    			entities.add(entity);
-    		}
-    	}
+    	Set<Integer> ruleIds = new HashSet<>();
+		redisTemplate.executePipelined(new RedisCallback<Object>() {
+			@Override
+			public Object doInRedis(RedisConnection redis) throws DataAccessException {
+				for (AlertMessageReceiveDTO dto : receiveData) {
+					try{
+						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
+						ruleIds.add(entity.getRuleId());
+						entities.add(entity);
+						HashMap<String, Object> map = new HashMap<>();
+						map.put("id",entity.getRuleId());
+						map.put("time",new Date().getTime());
+						//存在更新时间，不存在set
+						redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(),entity.getHashKey().getBytes(),JSON.toJSONString(map).getBytes());
+					}catch (Exception e){
+						throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
+					}
+				}
+				return null;
+			}
+		});
+		logger.debug("数据格式化完成 : {}",entities.toString());
     	if (!CollectionUtils.isEmpty(entities)) {
 	    	this.saveBatch(entities);
-    	
 	    	//邮件通知
 	    	if (sendEmail == null || sendEmail == 1) {
-	    		List<AlertNameMapUserDTO> alertNameMapEmail = alertRuleService.queryUserByAlertName(alertNames);
+	    		List<AlertNameMapUserDTO> alertNameMapEmail = alertRuleService.queryUserByRuleId(ruleIds);
 	    		for (AlertMessageEntity entity : entities) {
 	        		for (AlertNameMapUserDTO dto : alertNameMapEmail) {
-	        			if (entity.getAlertName().equals(dto.getAlertName())) {
+	        			if (entity.getRuleId().intValue()==dto.getRuleId().intValue()) {
 	        				List<String> toSendEmails = new ArrayList<>();
 	        				List<SysUserEntity> users = dto.getUsers();
 	        				for (SysUserEntity user : users) {
@@ -151,9 +149,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	        						toSendEmails.add(user.getEmail());
 	        					}
 	        				}
-	        				//TODO 邮件内容/格式 待定
-	        				mailUtil.sendHTML(toSendEmails, entity.getSummary(), entity.getDescription());
-	        				break;
+							//TODO 邮件内容/格式 待定
+							mailUtil.sendHTML(toSendEmails, entity.getSummary(), entity.getDescription());
+
+							break;
 	        			}
 	        		}
 	        	}

@@ -94,12 +94,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 		return false;
 	}
 
-	@Override
-	public List<AlertNameMapUserDTO> queryUserByAlertName(Set<String> alertNames) {
-		List<AlertNameMapUserDTO> mapping = baseMapper.queryUserByAlertName(alertNames);
-		return mapping;
-	}
-
 	/**
 	 * 校验linkId关联的对象是否存在
 	 * */
@@ -111,6 +105,13 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 			throw new NZException(RCode.ALERTRULE_LINK_OBJECT_ISNULL);
 		}
 	}
+
+	@Override
+	public List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds) {
+		List<AlertNameMapUserDTO> results=this.baseMapper.queryUserByRuleIds(ruleIds);
+		return results;
+	}
+
 	/**
 	 * 根据type获取相应service
 	 * */
@@ -129,6 +130,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 		}
 		return null;
 	}
+
 
 
 }

@@ -11,8 +11,7 @@ import lombok.Data;
  */
 @Data
 public class AlertNameMapUserDTO {
-	private String alertName;
-	private Integer alertId;
+	private Integer ruleId;
 	private Integer receiver; //usergroupId
 	private List<SysUserEntity> users;
 }

@@ -18,28 +18,29 @@
     </resultMap>
     
     <resultMap type="com.nis.modules.alert.entity.AlertNameMapUserDTO" id="alertRuleMapUser">
-        <result property="alertId" column="id"/>
-        <result property="alertName" column="alert_name"/>
+        <result property="ruleId" column="ruleId"/>
         <result property="receiver" column="receiver"/>
         <collection property="users" ofType="com.nis.modules.sys.entity.SysUserEntity">
 	        <result property="email" column="email"/>
         </collection>
     </resultMap>
 
-	<select id="queryUserByAlertName" resultMap="alertRuleMapUser">
+	<select id="queryUserByRuleIds" resultMap="alertRuleMapUser">
 		SELECT 
-			a.id alertId,
-			a.alert_name,
+			a.id ruleId,
 			a.receiver,
 			u.email
 		FROM alert_rule a
 		LEFT JOIN user_group_rel ugr ON ugr.group_id=a.receiver
 		LEFT JOIN sys_user u ON ugr.user_id=u.user_id
 		WHERE 
-			a.alert_name in
-			<foreach item="item" collection="collection" separator="," open="(" close=")" index="">
-				#{item}
+			a.id in
+			<foreach item="ruleId" collection="ruleIds" separator="," open="(" close=")" index="">
+				#{ruleId}
 			</foreach>
 	</select>
-	
+
+    <select id="queryIdsByAlertName" resultType="integer">
+        select id from alert_rule where alert_name like concat('%',#{alertName},'%')
+    </select>
 </mapper>
