@@ -5,7 +5,8 @@ import com.nis.common.utils.Constant;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.romote.util.StringUtils;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -36,10 +37,14 @@ public class AlertMessageJob extends QuartzJobBean {
     @Autowired
     private AlertMessageDao alertMessageDao;
 
+    @Autowired
+    private SysDictService sysDictService;
+
     private static Gson gson = new Gson();
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+
         // 1. 从 redis 中获取缓存信息
         HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
         Map<String, String> cacheAlertMap = opsForHash.entries(Constant.REDIS_KEY_ALERTMESSAGE);
@@ -52,14 +57,24 @@ public class AlertMessageJob extends QuartzJobBean {
             alertRuleIdAndLast.put(ruleEntity.getId(), ruleEntity.getLast());
         }
 
-        Map<String, String> cacheAlert = new HashMap<>();
+        Map<String, Double> cacheAlert = new HashMap<>();
         Integer cacheAlertId = null;
-        String cacheEndTime = null;
+        Long cacheEndTime = null;
 
-        // 当前时间 和 缓存中记录的最后时间
-        long currentTimeMillis, endTimeMillis = 0;
-        // 缓存hashmap 中的 key value ,value实体中的id
-        String hashKey, value, id = null;
+        // 当前时间
+        long currentTimeMillis = 0;
+        // 缓存hashmap 中的 key value
+        String hashKey, value = null;
+
+        // 默认 alertInterval 为15s
+        Integer alertInterval = 15;
+        Map<String, Object> map = new HashMap<>(2);
+        map.put("type", Constant.DICT_ALERTINTERVAL_TYPE);
+
+        List<SysDictEntity> sysDictEntities = sysDictService.queryList(map);
+        if (CollectionUtils.isNotEmpty(sysDictEntities)) {
+            alertInterval = Integer.valueOf(sysDictEntities.get(0).getValue());
+        }
 
         // 循环比对
         List<String> updateCacheKeys = new ArrayList<>();
@@ -70,16 +85,8 @@ public class AlertMessageJob extends QuartzJobBean {
 
             // 缓存中的实体
             cacheAlert = gson.fromJson(value, Map.class);
-            id = cacheAlert.get("id");
-            cacheEndTime = cacheAlert.get("time");
-            cacheAlertId = StringUtils.isNotEmpty(id) ? Integer.valueOf(id) : null;
-
-            // 时间为空 暂时不比对
-            if (StringUtils.isEmpty(cacheEndTime)) {
-                // TO DO
-                continue;
-            }
-            endTimeMillis = Long.valueOf(cacheEndTime);
+            cacheAlertId = cacheAlert.get("id").intValue();
+            cacheEndTime = cacheAlert.get("time").longValue();
 
             // 数据库存储持续时间为 秒
             Integer last = alertRuleIdAndLast.get(cacheAlertId);
@@ -88,7 +95,7 @@ public class AlertMessageJob extends QuartzJobBean {
                 currentTimeMillis = System.currentTimeMillis();
 
                 // 当前时间 - 结束时间 大于等于 持续时间 证明已经失效
-                if (currentTimeMillis > endTimeMillis && (currentTimeMillis - endTimeMillis) / 1000 >= last) {
+                if (currentTimeMillis > cacheEndTime && (currentTimeMillis - cacheEndTime) / 1000 - last - alertInterval > 0) {
                     updateCacheKeys.add(hashKey);
                 }
             } else {

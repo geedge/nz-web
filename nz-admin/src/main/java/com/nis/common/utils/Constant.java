@@ -343,6 +343,9 @@ public class Constant {
     // 字典表中 account 认证类型的 type 值
     public static final String DICT_EXPRESSION_TYPE = "exprType";
 
+    // 字典表中 告警周期 类型的 type 值
+    public static final String DICT_ALERTINTERVAL_TYPE = "alertInterval";
+
     // 目前机柜最大值限制
     public static final Integer CURRENT_CABINET_MAXU= 47;
 
