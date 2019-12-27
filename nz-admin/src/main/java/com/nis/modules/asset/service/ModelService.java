@@ -18,7 +18,7 @@ public interface ModelService extends IService<Model> {
 
     void saveOrUpdateModel(Model model);
 
-    void delete(String ids);
+    void delete(Integer ... ids);
 
     boolean checkName(Integer id, String name);
 }

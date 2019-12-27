@@ -18,7 +18,7 @@ import com.nis.modules.sys.service.SysDictService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,30 +65,24 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
     }
 
     @Override
-    public void delete(String ids) {
+    public void delete(Integer... ids) {
         // 1. 校验已存在资产是否关联型号
-        String[] idArr = ids.split(",");
-        List<Integer> delIds = new ArrayList<>();
+        for (Integer id : ids) {
+            if (id == null) {
+                continue;
+            }
 
-        for (String id : idArr) {
-            try {
-                delIds.add(Integer.parseInt(id));
+            int countModel = assetService.count(new QueryWrapper<Asset>().eq("model_id", id));
 
-                int countModel = assetService.count(new QueryWrapper<Asset>().eq("model_id", id));
-
-                if (countModel > 0) {
-                    Model model = this.getById(id);
-                    // 当前资产类型中关联着资产 不可删除
-                    throw new NZException(model.getName() + " related assets , not deletable", 502005);
-                }
-            } catch (NumberFormatException e) {
-                // ID转换异常
-                throw new NZException(RCode.ASSET_ID_FORMAT);
+            if (countModel > 0) {
+                Model model = this.getById(id);
+                // 当前资产类型中关联着资产 不可删除
+                throw new NZException(model.getName() + " related assets , not deletable", RCode.ASSET_MODELRELATED_ASSET.getCode());
             }
         }
 
         // 2. 删除
-        this.removeByIds(delIds);
+        this.removeByIds(Arrays.asList(ids));
     }
 
     /**

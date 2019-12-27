@@ -105,7 +105,7 @@ public class CabinetController {
      */
     @DeleteMapping
     @SysLog("delete cabinet")
-    public R delete(String ids) {
+    public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_CABINETID_ISNULL);
 
         cabinetService.delete(ids);

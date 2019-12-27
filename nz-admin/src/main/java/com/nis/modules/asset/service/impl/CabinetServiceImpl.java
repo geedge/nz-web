@@ -18,7 +18,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -70,30 +70,24 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     }
 
     @Override
-    public void delete(String ids) {
+    public void delete(Integer... ids) {
         // 1.校验是否关联资产  to do
-        String[] idArr = ids.split(",");
-        List<Integer> delIds = new ArrayList<>();
+        for (Integer id : ids) {
+            if(id == null){
+                continue;
+            }
 
-        for (String id : idArr) {
-            try {
-                delIds.add(Integer.parseInt(id));
-
-                int count = assetService.count(new QueryWrapper<Asset>().eq("cabinet_id", id));
-                if (count > 0) {
-                    // 机柜中有资产
-                    Cabinet cab = this.getById(id);
-                    //throw new NZException(RCode.IDC_CABINET_ASSETS_EXISTS);
-                    throw new NZException("There are assets in the " + cab.getName(), 402005);
-                }
-            } catch (NumberFormatException e) {
-                // ID转换异常
-                throw new NZException(RCode.IDC_ID_FORMAT);
+            int count = assetService.count(new QueryWrapper<Asset>().eq("cabinet_id", id));
+            if (count > 0) {
+                // 机柜中有资产
+                Cabinet cab = this.getById(id);
+                //throw new NZException(RCode.IDC_CABINET_ASSETS_EXISTS);
+                throw new NZException("There are assets in the " + cab.getName(), RCode.IDC_CABINET_ASSETS_EXISTS.getCode());
             }
         }
 
         // 2.删除
-        this.removeByIds(delIds);
+        this.removeByIds(Arrays.asList(ids));
     }
 
 

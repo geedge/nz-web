@@ -100,7 +100,7 @@ public class IdcController {
      */
     @DeleteMapping
     @SysLog("delete idc")
-    public R delete(String ids) {
+    public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
 
         idcService.delete(ids);

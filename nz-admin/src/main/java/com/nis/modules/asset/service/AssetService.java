@@ -24,7 +24,7 @@ public interface AssetService extends IService<Asset> {
 
     void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys);
 
-    void delete(String ids);
+    void delete(Integer ... ids);
 
     void validateAccount(Account account, MultipartFile file);
 }

@@ -89,7 +89,7 @@ public class ModelController {
      */
     @DeleteMapping
     @SysLog("delete model")
-    public R delete(String ids) {
+    public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
         modelService.delete(ids);

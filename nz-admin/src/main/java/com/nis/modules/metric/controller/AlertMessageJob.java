@@ -106,11 +106,11 @@ public class AlertMessageJob extends QuartzJobBean {
         // 3. 处理变化  1. 修改数据库alert_message 中的state 2. 更新缓存
         if (CollectionUtils.isNotEmpty(updateCacheKeys)) {
             alertMessageDao.updateBatch(updateCacheKeys);
-        }
 
-        String[] delKeys = new String[updateCacheKeys.size()];
-        updateCacheKeys.toArray(delKeys);
-        // 删除失效的key
-        opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, delKeys);
+            String[] delKeys = new String[updateCacheKeys.size()];
+            updateCacheKeys.toArray(delKeys);
+            // 删除失效的key
+            opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, delKeys);
+        }
     }
 }

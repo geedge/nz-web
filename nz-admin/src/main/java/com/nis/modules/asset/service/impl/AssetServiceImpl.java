@@ -82,7 +82,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             List<Integer> idcidList = new ArrayList<>();
             for (String id : idcIdsArr) {
                 try {
-                    idcidList.add(Integer.parseInt(id));
+                    if (id.length() > 0) {
+                        idcidList.add(Integer.parseInt(id));
+                    }
                 } catch (NumberFormatException e) {
                     // ID转换异常
                     throw new NZException(RCode.IDC_ID_FORMAT);
@@ -210,11 +212,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     accountService.save(account);
                 } else {
                     // 修改参数含有密码
-                    if(StringUtils.isNotEmpty(account.getPwd())){
+                    if (StringUtils.isNotEmpty(account.getPwd())) {
                         Account accountEntity = accountService.getById(account.getId());
                         // 前台传参密码和数据库存储密码不对应 证明修改了密码
-                        if(!account.getPwd().equals(accountEntity.getPwd())){
-                            String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                        if (!account.getPwd().equals(accountEntity.getPwd())) {
+                            String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
                             account.setPwd(encodePwd);
                         }
                     }
@@ -226,22 +228,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
-    public void delete(String ids) {
-        // 1.转换类型
-        String[] idArr = ids.split(",");
-        List<Integer> delIds = new ArrayList<>();
+    public void delete(Integer... ids) {
 
-        for (String id : idArr) {
-            try {
-                delIds.add(Integer.parseInt(id));
-            } catch (NumberFormatException e) {
-                // ID转换异常
-                throw new NZException(RCode.ASSET_ID_FORMAT);
-            }
-        }
-
-        // 2. 删除
-        this.removeByIds(delIds);
+        // 删除
+        this.removeByIds(Arrays.asList(ids));
     }
 
     @Override

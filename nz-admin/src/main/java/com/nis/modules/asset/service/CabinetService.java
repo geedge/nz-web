@@ -18,7 +18,7 @@ public interface CabinetService extends IService<Cabinet> {
 
     void saveOrUpdateCabinet(Cabinet cabinet);
 
-    void delete(String ids);
+    void delete(Integer ... ids);
 
     boolean cabinetNameCheck(Integer id, String name, Integer idcId);
 }
