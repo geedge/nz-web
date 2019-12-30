@@ -69,6 +69,7 @@ nezha:
     series: /api/v1/series
     labels: /api/v1/labels
     label: ^/api/v1/label/.+/values$
+    metadata: /api/v1/targets/metadata
   metricJobCron: 0 0 0/1 * * ? *  # metricJobCron同步程序采集频率 0 0 0/1 * * ? * 一小时执行一次 测试使用10s
   alertMessageJobCron: 0 0/1 * * * ? *   # 告警同步程序采集频率 1分钟执行一次  0/10 * * * * ?
 

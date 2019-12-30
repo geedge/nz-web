@@ -99,6 +99,17 @@ public class Constant {
      * redis告警信息的key
      */
     public static final String REDIS_KEY_ALERTMESSAGE = "ALERT_MESSAGE";
+
+    /**
+     * redis metric集合的key
+     */
+    public static final String REDIS_KEY_METRICS = "cacheMetricList";
+
+    /**
+     *redis metric labels的key
+     */
+    public static final String REDIS_KEY_METRICLABELS = "cacheMetricLabels";
+
     /**
      * 临时目录 
      */
@@ -348,5 +359,11 @@ public class Constant {
 
     // 目前机柜最大值限制
     public static final Integer CURRENT_CABINET_MAXU= 47;
+
+    // 默认告警间隔为15s
+    public static final Integer ALERT_INTERVAL = 15;
+
+    // ip 校验正则
+    public static final String REGEX_IP = "(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)";
 
 }

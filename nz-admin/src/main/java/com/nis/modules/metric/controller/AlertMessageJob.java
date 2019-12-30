@@ -67,7 +67,7 @@ public class AlertMessageJob extends QuartzJobBean {
         String hashKey, value = null;
 
         // 默认 alertInterval 为15s
-        Integer alertInterval = 15;
+        Integer alertInterval = Constant.ALERT_INTERVAL;
         Map<String, Object> map = new HashMap<>(2);
         map.put("type", Constant.DICT_ALERTINTERVAL_TYPE);
 

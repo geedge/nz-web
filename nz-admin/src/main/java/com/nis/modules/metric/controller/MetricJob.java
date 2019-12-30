@@ -3,6 +3,7 @@ package com.nis.modules.metric.controller;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.modules.endpoint.dao.MetadataLabelDao;
 import com.nis.modules.endpoint.dao.MetadataMetricDao;
@@ -16,12 +17,14 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import com.nis.modules.romote.util.DigestUtils;
+import com.nis.modules.romote.util.StringUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.quartz.QuartzJobBean;
@@ -65,14 +68,11 @@ public class MetricJob extends QuartzJobBean {
     /**
      * api 方法
      */
-    private final String API_TARGETS_METADATA = "/api/v1/targets/metadata";
-    private final String API_SERIES = "/api/v1/series";
+    @Value("${nezha.promApis.metadata}")
+    private String apiMetadata = "/api/v1/targets/metadata";
 
-    /**
-     * redis 中存的key名称
-     */
-    private final String CACHE_METRIC = "cacheMetricList";
-    private final String CACHE_METRIC_LABEL = "cacheMetricLabels";
+    @Value("${nezha.promApis.series}")
+    private String apiSeries = "/api/v1/series";
 
     /**
      * metric元数据周期同步方法
@@ -86,19 +86,19 @@ public class MetricJob extends QuartzJobBean {
 
         // 缓存中的 metric 集合
         List<MetadataMetric> cacheMetricList = new ArrayList<>();
-        Object cacheMetricObject = valueOperations.get(CACHE_METRIC);
+        Object cacheMetricObject = valueOperations.get(Constant.REDIS_KEY_METRICS);
         if (cacheMetricObject == null) {
             // 数据库获取
             cacheMetricList = metadataMetricService.list();
             // 放回
-            valueOperations.set(CACHE_METRIC, JSONArray.toJSONString(cacheMetricList));
+            valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(cacheMetricList));
         } else {
             cacheMetricList = JSONObject.parseArray(String.valueOf(cacheMetricObject), MetadataMetric.class);
         }
 
         // 缓存中的 labels 值
         Map<String, List<MetadataLabel>> cacheLabels = new HashMap<>();
-        Object cacheMetricLabels = valueOperations.get(CACHE_METRIC_LABEL);
+        Object cacheMetricLabels = valueOperations.get(Constant.REDIS_KEY_METRICLABELS);
         if (cacheMetricLabels == null) {
             // 数据库获取
             List<MetadataMetric> labelsWithMetric = metadataMetricDao.getLabelsWithMetric();
@@ -106,7 +106,7 @@ public class MetricJob extends QuartzJobBean {
                 cacheLabels.put(metric.getMetric(), metric.getLabels());
             }
             // 放回
-            valueOperations.set(CACHE_METRIC_LABEL, JSONArray.toJSONString(cacheLabels));
+            valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
         } else {
             cacheLabels = JSONObject.parseObject(String.valueOf(cacheMetricLabels), Map.class);
         }
@@ -123,11 +123,17 @@ public class MetricJob extends QuartzJobBean {
         List<Module> moduleList = moduleService.list();
 
         // 请求 api 的参数
-        Map<String, String> matchTarget = new HashMap<>();
-        Map<String, Object> params = new HashMap<>();
-        Map<String, Object> matchParam = new HashMap<>();
+        Map<String, String> matchTarget = new HashMap<>(2);
+        Map<String, Object> params = new HashMap<>(2);
+        Map<String, Object> matchParam = new HashMap<>(2);
+        String host = null;
 
         for (Promserver promserver : promservers) {
+            host = promserver.getHost();
+            if (StringUtils.isEmpty(host) || !host.matches(Constant.REGEX_IP)) {
+                logger.error("ip format error {}", host);
+                continue;
+            }
             /*// 请求获取所有的 metric
             Map responseMetrics = promserverProxyService.requestPromAPI("http://" + promserver.getHost() + ":" + promserver.getPort() + "/api/v1/label/__name__/values");
             if (responseMetrics == null || responseMetrics.get("error") != null) {
@@ -145,7 +151,7 @@ public class MetricJob extends QuartzJobBean {
                 matchTargetStr = matchTargetStr.replaceAll("\"(\\w+)\"(\\s*:\\s*)", "$1$2").replaceAll(":\"", "=\"");
 
                 params.put("match_target", DigestUtils.urlEncode(matchTargetStr));
-                String metadataUrl = this.buildUrl(promserver.getHost(), promserver.getPort(), API_TARGETS_METADATA, params);
+                String metadataUrl = this.buildUrl(host, promserver.getPort(), apiMetadata, params);
 
                 // 请求接口
                 Map result = promserverProxyService.requestPromAPI(metadataUrl);
@@ -202,7 +208,7 @@ public class MetricJob extends QuartzJobBean {
             List<MetadataMetric> metricList = metadataMetricService.list();
 
             // 更新缓存数据
-            valueOperations.set(CACHE_METRIC, JSONArray.toJSONString(metricList));
+            valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(metricList));
 
             for (MetadataMetric metric : metricList) {
                 // 存放的为 metricName  metricId
@@ -215,7 +221,7 @@ public class MetricJob extends QuartzJobBean {
                 String metricName = metric.getMetric();
 
                 matchParam.put("match[]", metricName);
-                String seriesUrl = this.buildUrl(promserver.getHost(), promserver.getPort(), API_SERIES, matchParam);
+                String seriesUrl = this.buildUrl(host, promserver.getPort(), apiSeries, matchParam);
 
                 // 请求API 获取结果
                 Map result = promserverProxyService.requestPromAPI(seriesUrl);
@@ -277,7 +283,7 @@ public class MetricJob extends QuartzJobBean {
                 metadataLabels.addAll(lablesByMetric);
             }
             // 更新缓存
-            valueOperations.set(CACHE_METRIC_LABEL, JSONArray.toJSONString(cacheLabels));
+            valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
 
             // 保存 labels 数据
             if (CollectionUtils.isNotEmpty(metadataLabels)) {
