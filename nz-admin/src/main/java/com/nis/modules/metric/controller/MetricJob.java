@@ -69,10 +69,10 @@ public class MetricJob extends QuartzJobBean {
      * api 方法
      */
     @Value("${nezha.promApis.metadata}")
-    private String apiMetadata = "/api/v1/targets/metadata";
+    private String apiMetadata;
 
     @Value("${nezha.promApis.series}")
-    private String apiSeries = "/api/v1/series";
+    private String apiSeries;
 
     /**
      * metric元数据周期同步方法
