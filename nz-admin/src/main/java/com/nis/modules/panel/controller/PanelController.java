@@ -71,7 +71,9 @@ public class PanelController {
     @GetMapping(value={"/{id}/charts"})
     public R chartList(@PathVariable("id") Integer panelId, @RequestParam(value="id",required = false) Integer id,@RequestParam(value="title",required = false)String title){
         List<Chart> charts=chartService.queryCharts(panelId,id,title);
-        return R.ok(charts);
+        Map<String,List<Chart>> map=new HashMap<String,List<Chart>>();
+        map.put("list",charts);
+        return R.ok(map);
     }
 
     @PostMapping("/{id}/charts")
