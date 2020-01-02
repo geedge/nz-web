@@ -9,5 +9,6 @@ import java.util.Map;
 public interface MetadataLabelService extends IService<MetadataLabel> {
     List<Integer> queryMetricIds(String name,String value);
 
-    List<Map<String, String>> queryLabels(String metric, String name);
+
+    List<Map<String, String>> queryLabels(String metric, String name, String field);
 }

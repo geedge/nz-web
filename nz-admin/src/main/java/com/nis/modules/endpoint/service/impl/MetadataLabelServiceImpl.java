@@ -22,8 +22,11 @@ public class MetadataLabelServiceImpl extends ServiceImpl<MetadataLabelDao, Meta
         return this.baseMapper.queryMetricIds(name,value);
     }
 
+    /**
+     * field: name value all
+     * */
     @Override
-    public List<Map<String, String>> queryLabels(String metric, String name) {
+    public List<Map<String, String>> queryLabels(String metric, String name,String field) {
 
 //        List<Integer> metricIds=metricService.queryIdsByMetric(metric);
 
@@ -38,7 +41,7 @@ public class MetadataLabelServiceImpl extends ServiceImpl<MetadataLabelDao, Meta
         labelQueryWrapper.like(StringUtils.isNotBlank(name),"name",name);
 
 //        List<Map<String,String>> list = this.baseMapper.queryLabelNamesByMetricIds(metricIds,name);
-        List<Map<String,String>> list = this.baseMapper.queryLabelNamesByMetricId(metricId,name);
+        List<Map<String,String>> list = this.baseMapper.queryLabelNamesByMetricId(metricId,name,field);
 
 
         return list;

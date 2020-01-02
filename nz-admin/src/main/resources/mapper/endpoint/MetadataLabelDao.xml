@@ -18,7 +18,20 @@
     </select>
     <select id="queryLabelNamesByMetricId" resultType="java.util.Map">
 
-        select `name`,`value` from `metadata_label` where `metric_id` =#{metricId}
+        select
+        <if test="field != null and field != '' and (field == 'all' or field == 'name')">
+            `name`
+        </if>
+
+        <if test="field != null and field != '' and field == 'all'">
+            ,
+        </if>
+
+        <if test="field != null and field != '' and (field == 'all' or field == 'value')">
+            `value`
+        </if>
+
+        from `metadata_label` where `metric_id` =#{metricId}
         <if test="name != null and name != ''">
             and `name` like concat('%',#{name},'%')
         </if>

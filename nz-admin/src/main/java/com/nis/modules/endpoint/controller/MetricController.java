@@ -35,7 +35,7 @@ public class MetricController {
     @ResponseBody
     public R queryLabelNames(@RequestParam(value = "metric")String metric,@RequestParam(value = "name",required = false) String name){
 
-        List<Map<String,String>> list=labelService.queryLabels(metric,name);
+        List<Map<String,String>> list=labelService.queryLabels(metric,name,"name");
 
         return R.ok(list);
     }
@@ -44,7 +44,7 @@ public class MetricController {
     @ResponseBody
     public R queryLabelValues(@RequestParam(value = "metric")String metric,@RequestParam(value = "name") String name){
 
-        List<Map<String,String>> list=labelService.queryLabels(metric,name);
+        List<Map<String,String>> list=labelService.queryLabels(metric,name,"value");
 
         return R.ok(list);
     }
