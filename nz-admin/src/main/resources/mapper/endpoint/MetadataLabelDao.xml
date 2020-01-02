@@ -19,15 +19,10 @@
     <select id="queryLabelNamesByMetricId" resultType="java.util.Map">
 
         select
-        <if test="field != null and field != '' and (field == 'all' or field == 'name')">
+        <if test="field != null and field != '' and field == 'name'">
             `name`
         </if>
-
-        <if test="field != null and field != '' and field == 'all'">
-            ,
-        </if>
-
-        <if test="field != null and field != '' and (field == 'all' or field == 'value')">
+        <if test="field != null and field != '' and field == 'value'">
             `value`
         </if>
 
@@ -35,6 +30,10 @@
         <if test="name != null and name != ''">
             and `name` like concat('%',#{name},'%')
         </if>
+        <if test="field != null and field != '' and field == 'name'">
+            group by `name`
+        </if>
+
     </select>
 
     <delete id="deleteByMetricIds">
