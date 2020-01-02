@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -41,6 +42,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Override
     public void saveChart(Chart chart) {
+        chart.setCreateAt(new Date());
         this.save(chart);
         for (ChartElement element:chart.getElements()){
             element.setChartId(chart.getId());
