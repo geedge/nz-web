@@ -21,9 +21,9 @@
 
 
     <select id="getLabelsWithMetric" resultMap="metricWithLabels">
-        SELECT  metric.metric,metric.id,label.name,label.value
+        SELECT  metric.metric,metric.id AS metric_id,label.name,label.value
         FROM metadata_metric metric
-        LEFT JOIN metadata_label label on metric.id = label.metric_id
+        LEFT JOIN metadata_label label ON metric.id = label.metric_id
     </select>
 
     <select id="queryMetricList" resultType="com.nis.modules.endpoint.entity.MetadataMetric">

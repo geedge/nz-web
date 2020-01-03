@@ -1,5 +1,6 @@
 package com.nis.modules.metric.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -91,7 +92,9 @@ public class MetricJob extends QuartzJobBean {
             // 数据库获取
             cacheMetricList = metadataMetricService.list();
             // 放回
-            valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(cacheMetricList));
+            if (CollectionUtils.isNotEmpty(cacheMetricList)) {
+                valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(cacheMetricList));
+            }
         } else {
             cacheMetricList = JSONObject.parseArray(String.valueOf(cacheMetricObject), MetadataMetric.class);
         }
@@ -106,7 +109,9 @@ public class MetricJob extends QuartzJobBean {
                 cacheLabels.put(metric.getMetric(), metric.getLabels());
             }
             // 放回
-            valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
+            if (cacheLabels != null && cacheLabels.size() > 0) {
+                valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
+            }
         } else {
             cacheLabels = JSONObject.parseObject(String.valueOf(cacheMetricLabels), Map.class);
         }
@@ -207,8 +212,10 @@ public class MetricJob extends QuartzJobBean {
             Map<String, Integer> metricNameAndId = new HashMap<>();
             List<MetadataMetric> metricList = metadataMetricService.list();
 
-            // 更新缓存数据
-            valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(metricList));
+            if (CollectionUtils.isNotEmpty(metricList)) {
+                // 更新缓存数据
+                valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(metricList));
+            }
 
             for (MetadataMetric metric : metricList) {
                 // 存放的为 metricName  metricId
@@ -252,9 +259,10 @@ public class MetricJob extends QuartzJobBean {
                         }
 
                         // 缓存处理 缓存中有当前 metric 的 labels集合
-                        if (cacheLabels != null && cacheLabels.get(metricName) != null) {
+                        if (cacheLabels != null && CollectionUtils.isNotEmpty(cacheLabels.get(metricName))) {
                             // 缓存中的当前 metric 关联的 label集合
-                            List<MetadataLabel> labels = JSONObject.parseArray(String.valueOf(cacheLabels.get(metricName)), MetadataLabel.class);
+                            List<MetadataLabel> labels = new ArrayList<>();
+                            labels = JSONObject.parseArray(JSON.toJSONString(cacheLabels.get(metricName)), MetadataLabel.class);
                             // 这次查询的标签集合
                             for (Map.Entry<String, Object> entry : set) {
                                 if (metricNameAndId.get(metricName) != null) {
@@ -282,8 +290,11 @@ public class MetricJob extends QuartzJobBean {
                 // 将查询到结果集合汇总
                 metadataLabels.addAll(lablesByMetric);
             }
-            // 更新缓存
-            valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
+
+            if (cacheLabels != null && cacheLabels.size() > 0) {
+                // 更新缓存
+                valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
+            }
 
             // 保存 labels 数据
             if (CollectionUtils.isNotEmpty(metadataLabels)) {
