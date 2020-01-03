@@ -9,6 +9,8 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
@@ -18,6 +20,8 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.romote.service.AccountService;
 import com.nis.modules.romote.util.StringUtils;
@@ -29,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -66,6 +71,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private EndpointService endpointService;
+
+    @Autowired
+    private AlertRuleService alertRuleService;
+
+    @Autowired
+    private AlertMessageService alertMessageService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -112,6 +126,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys) {
         // 1. sn 唯一校验
         if (!this.checkFieldExist(asset.getId(), "sn", asset.getSn())) {
@@ -228,10 +243,19 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
+        List<Integer> idList = Arrays.asList(ids);
 
-        // 删除
-        this.removeByIds(Arrays.asList(ids));
+        // 1. 删除
+        this.removeByIds(idList);
+
+        // 2. 删除关联的endponiet
+        endpointService.remove(new QueryWrapper<Endpoint>().in("asset_id", idList));
+
+        // 3. 删除关联的alert信息
+        alertRuleService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
+        alertMessageService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
     }
 
     @Override
