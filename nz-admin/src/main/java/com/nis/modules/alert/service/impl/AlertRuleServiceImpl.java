@@ -9,6 +9,7 @@ import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	private ModuleService moduleService;
 	@Autowired
 	private ProjectService projectService;
-
+	@Autowired
+	private AlertRuleDao alertRuleDao;
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
     	Integer searchId = null;
@@ -129,6 +132,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 				return assetService;
 		}
 		return null;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByTypeIds(Integer typeId, List ids) {
+		alertRuleDao.deleteByTypeIds(typeId,ids);
 	}
 
 

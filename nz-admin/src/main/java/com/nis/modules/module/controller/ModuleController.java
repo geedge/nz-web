@@ -57,7 +57,8 @@ public class ModuleController extends AbstractController {
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
 		String[] split = ids.split(",");
-		moduleService.removeByIds(Arrays.asList(split));
+		moduleService.removeHandle(Arrays.asList(split));
+//		moduleService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }

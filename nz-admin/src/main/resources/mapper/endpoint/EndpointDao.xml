@@ -69,4 +69,10 @@
        </if>
     </select>
 
+	<delete id="deleteByModuleIds">
+		delete from endpoint where module_id in 
+		<foreach item="moduleId" collection="moduleIds" separator="," open="(" close=")" index="">
+			#{moduleId}
+		</foreach>
+	</delete>
 </mapper>

@@ -6,6 +6,7 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,5 +23,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	boolean updateByIds(AlertMessageEntity alertMessage);
 
 	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
+	
+	void removeByTypeIds(Integer typeId,List ids);
 }
 

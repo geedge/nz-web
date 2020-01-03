@@ -23,4 +23,6 @@ public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
 	List<AlertNameMapUserDTO> queryUserByRuleIds(@Param("ruleIds")Set<Integer> ruleIds);
 
     List<Integer> queryIdsByAlertName(@Param("alertName")String alertName);
+    
+    void deleteByTypeIds(@Param("typeId")Integer typeId,@Param("ids")List ids);
 }

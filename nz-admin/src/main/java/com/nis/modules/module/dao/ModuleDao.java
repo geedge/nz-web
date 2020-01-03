@@ -15,4 +15,5 @@ public interface ModuleDao extends BaseMapper<Module> {
 	
 	List<Module> queryPage(IPage<Module> page,@Param("params") Map<String, Object> params);
 	
+	List<Integer> selectModuleIdsByProjectIds(@Param("projectIds") List projectIds);
 }

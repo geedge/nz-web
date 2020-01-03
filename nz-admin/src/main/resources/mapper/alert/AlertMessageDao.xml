@@ -59,4 +59,11 @@
 			#{hashKey}
 		</foreach>
 	</update>
+	
+	<delete id="deleteByTypeIds">
+    	delete from alert_message where type=#{typeId} and link_id in
+    	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+    </delete>
 </mapper>

@@ -57,7 +57,8 @@ public class ProjectController extends AbstractController {
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 		String[] split = ids.split(",");
-		projectService.removeByIds(Arrays.asList(split));
+		projectService.removeHandle(Arrays.asList(split));
+//		projectService.removeByIds(Arrays.asList(split));
 		return R.ok();
 	}
 }

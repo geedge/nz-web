@@ -61,5 +61,10 @@
         
     </select>
 	
-	
+	<select id="selectModuleIdsByProjectIds" resultType="java.lang.Integer">
+		select id from module where project_id in 
+		<foreach item="projectId" collection="projectIds" separator="," open="(" close=")" index="">
+			#{projectId}
+		</foreach>
+	</select>
 </mapper>

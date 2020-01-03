@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service;
 
+import java.util.List;
 import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -11,4 +12,6 @@ public interface EndpointService extends IService<Endpoint> {
 	PageUtils queryPage(Map<String, Object> params);
 	
 	void validateParam(Endpoint endpointEntity);
+	
+	void removeByModuleIds(List moduleIds);
 }

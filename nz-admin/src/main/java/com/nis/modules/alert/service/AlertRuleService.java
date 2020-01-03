@@ -31,6 +31,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds);
 
-
+	void removeByTypeIds(Integer typeId,List ids);
 }
 

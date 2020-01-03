@@ -43,4 +43,11 @@
     <select id="queryIdsByAlertName" resultType="integer">
         select id from alert_rule where alert_name like concat('%',#{alertName},'%')
     </select>
+    
+    <delete id="deleteByTypeIds">
+    	delete from alert_rule where type=#{typeId} and link_id in
+    	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+    </delete>
 </mapper>

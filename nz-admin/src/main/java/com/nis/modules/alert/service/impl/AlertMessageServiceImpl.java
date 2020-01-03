@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
@@ -62,6 +63,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private AlertRuleService alertRuleService;
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
+	@Autowired
+	private AlertMessageDao alertMessageDao;
     
 	private static Gson gson = new Gson();
 	
@@ -195,6 +198,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}catch (NumberFormatException e){}
 
 		return param;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByTypeIds(Integer typeId, List ids) {
+		alertMessageDao.deleteByTypeIds(typeId, ids);
 	}
 
 }

@@ -5,13 +5,18 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant.AlertType;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -21,6 +26,12 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	
 	@Autowired
 	private ModuleDao moduleDao;
+	@Autowired
+	private AlertRuleService alertRuleService;
+	@Autowired
+	private AlertMessageService alertMessageService;
+	@Autowired
+	private EndpointService endpointService;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -36,6 +47,22 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
 		ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
 		ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeHandle(List ids) {
+		moduleDao.deleteBatchIds(ids);
+		//同时删除endpoint信息
+		endpointService.removeByModuleIds(ids);
+		//删除alert相关信息
+		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+	}
+
+	@Override
+	public List queryModuleIdsByProjectIds(List projectIds) {
+		return moduleDao.selectModuleIdsByProjectIds(projectIds);
 	}
 
 }

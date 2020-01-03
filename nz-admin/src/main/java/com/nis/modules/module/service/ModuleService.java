@@ -1,5 +1,6 @@
 package com.nis.modules.module.service;
 
+import java.util.List;
 import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -11,4 +12,8 @@ public interface ModuleService extends IService<Module> {
 	PageUtils queryPage(Map<String, Object> params);
 	
 	void validateParam(Module moduleEntity);
+	
+	void removeHandle(List ids);
+	
+	List queryModuleIdsByProjectIds(List projectIds);
 }
