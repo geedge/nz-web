@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,8 +37,9 @@ public class MetricController {
     public R queryLabelNames(@RequestParam(value = "metric")String metric,@RequestParam(value = "name",required = false) String name){
 
         List<Map<String,String>> list=labelService.queryLabels(metric,name,"name");
-
-        return R.ok(list);
+        Map<String, List<Map<String, String>>> map = new HashMap<>();
+        map.put("list",list);
+        return R.ok(map);
     }
 
     @GetMapping("/labelVal")
@@ -45,8 +47,9 @@ public class MetricController {
     public R queryLabelValues(@RequestParam(value = "metric")String metric,@RequestParam(value = "name") String name){
 
         List<Map<String,String>> list=labelService.queryLabels(metric,name,"value");
-
-        return R.ok(list);
+        Map<String, List<Map<String, String>>> map = new HashMap<>();
+        map.put("list",list);
+        return R.ok(map);
     }
 
 }
