@@ -63,7 +63,8 @@ public class AlertMessageReceiveDTO implements Serializable {
 		Date sa = sdf.parse(dto.getStartsAt());
 		Date ea = sdf.parse(dto.getEndsAt());
 		entity.setStartAt(sa);
-		entity.setEndAt(ea);
+		// 新接收的告警信息 state 默认为1 ， 过期会更改为2 ， 此处不应设置 end_at
+		// entity.setEndAt(ea);
 		entity.setState(1);
 		return entity;
 	}
