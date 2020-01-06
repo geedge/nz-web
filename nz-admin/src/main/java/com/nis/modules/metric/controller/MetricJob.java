@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.concurrent.*;
 
 @RestController
 @RequestMapping("/metricJob")
@@ -109,7 +110,7 @@ public class MetricJob extends QuartzJobBean {
                 }
 
                 // 缓存中的 labels 值
-                Map<String, List<MetadataLabel>> cacheLabels = new HashMap<>();
+                final ConcurrentHashMap<String, List<MetadataLabel>> cacheLabels = new ConcurrentHashMap<>();
                 Object cacheMetricLabels = valueOperations.get(Constant.REDIS_KEY_METRICLABELS);
                 if (cacheMetricLabels == null) {
                     // 数据库获取
@@ -122,7 +123,8 @@ public class MetricJob extends QuartzJobBean {
                         valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
                     }
                 } else {
-                    cacheLabels = JSONObject.parseObject(String.valueOf(cacheMetricLabels), Map.class);
+                    // cacheLabels = JSONObject.parseObject(String.valueOf(cacheMetricLabels), Map.class);
+                    cacheLabels.putAll(JSONObject.parseObject(String.valueOf(cacheMetricLabels), Map.class));
                 }
 
                 // 需要进行同步的服务集合
@@ -133,31 +135,25 @@ public class MetricJob extends QuartzJobBean {
                     return R.ok("There are currently no synchronized promservers.");
                 }
 
+
                 // 查询所有的 module
                 List<Module> moduleList = moduleService.list();
 
                 // 请求 api 的参数
                 Map<String, String> matchTarget = new HashMap<>(2);
                 Map<String, Object> params = new HashMap<>(2);
-                Map<String, Object> matchParam = new HashMap<>(2);
                 String host = null;
 
+                // 请求查询到的 metric 信息  查询到所有 prometheus server 的 metric信息
+                List<MetadataMetric> metadataMetrics = new ArrayList<>();
+
+                // 所有要进行同步的prometheus程序
                 for (Promserver promserver : promservers) {
                     host = promserver.getHost();
                     if (StringUtils.isEmpty(host) || !host.matches(Constant.REGEX_IP)) {
                         logger.error("ip format error {}", host);
                         continue;
                     }
-            /*// 请求获取所有的 metric
-            Map responseMetrics = promserverProxyService.requestPromAPI("http://" + promserver.getHost() + ":" + promserver.getPort() + "/api/v1/label/__name__/values");
-            if (responseMetrics == null || responseMetrics.get("error") != null) {
-                logger.info("request Prometheus Server values api with error {}", promserver.getHost(), responseMetrics.get("error"));
-                continue;
-            }
-            List<String> metricNameList = (List) responseMetrics.get("data");*/
-
-                    // 请求查询到的 metric 信息
-                    List<MetadataMetric> metadataMetrics = new ArrayList<>();
 
                     for (Module module : moduleList) {
                         matchTarget.put("module", module.getName());
@@ -185,131 +181,197 @@ public class MetricJob extends QuartzJobBean {
                             }
                         }
                     }
+                }
 
-                    // metadata Metric 同步入库
-                    if (CollectionUtils.isNotEmpty(metadataMetrics)) {
-                        // 去除重复数据
-                        metadataMetrics = new ArrayList<>(new HashSet<>(metadataMetrics));
-                        // 判断缓存中是否为空
-                        if (CollectionUtils.isNotEmpty(cacheMetricList)) {
-                            // 数据库中存在 但是新查出来的不在
-                            List<MetadataMetric> list = this.listCompare(cacheMetricList, metadataMetrics);
-                            if (CollectionUtils.isNotEmpty(list)) {
-                                // 1. 删除 metric 数据
-                                List ids = new ArrayList();
-                                for (MetadataMetric metadataMetric : list) {
-                                    ids.add(metadataMetric.getId());
+                // 将所有的 metadata Metric数据去重
+
+                if (CollectionUtils.isNotEmpty(metadataMetrics)) {
+                    // 去除重复数据
+                    metadataMetrics = new ArrayList<>(new HashSet<>(metadataMetrics));
+                    // 判断缓存中是否为空
+                    if (CollectionUtils.isNotEmpty(cacheMetricList)) {
+                        // 缓存中有 但是新查询来的没有 证明缓存中有失效数据
+                        List<MetadataMetric> list = this.listCompare(cacheMetricList, metadataMetrics);
+                        if (CollectionUtils.isNotEmpty(list)) {
+                            // 1. 删除过期的 metric 数据
+                            List ids = new ArrayList();
+                            for (MetadataMetric metadataMetric : list) {
+                                ids.add(metadataMetric.getId());
+                            }
+                            metadataMetricService.removeByIds(ids);
+                            // 2. 删除关联label 数据
+                            metadataLabelDao.deleteByMetricIds(ids);
+                            // 3. 更新 label 缓存数据
+                            for (MetadataMetric metric : list) {
+                                cacheLabels.remove(metric.getMetric());
+                            }
+                        }
+                        // 处理失效数据后 处理 新增加 的数据
+                        metadataMetrics.removeAll(cacheMetricList);
+                        metadataMetricService.saveBatch(metadataMetrics);
+                    } else {
+                        // 缓存为 Null 直接入库
+                        metadataMetricService.saveBatch(metadataMetrics);
+                    }
+                }
+
+                //      metric  信息处理完毕==============================================================================
+
+                // 查询当前数据库 metric 信息
+                Map<String, Integer> metricNameAndId = new HashMap<>();
+                List<MetadataMetric> metricList = metadataMetricService.list();
+
+                // 数据库中也没有数据
+                if (CollectionUtils.isEmpty(metricList)) {
+                    return R.ok();
+                }
+
+                // 更新缓存数据
+                valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(metricList));
+
+                for (MetadataMetric metric : metricList) {
+                    // 存放的为 metricName  metricId
+                    metricNameAndId.put(metric.getMetric(), metric.getId());
+                }
+
+                // IO密集类型 所以最佳线程数为 当前机器的cpu 乘以 2
+                int niceCpu = Runtime.getRuntime().availableProcessors() * 2;
+                // 平均等分后的集合
+                List<List<MetadataMetric>> allMetricList = this.averageAssignList(metricList, niceCpu);
+
+                // 创建一个线程池
+                ExecutorService exec = Executors.newFixedThreadPool(niceCpu);
+                // 定义一个任务集合
+                List<Callable<List>> tasks = new ArrayList<>();
+                Callable<List> task = null;
+                // 确定每条线程的数据
+                for (int i = 0; i < niceCpu; i++) {
+
+                    if (i > allMetricList.size() - 1) {
+                        break;
+                    }
+
+                    final List<MetadataMetric> list = allMetricList.get(i);
+
+                    task = new Callable<List>() {
+                        @Override
+                        public List<MetadataLabel> call() throws Exception {
+                            Map<String, Object> matchParam = new HashMap<>(2);
+
+                            // 汇总
+                            List<MetadataLabel> metadataLabels = new ArrayList<>();
+
+                            /*List<Integer> ids = list.stream().map(metadataMetric -> metadataMetric.getId()).collect(Collectors.toList());
+                            System.out.println(Thread.currentThread().getName() + "线程执行的集合段：" + ids);*/
+
+                            // 处理 label 信息
+                            for (Promserver promserver : promservers) {
+
+                                String host = promserver.getHost();
+                                if (StringUtils.isEmpty(host) || !host.matches(Constant.REGEX_IP)) {
+                                    logger.error("ip format error {}", host);
+                                    continue;
                                 }
-                                metadataMetricService.removeByIds(ids);
-                                // 2. 删除关联label 数据
-                                metadataLabelDao.deleteByMetricIds(ids);
-                                // 3. 更新缓存数据
+
+                                // 当前 数据库中 metric 集合
                                 for (MetadataMetric metric : list) {
-                                    cacheLabels.remove(metric.getMetric());
+                                    String metricName = metric.getMetric();
+
+                                    matchParam.put("match[]", metricName);
+                                    String seriesUrl = buildUrl(host, promserver.getPort(), apiSeries, matchParam);
+
+                                    // 请求API 获取结果
+                                    Map result = promserverProxyService.requestPromAPI(seriesUrl);
+
+                                    // 当前请求查询得到的 label 集合
+                                    List<MetadataLabel> lablesByMetric = new ArrayList<>();
+                                    if (result == null || result.get("errorType") != null) {
+                                        logger.error("request Prometheus Server series api with error {}", metricName);
+                                        continue;
+                                    } else {
+                                        // 结果集去重 标签名称切标签值相同则去重
+                                        Set<Map.Entry<String, Object>> set = new HashSet();
+
+                                        // 所有标签
+                                        JSONArray array = (JSONArray) result.get("data");
+
+                                        if (array.size() > 0) {
+                                            // 所有标签去重
+                                            for (int i = 0; i < array.size(); i++) {
+                                                JSONObject jsonObject = (JSONObject) array.get(i);
+                                                Set<Map.Entry<String, Object>> entries = jsonObject.entrySet();
+                                                for (Map.Entry<String, Object> entry : entries) {
+                                                    if ("__name__".equals(entry.getKey())) {
+                                                        continue;
+                                                    }
+                                                    set.add(entry);
+                                                }
+                                            }
+
+                                            // 缓存处理 缓存中有当前 metric 的 labels集合
+                                            if (cacheLabels != null && CollectionUtils.isNotEmpty(cacheLabels.get(metricName))) {
+                                                // 缓存中的当前 metric 关联的 label集合
+                                                List<MetadataLabel> labels = new ArrayList<>();
+                                                labels = JSONObject.parseArray(JSON.toJSONString(cacheLabels.get(metricName)), MetadataLabel.class);
+                                                // 这次查询的标签集合
+                                                for (Map.Entry<String, Object> entry : set) {
+                                                    if (metricNameAndId.get(metricName) != null) {
+                                                        lablesByMetric.add(new MetadataLabel(metricNameAndId.get(metricName), entry.getKey(), entry.getValue().toString()));
+                                                    }
+                                                }
+                                                // 使用新查询到的标签集合去除缓存中的标签集合 剩下的保存入库 做增量处理
+                                                lablesByMetric.removeAll(labels);
+                                                // 更新缓存
+                                                labels.addAll(lablesByMetric);
+                                                cacheLabels.put(metricName, labels);
+                                            } else {
+                                                // 没有缓存的情况保存数据
+                                                for (Map.Entry<String, Object> entry : set) {
+                                                    if (metricNameAndId.get(metricName) != null) {
+                                                        lablesByMetric.add(new MetadataLabel(metricNameAndId.get(metricName), entry.getKey(), entry.getValue().toString()));
+                                                    }
+                                                }
+                                                // 更新缓存
+                                                cacheLabels.put(metricName, lablesByMetric);
+                                            }
+                                        }
+                                    }
+
+                                    // 将查询到结果集合汇总
+                                    metadataLabels.addAll(lablesByMetric);
                                 }
                             }
-                            // 之后新的 metadataMetrics 数据为新增的 数据库中不存在
-                            metadataMetrics.removeAll(cacheMetricList);
-                            metadataMetricService.saveBatch(metadataMetrics);
-                        } else {
-                            // 不存在缓存数据 直接入库
-                            metadataMetricService.saveBatch(metadataMetrics);
+                            return metadataLabels;
                         }
+                    };
+                    // 这里提交的任务容器列表和返回的Future列表存在顺序对应的关系
+                    tasks.add(task);
+                }
+
+                // 执行
+                try {
+                    List<Future<List>> results = exec.invokeAll(tasks);
+                    // 最终添加的labels集合
+                    List<MetadataLabel> allLabels = new ArrayList();
+                    for (Future<List> future : results) {
+                        allLabels.addAll(future.get());
                     }
 
-                    // 查询当前数据库 metric 信息
-                    Map<String, Integer> metricNameAndId = new HashMap<>();
-                    List<MetadataMetric> metricList = metadataMetricService.list();
-
-                    if (CollectionUtils.isNotEmpty(metricList)) {
-                        // 更新缓存数据
-                        valueOperations.set(Constant.REDIS_KEY_METRICS, JSONArray.toJSONString(metricList));
-                    }
-
-                    for (MetadataMetric metric : metricList) {
-                        // 存放的为 metricName  metricId
-                        metricNameAndId.put(metric.getMetric(), metric.getId());
-                    }
-
-                    List<MetadataLabel> metadataLabels = new ArrayList<>();
-
-                    for (MetadataMetric metric : metricList) {// 当前 metric 集合
-                        String metricName = metric.getMetric();
-
-                        matchParam.put("match[]", metricName);
-                        String seriesUrl = this.buildUrl(host, promserver.getPort(), apiSeries, matchParam);
-
-                        // 请求API 获取结果
-                        Map result = promserverProxyService.requestPromAPI(seriesUrl);
-
-                        // 当前请求查询得到的 label 集合
-                        List<MetadataLabel> lablesByMetric = new ArrayList<>();
-                        if (result == null || result.get("errorType") != null) {
-                            logger.error("request Prometheus Server series api with error {}", metricName);
-                            continue;
-                        } else {
-                            // 结果集去重 标签名称切标签值相同则去重
-                            Set<Map.Entry<String, Object>> set = new HashSet();
-
-                            // 所有标签
-                            JSONArray array = (JSONArray) result.get("data");
-
-                            if (array.size() > 0) {
-                                // 所有标签去重
-                                for (int i = 0; i < array.size(); i++) {
-                                    JSONObject jsonObject = (JSONObject) array.get(i);
-                                    Set<Map.Entry<String, Object>> entries = jsonObject.entrySet();
-                                    for (Map.Entry<String, Object> entry : entries) {
-                                        if ("__name__".equals(entry.getKey())) {
-                                            continue;
-                                        }
-                                        set.add(entry);
-                                    }
-                                }
-
-                                // 缓存处理 缓存中有当前 metric 的 labels集合
-                                if (cacheLabels != null && CollectionUtils.isNotEmpty(cacheLabels.get(metricName))) {
-                                    // 缓存中的当前 metric 关联的 label集合
-                                    List<MetadataLabel> labels = new ArrayList<>();
-                                    labels = JSONObject.parseArray(JSON.toJSONString(cacheLabels.get(metricName)), MetadataLabel.class);
-                                    // 这次查询的标签集合
-                                    for (Map.Entry<String, Object> entry : set) {
-                                        if (metricNameAndId.get(metricName) != null) {
-                                            lablesByMetric.add(new MetadataLabel(metricNameAndId.get(metricName), entry.getKey(), entry.getValue().toString()));
-                                        }
-                                    }
-                                    // 使用新查询到的标签集合去除缓存中的标签集合 剩下的保存入库 做增量处理
-                                    lablesByMetric.removeAll(labels);
-                                    // 更新缓存
-                                    labels.addAll(lablesByMetric);
-                                    cacheLabels.put(metricName, labels);
-                                } else {
-                                    // 没有缓存的情况保存数据
-                                    for (Map.Entry<String, Object> entry : set) {
-                                        if (metricNameAndId.get(metricName) != null) {
-                                            lablesByMetric.add(new MetadataLabel(metricNameAndId.get(metricName), entry.getKey(), entry.getValue().toString()));
-                                        }
-                                    }
-                                    // 更新缓存
-                                    cacheLabels.put(metricName, lablesByMetric);
-                                }
-                            }
-                        }
-
-                        // 将查询到结果集合汇总
-                        metadataLabels.addAll(lablesByMetric);
+                    // 保存 labels 数据
+                    if (CollectionUtils.isNotEmpty(allLabels)) {
+                        metadataLabelService.saveBatch(allLabels);
                     }
 
                     if (cacheLabels != null && cacheLabels.size() > 0) {
                         // 更新缓存
                         valueOperations.set(Constant.REDIS_KEY_METRICLABELS, JSONArray.toJSONString(cacheLabels));
                     }
-
-                    // 保存 labels 数据
-                    if (CollectionUtils.isNotEmpty(metadataLabels)) {
-                        metadataLabelService.saveBatch(metadataLabels);
-                    }
+                } catch (Exception e) {
+                    // TO DO
                 }
+                // System.out.println("=========================over====================================");
+                logger.info("同步 metric 信息结束");
+
             } else {
                 // 获取锁失败  TODO
             }
@@ -320,6 +382,15 @@ public class MetricJob extends QuartzJobBean {
         return R.ok();
     }
 
+    /**
+     * 处理请求prometheus 的url
+     *
+     * @param host
+     * @param port
+     * @param baseUrl
+     * @param params
+     * @return
+     */
     public String buildUrl(String host, Integer port, String baseUrl, Map<String, Object> params) {
         StringBuilder sb = new StringBuilder("http://");
         sb.append(host);
@@ -370,6 +441,13 @@ public class MetricJob extends QuartzJobBean {
         return sb.toString();
     }
 
+    /**
+     * 得出两个集合不同的地方 以new为主
+     *
+     * @param o
+     * @param n
+     * @return
+     */
     private List<MetadataMetric> listCompare(List<MetadataMetric> o, List<MetadataMetric> n) {
         Map<MetadataMetric, Integer> map = new HashMap<MetadataMetric, Integer>(n.size());
         List<MetadataMetric> differentList = new ArrayList<MetadataMetric>();
@@ -384,6 +462,34 @@ public class MetricJob extends QuartzJobBean {
             }
         }
         return differentList;
+    }
+
+
+    /**
+     * 将一组数据平均分成n组
+     *
+     * @param source 要分组的数据源
+     * @param n      平均分成 n 组
+     * @param <T>
+     * @return
+     */
+    public <T> List<List<T>> averageAssignList(List<T> source, int n) {
+        List<List<T>> result = new ArrayList<List<T>>();
+        int remainder = source.size() % n;  // 先算余
+        int number = source.size() / n;     // 然后算商
+        int offset = 0;// 偏移量
+        for (int i = 0; i < n; i++) {
+            List<T> value = null;
+            if (remainder > 0) { // 不能整除
+                value = source.subList(i * number + offset, (i + 1) * number + offset + 1);
+                remainder--;
+                offset++;
+            } else {
+                value = source.subList(i * number + offset, (i + 1) * number + offset);
+            }
+            result.add(value);
+        }
+        return result;
     }
 
 

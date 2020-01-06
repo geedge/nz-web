@@ -1,5 +1,6 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.romote.entity.Account;
@@ -45,6 +46,7 @@ public class Asset implements Serializable {
     /**
      * 机柜编号
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer cabinetId;
 
     /**
