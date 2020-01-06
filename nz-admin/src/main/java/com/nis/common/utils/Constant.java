@@ -111,6 +111,11 @@ public class Constant {
     public static final String REDIS_KEY_METRICLABELS = "cacheMetricLabels";
 
     /**
+     * metricjob 分布式锁
+     */
+    public static final String REDIS_KEY_METRIClOCK = "metricLock";
+
+    /**
      * 临时目录 
      */
     public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
