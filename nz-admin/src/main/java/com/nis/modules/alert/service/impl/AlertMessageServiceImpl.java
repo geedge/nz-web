@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -102,7 +104,11 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			if(am.getType()!=null){
 				IService service=getServiceImpl(am.getType());
 				Object linkObject = service.getById(am.getLinkId());
-
+				if(Constant.AlertType.ALERT_TYPE_MODULE.getCode().intValue()==am.getType().intValue()){
+					Module module=(Module)linkObject;
+					Project project = projectService.getById(module.getProjectId());
+					module.setProject(project);
+				}
 				am.setLinkObject(linkObject);
 			}
 		}
