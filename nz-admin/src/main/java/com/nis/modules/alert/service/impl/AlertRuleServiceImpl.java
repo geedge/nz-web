@@ -5,7 +5,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +78,11 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 			if(alertRule.getType()!=null){
 				IService service=getServiceImpl(alertRule.getType());
 				Object linkObject=service.getById(alertRule.getLinkId());
-
+				if(AlertType.ALERT_TYPE_MODULE.getCode().intValue()==alertRule.getType().intValue()){
+					Module module=(Module)linkObject;
+					Project project = projectService.getById(module.getProjectId());
+					module.setProject(project);
+				}
 				alertRule.setLinkObject(linkObject);
 			}
 		}
