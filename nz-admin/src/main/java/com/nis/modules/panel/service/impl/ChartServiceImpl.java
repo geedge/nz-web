@@ -137,6 +137,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Override
     public void delCharts(Integer... ids) {
+        if(ids.length<1){
+            return;
+        }
         this.removeByIds(Arrays.asList(ids));
         chartElementService.delElementByChartIds(ids);
     }

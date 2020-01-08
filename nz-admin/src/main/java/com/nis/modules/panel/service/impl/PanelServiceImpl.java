@@ -40,6 +40,9 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     @Override
     public void delPanels(Integer... ids) {
+        if(ids.length<1){
+            return;
+        }
         this.removeByIds(Arrays.asList(ids));
 
         chartService.delChartsByPanelId(ids);

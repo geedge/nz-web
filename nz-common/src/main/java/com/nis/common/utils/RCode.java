@@ -154,6 +154,7 @@ public enum RCode {
 	CHART_TYPE_INVALIDE(1100007,"Chart type is invalide"),
 	CHART_PANEL_ISNULL(1100008,"Panel is not exsits"),
 	CHART_NOTEXSITS(1100009,"Chart is not exsits"),
+	CHART_ID_ISNULL(1100010,"Chart ID can not be empty"),
 
 	CHARTELEMENT_EXPRESSION_ISNULL(12000001,"Chart element expression can not be empty"),
 	CHARTELEMENT_TYPE_ISNULL(12000002,"Chart element type can not be empty"),

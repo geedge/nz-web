@@ -103,6 +103,7 @@ public class PanelController {
     @DeleteMapping("/{id}/charts")
     public R chartDelete(@PathVariable("id") Integer panelId,@RequestParam Integer ... ids){
         chartService.validatePanel(panelId);
+        ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
         chartService.delCharts(ids);
         return R.ok();
     }
