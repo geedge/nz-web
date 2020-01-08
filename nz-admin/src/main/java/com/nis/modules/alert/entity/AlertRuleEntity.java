@@ -69,5 +69,10 @@ public class AlertRuleEntity implements Serializable {
 
 	@TableField(exist = false)
 	private Object linkObject;
+	
+	/**
+	 * 是否为内置规则
+	 */
+	private Boolean buildIn;
 
 }

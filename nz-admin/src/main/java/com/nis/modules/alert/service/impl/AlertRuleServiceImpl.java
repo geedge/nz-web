@@ -75,6 +75,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
 		List<AlertRuleEntity> records = page.getRecords();
 		for (AlertRuleEntity alertRule:records){
+			if(alertRule.getBuildIn()) {
+				//如果为内置规则 则跳过剩余关联关系查询
+				break;
+			}
 			if(alertRule.getType()!=null){
 				IService service=getServiceImpl(alertRule.getType());
 				Object linkObject=service.getById(alertRule.getLinkId());
@@ -86,7 +90,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 				alertRule.setLinkObject(linkObject);
 			}
 		}
-
+		
 		return new PageUtils(page);
     }
 
@@ -144,6 +148,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	@Transactional(rollbackFor = Exception.class)
 	public void removeByTypeIds(Integer typeId, List ids) {
 		alertRuleDao.deleteByTypeIds(typeId,ids);
+	}
+	
+	/**
+	 * 查询当前规则是否为内置规则
+	 */
+	@Override
+	public void validateBulitinRule(List<Integer> ids) {
+		List<AlertRuleEntity> objs = alertRuleDao.selectBatchIds(ids);
+		for(AlertRuleEntity obj : objs) {
+			if(obj!=null&&obj.getBuildIn()){
+				throw new NZException(RCode.ALERTRULE_BUILDIN_CAN_NOT_REMOVE);
+			}
+		}
 	}
 
 

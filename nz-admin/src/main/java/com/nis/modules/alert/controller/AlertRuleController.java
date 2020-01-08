@@ -88,6 +88,7 @@ public class AlertRuleController {
      */
     @RequestMapping(value = "", method = RequestMethod.PUT)
     public R update(@RequestBody AlertRuleEntity alertRule){
+    	alertRuleService.validateBulitinRule(Arrays.asList(alertRule.getId()));
     	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
 						.and(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL)
     					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
@@ -125,6 +126,7 @@ public class AlertRuleController {
     @RequestMapping(value = "", method = RequestMethod.DELETE)
     public R delete(@RequestParam Integer ... ids){
     	ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
+    	alertRuleService.validateBulitinRule(Arrays.asList(ids));
 		alertRuleService.removeByIds(Arrays.asList(ids));
 
         return R.ok();

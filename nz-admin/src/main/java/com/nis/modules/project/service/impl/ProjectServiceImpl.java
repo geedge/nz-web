@@ -54,7 +54,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		projectDao.deleteBatchIds(ids);
 		//同时删除相关联的module信息 先查询出要删除的module信息
 		List moduleIds =  moduleService.queryModuleIdsByProjectIds(ids);
-		moduleService.removeHandle(moduleIds);
+		if(moduleIds!=null && moduleIds.size()>0) {
+			moduleService.removeHandle(moduleIds);
+		}
 		//删除alert表相关数据信息
 		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
 		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
