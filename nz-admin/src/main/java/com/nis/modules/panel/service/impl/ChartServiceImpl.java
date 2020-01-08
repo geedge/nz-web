@@ -143,6 +143,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Override
     public void delChartsByPanelId(Integer... panelIds){
+        if(panelIds.length<1){
+            return ;
+        }
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
         chartQueryWrapper.in("panel_id",panelIds);
 

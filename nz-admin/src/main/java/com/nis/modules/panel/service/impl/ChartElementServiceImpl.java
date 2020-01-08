@@ -61,6 +61,9 @@ public class ChartElementServiceImpl extends ServiceImpl<ChartElementDao, ChartE
 
     @Override
     public void delElementByChartIds(List<Integer> ids) {
+        if(ids.size()<1){
+            return ;
+        }
         QueryWrapper<ChartElement> elementQueryWrapper = new QueryWrapper<>();
         elementQueryWrapper.in("chart_id",ids);
 
