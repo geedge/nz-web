@@ -97,7 +97,7 @@ public class SysLoginController extends AbstractController {
 			map.put("password",password);
 			String json=JSON.toJSONString(map);
 			String value = Base64.getEncoder().encodeToString(json.getBytes());
-			ops.set(loginToken,value ,30, TimeUnit.MINUTES);
+			ops.set(loginToken,value ,60, TimeUnit.MINUTES);
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);

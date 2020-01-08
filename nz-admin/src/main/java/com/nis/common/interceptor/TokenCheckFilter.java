@@ -64,7 +64,7 @@ public class TokenCheckFilter extends AccessControlFilter {
             return false;
         }
         //验证成功刷新过期时间
-        redisTemplate.expire(requestToken,30, TimeUnit.MINUTES);
+        redisTemplate.expire(requestToken,60, TimeUnit.MINUTES);
         Subject subject = ShiroUtils.getSubject();
         String json= new String(Base64.getDecoder().decode(value),"UTF-8");
         Map<String,String> map=JSON.parseObject(json, HashMap.class);
