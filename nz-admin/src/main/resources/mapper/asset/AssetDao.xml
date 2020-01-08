@@ -60,6 +60,7 @@
             <result property="user" column="user"/>
             <result property="pwd" column="pwd"/>
             <result property="port" column="port"/>
+            <result property="privateKey" column="privateKey"/>
         </collection>
     </resultMap>
 
@@ -185,7 +186,8 @@
             acc.auth_type AS authType,
             acc.user AS user,
             acc.pwd AS pwd,
-            acc.port AS port
+            acc.port AS port,
+            acc.private_key AS privateKey
          FROM account acc WHERE acc.asset_id = #{id}
     </select>
 
