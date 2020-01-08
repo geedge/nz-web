@@ -21,7 +21,7 @@
         </if>
 
         <if test="title != null and title != ''" >
-            and title=#{title}
+            and title like concat('%',#{title},'%')
         </if>
 
     </select>
