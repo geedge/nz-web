@@ -5,7 +5,6 @@
 	<resultMap type="com.nis.modules.module.entity.Module" id="module">
         <result property="id" column="id"/>
         <result property="projectId" column="project_id"/>
-        <result property="host" column="host"/>
         <result property="port" column="port"/>
         <result property="param" column="param"/>
         <result property="path" column="path"/>
@@ -38,11 +37,11 @@
             AND m.port = #{params.port}
         </if>
         
-        <if test="params.host != null and params.host != ''">
-        	AND m.host LIKE
-            <if test="_databaseId == 'oracle'">'%'||#{params.host}||'%'</if>
-            <if test="_databaseId == 'mysql'">CONCAT('%', #{params.host}, '%')</if>
-            <if test="_databaseId == 'postgresql'">CONCAT('%', #{params.host}, '%')</if>
+        <if test="params.name != null and params.name != ''">
+        	AND m.name LIKE
+            <if test="_databaseId == 'oracle'">'%'||#{params.name}||'%'</if>
+            <if test="_databaseId == 'mysql'">CONCAT('%', #{params.name}, '%')</if>
+            <if test="_databaseId == 'postgresql'">CONCAT('%', #{params.name}, '%')</if>
         </if>
         
         <if test="params.param != null and params.param != ''">
