@@ -210,6 +210,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // ssh 登录选择文件
                         MultipartFile file = sshKeys[currSshKeys++];
                         account.setPrivateKey(file.getBytes());
+                        account.setPwd(null);
                     } catch (Exception e) {
                         logger.error("transfer ssh certificate error", e);
                     }
@@ -233,6 +234,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         if (!account.getPwd().equals(accountEntity.getPwd())) {
                             String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
                             account.setPwd(encodePwd);
+                            try {
+                                account.setPrivateKey(null);
+                            } catch (Exception e) {
+                                // TO DO
+                            }
                         }
                     }
 

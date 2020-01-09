@@ -108,8 +108,9 @@
 
         /*module统计 关联endPoint表*/
         (SELECT COUNT(ep.id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS moduleNum,
-        /*alert统计 关联alert_rule表*/
-        (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum
+        /*alert统计 关联alert_rule表*//*
+        (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum*/
+        (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.link_id AND am.type = 3 AND am.state = 1) AS alertNum
     </sql>
 
 

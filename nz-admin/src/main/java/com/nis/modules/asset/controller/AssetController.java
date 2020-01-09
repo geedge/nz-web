@@ -152,6 +152,8 @@ public class AssetController {
                 // 日期不合法
                 throw new NZException(RCode.ASSET_PURCHASEDATE_UNAVAILABLE);
             }
+        } else {
+            asset.setPurchaseDate(null);
         }
 
         assetService.saveOrUpdateAsset(asset, sshKeys);

@@ -1,5 +1,6 @@
 package com.nis.modules.romote.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -19,7 +20,11 @@ public class Account {
     private Integer assetId;
     private Integer authType;
     private String user;
+
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String pwd;
+
+    @TableField(strategy = FieldStrategy.IGNORED)
     private byte[] privateKey;
     private Integer port;
     @TableField(exist = false)
