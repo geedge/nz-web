@@ -188,7 +188,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
                     sb.append(parseValue);
                 }else{
                     try {
-                        sb.append((URLEncoder.encode(key,"UTF-8")+"="+parseValue+"&"));
+                        sb.append((URLEncoder.encode(key,"UTF-8")+"="+(URLEncoder.encode(parseValue,"UTF-8"))+"&"));
                     }catch (Exception e){
                         logger.warn("urlencode faild");
                     }
