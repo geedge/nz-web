@@ -19,11 +19,18 @@
     </resultMap>
 	
 	<select id="queryPage" resultMap="module">
-       SELECT m.*,
+       SELECT DISTINCT m.*,
        p.id AS p_id,
        p.name AS p_name,
        p.remark AS p_remark 
-       FROM module m left join project p on m.project_id=p.id where 1=1
+       FROM module m left join project p on m.project_id=p.id 
+       
+       <if test="params.assetId != null and params.assetId != ''">
+             left join endpoint e on e.module_id=m.id
+			 left join asset a on e.asset_id = a.id
+       </if>
+       
+       where 1=1
 
         <if test="params.id != null and params.id != ''">
             AND m.id = #{params.id}
@@ -58,6 +65,9 @@
             <if test="_databaseId == 'postgresql'">CONCAT('%', #{params.path}, '%')</if>
         </if>
         
+        <if test="params.assetId != null and params.assetId != ''">
+        	AND a.id=#{params.assetId}
+        </if>
     </select>
 	
 	<select id="selectModuleIdsByProjectIds" resultType="java.lang.Integer">
