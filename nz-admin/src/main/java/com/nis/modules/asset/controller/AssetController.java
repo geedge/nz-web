@@ -61,7 +61,7 @@ public class AssetController {
 
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
             // 记录当前获取的下标
-            int currSshKeys = 0;
+            /*int currSshKeys = 0;
 
             for (int i = 0; i < asset.getAccounts().size(); i++) {
                 Account account = asset.getAccounts().get(i);
@@ -77,6 +77,21 @@ public class AssetController {
                     // 用户名 密码登录
                     assetService.validateAccount(asset.getAccounts().get(i), null);
                 }
+            }*/
+
+            // 目前按照一个asset 对应 一个account实现
+            Account account = asset.getAccounts().get(0);
+            assetService.validateAccount(account);
+
+            // 密码登录，密码不能为空，证书登录，证书不能为空
+            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+                ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
+            } else {
+                if (sshKeys.length < 1) {
+                    // 文件数量不足
+                    throw new NZException(RCode.ACCOUNT_FILE_INSUFFICIENT);
+                }
+                ValidateUtils.is(sshKeys[0]).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
             }
         }
         // 购买时间格式校验
@@ -118,7 +133,7 @@ public class AssetController {
 
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
             // 记录当前获取的下标
-            int currSshKeys = 0;
+            /*int currSshKeys = 0;
 
             for (int i = 0; i < asset.getAccounts().size(); i++) {
                 Account account = asset.getAccounts().get(i);
@@ -136,7 +151,12 @@ public class AssetController {
                     // 用户名 密码登录
                     assetService.validateAccount(asset.getAccounts().get(i), null);
                 }
-            }
+            }*/
+
+            // 目前按照一个asset 对应 一个account实现
+            Account account = asset.getAccounts().get(0);
+            ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
+            assetService.validateAccount(account);
         }
 
         // 购买时间格式校验
@@ -168,7 +188,7 @@ public class AssetController {
      */
     @DeleteMapping
     @SysLog("delete asset")
-    public R delete(@RequestParam Integer ... ids) {
+    public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
         assetService.delete(ids);

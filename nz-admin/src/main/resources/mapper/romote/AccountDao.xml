@@ -19,4 +19,9 @@
     <select id="getAccountById" resultMap="accountMap">
         select * from account where id=#{id}
     </select>
+
+    <update id="updateForPrivateKey">
+        update account set auth_type = #{account.authType}, user = #{account.user},
+        pwd = #{account.pwd}, port = #{account.port} where id = #{account.id}
+    </update>
 </mapper>

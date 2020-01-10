@@ -22,6 +22,7 @@ import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.romote.dao.AccountDao;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.romote.service.AccountService;
 import com.nis.modules.romote.util.StringUtils;
@@ -80,6 +81,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private AlertMessageService alertMessageService;
+
+    @Autowired
+    private AccountDao accountDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -202,10 +206,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 保存 accounts
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            int currSshKeys = 0;
+            // int currSshKeys = 0;
             for (int i = 0; i < asset.getAccounts().size(); i++) {
                 Account account = asset.getAccounts().get(i);
-                if (Constant.AUTH_CERTIFICATE.equals(account.getAuthType())) {
+               /* if (Constant.AUTH_CERTIFICATE.equals(account.getAuthType())) {
                     try {
                         // ssh 登录选择文件
                         MultipartFile file = sshKeys[currSshKeys++];
@@ -214,7 +218,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     } catch (Exception e) {
                         logger.error("transfer ssh certificate error", e);
                     }
-                }
+                }*/
 
                 // 添加
                 if (account.getId() == null) {
@@ -222,6 +226,20 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     if (StringUtils.isNotEmpty(account.getPwd())) {
                         String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
                         account.setPwd(encodePwd);
+                        try {
+                            account.setPrivateKey(null);
+                        } catch (Exception e) {
+                            // TO DO
+                        }
+                    } else {
+                        try {
+                            // ssh 登录选择文件
+                            MultipartFile file = sshKeys[0];
+                            account.setPrivateKey(file.getBytes());
+                            account.setPwd(null);
+                        } catch (Exception e) {
+                            logger.error("transfer ssh certificate error", e);
+                        }
                     }
                     account.setAssetId(asset.getId());
 
@@ -240,9 +258,22 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 // TO DO
                             }
                         }
+                        accountService.updateById(account);
                     }
 
-                    accountService.updateById(account);
+                    // 修改时没有指定密钥文件
+                    if (sshKeys.length < 1) {
+                        accountDao.updateForPrivateKey(account);
+                    } else {
+                        try {
+                            // ssh 登录选择文件
+                            MultipartFile file = sshKeys[0];
+                            account.setPrivateKey(file.getBytes());
+                        } catch (Exception e) {
+                            logger.error("transfer ssh certificate error", e);
+                        }
+                        accountService.updateById(account);
+                    }
                 }
             }
         }
@@ -265,7 +296,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
-    public void validateAccount(Account account, MultipartFile file) {
+    public void validateAccount(Account account) {
         //1.认证类型必须合法
         ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
         QueryWrapper<SysDictEntity> sysDictyQueryWrapper = new QueryWrapper<SysDictEntity>();
@@ -281,12 +312,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         //2.用户名不能为空
         ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
 
-        //3.密码登录，密码不能为空，证书登录，证书不能为空
+        /*//3.密码登录，密码不能为空，证书登录，证书不能为空
         if (Constant.AUTH_PASSWORD == account.getAuthType()) {
             ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
         } else {
             ValidateUtils.is(file).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
-        }
+        }*/
         //4.port 不能为空
         ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
     }

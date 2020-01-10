@@ -1,40 +1,13 @@
 package com.nis.modules.alert.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.module.service.ModuleService;
-import com.nis.modules.project.entity.Project;
-import com.nis.modules.project.service.ProjectService;
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.StringRedisConnection;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.DigestUtils;
-
-import java.lang.reflect.InvocationTargetException;
-import java.text.ParseException;
-import java.util.*;
-
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
@@ -43,9 +16,27 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.entity.SysUserEntity;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.mail.SendFailedException;
+import java.text.ParseException;
+import java.util.*;
 
 
 @Service("alertMessageService")
@@ -125,9 +116,20 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		redisTemplate.executePipelined(new RedisCallback<Object>() {
 			@Override
 			public Object doInRedis(RedisConnection redis) throws DataAccessException {
+
+			    // 获取当前asset集合 并将ip 与 id 抽出来， 在收集snmptrap信息时需要使用
+ 				List<Asset> assetList = assetService.list();
+				Map<String,Integer> assetIpWithId = new HashMap<>();
+				if(CollectionUtils.isNotEmpty(assetList)){
+                    for (Asset asset : assetList) {
+                        assetIpWithId.put(asset.getHost(), asset.getId());
+                    }
+				}
+
 				for (AlertMessageReceiveDTO dto : receiveData) {
 					try{
-						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
+//						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
+                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, assetIpWithId);
 						ruleIds.add(entity.getRuleId());
 						entities.add(entity);
 						HashMap<String, Object> map = new HashMap<>();

@@ -26,5 +26,5 @@ public interface AssetService extends IService<Asset> {
 
     void delete(Integer ... ids);
 
-    void validateAccount(Account account, MultipartFile file);
+    void validateAccount(Account account);
 }
