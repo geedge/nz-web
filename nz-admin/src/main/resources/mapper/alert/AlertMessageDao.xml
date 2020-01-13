@@ -33,6 +33,9 @@
 			<if test="params.type != null">
 				and am.type = #{params.type}
 			</if>
+			<if test="params.linkId != null">
+				and am.link_id = #{params.linkId}
+			</if>
 			<if test="params.severity != null and params.severity != ''">
 				AND am.severity=#{params.severity}
 			</if>
