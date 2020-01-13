@@ -41,6 +41,8 @@ import java.util.Map;
 public class ShiroConfig {
     @Autowired
     private RedisTemplate<String,String> redisTemplate;
+    @Value("${nezha.loginExpiration:30}")
+    private Integer loginExpiration;
     /**
      * 单机环境，session交给shiro管理
      */
@@ -101,7 +103,7 @@ public class ShiroConfig {
 //        filterMap.put("/**", "authc");
         filterMap.put("/**", "tokenCheckFilter");
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
-        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate);
+        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate,loginExpiration);
         cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
         shiroFilter.setFilters(cumstomFilterMap);
         shiroFilter.setFilterChainDefinitionMap(filterMap);

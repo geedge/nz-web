@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
@@ -53,6 +54,8 @@ public class SysLoginController extends AbstractController {
 	private Producer producer;
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
+	@Value(value="${nezha.loginExpiration:30}")
+	private Integer loginExpiration;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -97,7 +100,7 @@ public class SysLoginController extends AbstractController {
 			map.put("password",password);
 			String json=JSON.toJSONString(map);
 			String value = Base64.getEncoder().encodeToString(json.getBytes());
-			ops.set(loginToken,value ,60, TimeUnit.MINUTES);
+			ops.set(loginToken,value ,this.loginExpiration, TimeUnit.MINUTES);
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
