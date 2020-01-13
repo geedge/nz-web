@@ -134,8 +134,8 @@ public enum RCode {
 	PROMSERVER_PARAM_START_ISNULL(800009,"Parameter 'start' is required"),
 	PROMSERVER_PARAM_END_ISNULL(800010,"Parameter 'end' is required"),
 	PROMSERVER_PARAM_STEP_ISNULL(800011,"Parameter 'step' is required"),
-	PROMSERVER_PARAM_MATCH_ISNULL(800011,"Parameter 'match[]' is required"),
-
+	PROMSERVER_PARAM_MATCH_ISNULL(800012,"Parameter 'match[]' is required"),
+	PROMSERVER_PORT_ERROR(800013,"PromServer port  is incorrect"),
 
 	ENDPOINT_ID_ISNULL(900001,"Endpoint id can not be empty"),
 	ENDPOINT_MODULEID_ISNULL(900002,"Module Id can not be empty"),

@@ -1,6 +1,7 @@
 package com.nis.modules.promserver.service.impl;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
@@ -40,10 +42,18 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 
 	@Override
 	public void validateParam(Promserver promserverEntity) {
+		
 		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL);
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);
 		ValidateUtils.is(promserverEntity.getPort()).notNull(RCode.PROMSERVER_PORT_ISNULL);
+		Integer port = promserverEntity.getPort();
+		// 端口合法性校验
+		String regex = "^([1-9]|[1-9]\\d{3}|[1-6][0-5][0-5][0-3][0-5])$";
+		boolean flag = Pattern.matches(regex, port.toString());
+		if(!flag) {
+			throw new NZException(RCode.PROMSERVER_PORT_ERROR);
+		}
 	}
 
 }
