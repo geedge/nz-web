@@ -42,9 +42,14 @@
 			<if test="params.id != null ">
 				AND am.id=#{params.id}
 			</if>
-			<if test="params.state != null ">
-				AND am.state=#{params.state}
-			</if>
+			<choose>
+                <when test="params.state != null ">
+                    AND am.state=#{params.state}
+                </when>
+                <otherwise>
+                    AND am.state=1
+                </otherwise>
+            </choose>
 			<if test="params.startAt != null">
 				AND am.start_at &gt;= #{params.startAt}
 			</if>
