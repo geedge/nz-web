@@ -43,5 +43,6 @@
         <if test="metric != null and metric != ''">
             and  c.metric like concat('%',#{metric},'%')
         </if>
+        order by c.metric
     </select>
 </mapper>
