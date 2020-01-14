@@ -41,7 +41,10 @@ public class PanelController {
 
         panelService.save(panel);
 
-        return R.ok();
+        // 添加之后相应 panel 对象
+        Map<String, Panel> resultMap = new HashMap<>(2);
+        resultMap.put("panel", panel);
+        return R.ok(resultMap);
     }
 
     @RequestMapping(method = {RequestMethod.PUT})
@@ -56,7 +59,10 @@ public class PanelController {
 
         panelService.updateById(panel);
 
-        return R.ok();
+        // 修改之后相应 panel 对象
+        Map<String, Panel> resultMap = new HashMap<>(2);
+        resultMap.put("panel", panel);
+        return R.ok(resultMap);
     }
 
     @DeleteMapping
