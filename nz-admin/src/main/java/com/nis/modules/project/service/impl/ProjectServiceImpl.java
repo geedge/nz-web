@@ -11,9 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant.AlertType;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.module.service.ModuleService;
@@ -60,6 +62,17 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		//删除alert表相关数据信息
 		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
 		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
+	}
+
+	@Override
+	public void validateBulitinRule(List<Integer> ids) {
+		List<Project> objs = projectDao.selectBatchIds(ids);
+		for(Project obj : objs) {
+			if(obj!=null&&obj.getBuildIn()){
+				throw new NZException(RCode.PROJECT_BUILDIN_CAN_NOT_REMOVE);
+			}
+		}
+		
 	}
 
 }

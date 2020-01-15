@@ -11,5 +11,7 @@ public interface ProjectService extends IService<Project> {
 	
 	PageUtils queryPage(Map<String, Object> params);
 	
-	void removeHandle(List<String> ids);
+	void removeHandle(List ids);
+	
+	void validateBulitinRule(List<Integer> ids);
 }

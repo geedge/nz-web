@@ -15,4 +15,5 @@ public class Project {
 	@NotBlank(message="参数名不能为空")
 	private String name;
 	private String remark;
+	private Boolean buildIn;
 }

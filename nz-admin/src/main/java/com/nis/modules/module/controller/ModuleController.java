@@ -47,6 +47,7 @@ public class ModuleController extends AbstractController {
 	@SysLog("update module")
 	public R modify(@RequestBody Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getId()).notNull(RCode.MODULE_ID_ISNULL);
+		moduleService.validateBulitinRule(Arrays.asList(moduleEntity.getId()));
 		moduleService.validateParam(moduleEntity);
 		moduleService.updateById(moduleEntity);
 		return R.ok();
@@ -54,11 +55,10 @@ public class ModuleController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete module")
-	public R remove(String ids) {
+	public R remove(@RequestParam Integer ... ids) {
 		ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
-		String[] split = ids.split(",");
-		moduleService.removeHandle(Arrays.asList(split));
-//		moduleService.removeByIds(Arrays.asList(split));
+		moduleService.validateBulitinRule(Arrays.asList(ids));
+		moduleService.removeHandle(Arrays.asList(ids));
 		return R.ok();
 	}
 }

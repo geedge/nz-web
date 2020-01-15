@@ -16,4 +16,6 @@ public interface ModuleService extends IService<Module> {
 	void removeHandle(List ids);
 	
 	List queryModuleIdsByProjectIds(List projectIds);
+	
+	void validateBulitinRule(List<Integer> ids);
 }

@@ -10,6 +10,7 @@
         <result property="path" column="path"/>
         <result property="remark" column="remark"/>
         <result property="name" column="name"/>
+        <result property="buildIn" column="build_in"/>
         
         <association property="project" columnPrefix="p_" javaType="com.nis.modules.project.entity.Project">
 	    	<id column="id" property="id"/>

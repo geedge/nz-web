@@ -47,6 +47,7 @@ public class ProjectController extends AbstractController {
 	@SysLog("update project")
 	public R modify(@RequestBody Project systemEntity) {
 		ValidateUtils.is(systemEntity.getId()).notNull(RCode.PROJECT_ID_ISNULL);
+		projectService.validateBulitinRule(Arrays.asList(systemEntity.getId()));
 		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 		projectService.updateById(systemEntity);
 		return R.ok();
@@ -54,11 +55,10 @@ public class ProjectController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog("delete project")
-	public R remove(String ids) {
+	public R remove(@RequestParam Integer ... ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
-		String[] split = ids.split(",");
-		projectService.removeHandle(Arrays.asList(split));
-//		projectService.removeByIds(Arrays.asList(split));
+		projectService.validateBulitinRule(Arrays.asList(ids));
+		projectService.removeHandle(Arrays.asList(ids));
 		return R.ok();
 	}
 }

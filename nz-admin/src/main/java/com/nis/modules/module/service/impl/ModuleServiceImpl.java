@@ -71,4 +71,15 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		return moduleDao.selectModuleIdsByProjectIds(projectIds);
 	}
 
+	@Override
+	public void validateBulitinRule(List<Integer> ids) {
+		List<Module> objs = moduleDao.selectBatchIds(ids);
+		for(Module obj : objs) {
+			if(obj!=null&&obj.getBuildIn()){
+				throw new NZException(RCode.MODULE_BUILDIN_CAN_NOT_REMOVE);
+			}
+		}
+		
+	}
+
 }
