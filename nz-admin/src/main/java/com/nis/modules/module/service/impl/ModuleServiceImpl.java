@@ -9,8 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant.AlertType;
+import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -47,6 +49,10 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
 		ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
 		ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
+		boolean flag = CommonUtils.checkPort(moduleEntity.getPort().toString());
+		if(!flag) {
+			throw new NZException(RCode.MODULE_PORT_ERROR);
+		}
 	}
 
 	@Override

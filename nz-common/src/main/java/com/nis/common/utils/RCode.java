@@ -122,6 +122,7 @@ public enum RCode {
 	MODULE_NAME_ISNULL(700003,"Module name info can not be empty"),
 	MODULE_PORT_ISNULL(700004,"Module port info can not be empty"),
 	MODULE_PATH_ISNULL(700005,"Module path info can not be empty"),
+	MODULE_PORT_ERROR(700006,"Module port  is incorrect"),
 	
 	PROMSERVER_ID_ISNULL(800001,"PromServer id can not be empty"),
 	PROMSERVER_IDCID_ISNULL(800002,"Idc id can not be empty"),
