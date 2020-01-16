@@ -47,8 +47,14 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);
 		ValidateUtils.is(promserverEntity.getPort()).notNull(RCode.PROMSERVER_PORT_ISNULL);
-		boolean flag = CommonUtils.checkPort(promserverEntity.getPort().toString());
-		if(!flag) {
+		// 校验ip是否合法
+		boolean ipFlag = CommonUtils.checkIp(promserverEntity.getHost());
+		if(!ipFlag) {
+			throw new NZException(RCode.PROMSERVER_HOST_ERROR);
+		}
+		// 校验port是否合法
+		boolean portFlag = CommonUtils.checkPort(promserverEntity.getPort().toString());
+		if(!portFlag) {
 			throw new NZException(RCode.PROMSERVER_PORT_ERROR);
 		}
 	}
