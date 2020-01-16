@@ -49,6 +49,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
 		ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
 		ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
+		ValidateUtils.is(moduleEntity.getName()).maxLength(64,RCode.MODULE_NAME_TOO_LONG);
+		ValidateUtils.is(moduleEntity.getRemark()).maxLength(1024,RCode.MODULE_REMARK_TOO_LONG);
 		boolean flag = CommonUtils.checkPort(moduleEntity.getPort().toString());
 		if(!flag) {
 			throw new NZException(RCode.MODULE_PORT_ERROR);

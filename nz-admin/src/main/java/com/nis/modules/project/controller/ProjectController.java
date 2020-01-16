@@ -37,19 +37,23 @@ public class ProjectController extends AbstractController {
 	
 	@PostMapping
 	@SysLog("save project")
-	public R save(@RequestBody Project systemEntity) {
-		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
-		projectService.save(systemEntity);
+	public R save(@RequestBody Project project) {
+		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
+		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
+		projectService.save(project);
 		return R.ok();
 	}
 	
 	@PutMapping
 	@SysLog("update project")
-	public R modify(@RequestBody Project systemEntity) {
-		ValidateUtils.is(systemEntity.getId()).notNull(RCode.PROJECT_ID_ISNULL);
-		projectService.validateBulitinRule(Arrays.asList(systemEntity.getId()));
-		ValidateUtils.is(systemEntity.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
-		projectService.updateById(systemEntity);
+	public R modify(@RequestBody Project project) {
+		ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL);
+		projectService.validateBulitinRule(Arrays.asList(project.getId()));
+		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
+		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
+		projectService.updateById(project);
 		return R.ok();
 	}
 	

@@ -117,6 +117,8 @@ public enum RCode {
 	PROJECT_ID_ISNULL(600001,"Project id can not be empty"),
 	PROJECT_NAME_ISNULL(600002,"Project name can not be empty"),
 	PROJECT_BUILDIN_CAN_NOT_REMOVE(600003,"This project is built-in and cannot be deleted"),
+	PROJECT_NAME_TOO_LONG(600004,"Project name too long"),
+	PROJECT_REMARK_TOO_LONG(600005,"Project remark too long"),
 	
 	MODULE_ID_ISNULL(700001,"Module id can not be empty"),
 	MODULE_PROJECTID_ISNULL(700002,"Project id can not be empty"),
@@ -125,6 +127,8 @@ public enum RCode {
 	MODULE_PATH_ISNULL(700005,"Module path info can not be empty"),
 	MODULE_PORT_ERROR(700006,"Module port  is incorrect"),
 	MODULE_BUILDIN_CAN_NOT_REMOVE(700007,"This module is built-in and cannot be deleted"),
+	MODULE_NAME_TOO_LONG(700008,"Module name too long"),
+	MODULE_REMARK_TOO_LONG(700009,"Module remark too long"),
 	
 	PROMSERVER_ID_ISNULL(800001,"PromServer id can not be empty"),
 	PROMSERVER_IDCID_ISNULL(800002,"Idc id can not be empty"),

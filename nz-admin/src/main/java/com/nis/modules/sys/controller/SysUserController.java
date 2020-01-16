@@ -102,8 +102,8 @@ public class SysUserController extends AbstractController {
 	@RequestMapping("/save")
 //	@RequiresPermissions("sys:user:save")
 	public R save(@RequestBody SysUserEntity user){
-		ValidateUtils.is(user.getUsername()).notNull()
-						.and(user.getPassword()).notNull()
+		ValidateUtils.is(user.getUsername()).notNull().maxLength(64)
+						.and(user.getPassword()).notNull().maxLength(64)
 						.and(user.getEmail()).notNull().email();
 		sysUserService.saveUser(user);
 		
@@ -117,7 +117,7 @@ public class SysUserController extends AbstractController {
 	@RequestMapping("/update")
 //	@RequiresPermissions("sys:user:update")
 	public R update(@RequestBody SysUserEntity user){
-		ValidateUtils.is(user.getUsername()).notNull()
+		ValidateUtils.is(user.getUsername()).notNull().max(64)
 		.and(user.getEmail()).notNull().email();
 
 		sysUserService.update(user);
