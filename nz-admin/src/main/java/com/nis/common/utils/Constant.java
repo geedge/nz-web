@@ -371,4 +371,18 @@ public class Constant {
     // ip 校验正则
     public static final String REGEX_IP = "(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)";
 
+    // 系统配置表中 内置 module 的 key名
+    public static final String SYSCONFIG_KEY_INIT_MODULE = "init_module_node_exporter";
+
+    // 内置 node_exporter 默认安装服务器路径
+    public static final String SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH = "node_exporter_target_path";
+
+    // 内置 node_exporter 项目中的路径
+    public static final String SYSCONFIG_KEY_NODEEXPORTER_PATH = "node_exporter_path";
+
+    // 内置 node_exporter 压缩包名称
+    public static final String SYSCONFIG_KEY_NODEEXPORTER_NAME = "node_exporter_name";
+
+    // 内置 node_exporter 初始执行脚本名称
+    public static final String SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME = "node_exporter_shell_name";
 }

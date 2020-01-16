@@ -36,6 +36,9 @@ public enum RCode {
 	SYS_DICT_ID_INVALIDE(106006,"Invalid system dictionary ID"),
 	SYS_DICT_ID_ISNULL(106007,"System dictionary ID is null"),
 
+
+	SYS_CONFIG_MODULEKEY_ISNULL(107001, "System config init module node exporter can not be null"),// 内置module不能为空
+
 	ALERTRULE_ID_ISNULL(201000, "ID is required"), //告警规则ID不能为空
 	ALERTRULE_NAME_ISNULL(201001, "Alert name is required"), //告警规则名称不能为空
 	ALERTRULE_NAME_DUPLICATE(201002, "Alert name is duplicate"), //告警规则名称不能为空
@@ -65,6 +68,8 @@ public enum RCode {
 	ACCOUNT_ID_ISNULL(301007,"Account ID cannot be null"),
 	ACCOUNT_ID_INVALIDE(301008,"Account ID cannot be null"),
 	ACCOUNT_FILE_INSUFFICIENT(301009,"Account insufficient number of documents"), // 文件数量不足
+	ACCOUNT_PORT_ERROR(301010,"Account port is incorrect"),                       // 账号端口不正确
+
 
 	IDC_IDCNAME_ISNULL(401001,"Idc name can not be empty"),              // 数据中心name不能为空
 	IDC_IDCID_ISNULL(401002,"Idc id can not be empty"),                  // 数据中心id不能为空
@@ -110,6 +115,9 @@ public enum RCode {
 	ASSET_VENDOR_ISNULL(502015, "Model vendor can not be empty"),        // 厂商不能为空
 	ASSET_TYPE_ISNULL(502016, "Asset type can not be empty"),            // 资产类型不能为空
 	ASSET_VENDOR_NOTFOUND(502017, "Asset model vendor not found"),       // 资产型号厂商未找到
+	ASSET_ACCOUNT_ISNULL(502018, "Account can not be null, because exporter is specified"),// 账号信息不能为空，因为指明了需要安装exporter
+	ASSET_UPLOAD_FAIL(502019, "The asset and account are saved successfully, but export upload error. You can upload files manually, sorry."),
+	ASSET_SN_TOO_LONG(502020, "Asset serial number too long"),           // 资产序列号长度过长
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误

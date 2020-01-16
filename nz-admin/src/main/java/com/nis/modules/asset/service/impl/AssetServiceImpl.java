@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.dao.AssetDao;
@@ -22,11 +19,15 @@ import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.romote.dao.AccountDao;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.romote.service.AccountService;
 import com.nis.modules.romote.util.StringUtils;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -81,6 +82,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private AlertMessageService alertMessageService;
+
+    @Autowired
+    private SysConfigService sysConfigService;
+
+    @Autowired
+    private ModuleService moduleService;
 
     @Autowired
     private AccountDao accountDao;
@@ -200,6 +207,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         if (asset.getId() == null) {
             assetDao.saveAsset(asset);
+            // 如果指名了安装node exporter 则需要保存endpoint信息
+            if (asset.getExporter().equals(1)) {
+                this.saveInitEndpoint(asset);
+            }
         } else {
             this.updateById(asset);
         }
@@ -279,6 +290,23 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
+    /**
+     * 保存内置module 下endpoint信息
+     *
+     * @param asset
+     */
+    private void saveInitEndpoint(Asset asset) {
+        SysConfigEntity initModule = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", Constant.SYSCONFIG_KEY_INIT_MODULE));
+        if (initModule == null) {
+            throw new NZException(RCode.SYS_CONFIG_MODULEKEY_ISNULL);
+        }
+
+        // 保存内置的endpoint
+        Module module = moduleService.getById(initModule.getParamValue());
+        Endpoint endpoint = new Endpoint(module.getId(), asset.getId(), asset.getHost(), module.getPort(), module.getParam(), module.getPath());
+        endpointService.save(endpoint);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
@@ -320,6 +348,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }*/
         //4.port 不能为空
         ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
+        boolean portFlag = CommonUtils.checkPort(account.getPort().toString());
+        if (!portFlag) {
+            // 账号端口不正确
+            throw new NZException(RCode.ACCOUNT_PORT_ERROR);
+        }
     }
 
     public boolean checkFieldExist(Integer id, String column, String columnValue) {

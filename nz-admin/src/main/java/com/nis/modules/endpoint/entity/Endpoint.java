@@ -30,4 +30,16 @@ public class Endpoint {
 	private Long lastUpdate;
 	@TableField(exist = false)
 	private Integer state;
+
+	public Endpoint() {
+	}
+
+	public Endpoint(Integer moduleId, Integer assetId, String host, Integer port, String param, String path) {
+		this.moduleId = moduleId;
+		this.assetId = assetId;
+		this.host = host;
+		this.port = port;
+		this.param = param;
+		this.path = path;
+	}
 }

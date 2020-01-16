@@ -133,4 +133,11 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private List<Account> accounts;
+
+    /**
+     * 标识
+     * 是否安装node_exporter，1：安装，0：不安装
+     */
+    @TableField(exist = false)
+    private Integer exporter;
 }
