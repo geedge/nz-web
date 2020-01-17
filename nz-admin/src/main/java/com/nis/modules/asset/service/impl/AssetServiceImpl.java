@@ -208,7 +208,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (asset.getId() == null) {
             assetDao.saveAsset(asset);
             // 如果指名了安装node exporter 则需要保存endpoint信息
-            if (asset.getExporter().equals(1)) {
+            if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
                 this.saveInitEndpoint(asset);
             }
         } else {

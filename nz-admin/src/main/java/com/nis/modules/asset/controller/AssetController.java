@@ -69,21 +69,22 @@ public class AssetController {
                 .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
-        Integer exporterFlag = 1;
-        if (exporterFlag.equals(asset.getExporter()) && CollectionUtils.isEmpty(asset.getAccounts())) {
+        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter()) && CollectionUtils.isEmpty(asset.getAccounts())) {
             // 指名了需要安装 node exporter 账号信息不能为空
             throw new NZException(RCode.ASSET_ACCOUNT_ISNULL);
         }
 
-        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
 
-            // 目前按照一个asset 对应 一个account实现
-            Account account = asset.getAccounts().get(0);
-            assetService.validateAccount(account);
+        Account accountCli = null;
+        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
+            // 克隆登录服务器的账号信息
+            accountCli = JSONObject.parseObject(JSON.toJSONString(asset.getAccounts().get(0)), Account.class);
+
+            assetService.validateAccount(accountCli);
 
             // 密码登录，密码不能为空，证书登录，证书不能为空
-            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
-                ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
+            if (Constant.AUTH_PASSWORD.equals(accountCli.getAuthType())) {
+                ValidateUtils.is(accountCli.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
             } else {
                 if (sshKeys.length < 1) {
                     // 文件数量不足
@@ -109,12 +110,10 @@ public class AssetController {
             asset.setPurchaseDate(null);
         }
 
-        // 克隆登录服务器的账号信息
-        Account accountCli = JSONObject.parseObject(JSON.toJSONString(asset.getAccounts().get(0)), Account.class);
         assetService.saveOrUpdateAsset(asset, sshKeys);
         String msg = "The asset and account are saved successfully";
 
-        if (exporterFlag.equals(asset.getExporter())) {
+        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
             List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().eq("status", 1));
             Map<String, String> configs = new HashMap<>();
             for (SysConfigEntity config : sysConfigs) {
@@ -133,7 +132,7 @@ public class AssetController {
                 String buildNodeExporterName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_NAME);
 
                 // 登录
-                sftpUtils.loginIn(asset.getHost(), accountCli.getPort(), accountCli.getUser(), accountCli.getAuthType(), accountCli.getPwd(), accountCli.getPrivateKey());
+                sftpUtils.loginIn(asset.getHost(), accountCli.getPort(), accountCli.getUser(), accountCli.getAuthType(), accountCli.getPwd(), sshKeys.length > 0 ? sshKeys[0].getBytes() : null);
 
                 // 上传
                 sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);

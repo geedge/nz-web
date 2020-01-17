@@ -385,4 +385,7 @@ public class Constant {
 
     // 内置 node_exporter 初始执行脚本名称
     public static final String SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME = "node_exporter_shell_name";
+
+    // asset 内置node exporter 标识
+    public static final Integer ASSET_BUILD_NODE_EXPORTER_FLAG = 1;
 }
