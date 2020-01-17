@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -110,10 +111,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
     @Override
     public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
-    	logger.info("receive promethues alert message {}",receiveData==null?null:Arrays.asList(receiveData).toString());
+    	logger.debug("receive promethues alert message {}",receiveData==null?null:Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
     	Set<Integer> ruleIds = new HashSet<>();
-		redisTemplate.executePipelined(new RedisCallback<Object>() {
+
+	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
+
+	    redisTemplate.executePipelined(new RedisCallback<Object>() {
 			@Override
 			public Object doInRedis(RedisConnection redis) throws DataAccessException {
 
@@ -131,11 +135,18 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 //						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
                         AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, assetIpWithId);
 						ruleIds.add(entity.getRuleId());
-						entities.add(entity);
+
+						// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
+						Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
+						if(cacheAlert == null){
+                            entities.add(entity);
+						}
+
+						// entities.add(entity);
 						HashMap<String, Object> map = new HashMap<>();
 						map.put("id",entity.getRuleId());
-						map.put("time",new Date().getTime());
-						//存在更新时间，不存在set
+						map.put("time", System.currentTimeMillis());
+						// 存在更新时间，不存在set
 						redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(),entity.getHashKey().getBytes(),JSON.toJSONString(map).getBytes());
 					}catch (Exception e){
 						// 告警信息解析失败
