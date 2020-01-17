@@ -138,6 +138,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 						//存在更新时间，不存在set
 						redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(),entity.getHashKey().getBytes(),JSON.toJSONString(map).getBytes());
 					}catch (Exception e){
+						// 告警信息解析失败
 						throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 					}
 				}

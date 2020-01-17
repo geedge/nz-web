@@ -104,7 +104,7 @@ public class AlertMessageReceiveDTO implements Serializable {
             // 非内置
             entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
             entity.setSeverity((String) receiveLabels.get("severity"));
-            entity.setHost(((String) receiveLabels.get("instance")).split(":")[0]);
+            entity.setHost(((String) receiveLabels.get("asset")));
             entity.setType(Integer.parseInt((String) receiveLabels.get("type")));
             entity.setLinkId(Integer.parseInt((String) receiveLabels.get("linkId")));
         }

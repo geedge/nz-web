@@ -98,7 +98,7 @@ public class SftpUtils {
         InputStream in = null;
         try {
             // node exporter 文件
-            file = new File(path + "/" + fileName);
+            file = new File(path + File.separator + fileName);
             in = new FileInputStream(file);
 
             // 上传文件
@@ -113,14 +113,14 @@ public class SftpUtils {
             sftp.put(in, file.getName());
 
             // 脚本文件
-            file = new File(path + "/" + shellName);
+            file = new File(path + File.separator + shellName);
             in = new FileInputStream(file);
 
             // 放进sftp中进行传输
             sftp.put(in, file.getName());
         } catch (Exception e) {
             // 文件上传失败
-            logger.error("build node exporter upload faild", e.getMessage());
+            logger.error("build node exporter upload faild {}", e.getMessage());
             // 抛出 controller 处理
             throw new RuntimeException("build node exporter upload faild");
         } finally {
