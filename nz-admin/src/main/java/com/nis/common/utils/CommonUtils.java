@@ -14,7 +14,7 @@ public class CommonUtils {
 	 * @return
 	 */
 	public static boolean checkPort(String port) {
-		String regex = "^([1-9]|[1-9]\\d{3}|[1-6][0-5][0-5][0-3][0-5])$";
+		String regex = "^[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5]$";
 		boolean flag = Pattern.matches(regex, port.toString());
 		return flag;
 	}
