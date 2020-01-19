@@ -150,8 +150,8 @@ public class MetricJob extends QuartzJobBean {
                 // 所有要进行同步的prometheus程序
                 for (Promserver promserver : promservers) {
                     host = promserver.getHost();
-                    if (StringUtils.isEmpty(host) || !host.matches(Constant.REGEX_IP)) {
-                        logger.error("ip format error {}", host);
+                    if (StringUtils.isEmpty(host)) {
+                        logger.error("ip can not be empty {}", promserver);
                         continue;
                     }
 
@@ -268,8 +268,8 @@ public class MetricJob extends QuartzJobBean {
                             for (Promserver promserver : promservers) {
 
                                 String host = promserver.getHost();
-                                if (StringUtils.isEmpty(host) || !host.matches(Constant.REGEX_IP)) {
-                                    logger.error("ip format error {}", host);
+                                if (StringUtils.isEmpty(host)) {
+                                    logger.error("ip can not be empty {}", promserver);
                                     continue;
                                 }
 
@@ -370,7 +370,7 @@ public class MetricJob extends QuartzJobBean {
                     // TO DO
                 }
                 // System.out.println("=========================over====================================");
-                logger.info("同步 metric 信息结束");
+                logger.debug("同步 metric 信息结束");
 
             } else {
                 // 获取锁失败  TODO

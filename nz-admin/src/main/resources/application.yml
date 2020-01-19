@@ -60,6 +60,7 @@ nezha:
   globalSessionTimeout: 3600   #单机环境，session过期时间为60分钟
   redis:
     open: false  #是否开启redis缓存  true开启   false关闭
+    metricLockTimeOut: 5 # metricJob 定时任务redis锁超时时间 目前暂时设置为 5分钟
   defaultLang: en
   promtoolPath: c:/
   uploadTempPath: /upload/temp

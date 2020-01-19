@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -21,8 +22,9 @@ public class LockUtils {
     @Autowired
     private DefaultRedisScript<Long> redisScript;
 
-    // 超时时间 50分钟
-    private final Long TIME_OUT = 50L;
+    // 超时时间  暂时 5 分钟
+    @Value("${nezha.redis.metricLockTimeOut}")
+    private Long TIME_OUT;
 
     private final Long RELEASE_SUCCESS = 1L;
 
