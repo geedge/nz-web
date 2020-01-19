@@ -213,6 +213,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         } else {
             this.updateById(asset);
+            // 修改的时候如果没有指定 account, 则视为删除asset关联account
+            if(CollectionUtils.isEmpty(asset.getAccounts())){
+                accountService.remove(new QueryWrapper<Account>().eq("asset_id", asset.getId()));
+            }
         }
 
         // 保存 accounts
