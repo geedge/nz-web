@@ -192,7 +192,8 @@ public class AssetController {
 
             // 目前按照一个asset 对应 一个account实现
             Account account = asset.getAccounts().get(0);
-            ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
+            // 此处取消对 account id 的校验 原因： asset 修改的时候 account 可以是新增 也可以是修改
+            // ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
             assetService.validateAccount(account);
         }
 
