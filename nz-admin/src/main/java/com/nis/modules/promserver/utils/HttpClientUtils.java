@@ -141,6 +141,32 @@ public class HttpClientUtils {
         return jsonResult;
     }
 
+    /**
+     * 发送get请求
+     *
+     * @param url 路径
+     * @return
+     */
+    public static Integer httpGetForCode(String url) {
+        // get请求返回结果
+    	Integer statusCode  = null;
+        CloseableHttpClient client = HttpClients.createDefault();
+        // 发送get请求
+        HttpGet request = new HttpGet(url);
+        request.setConfig(requestConfig);
+        try {
+            CloseableHttpResponse response = client.execute(request);
+            statusCode = response.getStatusLine().getStatusCode();
+            return statusCode;
+   
+        } catch (IOException e) {
+            logger.error("submit get request faild:" + url, e);
+        } finally {
+            request.releaseConnection();
+        }
+        return statusCode;
+    }
+    
     public static void main(String[] args) throws IOException {
 //        JSONObject jsonObject = HttpClientUtils.httpGet("http://192.168.40.247:9090/api/v1/query");
 //

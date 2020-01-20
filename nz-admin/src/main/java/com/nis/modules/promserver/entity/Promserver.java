@@ -1,5 +1,7 @@
 package com.nis.modules.promserver.entity;
 
+import java.util.Date;
+
 import javax.validation.constraints.NotBlank;
 
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -19,4 +21,6 @@ public class Promserver {
 	@NotBlank(message="参数名不能为空")
 	private Integer type;
 	private Integer port;
+	private Boolean status;
+	private Date lastUpdate;
 }

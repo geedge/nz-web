@@ -29,6 +29,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		String host = (String)params.get("host");
 		String type = (String)params.get("type");
 		String port = (String)params.get("port");
+		String status = (String)params.get("status");
 		IPage<Promserver> page = this.page(
 			new Query<Promserver>().getPage(params),
 			new QueryWrapper<Promserver>()
@@ -37,6 +38,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				.eq(StringUtils.isNotBlank(type), "type",type)
 				.eq(StringUtils.isNotBlank(idcId), "idc_id",idcId)
 				.eq(StringUtils.isNotBlank(port), "port",port)
+				.eq(StringUtils.isNotBlank(status),"status",status)
 		);
 		return new PageUtils(page);
 	}
@@ -58,5 +60,4 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 			throw new NZException(RCode.PROMSERVER_PORT_ERROR);
 		}
 	}
-
 }
