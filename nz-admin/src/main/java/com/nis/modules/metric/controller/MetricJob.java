@@ -128,7 +128,7 @@ public class MetricJob extends QuartzJobBean {
                 }
 
                 // 需要进行同步的服务集合
-                List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 2));
+                List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 2).eq("status", 1));
 
                 if (CollectionUtils.isEmpty(promservers)) {
                     logger.error("There are currently no synchronized promservers.");

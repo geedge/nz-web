@@ -135,6 +135,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
         QueryWrapper<Promserver> psQueryWrapper = new QueryWrapper<>();
         //服务器类型为center
         psQueryWrapper.eq("type",1);
+        psQueryWrapper.eq("status",1);
         List<Promserver> list = promserverService.list(psQueryWrapper);
 
         if(list != null && list.size() > 0){

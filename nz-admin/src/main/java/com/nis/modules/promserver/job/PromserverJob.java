@@ -67,7 +67,7 @@ public class PromserverJob extends QuartzJobBean {
 
         }catch (Exception e){
             logger.error("request Prometheus Server query api with error {}",e);
-            throw new NZException(RCode.PROMSERVER_REQUEST_FAILD);
+            // throw new NZException(RCode.PROMSERVER_REQUEST_FAILD);
         }
         return code;
     }
