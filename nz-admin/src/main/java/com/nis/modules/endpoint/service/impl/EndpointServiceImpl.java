@@ -69,6 +69,8 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						String stateValue=(String)valueList.get(1);
 						Integer state = Integer.valueOf(stateValue);
 						data.setState(state);
+					}else {
+						data.setState(0);
 					}
 				}
 			}
