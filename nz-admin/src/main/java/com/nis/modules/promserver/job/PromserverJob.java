@@ -48,11 +48,11 @@ public class PromserverJob extends QuartzJobBean {
 				logger.info("current promserver info : {}",JSON.toJSON(promserver));
 				logger.info("prometheus response :{}",JSON.toJSON(result));
 				if(result!=null&&result.equals(200)) {
-					promserver.setStatus(true);
-					promserver.setLastUpdate(new Date());
+					promserver.setStatus(1);
+					promserver.setCheckTime(new Date());
 				}else {
-					promserver.setStatus(false);
-					promserver.setLastUpdate(new Date());
+					promserver.setStatus(0);
+					promserver.setCheckTime(new Date());
 				}
 			}
 			promserverService.updateBatchById(promservers);

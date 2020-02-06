@@ -21,6 +21,6 @@ public class Promserver {
 	@NotBlank(message="参数名不能为空")
 	private Integer type;
 	private Integer port;
-	private Boolean status;
-	private Date lastUpdate;
+	private Integer status;
+	private Date checkTime;
 }
