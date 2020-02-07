@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.overview.dao.OverviewDao">
+
+    <select id="getAlertMessageAllSeverityInfos" resultType="java.util.Map">
+        SELECT
+            COUNT(DISTINCT am.link_id) AS nums, am.severity AS severity, am.type AS type
+        FROM alert_message am
+        WHERE am.state = 1
+        GROUP BY am.type,am.severity
+    </select>
+
+    <select id="getProjectNotRelationAlertCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM project
+        WHERE id NOT IN (
+            SELECT DISTINCT am.link_id
+            FROM alert_message am WHERE am.type = 1 AND am.state = 1
+        )
+    </select>
+
+    <select id="getModuletNotRelationAlertCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM module
+        WHERE id NOT IN (
+            SELECT DISTINCT am.link_id
+            FROM alert_message am WHERE am.type = 2 AND am.state = 1
+        )
+    </select>
+
+    <select id="getAssetNotRelationAlertCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM asset
+        WHERE id NOT IN (
+            SELECT DISTINCT am.link_id
+            FROM alert_message am WHERE am.type = 3 AND am.state = 1
+        )
+    </select>
+
+
+    <select id="alertNumTopN" resultType="java.util.Map">
+        SELECT COUNT(am.id) AS nmus,am.type,am.link_id AS linkId FROM alert_message am
+        WHERE am.state = 1
+        GROUP BY am.type,am.link_id
+        ORDER BY nmus DESC,type
+        limit #{topN}
+    </select>
+
+    <select id="alertRuleTopN" resultType="java.util.Map">
+        SELECT ar.alert_name AS alertName,ar.severity AS level, COUNT(am.rule_id) AS nums FROM alert_rule ar
+        LEFT JOIN alert_message am ON ar.id = am.rule_id
+        WHERE am.state = 1
+        GROUP BY am.rule_id
+        ORDER BY nums DESC
+        limit #{topN}
+    </select>
+
+    <select id="alertUnprocessed" resultType="java.util.Map">
+        SELECT am.id,am.type,am.link_id AS linkId,am.rule_id AS ruleId,am.severity AS level,am.summary,am.start_at AS time FROM alert_message am
+        WHERE am.state = 1
+        ORDER BY
+        field( am.severity,'high','medium','low'), am.type
+        limit #{pageNo},#{pageSize}
+    </select>
+
+    <select id="assetModelAndAlertSeveritysNums" resultType="java.util.Map">
+        SELECT
+        ass.model_id as modelId,
+        COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
+        COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
+        COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
+        FROM asset ass
+        LEFT JOIN alert_message am ON ass.id = am.link_id
+        WHERE am.type = 3 AND am.state = 1
+
+        /*是否只统计在库资产*/
+        <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
+            AND ass.state = #{onlyInUse}
+        </if>
+        GROUP BY ass.model_id
+        ORDER BY ass.model_id
+    </select>
+
+    <select id="assetModelAndPingActivesNums" resultType="java.util.Map">
+        SELECT
+        ass.model_id AS modelId,
+        COUNT(CASE WHEN assp.status = '1' THEN 0 END) AS pingActive,
+        COUNT(CASE WHEN assp.status = '0' THEN 0 END) AS pingInactive
+        FROM asset ass
+        LEFT JOIN asset_ping assp ON ass.host = assp.host
+        /*是否只统计在库资产*/
+        <where>
+            <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
+                AND ass.state = #{onlyInUse}
+            </if>
+        </where>
+        GROUP BY ass.model_id
+        ORDER BY ass.model_id
+    </select>
+
+    <select id="assetDcAndAlertSeveritysNums" resultType="java.util.Map">
+        SELECT ass.idc_id AS idcId,
+        COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
+        COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
+        COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
+        FROM asset ass
+        LEFT JOIN alert_message am ON ass.id = am.link_id
+        WHERE am.type = 3 AND am.state = 1
+
+        /*是否只统计在库资产*/
+        <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
+            AND ass.state = #{onlyInUse}
+        </if>
+
+        GROUP BY ass.idc_id
+        ORDER BY ass.idc_id
+    </select>
+
+    <select id="assetDcAndPingActivesNums" resultType="java.util.Map">
+        SELECT
+        ass.idc_id AS idcId,
+        COUNT(CASE WHEN assp.status = '1' THEN 0 END) AS pingActive,
+        COUNT(CASE WHEN assp.status = '0' THEN 0 END) AS pingInactive
+        FROM asset ass
+        LEFT JOIN asset_ping assp ON ass.host = assp.host
+        /*是否只统计在库资产*/
+        <where>
+            <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
+                AND ass.state = #{onlyInUse}
+            </if>
+        </where>
+        GROUP BY ass.idc_id
+        ORDER BY ass.idc_id
+    </select>
+
+    <select id="alertRuleStat" resultType="java.util.Map">
+        SELECT
+        COUNT(CASE WHEN ar.severity = 'high' THEN 0 END) AS high,
+        COUNT(CASE WHEN ar.severity = 'medium' THEN 0 END) AS medium,
+        COUNT(CASE WHEN ar.severity = 'low' THEN 0 END) AS low
+        FROM alert_rule ar
+    </select>
+
+    <select id="promDCAndActiveNums" resultType="java.util.Map">
+        SELECT
+        ps.idc_id AS idcId,
+        COUNT(CASE WHEN ps.status = '1' THEN 0 END) AS prometheusServerActive,
+        COUNT(CASE WHEN ps.status = '0' THEN 0 END) AS prometheusServerInactive
+        FROM prom_server ps
+        GROUP BY ps.idc_id
+    </select>
+
+    <select id="getIdcAndEndpointIds" resultType="java.util.Map">
+        SELECT
+        ass.idc_id AS idcId,
+        GROUP_CONCAT(en.id) AS endpointIds
+        FROM endpoint en
+        LEFT JOIN asset ass ON en.asset_id = ass.id
+        GROUP BY ass.idc_id
+    </select>
+</mapper>

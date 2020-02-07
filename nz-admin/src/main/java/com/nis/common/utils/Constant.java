@@ -8,15 +8,12 @@
 
 package com.nis.common.utils;
 
-import java.io.File;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import org.apache.ibatis.mapping.DatabaseIdProvider;
 
 import javax.sql.DataSource;
-
-import org.apache.ibatis.mapping.DatabaseIdProvider;
+import java.io.File;
+import java.sql.SQLException;
+import java.util.*;
 
 /**
  * 常量
@@ -37,6 +34,10 @@ public class Constant {
      * 每页显示记录数
      */
     public static final String LIMIT = "pageSize";
+    /**
+     * 每页显示条数
+     */
+    public static final long PAGESIZE = 10;
     /**
      * 排序字段
      */
@@ -403,4 +404,16 @@ public class Constant {
 
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
+
+    // 告警级别 高
+    public static final String ALERT_SEVERITY_HIGH = "high";
+
+    // 告警级别 中
+    public static final String ALERT_SEVERITY_MEDIUM = "medium";
+
+    // 告警级别 低
+    public static final String ALERT_SEVERITY_LOW = "low";
+
+    // 系统登陆用户集合
+    public static Set<String> loginUsers = new HashSet<>();
 }

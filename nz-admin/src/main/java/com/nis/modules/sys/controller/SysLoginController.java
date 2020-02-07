@@ -20,6 +20,7 @@ import com.nis.modules.romote.util.CommonUtils;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,6 +102,9 @@ public class SysLoginController extends AbstractController {
 			String json=JSON.toJSONString(map);
 			String value = Base64.getEncoder().encodeToString(json.getBytes());
 			ops.set(loginToken,value ,this.loginExpiration, TimeUnit.MINUTES);
+
+			Constant.loginUsers.add(username);
+
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
@@ -113,13 +117,17 @@ public class SysLoginController extends AbstractController {
 		}
 	}
 
-	
+
 	/**
 	 * 退出
 	 */
 	@RequestMapping(value = "logout", method = RequestMethod.GET)
 	@ResponseBody
 	public R logout(HttpServletRequest request) {
+
+		SysUserEntity userEntity = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
+		Constant.loginUsers.remove(userEntity.getUsername());
+
 		ShiroUtils.logout();
 		String requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
 		if(StringUtils.isBlank(requestToken)){

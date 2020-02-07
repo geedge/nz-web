@@ -52,12 +52,14 @@ public enum RCode {
 	ALERTRULE_TYPE_ISNULL(201010,"Alarm type is empty"),
 	ALERTRULE_TYPE_INVALIDE(201011,"Alarm type is invalide"),
 	ALERTRULE_BUILDIN_CAN_NOT_REMOVE(201012,"This rule is built-in and cannot be deleted"),
+	ALERTRULE_TOPN_ISNULL(201013,"TopN is required"), //告警信息topn不能为空
 	
 	ALERTMSG_IDS_ISNULL(202000, "Ids is required"), //告警信息ids不能为空
 	ALERTMSG_STATE_ISNULL(202001, "State is required"), //告警信息state不能为空
 	ALERTMSG_STATE_INCORRECT(202002, "State is incorrect"), //告警信息state不合法
 	ALERTMSG_PARSE_ERROR(202003, "Data parse error"), //告警信息解析失败
 	ALERTMSG_SAVE_ERROR(202004, "Data save faild"), //告警信息解析失败
+	ALERTMSG_TOPN_ISNULL(202005,"TopN is required"),//告警信息topn不能为空
 
 	ACCOUNT_AUTHTYPE_ISNULL(301001,"Authentication type cannot be empty"),
 	ACCOUNT_AUTHTYPE_INVALIDE(301002,"Invalid authentication type"),
@@ -158,6 +160,7 @@ public enum RCode {
 	ENDPOINT_ASSETID_ISNULL(900003,"Asset Id can not be empty"),
 	ENDPOINT_PORT_ISNULL(900004,"Port can not be empty"),
 	ENDPOINT_PATH_ISNULL(900005,"Path can not be empty"),
+	ENDPOINT_QUERYACTIVE_ERROR(900006,"Endpoint query active state error"), // 请求prometheus查询endpoint状态失败
 
 	PANEL_NAME_ISNULL(1000001,"Panel name can not be empty"),
 	PANEL_ID_ISNULL(1000002,"Panel ID can not be empty"),
