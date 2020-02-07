@@ -13,6 +13,9 @@
         <result property="updateAt" column="update_at"/>
         <result property="createBy" column="create_by"/>
         <result property="updateBy" column="update_by"/>
+        <result property="pingState" column="pingState"/>
+        <result property="pingRtt" column="pingRtt"/>
+        <result property="pingLastUpdate" column="pingLastUpdate"/>
 
         <!--数据中心-->
         <result property="idc.id" column="idc_id"/>
@@ -105,6 +108,9 @@
        su1.status AS su1_status,
        su1.create_time AS su1_createTime,
 
+       assp.status AS pingState,
+       assp.rtt AS pingRtt,
+       assp.last_update AS pingLastUpdate,
 
         /*module统计 关联endPoint表  统计 module 数量 */
         (SELECT COUNT(DISTINCT ep.module_id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS moduleNum,
@@ -123,6 +129,7 @@
         LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
         LEFT JOIN sys_user su ON ass.create_by = su.user_id
         LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
+        LEFT JOIN asset_ping assp ON ass.host = assp.host
 
         WHERE 1=1
 
@@ -164,6 +171,10 @@
         <if test="params.purchaseDate != null and params.purchaseDate != ''">
             AND ass.purchase_date like CONCAT('%', #{params.purchaseDate}, '%')
         </if>
+
+        <if test="params.pingStatus != null and params.pingStatus != ''">
+            AND assp.status = #{params.pingStatus}
+        </if>
     </select>
 
 
@@ -193,22 +204,23 @@
     </select>
 
 
-	<select id="queryListByHosts" resultType="asset">
-		SELECT id, sn, host, state
-		FROM asset
-		<where>
-			host in
-			<foreach item="item" collection="collection" separator="," open="(" close=")" index="">
-				#{item}
-			</foreach>
-		</where>
-	</select>
+    <select id="queryListByHosts" resultType="asset">
+        SELECT id, sn, host, state
+        FROM asset
+        <where>
+            host in
+            <foreach item="item" collection="collection" separator="," open="(" close=")" index="">
+                #{item}
+            </foreach>
+        </where>
+    </select>
 
     <insert id="saveAsset">
-        INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, host, state, purchase_date, create_at, update_at, create_by, update_by)
+        INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, host, state, purchase_date, create_at, update_at,
+        create_by, update_by)
         VALUES
         (NULL, #{asset.sn},#{asset.modelId},#{asset.idcId},#{asset.cabinetId},#{asset.host},
-         #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy})
+        #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy})
 
         <selectKey keyProperty="asset.id" order="AFTER" resultType="java.lang.Integer">
             SELECT LAST_INSERT_ID();

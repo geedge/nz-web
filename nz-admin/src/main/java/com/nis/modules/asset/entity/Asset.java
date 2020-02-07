@@ -123,7 +123,7 @@ public class Asset implements Serializable {
     private Integer moduleNum;
 
     /**
-     *  alert统计
+     * alert统计
      */
     @TableField(exist = false)
     private Integer alertNum;
@@ -140,4 +140,22 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private Integer exporter;
+
+    /**
+     * ping状态
+     */
+    @TableField(exist = false)
+    private Integer pingState;
+
+    /**
+     * ping网络延时
+     */
+    @TableField(exist = false)
+    private Double pingRtt;
+
+    /**
+     * ping检查时间
+     */
+    @TableField(exist = false)
+    private Date pingLastUpdate;
 }
