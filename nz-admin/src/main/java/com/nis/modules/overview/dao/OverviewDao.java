@@ -52,4 +52,7 @@ public interface OverviewDao {
 
     // 获取 idc 下的 endpoint  格式为 idcId endpoints(1,2,...)
     List<Map> getIdcAndEndpointIds();
+
+    // 关联并且type = per prometheus status 为可用的 prometheus 关联 dc的名称集合
+    List<String> getIdcNameByPerPromeServer();
 }

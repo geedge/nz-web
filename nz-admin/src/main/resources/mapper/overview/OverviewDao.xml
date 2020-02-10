@@ -159,4 +159,11 @@
         LEFT JOIN asset ass ON en.asset_id = ass.id
         GROUP BY ass.idc_id
     </select>
+
+    <select id="getIdcNameByPerPromeServer" resultType="java.lang.String">
+        SELECT idc.name AS dc FROM idc
+        LEFT JOIN prom_server ps ON idc.id = ps.idc_id
+        WHERE ps.type = 2 AND ps.status = 1
+        GROUP BY idc.id
+    </select>
 </mapper>

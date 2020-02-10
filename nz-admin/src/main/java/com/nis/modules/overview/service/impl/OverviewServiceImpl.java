@@ -3,9 +3,7 @@ package com.nis.modules.overview.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Asset;
@@ -30,17 +28,17 @@ import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service("overviewService")
 public class OverviewServiceImpl implements OverviewService {
+    private static Logger logger = LoggerFactory.getLogger(OverviewServiceImpl.class);
 
     @Autowired
     private OverviewDao overviewDao;
@@ -167,7 +165,7 @@ public class OverviewServiceImpl implements OverviewService {
         prometheusServer.put("inactive", inactive);
 
         // endpoint 状态查询  返回 可用的endpoint id集合
-        List<Integer> endPointIds = this.getEndpointStatus();
+        Set<Integer> endPointIds = this.getEndpointStatus();
         // 当前库中的数据
         List<Endpoint> endpoints = endpointService.list();
         List<Integer> dataBaseEndpointIds = new ArrayList<>();
@@ -190,46 +188,48 @@ public class OverviewServiceImpl implements OverviewService {
     }
 
     // 请求prometheus 然后返回状态可用的endpoint ids
-    public List<Integer> getEndpointStatus() {
-        // endpoint 状态查询
-        List<Integer> endPointIds = new ArrayList<>();
+    public Set<Integer> getEndpointStatus() {
+        Set<Integer> endPointIds = new HashSet<>();
 
         // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
-        Promserver promserver = promserverService.getOne(new QueryWrapper<Promserver>().eq("type", 1));
+        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1));
+        String url;
+        Map result;
+        for (Promserver promserver : promservers) {
+            // 2. 查询 up
+            url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
+            url += query + "?query=up";// url
 
-        // 2. 查询 up
-        String url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
-        url += query + "?query=up";// url
-        Map result = promserverProxyService.requestPromAPI(url);
+            result = promserverProxyService.requestPromAPI(url);
+            // 查询成功
+            if (result != null && "success".equals(result.get("status"))) {
+                Map data = (Map) result.get("data");
+                JSONArray array = (JSONArray) data.get("result");
 
-        // 查询成功
-        if (result != null && "success".equals(result.get("status"))) {
-            Map data = (Map) result.get("data");
-            JSONArray array = (JSONArray) data.get("result");
+                JSONObject obj = null;
+                JSONArray timeAndState = null;
+                Map metricLabels;
+                String job = null;
+                String[] split = null;
 
-            JSONObject obj = null;
-            JSONArray timeAndState = null;
-            Map metricLabels;
-            String job = null;
-            String[] split = null;
+                for (int i = 0; i < array.size(); i++) {
+                    obj = (JSONObject) array.get(i);
+                    timeAndState = (JSONArray) obj.get("value");
 
-            for (int i = 0; i < array.size(); i++) {
-                obj = (JSONObject) array.get(i);
-                timeAndState = (JSONArray) obj.get("value");
+                    if ("1".equals(timeAndState.get(1).toString())) {
+                        metricLabels = (Map) obj.get("metric");
+                        job = metricLabels.get("job").toString();
 
-                if ("1".equals(timeAndState.get(1).toString())) {
-                    metricLabels = (Map) obj.get("metric");
-                    job = metricLabels.get("job").toString();
-
-                    if (job.contains("_")) {
-                        // job 标签的格式为 ed_endpointId
-                        split = job.split("_");
-                        endPointIds.add(Integer.parseInt(split[1]));
+                        if (job.contains("_")) {
+                            // job 标签的格式为 ed_endpointId
+                            split = job.split("_");
+                            endPointIds.add(Integer.parseInt(split[1]));
+                        }
                     }
                 }
+            } else {// 查询失败
+                logger.error("query endpoint status failed ,prometheus server is {}", promserver);
             }
-        } else {// 查询失败
-            throw new NZException(RCode.ENDPOINT_QUERYACTIVE_ERROR);
         }
         return endPointIds;
     }
@@ -583,7 +583,7 @@ public class OverviewServiceImpl implements OverviewService {
         }
 
         // 请求prometheus 查询可用endpoint id 集合
-        List<Integer> endpointStatusIds = this.getEndpointStatus();
+        Set<Integer> endpointStatusIds = this.getEndpointStatus();
 
         for (int i = 0; i < list.size(); i++) {
             int endpointUp = 0;
