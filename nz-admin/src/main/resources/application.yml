@@ -101,3 +101,24 @@ mybatis-plus:
     cache-enabled: false
     call-setters-on-nulls: true
     jdbc-type-for-null: 'null'
+
+management:
+   metrics:
+    binders:
+      jvm:
+        enabled: false
+      files:
+        enabled: false
+      integration:
+        enabled: false
+      logback:
+        enabled: false
+      processor:
+        enabled: false
+      uptime:
+        enabled: false
+   endpoints:
+    web:
+      exposure:
+        include: ["prometheus"]
+      base-path: "/"

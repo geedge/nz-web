@@ -6,6 +6,7 @@ import java.util.Map;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.metric.dto.MetricsDto;
 
 public interface EndpointService extends IService<Endpoint> {
 	
@@ -14,4 +15,6 @@ public interface EndpointService extends IService<Endpoint> {
 	void validateParam(Endpoint endpointEntity);
 	
 	void removeByModuleIds(List moduleIds);
+	
+	List<MetricsDto> queryEndpointStatisticsInfoByModel();
 }

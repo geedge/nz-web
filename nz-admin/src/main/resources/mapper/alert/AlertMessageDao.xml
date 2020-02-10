@@ -78,4 +78,10 @@
 			#{id}
 		</foreach>
     </delete>
+    
+    <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
+    	select count(*) total,type,severity 
+    	from alert_message 
+    	where state=1 group by type,severity
+    </select>
 </mapper>

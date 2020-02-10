@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.metric.dto.MetricsDto;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -25,5 +26,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
 	
 	void removeByTypeIds(Integer typeId,List ids);
+	
+	List<MetricsDto> queryAlertMessageStatisticsInfo();
 }
 

@@ -19,6 +19,7 @@ import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.romote.dao.AccountDao;
@@ -370,4 +371,19 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
         return flag;
     }
+
+	@Override
+	public List<MetricsDto> queryAssetStatisticsByModel() {
+		return assetDao.selectAssetStatisticsByModel();
+	}
+
+	@Override
+	public List<MetricsDto> queryAssetStatisticsByModelOnLine() {
+		return assetDao.selectAssetStatisticsByModelOnLine();
+	}
+
+	@Override
+	public MetricsDto queryAssetStatisticsByModelOffLine() {
+		return assetDao.selectAssetStatisticsByModelOffLine();
+	}
 }

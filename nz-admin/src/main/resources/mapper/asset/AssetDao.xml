@@ -227,4 +227,22 @@
         </selectKey>
     </insert>
 
+	<select id="selectAssetStatisticsByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
+		select count(*) total , m.name 
+		from asset a left join model m on a.model_id=m.id 
+		group by a.model_id
+	</select>
+	
+	<select id="selectAssetStatisticsByModelOnLine" resultType="com.nis.modules.metric.dto.MetricsDto">
+		select count(*) total , m.name 
+		from asset a left join model m on a.model_id=m.id 
+		where a.state=1
+		group by a.model_id
+	</select>
+	
+	<select id="selectAssetStatisticsByModelOffLine" resultType="com.nis.modules.metric.dto.MetricsDto">
+		select count(*) total 
+		from asset a 
+		where a.state=2
+	</select>
 </mapper>

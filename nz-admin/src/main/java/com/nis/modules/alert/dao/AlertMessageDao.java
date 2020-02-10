@@ -1,6 +1,7 @@
 package com.nis.modules.alert.dao;
 
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.metric.dto.MetricsDto;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
@@ -23,4 +24,5 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
     List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
     void deleteByTypeIds(@Param("typeId")Integer typeId,@Param("ids")List ids);
+    List<MetricsDto> selectAlertMessageStatisticsInfo();
 }

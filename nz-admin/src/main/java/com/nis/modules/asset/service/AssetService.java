@@ -3,6 +3,7 @@ package com.nis.modules.asset.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.romote.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,4 +28,10 @@ public interface AssetService extends IService<Asset> {
     void delete(Integer ... ids);
 
     void validateAccount(Account account);
+    
+    List<MetricsDto> queryAssetStatisticsByModel();
+    
+    List<MetricsDto> queryAssetStatisticsByModelOnLine();
+    
+    MetricsDto queryAssetStatisticsByModelOffLine();
 }

@@ -3,6 +3,8 @@ package com.nis.modules.asset.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.metric.dto.MetricsDto;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -27,4 +29,10 @@ public interface AssetDao extends BaseMapper<Asset> {
 
 	// 注: 此添加会通过selectkey返回添加之后的ID
     void saveAsset(@Param("asset") Asset asset);
+    
+    List<MetricsDto> selectAssetStatisticsByModel(); 
+    
+    List<MetricsDto> selectAssetStatisticsByModelOnLine();
+    
+    MetricsDto selectAssetStatisticsByModelOffLine();
 }

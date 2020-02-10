@@ -21,6 +21,7 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -93,6 +94,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	@Transactional(rollbackFor = Exception.class)
 	public void removeByModuleIds(List moduleIds) {
 		endpointDao.deleteByModuleIds(moduleIds);
+	}
+
+	@Override
+	public List<MetricsDto> queryEndpointStatisticsInfoByModel() {
+		return endpointDao.selectEndpointStatisticsInfoByModel();
 	}
 
 }

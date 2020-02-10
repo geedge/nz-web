@@ -16,6 +16,7 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
@@ -224,6 +225,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Transactional(rollbackFor = Exception.class)
 	public void removeByTypeIds(Integer typeId, List ids) {
 		alertMessageDao.deleteByTypeIds(typeId, ids);
+	}
+
+	@Override
+	public List<MetricsDto> queryAlertMessageStatisticsInfo() {
+		// TODO Auto-generated method stub
+		return alertMessageDao.selectAlertMessageStatisticsInfo();
 	}
 
 }
