@@ -192,7 +192,7 @@ public class OverviewServiceImpl implements OverviewService {
         Set<Integer> endPointIds = new HashSet<>();
 
         // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
-        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1));
+        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
         String url;
         Map result;
         for (Promserver promserver : promservers) {
