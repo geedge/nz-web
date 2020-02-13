@@ -51,6 +51,13 @@ public class NezhaMetrics implements MeterBinder {
                 .description("Alert message statistics info")
                 .register(meterRegistry);
         	}
+        }else {
+        	map.put("alertNums", 0.0);
+    		String key="alertNums";
+    		Gauge.builder("alert_nums", map, x -> x.get(key))
+            .tags("type","null","severity","null","name","alert_message")
+            .description("Alert message statistics info")
+            .register(meterRegistry);
         }
         /**
          * asset_nums指标
@@ -66,6 +73,13 @@ public class NezhaMetrics implements MeterBinder {
                 .description("Asset statistics info")
                 .register(meterRegistry);
         	}
+        }else {
+        	map.put("assetNums", 0.0);
+    		String key="assetNums";
+    		Gauge.builder("asset_nums", map, x -> x.get(key))
+            .tags("model","null")
+            .description("Asset statistics info")
+            .register(meterRegistry);
         }
         /**
          * asset_offline指标
@@ -73,6 +87,11 @@ public class NezhaMetrics implements MeterBinder {
         MetricsDto assetOffline = assetService.queryAssetStatisticsByModelOffLine();
         if(assetOffline!=null) {
         	map.put("assetOffline", assetOffline.getTotal());
+        	Gauge.builder("asset_offline_num", map, x -> x.get("assetOffline"))
+            .description("Asset offline statistics info")
+            .register(meterRegistry);
+        }else {
+        	map.put("assetOffline", 0.0);
         	Gauge.builder("asset_offline_num", map, x -> x.get("assetOffline"))
             .description("Asset offline statistics info")
             .register(meterRegistry);
@@ -92,6 +111,13 @@ public class NezhaMetrics implements MeterBinder {
                 .description("Asset online statistics info")
                 .register(meterRegistry);
         	}
+        }else {
+        	map.put("assetOnlineNums", 0.0);
+    		String key="assetOnlineNums";
+    		Gauge.builder("asset_online_nums", map, x -> x.get(key))
+            .tags("model","null")
+            .description("Asset online statistics info")
+            .register(meterRegistry);
         }
         /**
          * endpoint_nums指标
@@ -107,6 +133,13 @@ public class NezhaMetrics implements MeterBinder {
                 .description("Endpoint statistics info")
                 .register(meterRegistry);
         	}
+        }else {
+        	map.put("endpointNums", 0.0);
+    		String key="endpointNums";
+    		Gauge.builder("endpoint_nums", map, x -> x.get(key))
+            .tags("model","null")
+            .description("Endpoint statistics info")
+            .register(meterRegistry);
         }
     }
 }
