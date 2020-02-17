@@ -120,6 +120,8 @@ public enum RCode {
 	ASSET_ACCOUNT_ISNULL(502018, "Account can not be null, because exporter is specified"),// 账号信息不能为空，因为指明了需要安装exporter
 	ASSET_UPLOAD_FAIL(502019, "The asset and account are saved successfully, but export upload error. You can upload files manually, sorry."),
 	ASSET_SN_TOO_LONG(502020, "Asset serial number too long"),           // 资产序列号长度过长
+	ASSET_CANCELIMPORTSEQ_ISNULL(502021, "Asset cancel import seq can not be null"),//  导入撤销 seq不能为空
+	ASSET_IMPORT_FILE_ISNULL(502022, "Asset import file can not be null"),//  导入文件不能为空
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误

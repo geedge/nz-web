@@ -84,6 +84,12 @@ public class Asset implements Serializable {
      */
     private Long updateBy;
 
+
+    /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
+
     /**
      * 资产型号
      */

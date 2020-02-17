@@ -18,6 +18,7 @@
 		<qcloud.cos.version>4.4</qcloud.cos.version>
 		<swagger.version>2.7.0</swagger.version>
 		<commons-lang3.version>3.3.2</commons-lang3.version>
+		<apache.poi.version>3.14</apache.poi.version>
 	</properties>
 
 	<dependencies>
@@ -176,6 +177,19 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+
+
+		<!-- excel poi -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>${apache.poi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${apache.poi.version}</version>
+		</dependency>
     </dependencies>
 
 	<build>

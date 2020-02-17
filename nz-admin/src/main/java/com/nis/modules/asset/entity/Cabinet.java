@@ -44,6 +44,11 @@ public class Cabinet implements Serializable {
      */
     private String remark;
 
+    /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
+
     // 解决lombok自动生成方法命名问题
     public Integer getuSize() {
         return uSize;

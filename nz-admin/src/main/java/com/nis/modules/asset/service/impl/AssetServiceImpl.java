@@ -1,5 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -26,12 +28,16 @@ import com.nis.modules.romote.dao.AccountDao;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.romote.service.AccountService;
 import com.nis.modules.romote.util.StringUtils;
+import com.nis.modules.sys.controller.SysDictController;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +45,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -92,6 +101,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private AccountDao accountDao;
+
+    @Autowired
+    private SysDictController sysDictController;
+
+    @Autowired
+    private SftpUtils sftpUtils;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -215,7 +230,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         } else {
             this.updateById(asset);
             // 修改的时候如果没有指定 account, 则视为删除asset关联account
-            if(CollectionUtils.isEmpty(asset.getAccounts())){
+            if (CollectionUtils.isEmpty(asset.getAccounts())) {
                 accountService.remove(new QueryWrapper<Account>().eq("asset_id", asset.getId()));
             }
         }
@@ -372,18 +387,458 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return flag;
     }
 
-	@Override
-	public List<MetricsDto> queryAssetStatisticsByModel() {
-		return assetDao.selectAssetStatisticsByModel();
-	}
+    @Override
+    public List<MetricsDto> queryAssetStatisticsByModel() {
+        return assetDao.selectAssetStatisticsByModel();
+    }
 
-	@Override
-	public List<MetricsDto> queryAssetStatisticsByModelOnLine() {
-		return assetDao.selectAssetStatisticsByModelOnLine();
-	}
+    @Override
+    public List<MetricsDto> queryAssetStatisticsByModelOnLine() {
+        return assetDao.selectAssetStatisticsByModelOnLine();
+    }
 
-	@Override
-	public MetricsDto queryAssetStatisticsByModelOffLine() {
-		return assetDao.selectAssetStatisticsByModelOffLine();
-	}
+    @Override
+    public MetricsDto queryAssetStatisticsByModelOffLine() {
+        return assetDao.selectAssetStatisticsByModelOffLine();
+    }
+
+    @Override
+    public Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID) {
+        String originalFilename = assetsExcelFile.getOriginalFilename();
+
+        // 最终入库集合
+        List<Asset> assets = new ArrayList<>();
+
+        Map<String, SysDictEntity> assetTypesMap = new HashMap();
+        Map<String, SysDictEntity> vendorsMap = new HashMap();
+        Map<String, Model> modelMap = new HashMap();
+        Map<String, Idc> idcMap = new HashMap();
+        Map<String, Integer> assetSnMap = new HashMap();
+        Map<String, Integer> assetHostMap = new HashMap();
+        Map<String, String> configs = new HashMap<>();
+
+
+        Map<String, Object> queryParam = new HashMap<>(2);
+        queryParam.put("type", Constant.DICT_ASSET_MODEL_TYPE); // 字典表中资产型号类型type值 assetType
+        List<SysDictEntity> assetTypes = sysDictService.queryList(queryParam);
+        for (SysDictEntity entity : assetTypes) {
+            assetTypesMap.put(entity.getValue(), entity);
+        }
+
+        queryParam.put("type", Constant.DICT_ASSET_MODEL_VENDOR); // 字典表中资产型号厂商type值 vendor
+        List<SysDictEntity> vendors = sysDictService.queryList(queryParam);
+        for (SysDictEntity entity : vendors) {
+            vendorsMap.put(entity.getValue(), entity);
+        }
+
+        List<Model> modelList = modelService.list();
+        for (Model model : modelList) {
+            modelMap.put(model.getName(), model);
+        }
+
+        List<Idc> idcList = idcService.list();
+        for (Idc idc : idcList) {
+            idcMap.put(idc.getName(), idc);
+        }
+
+        List<Cabinet> cabinetList = cabinetService.list();
+
+        List<Asset> assetList = this.list();
+        for (Asset asset : assetList) {
+            assetSnMap.put(asset.getSn(), 1);
+        }
+
+        for (Asset asset : assetList) {
+            assetHostMap.put(asset.getHost(), 1);
+        }
+
+        List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().eq("status", 1));
+        for (SysConfigEntity config : sysConfigs) {
+            configs.put(config.getParamKey(), config.getParamValue());
+        }
+
+        Map info = new HashMap();
+        Workbook work = null;
+        try {
+            work = ExcelUtils.getWork(originalFilename, assetsExcelFile.getInputStream());
+            // 默认得到第一个 sheet
+            Sheet sheet = work.getSheetAt(0);
+//            Sheet sheet = work.getSheet("assets");
+            // 获得当前sheet的开始行
+            int firstRowNum = sheet.getFirstRowNum();
+            // 获得当前sheet的结束行
+            int maxRowNum = sheet.getLastRowNum();
+            Asset asset;
+            Account account, accountCli;
+            Row row;
+
+            // 返回导出错误信息
+            List<Map> failDetails = new ArrayList<>();
+            Map failDetail;
+            // 成功条数
+            int successNum = 0;
+
+            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, authType, user, pwd, cert, port, exporter;
+            Integer accountAuthType;
+
+            File sshKey;
+            InputStream sshKeyInput;
+            // 第一行是表头 所以从第二行开始
+            for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
+                account = accountCli = null;
+                boolean saveFlag = true;
+                asset = new Asset();
+                row = sheet.getRow(i);
+
+                if (row == null) {
+                    continue;
+                }
+
+                // 资产序列号
+                sn = ExcelUtils.getCellValue(row.getCell(0));
+                if (StringUtils.isEmpty(sn)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "sn不能为空");
+                    failDetails.add(failDetail);
+                } else {
+                    asset.setSn(sn);
+                }
+                // 资产类型
+                type = ExcelUtils.getCellValue(row.getCell(1));
+                if (StringUtils.isEmpty(type)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "type不能为空");
+                    failDetails.add(failDetail);
+                }
+                // 资产类型
+                vendor = ExcelUtils.getCellValue(row.getCell(2));
+                if (StringUtils.isEmpty(vendor)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "厂商不能为空");
+                    failDetails.add(failDetail);
+                }
+                // 型号
+                model = ExcelUtils.getCellValue(row.getCell(3));
+                if (StringUtils.isEmpty(model)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "型号不能为空");
+                    failDetails.add(failDetail);
+                }
+
+                // 处理类型 厂商 型号
+                if (StringUtils.isNotEmpty(type) && StringUtils.isNotEmpty(vendor) && StringUtils.isNotEmpty(model)) {
+                    Integer modelId = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelMap, seqUUID);
+                    asset.setModelId(modelId);
+                }
+
+                // DC
+                Integer idcId = null;
+                dcName = ExcelUtils.getCellValue(row.getCell(4));
+                if (StringUtils.isEmpty(dcName)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "DC不能为空");
+                    failDetails.add(failDetail);
+                } else {
+                    idcId = this.checkIdc(dcName, idcMap, seqUUID);
+                    asset.setIdcId(idcId);
+                }
+
+                // cabinet
+                cabinetName = ExcelUtils.getCellValue(row.getCell(5));
+                if (StringUtils.isNotEmpty(cabinetName) && StringUtils.isNotEmpty(dcName)) {
+                    Integer cabinetId = this.checkCabinet(cabinetName, idcId, cabinetList, seqUUID);
+                    asset.setCabinetId(cabinetId);
+                }
+
+                // host
+                host = ExcelUtils.getCellValue(row.getCell(6));
+                if (StringUtils.isEmpty(host)) {
+                    saveFlag = false;
+                    failDetail = new HashMap();
+                    failDetail.put("lineNo", i);
+                    failDetail.put("errorMsg", "host不能为空");
+                    failDetails.add(failDetail);
+                } else {
+                    asset.setHost(host);
+                }
+
+                // state
+                state = ExcelUtils.getCellValue(row.getCell(7));
+                if (StringUtils.isEmpty(state)) {
+                    state = "1";
+                }
+                asset.setState(Integer.parseInt(state));
+
+                // 购买日期
+                purchaseDate = ExcelUtils.getCellValue(row.getCell(8));
+                if (StringUtils.isNotEmpty(purchaseDate)) {
+                    asset.setPurchaseDate(purchaseDate);
+                }
+
+                // 账号相关
+                authType = ExcelUtils.getCellValue(row.getCell(9));
+                user = ExcelUtils.getCellValue(row.getCell(10));
+                pwd = ExcelUtils.getCellValue(row.getCell(11));
+                // 暂未处理
+                cert = ExcelUtils.getCellValue(row.getCell(12));
+                port = ExcelUtils.getCellValue(row.getCell(13));
+
+                // 是否内置exporter
+                exporter = ExcelUtils.getCellValue(row.getCell(14));
+
+                // 满足添加Account所需
+                if (StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
+                    account = new Account();
+                    accountAuthType = Integer.parseInt(authType);
+                    if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
+                        account.setPwd(pwd);
+                    }
+                    /*if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(cert)) {
+                        sshKey = new File(cert);
+                        sshKeyInput = new FileInputStream(sshKey);
+                        account.setPrivateKey(new byte[sshKeyInput.available()]);
+                    }*/
+                    account.setAuthType(accountAuthType);
+                    account.setUser(user);
+                    account.setPort(Integer.parseInt(port));
+
+                    // 深克隆 预备登陆服务器上传node exporter
+                    accountCli = JSONObject.parseObject(JSON.toJSONString(account), Account.class);
+
+                    // 校验端口
+                    if (!CommonUtils.checkPort(account.getPort().toString())) {
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", "账号端口格式不正确");
+                        failDetails.add(failDetail);
+                        account = accountCli = null;
+                    }
+                }
+
+
+                // 前面没有报错
+                if (saveFlag) {
+                    // Sn 唯一校验
+                    if (this.checkImportSnOnly(asset.getSn(), assetSnMap)) {
+                        // host唯一校验
+                        if (this.checkImportHostOnly(asset.getHost(), assetHostMap)) {
+                            asset.setSeq(seqUUID);
+                            asset.setCreateAt(new Date());
+                            // 账号信息正常
+                            if (account != null) {
+                                // 保存asset 直接在循环内入库是应为下方添加account的时候需要关联asset 的 id
+                                this.save(asset);
+                                // 保存account
+                                account.setAssetId(asset.getId());
+                                // 密码加密
+                                account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
+                                account.setSeq(seqUUID);
+                                accountService.save(account);
+                                // 内置exporter
+                                if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
+                                    // 失败则提示
+                                    if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
+                                        failDetail = new HashMap();
+                                        failDetail.put("lineNo", i);
+                                        failDetail.put("errorMsg", "内置exporter上传失败，请您手动上传。谢谢！");
+                                        failDetails.add(failDetail);
+                                    }
+                                }
+
+                                successNum++;
+                            } else {
+                                // 只是单纯的导入 asset ,这里添加至集合中 循环结束批量入库
+                                assets.add(asset);
+
+                                successNum++;
+                            }
+                        } else {
+                            failDetail = new HashMap();
+                            failDetail.put("lineNo", i);
+                            failDetail.put("errorMsg", "Host重复，当前已有该host地址。");
+                            failDetails.add(failDetail);
+                        }
+                    } else {
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", "Sn重复，当前已有该资产序列号。");
+                        failDetails.add(failDetail);
+                    }
+                }
+            }
+
+            // 批量入库 asset
+            this.saveBatch(assets);
+
+            int totalNum = maxRowNum - firstRowNum;
+            info.put("seq", seqUUID);
+            info.put("totalNum", totalNum);
+            info.put("successNum", successNum);
+            info.put("failNum", totalNum - successNum);
+            info.put("failDetail", failDetails);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                work.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return info;
+    }
+
+    @Override
+    public void cancelImport(String seq) {
+        // asset
+        this.remove(new QueryWrapper<Asset>().eq("seq", seq));
+        // idc
+        idcService.remove(new QueryWrapper<Idc>().eq("seq", seq));
+        // cabinet
+        cabinetService.remove(new QueryWrapper<Cabinet>().eq("seq", seq));
+        // model
+        modelService.remove(new QueryWrapper<Model>().eq("seq", seq));
+        // sys dict （asset type ,vendor）
+        sysDictService.remove(new QueryWrapper<SysDictEntity>().eq("seq", seq));
+        // account
+        accountService.remove(new QueryWrapper<Account>().eq("seq", seq));
+    }
+
+
+    private Integer checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID) {
+        Cabinet cabinet = new Cabinet();
+        boolean flag = false;
+        for (Cabinet entity : cabinetList) {
+            // 如果该机房下有该机柜
+            if (cabinetName.equals(entity.getName()) && idcId.equals(entity.getIdcId())) {
+                cabinet = entity;
+                flag = true;
+                break;
+            }
+        }
+        // 找不到机柜
+        if (!flag) {
+            cabinet.setName(cabinetName);
+            cabinet.setIdcId(idcId);
+            cabinet.setuSize(1);
+            cabinet.setSeq(seqUUID);
+            cabinetService.save(cabinet);
+        }
+        return cabinet.getId();
+    }
+
+    private Integer checkIdc(String dcName, Map<String, Idc> idcMap, String seqUUID) {
+        Idc idc = idcMap.get(dcName);
+        if (idc == null) {
+            idc = new Idc();
+            idc.setName(dcName);
+            idc.setSeq(seqUUID);
+            idcService.save(idc);
+        }
+        return idc.getId();
+    }
+
+    public Integer checkAssetTypeVendorModel(String assetType, Map<String, SysDictEntity> assetTypesMap, String assetVendor, Map<String, SysDictEntity> vendorsMap, String modelName, Map<String, Model> modelMap, String seqUUID) {
+        // 是否新增 model 标识 由于model名称目前是唯一的，所以暂且不处理资产类型，厂商更改，型号名称不变情况
+        //boolean flag = false;
+
+        // 如果没有获取倒该资产类型
+        SysDictEntity type = assetTypesMap.get(assetType);
+        if (type == null) {
+            type = new SysDictEntity();
+            type.setType(Constant.DICT_ASSET_MODEL_TYPE);
+            type.setValue(assetType);
+            type.setSeq(seqUUID);
+            sysDictController.save(type);
+            //flag = true;
+        }
+
+        // 如果没有厂商
+        SysDictEntity vendor = vendorsMap.get(assetVendor);
+        if (vendor == null) {
+            vendor = new SysDictEntity();
+            vendor.setType(Constant.DICT_ASSET_MODEL_VENDOR);
+            vendor.setValue(assetVendor);
+            vendor.setSeq(seqUUID);
+            sysDictController.save(vendor);
+            //flag = true;
+        }
+
+        // 如果没有资产型号
+        Model model = modelMap.get(modelName);
+        if (model == null) {
+            model = new Model();
+            model.setName(modelName);
+            model.setTypeCode(type.getCode());
+            model.setVendorCode(vendor.getCode());
+            model.setSeq(seqUUID);
+            modelService.save(model);
+        }
+        return model.getId();
+    }
+
+    public boolean checkImportSnOnly(String sn, Map<String, Integer> assetSnMap) {
+        if (assetSnMap != null && assetSnMap.size() > 0) {
+            // 如果不唯一
+            if (assetSnMap.get(sn) != null) {
+                return false;
+            } else { // 唯一
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private boolean checkImportHostOnly(String host, Map<String, Integer> assetHostMap) {
+        if (assetHostMap != null && assetHostMap.size() > 0) {
+            // 如果不唯一
+            if (assetHostMap.get(host) != null) {
+                return false;
+            } else { // 唯一
+                return true;
+            }
+        }
+        return true;
+    }
+
+    public boolean uploadBuildNodeExporter(Map<String, String> configs, Asset asset, Account account) {
+        // 上传文件
+        try {
+            // 内置 node_exporter 默认安装服务器路径
+            String targetExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH);
+            // 内置 node_exporter 初始执行脚本名称
+            String shellName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME);
+            // 内置 node_exporter 项目路径
+            String buildNodeExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_PATH);
+            // 内置 node_exporter 压缩包名称
+            String buildNodeExporterName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_NAME);
+
+            // 登录 导入这里的 sshkey 暂未处理 目前只是 user password 模式登陆
+            sftpUtils.loginIn(asset.getHost(), account.getPort(), account.getUser(), account.getAuthType(), account.getPwd(), null);
+
+            // 上传
+            sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);
+
+            // 执行脚本让exporter运行
+            String execCommand = "chmod +x " + targetExporterPath + "/" + shellName + " && " + targetExporterPath + "/" + shellName;
+            sftpUtils.exec(execCommand);
+        } catch (Exception e) {
+            // 上传失败
+            return false;
+        } finally {
+            // 退出
+            sftpUtils.logout();
+        }
+        return true;
+    }
 }

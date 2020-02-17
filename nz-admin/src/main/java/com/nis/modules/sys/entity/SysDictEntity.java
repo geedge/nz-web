@@ -13,9 +13,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
@@ -82,6 +80,11 @@ public class SysDictEntity implements Serializable {
 	 * 国际化code
 	 */
 	private String i18nCode;
+
+	/**
+	 * 用于撤销具体某次批量导入的uuid
+	 */
+	private String seq;
 
 	@TableField(exist = false)
 	private SysUserEntity operatorUser;

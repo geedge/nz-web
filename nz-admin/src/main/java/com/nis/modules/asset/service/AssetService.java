@@ -34,4 +34,8 @@ public interface AssetService extends IService<Asset> {
     List<MetricsDto> queryAssetStatisticsByModelOnLine();
     
     MetricsDto queryAssetStatisticsByModelOffLine();
+
+    Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID);
+
+    void cancelImport(String seq);
 }

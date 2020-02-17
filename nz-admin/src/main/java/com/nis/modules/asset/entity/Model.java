@@ -49,6 +49,11 @@ public class Model implements Serializable {
     private String remark;
 
     /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
+
+    /**
      * 厂商对象 (字典表)
      */
     @TableField(exist = false)

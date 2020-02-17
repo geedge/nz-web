@@ -43,4 +43,9 @@ public class Idc implements Serializable {
      * 机房负责人
      */
     private Integer principal;
+
+    /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
 }

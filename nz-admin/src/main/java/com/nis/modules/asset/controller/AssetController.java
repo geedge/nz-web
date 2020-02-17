@@ -8,20 +8,28 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.romote.entity.Account;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 /**
@@ -230,6 +238,131 @@ public class AssetController {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
         assetService.delete(ids);
+        return R.ok();
+    }
+
+    /**
+     * 批量导入
+     *
+     * @param assetsExcelFile
+     * @return
+     */
+    @PostMapping("/import")
+    public R importAssetsFromExcel(MultipartFile assetsExcelFile) {
+        ValidateUtils.is(assetsExcelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
+        // 本次导入的 uuid
+        String seqUUID = UUID.randomUUID().toString();
+        Map map = assetService.importAssetsFromExcel(assetsExcelFile, seqUUID);
+        return R.ok(map);
+    }
+
+    /**
+     * 导出
+     *
+     * @param response
+     * @param params
+     */
+    @GetMapping("/export")
+    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        PageUtils page = assetService.queryPage(params);
+        List<Asset> list = (List<Asset>) page.getList();
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Assets");
+
+        int rowNum = 0;
+        // 添加标题行
+        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "Host", "State", "PurchaseDate", "AuthType", "User", "Pwd", "Cert", "Port"};
+        Row row = sheet.createRow(rowNum);
+        Cell cell;
+
+        // 创建样式对象
+        CellStyle style = workbook.createCellStyle();
+        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
+        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
+
+        for (int i = 0; i < columnNames.length; i++) {
+            // 创建列、单元格
+            cell = row.createCell(i);
+            cell.setCellValue(columnNames[i]);
+            cell.setCellStyle(style);
+        }
+
+        // 添加数据
+        Row row1;
+        List<Account> accountList;
+        Model model;
+        Account account;
+        for (Asset asset : list) {
+            account = null;
+            row1 = sheet.createRow(++rowNum);
+
+            model = asset.getModel();
+            // sn
+            row1.createCell(0).setCellValue(asset.getSn());
+            // assettype
+            row1.createCell(1).setCellValue(model.getType().getValue());
+            // vendor
+            row1.createCell(2).setCellValue(model.getVendor().getValue());
+            // model
+            row1.createCell(3).setCellValue(model.getName());
+            // idc
+            row1.createCell(4).setCellValue(asset.getIdc().getName());
+            // cabinet
+            row1.createCell(5).setCellValue(asset.getCabinet() == null ? null : asset.getCabinet().getName());
+            // host
+            row1.createCell(6).setCellValue(asset.getHost());
+            // state
+            row1.createCell(7).setCellValue(asset.getState());
+            // PurchaseDate
+            row1.createCell(8).setCellValue(asset.getPurchaseDate());
+
+            accountList = asset.getAccounts();
+            if (CollectionUtils.isNotEmpty(accountList)) {
+                // 当前账号信息和资产是一对一
+                account = accountList.get(0);
+            }
+            if (account != null) {
+                // authtype
+                row1.createCell(9).setCellValue(account.getAuthType());
+                // user
+                row1.createCell(10).setCellValue(account.getUser());
+                if (StringUtils.isNotEmpty(account.getPwd())) {
+                    // pwd
+                    row1.createCell(11).setCellValue(account.getPwd());
+                }
+                if (account.getPrivateKey() != null && account.getPrivateKey().length > 0) {
+                    // sshKeys
+                    row1.createCell(12).setCellValue(new String(account.getPrivateKey()));
+                }
+                // port
+                row1.createCell(13).setCellValue(account.getPort());
+            }
+        }
+
+        try {
+            // 响应为流
+            String fileName = "资产导出.xlsx"; // 默认名称
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * asset导入撤销
+     *
+     * @return
+     */
+    @DeleteMapping("/cancelImport")
+    public R cancelImport(String seq) {
+        ValidateUtils.is(seq).notNull(RCode.ASSET_CANCELIMPORTSEQ_ISNULL);
+
+        assetService.cancelImport(seq);
         return R.ok();
     }
 }

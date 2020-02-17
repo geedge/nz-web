@@ -30,6 +30,11 @@ public class Account {
     @TableField(exist = false)
     private Asset asset;
 
+    /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
+
     public byte[] getPrivateKey() {
         //拿本地的公钥解密ssh的私钥
         if (this.privateKey != null) {
