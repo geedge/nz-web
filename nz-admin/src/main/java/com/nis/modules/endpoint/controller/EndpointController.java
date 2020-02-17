@@ -149,11 +149,11 @@ public class EndpointController extends AbstractController {
             // sn
             row1.createCell(2).setCellValue(asset.getSn());
             // port
-            row1.createCell(3).setCellValue(module.getPort());
+            row1.createCell(3).setCellValue(endpoint.getPort());
             // param
-            row1.createCell(4).setCellValue(module.getParam());
+            row1.createCell(4).setCellValue(endpoint.getParam());
             // path
-            row1.createCell(5).setCellValue(module.getPath());
+            row1.createCell(5).setCellValue(endpoint.getPath());
             // host
             row1.createCell(6).setCellValue(asset.getHost());
         }

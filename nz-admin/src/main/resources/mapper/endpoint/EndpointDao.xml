@@ -68,6 +68,42 @@
        <if test="params.moduleId != null and params.moduleId != ''">
            AND e.module_id = #{params.moduleId}
        </if>
+       
+       <if test="params.sn != null and params.sn != ''">
+           AND a.sn = #{params.sn}
+       </if>
+       
+       <if test="params.modelId != null and params.modelId != ''">
+           AND a.model_id = #{params.modelId}
+       </if>
+       
+       <if test="params.idcId != null and params.idcId != ''">
+           AND a.idc_id = #{params.idcId}
+       </if>
+       
+       	<if test="params.cabinetId != null and params.cabinetId != ''">
+           AND a.cabinet_id = #{params.cabinetId}
+       </if>
+       
+       <if test="params.host != null and params.host != ''">
+           AND a.host = #{params.host}
+       </if>
+       
+       <if test="params.state != null and params.state != ''">
+           AND a.state = #{params.state}
+       </if>
+       
+       <if test="params.purchaseDate != null and params.purchaseDate != ''">
+           AND a.purchase_date = #{params.purchaseDate}
+       </if>
+       
+       <if test="params.pingStatus != null and params.pingStatus != ''">
+           AND a.ping_status = #{params.pingStatus}
+       </if>
+       
+       <if test="params.idcIds != null and params.idcIds != ''">
+       	 AND a.idc_id in (#{params.idcIds})
+       </if>
     </select>
 
 	<delete id="deleteByModuleIds">
