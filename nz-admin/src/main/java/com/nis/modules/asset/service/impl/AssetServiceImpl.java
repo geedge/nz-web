@@ -632,35 +632,44 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     if (this.checkImportSnOnly(asset.getSn(), assetSnMap)) {
                         // host唯一校验
                         if (this.checkImportHostOnly(asset.getHost(), assetHostMap)) {
-                            asset.setSeq(seqUUID);
-                            asset.setCreateAt(new Date());
-                            // 账号信息正常
-                            if (account != null) {
-                                // 保存asset 直接在循环内入库是应为下方添加account的时候需要关联asset 的 id
-                                this.save(asset);
-                                // 保存account
-                                account.setAssetId(asset.getId());
-                                // 密码加密
-                                account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
-                                account.setSeq(seqUUID);
-                                accountService.save(account);
-                                // 内置exporter
-                                if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
-                                    // 失败则提示
-                                    if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
-                                        failDetail = new HashMap();
-                                        failDetail.put("lineNo", i);
-                                        failDetail.put("errorMsg", "内置exporter上传失败，请您手动上传。谢谢！");
-                                        failDetails.add(failDetail);
+                            if(host.matches(Constant.REGEX_IP)){
+                                asset.setSeq(seqUUID);
+                                asset.setCreateAt(new Date());
+                                // 账号信息正常
+                                if (account != null) {
+                                    // 保存asset 直接在循环内入库是应为下方添加account的时候需要关联asset 的 id
+                                    this.save(asset);
+                                    // 保存account
+                                    account.setAssetId(asset.getId());
+                                    // 密码加密
+                                    account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
+                                    account.setSeq(seqUUID);
+                                    accountService.save(account);
+                                    // 内置exporter
+                                    if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
+                                        // 失败则提示
+                                        if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
+                                            failDetail = new HashMap();
+                                            failDetail.put("lineNo", i);
+                                            failDetail.put("errorMsg", "内置exporter上传失败，请您手动上传。谢谢！");
+                                            failDetails.add(failDetail);
+                                        }
                                     }
+
+                                    successNum++;
+                                } else {
+                                    // 只是单纯的导入 asset ,这里添加至集合中 循环结束批量入库
+                                    assets.add(asset);
+
+                                    successNum++;
                                 }
-
-                                successNum++;
-                            } else {
-                                // 只是单纯的导入 asset ,这里添加至集合中 循环结束批量入库
-                                assets.add(asset);
-
-                                successNum++;
+                                // 更新 host map
+                                assetHostMap.put(asset.getHost(), 1);
+                            }else{
+                                failDetail = new HashMap();
+                                failDetail.put("lineNo", i);
+                                failDetail.put("errorMsg", "Host格式不合法。");
+                                failDetails.add(failDetail);
                             }
                         } else {
                             failDetail = new HashMap();
@@ -668,6 +677,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             failDetail.put("errorMsg", "Host重复，当前已有该host地址。");
                             failDetails.add(failDetail);
                         }
+                        // 更新map值
+                        assetSnMap.put(asset.getSn(), 1);
                     } else {
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
@@ -733,6 +744,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             cabinet.setuSize(1);
             cabinet.setSeq(seqUUID);
             cabinetService.save(cabinet);
+            // 更新cabinet ist
+            cabinetList.add(cabinet);
         }
         return cabinet.getId();
     }
@@ -744,6 +757,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             idc.setName(dcName);
             idc.setSeq(seqUUID);
             idcService.save(idc);
+            // 更新map值
+            idcMap.put(idc.getName(), idc);
         }
         return idc.getId();
     }
@@ -760,6 +775,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             type.setValue(assetType);
             type.setSeq(seqUUID);
             sysDictController.save(type);
+            // 更新 map 值
+            assetTypesMap.put(type.getValue(), type);
             //flag = true;
         }
 
@@ -771,6 +788,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             vendor.setValue(assetVendor);
             vendor.setSeq(seqUUID);
             sysDictController.save(vendor);
+            // 更新 map 值
+            vendorsMap.put(vendor.getValue(), vendor);
             //flag = true;
         }
 
@@ -783,6 +802,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             model.setVendorCode(vendor.getCode());
             model.setSeq(seqUUID);
             modelService.save(model);
+            // 更新model map值
+            modelMap.put(model.getName(), model);
         }
         return model.getId();
     }

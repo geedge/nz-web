@@ -342,7 +342,7 @@ public class AssetController {
 
         try {
             // 响应为流
-            String fileName = "资产导出.xlsx"; // 默认名称
+            String fileName = "AssetsExport.xlsx"; // 默认名称
             response.setContentType("application/excel");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
