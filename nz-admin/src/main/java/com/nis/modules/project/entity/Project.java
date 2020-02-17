@@ -16,4 +16,5 @@ public class Project {
 	private String name;
 	private String remark;
 	private Boolean buildIn;
+	private String seq;
 }

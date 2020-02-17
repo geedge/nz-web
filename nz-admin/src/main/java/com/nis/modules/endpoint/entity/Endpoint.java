@@ -30,7 +30,7 @@ public class Endpoint {
 	private Long lastUpdate;
 	@TableField(exist = false)
 	private Integer state;
-
+	private String seq;
 	public Endpoint() {
 	}
 

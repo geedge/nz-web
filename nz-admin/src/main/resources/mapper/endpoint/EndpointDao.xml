@@ -14,7 +14,7 @@
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.Module">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
-	    	
+	    	<result column="port" property="port"/>
 	    </association>
 	    
 	    <association columnPrefix="P_" property="project" javaType="com.nis.modules.project.entity.Project">
@@ -38,6 +38,7 @@
        SELECT e.*,
        m.id AS m_id,
        m.name AS m_name,
+       m.port AS m_port,
        a.id AS a_id,
        a.host AS a_host,
        a.sn AS a_sn,

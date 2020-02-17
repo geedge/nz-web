@@ -163,7 +163,9 @@ public enum RCode {
 	ENDPOINT_PORT_ISNULL(900004,"Port can not be empty"),
 	ENDPOINT_PATH_ISNULL(900005,"Path can not be empty"),
 	ENDPOINT_QUERYACTIVE_ERROR(900006,"Endpoint query active state error"), // 请求prometheus查询endpoint状态失败
-
+	ENDPOINT_IMPORT_FILE_ISNULL(900007, "Endpoint import file can not be null"),//  导入文件不能为空
+	ENDPOINT_CANCELIMPORTSEQ_ISNULL(900008, "Endpoint cancel import seq can not be null"),//  导入撤销 seq不能为空
+	
 	PANEL_NAME_ISNULL(1000001,"Panel name can not be empty"),
 	PANEL_ID_ISNULL(1000002,"Panel ID can not be empty"),
 

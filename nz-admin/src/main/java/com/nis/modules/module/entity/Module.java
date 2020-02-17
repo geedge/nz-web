@@ -27,4 +27,5 @@ public class Module {
 	private String path;
 	private String remark;
 	private Boolean buildIn;
+	private String seq;
 }
