@@ -13,4 +13,8 @@ public interface MetadataMetricService extends IService<MetadataMetric> {
     List<Integer> queryIdsByMetric(String metric);
 
     Integer queryIdByMetric(String metric);
+
+    List<MetadataMetric> metadata(Integer endpointId);
+
+    Map series(String match, String start, String end);
 }

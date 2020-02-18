@@ -1,7 +1,10 @@
 package com.nis.modules.endpoint.controller;
 
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataLabelService;
 import com.nis.modules.endpoint.service.MetadataMetricService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +53,40 @@ public class MetricController {
         Map<String, List<Map<String, String>>> map = new HashMap<>();
         map.put("list",list);
         return R.ok(map);
+    }
+
+    /**
+     * 元数据查询
+     *
+     * @param endpointId
+     * @return
+     */
+    @GetMapping("/metadata")
+    @ResponseBody
+    public R queryMetadata(Integer endpointId) {
+        ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
+
+        List<MetadataMetric> metadata = metricService.metadata(endpointId);
+        Map data = new HashMap();
+        data.put("list", metadata);
+        return R.ok(data);
+    }
+
+    /**
+     * series查询
+     *
+     * @param match
+     * @param start
+     * @param end
+     * @return
+     */
+    @GetMapping("/series")
+    @ResponseBody
+    public R querySeries(String match, String start, String end) {
+        ValidateUtils.is(match).notNull(RCode.PROMSERVER_PARAM_MATCH_ISNULL);
+
+        Map series = metricService.series(match, start, end);
+        return R.ok(series);
     }
 
 }

@@ -205,7 +205,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     /**
      * 将时间字符串转为unix 时间戳
      * */
-    private Long formatTimeToUnixTimestemp(String time){
+    public Long formatTimeToUnixTimestemp(String time){
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(dateFormate);
         try {
             Date date = simpleDateFormat.parse(time);
