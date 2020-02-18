@@ -150,33 +150,33 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
 
         // global promserver
         List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
-        String url;
-        Map result;
+        // 随机取一个global promserver
+        int randomPos = new Random().nextInt(promservers.size());
+        Promserver promserver = promservers.get(randomPos);
+
         // 结果集去重 标签名称切标签值相同则去重
         Set<Map.Entry<String, Object>> set = new HashSet();
-        for (Promserver promserver : promservers) {
-            // 处理请求url
-            url = this.buildUrl(promserver.getHost(), promserver.getPort(), apiSeries, queryParam);
-            result = promserverProxyService.requestPromAPI(url);
-            // 查询成功的
-            if (result != null && result.get("status").equals("success")) {
-                // 所有标签
-                JSONArray array = (JSONArray) result.get("data");
+        // 处理请求url
+        String url = this.buildUrl(promserver.getHost(), promserver.getPort(), apiSeries, queryParam);
+        Map result = promserverProxyService.requestPromAPI(url);
+        // 查询成功的
+        if (result != null && result.get("status").equals("success")) {
+            // 所有标签
+            JSONArray array = (JSONArray) result.get("data");
 
-                // 所有标签去重
-                for (int i = 0; i < array.size(); i++) {
-                    JSONObject jsonObject = (JSONObject) array.get(i);
-                    Set<Map.Entry<String, Object>> entries = jsonObject.entrySet();
-                    for (Map.Entry<String, Object> entry : entries) {
-                        if ("__name__".equals(entry.getKey())) {
-                            continue;
-                        }
-                        set.add(entry);
+            // 所有标签去重
+            for (int i = 0; i < array.size(); i++) {
+                JSONObject jsonObject = (JSONObject) array.get(i);
+                Set<Map.Entry<String, Object>> entries = jsonObject.entrySet();
+                for (Map.Entry<String, Object> entry : entries) {
+                    if ("__name__".equals(entry.getKey())) {
+                        continue;
                     }
+                    set.add(entry);
                 }
-            } else {
-                logger.error("query api/v1/targets/series error {}", promserver);
             }
+        } else {
+            logger.error("query api/v1/targets/series error {}", promserver);
         }
 
 
