@@ -67,7 +67,9 @@ public class MetricController {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
 
         List<MetadataMetric> metadata = metricService.metadata(endpointId);
-        return R.ok(metadata);
+        Map data = new HashMap();
+        data.put("list", metadata);
+        return R.ok(data);
     }
 
     /**
