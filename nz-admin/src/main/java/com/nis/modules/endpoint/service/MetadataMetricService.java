@@ -16,5 +16,5 @@ public interface MetadataMetricService extends IService<MetadataMetric> {
 
     List<MetadataMetric> metadata(Integer endpointId);
 
-    Map series(String match, String start, String end);
+    Map series(Map<String, Object> params);
 }

@@ -132,20 +132,23 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
     }
 
     @Override
-    public Map series(String match, String start, String end) {
-        Map queryParam = new HashMap();
+    public Map series(Map<String, Object> params) {
+        if (!params.containsKey("match[]") || StringUtils.isBlank((String) params.get("match[]"))) {
+            throw new NZException(RCode.PROMSERVER_PARAM_MATCH_ISNULL);
+        } else {
+            String matchsParam = (String) params.get("match[]");
+            String[] matchs = matchsParam.split(",");
 
-        String[] matchs = match.split(",");
-        queryParam.put("match[]", Arrays.asList(matchs));
+            params.put("match[]", Arrays.asList(matchs));
+        }
 
         // 处理时间
-        if (StringUtils.isNotEmpty(start)) {
-            Long startTime = promserverProxyService.formatTimeToUnixTimestemp(start);
-            queryParam.put("start", startTime);
+        if (params.containsKey("start") && StringUtils.isNotEmpty((String) params.get("start"))) {
+            params.put("start", promserverProxyService.formatTimeToUnixTimestemp((String) params.get("start")));
         }
-        if (StringUtils.isNotEmpty(end)) {
-            Long endTime = promserverProxyService.formatTimeToUnixTimestemp(end);
-            queryParam.put("end", endTime);
+
+        if (params.containsKey("end") && StringUtils.isNotEmpty((String) params.get("end"))) {
+            params.put("end", promserverProxyService.formatTimeToUnixTimestemp((String) params.get("end")));
         }
 
         // global promserver
@@ -157,7 +160,7 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
         // 结果集去重 标签名称切标签值相同则去重
         Set<Map.Entry<String, Object>> set = new HashSet();
         // 处理请求url
-        String url = this.buildUrl(promserver.getHost(), promserver.getPort(), apiSeries, queryParam);
+        String url = this.buildUrl(promserver.getHost(), promserver.getPort(), apiSeries, params);
         Map result = promserverProxyService.requestPromAPI(url);
         // 查询成功的
         if (result != null && result.get("status").equals("success")) {

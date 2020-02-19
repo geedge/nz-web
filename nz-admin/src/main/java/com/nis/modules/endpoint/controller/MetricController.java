@@ -73,17 +73,12 @@ public class MetricController {
     /**
      * series查询
      *
-     * @param match
-     * @param start
-     * @param end
      * @return
      */
     @GetMapping("/series")
     @ResponseBody
-    public R querySeries(String match, String start, String end) {
-        ValidateUtils.is(match).notNull(RCode.PROMSERVER_PARAM_MATCH_ISNULL);
-
-        Map series = metricService.series(match, start, end);
+    public R querySeries(@RequestParam Map<String, Object> params) {
+        Map series = metricService.series(params);
         return R.ok(series);
     }
 
