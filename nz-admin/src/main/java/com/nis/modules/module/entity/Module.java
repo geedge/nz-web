@@ -26,6 +26,6 @@ public class Module {
 	@NotBlank(message="参数名不能为空")
 	private String path;
 	private String remark;
-	private Boolean buildIn;
+	private Integer buildIn;
 	private String seq;
 }

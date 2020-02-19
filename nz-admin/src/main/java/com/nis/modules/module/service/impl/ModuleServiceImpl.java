@@ -79,7 +79,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	public void validateBulitinRule(List<Integer> ids) {
 		List<Module> objs = moduleDao.selectBatchIds(ids);
 		for(Module obj : objs) {
-			if(obj!=null&&obj.getBuildIn()){
+			if(obj!=null&&obj.getBuildIn().equals(1)){
 				throw new NZException(RCode.MODULE_BUILDIN_CAN_NOT_REMOVE);
 			}
 		}

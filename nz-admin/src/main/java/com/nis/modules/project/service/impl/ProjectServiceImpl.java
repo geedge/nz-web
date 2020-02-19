@@ -68,7 +68,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 	public void validateBulitinRule(List<Integer> ids) {
 		List<Project> objs = projectDao.selectBatchIds(ids);
 		for(Project obj : objs) {
-			if(obj!=null&&obj.getBuildIn()){
+			if(obj!=null&&obj.getBuildIn().equals(1)){
 				throw new NZException(RCode.PROJECT_BUILDIN_CAN_NOT_REMOVE);
 			}
 		}

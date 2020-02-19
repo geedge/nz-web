@@ -308,13 +308,13 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
                 		projectObject=new Project();
                 		projectObject.setName(project);
                 		projectObject.setSeq(uuid);
-                		projectObject.setBuildIn(false);
+                		projectObject.setBuildIn(0);
                 		projectService.save(projectObject);
                 		projectMap.put(project, projectObject);
                 	}
                 	if(moduleObject==null) {
                 		moduleObject=new Module();
-                		moduleObject.setBuildIn(false);
+                		moduleObject.setBuildIn(0);
                 		moduleObject.setName(module);
                 		moduleObject.setParam(param);
                 		moduleObject.setPort(Integer.valueOf(port));
