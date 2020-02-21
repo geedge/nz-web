@@ -11,7 +11,7 @@
         <result property="seq" column="seq"/>
         <result property="areaId" column="area_id"/>
         
-        <association columnPrefix="sa_" property="sysArea" javaType="com.nis.modules.sys.entity.SysArea">
+        <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="pid" property="pid"/>

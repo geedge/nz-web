@@ -58,7 +58,7 @@ public class Idc implements Serializable {
     private Integer areaId;
     
     @TableField(exist = false)
-    private SysArea sysArea;
+    private SysArea area;
     
     @TableField(exist = false)
     private AssetStat assetStat;
