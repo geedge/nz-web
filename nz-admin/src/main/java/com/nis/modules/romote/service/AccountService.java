@@ -3,7 +3,6 @@ package com.nis.modules.romote.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.romote.entity.Account;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -18,9 +17,11 @@ public interface AccountService extends IService<Account> {
     PageUtils queryPage(Map<String, Object> params);
 
 
-    void validateAccount(Account account, MultipartFile file);
+//    void validateAccount(Account account, MultipartFile file);
+    void validateAccount(Account account);
 
-    void saveOrUpdateAccount(Account account, MultipartFile file);
+//    void saveOrUpdateAccount(Account account, MultipartFile file);
+    void saveOrUpdateAccount(Account account);
 
     void delete(Integer ... ids);
 }

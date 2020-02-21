@@ -45,9 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 /**
@@ -154,7 +152,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys) {
+    public void saveOrUpdateAsset(Asset asset) {
         // 1. sn 唯一校验
         if (!this.checkFieldExist(asset.getId(), "sn", asset.getSn())) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
@@ -237,74 +235,41 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 保存 accounts
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            // int currSshKeys = 0;
             for (int i = 0; i < asset.getAccounts().size(); i++) {
                 Account account = asset.getAccounts().get(i);
-               /* if (Constant.AUTH_CERTIFICATE.equals(account.getAuthType())) {
-                    try {
-                        // ssh 登录选择文件
-                        MultipartFile file = sshKeys[currSshKeys++];
-                        account.setPrivateKey(file.getBytes());
-                        account.setPwd(null);
-                    } catch (Exception e) {
-                        logger.error("transfer ssh certificate error", e);
-                    }
-                }*/
-
                 // 添加
                 if (account.getId() == null) {
                     // 处理密码
-                    if (StringUtils.isNotEmpty(account.getPwd())) {
-                        String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                        account.setPwd(encodePwd);
-                        try {
-                            account.setPrivateKey(null);
-                        } catch (Exception e) {
-                            // TO DO
+                    if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+                        if (StringUtils.isNotEmpty(account.getPwd())) {
+                            String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                            account.setPwd(encodePwd);
                         }
+
+                        account.setPrivateKey(null);
                     } else {
-                        try {
-                            // ssh 登录选择文件
-                            MultipartFile file = sshKeys[0];
-                            account.setPrivateKey(file.getBytes());
-                            account.setPwd(null);
-                        } catch (Exception e) {
-                            logger.error("transfer ssh certificate error", e);
-                        }
+                        account.setPwd(null);
                     }
                     account.setAssetId(asset.getId());
 
                     accountService.save(account);
                 } else {
                     // 修改参数含有密码
-                    if (StringUtils.isNotEmpty(account.getPwd())) {
-                        Account accountEntity = accountService.getById(account.getId());
-                        // 前台传参密码和数据库存储密码不对应 证明修改了密码
-                        if (!account.getPwd().equals(accountEntity.getPwd())) {
-                            String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                            account.setPwd(encodePwd);
-                            try {
-                                account.setPrivateKey(null);
-                            } catch (Exception e) {
-                                // TO DO
+                    if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+                        if (StringUtils.isNotEmpty(account.getPwd())) {
+                            Account accountEntity = accountService.getById(account.getId());
+                            // 前台传参密码和数据库存储密码不对应 证明修改了密码
+                            if (!account.getPwd().equals(accountEntity.getPwd())) {
+                                String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                                account.setPwd(encodePwd);
                             }
                         }
-                        accountService.updateById(account);
+                        account.setPrivateKey(null);
+                    } else {
+                        account.setPwd(null);
                     }
 
-                    // 修改时没有指定密钥文件
-                    if (sshKeys.length < 1) {
-                        accountDao.updateForPrivateKey(account);
-                    } else {
-                        try {
-                            // ssh 登录选择文件
-                            MultipartFile file = sshKeys[0];
-                            account.setPrivateKey(file.getBytes());
-                        } catch (Exception e) {
-                            logger.error("transfer ssh certificate error", e);
-                        }
-                        accountService.updateById(account);
-                    }
+                    accountService.updateById(account);
                 }
             }
         }
@@ -349,11 +314,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
         QueryWrapper<SysDictEntity> sysDictyQueryWrapper = new QueryWrapper<SysDictEntity>();
         sysDictyQueryWrapper.eq("type", Constant.DICT_ACCOUNT_AUTH_TYPE); // authType 字典中的type值
-        sysDictyQueryWrapper.eq("value", account.getAuthType());
+        sysDictyQueryWrapper.eq("code", account.getAuthType());
 
         List<SysDictEntity> authTypeList = sysDictService.list(sysDictyQueryWrapper);
 
-        if (authTypeList == null || authTypeList.size() > 0) {
+        if (CollectionUtils.isEmpty(authTypeList)) {
             throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
         }
 
@@ -478,11 +443,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 成功条数
             int successNum = 0;
 
-            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, authType, user, pwd, cert, port, exporter;
+            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, authType, user, pwd, privateKey, port, exporter;
             Integer accountAuthType;
 
-            File sshKey;
-            InputStream sshKeyInput;
             // 第一行是表头 所以从第二行开始
             for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
                 account = accountCli = null;
@@ -589,8 +552,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 authType = ExcelUtils.getCellValue(row.getCell(9));
                 user = ExcelUtils.getCellValue(row.getCell(10));
                 pwd = ExcelUtils.getCellValue(row.getCell(11));
-                // 暂未处理
-                cert = ExcelUtils.getCellValue(row.getCell(12));
+                privateKey = ExcelUtils.getCellValue(row.getCell(12));
                 port = ExcelUtils.getCellValue(row.getCell(13));
 
                 // 是否内置exporter
@@ -603,11 +565,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
                         account.setPwd(pwd);
                     }
-                    /*if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(cert)) {
-                        sshKey = new File(cert);
-                        sshKeyInput = new FileInputStream(sshKey);
-                        account.setPrivateKey(new byte[sshKeyInput.available()]);
-                    }*/
+                    if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(privateKey)) {
+                        account.setPrivateKey(privateKey);
+                    }
                     account.setAuthType(accountAuthType);
                     account.setUser(user);
                     account.setPort(Integer.parseInt(port));
@@ -632,7 +592,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     if (this.checkImportSnOnly(asset.getSn(), assetSnMap)) {
                         // host唯一校验
                         if (this.checkImportHostOnly(asset.getHost(), assetHostMap)) {
-                            if(host.matches(Constant.REGEX_IP)){
+                            if (host.matches(Constant.REGEX_IP)) {
                                 asset.setSeq(seqUUID);
                                 asset.setCreateAt(new Date());
                                 // 账号信息正常
@@ -665,7 +625,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 }
                                 // 更新 host map
                                 assetHostMap.put(asset.getHost(), 1);
-                            }else{
+                            } else {
                                 failDetail = new HashMap();
                                 failDetail.put("lineNo", i);
                                 failDetail.put("errorMsg", "Host格式不合法。");

@@ -23,7 +23,7 @@ public interface AssetService extends IService<Asset> {
     
     List<Asset> queryListByHosts(Collection<String> hosts);
 
-    void saveOrUpdateAsset(Asset asset, MultipartFile[] sshKeys);
+    void saveOrUpdateAsset(Asset asset);
 
     void delete(Integer ... ids);
 

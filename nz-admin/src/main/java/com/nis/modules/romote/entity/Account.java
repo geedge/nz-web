@@ -5,11 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.romote.util.RSAUtils;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Base64;
 
 @Data
 @TableName("account")
@@ -24,8 +20,12 @@ public class Account {
     @TableField(strategy = FieldStrategy.IGNORED)
     private String pwd;
 
+    /*@TableField(strategy = FieldStrategy.IGNORED)
+    private byte[] privateKey;*/
+
     @TableField(strategy = FieldStrategy.IGNORED)
-    private byte[] privateKey;
+    private String privateKey;
+
     private Integer port;
     @TableField(exist = false)
     private Asset asset;
@@ -35,7 +35,7 @@ public class Account {
      */
     private String seq;
 
-    public byte[] getPrivateKey() {
+    /*public byte[] getPrivateKey() {
         //拿本地的公钥解密ssh的私钥
         if (this.privateKey != null) {
             try {
@@ -45,14 +45,14 @@ public class Account {
             }
         }
         return null;
-    }
+    }*/
 
-    public void setPrivateKey(byte[] privateKey) throws Exception {
+    /*public void setPrivateKey(byte[] privateKey) throws Exception {
         //拿本地的公钥加密ssh的私钥
         if (privateKey!=null) {
             this.privateKey = RSAUtils.encryptByPublicKey(privateKey, Auth.getPublicKey());
         }
-    }
+    }*/
 
     public String getPwd(){
         return this.pwd;

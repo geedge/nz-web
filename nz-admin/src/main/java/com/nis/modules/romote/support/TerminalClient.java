@@ -94,7 +94,7 @@ public class TerminalClient {
                     File keyFile = new File(terminal.getPrivateKeyPath());
                     if (!keyFile.exists()) {
                         //将数据库中的私钥写到用户的机器上
-                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(terminal.getPrivateKey()));
+                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(terminal.getPrivateKey().getBytes()));
                     }
                     if (notEmpty(terminal.getPwd())) {
                         //设置带口令的密钥

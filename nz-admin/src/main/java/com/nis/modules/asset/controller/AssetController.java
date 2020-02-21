@@ -71,7 +71,7 @@ public class AssetController {
      */
     @PostMapping
     @SysLog("save asset")
-    public R save(Asset asset, @RequestParam(value = "cert", required = false) MultipartFile[] sshKeys) {
+    public R save(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
@@ -94,11 +94,7 @@ public class AssetController {
             if (Constant.AUTH_PASSWORD.equals(accountCli.getAuthType())) {
                 ValidateUtils.is(accountCli.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
             } else {
-                if (sshKeys.length < 1) {
-                    // 文件数量不足
-                    throw new NZException(RCode.ACCOUNT_FILE_INSUFFICIENT);
-                }
-                ValidateUtils.is(sshKeys[0]).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
+                ValidateUtils.is(accountCli.getPrivateKey()).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
             }
         }
         // 购买时间格式校验
@@ -118,7 +114,7 @@ public class AssetController {
             asset.setPurchaseDate(null);
         }
 
-        assetService.saveOrUpdateAsset(asset, sshKeys);
+        assetService.saveOrUpdateAsset(asset);
         String msg = "The asset and account are saved successfully";
 
         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
@@ -140,7 +136,7 @@ public class AssetController {
                 String buildNodeExporterName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_NAME);
 
                 // 登录
-                sftpUtils.loginIn(asset.getHost(), accountCli.getPort(), accountCli.getUser(), accountCli.getAuthType(), accountCli.getPwd(), sshKeys.length > 0 ? sshKeys[0].getBytes() : null);
+                sftpUtils.loginIn(asset.getHost(), accountCli.getPort(), accountCli.getUser(), accountCli.getAuthType(), accountCli.getPwd(), accountCli.getPrivateKey());
 
                 // 上传
                 sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);
@@ -168,7 +164,7 @@ public class AssetController {
      */
     @PutMapping
     @SysLog("update asset")
-    public R update(Asset asset, @RequestParam(value = "cert", required = false) MultipartFile[] sshKeys) {
+    public R update(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
@@ -177,27 +173,6 @@ public class AssetController {
 
 
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            // 记录当前获取的下标
-            /*int currSshKeys = 0;
-
-            for (int i = 0; i < asset.getAccounts().size(); i++) {
-                Account account = asset.getAccounts().get(i);
-                // 修改 id 不能为null
-                ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
-                // 证书登录 ssh
-                if (Constant.AUTH_CERTIFICATE.equals(account.getAuthType())) {
-                    if (sshKeys.length < 1 || currSshKeys >= sshKeys.length) {
-                        // 文件数量不足
-                        throw new NZException(RCode.ACCOUNT_FILE_INSUFFICIENT);
-                    } else {
-                        assetService.validateAccount(account, sshKeys[currSshKeys++]);
-                    }
-                } else {
-                    // 用户名 密码登录
-                    assetService.validateAccount(asset.getAccounts().get(i), null);
-                }
-            }*/
-
             // 目前按照一个asset 对应 一个account实现
             Account account = asset.getAccounts().get(0);
             // 此处取消对 account id 的校验 原因： asset 修改的时候 account 可以是新增 也可以是修改
@@ -222,7 +197,7 @@ public class AssetController {
             asset.setPurchaseDate(null);
         }
 
-        assetService.saveOrUpdateAsset(asset, sshKeys);
+        assetService.saveOrUpdateAsset(asset);
         return R.ok();
     }
 
@@ -331,9 +306,9 @@ public class AssetController {
                     // pwd
                     row1.createCell(11).setCellValue(account.getPwd());
                 }
-                if (account.getPrivateKey() != null && account.getPrivateKey().length > 0) {
+                if (StringUtils.isNotEmpty(account.getPrivateKey())) {
                     // sshKeys
-                    row1.createCell(12).setCellValue(new String(account.getPrivateKey()));
+                    row1.createCell(12).setCellValue(account.getPrivateKey());
                 }
                 // port
                 row1.createCell(13).setCellValue(account.getPort());

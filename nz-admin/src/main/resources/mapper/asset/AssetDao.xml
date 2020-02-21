@@ -18,11 +18,11 @@
         <result property="pingLastUpdate" column="pingLastUpdate"/>
 
         <!--数据中心-->
-        <result property="idc.id" column="idc_id"/>
+        <!--<result property="idc.id" column="idc_id"/>
         <result property="idc.name" column="idc_name"/>
         <result property="idc.location" column="idc_location"/>
         <result property="idc.tel" column="idc_tel"/>
-        <result property="idc.principal" column="idc_principal"/>
+        <result property="idc.principal" column="idc_principal"/>-->
 
         <!-- 机柜-->
         <result property="cabinet.id" column="cab_id"/>
@@ -54,6 +54,24 @@
         <association property="model" column="model_id" javaType="com.nis.modules.asset.entity.Model"
                      select="getModelById"/>
 
+        <association property="idc" javaType="com.nis.modules.asset.entity.Idc">
+            <id property="id" column="idc_id"/>
+            <result property="name" column="idc_name"/>
+            <result property="location" column="idc_location"/>
+            <result property="tel" column="idc_tel"/>
+            <result property="principal" column="idc_principal"/>
+
+            <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
+                <id column="id" property="id"/>
+                <result column="name" property="name"/>
+                <result column="pid" property="pid"/>
+                <result column="pids" property="pids"/>
+                <result column="longitude" property="longitude"/>
+                <result column="latitude" property="latitude"/>
+                <result column="i18n" property="i18n"/>
+            </association>
+        </association>
+
         <!-- 一对多 关联account -->
         <collection property="accounts" column="id" ofType="com.nis.modules.romote.entity.Account"
                     select="getAccountsById">
@@ -83,6 +101,14 @@
        idc.location AS idc_location,
        idc.tel AS idc_tel,
        idc.principal AS idc_principal,
+
+       sa.id AS sa_id,
+       sa.name AS sa_name,
+       sa.pid AS sa_pid,
+       sa.pids AS sa_pids,
+       sa.longitude AS sa_longitude,
+       sa.latitude AS sa_latitude,
+       sa.i18n AS sa_i18n,
 
        /*机柜*/
        cab.id AS cab_id,
@@ -114,6 +140,8 @@
 
         /*module统计 关联endPoint表  统计 module 数量 */
         (SELECT COUNT(DISTINCT ep.module_id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS moduleNum,
+        /*module统计 关联endPoint表  统计 endPoint 数量 */
+         (SELECT COUNT(ep.id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS endpointNum,
         /*alert统计 关联alert_rule表*//*
         (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum*/
         (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.link_id AND am.type = 3 AND am.state = 1) AS alertNum
@@ -130,6 +158,7 @@
         LEFT JOIN sys_user su ON ass.create_by = su.user_id
         LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
         LEFT JOIN asset_ping assp ON ass.host = assp.host
+        LEFT JOIN sys_area sa ON idc.area_id = sa.id
 
         WHERE 1=1
 
@@ -227,20 +256,20 @@
         </selectKey>
     </insert>
 
-	<select id="selectAssetStatisticsByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
+    <select id="selectAssetStatisticsByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
 		select count(*) total , m.name 
 		from asset a left join model m on a.model_id=m.id 
 		group by a.model_id
 	</select>
-	
-	<select id="selectAssetStatisticsByModelOnLine" resultType="com.nis.modules.metric.dto.MetricsDto">
+
+    <select id="selectAssetStatisticsByModelOnLine" resultType="com.nis.modules.metric.dto.MetricsDto">
 		select count(*) total , m.name 
 		from asset a left join model m on a.model_id=m.id 
 		where a.state=1
 		group by a.model_id
 	</select>
-	
-	<select id="selectAssetStatisticsByModelOffLine" resultType="com.nis.modules.metric.dto.MetricsDto">
+
+    <select id="selectAssetStatisticsByModelOffLine" resultType="com.nis.modules.metric.dto.MetricsDto">
 		select count(*) total 
 		from asset a 
 		where a.state=2

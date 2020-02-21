@@ -38,7 +38,7 @@ public class SftpUtils {
      * @param privateKey 密钥文件
      * @throws Exception
      */
-    public void loginIn(String server, Integer port, String username, Integer authType, String password, byte[] privateKey) throws Exception {
+    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey) throws Exception {
         OutputStream out = null;
         File file = null;
         try {
@@ -54,8 +54,7 @@ public class SftpUtils {
                 // 私钥文件登录
                 file = new File("privateKey");
                 out = new FileOutputStream(file);
-                out.write(privateKey);
-
+                out.write(privateKey.getBytes());
                 jsch.addIdentity(file.getAbsolutePath());
                 session.setUserInfo(new SftpAuthKeyUserInfo(""));
             } else {

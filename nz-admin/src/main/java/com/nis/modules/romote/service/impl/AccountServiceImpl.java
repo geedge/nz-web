@@ -29,10 +29,7 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.romote.dao.AccountDao;
@@ -45,16 +42,19 @@ import com.nis.modules.romote.util.IOUtils;
 import com.nis.modules.romote.util.StringUtils;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 
 import static com.nis.modules.romote.util.CommonUtils.notEmpty;
 
@@ -122,22 +122,24 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
     }
 
     @Override
-    public void validateAccount(Account account, MultipartFile file) {
+    public void validateAccount(Account account) { //, MultipartFile file
         //1.资产id不能为空
         ValidateUtils.is(account.getAssetId()).notNull(RCode.ASSET_ID_ISNULL);
 
         //2.资产必须存在
-        Asset asset=assetService.getById(account.getAssetId());
-        if(asset==null){
+        Asset asset = assetService.getById(account.getAssetId());
+        if (asset == null) {
             throw new NZException(RCode.ASSET_NOT_EXIST);
         }
         //3.认证类型必须合法
         ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
-        QueryWrapper<SysDictEntity> sysDictyQueryWrapper=new QueryWrapper<SysDictEntity>();
-        sysDictyQueryWrapper.eq("type",Constant.DICT_ACCOUNT_AUTH_TYPE);
-        sysDictyQueryWrapper.eq("value",account.getAuthType());
+        QueryWrapper<SysDictEntity> sysDictyQueryWrapper = new QueryWrapper<SysDictEntity>();
+        sysDictyQueryWrapper.eq("type", Constant.DICT_ACCOUNT_AUTH_TYPE);
+//        sysDictyQueryWrapper.eq("value",account.getAuthType());
+        sysDictyQueryWrapper.eq("code", account.getAuthType());
         List<SysDictEntity> authTypeList = sysDictService.list(sysDictyQueryWrapper);
-        if(authTypeList==null||authTypeList.size()>0){
+
+        if (CollectionUtils.isEmpty(authTypeList)) {
             throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
         }
 
@@ -145,46 +147,51 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
         ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
 
         //5.密码登录，密码不能为空，证书登录，证书不能为空
-        if(Constant.AUTH_PASSWORD==account.getAuthType()){
+        /*if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
             ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
-        }else{
-            ValidateUtils.is(file).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
-        }
+        } else {
+            ValidateUtils.is(account.getPrivateKey()).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
+        }*/
 
         //6.port 不能为空
         ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
+        boolean portFlag = CommonUtils.checkPort(account.getPort().toString());
+        if (!portFlag) {
+            // 账号端口不正确
+            throw new NZException(RCode.ACCOUNT_PORT_ERROR);
+        }
     }
 
     @Override
-    public void saveOrUpdateAccount(Account account,MultipartFile file) {
-        if (Constant.AUTH_CERTIFICATE==account.getAuthType()){
-            try{
-                account.setPrivateKey(file.getBytes());
-            }catch (Exception e){
-                logger.error("transfer ssh certificate error",e);
-            }
-        }
-        /*if(StringUtils.isNotEmpty(account.getPwd())){
-            String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-            account.setPwd(encodePwd);
-        }*/
-        if(account.getId()==null){
-            if(StringUtils.isNotEmpty(account.getPwd())){
-                String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                account.setPwd(encodePwd);
+    public void saveOrUpdateAccount(Account account) {// ,MultipartFile file
+        if (account.getId() == null) {
+            // 密码
+            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+                if(StringUtils.isNotEmpty(account.getPwd())){
+                    String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                    account.setPwd(encodePwd);
+                }
+                account.setPrivateKey(null);
+            } else {
+                account.setPwd(null);
             }
 
             this.save(account);
-        }else{
+        } else {
             // 修改参数含有密码
-            if(StringUtils.isNotEmpty(account.getPwd())){
-                Account accountEntity = this.getById(account.getId());
+            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+                if(StringUtils.isNotEmpty(account.getPwd())){
+                    Account accountEntity = this.getById(account.getId());
 
-                // 前台传参密码和数据库存储密码不对应 证明修改了密码
-               if(!account.getPwd().equals(accountEntity.getPwd())){
-                   String encodePwd=Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                   account.setPwd(encodePwd);
-               }
+                    // 前台传参密码和数据库存储密码不对应 证明修改了密码
+                    if (!account.getPwd().equals(accountEntity.getPwd())) {
+                        String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
+                        account.setPwd(encodePwd);
+                    }
+                }
+                account.setPrivateKey(null);
+            } else {
+                account.setPwd(null);
             }
 
             this.updateById(account);
@@ -219,7 +226,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
                             keyFile.delete();
                         }
                         //将数据库中的私钥写到用户的机器上
-                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(terminal.getPrivateKey()));
+                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(terminal.getPrivateKey().getBytes()));
                         if (notEmpty(terminal.getPwd())) {
                             //设置带口令的密钥
                             jSch.addIdentity(terminal.getPrivateKeyPath(), terminal.getPwd());

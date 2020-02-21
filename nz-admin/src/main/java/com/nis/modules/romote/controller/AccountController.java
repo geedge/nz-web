@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
@@ -47,8 +46,6 @@ import org.springframework.web.socket.WebSocketSession;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -80,21 +77,41 @@ public class AccountController {
         return R.ok(page);
 
     }
-    @PostMapping
+    /*@PostMapping
     @ResponseBody
     @SysLog("save account")
     public R save( Account account,@RequestParam(value="cert",required = false) MultipartFile sshKey){
         accountService.validateAccount(account,sshKey);
         accountService.saveOrUpdateAccount(account,sshKey);
         return R.ok();
+    }*/
+
+    @PostMapping
+    @ResponseBody
+    @SysLog("save account")
+    public R save(@RequestBody Account account) {
+        accountService.validateAccount(account);
+        accountService.saveOrUpdateAccount(account);
+        return R.ok();
     }
 
-    @PutMapping
+    /*@PutMapping
     @ResponseBody
     @SysLog("update account")
     public R update( Account account,@RequestParam(value="cert",required = false) MultipartFile sshKey){
         accountService.validateAccount(account,sshKey);
         accountService.saveOrUpdateAccount(account,sshKey);
+        return R.ok();
+    }*/
+
+    @PutMapping
+    @ResponseBody
+    @SysLog("update account")
+    public R update(@RequestBody Account account) {
+        ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
+        accountService.validateAccount(account);
+
+        accountService.saveOrUpdateAccount(account);
         return R.ok();
     }
 

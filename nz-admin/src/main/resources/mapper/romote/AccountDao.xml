@@ -6,7 +6,7 @@
         <result property="user" column="user"></result>
         <result property="pwd" column="pwd"></result>
         <result property="authType" column="auth_type"></result>
-        <result property="privateKey" column="private-key"></result>
+        <result property="privateKey" column="private_key"></result>
         <association property="asset" select="getAssetById" column="asset_id"></association>
     </resultMap>
     <select id="getCount" resultType="Integer">
