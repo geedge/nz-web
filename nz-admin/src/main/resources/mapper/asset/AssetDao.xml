@@ -16,6 +16,9 @@
         <result property="pingState" column="pingState"/>
         <result property="pingRtt" column="pingRtt"/>
         <result property="pingLastUpdate" column="pingLastUpdate"/>
+        <result property="moduleNum" column="moduleNum"/>
+        <result property="endpointNum" column="endpointNum"/>
+        <result property="alertNum" column="alertNum"/>
 
         <!--数据中心-->
         <!--<result property="idc.id" column="idc_id"/>
