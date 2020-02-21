@@ -1,7 +1,10 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.sys.entity.SysArea;
+
 import lombok.Data;
 
 import java.io.Serializable;
@@ -48,4 +51,15 @@ public class Idc implements Serializable {
      * 用于撤销具体某次批量导入的uuid
      */
     private String seq;
+    
+    /**
+     * 区域id
+     */
+    private Integer areaId;
+    
+    @TableField(exist = false)
+    private SysArea sysArea;
+    
+    @TableField(exist = false)
+    private AssetStat assetStat;
 }

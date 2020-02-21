@@ -14,6 +14,7 @@ import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.lang.StringUtils;
@@ -44,6 +45,9 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     // 资产  service
     @Autowired
     private AssetService assetService;
+    
+    @Autowired
+    private IdcDao idcDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -58,7 +62,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             tel = (String) params.get("tel");
         }
 
-        IPage<Idc> page = this.page(
+        /*IPage<Idc> page = this.page(
                 new Query<Idc>().getPage(params),
                 new QueryWrapper<Idc>()
                         .eq(StringUtils.isNotEmpty(id), "id", id)
@@ -66,8 +70,10 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
                         .like(StringUtils.isNotEmpty(name), "name", name)
                         .like(StringUtils.isNotEmpty(location), "location", location)
                         .like(StringUtils.isNotEmpty(tel), "tel", tel)
-        );
-
+        );*/
+        IPage<Idc> page = new Query<Idc>().getPage(params);
+		List<Idc> datas = idcDao.queryPage(page, params);
+		page.setRecords(datas);
         return new PageUtils(page);
     }
 
