@@ -62,4 +62,7 @@ public class Idc implements Serializable {
     
     @TableField(exist = false)
     private AssetStat assetStat;
+    
+    @TableField(exist = false)
+    private Integer cabinetNum;
 }

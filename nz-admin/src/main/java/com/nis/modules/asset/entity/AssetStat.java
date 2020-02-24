@@ -7,5 +7,4 @@ public class AssetStat {
 	private Integer total;
 	private Integer inStock;
 	private Integer outStock;
-	private Integer cabinetNum;
 }

@@ -10,7 +10,7 @@
         <result property="principal" column="principal"/>
         <result property="seq" column="seq"/>
         <result property="areaId" column="area_id"/>
-        
+        <result property="cabinetNum" column="cabinetNum" />
         <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
@@ -42,7 +42,7 @@
        count(*) as_total,
 	     sum(case a.state when 1 then 1 else 0 end) as_inStock,
        sum(case a.state when 2 then 1 else 0 end) as_outStock,
-       count(DISTINCT c.id) as_cabinetNum
+       count(DISTINCT c.id) cabinetNum
        from idc i left join sys_area sa on i.area_id=sa.id 
        left join asset a on i.id =a.idc_id 
        left join cabinet c on i.id=c.idc_id
