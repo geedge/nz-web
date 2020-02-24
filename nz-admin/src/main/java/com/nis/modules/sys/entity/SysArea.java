@@ -1,5 +1,8 @@
 package com.nis.modules.sys.entity;
 
+import java.util.List;
+
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Idc;
@@ -43,4 +46,7 @@ public class SysArea {
 	private Double latitude;
 	
 	private String i18n;
+	
+	@TableField(exist = false)
+	private List<SysArea> children;
 }
