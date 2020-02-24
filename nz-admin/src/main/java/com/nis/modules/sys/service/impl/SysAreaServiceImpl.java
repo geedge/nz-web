@@ -37,6 +37,9 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 			    );
 		
 		// 查询子集列表数据
+		if(StringUtils.isBlank(includeLeaf)) {
+			includeLeaf="1";
+		}
 		if(!includeLeaf.equals("0")) {
 			Map<Long,SysArea> map =new HashMap<Long,SysArea>(); 
 			List<SysArea> datas = page.getRecords();
