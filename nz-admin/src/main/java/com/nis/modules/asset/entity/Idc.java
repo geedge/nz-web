@@ -1,5 +1,6 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -55,6 +56,7 @@ public class Idc implements Serializable {
     /**
      * 区域id
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer areaId;
     
     @TableField(exist = false)
