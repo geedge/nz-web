@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
@@ -21,7 +23,10 @@ import io.micrometer.core.instrument.util.StringUtils;
 
 @Service("sysAreaService")
 public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> implements SysAreaService {
-
+	@Autowired
+	private RedisTemplate redisTemplate;
+	
+	@SuppressWarnings("unchecked")
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String id = (String) params.get("id");
@@ -43,7 +48,8 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 		if(!includeLeaf.equals("0")) {
 			Map<Long,SysArea> map =new HashMap<Long,SysArea>(); 
 			List<SysArea> datas = page.getRecords();
-			List<SysArea> allDatas = this.list();
+//			List<SysArea> allDatas = this.list();
+			List<SysArea> allDatas = redisTemplate.opsForList().range("area", 0, -1);
 			for(SysArea data: allDatas) {
 				map.put(data.getId().longValue(), data);
 			}

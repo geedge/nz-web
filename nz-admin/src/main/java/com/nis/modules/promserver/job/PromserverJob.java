@@ -52,7 +52,7 @@ public class PromserverJob extends QuartzJobBean {
 					promserver.setCheckTime(new Date());
 				}else {
 					promserver.setStatus(0);
-					promserver.setCheckTime(new Date());
+//					promserver.setCheckTime(new Date());
 				}
 			}
 			promserverService.updateBatchById(promservers);

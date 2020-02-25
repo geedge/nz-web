@@ -1,5 +1,6 @@
 package com.nis.modules.sys.entity;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -17,7 +18,7 @@ import lombok.Data;
  */
 @Data
 @TableName("sys_area")
-public class SysArea {
+public class SysArea implements Serializable{
 	@TableId
 	private Long id;
 	/**
