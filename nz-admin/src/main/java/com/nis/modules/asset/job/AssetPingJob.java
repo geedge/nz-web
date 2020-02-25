@@ -120,8 +120,10 @@ public class AssetPingJob extends QuartzJobBean {
                         ipAndDesc.put(is[0].trim(), is[1].trim());
                     }
 
-                    // 最终更新数据库数据
-                    List<AssetPing> assetPings = new ArrayList<>();
+                    // 可达ping asset集合
+                    List<AssetPing> callAssetPings = new ArrayList<>();
+                    // 不可达ping asset集合
+                    List<AssetPing> unCallAssetPings = new ArrayList<>();
                     String statusInfo = null;
                     String host = null;
 
@@ -130,18 +132,34 @@ public class AssetPingJob extends QuartzJobBean {
                         host = entry.getKey();
                         // IP 不可达
                         if (Constant.ASSET_PING_DOWN_FLAG.equals(statusInfo)) {
-                            assetPings.add(new AssetPing(host, 0, null, new Date()));
+                            unCallAssetPings.add(new AssetPing(host, 0, null, null));
                         } else {
                             // 可达
-                            assetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), new Date()));
+                            callAssetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), new Date()));
                         }
                     }
 
                     // 更新数据库
-                    assetPingDao.deleteAll();
-                    assetPingService.saveBatch(assetPings);
+                    List<AssetPing> list = assetPingService.list();
+                    Map<String, AssetPing> hostAndAssetPing = new HashMap();
+                    for (AssetPing assetPing : list) {
+                        hostAndAssetPing.put(assetPing.getHost(), assetPing);
+                    }
+                    // 处理不可达资产的最后可达时间
+                    AssetPing ping;
+                    for (AssetPing assetPing : unCallAssetPings) {
+                        ping = hostAndAssetPing.get(assetPing.getHost());
+                        if (ping != null) {
+                            assetPing.setLastUpdate(ping.getLastUpdate());
+                        }
+                    }
+                    // 汇总数据
+                    callAssetPings.addAll(unCallAssetPings);
 
-                    logger.debug("update asset ping list {}", assetPings);
+                    assetPingDao.deleteAll();
+                    assetPingService.saveBatch(callAssetPings);
+
+                    logger.debug("update asset ping list {}", callAssetPings);
 
                 } catch (IOException e) {
                     e.printStackTrace();
