@@ -26,6 +26,11 @@ public class ChartElement {
      * */
     private String type;
 
+    /**
+     * 图表legend表达式
+     */
+    private String legend;
+
     @Override
     public boolean equals(Object compareObj){
         if(this ==  compareObj){
