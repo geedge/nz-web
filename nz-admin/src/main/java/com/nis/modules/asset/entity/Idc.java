@@ -5,10 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SysArea;
-
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Map;
 
 
 /**
@@ -58,13 +58,28 @@ public class Idc implements Serializable {
      */
     @TableField(strategy = FieldStrategy.IGNORED)
     private Integer areaId;
-    
+
+    /**
+     * 地域信息
+     */
     @TableField(exist = false)
     private SysArea area;
-    
+
+    /**
+     * 资产统计
+     */
     @TableField(exist = false)
     private AssetStat assetStat;
-    
+
+    /**
+     * 机柜计数
+     */
     @TableField(exist = false)
     private Integer cabinetNum;
+
+    /**
+     * 告警统计
+     */
+    @TableField(exist = false)
+    private Map alertStat;
 }

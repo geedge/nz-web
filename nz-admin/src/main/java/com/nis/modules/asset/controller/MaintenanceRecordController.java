@@ -20,7 +20,7 @@ import java.util.Map;
  * @date 2019-11-21
  */
 @RestController
-@RequestMapping("/maintenance")
+@RequestMapping("/asset/maintenance")
 public class MaintenanceRecordController {
 
     @Autowired

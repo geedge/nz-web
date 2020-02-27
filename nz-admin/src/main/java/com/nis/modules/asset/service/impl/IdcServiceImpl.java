@@ -14,16 +14,13 @@ import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
-import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.overview.dao.OverviewDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 数据中心    serviceImpl
@@ -45,14 +42,17 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     // 资产  service
     @Autowired
     private AssetService assetService;
-    
+
     @Autowired
     private IdcDao idcDao;
+
+    @Autowired
+    private OverviewDao overviewDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         //      id         负责人           姓名          地址             电话
-        String id = null, principal = null, name = null, location = null, tel = null;
+       /* String id = null, principal = null, name = null, location = null, tel = null;
 
         if (params != null && params.size() > 0) {
             id = (String) params.get("id");
@@ -60,7 +60,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             name = (String) params.get("name");
             location = (String) params.get("location");
             tel = (String) params.get("tel");
-        }
+        }*/
 
         /*IPage<Idc> page = this.page(
                 new Query<Idc>().getPage(params),
@@ -72,8 +72,45 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
                         .like(StringUtils.isNotEmpty(tel), "tel", tel)
         );*/
         IPage<Idc> page = new Query<Idc>().getPage(params);
-		List<Idc> datas = idcDao.queryPage(page, params);
-		page.setRecords(datas);
+        // dc列表数据
+        List<Idc> datas = idcDao.queryPage(page, params);
+        Map<Integer, Idc> idcMap = new HashMap<>();
+        for (Idc idc : datas) {
+            idcMap.put(idc.getId(), idc);
+        }
+
+        // 按照DC维度统计alert数量 在库的资产
+        List<Map> mapList = overviewDao.assetDcAndAlertSeveritysNums(1);
+        Integer idcId, highNum, mediumNum, lowNum;
+        Idc idc;
+        Map alertStat;
+        for (Map map : mapList) {
+            idcId = Integer.parseInt(map.get("idcId").toString());
+            idc = idcMap.get(idcId);
+            if (idc != null) {
+                alertStat = new HashMap();
+                highNum = Integer.parseInt(map.get("alertHigh").toString());
+                mediumNum = Integer.parseInt(map.get("alertMedium").toString());
+                lowNum = Integer.parseInt(map.get("alertLow").toString());
+                alertStat.put("high", highNum);
+                alertStat.put("medium", mediumNum);
+                alertStat.put("low", lowNum);
+                alertStat.put("total", highNum + mediumNum + lowNum);
+                idc.setAlertStat(alertStat);
+            }
+        }
+
+        alertStat = new HashMap();
+        alertStat.put("high", 0);
+        alertStat.put("medium", 0);
+        alertStat.put("low", 0);
+        alertStat.put("total", 0);
+        for (Idc entity : idcMap.values()) {
+            if(entity.getAlertStat() == null){
+                entity.setAlertStat(alertStat);
+            }
+        }
+        page.setRecords(new ArrayList<>(idcMap.values()));
         return new PageUtils(page);
     }
 
