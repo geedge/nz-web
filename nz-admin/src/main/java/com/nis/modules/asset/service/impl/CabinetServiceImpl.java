@@ -14,13 +14,11 @@ import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
-import org.apache.commons.lang.StringUtils;
+import com.nis.modules.overview.dao.OverviewDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 机柜    serviceImpl
@@ -39,27 +37,57 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     @Autowired
     private AssetService assetService;
 
+    @Autowired
+    private CabinetDao cabinetDao;
+
+    @Autowired
+    private OverviewDao overviewDao;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String id = null, name = null, idcId = null, uSize = null, remark = null;
-
-        if (params != null && params.size() > 0) {
-            id = (String) params.get("id");
-            name = (String) params.get("name");
-            idcId = (String) params.get("idcId");
-            uSize = (String) params.get("uSize");
-            remark = (String) params.get("remark");
+        IPage<Cabinet> page = new Query<Cabinet>().getPage(params);
+        // 机柜列表 并且含有asset统计信息
+        List<Cabinet> cabinets = cabinetDao.queryPage(page, params);
+        Map<Integer, Cabinet> cabinetMap = new HashMap<>();
+        for (Cabinet cabinet : cabinets) {
+            cabinetMap.put(cabinet.getId(), cabinet);
         }
 
-        IPage<Cabinet> page = this.page(
-                new Query<Cabinet>().getPage(params),
-                new QueryWrapper<Cabinet>()
-                        .eq(StringUtils.isNotEmpty(id), "id", id)
-                        .eq(StringUtils.isNotEmpty(idcId), "idc_id", idcId)
-                        .eq(StringUtils.isNotEmpty(uSize), "u_size", uSize)
-                        .like(StringUtils.isNotEmpty(name), "name", name)
-                        .like(StringUtils.isNotEmpty(remark), "remark", remark)
-        );
+        // 按照DC维度统计alert数量 在库的资产
+        List<Map> mapList = overviewDao.assetCabAndAlertSeveritysNums(1);
+        Integer cabinetId, highNum, mediumNum, lowNum;
+        Cabinet cabinet;
+        Map alertStat;
+        for (Map map : mapList) {
+            if (map.get("cabinetId") == null) {
+                continue;
+            }
+            cabinetId = Integer.parseInt(map.get("cabinetId").toString());
+            cabinet = cabinetMap.get(cabinetId);
+            if (cabinet != null) {
+                alertStat = new HashMap();
+                highNum = Integer.parseInt(map.get("alertHigh").toString());
+                mediumNum = Integer.parseInt(map.get("alertMedium").toString());
+                lowNum = Integer.parseInt(map.get("alertLow").toString());
+                alertStat.put("high", highNum);
+                alertStat.put("medium", mediumNum);
+                alertStat.put("low", lowNum);
+                alertStat.put("total", highNum + mediumNum + lowNum);
+                cabinet.setAlertStat(alertStat);
+            }
+        }
+
+        alertStat = new HashMap();
+        alertStat.put("high", 0);
+        alertStat.put("medium", 0);
+        alertStat.put("low", 0);
+        alertStat.put("total", 0);
+        for (Cabinet entity : cabinetMap.values()) {
+            if (entity.getAlertStat() == null) {
+                entity.setAlertStat(alertStat);
+            }
+        }
+        page.setRecords(new ArrayList<>(cabinetMap.values()));
         return new PageUtils(page);
     }
 

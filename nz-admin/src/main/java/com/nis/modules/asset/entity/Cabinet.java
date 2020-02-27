@@ -1,10 +1,12 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Map;
 
 
 /**
@@ -48,6 +50,18 @@ public class Cabinet implements Serializable {
      * 用于撤销具体某次批量导入的uuid
      */
     private String seq;
+
+    /**
+     * 资产统计
+     */
+    @TableField(exist = false)
+    private AssetStat assetStat;
+
+    /**
+     * 告警统计
+     */
+    @TableField(exist = false)
+    private Map alertStat;
 
     // 解决lombok自动生成方法命名问题
     public Integer getuSize() {

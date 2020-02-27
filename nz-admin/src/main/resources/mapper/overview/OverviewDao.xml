@@ -117,6 +117,23 @@
         ORDER BY ass.idc_id
     </select>
 
+    <select id="assetCabAndAlertSeveritysNums" resultType="java.util.Map">
+        SELECT ass.cabinet_id AS cabinetId,
+            COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
+            COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
+            COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
+        FROM asset ass
+        LEFT JOIN alert_message am ON ass.id = am.link_id
+        WHERE am.type = 3 AND am.state = 1
+
+        /*是否只统计在库资产*/
+        <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
+            AND ass.state = #{onlyInUse}
+        </if>
+
+        GROUP BY ass.cabinet_id
+    </select>
+
     <select id="assetDcAndPingActivesNums" resultType="java.util.Map">
         SELECT
         ass.idc_id AS idcId,

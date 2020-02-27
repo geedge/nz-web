@@ -51,26 +51,6 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        //      id         负责人           姓名          地址             电话
-       /* String id = null, principal = null, name = null, location = null, tel = null;
-
-        if (params != null && params.size() > 0) {
-            id = (String) params.get("id");
-            principal = (String) params.get("principal");
-            name = (String) params.get("name");
-            location = (String) params.get("location");
-            tel = (String) params.get("tel");
-        }*/
-
-        /*IPage<Idc> page = this.page(
-                new Query<Idc>().getPage(params),
-                new QueryWrapper<Idc>()
-                        .eq(StringUtils.isNotEmpty(id), "id", id)
-                        .eq(StringUtils.isNotEmpty(principal), "principal", principal)
-                        .like(StringUtils.isNotEmpty(name), "name", name)
-                        .like(StringUtils.isNotEmpty(location), "location", location)
-                        .like(StringUtils.isNotEmpty(tel), "tel", tel)
-        );*/
         IPage<Idc> page = new Query<Idc>().getPage(params);
         // dc列表数据
         List<Idc> datas = idcDao.queryPage(page, params);

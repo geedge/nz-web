@@ -41,6 +41,9 @@ public interface OverviewDao {
     // 按照DC维度 统计资产alert 信息 返回为 idcId alertHigh(数量)  alertMedium （数量） alertLow （数量）
     List<Map> assetDcAndAlertSeveritysNums(@Param("onlyInUse") Integer onlyInUse);
 
+    // 按照Cabinet维度 统计资产 alert 信息 返回为 cabinetId alertHigh(数量)  alertMedium （数量） alertLow （数量）
+    List<Map> assetCabAndAlertSeveritysNums(@Param("onlyInUse") Integer onlyInUse);
+
     // 按照dc维度统计资产assetping 可达状态统计 返回为 idcId pingActive (可达数量)  pingInactive （不可达数量）
     List<Map> assetDcAndPingActivesNums(@Param("onlyInUse") Integer onlyInUse);
 
