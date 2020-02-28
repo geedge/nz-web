@@ -431,6 +431,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 //            Sheet sheet = work.getSheet("assets");
             // 获得当前sheet的开始行
             int firstRowNum = sheet.getFirstRowNum();
+
+            // 校验表头是否与模板一致
+            List<Map> mapList = this.validateExcelHeader(sheet, firstRowNum);
+            if (CollectionUtils.isNotEmpty(mapList)) {
+                info.put("seq", seqUUID);
+                info.put("totalNum", 0);
+                info.put("successNum", 0);
+                info.put("failNum", 0);
+                info.put("failDetail", mapList);
+                return info;
+            }
             // 获得当前sheet的结束行
             int maxRowNum = sheet.getLastRowNum();
             Asset asset;
@@ -667,6 +678,30 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
         return info;
+    }
+
+    private List<Map> validateExcelHeader(Sheet sheet, int firstRowNum) {
+        Row row = sheet.getRow(firstRowNum);
+
+        List<Map> mapList = new ArrayList<>();
+        Map map;
+
+        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "host", "state", "purchasedate", "authtype", "user", "pwd", "cert", "port", "exporter"};
+        List<String> titles = Arrays.asList(str);
+
+        String titleValue, title;
+        for (int i = 0; i < titles.size(); i++) {
+            titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
+            title = titles.get(i);
+            if (!titleValue.contains(title)) {
+                map = new HashMap();
+                map.put("lineNo", firstRowNum);
+                map.put("errorMsg", "第" + (i + 1) + "列表头为 " + titleValue + " ,与模板不符，请您核实。谢谢！");
+                mapList.add(map);
+            }
+        }
+
+        return mapList;
     }
 
     @Override
