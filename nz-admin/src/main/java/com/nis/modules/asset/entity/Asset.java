@@ -3,7 +3,7 @@ package com.nis.modules.asset.entity;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.romote.entity.Account;
+import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 

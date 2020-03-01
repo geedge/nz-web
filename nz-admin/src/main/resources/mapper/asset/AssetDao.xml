@@ -76,7 +76,7 @@
         </association>
 
         <!-- 一对多 关联account -->
-        <collection property="accounts" column="id" ofType="com.nis.modules.romote.entity.Account"
+        <collection property="accounts" column="id" ofType="com.nis.modules.terminal.entity.Account"
                     select="getAccountsById">
             <id property="id" column="id"/>
             <result property="assetId" column="assetId"/>
@@ -223,7 +223,7 @@
     </select>
 
     <!--查看 accounts-->
-    <select id="getAccountsById" resultType="com.nis.modules.romote.entity.Account">
+    <select id="getAccountsById" resultType="com.nis.modules.terminal.entity.Account">
         SELECT
             acc.id AS id,
             acc.asset_id AS assetId,

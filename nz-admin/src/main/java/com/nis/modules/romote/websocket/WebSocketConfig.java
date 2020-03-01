@@ -1,4 +1,4 @@
-package com.nis.modules.romote.websocket;
+/*package com.nis.modules.romote.websocket;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,3 +19,4 @@ public class WebSocketConfig implements WebSocketConfigurer {
         return new TerminalHandler();
     }
 }
+*/

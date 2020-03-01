@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.controller;
 
@@ -49,9 +49,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
+*//**
  * benjobs..
- */
+ *//*
 @Controller
 @RequestMapping("/account")
 public class AccountController {
@@ -77,14 +77,14 @@ public class AccountController {
         return R.ok(page);
 
     }
-    /*@PostMapping
+    @PostMapping
     @ResponseBody
     @SysLog("save account")
     public R save( Account account,@RequestParam(value="cert",required = false) MultipartFile sshKey){
         accountService.validateAccount(account,sshKey);
         accountService.saveOrUpdateAccount(account,sshKey);
         return R.ok();
-    }*/
+    }
 
     @PostMapping
     @ResponseBody
@@ -95,14 +95,14 @@ public class AccountController {
         return R.ok();
     }
 
-    /*@PutMapping
+    @PutMapping
     @ResponseBody
     @SysLog("update account")
     public R update( Account account,@RequestParam(value="cert",required = false) MultipartFile sshKey){
         accountService.validateAccount(account,sshKey);
         accountService.saveOrUpdateAccount(account,sshKey);
         return R.ok();
-    }*/
+    }
 
     @PutMapping
     @ResponseBody
@@ -126,7 +126,7 @@ public class AccountController {
 
 
 
-    /**web ssh 操作**/
+    *//**web ssh 操作**//*
 
     @RequestMapping(value = "ssh.do", method = RequestMethod.POST)
     @ResponseBody
@@ -190,14 +190,14 @@ public class AccountController {
 
         }
     }
-    /**
+    *//**
      * 不能重复复制会话,可以通过ajax的方式重新生成token解决....
      *
      * @param id
      * @param token
      * @return
      * @throws Exception
-     */
+     *//*
     @RequestMapping("reopen.do")
     @ResponseBody
     public R reopen(Long id, String token) {
@@ -265,4 +265,4 @@ public class AccountController {
         }
     }
 
-}
+}*/

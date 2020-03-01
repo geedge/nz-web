@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.support;
 
@@ -46,9 +46,9 @@ public class TerminalContext implements Serializable {
         this.token = key;
         //该终端实例只能被的打开一次,之后就失效
         terminalContext.put(key(key), terminal);
-        /**
+        *//**
          * 为复制会话
-         */
+         *//*
         String reKey = terminal.getId() + "_" + key;
         terminalContext.put(key(reKey), terminal);
     }
@@ -66,4 +66,4 @@ public class TerminalContext implements Serializable {
         return this.token;
     }
 
-}
+}*/

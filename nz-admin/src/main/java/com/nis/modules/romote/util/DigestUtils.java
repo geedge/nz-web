@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.util;
 
@@ -46,10 +46,10 @@ import java.security.SecureRandom;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
 
-/**
+*//**
  * @author wanghuajie
  * @since 3.0
- */
+ *//*
 public abstract class DigestUtils {
 
     private static final String SHA1 = "SHA-1";
@@ -66,9 +66,9 @@ public abstract class DigestUtils {
 
     private static SecureRandom random = new SecureRandom();
 
-    /**
+    *//**
      * 对输入字符串进行sha1散列.
-     */
+     *//*
     public static byte[] sha1(byte[] input) {
         return digest(input, SHA1, null, 1);
     }
@@ -81,9 +81,9 @@ public abstract class DigestUtils {
         return digest(input, SHA1, salt, iterations);
     }
 
-    /**
+    *//**
      * 对字符串进行散列, 支持md5与sha1算法.
-     */
+     *//*
     private static byte[] digest(byte[] input, String algorithm, byte[] salt, int iterations) {
         try {
             MessageDigest digest = MessageDigest.getInstance(algorithm);
@@ -104,11 +104,11 @@ public abstract class DigestUtils {
         }
     }
 
-    /**
+    *//**
      * 生成随机的Byte[]作为salt.
      *
      * @param numBytes byte数组的大小
-     */
+     *//*
     public static byte[] generateSalt(int numBytes) {
         Validate.isTrue(numBytes > 0, "numBytes argument must be a positive integer (1 or larger)", numBytes);
 
@@ -117,9 +117,9 @@ public abstract class DigestUtils {
         return bytes;
     }
 
-    /**
+    *//**
      * 对文件进行sha1散列.
-     */
+     *//*
     public static byte[] sha1(InputStream input) throws IOException {
         return digest(input, SHA1);
     }
@@ -166,16 +166,16 @@ public abstract class DigestUtils {
         return "";
     }
 
-    /**
+    *//**
      * Hex编码.
-     */
+     *//*
     public static String encodeHex(byte[] input) {
         return Hex.encodeHexString(input);
     }
 
-    /**
+    *//**
      * Hex解码.
-     */
+     *//*
     public static byte[] decodeHex(String input) {
         try {
             return Hex.decodeHex(input.toCharArray());
@@ -184,30 +184,30 @@ public abstract class DigestUtils {
         }
     }
 
-    /**
+    *//**
      * Base64编码.
-     */
+     *//*
     public static String encodeBase64(byte[] input) {
         return Base64.encodeBase64String(input);
     }
 
-    /**
+    *//**
      * Base64编码, URL安全(将Base64中的URL非法字符'+'和'/'转为'-'和'_', 见RFC3548).
-     */
+     *//*
     public static String encodeUrlSafeBase64(byte[] input) {
         return Base64.encodeBase64URLSafeString(input);
     }
 
-    /**
+    *//**
      * Base64解码.
-     */
+     *//*
     public static byte[] decodeBase64(String input) {
         return Base64.decodeBase64(input);
     }
 
-    /**
+    *//**
      * Base62编码。
-     */
+     *//*
     public static String encodeBase62(byte[] input) {
         char[] chars = new char[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -216,37 +216,37 @@ public abstract class DigestUtils {
         return new String(chars);
     }
 
-    /**
+    *//**
      * Html 转码.
-     */
+     *//*
     public static String escapeHtml(String html) {
         return StringEscapeUtils.escapeHtml4(html);
     }
 
-    /**
+    *//**
      * Html 解码.
-     */
+     *//*
     public static String unescapeHtml(String htmlEscaped) {
         return StringEscapeUtils.unescapeHtml4(htmlEscaped);
     }
 
-    /**
+    *//**
      * Xml 转码.
-     */
+     *//*
     public static String escapeXml(String xml) {
         return StringEscapeUtils.escapeXml(xml);
     }
 
-    /**
+    *//**
      * Xml 解码.
-     */
+     *//*
     public static String unescapeXml(String xmlEscaped) {
         return StringEscapeUtils.unescapeXml(xmlEscaped);
     }
 
-    /**
+    *//**
      * URL 编码, Encode默认为UTF-8.
-     */
+     *//*
     public static String urlEncode(String part) {
         try {
             return URLEncoder.encode(part, DEFAULT_URL_ENCODING);
@@ -255,9 +255,9 @@ public abstract class DigestUtils {
         }
     }
 
-    /**
+    *//**
      * URL 解码, Encode默认为UTF-8.
-     */
+     *//*
     public static String urlDecode(String part) {
 
         try {
@@ -280,33 +280,33 @@ public abstract class DigestUtils {
         return md5Hex(text.getBytes());
     }
 
-    /**
+    *//**
      * Return a hexadecimal string representation of the MD5 digest of the given
      * bytes.
      *
      * @param bytes the bytes to calculate the digest over
      * @return a hexadecimal digest string
-     */
+     *//*
     public static String md5Hex(byte[] bytes) {
         return digestAsHexString(MD5_ALGORITHM_NAME, bytes);
     }
 
-    /**
+    *//**
      * Append a hexadecimal string representation of the MD5 digest of the given
      * bytes to the given {@link StringBuilder}.
      *
      * @param bytes   the bytes to calculate the digest over
      * @param builder the string builder to append the digest to
      * @return the given string builder
-     */
+     *//*
     public static StringBuilder appendMd5DigestAsHex(byte[] bytes, StringBuilder builder) {
         return appendDigestAsHex(MD5_ALGORITHM_NAME, bytes, builder);
     }
 
-    /**
+    *//**
      * Creates a new {@link MessageDigest} with the given algorithm. Necessary
      * because {@code MessageDigest} is not thread-safe.
-     */
+     *//*
     private static MessageDigest getDigest(String algorithm) {
         try {
             return MessageDigest.getInstance(algorithm);
@@ -348,21 +348,21 @@ public abstract class DigestUtils {
 
     }
 
-    /**
+    *//**
      * Description 根据键值进行加密
      *
      * @param data
      * @param key  加密键byte数组
      * @return
      * @throws Exception
-     */
+     *//*
     public static String desEncrypt(String key, String data) throws Exception {
         byte[] bt = desEncrypt(key.getBytes(), data.getBytes());
         String strs = Base64.encodeBase64String(bt);
         return strs;
     }
 
-    /**
+    *//**
      * Description 根据键值进行解密
      *
      * @param data
@@ -370,7 +370,7 @@ public abstract class DigestUtils {
      * @return
      * @throws IOException
      * @throws Exception
-     */
+     *//*
     public static String desDecrypt(String key, String data) throws Exception {
         if (data == null)
             return null;
@@ -379,14 +379,14 @@ public abstract class DigestUtils {
         return new String(bt);
     }
 
-    /**
+    *//**
      * Description 根据键值进行加密
      *
      * @param data
      * @param key  加密键byte数组
      * @return
      * @throws Exception
-     */
+     *//*
     private static byte[] desEncrypt(byte[] key, byte[] data) throws Exception {
         // 生成一个可信任的随机数源
         SecureRandom sr = new SecureRandom();
@@ -439,14 +439,14 @@ public abstract class DigestUtils {
     }
 
 
-    /**
+    *//**
      * Description 根据键值进行解密
      *
      * @param data
      * @param key  加密键byte数组
      * @return
      * @throws Exception
-     */
+     *//*
     private static byte[] desDecrypt(byte[] key, byte[] data) throws Exception {
         // 生成一个可信任的随机数源
         SecureRandom sr = new SecureRandom();
@@ -496,11 +496,11 @@ public abstract class DigestUtils {
         return null;
     }
 
-    /**
+    *//**
      * @param sSrc
      * @return 加密程序
      * @throws Exception
-     */
+     *//*
     public static String aesEncrypt(String key, String sSrc) throws Exception {
         if (key == null) {
             throw new ExceptionInInitializerError("key not bo null");
@@ -667,3 +667,4 @@ public abstract class DigestUtils {
 
 
 }
+*/

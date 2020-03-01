@@ -1,7 +1,7 @@
 
 package com.nis;
 
-import com.nis.modules.romote.websocket.TerminalHandler;
+import com.nis.modules.terminal.config.TerminalHandler;
 
 import io.micrometer.core.instrument.MeterRegistry;
 

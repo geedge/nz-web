@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.support;
 
@@ -178,12 +178,12 @@ public class TerminalClient {
 
     }
 
-    /**
+    *//**
      * 向ssh终端输入内容
      *
      * @param message
      * @throws IOException
-     */
+     *//*
     public void write(String message) throws IOException {
         if (message.equals("\r")) {
             if (closed) {
@@ -276,4 +276,4 @@ public class TerminalClient {
         return clientId;
     }
 
-}
+}*/

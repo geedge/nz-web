@@ -34,6 +34,7 @@ import com.nis.common.utils.ExcelUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Idc;
@@ -51,8 +52,6 @@ import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.service.PromserverProxyService;
-import com.nis.modules.romote.entity.Account;
-import com.nis.modules.romote.util.StringUtils;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 
@@ -137,6 +136,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public Map importEndpoint(MultipartFile endpointExcelFile, String uuid) {
 		logger.info("importEndpoint param endpointExcelFileName is {}",endpointExcelFile.getOriginalFilename());
 		logger.info("importEndpoint param uuid is {}",uuid);

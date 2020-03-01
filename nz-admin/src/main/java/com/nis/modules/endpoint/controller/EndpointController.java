@@ -35,12 +35,10 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Model;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.entity.Project;
-import com.nis.modules.romote.entity.Account;
 import com.nis.modules.sys.controller.AbstractController;
 
 @RestController

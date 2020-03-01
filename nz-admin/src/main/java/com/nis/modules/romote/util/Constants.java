@@ -1,4 +1,4 @@
-package com.nis.modules.romote.util;
+/*package com.nis.modules.romote.util;
 
 
 import java.io.File;
@@ -35,4 +35,4 @@ public class Constants{
             this.type = type;
         }
     }
-}
+}*/

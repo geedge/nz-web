@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.util;
 
@@ -26,7 +26,7 @@ import java.io.Serializable;
 import java.util.*;
 
 
-/**
+*//**
  * @author <a href="mailto:benjobs@qq.com">benjobs@qq.com</a>
  * @name:CommonUtil
  * @version: 1.0.0
@@ -97,7 +97,7 @@ import java.util.*;
  * 愿得谁之心,白首不相离？<br/>
  * 该执谁之手,相守到白发? <br/>
  * <hr style="color:RED"/>
- */
+ *//*
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class CommonUtils implements Serializable {
@@ -106,7 +106,7 @@ public abstract class CommonUtils implements Serializable {
 
     private static String OS = System.getProperty("os.name").toLowerCase();
 
-    /**
+    *//**
      * 非空判断
      *
      * @param objs 要判断,处理的对象
@@ -114,7 +114,7 @@ public abstract class CommonUtils implements Serializable {
      * @author <a href="mailto:benjobs@qq.com">Ben</a>
      * @see <b>对象为Null返回true,集合的大小为0也返回true,迭代器没有下一个也返回true..</b>
      * @since 1.0
-     */
+     *//*
     public static Boolean isEmpty(Object... objs) {
 
         if (objs == null) {
@@ -173,7 +173,7 @@ public abstract class CommonUtils implements Serializable {
         return false;
     }
 
-    /**
+    *//**
      * 空判断
      *
      * @param obj 要判断,处理的对象
@@ -181,7 +181,7 @@ public abstract class CommonUtils implements Serializable {
      * @author <a href="mailto:benjobs@qq.com">Ben</a>
      * @see <b>与非空相反</b>
      * @since 1.0
-     */
+     *//*
     public static Boolean notEmpty(Object... obj) {
         return !isEmpty(obj);
     }
@@ -247,7 +247,7 @@ public abstract class CommonUtils implements Serializable {
         return toFloat(val, 0f);
     }
 
-    /**
+    *//**
      * 对Null作预处理
      *
      * @param obj   待处理的对象
@@ -256,7 +256,7 @@ public abstract class CommonUtils implements Serializable {
      * @author <a href="mailto:benjobs@qq.com">Ben</a>
      * @see <b>对Null作预处理,有效避免NullPointerException</b>
      * @since 1.0
-     */
+     *//*
     public static <T> T preparedNull(T obj, Class<?> clazz) {
 
         if (notEmpty(obj)) {
@@ -301,13 +301,13 @@ public abstract class CommonUtils implements Serializable {
         return false;
     }
 
-    /**
+    *//**
      * Check whether the given Enumeration contains the given element.
      *
      * @param enumeration the Enumeration to check
      * @param element     the element to look for
      * @return <code>true</code> if found, <code>false</code> else
-     */
+     *//*
     public static boolean contains(Enumeration enumeration, Object element) {
         if (enumeration != null) {
             while (enumeration.hasMoreElements()) {
@@ -320,7 +320,7 @@ public abstract class CommonUtils implements Serializable {
         return false;
     }
 
-    /**
+    *//**
      * Check whether the given Collection contains the given element instance.
      * <p>Enforces the given instance to be present, rather than returning
      * <code>true</code> for an equal element as well.
@@ -328,7 +328,7 @@ public abstract class CommonUtils implements Serializable {
      * @param collection the Collection to check
      * @param element    the element to look for
      * @return <code>true</code> if found, <code>false</code> else
-     */
+     *//*
     public static boolean containsInstance(Collection collection, Object element) {
         if (collection != null) {
             for (Object candidate : collection) {
@@ -349,12 +349,12 @@ public abstract class CommonUtils implements Serializable {
         return elements.toArray(array);
     }
 
-    /**
+    *//**
      * Adapt an enumeration to an iterator.
      *
      * @param enumeration the enumeration
      * @return the iterator
-     */
+     *//*
     public static <E> Iterator<E> toIterator(Enumeration<E> enumeration) {
         @SuppressWarnings("hiding")
         class EnumerationIterator<E> implements Iterator<E> {
@@ -504,11 +504,11 @@ public abstract class CommonUtils implements Serializable {
         }
         return isUnix;
     }
-    /**
+    *//**
      * linux内核平台 1
      * window： 2
      * 其他平台 0
-     */
+     *//*
     public static int getPlatform(){
         int platform = 0;
         if (CommonUtils.isUnix()) {
@@ -519,14 +519,14 @@ public abstract class CommonUtils implements Serializable {
         }
         return platform;
     }
-    /**
+    *//**
      * 将String数组转化为Long数组
      *
      * @param strArr String数组
      * @return Long数组
      * @Title: strArr2LongArr
      * @author: wanghajie 2012-12-13上午10:15:42
-     */
+     *//*
     public static Long[] string2LongArray(String[] strArr) {
         if (CommonUtils.isEmpty(strArr)) {
             return null;
@@ -538,14 +538,14 @@ public abstract class CommonUtils implements Serializable {
         return longArray;
     }
 
-    /**
+    *//**
      * 将将String数组转化为LongList
      *
      * @param strArr String数组
      * @return LongList
      * @Title: strArr2LongList
      * @author: wanghajie 2012-12-13上午11:09:10
-     */
+     *//*
     public static List<Long> string2LongList(String[] strArr) {
         // 将String数组转化为Long数组
         Long[] longArr = string2LongArray(strArr);
@@ -613,12 +613,12 @@ public abstract class CommonUtils implements Serializable {
         return UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    /**
+    *//**
      * 生成指定长度的uuid
      *
      * @param len
      * @return
-     */
+     *//*
     public static String uuid(int len) {
         StringBuffer sb = new StringBuffer();
         while (sb.length() < len) {
@@ -640,3 +640,4 @@ public abstract class CommonUtils implements Serializable {
 }
 
 
+*/

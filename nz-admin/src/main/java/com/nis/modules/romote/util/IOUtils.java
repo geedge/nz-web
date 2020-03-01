@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.util;
 
@@ -29,31 +29,31 @@ import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+*//**
  * Created by benjobs on 15/6/24.
- */
+ *//*
 public abstract class IOUtils implements Serializable {
 
     private static final int EOF = -1;
-    /**
+    *//**
      * The Unix directory separator character.
-     */
+     *//*
     public static final char DIR_SEPARATOR_UNIX = '/';
-    /**
+    *//**
      * The Windows directory separator character.
-     */
+     *//*
     public static final char DIR_SEPARATOR_WINDOWS = '\\';
-    /**
+    *//**
      * The system directory separator character.
-     */
+     *//*
     public static final char DIR_SEPARATOR = File.separatorChar;
-    /**
+    *//**
      * The Unix line separator string.
-     */
+     *//*
     public static final String LINE_SEPARATOR_UNIX = "\n";
-    /**
+    *//**
      * The Windows line separator string.
-     */
+     *//*
     public static final String LINE_SEPARATOR_WINDOWS = "\r\n";
 
     public static final String FIELD_TERMINATED_BY = new String(new char['\001']);
@@ -208,25 +208,25 @@ public abstract class IOUtils implements Serializable {
         return path;
     }
 
-    /**
+    *//**
      * write.
      *
      * @param is InputStream instance.
      * @param os OutputStream instance.
      * @return count.
-     */
+     *//*
     public static long write(InputStream is, OutputStream os) throws IOException {
         return write(is, os, BUFFER_SIZE);
     }
 
-    /**
+    *//**
      * write.
      *
      * @param is         InputStream instance.
      * @param os         OutputStream instance.
      * @param bufferSize buffer size.
      * @return count.
-     */
+     *//*
     public static long write(InputStream is, OutputStream os, int bufferSize) throws IOException {
         int read;
         long total = 0;
@@ -242,13 +242,13 @@ public abstract class IOUtils implements Serializable {
         return total;
     }
 
-    /**
+    *//**
      * read string.
      *
      * @param reader Reader instance.
      * @return String.
      * @throws IOException
-     */
+     *//*
     public static String read(Reader reader) throws IOException {
         StringWriter writer = new StringWriter();
         try {
@@ -259,13 +259,13 @@ public abstract class IOUtils implements Serializable {
         }
     }
 
-    /**
+    *//**
      * write string.
      *
      * @param writer Writer instance.
      * @param string String.
      * @throws IOException
-     */
+     *//*
     public static long write(Writer writer, String string) throws IOException {
         Reader reader = new StringReader(string);
         try {
@@ -275,19 +275,19 @@ public abstract class IOUtils implements Serializable {
         }
     }
 
-    /**
+    *//**
      * write.
      *
      * @param reader Reader.
      * @param writer Writer.
      * @return count.
      * @throws IOException
-     */
+     *//*
     public static long write(Reader reader, Writer writer) throws IOException {
         return write(reader, writer, BUFFER_SIZE);
     }
 
-    /**
+    *//**
      * write.
      *
      * @param reader     Reader.
@@ -295,7 +295,7 @@ public abstract class IOUtils implements Serializable {
      * @param bufferSize buffer size.
      * @return count.
      * @throws IOException
-     */
+     *//*
     public static long write(Reader reader, Writer writer, int bufferSize) throws IOException {
         int read;
         long total = 0;
@@ -308,13 +308,13 @@ public abstract class IOUtils implements Serializable {
         return total;
     }
 
-    /**
+    *//**
      * read lines.
      *
      * @param file file.
      * @return lines.
      * @throws IOException
-     */
+     *//*
     public static String[] readLines(File file) throws IOException {
         if (file == null || !file.exists() || !file.canRead())
             return new String[0];
@@ -322,13 +322,13 @@ public abstract class IOUtils implements Serializable {
         return readLines(new FileInputStream(file));
     }
 
-    /**
+    *//**
      * read lines.
      *
      * @param is input stream.
      * @return lines.
      * @throws IOException
-     */
+     *//*
     public static String[] readLines(InputStream is) throws IOException {
         List<String> lines = new ArrayList<String>();
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -342,13 +342,13 @@ public abstract class IOUtils implements Serializable {
         }
     }
 
-    /**
+    *//**
      * write lines.
      *
      * @param os    output stream.
      * @param lines lines.
      * @throws IOException
-     */
+     *//*
     public static void writeLines(OutputStream os, String[] lines) throws IOException {
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(os));
         try {
@@ -360,26 +360,26 @@ public abstract class IOUtils implements Serializable {
         }
     }
 
-    /**
+    *//**
      * write lines.
      *
      * @param file  file.
      * @param lines lines.
      * @throws IOException
-     */
+     *//*
     public static void writeLines(File file, String[] lines) throws IOException {
         if (file == null)
             throw new IOException("File is null.");
         writeLines(new FileOutputStream(file), lines);
     }
 
-    /**
+    *//**
      * append lines.
      *
      * @param file  file.
      * @param lines lines.
      * @throws IOException
-     */
+     *//*
     public static void appendLines(File file, String[] lines) throws IOException {
         if (file == null)
             throw new IOException("File is null.");
@@ -474,3 +474,4 @@ public abstract class IOUtils implements Serializable {
     }
 
 }
+*/

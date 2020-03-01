@@ -1,4 +1,4 @@
-package com.nis.modules.romote.entity;
+/*package com.nis.modules.romote.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -20,8 +20,8 @@ public class Account {
     @TableField(strategy = FieldStrategy.IGNORED)
     private String pwd;
 
-    /*@TableField(strategy = FieldStrategy.IGNORED)
-    private byte[] privateKey;*/
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private byte[] privateKey;
 
     @TableField(strategy = FieldStrategy.IGNORED)
     private String privateKey;
@@ -30,12 +30,12 @@ public class Account {
     @TableField(exist = false)
     private Asset asset;
 
-    /**
+    *//**
      * 用于撤销具体某次批量导入的uuid
-     */
+     *//*
     private String seq;
 
-    /*public byte[] getPrivateKey() {
+    public byte[] getPrivateKey() {
         //拿本地的公钥解密ssh的私钥
         if (this.privateKey != null) {
             try {
@@ -45,14 +45,14 @@ public class Account {
             }
         }
         return null;
-    }*/
+    }
 
-    /*public void setPrivateKey(byte[] privateKey) throws Exception {
+    public void setPrivateKey(byte[] privateKey) throws Exception {
         //拿本地的公钥加密ssh的私钥
         if (privateKey!=null) {
             this.privateKey = RSAUtils.encryptByPublicKey(privateKey, Auth.getPublicKey());
         }
-    }*/
+    }
 
     public String getPwd(){
         return this.pwd;
@@ -100,3 +100,4 @@ public class Account {
 
     }
 }
+*/

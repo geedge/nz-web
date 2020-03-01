@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 package com.nis.modules.romote.util;
 
 import javax.crypto.Cipher;
@@ -30,7 +30,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
+*//**
  * <p>
  * RSA公钥/私钥/签名工具包
  * </p>
@@ -46,47 +46,47 @@ import java.util.Map;
  * @author IceWee
  * @version 1.0
  * @date 2012-4-26
- */
+ *//*
 public abstract class RSAUtils {
 
-    /**
+    *//**
      * 加密算法RSA
-     */
+     *//*
     public static final String KEY_ALGORITHM = "RSA";
 
-    /**
+    *//**
      * 签名算法
-     */
+     *//*
     public static final String SIGNATURE_ALGORITHM = "MD5withRSA";
 
-    /**
+    *//**
      * 获取公钥的key
-     */
+     *//*
     private static final String PUBLIC_KEY = "RSAPublicKey";
 
-    /**
+    *//**
      * 获取私钥的key
-     */
+     *//*
     private static final String PRIVATE_KEY = "RSAPrivateKey";
 
-    /**
+    *//**
      * RSA最大加密明文大小
-     */
+     *//*
     private static final int MAX_ENCRYPT_BLOCK = 117;
 
-    /**
+    *//**
      * RSA最大解密密文大小
-     */
+     *//*
     private static final int MAX_DECRYPT_BLOCK = 128;
 
-    /**
+    *//**
      * <p>
      * 生成密钥对(公钥和私钥)
      * </p>
      *
      * @return
      * @throws Exception
-     */
+     *//*
     public static Map<String, Object> genKeyPair() throws Exception {
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(KEY_ALGORITHM);
         keyPairGen.initialize(1024);
@@ -99,7 +99,7 @@ public abstract class RSAUtils {
         return keyMap;
     }
 
-    /**
+    *//**
      * <p>
      * 用私钥对信息生成数字签名
      * </p>
@@ -108,7 +108,7 @@ public abstract class RSAUtils {
      * @param privateKey 私钥(BASE64编码)
      * @return
      * @throws Exception
-     */
+     *//*
     public static String sign(byte[] data, String privateKey) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(privateKey);
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -120,7 +120,7 @@ public abstract class RSAUtils {
         return DigestUtils.getenBASE64inCodec(signature.sign());
     }
 
-    /**
+    *//**
      * <p>
      * 校验数字签名
      * </p>
@@ -130,7 +130,7 @@ public abstract class RSAUtils {
      * @param sign      数字签名
      * @return
      * @throws Exception
-     */
+     *//*
     public static boolean verify(byte[] data, String publicKey, String sign) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(publicKey);
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
@@ -142,7 +142,7 @@ public abstract class RSAUtils {
         return signature.verify(DigestUtils.getdeBASE64inCodec(sign));
     }
 
-    /**
+    *//**
      * <P>
      * 私钥解密
      * </p>
@@ -151,7 +151,7 @@ public abstract class RSAUtils {
      * @param privateKey    私钥(BASE64编码)
      * @return
      * @throws Exception
-     */
+     *//*
     public static byte[] decryptByPrivateKey(byte[] encryptedData, String privateKey) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(privateKey);
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -180,7 +180,7 @@ public abstract class RSAUtils {
         return decryptedData;
     }
 
-    /**
+    *//**
      * <p>
      * 公钥解密
      * </p>
@@ -189,7 +189,7 @@ public abstract class RSAUtils {
      * @param publicKey     公钥(BASE64编码)
      * @return
      * @throws Exception
-     */
+     *//*
     public static byte[] decryptByPublicKey(byte[] encryptedData, String publicKey) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(publicKey);
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
@@ -218,7 +218,7 @@ public abstract class RSAUtils {
         return decryptedData;
     }
 
-    /**
+    *//**
      * <p>
      * 公钥加密
      * </p>
@@ -227,7 +227,7 @@ public abstract class RSAUtils {
      * @param publicKey 公钥(BASE64编码)
      * @return
      * @throws Exception
-     */
+     *//*
     public static byte[] encryptByPublicKey(byte[] data, String publicKey) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(publicKey);
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(keyBytes);
@@ -257,7 +257,7 @@ public abstract class RSAUtils {
         return encryptedData;
     }
 
-    /**
+    *//**
      * <p>
      * 私钥加密
      * </p>
@@ -266,7 +266,7 @@ public abstract class RSAUtils {
      * @param privateKey 私钥(BASE64编码)
      * @return
      * @throws Exception
-     */
+     *//*
     public static byte[] encryptByPrivateKey(byte[] data, String privateKey) throws Exception {
         byte[] keyBytes = DigestUtils.getdeBASE64inCodec(privateKey);
         PKCS8EncodedKeySpec pkcs8KeySpec = new PKCS8EncodedKeySpec(keyBytes);
@@ -295,7 +295,7 @@ public abstract class RSAUtils {
         return encryptedData;
     }
 
-    /**
+    *//**
      * <p>
      * 获取私钥
      * </p>
@@ -303,13 +303,13 @@ public abstract class RSAUtils {
      * @param keyMap 密钥对
      * @return
      * @throws Exception
-     */
+     *//*
     public static String getPrivateKey(Map<String, Object> keyMap) throws Exception {
         Key key = (Key) keyMap.get(PRIVATE_KEY);
         return DigestUtils.getenBASE64inCodec(key.getEncoded());
     }
 
-    /**
+    *//**
      * <p>
      * 获取公钥
      * </p>
@@ -317,10 +317,10 @@ public abstract class RSAUtils {
      * @param keyMap 密钥对
      * @return
      * @throws Exception
-     */
+     *//*
     public static String getPublicKey(Map<String, Object> keyMap) throws Exception {
         Key key = (Key) keyMap.get(PUBLIC_KEY);
         return DigestUtils.getenBASE64inCodec(key.getEncoded());
     }
 
-}
+}*/

@@ -1,4 +1,4 @@
-package com.nis.modules.romote.entity;
+/*package com.nis.modules.romote.entity;
 
 import com.nis.modules.romote.util.CommonUtils;
 import com.nis.modules.romote.util.Constants;
@@ -89,3 +89,4 @@ public  class Auth {
     }
 
 }
+*/

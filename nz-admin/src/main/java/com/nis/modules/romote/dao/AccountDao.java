@@ -1,4 +1,4 @@
-package com.nis.modules.romote.dao;
+/*package com.nis.modules.romote.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.romote.entity.Account;
@@ -13,3 +13,4 @@ public interface AccountDao extends BaseMapper<Account> {
 
     void updateForPrivateKey(@Param(value="account") Account account);
 }
+*/

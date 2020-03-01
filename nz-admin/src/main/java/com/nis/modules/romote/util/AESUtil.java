@@ -1,4 +1,4 @@
-package com.nis.modules.romote.util;
+/*package com.nis.modules.romote.util;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -17,7 +17,7 @@ public class AESUtil {
 
     private static final String DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";//默认的加密算法
 
-    /**
+    *//**
 
      * AES 加密操作
 
@@ -29,7 +29,7 @@ public class AESUtil {
 
      * @return 返回Base64转码后的加密数据
 
-     */
+     *//*
 
     public static String encrypt(String content, String password) {
 
@@ -56,7 +56,7 @@ public class AESUtil {
     }
 
 
-    /**
+    *//**
 
      * AES 解密操作
 
@@ -68,7 +68,7 @@ public class AESUtil {
 
      * @return
 
-     */
+     *//*
 
     public static String decrypt(String content, String password) {
         try {
@@ -91,13 +91,13 @@ public class AESUtil {
 
     }
 
-    /**
+    *//**
 
      * 生成加密秘钥
 
      * @return
 
-     */
+     *//*
 
     private static SecretKeySpec getSecretKey(final String password) {
 
@@ -142,3 +142,4 @@ public class AESUtil {
     }
 
 }
+*/

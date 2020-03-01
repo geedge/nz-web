@@ -10,7 +10,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.romote.entity.Account;
+import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;

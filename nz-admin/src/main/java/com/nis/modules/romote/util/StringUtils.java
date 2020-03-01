@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.util;
 
@@ -63,46 +63,46 @@ public abstract class StringUtils {
         return joinString(collection, ",");
     }
 
-    /**
+    *//**
      * 将字符串转换成String[]
      *
      * @param str 要转换的目标字符串
      * @return
-     */
+     *//*
     public static String[] stringToArray(String str) {
         return stringToArray(str, null, 0);
     }
 
-    /**
+    *//**
      * 将字符串转换成String[]
      *
      * @param str   要转换的目标字符串
      * @param limit 要转换的目标字符串
      * @return
-     */
+     *//*
     public static String[] stringToArray(String str, int limit) {
         return stringToArray(str, null, limit);
     }
 
-    /**
+    *//**
      * 将字符串转换成String[]
      *
      * @param str   要转换的目标字符串
      * @param split 对字符串截取的分隔符
      * @return
-     */
+     *//*
     public static String[] stringToArray(String str, String split) {
         return stringToArray(str, split, 0);
     }
 
-    /**
+    *//**
      * 将字符串转换成String[]
      *
      * @param str   要转换的目标字符串
      * @param split 对字符串截取的分隔符
      * @param limit 长度
      * @return
-     */
+     *//*
     public static String[] stringToArray(String str, String split, int limit) {
         List<String> list = stringToList(str, split, limit);
         if (list == null) {
@@ -111,46 +111,46 @@ public abstract class StringUtils {
         return list.toArray(new String[0]);
     }
 
-    /**
+    *//**
      * 将字符串转换成List<String>
      *
      * @param str 要转换的目标字符串
      * @return
-     */
+     *//*
     public static List<String> stringToList(String str) {
         return stringToList(str, null, 0);
     }
 
-    /**
+    *//**
      * 将字符串转换成List<String>
      *
      * @param str   要转换的目标字符串
      * @param limit 对字符串截取的分隔符
      * @return
-     */
+     *//*
     public static List<String> stringToList(String str, int limit) {
         return stringToList(str, null, limit);
     }
 
-    /**
+    *//**
      * 将字符串转换成List<String>
      *
      * @param str   要转换的目标字符串
      * @param split 长度
      * @return
-     */
+     *//*
     public static List<String> stringToList(String str, String split) {
         return stringToList(str, split, 0);
     }
 
-    /**
+    *//**
      * 转换字符串成list
      *
      * @param str   字符串
      * @param split 分隔符
      * @param limit 长度
      * @return
-     */
+     *//*
     public static List<String> stringToList(String str, String split, int limit) {
         if (str == null) {
             return null;
@@ -178,23 +178,23 @@ public abstract class StringUtils {
         return list;
     }
 
-    /**
+    *//**
      * 转换字符串为int 失败时返回默认值 -1
      *
      * @param str
      * @return
-     */
+     *//*
     public static int parseInt(String str) {
         return parseInt(str, -1);
     }
 
-    /**
+    *//**
      * 转换字符串为int 失败时返回默认值 defaultValue
      *
      * @param str
      * @param defaultValue
      * @return
-     */
+     *//*
     public static int parseInt(String str, int defaultValue) {
         if (str == null || "".equals(str.trim())) {
             return defaultValue;
@@ -208,23 +208,23 @@ public abstract class StringUtils {
         return num;
     }
 
-    /**
+    *//**
      * 转换字符串为long类型，如果转换失败，则返回默认值 -1
      *
      * @param str 字符串
      * @return
-     */
+     *//*
     public static long parseLong(String str) {
         return parseLong(str, -1);
     }
 
-    /**
+    *//**
      * 转换字符串为long类型，如果转换失败，则返回默认值 defaultValue
      *
      * @param str          字符串
      * @param defaultValue 默认值
      * @return
-     */
+     *//*
     public static long parseLong(String str, long defaultValue) {
         if (str == null || "".equals(str.trim())) {
             return defaultValue;
@@ -238,12 +238,12 @@ public abstract class StringUtils {
         return num;
     }
 
-    /**
+    *//**
      * 判断字符串是否为null或者为""
      *
      * @param str
      * @return
-     */
+     *//*
     public static boolean isNullString(String str) {
         if (str == null || "".equals(str.trim())) {
             return true;
@@ -272,12 +272,12 @@ public abstract class StringUtils {
         return o.toString();
     }
 
-    /**
+    *//**
      * 过滤字符串内的所有script标签
      *
      * @param htmlStr
      * @return writer:<a href="mailto:benjobs@qq.com">benjobs</a> 2012.2.1
-     */
+     *//*
     public static String escapeJavaScript(String htmlStr) {
         if (htmlStr == null || "".equals(htmlStr)) {
             return "";
@@ -290,12 +290,12 @@ public abstract class StringUtils {
         return htmlStr.trim(); // 返回文本字符串
     }
 
-    /**
+    *//**
      * 过滤字符串内的所有html标签
      *
      * @param htmlStr
      * @return writer:<a href="mailto:benjobs@qq.com">benjobs</a> 2012.2.1
-     */
+     *//*
     public static String escapeHtml(String htmlStr) {
         if (htmlStr == null || "".equals(htmlStr)) {
             return "";
@@ -363,7 +363,7 @@ public abstract class StringUtils {
         return html;
     }
 
-    /**
+    *//**
      * 取字符串的前toCount个字符
      *
      * @param str     被处理字符串
@@ -372,7 +372,7 @@ public abstract class StringUtils {
      * @return String
      * @version 2004.11.24
      * @author zhulx
-     */
+     *//*
     public static String subString(String str, int toCount, String more) {
         int reInt = 0;
         String reStr = "";
@@ -391,13 +391,13 @@ public abstract class StringUtils {
         return reStr;
     }
 
-    /**
+    *//**
      * 按字节截取字符串，并保证不会截取半个汉字
      *
      * @param str
      * @param byteLength
      * @return
-     */
+     *//*
     public static String truncate(String str, int byteLength) {
         if (str == null) {
             return null;
@@ -421,12 +421,12 @@ public abstract class StringUtils {
         return new String(chs, 0, i);
     }
 
-    /**
+    *//**
      * 取得字符串s的char长度
      *
      * @param s
      * @return
-     */
+     *//*
     public static int getWordCount(String s) {
         int length = 0;
         for (int i = 0; i < s.length(); i++) {
@@ -548,9 +548,9 @@ public abstract class StringUtils {
         return str1 + replStr + str2;
     }
 
-    /**
+    *//**
      * 生成计费ID bs+四位随机生成的
-     */
+     *//*
     public static String generateString(int length) {
         String corpid = "";
         int value;
@@ -582,33 +582,33 @@ public abstract class StringUtils {
         return false;
     }
 
-    /**
+    *//**
      * is empty string.
      *
      * @param str source string.
      * @return is empty.
-     */
+     *//*
     public static boolean isEmpty(String str) {
         if (str == null || str.length() == 0)
             return true;
         return false;
     }
 
-    /**
+    *//**
      * is not empty string.
      *
      * @param str source string.
      * @return is not empty.
-     */
+     *//*
     public static boolean isNotEmpty(String str) {
         return str != null && str.length() > 0;
     }
 
-    /**
+    *//**
      * @param s1
      * @param s2
      * @return equals
-     */
+     *//*
     public static boolean isEquals(String s1, String s2) {
         if (s1 == null && s2 == null)
             return true;
@@ -617,12 +617,12 @@ public abstract class StringUtils {
         return s1.equals(s2);
     }
 
-    /**
+    *//**
      * is integer string.
      *
      * @param str
      * @return is integer
-     */
+     *//*
     public static boolean isInteger(String str) {
         if (str == null || str.length() == 0)
             return false;
@@ -647,10 +647,10 @@ public abstract class StringUtils {
         return false;
     }
 
-    /**
+    *//**
      * Returns true if s is a legal Java identifier.<p>
      * <a href="http://www.exampledepot.com/egs/java.lang/IsJavaId.html">more info.</a>
-     */
+     *//*
     public static boolean isJavaIdentifier(String s) {
         if (s.length() == 0 || !Character.isJavaIdentifierStart(s.charAt(0))) {
             return false;
@@ -664,11 +664,11 @@ public abstract class StringUtils {
     }
 
 
-    /**
+    *//**
      * @param values
      * @param value
      * @return contains
-     */
+     *//*
     public static boolean isContains(String[] values, String value) {
         if (value != null && value.length() > 0 && values != null && values.length > 0) {
             for (String v : values) {
@@ -694,20 +694,20 @@ public abstract class StringUtils {
     }
 
 
-    /**
+    *//**
      * @param msg
      * @param e
      * @return string
-     */
+     *//*
 
-    /**
+    *//**
      * translat.
      *
      * @param src  source string.
      * @param from src char table.
      * @param to   target char table.
      * @return String.
-     */
+     *//*
     public static String translat(String src, String from, String to) {
         if (isEmpty(src)) return src;
         StringBuilder sb = null;
@@ -731,12 +731,12 @@ public abstract class StringUtils {
         return sb == null ? src : sb.toString();
     }
 
-    /**
+    *//**
      * split.
      *
      * @param ch char.
      * @return string array.
-     */
+     *//*
     public static String[] split(String str, char ch) {
         List<String> list = null;
         char c;
@@ -755,12 +755,12 @@ public abstract class StringUtils {
         return list == null ? EMPTY_STRING_ARRAY : (String[]) list.toArray(EMPTY_STRING_ARRAY);
     }
 
-    /**
+    *//**
      * join string.
      *
      * @param array String array.
      * @return String.
-     */
+     *//*
     public static String join(String[] array) {
         if (array.length == 0) return "";
         StringBuilder sb = new StringBuilder();
@@ -769,13 +769,13 @@ public abstract class StringUtils {
         return sb.toString();
     }
 
-    /**
+    *//**
      * join string like javascript.
      *
      * @param array String array.
      * @param split split
      * @return String.
-     */
+     *//*
     public static String join(String[] array, char split) {
         if (array.length == 0) return "";
         StringBuilder sb = new StringBuilder();
@@ -787,13 +787,13 @@ public abstract class StringUtils {
         return sb.toString();
     }
 
-    /**
+    *//**
      * join string like javascript.
      *
      * @param array String array.
      * @param split split
      * @return String.
-     */
+     *//*
     public static String join(String[] array, String split) {
         if (array.length == 0) return "";
         StringBuilder sb = new StringBuilder();
@@ -818,13 +818,13 @@ public abstract class StringUtils {
         return sb.toString();
     }
 
-    /**
+    *//**
      * parse key-value pair.
      *
      * @param str           string.
      * @param itemSeparator item separator.
      * @return key-value map;
-     */
+     *//*
     private static Map<String, String> parseKeyValuePair(String str, String itemSeparator) {
         String[] tmp = str.split(itemSeparator);
         Map<String, String> map = new HashMap<String, String>(tmp.length);
@@ -842,12 +842,12 @@ public abstract class StringUtils {
         return map.get(key);
     }
 
-    /**
+    *//**
      * parse query string to Parameters.
      *
      * @param qs query string.
      * @return Parameters instance.
-     */
+     *//*
     public static Map<String, String> parseQueryString(String qs) {
         if (qs == null || qs.length() == 0)
             return new HashMap<String, String>();
@@ -968,3 +968,4 @@ public abstract class StringUtils {
 
 }
 
+*/

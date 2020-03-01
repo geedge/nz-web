@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.support;
 
@@ -146,4 +146,4 @@ public class SftpMonitor extends TimerTask implements SftpProgressMonitor {
 
     public void init(int op, String src, String dest, long max) {
     }
-}
+}*/

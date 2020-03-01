@@ -17,7 +17,7 @@
  * KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
+ *//*
 
 package com.nis.modules.romote.service.impl;
 
@@ -58,7 +58,7 @@ import java.util.Map;
 
 import static com.nis.modules.romote.util.CommonUtils.notEmpty;
 
-/**
+*//**
  * @author <a href="mailto:benjobs@qq.com">benjobs@qq.com</a>
  * @name:CommonUtil
  * @version: 1.0.0
@@ -86,7 +86,7 @@ import static com.nis.modules.romote.util.CommonUtils.notEmpty;
  * 都是她冰清玉洁还不曾雕琢<br/><br/>
  * <p>
  * <hr style="color:RED"/>
- */
+ *//*
 
 @Service
 public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implements AccountService {
@@ -147,11 +147,11 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
         ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
 
         //5.密码登录，密码不能为空，证书登录，证书不能为空
-        /*if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
+        if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
             ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
         } else {
             ValidateUtils.is(account.getPrivateKey()).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
-        }*/
+        }
 
         //6.port 不能为空
         ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
@@ -277,3 +277,4 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao,Account> implemen
 }
 
 
+*/

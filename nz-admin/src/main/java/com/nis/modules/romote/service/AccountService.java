@@ -1,4 +1,4 @@
-package com.nis.modules.romote.service;
+/*package com.nis.modules.romote.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
@@ -25,3 +25,4 @@ public interface AccountService extends IService<Account> {
 
     void delete(Integer ... ids);
 }
+*/

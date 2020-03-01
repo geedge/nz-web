@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.metric.dto.MetricsDto;
-import com.nis.modules.romote.entity.Account;
+import com.nis.modules.terminal.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
