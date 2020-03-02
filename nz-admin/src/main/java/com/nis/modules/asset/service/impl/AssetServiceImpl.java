@@ -467,6 +467,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
             Map saveEntitys;
             Long userId = ShiroUtils.getUserId();
+
+            // 没有关联关系的资产数据,采取批量入库的方式
+            List<Asset> noRelationAssets = new ArrayList<>();
             // 第一行是表头 所以从第二行开始
             for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
                 // 保证一行数据在同一事务内，将所有入库数据统一入库
@@ -474,6 +477,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
                 account = accountCli = null;
                 boolean saveFlag = true;
+                boolean relaFlag = true;
                 asset = new Asset();
                 row = sheet.getRow(i);
 
@@ -534,6 +538,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     Integer modelId = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelMap, seqUUID, saveEntitys);
                     // modelid 可能为null,入库之后返回
                     asset.setModelId(modelId);
+                    // 当前库中不存在改型号
+                    if (modelId == null) {
+                        relaFlag = false;
+                    }
                 }
 
                 // DC
@@ -549,6 +557,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     idcId = this.checkIdc(dcName, idcMap, seqUUID, saveEntitys);
                     // idcId 可能为null,入库之后返回
                     asset.setIdcId(idcId);
+                    // 当前库中不存在该机房
+                    if (idcId == null) {
+                        relaFlag = false;
+                    }
                 }
 
                 // cabinet
@@ -558,6 +570,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         Integer cabinetId = this.checkCabinet(cabinetName, idcId, cabinetList, seqUUID, saveEntitys);
                         // cabinetId 可能为null,入库之后返回
                         asset.setCabinetId(cabinetId);
+                        if (cabinetId == null) {
+                            relaFlag = false;
+                        }
                     } else {
                         // idc不存在 需要添加之后才能获取idcId供添加cabinet使用
                         Cabinet cabinet = new Cabinet();
@@ -623,6 +638,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
                 // 满足添加Account所需
                 if (StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
+                    relaFlag = false;
                     account = new Account();
                     accountAuthType = Integer.parseInt(authType);
                     if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
@@ -656,70 +672,83 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     asset.setCreateAt(new Date());
                     asset.setCreateBy(userId);
                     asset.setUpdateBy(userId);
-                    saveEntitys.put("asset", asset);
-                    // 账号信息正常
-                    if (account != null) {
-                        // 密码加密
-                        account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
-                        account.setSeq(seqUUID);
-                        saveEntitys.put("account", account);
-                        // 内置exporter
-                        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
-                            // 上传文件
-                            if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
-                                failDetail = new HashMap();
-                                failDetail.put("lineNo", i);
-                                failDetail.put("errorMsg", RCode.ASSET_EXPORTER_UPLOAD_FAIL);
-                                failDetails.add(failDetail);
+
+                    // 当前数据没有任何关联关系 ，采取批量入库的方式
+                    if (relaFlag) {
+                        noRelationAssets.add(asset);
+                        // 更新sn host map
+                        assetSnMap.put(asset.getSn(), 1);
+                        assetHostMap.put(asset.getHost(), 1);
+                        successNum++;
+                    } else {
+                        saveEntitys.put("asset", asset);
+                        // 账号信息正常
+                        if (account != null) {
+                            // 密码加密
+                            account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
+                            account.setSeq(seqUUID);
+                            saveEntitys.put("account", account);
+                            // 内置exporter
+                            if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
+                                // 上传文件
+                                if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
+                                    failDetail = new HashMap();
+                                    failDetail.put("lineNo", i);
+                                    failDetail.put("errorMsg", RCode.ASSET_EXPORTER_UPLOAD_FAIL);
+                                    failDetails.add(failDetail);
+                                }
                             }
                         }
-                    }
-                    // 整体保存这行数据，保证单行数据在同一事务内
-                    // 手动开启事务
-                    TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
-                    try {
-                        // 调用入库方法
-                        Map updateMap = this.saveRowData(saveEntitys);
-                        // 手动提交事务
-                        dataSourceTransactionManager.commit(transactionStatus);
-                        // 更新map值
-                        SysDictEntity updateType = (SysDictEntity) updateMap.get("type");
-                        if (updateType != null) {
-                            assetTypesMap.put(updateType.getValue(), updateType);
-                        }
-                        SysDictEntity updateVendor = (SysDictEntity) updateMap.get("vendor");
-                        if (updateVendor != null) {
-                            vendorsMap.put(updateVendor.getValue(), updateVendor);
-                        }
-                        Model updateModel = (Model) updateMap.get("model");
-                        if (updateModel != null) {
-                            modelMap.put(updateModel.getName(), updateModel);
-                        }
-                        Idc updateIdc = (Idc) updateMap.get("idc");
-                        if (updateIdc != null) {
-                            idcMap.put(updateIdc.getName(), updateIdc);
-                        }
-                        Cabinet updateCabinet = (Cabinet) updateMap.get("cabinet");
-                        if (updateCabinet != null) {
-                            cabinetList.add(updateCabinet);
-                        }
-                        Asset updateAsset = (Asset) updateMap.get("asset");
-                        if (updateAsset != null) {
-                            assetSnMap.put(updateAsset.getSn(), 1);
-                            assetHostMap.put(updateAsset.getHost(), 1);
-                        }
+                        // 整体保存这行数据，保证单行数据在同一事务内
+                        // 手动开启事务
+                        TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
+                        try {
+                            // 调用入库方法
+                            Map updateMap = this.saveRowData(saveEntitys);
+                            // 手动提交事务
+                            dataSourceTransactionManager.commit(transactionStatus);
+                            // 更新map值
+                            SysDictEntity updateType = (SysDictEntity) updateMap.get("type");
+                            if (updateType != null) {
+                                assetTypesMap.put(updateType.getValue(), updateType);
+                            }
+                            SysDictEntity updateVendor = (SysDictEntity) updateMap.get("vendor");
+                            if (updateVendor != null) {
+                                vendorsMap.put(updateVendor.getValue(), updateVendor);
+                            }
+                            Model updateModel = (Model) updateMap.get("model");
+                            if (updateModel != null) {
+                                modelMap.put(updateModel.getName(), updateModel);
+                            }
+                            Idc updateIdc = (Idc) updateMap.get("idc");
+                            if (updateIdc != null) {
+                                idcMap.put(updateIdc.getName(), updateIdc);
+                            }
+                            Cabinet updateCabinet = (Cabinet) updateMap.get("cabinet");
+                            if (updateCabinet != null) {
+                                cabinetList.add(updateCabinet);
+                            }
+                            Asset updateAsset = (Asset) updateMap.get("asset");
+                            if (updateAsset != null) {
+                                assetSnMap.put(updateAsset.getSn(), 1);
+                                assetHostMap.put(updateAsset.getHost(), 1);
+                            }
 
-                        successNum++;
-                    } catch (Exception e) {
-                        // 手动回滚事务
-                        dataSourceTransactionManager.rollback(transactionStatus);
-                        failDetail = new HashMap();
-                        failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", e.getMessage());
-                        failDetails.add(failDetail);
+                            successNum++;
+                        } catch (Exception e) {
+                            // 手动回滚事务
+                            dataSourceTransactionManager.rollback(transactionStatus);
+                            failDetail = new HashMap();
+                            failDetail.put("lineNo", i);
+                            failDetail.put("errorMsg", e.getMessage());
+                            failDetails.add(failDetail);
+                        }
                     }
                 }
             }
+
+            // 批量入库没有关联的资产数据
+            this.saveBatch(noRelationAssets);
 
             int totalNum = maxRowNum - firstRowNum;
             info.put("seq", seqUUID);
