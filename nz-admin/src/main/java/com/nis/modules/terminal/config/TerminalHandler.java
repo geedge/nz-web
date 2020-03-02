@@ -23,6 +23,8 @@ package com.nis.modules.terminal.config;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -41,6 +43,9 @@ import java.io.IOException;
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
 public class TerminalHandler extends TextWebSocketHandler {
+	
+	private final Logger logger = LoggerFactory.getLogger(TerminalHandler.class);
+	
     private TerminalClient terminalClient;
 
     private static ApplicationContext applicationContext;
@@ -88,6 +93,8 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int height = toInt(session.getAttributes().get("height").toString());
                 terminalClient.openTerminal(cols, rows, width, height);
             } catch (Exception e) {
+            	logger.error(e.getMessage());
+            	e.printStackTrace();
             	if (e.getMessage().toLowerCase().contains("userauth fail")) {
             		session.sendMessage(new TextMessage(" Login fail "));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
