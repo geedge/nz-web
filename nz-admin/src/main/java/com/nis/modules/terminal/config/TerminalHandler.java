@@ -71,6 +71,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         }
         assetId=(String)session.getAttributes().get("assetId");
         accountId=(String)session.getAttributes().get("accountId");
+        uuid=(String)session.getAttributes().get("uuid");
         
         if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
         	// 从缓存中取出之前保存的客户端实例
@@ -107,7 +108,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
-        	session.sendMessage(new TextMessage("Welcome to Nezha Terminal! \n Type `help' to learn how to use Nezha Terminal prompt."));
+        	session.sendMessage(new TextMessage("Welcome to Nezha Terminal! \r Type `help' to learn how to use Nezha Terminal prompt."));
         }
     }
 

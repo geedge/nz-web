@@ -127,8 +127,8 @@ public class TerminalClient {
         this.channelShell.connect();
 
         StringBuilder sb = new StringBuilder();
-    	sb.append("Connecting to "+terminal.getAsset().getHost()+":"+terminal.getPort()+"\n");
-    	sb.append("Connection established.");
+    	sb.append("Connecting to "+terminal.getAsset().getHost()+":"+terminal.getPort()+"\r");
+    	sb.append("Connection established. \r");
     	sb.append("Login success，use user "+terminal.getUser());
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
         
