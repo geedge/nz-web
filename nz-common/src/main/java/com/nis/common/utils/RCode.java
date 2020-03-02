@@ -122,6 +122,7 @@ public enum RCode {
 	ASSET_SN_TOO_LONG(502020, "Asset serial number too long"),           // 资产序列号长度过长
 	ASSET_CANCELIMPORTSEQ_ISNULL(502021, "Asset cancel import seq can not be null"),//  导入撤销 seq不能为空
 	ASSET_IMPORT_FILE_ISNULL(502022, "Asset import file can not be null"),//  导入文件不能为空
+	ASSET_EXPORTER_UPLOAD_FAIL(502023, "Export upload error. You can upload files manually, sorry."),
 
 	NOT_NULL_ERROR(990, "not null error"), //not null错误
 	NOT_NUMBER_ERROR(991, "not number error"), //not number错误
