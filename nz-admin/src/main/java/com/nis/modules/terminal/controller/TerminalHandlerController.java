@@ -3,6 +3,8 @@ package com.nis.modules.terminal.controller;
 import java.io.File;
 import java.io.IOException;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,6 +22,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.terminal.config.TerminalClient;
@@ -26,6 +30,7 @@ import com.nis.modules.terminal.config.TerminalContext;
 import com.nis.modules.terminal.config.TerminalOneProcessor;
 import com.nis.modules.terminal.config.TerminalSession;
 import com.nis.modules.terminal.entity.Account;
+import com.nis.modules.terminal.entity.TerminalConfigDto;
 
 @Controller
 @RequestMapping("/terminal")
@@ -41,13 +46,23 @@ public class TerminalHandlerController {
 	
 	@RequestMapping(value = "resize", method = RequestMethod.POST)
     @ResponseBody
-    public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws Exception {
-        return terminalOneProcessor.resize(token, cols, rows, width, height);
+    public R resize(ServletRequest req, @RequestBody TerminalConfigDto dto) throws Exception {
+		HttpServletRequest request=(HttpServletRequest) req;
+		String token=request.getHeader(Constant.AUTH_TOKEN_CODE);
+		Integer cols = dto.getCols();
+		Integer height = dto.getHeight();
+		Integer rows = dto.getRows();
+		Integer width = dto.getWidth();
+		if(cols==null||height==null||rows==null||width==null) {
+			throw new NZException(RCode.TERMINAL_PARAM_ISNULL);
+		}else {
+			return terminalOneProcessor.resize(token, cols, rows, width, height);
+		}
     }
 	
 	@RequestMapping(value = "upload", method = RequestMethod.POST)
     @ResponseBody
-    public R upload(HttpSession httpSession, String token, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
+    public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
 		String rootPath=null;
         try{
             File temp=new File("");
@@ -81,7 +96,7 @@ public class TerminalHandlerController {
             }
             logger.debug("上传目录：["+path+"]");
             tempFile.delete();
-            return terminalOneProcessor.upload(token, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
+            return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
         } catch (Exception e) {
             e.printStackTrace();
             throw new NZException(RCode.SYS_ERROR);

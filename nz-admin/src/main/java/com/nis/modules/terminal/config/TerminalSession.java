@@ -24,6 +24,7 @@ package com.nis.modules.terminal.config;
 import com.nis.common.utils.DigestUtils;
 import com.nis.modules.terminal.entity.Account;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -48,6 +49,26 @@ public class TerminalSession implements Serializable {
     //key--->token value---->terminalInfo
     public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
     
+    public static Map<String,String> unloginMessageInfo = new HashMap<String,String>();
+    
+    public static String getUnloginMessage(String uuid) {
+    	return unloginMessageInfo.get(uuid);
+    }
+    
+    public static void setUnloginMessage(String uuid,String message) {
+    	String string = unloginMessageInfo.get(uuid);
+    	if(StringUtils.isNoneBlank(string)) {
+    		string=string+message;
+    	}else {
+    		string=message;
+    	}
+    	unloginMessageInfo.put(uuid,string);
+    }
+    
+    public static void removeUnloginMessage(String uuid) {
+    	unloginMessageInfo.remove(uuid);
+    }
+    
     public static TerminalClient get(WebSocketSession key) {
         return terminalSession.get(key);
     }
@@ -70,7 +91,7 @@ public class TerminalSession implements Serializable {
             TerminalClient client = entry.getValue();
             map.put(client.getClientId(), client);
         }
-    	if(terminalInfos.size()>0) {
+    	if(terminalInfos!=null&&terminalInfos.size()>0) {
     		for(String terminalInfo : terminalInfos) {
     			TerminalClient terminalClient = map.get(terminalInfo);
     			if(terminalClient!=null) {

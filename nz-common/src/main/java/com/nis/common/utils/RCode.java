@@ -189,6 +189,8 @@ public enum RCode {
 	CHARTELEMENT_TYPE_INVALIDE(12000003,"Chart element type is invalide"),
 	CHARTELEMENT_NOTEXSITS(12000004,"chart element is not exists"),
 
+	TERMINAL_PARAM_ISNULL(13000001,"Terminal param can not be null"),
+	
 	ERROR(999, "error"); //通用错误/未知错误
 
 	
