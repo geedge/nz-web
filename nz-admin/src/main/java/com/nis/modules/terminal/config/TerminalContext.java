@@ -29,22 +29,25 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 @Component
 public class TerminalContext implements Serializable {
 
-    //key-->token value--->Terminal
+    //key-->uuid value--->Terminal User
     public static Map<String, Account> terminalContext = new HashMap<String, Account>();
 
-    private String token;
+    public static Map<String,Set<String>> terminalUuid = new HashMap<String,Set<String>>();
+    
+    private String uuid;
 
     public Account get(String key) {
         return terminalContext.get(key(key));
     }
 
     public void put(String key, Account terminal) {
-        this.token = key;
+        this.uuid = key;
         //该终端实例只能被的打开一次,之后就失效
         terminalContext.put(key(key), terminal);
         /**
@@ -64,7 +67,7 @@ public class TerminalContext implements Serializable {
     }
 
     public String getToken() {
-        return this.token;
+        return this.uuid;
     }
 
 }

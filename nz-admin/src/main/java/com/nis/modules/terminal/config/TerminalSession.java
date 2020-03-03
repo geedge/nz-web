@@ -33,8 +33,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
@@ -42,7 +44,10 @@ public class TerminalSession implements Serializable {
 
     //key--->WebSocketSession value--->TerminalClient
     public static Map<WebSocketSession, TerminalClient> terminalSession = new HashMap<WebSocketSession, TerminalClient>();
-
+    
+    //key--->token value---->terminalInfo
+    public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
+    
     public static TerminalClient get(WebSocketSession key) {
         return terminalSession.get(key);
     }
@@ -57,10 +62,40 @@ public class TerminalSession implements Serializable {
         return null;
     }
 
+    public static List<TerminalClient> getAllTerminalClient(String token){
+    	List<TerminalClient> terminalClients=new ArrayList<TerminalClient>();
+    	Set<String> terminalInfos = terminalInfo.get(token);
+    	Map<String,TerminalClient> map=new HashMap<String,TerminalClient>();
+    	for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
+            TerminalClient client = entry.getValue();
+            map.put(client.getClientId(), client);
+        }
+    	if(terminalInfos.size()>0) {
+    		for(String terminalInfo : terminalInfos) {
+    			TerminalClient terminalClient = map.get(terminalInfo);
+    			if(terminalClient!=null) {
+    				terminalClients.add(terminalClient);
+    			}
+    		}
+    	}
+    	return terminalClients;
+    }
+    
     public static void put(WebSocketSession key, TerminalClient terminalClient) {
         terminalSession.put(key, terminalClient);
     }
 
+    public static void putTerminalInfo(String token,String uuid) {
+    	Set<String> terminalInfos = terminalInfo.get(token);
+    	if(terminalInfos==null) {
+    		terminalInfos=new HashSet<String>();
+    		terminalInfos.add(uuid);
+    		terminalInfo.put(token, terminalInfos);
+    	}else {
+    		terminalInfos.add(uuid);
+    	}
+    }
+    
     public static TerminalClient remove(WebSocketSession key) {
         return terminalSession.remove(key);
     }

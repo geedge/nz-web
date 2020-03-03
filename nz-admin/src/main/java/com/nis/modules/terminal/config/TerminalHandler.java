@@ -61,6 +61,8 @@ public class TerminalHandler extends TextWebSocketHandler {
     // 当前登录设备信息
     private String assetId;
     
+    private String token;
+    
     private String accountId;
     
     @Override
@@ -72,6 +74,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         assetId=(String)session.getAttributes().get("assetId");
         accountId=(String)session.getAttributes().get("accountId");
         uuid=(String)session.getAttributes().get("uuid");
+        token=(String)session.getAttributes().get("token");
         
         if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
         	// 从缓存中取出之前保存的客户端实例
@@ -108,13 +111,15 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
-        	session.sendMessage(new TextMessage("Welcome to Nezha Terminal! \r Type `help' to learn how to use Nezha Terminal prompt."));
+        	session.sendMessage(new TextMessage("Welcome to Nezha Terminal!  Type `help' to learn how to use Nezha Terminal prompt. \r\n"));
+        	logger.info("user stateless access server");
         }
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         super.handleTextMessage(session, message);
+        logger.info("handleTextMessage meesage info : {}",message.getPayload());
         try {
             getClient(session, null);
             if (this.terminalClient != null) {
@@ -152,6 +157,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         if (this.terminalClient == null && terminal != null) {
             this.terminalClient = new TerminalClient(session, terminal, uuid);
             TerminalSession.put(session, this.terminalClient);
+            TerminalSession.putTerminalInfo(token,uuid);
         }
         return this.terminalClient;
     }

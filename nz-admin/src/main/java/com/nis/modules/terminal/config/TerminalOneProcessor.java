@@ -22,6 +22,7 @@
 package com.nis.modules.terminal.config;
 
 
+import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.R;
 import com.nis.common.utils.StringUtils;
 
@@ -67,9 +68,11 @@ public class TerminalOneProcessor {
 
 //    @MethodMark
     public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws Exception {
-        TerminalClient terminalClient = TerminalSession.get(token);
-        if (terminalClient != null) {
-            terminalClient.resize(cols, rows, width, height);
+        List<TerminalClient> terminalClients = TerminalSession.getAllTerminalClient(token);
+        if (terminalClients != null && terminalClients.size()>0) {
+        	for(TerminalClient terminalClient : terminalClients) {
+        		terminalClient.resize(cols, rows, width, height);
+        	}
         }
         return R.ok();
     }
