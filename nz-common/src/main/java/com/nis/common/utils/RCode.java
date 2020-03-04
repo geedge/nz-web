@@ -190,6 +190,9 @@ public enum RCode {
 	CHARTELEMENT_NOTEXSITS(12000004,"chart element is not exists"),
 
 	TERMINAL_PARAM_ISNULL(13000001,"Terminal param can not be null"),
+	TERMINAL_UUID_ISNULL(13000002,"Terminal uuid can not be null"),
+	TERMINAL_PATH_ISNULL(13000003,"Terminal path can not be null"),
+	TERMINAL_FILE_ISNULL(13000004,"Terminal upload file can not be null"),
 	
 	ERROR(999, "error"); //通用错误/未知错误
 

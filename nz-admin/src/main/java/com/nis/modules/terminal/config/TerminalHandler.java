@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 The JobX Project
+ * Copyright (c) 2015 The Nezha Project
  * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -113,6 +113,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         	StringBuilder sb=new StringBuilder();
         	sb.append("Welcome to Nezha Terminal! \r\n");
         	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+        	sb.append("$: ");
         	session.sendMessage(new TextMessage(sb.toString()));
         	logger.info("user stateless access server");
         }
@@ -136,7 +137,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             	 */
             	if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
             		logger.info("user send terminal to start");
-            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
+//            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
             		nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
             		//执行完当前指令后将指令删除
             		TerminalSession.removeUnloginMessage(uuid);
@@ -147,7 +148,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             	}
             }
         } catch (Exception e) {
-            session.sendMessage(new TextMessage("Sorry! jobx Terminal was closed, please try again. "));
+            session.sendMessage(new TextMessage("Sorry! Nezha Terminal was closed, please try again. "));
             terminalClient.disconnect();
             session.close();
         }
@@ -195,53 +196,59 @@ public class TerminalHandler extends TextWebSocketHandler {
     public void nezhaMessageHandle(WebSocketSession session, String message) throws IOException {
     	logger.info("nezhaMessageHandle message info {}",message);
     	if(message.equals("help")) {
-    		session.sendMessage(new TextMessage("Internal Commands:\r\n" + 
+    		session.sendMessage(new TextMessage("\r\n$: Internal Commands:\r\n" + 
     				"ssh: Connects to a host using the SSH protocol.\r\n" + 
     				"telnet: Connects to a host using the TELNET protocol.\r\n" + 
     				"set: Sets options.\r\n" + 
     				"clear: Clears the screen/address/command history.\r\n" + 
     				"help: Displays this help. '?' does the same.\r\n" + 
-    				"quit: Quits Local Shell. 'exit' does the same.\r\n"));
+    				"quit: Quits Local Shell. 'exit' does the same.\r\n" +
+    				"$: "));
     	}else if(message.matches("help\\s+ssh")) {
-    		session.sendMessage(new TextMessage("NAME \r\n" + 
-    				"ssh - connects to a host using the SSH protocol. \r\n" + 
+    		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 
+    				"\n ssh - connects to a host using the SSH protocol. \r\n" + 
     				"SYNOPSYS \r\n" + 
-    				"ssh [user:pass@]host[ port] \r\n" + 
+    				"\n ssh [user:pass@]host[ port] \r\n" + 
     				"OPTIONS \r\n" + 
-    				"user Indicates the user's login name.\r\n" + 
-    				"pass If pass is definded, use password authentication.\r\n" + 
-    				"host Indicates the name, alias, or Internet address of the \r\n" + 
-    				"remote host.\r\n" + 
-    				"port Indicates a port number (address of an application).\r\n" + 
-    				"If the port is not specified, the default ssh port (22) is used.\r\n"));
+    				"\n user Indicates the user's login name.\r\n" + 
+    				"\n pass If pass is definded, use password authentication.\r\n" + 
+    				"\n host Indicates the name, alias, or Internet address of the \r\n" + 
+    				"\n remote host.\r\n" + 
+    				"\n port Indicates a port number (address of an application).\r\n" + 
+    				"\n If the port is not specified, the default ssh port (22) is used.\r\n"+
+    				"$: "));
     	}else if(message.matches("help\\s+telnet")) {
-    		session.sendMessage(new TextMessage("NAME \r\n" + 
-    				"telnet - connects to a host using the TELNET protocol. \r\n" + 
+    		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 
+    				"\n telnet - connects to a host using the TELNET protocol. \r\n" + 
     				"SYNOPSYS \r\n" + 
-    				"telnet [user@]host [port] \r\n" + 
+    				"\n telnet [user@]host [port] \r\n" + 
     				"OPTIONS \r\n" + 
-    				"host Indicates the name, alias, or Internet address of the \r\n" + 
-    				"remote host.\r\n" + 
-    				"port Indicates a port number (address of an application).\r\n" + 
-    				"If the port is not specified, the default telnet port (23) is used.\r\n"));
+    				"\n host Indicates the name, alias, or Internet address of the \r\n" + 
+    				"\n remote host.\r\n" + 
+    				"\n port Indicates a port number (address of an application).\r\n" + 
+    				"\n If the port is not specified, the default telnet port (23) is used.\r\n"+
+    				"$: "));
     	}else if(message.matches("help\\s+clear")) {
-    		session.sendMessage(new TextMessage("NAME\n" + 
-    				"clear - clears the screen \r\n"));
+    		session.sendMessage(new TextMessage("\r\n$: NAME\n" + 
+    				"clear - clears the screen \r\n"+
+    				"$: "));
     	}else if(message.matches("help\\s+quit")) {
-    		session.sendMessage(new TextMessage("NAME \r\n" + 
-    				"quit - quits application or connection. \r\n" + 
+    		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 
+    				"\n quit - quits application or connection. \r\n" + 
     				"DESCRIPTION \r\n" + 
-    				"When a connection is not establish, quits application.\r\n" + 
-    				"Otherwise, quits connection. No parameters are required.\r\n" + 
-    				"exit does the same. \r\n" + 
-    				"cf) Press Ctrl + Alt + ] to fall back to Xshell prompt \r\n" + 
-    				"whlie connection is alive. \r\n"));
+    				"\n When a connection is not establish, quits application.\r\n" + 
+    				"\n Otherwise, quits connection. No parameters are required.\r\n" + 
+    				"\n exit does the same. \r\n" + 
+    				"\n cf) Press Ctrl + Alt + ] to fall back to Xshell prompt \r\n" + 
+    				"\n whlie connection is alive. \r\n"+
+    				"$: "));
     	}else if(message.equals("quit")) {
     		session.close();
     	}else {
     		// 其它未知指令提示信息
-    		session.sendMessage(new TextMessage("command not found...\r\n" + 
-    				"Type `help' to learn how to use Nezha Terminal prompt. \r\n"));
+    		session.sendMessage(new TextMessage("\r\n$: command not found...\r\n" + 
+    				"Type `help' to learn how to use Nezha Terminal prompt. \r\n"+
+    				"$: "));
     	}
     }
 }

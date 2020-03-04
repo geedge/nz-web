@@ -2,11 +2,14 @@ package com.nis.modules.terminal.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,11 +66,20 @@ public class TerminalHandlerController {
 	@RequestMapping(value = "upload", method = RequestMethod.POST)
     @ResponseBody
     public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
+		if(StringUtils.isBlank(uuid)) {
+			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
+		}
+		if(StringUtils.isBlank(path)) {
+			throw new NZException(RCode.TERMINAL_PATH_ISNULL);
+		}
+		if(CommonUtils.isEmpty(file)) {
+			throw new NZException(RCode.TERMINAL_FILE_ISNULL);
+		}
 		String rootPath=null;
         try{
             File temp=new File("");
             rootPath = temp.getAbsolutePath();
-            logger.debug("项目根目录["+rootPath+"]");
+            logger.info("项目根目录["+rootPath+"]");
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -97,6 +109,27 @@ public class TerminalHandlerController {
             logger.debug("上传目录：["+path+"]");
             tempFile.delete();
             return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new NZException(RCode.SYS_ERROR);
+        }
+    }
+	
+	@RequestMapping(value = "download", method = RequestMethod.POST)
+    @ResponseBody
+    public void download(HttpSession httpSession,HttpServletResponse res, String uuid, String path) throws Exception {
+		if(StringUtils.isBlank(uuid)) {
+			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
+		}
+		if(StringUtils.isBlank(path)) {
+			throw new NZException(RCode.TERMINAL_PATH_ISNULL);
+		}
+		try {
+			// 判断当前路径是绝对路径还是相对路径
+			if(!path.startsWith("/")) {
+				path="./"+path;
+			}
+            terminalOneProcessor.download(uuid,path,res);
         } catch (Exception e) {
             e.printStackTrace();
             throw new NZException(RCode.SYS_ERROR);

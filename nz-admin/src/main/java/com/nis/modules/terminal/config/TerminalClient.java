@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 The JobX Project
+ * Copyright (c) 2015 The Nezha Project
  * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -37,6 +37,8 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.*;
 import java.util.Base64;
 import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
 
 public class TerminalClient {
 
@@ -242,6 +244,54 @@ public class TerminalClient {
         }
     }
 
+    public void download(String path,HttpServletResponse res) throws Exception {
+    	logger.info("TerminalClient download param is {}",path);
+        ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+        channelSftp.connect(CHANNEL_TIMEOUT);
+        //当前路径下,获取用户终端的当前位置
+        if (path.startsWith("./")) {
+            //不出绝招不行啊....很神奇
+            sendTempCmd = true;
+            write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
+            //等待获取返回的路径...
+            Thread.sleep(100);
+            sendTempCmd = false;
+            if (pwd == null) {
+                throw new RuntimeException("Sftp upload file target path error!");
+            }
+            path = path.replaceFirst("\\./", pwd);
+            pwd = null;
+        } else if (path.startsWith("~")) {
+            path = path.replaceAll("~/|~", "");
+        }
+        //截取路径中的文件名称
+        String fileName = path.substring(path.lastIndexOf("/")+1);
+		String pathExceptFileName = path.substring(0,path.lastIndexOf("/"));
+		logger.info("TerminalClient download fileName is {}",fileName);
+		logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
+        channelSftp.cd(pathExceptFileName);
+        InputStream is = channelSftp.get(fileName);
+        // 发送给客户端的数据
+        OutputStream outputStream = res.getOutputStream();
+        byte[] buff = new byte[1024];
+        int i = is.read(buff);
+        while (i != -1) {
+            outputStream.write(buff, 0, buff.length);
+            outputStream.flush();
+            i = is.read(buff);
+        }
+        //exit
+        if (channelSftp != null) {
+            channelSftp.exit();
+        }
+        //disconnect
+        if (channelSftp != null) {
+            channelSftp.disconnect();
+        }
+    }
+
+    
+    
     public void disconnect() throws IOException {
         if (writer != null) {
             writer.close();

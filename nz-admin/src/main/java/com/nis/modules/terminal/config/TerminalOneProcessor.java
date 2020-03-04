@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 The JobX Project
+ * Copyright (c) 2015 The Nezha Project
  * <p>
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -31,8 +31,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
 
 @Component
 public class TerminalOneProcessor {
@@ -80,7 +83,7 @@ public class TerminalOneProcessor {
 //    @MethodMark
     public R upload(String token, File file, String name, long size) {
         TerminalClient terminalClient = TerminalSession.get(token);
-        logger.debug("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
+        logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
         boolean success = true;
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
@@ -99,7 +102,17 @@ public class TerminalOneProcessor {
             success = false;
         }
 
-        return R.ok();
+        return R.ok(success);
     }
-
+    
+    public void download(String uuid, String path,HttpServletResponse res) {
+    	InputStream downloadFile =null;
+        TerminalClient terminalClient = TerminalSession.get(uuid);
+        logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
+        try {
+        	terminalClient.download(path,res);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
 }
