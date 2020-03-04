@@ -15,7 +15,9 @@ public class Account {
     private Integer id;
 
     private Integer assetId;
+
     private Integer authType;
+
     private String user;
 
     @TableField(strategy = FieldStrategy.IGNORED)
@@ -28,6 +30,7 @@ public class Account {
     private String privateKey;
 
     private Integer port;
+
     @TableField(exist = false)
     private Asset asset;
 
@@ -35,6 +38,29 @@ public class Account {
      * 用于撤销具体某次批量导入的uuid
      */
     private String seq;
+
+    /**
+     * 协议，可选值：SSH，TELNET。统一大写
+     */
+    private String protocol;
+
+    /**
+     * telnet用户名提示,telnet协议有效，用于自动登录，默认值：login
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private String userTip;
+
+    /**
+     * telnet密码提示 telnet协议有效，用于自动登录，默认值：password
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private String passwordTip;
+
+    /**
+     * 重新登录提示 telnet协议有效，用于relogin自动登录默认值：password
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private String reloginPasswordTip;
 
     /*public byte[] getPrivateKey() {
         //拿本地的公钥解密ssh的私钥

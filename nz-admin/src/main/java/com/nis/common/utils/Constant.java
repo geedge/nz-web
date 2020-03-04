@@ -416,4 +416,10 @@ public class Constant {
 
     // 系统登陆用户集合
     public static Set<String> loginUsers = new HashSet<>();
+
+    // account protocol ssh协议
+    public static final String ACCOUNT_SSH_PROTOCOL = "SSH";
+
+    // account protocol telnet协议
+    public static final String ACCOUNT_TELNET_PROTOCOL = "TELNET";
 }

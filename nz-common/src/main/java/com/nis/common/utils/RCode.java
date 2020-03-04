@@ -71,6 +71,8 @@ public enum RCode {
 	ACCOUNT_ID_INVALIDE(301008,"Account ID cannot be null"),
 	ACCOUNT_FILE_INSUFFICIENT(301009,"Account insufficient number of documents"), // 文件数量不足
 	ACCOUNT_PORT_ERROR(301010,"Account port is incorrect"),                       // 账号端口不正确
+	ACCOUNT_PROTOCOL_ISNULL(301011,"Account protocol cannot be empty"),          // 协议信息不能为空
+	ACCOUNT_PROTOCOL_INCORRECT(301012,"Account protocol is incorrect"),          // 协议信息不合法
 
 
 	IDC_IDCNAME_ISNULL(401001,"Idc name can not be empty"),              // 数据中心name不能为空
