@@ -159,7 +159,8 @@ public enum RCode {
 	PROMSERVER_PARAM_MATCH_ISNULL(800012,"Parameter 'match[]' is required"),
 	PROMSERVER_PORT_ERROR(800013,"PromServer port is incorrect"),
 	PROMSERVER_HOST_ERROR(800014,"PromServer host is incorrect"),
-	PROMSERVER_NOTEXSITS(800015,"PromServer is not exsits"),    // PromServer 不存在
+	PROMSERVER_NOTEXSITS(800015,"PromServer is not exists"),    // PromServer 不存在
+	PROMSERVER_EXIST_ERROR(800016,"PromServer is exists : host,type,port repeat"),
 
 	ENDPOINT_ID_ISNULL(900001,"Endpoint id can not be empty"),
 	ENDPOINT_MODULEID_ISNULL(900002,"Module Id can not be empty"),

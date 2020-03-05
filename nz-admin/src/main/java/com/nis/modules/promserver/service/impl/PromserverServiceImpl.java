@@ -12,12 +12,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.entity.SysConfigEntity;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
@@ -45,6 +47,13 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 
 	@Override
 	public void validateParam(Promserver promserverEntity) {
+		Promserver promserver = this.getOne(new QueryWrapper<Promserver>()
+				.eq("host", promserverEntity.getHost())
+				.eq("port", promserverEntity.getPort())
+				.eq("type", promserverEntity.getType()));
+		if(promserver!=null) {
+			throw new NZException(RCode.PROMSERVER_EXIST_ERROR);
+		}
 		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL);
 		ValidateUtils.is(promserverEntity.getHost()).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		ValidateUtils.is(promserverEntity.getType()).notNull(RCode.PROMSERVER_TYPE_ISNULL);
