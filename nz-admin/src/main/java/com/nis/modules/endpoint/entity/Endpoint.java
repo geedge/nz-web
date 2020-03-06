@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.entity.Project;
+import com.nis.modules.promserver.entity.Promserver;
 
 import lombok.Data;
 
@@ -31,6 +32,10 @@ public class Endpoint {
 	@TableField(exist = false)
 	private Integer state;
 	private String seq;
+	@TableField(exist = false)
+	private StateInfo stateInfo;
+	@TableField(exist = false)
+	private Promserver promserver;
 	public Endpoint() {
 	}
 

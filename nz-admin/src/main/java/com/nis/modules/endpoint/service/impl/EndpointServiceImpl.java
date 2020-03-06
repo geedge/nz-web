@@ -50,6 +50,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.impl.AssetServiceImpl;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.dao.ModuleDao;
@@ -58,6 +59,7 @@ import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.PromApi;
+import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
@@ -106,7 +108,10 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						resultMap.put(jobName, resultPromeMap.get("value"));
 					}
 				}
-				for(Endpoint data:datas) {
+				for(Endpoint data: datas) {
+					Promserver promserver = data.getPromserver();
+					Integer promStatus = promserver.getStatus();
+					StateInfo stateInfo =new StateInfo();
 					String jn="ed_"+data.getId();
 					JSONArray valueList = (JSONArray) resultMap.get(jn);
 					if(valueList!=null) {
@@ -116,9 +121,20 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						String stateValue=(String)valueList.get(1);
 						Integer state = Integer.valueOf(stateValue);
 						data.setState(state);
+						if(state.equals(0)) {
+							// promtheus 不可用
+							stateInfo.setCode(0);
+							stateInfo.setMsg("prometheus can not be used");
+						}else {
+							stateInfo.setCode(1);
+							stateInfo.setMsg("prometheus can be used");
+						}
 					}else {
 						data.setState(0);
+						stateInfo.setCode(-1);
+						stateInfo.setMsg("prometheus server available");
 					}
+					data.setStateInfo(stateInfo);
 				}
 			}
 		} catch (Exception e) {
