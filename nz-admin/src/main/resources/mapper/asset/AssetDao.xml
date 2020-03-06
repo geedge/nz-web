@@ -150,6 +150,24 @@
         (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.link_id AND am.type = 3 AND am.state = 1) AS alertNum
     </sql>
 
+    <sql id="model_info_columns">
+        mo.id,
+        mo.name,
+        mo.remark,
+
+        /*厂商*/
+        dict.id AS vendorId,
+        dict.value AS vendorValue,
+        dict.code AS vendorCode,
+        dict.type AS vendorType,
+
+        /*资产类型*/
+        dict1.id AS assetId,
+        dict1.value AS assetValue,
+        dict1.code AS assetCode,
+        dict1.type AS assetType
+    </sql>
+
 
     <select id="queryList" resultMap="assetWithModelIdcCab">
         SELECT
@@ -213,7 +231,7 @@
     <!--查询 model -->
     <select id="getModelById" resultMap="com.nis.modules.asset.dao.ModelDao.modelWithVendorAndType">
         SELECT
-        <include refid="com.nis.modules.asset.dao.ModelDao.model_info_columns"/>
+        <include refid="model_info_columns"/>
         FROM model mo
 
         LEFT JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor'
