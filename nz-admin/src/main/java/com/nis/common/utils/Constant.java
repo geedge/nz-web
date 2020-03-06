@@ -117,6 +117,11 @@ public class Constant {
     public static final String REDIS_KEY_METRIClOCK = "metricLock";
 
     /**
+     * 记录endpoint和proserver 对应关系
+     */
+    public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
+
+    /**
      * 临时目录 
      */
     public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
