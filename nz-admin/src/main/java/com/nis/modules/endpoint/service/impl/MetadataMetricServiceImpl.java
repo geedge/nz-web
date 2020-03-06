@@ -6,11 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.DigestUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.endpoint.dao.MetadataMetricDao;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataLabelService;
@@ -91,7 +87,7 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
         List<MetadataMetric> metrics = new ArrayList<>();
 
         // 从redis中根据endpointId获取promserver id
-        Object promeId = redisTemplate.opsForHash().get("endpoint_prom", endpointId.toString());
+        Object promeId = redisTemplate.opsForHash().get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
 
         if (promeId != null) {
             Promserver promserver = promserverService.getById(promeId.toString());
