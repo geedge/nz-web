@@ -19,6 +19,12 @@
         <result property="type.value" column="assetValue"/>
         <result property="type.code" column="assetCode"/>
         <result property="type.type" column="assetType"/>
+
+        <association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.asset.entity.AssetStat">
+            <result column="total" property="total"/>
+            <result column="inStock" property="inStock"/>
+            <result column="outStock" property="outStock"/>
+        </association>
     </resultMap>
 
 
@@ -37,7 +43,12 @@
           dict1.id AS assetId,
           dict1.value AS assetValue,
           dict1.code AS assetCode,
-          dict1.type AS assetType
+          dict1.type AS assetType,
+
+          /*资产统计*/
+          COUNT(ass.id) as as_total,
+          SUM(CASE ass.state WHEN 1 THEN 1 ELSE 0 END) AS as_inStock,
+          SUM(CASE ass.state WHEN 2 THEN 1 ELSE 0 END) AS as_outStock
     </sql>
 
     <select id="queryList" resultMap="modelWithVendorAndType">
@@ -47,6 +58,7 @@
 
         LEFT JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor'
         LEFT JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType'
+        LEFT JOIN asset ass ON mo.id = ass.model_id
 
         WHERE 1=1
 
@@ -69,5 +81,7 @@
         <if test="params.remark != null and params.remark != ''">
             AND mo.remark like CONCAT('%', #{params.remark}, '%')
         </if>
+
+        GROUP BY mo.id
     </select>
 </mapper>

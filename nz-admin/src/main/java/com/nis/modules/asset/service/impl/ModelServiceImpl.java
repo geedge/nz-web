@@ -50,6 +50,18 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         IPage<Model> page = new Query<Model>().getPage(params);
 
         List<Model> modelList = modelDao.queryList(page, params);
+
+        String stat = null;
+        if (params != null && params.size() > 0) {
+            stat = (String) params.get("stat");
+        }
+        // 返回不含统计信息
+        if (!"1".equals(stat)) {
+            for (Model model : modelList) {
+                model.setAssetStat(null);
+            }
+        }
+
         page.setRecords(modelList);
 
         return new PageUtils(page);

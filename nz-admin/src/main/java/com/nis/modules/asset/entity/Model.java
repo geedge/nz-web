@@ -64,4 +64,10 @@ public class Model implements Serializable {
      */
     @TableField(exist = false)
     private SysDictEntity type;
+
+    /**
+     * 资产统计
+     */
+    @TableField(exist = false)
+    private AssetStat assetStat;
 }
