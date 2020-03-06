@@ -27,6 +27,7 @@ public enum RCode {
      * 7：权限相关错误
      * 8: 登陆相关错误
      * 9：文件相关错误
+     * 0: 第三方服务相关错误
      */
 
 
@@ -86,8 +87,9 @@ public enum RCode {
     ENDPOINT_IMPORT_FILE_ISNULL(231006, "Endpoint import file can not be null"),//  导入文件不能为空
     ENDPOINT_CANCELIMPORTSEQ_ISNULL(231007, "Endpoint cancel import seq can not be null"),//  导入撤销 seq不能为空
     ENDPOINT_HOST_ERROR(233008, "Endpoint host is incorrect"),
-
-
+    ENDPOINT_PROMETHEUS_AVAILABLE(230009,"Prometheus server available"),
+    ENDPOINT_PROMETHEUS_ON_USE(230010,"Prometheus can be used"),
+    ENDPOINT_PROMETHEUS_UNUSE(230011,"Prometheus can not be used"),
     /**
      * assets菜单项相关
      */

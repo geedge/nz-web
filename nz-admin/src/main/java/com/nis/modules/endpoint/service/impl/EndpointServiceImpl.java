@@ -123,16 +123,16 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						data.setState(state);
 						if(state.equals(0)) {
 							// promtheus 不可用
-							stateInfo.setCode(0);
-							stateInfo.setMsg("prometheus can not be used");
+							stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
+							stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
 						}else {
-							stateInfo.setCode(1);
-							stateInfo.setMsg("prometheus can be used");
+							stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_ON_USE.getCode());
+							stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_ON_USE.getMsg());
 						}
 					}else {
 						data.setState(0);
-						stateInfo.setCode(-1);
-						stateInfo.setMsg("prometheus server available");
+						stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getCode());
+						stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getMsg());
 					}
 					data.setStateInfo(stateInfo);
 				}
