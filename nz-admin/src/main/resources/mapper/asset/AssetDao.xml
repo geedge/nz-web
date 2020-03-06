@@ -245,11 +245,15 @@
         SELECT
             acc.id AS id,
             acc.asset_id AS assetId,
+            acc.protocol AS protocol,
             acc.auth_type AS authType,
             acc.user AS user,
             acc.pwd AS pwd,
             acc.port AS port,
-            acc.private_key AS privateKey
+            acc.private_key AS privateKey,
+            acc.user_tip AS userTip,
+            acc.password_tip AS passwordTip,
+            acc.relogin_password_tip AS reloginPasswordTip
          FROM account acc WHERE acc.asset_id = #{id}
     </select>
 
