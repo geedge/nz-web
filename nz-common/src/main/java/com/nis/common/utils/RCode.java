@@ -239,6 +239,8 @@ public enum RCode {
     SYS_DICT_ID_ISNULL(551006, "System dictionary ID is null"),
 
 
+    SNMP_MIB_FILE_ISNULL(561000,"Snmp mib file can not be empty"), // snmp mib文件不能为空
+    SNMP_MIB_ID_ISNULL(561001,"Snmp mib id can not be empty"),     // snmp mib id 不能为空
     /**
      * webshell相关
      */

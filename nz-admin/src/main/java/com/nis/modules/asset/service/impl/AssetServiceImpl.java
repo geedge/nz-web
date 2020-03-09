@@ -239,6 +239,19 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
             for (int i = 0; i < asset.getAccounts().size(); i++) {
                 Account account = asset.getAccounts().get(i);
+                account.setAssetId(asset.getId());
+
+                accountService.saveOrUpdateAccount(account);
+               /* // 在SSH协议 telnet提示信息无效
+                if(Constant.ACCOUNT_SSH_PROTOCOL.equals(account.getProtocol())){
+                    account.setUserTip(null);
+                    account.setPasswordTip(null);
+                    account.setReloginPasswordTip(null);
+                } else {
+                    // 在telnet协议中pwd 与 privateKey字段无效
+                    account.setPwd(null);
+                    account.setPrivateKey(null);
+                }
                 // 添加
                 if (account.getId() == null) {
                     // 处理密码
@@ -272,7 +285,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     }
 
                     accountService.updateById(account);
-                }
+                }*/
             }
         }
     }
@@ -312,28 +325,26 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public void validateAccount(Account account) {
-        //1.认证类型必须合法
-        ValidateUtils.is(account.getAuthType()).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
-        QueryWrapper<SysDictEntity> sysDictyQueryWrapper = new QueryWrapper<SysDictEntity>();
-        sysDictyQueryWrapper.eq("type", Constant.DICT_ACCOUNT_AUTH_TYPE); // authType 字典中的type值
-        sysDictyQueryWrapper.eq("code", account.getAuthType());
-
-        List<SysDictEntity> authTypeList = sysDictService.list(sysDictyQueryWrapper);
-
-        if (CollectionUtils.isEmpty(authTypeList)) {
+        // 1.协议protocol不能为空
+        String protocol = account.getProtocol();
+        ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
+        if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+            throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
+        }
+        // 2.认证类型必须合法
+        Integer authType = account.getAuthType();
+        ValidateUtils.is(authType).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
+        if (!Constant.AUTH_PASSWORD.equals(authType) && !Constant.AUTH_CERTIFICATE.equals(authType)) {
             throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
         }
-
-        //2.用户名不能为空
+        if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+            if (!Constant.AUTH_PASSWORD.equals(authType)) {
+                throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+            }
+        }
+        // 3.用户名不能为空
         ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
-
-        /*//3.密码登录，密码不能为空，证书登录，证书不能为空
-        if (Constant.AUTH_PASSWORD == account.getAuthType()) {
-            ValidateUtils.is(account.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
-        } else {
-            ValidateUtils.is(file).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
-        }*/
-        //4.port 不能为空
+        // 4.port 不能为空
         ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
         boolean portFlag = CommonUtils.checkPort(account.getPort().toString());
         if (!portFlag) {

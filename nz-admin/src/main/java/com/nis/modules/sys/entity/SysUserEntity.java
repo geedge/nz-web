@@ -83,4 +83,11 @@ public class SysUserEntity implements Serializable {
 	 */
 	private Date createTime;
 
+
+	@TableField(exist=false)
+	private Integer id;
+
+	@TableField(exist=false)
+	private String name;
+
 }

@@ -90,6 +90,9 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
             account.setUserTip(null);
             account.setPasswordTip(null);
             account.setReloginPasswordTip(null);
+        } else {
+            account.setPwd(null);
+            account.setPrivateKey(null);
         }
         if (account.getId() == null) {
             // 密码
