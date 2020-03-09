@@ -106,6 +106,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         ValidateUtils.is(chart.getType()).notNull(RCode.CHART_TYPE_ISNULL);
 
+        ValidateUtils.is(chart.getUnit()).notNull(RCode.CHART_UNIT_ISNULL);
+        
         sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE,chart.getType(),RCode.CHART_TYPE_INVALIDE);;
 
         ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);

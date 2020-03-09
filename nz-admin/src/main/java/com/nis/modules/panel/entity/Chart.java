@@ -36,7 +36,11 @@ public class Chart {
      * 图标类型 line,bar,table
      * */
     private String type;
-
+    
+    /**
+     * 单位
+     */
+    private Integer unit;
     @TableField(exist = false)
     private List<ChartElement> elements;
 
