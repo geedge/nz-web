@@ -165,13 +165,23 @@ public class TerminalClient {
                                 }
                             }
                         } else {
-                            webSocketSession.sendMessage(new TextMessage(message));
+                            if((message.replaceAll("\r\n", "")).equals("logout")) {
+                            	StringBuilder sb=new StringBuilder();
+                            	sb.append("\r\nlogout\r\n");
+                                sb.append("Welcome to Nezha Terminal! \r\n");
+                            	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+                            	sb.append("$: ");
+                            	webSocketSession.sendMessage(new TextMessage(sb.toString()));	
+                            }else {
+                            	webSocketSession.sendMessage(new TextMessage(message));
+                            }
                             if (sendEnter) {
                                 String trimMessage = message.replaceAll("\r\n", "");
                                 if (CommonUtils.isEmpty(trimMessage)) {
                                     receiveEnd = false;
                                 } else {
                                     if (sendBuffer.toString().equals("exit") && trimMessage.equals("logout")) {
+                                    	TerminalSession.remove(webSocketSession);
                                         closed = true;
                                     }
                                     receiveEnd = true;

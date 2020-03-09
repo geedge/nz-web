@@ -110,11 +110,12 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
-        	StringBuilder sb=new StringBuilder();
+        	/*StringBuilder sb=new StringBuilder();
         	sb.append("Welcome to Nezha Terminal! \r\n");
         	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
         	sb.append("$: ");
-        	session.sendMessage(new TextMessage(sb.toString()));
+        	session.sendMessage(new TextMessage(sb.toString()));*/
+        	unloginUserHandle(session);
         	logger.info("user stateless access server");
         }
     }
@@ -128,8 +129,6 @@ public class TerminalHandler extends TextWebSocketHandler {
             if (this.terminalClient != null) {
                 if (!terminalClient.isClosed()) {
                     terminalClient.write(message.getPayload());
-                } else {
-                    session.close();
                 }
             }else {
             	/**
@@ -138,7 +137,12 @@ public class TerminalHandler extends TextWebSocketHandler {
             	if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
             		logger.info("user send terminal to start");
 //            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
-            		nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
+            		// 处理用户空输入 直接回车操作
+    				if(StringUtils.isEmpty(TerminalSession.getUnloginMessage(uuid))) {
+    					session.sendMessage(new TextMessage(message.getPayload()+"\n$:"));
+    				}else {
+    					nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
+    				}
             		//执行完当前指令后将指令删除
             		TerminalSession.removeUnloginMessage(uuid);
             	}else {
@@ -158,8 +162,6 @@ public class TerminalHandler extends TextWebSocketHandler {
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         super.handleTransportError(session, exception);
         this.closeTerminal(session);
-        session.close();
-
     }
 
     @Override
@@ -195,6 +197,9 @@ public class TerminalHandler extends TextWebSocketHandler {
 
     public void nezhaMessageHandle(WebSocketSession session, String message) throws IOException {
     	logger.info("nezhaMessageHandle message info {}",message);
+    	if(StringUtils.isEmpty(message)) {
+    		message="";
+    	}
     	if(message.equals("help")) {
     		session.sendMessage(new TextMessage("\r\n$: Internal Commands:\r\n" + 
     				"ssh: Connects to a host using the SSH protocol.\r\n" + 
@@ -250,6 +255,14 @@ public class TerminalHandler extends TextWebSocketHandler {
     				"Type `help' to learn how to use Nezha Terminal prompt. \r\n"+
     				"$: "));
     	}
+    }
+    
+    public void unloginUserHandle(WebSocketSession session) throws Exception{
+    	StringBuilder sb=new StringBuilder();
+        sb.append("Welcome to Nezha Terminal! \r\n");
+    	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+    	sb.append("$: ");
+    	session.sendMessage(new TextMessage(sb.toString()));		
     }
 }
 
