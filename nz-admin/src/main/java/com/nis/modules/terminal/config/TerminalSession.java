@@ -64,10 +64,29 @@ public class TerminalSession implements Serializable {
     	}
     	unloginMessageInfo.put(uuid,string);
     }
-    
+    /**
+     * 清空当前用户指令
+     * @param uuid
+     */
     public static void removeUnloginMessage(String uuid) {
     	unloginMessageInfo.remove(uuid);
     }
+    
+    /*public static boolean backspaceMessage(String uuid) {
+    	boolean flag=false;
+    	String string = unloginMessageInfo.get(uuid);
+    	if(!StringUtils.isNoneBlank(string)) {
+    		string=string.substring(0, string.length()-1);
+    		if(StringUtils.isNotBlank(string)) {
+    			unloginMessageInfo.put(uuid, string);
+    			flag=true;
+    		}else {
+    			unloginMessageInfo.remove(uuid);
+    			flag=true;
+    		}    		
+    	}
+    	return flag;
+    }*/
     
     public static TerminalClient get(WebSocketSession key) {
         return terminalSession.get(key);

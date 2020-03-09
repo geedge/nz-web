@@ -129,7 +129,7 @@ public class TerminalClient {
         this.channelShell.connect();
 
         StringBuilder sb = new StringBuilder();
-    	sb.append("Connecting to "+terminal.getAsset().getHost()+":"+terminal.getPort()+"\r\n");
+    	sb.append("\r\nConnecting to "+terminal.getAsset().getHost()+":"+terminal.getPort()+"\r\n");
     	sb.append("Connection established. \r\n");
     	sb.append("Login success，use user "+terminal.getUser()+" \r\n");
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
@@ -166,6 +166,7 @@ public class TerminalClient {
                             }
                         } else {
                             if((message.replaceAll("\r\n", "")).equals("logout")) {
+                            	System.out.println(session);
                             	StringBuilder sb=new StringBuilder();
                             	sb.append("\r\nlogout\r\n");
                                 sb.append("Welcome to Nezha Terminal! \r\n");

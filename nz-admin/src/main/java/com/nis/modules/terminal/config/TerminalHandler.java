@@ -32,12 +32,17 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.nis.common.utils.CommonUtils;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.terminal.config.Constants.SshType;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
@@ -63,6 +68,8 @@ public class TerminalHandler extends TextWebSocketHandler {
     private String token;
     
     private String accountId;
+    
+    private boolean sshLogin=false;
     
     @Override
     public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -138,14 +145,20 @@ public class TerminalHandler extends TextWebSocketHandler {
             		logger.info("user send terminal to start");
 //            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
             		// 处理用户空输入 直接回车操作
-    				if(StringUtils.isEmpty(TerminalSession.getUnloginMessage(uuid))) {
+    				if(StringUtils.isEmpty(TerminalSession.getUnloginMessage(uuid))&&(!sshLogin)) {
     					session.sendMessage(new TextMessage(message.getPayload()+"\n$:"));
     				}else {
     					nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
     				}
             		//执行完当前指令后将指令删除
             		TerminalSession.removeUnloginMessage(uuid);
-            	}else {
+            	/*}else if(message.getPayload().matches("\\b|\b")){
+            		// 处理用户退格键
+            		boolean backspaceFlage = TerminalSession.backspaceMessage(uuid);
+            		if(backspaceFlage) {
+            			session.sendMessage(new TextMessage(message.getPayload()));
+            		}*/
+            	}else{
             		logger.info("terminal unstart  uuid info {}",uuid);
             		TerminalSession.setUnloginMessage(uuid,message.getPayload());
             		session.sendMessage(new TextMessage(message.getPayload()));
@@ -195,12 +208,41 @@ public class TerminalHandler extends TextWebSocketHandler {
 //        terminalClusterProcessor.unregistry(terminalToken);
     }
 
-    public void nezhaMessageHandle(WebSocketSession session, String message) throws IOException {
+    public void nezhaMessageHandle(WebSocketSession session, String message) throws Exception {
     	logger.info("nezhaMessageHandle message info {}",message);
     	if(StringUtils.isEmpty(message)) {
     		message="";
     	}
-    	if(message.equals("help")) {
+    	// 处理用户ssh登录问题
+    	if(sshLogin) {
+    		sshLogin=false;
+    		//获取到用户ssh pwd
+    		Asset asset=new Asset();
+    		asset.setHost(TerminalSession.getUnloginMessage(uuid+"ip"));
+    		Account terminal=new Account();
+    		terminal.setUser(TerminalSession.getUnloginMessage(uuid+"user"));
+    		terminal.setPort(Integer.valueOf(TerminalSession.getUnloginMessage(uuid+"port")));
+    		terminal.setAsset(asset);
+    		terminal.setAuthType(SshType.ACCOUNT.getType());
+    		terminal.setPwd(Base64.getEncoder().encodeToString(message.getBytes()));
+    		//连接服务
+    		try {
+				getClient(session, terminal);
+				int cols = toInt(session.getAttributes().get("cols").toString());
+				int rows = toInt(session.getAttributes().get("rows").toString());
+				int width = toInt(session.getAttributes().get("width").toString());
+				int height = toInt(session.getAttributes().get("height").toString());
+				terminalClient.openTerminal(cols, rows, width, height);
+			} catch (Exception e) {
+				// 如果出现异常连接失败 则将session中client信息清空 
+				sshLogin=false;
+				TerminalSession.remove(session);
+				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
+			}
+            
+    	}else if(message.startsWith("ssh")) {
+    		sshLoginHandle(session,message);
+    	}else if(message.equals("help")) {
     		session.sendMessage(new TextMessage("\r\n$: Internal Commands:\r\n" + 
     				"ssh: Connects to a host using the SSH protocol.\r\n" + 
     				"telnet: Connects to a host using the TELNET protocol.\r\n" + 
@@ -263,6 +305,58 @@ public class TerminalHandler extends TextWebSocketHandler {
     	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
     	sb.append("$: ");
     	session.sendMessage(new TextMessage(sb.toString()));		
+    }
+    
+    public void sshLoginHandle(WebSocketSession session,String message) throws Exception{
+    	// 清空之前缓存的ssh登录系信息
+    	TerminalSession.removeUnloginMessage(uuid+"user");
+    	TerminalSession.removeUnloginMessage(uuid+"ip");
+    	TerminalSession.removeUnloginMessage(uuid+"port");
+    	String userInfo=null;
+		String port=null;
+		String user=null;
+		String ip=null;
+		String[] split = message.split("\\s");
+		for(int i =0;i<split.length;i++) {
+			if(i==1) {
+				userInfo = split[i];
+			}else if(i==2) {
+				port=split[i];
+			}
+		}
+		if(userInfo.contains("@")) {
+			String[] split2 = userInfo.split("@");
+			for(int i=0;i<split2.length;i++) {
+				if(i==0) {
+					user=split2[i];
+				}else if(i==1){
+					ip=split2[i];
+				}
+			}
+		}
+		if(StringUtils.isEmpty(user)||StringUtils.isEmpty(ip)) {
+			sshLogin=false;
+			session.sendMessage(new TextMessage("\r\nUnable to resolve host Connection failed.\r\nType `help' to learn how to use Xshell prompt.\r\n$: "));
+		}else {
+			if(StringUtils.isEmpty(port)) {
+				port="22";
+			}
+			//校验端口ip有效性
+			if(!(CommonUtils.checkIp(ip)&&CommonUtils.checkPort(port))) {
+				session.sendMessage(new TextMessage("\r\nUnable to resolve host Connection failed.\r\nType `help' to learn how to use Xshell prompt.\r\n$: "));
+			}else {
+				//将用户登录信息存储到当前会话中 记录标识符等待用户输入登录密码完成ssh登录
+				List<String> sshLoginInfo =new ArrayList<String>();
+				sshLoginInfo.add(user);
+				sshLoginInfo.add(ip);
+				sshLoginInfo.add(port);
+				TerminalSession.setUnloginMessage(uuid+"user",user);
+				TerminalSession.setUnloginMessage(uuid+"ip",ip);
+				TerminalSession.setUnloginMessage(uuid+"port",port);
+				sshLogin=true;
+				session.sendMessage(new TextMessage("\r\n"+TerminalSession.getUnloginMessage(uuid+"user")+"@"+TerminalSession.getUnloginMessage(uuid+"ip")+"'s password: "));
+			}
+		}
     }
 }
 
