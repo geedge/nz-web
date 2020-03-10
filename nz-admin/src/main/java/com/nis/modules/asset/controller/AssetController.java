@@ -10,6 +10,8 @@ import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
@@ -50,6 +52,9 @@ public class AssetController {
 
     @Autowired
     private SysConfigService sysConfigService;
+
+    @Autowired
+    private SysDictService sysDictService;
 
     /**
      * 资产请求列表
@@ -239,6 +244,15 @@ public class AssetController {
      */
     @GetMapping("/export")
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+
+        Map<String, Object> queryParam = new HashMap<>(2);
+        queryParam.put("type", Constant.DICT_ASSET_STATE_TYPE);
+        List<SysDictEntity> assetStates = sysDictService.queryList(queryParam);
+        Map<Integer, String> statesMap = new HashMap<>(4);
+        for (SysDictEntity dict : assetStates) {
+            statesMap.put(dict.getCode(), dict.getValue());
+        }
+
         PageUtils page = assetService.queryPage(params);
         List<Asset> list = (List<Asset>) page.getList();
 
@@ -247,7 +261,7 @@ public class AssetController {
 
         int rowNum = 0;
         // 添加标题行
-        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "Host", "State", "PurchaseDate", "AuthType", "User", "Pwd", "Cert", "Port"};
+        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip"};
         Row row = sheet.createRow(rowNum);
         Cell cell;
 
@@ -288,7 +302,7 @@ public class AssetController {
             // host
             row1.createCell(6).setCellValue(asset.getHost());
             // state
-            row1.createCell(7).setCellValue(asset.getState());
+            row1.createCell(7).setCellValue(statesMap.get(asset.getState()));
             // PurchaseDate
             row1.createCell(8).setCellValue(asset.getPurchaseDate());
 
@@ -298,20 +312,34 @@ public class AssetController {
                 account = accountList.get(0);
             }
             if (account != null) {
+                // protocol
+                row1.createCell(9).setCellValue(account.getProtocol());
                 // authtype
-                row1.createCell(9).setCellValue(account.getAuthType());
+                row1.createCell(10).setCellValue(account.getAuthType());
                 // user
-                row1.createCell(10).setCellValue(account.getUser());
+                row1.createCell(11).setCellValue(account.getUser());
                 if (StringUtils.isNotEmpty(account.getPwd())) {
                     // pwd
-                    row1.createCell(11).setCellValue(account.getPwd());
+                    row1.createCell(12).setCellValue(account.getPwd());
                 }
                 if (StringUtils.isNotEmpty(account.getPrivateKey())) {
                     // sshKeys
-                    row1.createCell(12).setCellValue(account.getPrivateKey());
+                    row1.createCell(13).setCellValue(account.getPrivateKey());
                 }
                 // port
-                row1.createCell(13).setCellValue(account.getPort());
+                row1.createCell(14).setCellValue(account.getPort());
+                if (StringUtils.isNotEmpty(account.getUserTip())) {
+                    // userTip
+                    row1.createCell(15).setCellValue(account.getUserTip());
+                }
+                if (StringUtils.isNotEmpty(account.getPasswordTip())) {
+                    // passwordTip
+                    row1.createCell(16).setCellValue(account.getPasswordTip());
+                }
+                if (StringUtils.isNotEmpty(account.getReloginPasswordTip())) {
+                    // reloginPasswordTip
+                    row1.createCell(17).setCellValue(account.getReloginPasswordTip());
+                }
             }
         }
 

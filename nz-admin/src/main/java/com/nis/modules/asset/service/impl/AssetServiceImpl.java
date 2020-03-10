@@ -473,7 +473,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 成功条数
             int successNum = 0;
 
-            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, authType, user, pwd, privateKey, port, exporter;
+            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter;
             Integer accountAuthType;
 
             Map saveEntitys;
@@ -638,17 +638,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
 
                 // 账号相关
-                authType = ExcelUtils.getCellValue(row.getCell(9));
+                /*authType = ExcelUtils.getCellValue(row.getCell(9));
                 user = ExcelUtils.getCellValue(row.getCell(10));
                 pwd = ExcelUtils.getCellValue(row.getCell(11));
                 privateKey = ExcelUtils.getCellValue(row.getCell(12));
                 port = ExcelUtils.getCellValue(row.getCell(13));
 
                 // 是否内置exporter
-                exporter = ExcelUtils.getCellValue(row.getCell(14));
+                exporter = ExcelUtils.getCellValue(row.getCell(14));*/
 
                 // 满足添加Account所需
-                if (StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
+               /* if (StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
                     relaFlag = false;
                     account = new Account();
                     accountAuthType = Integer.parseInt(authType);
@@ -674,6 +674,82 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         failDetails.add(failDetail);
                         account = accountCli = null;
                     }
+                }*/
+
+                // 账号相关
+                protocol = ExcelUtils.getCellValue(row.getCell(9));       // 协议信息
+                authType = ExcelUtils.getCellValue(row.getCell(10));      // 认证类型
+                user = ExcelUtils.getCellValue(row.getCell(11));          // 用户名
+                pwd = ExcelUtils.getCellValue(row.getCell(12));           // 密码
+                privateKey = ExcelUtils.getCellValue(row.getCell(13));    // 密钥文件
+                port = ExcelUtils.getCellValue(row.getCell(14));          // 端口
+                userTip = ExcelUtils.getCellValue(row.getCell(15));       // telnet协议有效 用户名提示
+                passwordTip = ExcelUtils.getCellValue(row.getCell(16));   // telnet协议有效 密码提示
+                reloginPasswordTip = ExcelUtils.getCellValue(row.getCell(17));// telnet协议有效 重复登陆提示
+
+                // 是否内置exporter
+                exporter = ExcelUtils.getCellValue(row.getCell(18));
+
+                // 满足添加Account所需
+                if (StringUtils.isNotEmpty(protocol) && StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
+                    relaFlag = false;
+                    account = new Account();
+                    // 验证协议
+                    if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+                        saveFlag = false;
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_PROTOCOL_INCORRECT);
+                        failDetails.add(failDetail);
+                    }
+                    // 验证认证类型
+                    accountAuthType = Integer.parseInt(authType);
+                    if (!Constant.AUTH_PASSWORD.equals(accountAuthType) && !Constant.AUTH_CERTIFICATE.equals(accountAuthType)) {
+                        saveFlag = false;
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+                        failDetails.add(failDetail);
+                    }
+                    if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+                        if (!Constant.AUTH_PASSWORD.equals(accountAuthType)) {
+                            saveFlag = false;
+                            failDetail = new HashMap();
+                            failDetail.put("lineNo", i);
+                            failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+                            failDetails.add(failDetail);
+                        }
+                    }
+                    account.setProtocol(protocol);
+                    account.setAuthType(accountAuthType);
+                    account.setUser(user);
+                    account.setPort(Integer.parseInt(port));
+                    if(Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)){
+                        if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
+                            account.setPwd(pwd);
+                        }
+                        if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(privateKey)) {
+                            account.setPrivateKey(privateKey);
+                        }
+                    }else if(Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)){
+                        account.setUserTip(userTip);
+                        account.setPasswordTip(passwordTip);
+                        account.setReloginPasswordTip(reloginPasswordTip);
+                    }
+
+                    // 深克隆 预备登陆服务器上传node exporter
+                    accountCli = JSONObject.parseObject(JSON.toJSONString(account), Account.class);
+
+                    // 校验端口
+                    if (!CommonUtils.checkPort(account.getPort().toString())) {
+                        saveFlag = false;
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_PORT_ERROR);
+                        failDetails.add(failDetail);
+                        account = accountCli = null;
+                    }
+
                 }
 
 
@@ -696,7 +772,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 账号信息正常
                         if (account != null) {
                             // 密码加密
-                            account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
+                            if(StringUtils.isNotEmpty(account.getPwd())){
+                                account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
+                            }
                             account.setSeq(seqUUID);
                             saveEntitys.put("account", account);
                             // 内置exporter
@@ -853,7 +931,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Map> mapList = new ArrayList<>();
         Map map;
 
-        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "host", "state", "purchasedate", "authtype", "user", "pwd", "cert", "port", "exporter"};
+        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "host", "state", "purchasedate", "protocol", "authtype", "user", "pwd", "cert", "port", "usertip", "passwordtip", "reloginpasswordtip", "exporter"};
         List<String> titles = Arrays.asList(str);
 
         String titleValue, title;
