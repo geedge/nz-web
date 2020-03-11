@@ -25,16 +25,26 @@ package com.nis.modules.terminal.config;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.terminal.config.Constants.SshType;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
@@ -42,7 +52,9 @@ import com.nis.modules.terminal.service.AccountService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
@@ -69,6 +81,12 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     private String accountId;
     
+    private String headerToken;
+    
+    private String loginUserName;
+    
+    private Long userId;
+    
     private boolean sshLogin=false;
     
     @Override
@@ -82,6 +100,39 @@ public class TerminalHandler extends TextWebSocketHandler {
         uuid=(String)session.getAttributes().get("uuid");
         token=(String)session.getAttributes().get("token");
         
+        RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean("redisTemplate");
+        redisTemplate.setValueSerializer(RedisSerializer.string());
+        //判断用户传入的token是否为项目获取的token信息 
+        ValueOperations<String, String>  ops = redisTemplate.opsForValue();
+        String value = ops.get(token);
+        if(!CommonUtils.notEmpty(value)) {
+        	session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
+        	session.close();
+        	return;
+        }
+        String json= new String(Base64.getDecoder().decode(value),"UTF-8");
+        Map<String,String> map=JSON.parseObject(json, HashMap.class);
+        SysUserService sysUserService = (SysUserService) applicationContext.getBean("sysUserService");
+        String loginUserName=map.get("username");
+        SysUserEntity user = sysUserService.getOne(new QueryWrapper<SysUserEntity>()
+				.eq("username", loginUserName));
+        userId = user.getUserId();
+        
+        
+        //判断当前连接的数量 防止用户连接过多窗口
+        SysConfigService SysconfigService = (SysConfigService) applicationContext.getBean("sysConfigService");
+        String maxNum = SysconfigService.getValue(Constant.MAX_TERMINAL_NUM);
+        //默认20个
+        Integer num=20;
+        if(StringUtils.isNotEmpty(maxNum)) {
+        	num=Integer.valueOf(maxNum);
+        }
+        List<TerminalClient> allTerminalClient = TerminalSession.getAllTerminalClient(token);
+        if(allTerminalClient.size()>num) {
+        	session.sendMessage(new TextMessage("Unable to connect at the maximum number of connections"));
+        	session.close();
+        	return;
+        }
         if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
         	// 从缓存中取出之前保存的客户端实例
         	Account terminalInfo = terminalContext.get(uuid);
@@ -117,11 +168,6 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
-        	/*StringBuilder sb=new StringBuilder();
-        	sb.append("Welcome to Nezha Terminal! \r\n");
-        	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
-        	sb.append("$: ");
-        	session.sendMessage(new TextMessage(sb.toString()));*/
         	unloginUserHandle(session);
         	logger.info("user stateless access server");
         }
@@ -239,9 +285,10 @@ public class TerminalHandler extends TextWebSocketHandler {
 				TerminalSession.remove(session);
 				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
 			}
-            
     	}else if(message.startsWith("ssh")) {
     		sshLoginHandle(session,message);
+    	}else if(message.startsWith("telnet")){
+    		telnetLoginHandle(session,message);
     	}else if(message.equals("help")) {
     		session.sendMessage(new TextMessage("\r\n$: Internal Commands:\r\n" + 
     				"ssh: Connects to a host using the SSH protocol.\r\n" + 
@@ -324,7 +371,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 				port=split[i];
 			}
 		}
-		if(userInfo.contains("@")) {
+		if(StringUtils.isNotEmpty(userInfo)&&userInfo.contains("@")) {
 			String[] split2 = userInfo.split("@");
 			for(int i=0;i<split2.length;i++) {
 				if(i==0) {
@@ -357,6 +404,78 @@ public class TerminalHandler extends TextWebSocketHandler {
 				session.sendMessage(new TextMessage("\r\n"+TerminalSession.getUnloginMessage(uuid+"user")+"@"+TerminalSession.getUnloginMessage(uuid+"ip")+"'s password: "));
 			}
 		}
+    }
+    
+    public void telnetLoginHandle(WebSocketSession session,String message) throws Exception{
+    	// 清空之前缓存的telnet登录系信息
+    	TerminalSession.removeUnloginMessage(uuid+"telip");
+    	TerminalSession.removeUnloginMessage(uuid+"telport");
+    	TerminalSession.removeUnloginMessage(uuid+"teluser");
+		String port=null;
+		String ip=null;
+		String userInfo=null;
+		String user=null;
+		String[] split = message.split("\\s");
+		for(int i =0;i<split.length;i++) {
+			if(i==1) {
+				userInfo = split[i];
+			}else if(i==2) {
+				port=split[i];
+			}
+		}
+		if(StringUtils.isNotEmpty(userInfo)&&userInfo.contains("@")) {
+			String[] split2 = userInfo.split("@");
+			for(int i=0;i<split2.length;i++) {
+				if(i==0&&split2.length==2) {
+					user=split2[i];
+				}else if(i==1&&split2.length==2){
+					ip=split2[i];
+				}else if(i==0&&split2.length==1) {
+					ip=split2[i];
+				}
+			}
+		}else {
+			ip=split[1];
+		}
+		if(StringUtils.isBlank(ip)||!CommonUtils.checkIp(ip)) {
+			session.sendMessage(new TextMessage("\r\nPlease check your Ip is correct \r\n$: "));
+			return;
+		}
+		if(StringUtils.isBlank(port)) {
+			port="23";
+		}
+		if(!CommonUtils.checkPort(port)) {
+			session.sendMessage(new TextMessage("\r\nPlease check your port is correct \r\n$: "));
+			return;
+		}
+		if(StringUtils.isBlank(user)) {
+			user="";
+		}
+		TerminalSession.setUnloginMessage(uuid+"teluser",user);
+		TerminalSession.setUnloginMessage(uuid+"telip",ip);
+		TerminalSession.setUnloginMessage(uuid+"telport",port);
+		//获取到用户ssh pwd
+		Asset asset=new Asset();
+		asset.setHost(ip);
+		Account terminal=new Account();
+		terminal.setPort(Integer.valueOf(port));
+		terminal.setAsset(asset);
+		terminal.setUser(user);
+		//连接服务
+		try {
+			getClient(session, terminal);
+			int cols = toInt(session.getAttributes().get("cols").toString());
+			int rows = toInt(session.getAttributes().get("rows").toString());
+			int width = toInt(session.getAttributes().get("width").toString());
+			int height = toInt(session.getAttributes().get("height").toString());
+			terminalClient.openTelnetTerminal(cols, rows, width, height);
+		} catch (Exception e) {
+			// 如果出现异常连接失败 则将session中client信息清空 
+			sshLogin=false;
+			TerminalSession.remove(session);
+			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
+		}
+		
     }
 }
 

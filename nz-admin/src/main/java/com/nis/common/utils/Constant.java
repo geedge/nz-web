@@ -432,4 +432,7 @@ public class Constant {
     public static final String CONFAGENT_PORT="confagent_port";
     //confagent项目名称
     public static final String CONFAGENT_PATH="confagent_path";
+    
+    //最大窗口允许的连接数
+    public static final String MAX_TERMINAL_NUM="max_terminal_num";
 }

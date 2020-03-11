@@ -15,6 +15,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.entity.Promserver;
@@ -39,8 +40,8 @@ public class PromserverJob extends QuartzJobBean {
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 		Map params=new HashMap();
 		//查询内置confagent配置信息
-		String confagentPort=sysConfigService.getValue("confagent_port");
-		String confagentPath=sysConfigService.getValue("confagent_path");
+		String confagentPort=sysConfigService.getValue(Constant.CONFAGENT_PORT);
+		String confagentPath=sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		//循环查询所有promserver信息
 		PageUtils datas = promserverService.queryPage(params);
 		List<Promserver> promservers = (List<Promserver>) datas.getList();

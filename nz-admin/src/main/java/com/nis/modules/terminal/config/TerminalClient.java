@@ -28,6 +28,8 @@ import com.nis.common.utils.IOUtils;
 import com.nis.common.utils.StringUtils;
 import com.nis.modules.terminal.entity.Account;
 import static com.nis.common.utils.CommonUtils.notEmpty;
+
+import org.apache.commons.net.telnet.TelnetClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -200,6 +202,87 @@ public class TerminalClient {
 
     }
 
+    public void openTelnetTerminal(final int cols, int rows, int width, int height) throws Exception {
+    	TelnetClient telnet = new TelnetClient("VT100");// VT100 VT52 VT220 VTNT ANSI  
+        telnet.connect(terminal.getAsset().getHost(), terminal.getPort());  
+        this.inputStream=telnet.getInputStream();
+        this.outputStream=telnet.getOutputStream();
+        this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
+        
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                byte[] buffer = new byte[1024 * 4];
+                StringBuilder builder = new StringBuilder();
+                try {
+                    while (webSocketSession != null && webSocketSession.isOpen()) {
+                        builder.setLength(0);
+                        int size = inputStream.read(buffer);
+                        if (size == -1) {
+                            return;
+                        }
+                        for (int i = 0; i < size; i++) {
+                            char chr = (char) (buffer[i] & 0xff);
+                            builder.append(chr);
+                        }
+                        //取到linux远程机器输出的信息发送给前端
+                        String message = builder.toString();
+                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        //获取pwd的结果输出,不能发送给前台
+                        if (sendTempCmd) {
+                            if (message.contains(sendTempCmdId)) {
+                                if (pwd != null || message.contains("echo")) {
+                                    continue;
+                                }
+                                pwd = message.replace(sendTempCmdId, "").replaceAll("\r\n.*", "") + "/";
+                                if (logger.isInfoEnabled()) {
+                                    logger.info(" Sftp upload file target path:{}", pwd);
+                                }
+                            }
+                        } else {
+                            if((message.replaceAll("\r\n", "")).equals("logout")) {
+                            	System.out.println(session);
+                            	StringBuilder sb=new StringBuilder();
+                            	sb.append("\r\nlogout\r\n");
+                                sb.append("Welcome to Nezha Terminal! \r\n");
+                            	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+                            	sb.append("$: ");
+                            	webSocketSession.sendMessage(new TextMessage(sb.toString()));	
+                            }else {
+                            	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
+                            		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
+                            		write(terminal.getUser()+"\r");
+                            	}else if(message.matches("Password:.*")&&StringUtils.isBlank(terminal.getUser())){
+                            		webSocketSession.sendMessage(new TextMessage("\r\n"+message));
+                            	}else{
+                            		webSocketSession.sendMessage(new TextMessage(message));
+                            	}
+                            }
+                            if (sendEnter) {
+                                String trimMessage = message.replaceAll("\r\n", "");
+                                if (CommonUtils.isEmpty(trimMessage)) {
+                                    receiveEnd = false;
+                                } else {
+                                    if (sendBuffer.toString().equals("exit") && trimMessage.equals("logout")) {
+                                    	TerminalSession.remove(webSocketSession);
+                                        closed = true;
+                                    }
+                                    receiveEnd = true;
+                                }
+                                if (receiveEnd) {
+                                    sendBuffer.setLength(0);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                }
+            }
+        }).start();
+
+    }
+    
+    
     /**
      * 向ssh终端输入内容
      *
