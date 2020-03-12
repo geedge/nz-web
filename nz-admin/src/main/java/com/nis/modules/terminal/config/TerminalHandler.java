@@ -47,11 +47,14 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.terminal.config.Constants.SshType;
 import com.nis.modules.terminal.entity.Account;
+import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.service.AccountService;
+import com.nis.modules.terminal.service.TerminalLogService;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +92,12 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     private boolean sshLogin=false;
     
+    private StringBuilder terminalCmd;
+    
+    private TerminalLogService terminalLogService;
+    //记录日志
+	TerminalLog terminalLog = null;
+    
     @Override
     public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
         super.afterConnectionEstablished(session);
@@ -118,6 +127,13 @@ public class TerminalHandler extends TextWebSocketHandler {
 				.eq("username", loginUserName));
         userId = user.getUserId();
         
+        // 创建登录服务器日志记录相关内容
+        terminalLogService=(TerminalLogService) applicationContext.getBean("terminalLogService");
+        if(terminalLog==null) {
+        	terminalLog=new TerminalLog();
+        }
+        terminalLog.setUser(loginUserName);
+        terminalLog.setUserId(userId);
         
         //判断当前连接的数量 防止用户连接过多窗口
         SysConfigService SysconfigService = (SysConfigService) applicationContext.getBean("sysConfigService");
@@ -134,6 +150,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         	return;
         }
         if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
+        	
         	// 从缓存中取出之前保存的客户端实例
         	Account terminalInfo = terminalContext.get(uuid);
             if (terminalInfo == null) {
@@ -146,6 +163,11 @@ public class TerminalHandler extends TextWebSocketHandler {
             	terminalContext.put(uuid,terminalInfo);
             }
             final Account terminal =terminalInfo;
+            
+            terminalLog.setAuthType(terminal.getAuthType());
+            terminalLog.setHost(terminal.getAsset().getHost());
+            terminalLog.setPort(terminal.getPort());
+            terminalLog.setProtocol(terminal.getProtocol());
             try {
                 getClient(session, terminal);
                 int cols = toInt(session.getAttributes().get("cols").toString());
@@ -153,6 +175,10 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int width = toInt(session.getAttributes().get("width").toString());
                 int height = toInt(session.getAttributes().get("height").toString());
                 terminalClient.openTerminal(cols, rows, width, height);
+                terminalLog.setCmd("first login");
+                terminalLog.setStatus(1);
+                terminalLog.setTime(new Date());
+                terminalLogService.save(terminalLog);
             } catch (Exception e) {
             	logger.error(e.getMessage());
             	e.printStackTrace();
@@ -163,6 +189,9 @@ public class TerminalHandler extends TextWebSocketHandler {
                 } else {
                     session.sendMessage(new TextMessage("Sorry! Operation error, please try again. "));
                 }
+            	terminalLog.setStatus(0);
+                terminalLog.setTime(new Date());
+                terminalLogService.save(terminalLog);
                 terminalClient.disconnect();
                 session.close();
             }
@@ -177,11 +206,26 @@ public class TerminalHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         super.handleTextMessage(session, message);
         logger.info("handleTextMessage meesage info : {}",message.getPayload());
+        if(CommonUtils.isEmpty(terminalCmd)) {
+        	terminalCmd=new StringBuilder();
+        }
         try {
             getClient(session, null);
             if (this.terminalClient != null) {
                 if (!terminalClient.isClosed()) {
+                	if(message.getPayload().equals("\r")) {
+                		terminalLog.setCmd(terminalCmd.toString());
+                		terminalCmd.delete(0,terminalCmd.length());
+                		TerminalSession.removeUnloginMessage("telnetFlag");
+                	}else {
+                		terminalCmd.append(message.getPayload());
+                	}
                     terminalClient.write(message.getPayload());
+                    if(message.getPayload().equals("\r")) {
+                		terminalLog.setStatus(1);
+                        terminalLog.setTime(new Date());
+                        terminalLogService.save(terminalLog);
+                	}
                 }
             }else {
             	/**
@@ -255,12 +299,20 @@ public class TerminalHandler extends TextWebSocketHandler {
     }
 
     public void nezhaMessageHandle(WebSocketSession session, String message) throws Exception {
+    	terminalLog.setAuthType(1);
+    	terminalLog.setCmd(message);
+    	terminalLog.setProtocol("");
+    	terminalLog.setStatus(0);
     	logger.info("nezhaMessageHandle message info {}",message);
     	if(StringUtils.isEmpty(message)) {
     		message="";
     	}
     	// 处理用户ssh登录问题
     	if(sshLogin) {
+    		terminalLog.setProtocol("SSH");
+    		terminalLog.setCmd("SSH Login");
+    		terminalLog.setHost(TerminalSession.getUnloginMessage(uuid+"ip"));
+    		terminalLog.setPort(Integer.valueOf(TerminalSession.getUnloginMessage(uuid+"port")));
     		sshLogin=false;
     		//获取到用户ssh pwd
     		Asset asset=new Asset();
@@ -279,12 +331,17 @@ public class TerminalHandler extends TextWebSocketHandler {
 				int width = toInt(session.getAttributes().get("width").toString());
 				int height = toInt(session.getAttributes().get("height").toString());
 				terminalClient.openTerminal(cols, rows, width, height);
+				terminalLog.setStatus(1);
+				terminalLog.setTime(new Date());
 			} catch (Exception e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
+				terminalLog.setStatus(0);
+				terminalLog.setTime(new Date());
 				sshLogin=false;
 				TerminalSession.remove(session);
 				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
 			}
+    		terminalLogService.save(terminalLog);
     	}else if(message.startsWith("ssh")) {
     		sshLoginHandle(session,message);
     	}else if(message.startsWith("telnet")){
@@ -462,6 +519,11 @@ public class TerminalHandler extends TextWebSocketHandler {
 		terminal.setAsset(asset);
 		terminal.setUser(user);
 		//连接服务
+		terminalLog.setAuthType(1);
+		terminalLog.setCmd("Telnet Login");
+		terminalLog.setHost(ip);
+		terminalLog.setPort(Integer.valueOf(port));
+		terminalLog.setProtocol("TELNET");
 		try {
 			getClient(session, terminal);
 			int cols = toInt(session.getAttributes().get("cols").toString());
@@ -469,8 +531,14 @@ public class TerminalHandler extends TextWebSocketHandler {
 			int width = toInt(session.getAttributes().get("width").toString());
 			int height = toInt(session.getAttributes().get("height").toString());
 			terminalClient.openTelnetTerminal(cols, rows, width, height);
+			terminalLog.setStatus(1);
+			terminalLog.setTime(new Date());
+			terminalLogService.save(terminalLog);
 		} catch (Exception e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
+			terminalLog.setStatus(0);
+			terminalLog.setTime(new Date());
+			terminalLogService.save(terminalLog);
 			sshLogin=false;
 			TerminalSession.remove(session);
 			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));

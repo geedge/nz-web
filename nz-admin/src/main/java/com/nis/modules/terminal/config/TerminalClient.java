@@ -249,11 +249,18 @@ public class TerminalClient {
                             	sb.append("$: ");
                             	webSocketSession.sendMessage(new TextMessage(sb.toString()));	
                             }else {
+                            	// 防止用户登录日志记录用户输入的密码信息
+                            	if(message.matches("Password:.*")) {
+                            		TerminalSession.setUnloginMessage("telnetFlag", "1");
+                            	}
                             	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
                             		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
                             		write(terminal.getUser()+"\r");
                             	}else if(message.matches("Password:.*")&&StringUtils.isBlank(terminal.getUser())){
                             		webSocketSession.sendMessage(new TextMessage("\r\n"+message));
+                            	}else if(message.contains("timed out after 60 seconds")) {
+                            		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
+                            		TerminalSession.remove(webSocketSession);
                             	}else{
                             		webSocketSession.sendMessage(new TextMessage(message));
                             	}
