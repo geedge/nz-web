@@ -248,7 +248,7 @@ public enum RCode {
     TERMINAL_UUID_ISNULL(611001, "Terminal uuid can not be null"),
     TERMINAL_PATH_ISNULL(611002, "Terminal path can not be null"),
     TERMINAL_FILE_ISNULL(611003, "Terminal upload file can not be null"),
-
+    TERMINAL_ISNULL(611004, "Error,Terminal is null"),
 
     NOT_NULL_ERROR(990, "not null error"), //not null错误
     NOT_NUMBER_ERROR(991, "not number error"), //not number错误

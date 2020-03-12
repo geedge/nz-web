@@ -365,6 +365,7 @@ public class TerminalClient {
 		logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
         channelSftp.cd(pathExceptFileName);
         InputStream is = channelSftp.get(fileName);
+        res.setHeader("Content-Disposition","attachment; filename="+fileName);
         // 发送给客户端的数据
         OutputStream outputStream = res.getOutputStream();
         byte[] buff = new byte[1024];

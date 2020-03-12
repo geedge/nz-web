@@ -3,6 +3,7 @@ package com.nis.modules.terminal.controller;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
@@ -117,7 +118,9 @@ public class TerminalHandlerController {
 	
 	@RequestMapping(value = "download", method = RequestMethod.POST)
     @ResponseBody
-    public void download(HttpSession httpSession,HttpServletResponse res, String uuid, String path) throws Exception {
+    public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws Exception {
+		String uuid = param.get("uuid");
+		String path = param.get("path");
 		if(StringUtils.isBlank(uuid)) {
 			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
 		}

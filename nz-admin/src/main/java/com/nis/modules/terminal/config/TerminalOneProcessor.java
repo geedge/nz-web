@@ -23,7 +23,10 @@ package com.nis.modules.terminal.config;
 
 
 import com.alibaba.fastjson.JSON;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 
 import org.slf4j.Logger;
@@ -85,6 +88,11 @@ public class TerminalOneProcessor {
         TerminalClient terminalClient = TerminalSession.get(token);
         logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
         boolean success = true;
+        if(CommonUtils.isEmpty(terminalClient)) {
+        	logger.info("terminalClient upload fail terminal is null");
+        	success=false;
+        	return R.error(RCode.TERMINAL_ISNULL);
+        }
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
         }
@@ -109,6 +117,10 @@ public class TerminalOneProcessor {
     	InputStream downloadFile =null;
         TerminalClient terminalClient = TerminalSession.get(uuid);
         logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
+        if(CommonUtils.isEmpty(terminalClient)) {
+        	logger.info("terminalClient download fail terminal is null");
+        	return;
+        }
         try {
         	terminalClient.download(path,res);
 		} catch (Exception e) {
