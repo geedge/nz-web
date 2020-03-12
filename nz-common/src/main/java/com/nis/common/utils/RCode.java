@@ -50,11 +50,16 @@ public enum RCode {
     CHART_NOTEXSITS(116010, "Chart is not exsits"),
     CHART_ID_ISNULL(111011, "Chart ID can not be empty"),
     CHART_UNIT_ISNULL(111012, "Chart unit can not be empty"),
+    CHART_PREV_ISNULL(111013,"Chart prev can not be empty"),
+    CHART_NEXT_ISNULL(111014,"Chart next can not be empty"),
+    CHART_CANNOT_MODIFY(116015,"Chart can not modify"),
+    CHART_PREVNEXT_INCORRECT(113016,"Chart prev and next is incorrect"),
 
-    CHARTELEMENT_EXPRESSION_ISNULL(111012, "Chart element expression can not be empty"),
-    CHARTELEMENT_TYPE_ISNULL(111013, "Chart element type can not be empty"),
-    CHARTELEMENT_TYPE_INVALIDE(113014, "Chart element type is invalide"),
-    CHARTELEMENT_NOTEXSITS(116015, "chart element is not exists"),
+
+    CHARTELEMENT_EXPRESSION_ISNULL(111000, "Chart element expression can not be empty"),
+    CHARTELEMENT_TYPE_ISNULL(111001, "Chart element type can not be empty"),
+    CHARTELEMENT_TYPE_INVALIDE(113002, "Chart element type is invalide"),
+    CHARTELEMENT_NOTEXSITS(116003, "chart element is not exists"),
 
 
     /**

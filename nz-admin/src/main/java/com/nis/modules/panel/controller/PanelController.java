@@ -12,7 +12,9 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/panel")
@@ -110,7 +112,29 @@ public class PanelController {
     public R chartDelete(@PathVariable("id") Integer panelId,@RequestParam Integer ... ids){
         chartService.validatePanel(panelId);
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
-        chartService.delCharts(ids);
+        chartService.delCharts(panelId, ids);
+        return R.ok();
+    }
+
+
+    /**
+     * charts 调整位置接口
+     *
+     * @param panelId
+     * @param chart
+     * @return
+     */
+    @PutMapping(value = {"/{id}/charts/modify"})
+    public R modify(@PathVariable("id") Integer panelId, @RequestBody Chart chart) {
+        // 校验参数
+        chartService.validatePanel(panelId);
+        ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
+                .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
+                .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
+                .and(chart.getPrev()).notNull(RCode.CHART_PREV_ISNULL)
+                .and(chart.getNext()).notNull(RCode.CHART_NEXT_ISNULL);
+
+        chartService.modify(panelId, chart);
         return R.ok();
     }
 }

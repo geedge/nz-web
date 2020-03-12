@@ -16,7 +16,9 @@ public interface ChartService extends IService<Chart> {
 
     void validatePanel(Integer panelId);
 
-    void delCharts(Integer[] ids);
+    void delCharts(Integer panelId, Integer[] ids);
 
     void delChartsByPanelId(Integer... panelId);
+
+    void modify(Integer panelId, Chart chart);
 }

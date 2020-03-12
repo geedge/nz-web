@@ -16,13 +16,15 @@
 
         select * from chart where panel_id=#{panelId}
 
-        <if test="id != null ">
+        <!--<if test="id != null ">
             and id=#{id}
         </if>
 
         <if test="title != null and title != ''" >
             and title like concat('%',#{title},'%')
-        </if>
+        </if>-->
+
+        ORDER BY prev
 
     </select>
 
@@ -36,4 +38,12 @@
             #{panelId}
         </foreach>
     </select>
+
+
+    <delete id="deleteByIds">
+        delete from chart where panel_id=#{panelId} and id in
+        <foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+            #{id}
+        </foreach>
+    </delete>
 </mapper>

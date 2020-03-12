@@ -41,6 +41,17 @@ public class Chart {
      * 单位
      */
     private Integer unit;
+
+    /**
+     * 排序字段，前一个元素
+     */
+    private Integer prev;
+
+    /**
+     * 排序字段，后一个元素
+     */
+    private Integer next;
+
     @TableField(exist = false)
     private List<ChartElement> elements;
 
