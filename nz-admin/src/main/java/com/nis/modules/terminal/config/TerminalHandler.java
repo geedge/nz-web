@@ -38,6 +38,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.modules.asset.entity.Asset;
@@ -242,12 +243,14 @@ public class TerminalHandler extends TextWebSocketHandler {
     				}
             		//执行完当前指令后将指令删除
             		TerminalSession.removeUnloginMessage(uuid);
-            	/*}else if(message.getPayload().matches("\\b|\b")){
+            	}else if(message.asBytes()[0]==127){
             		// 处理用户退格键
+            		byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
             		boolean backspaceFlage = TerminalSession.backspaceMessage(uuid);
             		if(backspaceFlage) {
-            			session.sendMessage(new TextMessage(message.getPayload()));
-            		}*/
+            			session.sendMessage(new TextMessage(fromHexAscii));
+            		}
+            		return;
             	}else{
             		logger.info("terminal unstart  uuid info {}",uuid);
             		TerminalSession.setUnloginMessage(uuid,message.getPayload());
