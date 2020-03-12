@@ -35,6 +35,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public List<Chart> queryCharts(Integer panelId, Integer id, String title) {
 
         List<Chart> charts = this.baseMapper.queryCharts(panelId);
+        if(CollectionUtils.isEmpty(charts)){
+            return charts;
+        }
 
         Map<Integer, Chart> idAndChartMap = new HashMap<>();
         for (Chart chart1 : charts) {
