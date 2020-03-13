@@ -362,7 +362,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 
     				"\n ssh - connects to a host using the SSH protocol. \r\n" + 
     				"SYNOPSYS \r\n" + 
-    				"\n ssh [user:pass@]host[ port] \r\n" + 
+    				"\n ssh user@host[ port] \r\n" + 
     				"OPTIONS \r\n" + 
     				"\n user Indicates the user's login name.\r\n" + 
     				"\n pass If pass is definded, use password authentication.\r\n" + 
@@ -398,6 +398,10 @@ public class TerminalHandler extends TextWebSocketHandler {
     				"$: "));
     	}else if(message.equals("quit")) {
     		session.close();
+    	}else if(message.equals("clear")){
+    		byte[] fromHexAscii = ByteUtils.fromHexAscii("1b5b333b4a1b5b481b5b324a");
+    		session.sendMessage(new TextMessage(fromHexAscii));
+    		session.sendMessage(new TextMessage("\r\n$: "));
     	}else {
     		// 其它未知指令提示信息
     		session.sendMessage(new TextMessage("\r\n$: command not found...\r\n" + 
