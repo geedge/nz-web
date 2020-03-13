@@ -378,7 +378,7 @@ public class TerminalClient {
         byte[] buff = new byte[1024];
         int i = is.read(buff);
         while (i != -1) {
-            outputStream.write(buff, 0, buff.length);
+            outputStream.write(buff, 0, i);
             outputStream.flush();
             i = is.read(buff);
         }

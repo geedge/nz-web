@@ -108,7 +108,7 @@ public class TerminalHandlerController {
                 }
             }
             logger.debug("上传目录：["+path+"]");
-            tempFile.delete();
+ //           tempFile.delete();
             return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
         } catch (Exception e) {
             e.printStackTrace();
