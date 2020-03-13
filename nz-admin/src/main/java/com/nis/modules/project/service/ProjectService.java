@@ -14,4 +14,6 @@ public interface ProjectService extends IService<Project> {
 	void removeHandle(List ids);
 	
 	void validateBulitinRule(List<Integer> ids);
+
+    boolean validateProjectName(Integer id, String name);
 }

@@ -38,22 +38,25 @@ public enum RCode {
      */
     PANEL_NAME_ISNULL(111000, "Panel name can not be empty"),
     PANEL_ID_ISNULL(111001, "Panel ID can not be empty"),
+    PANEL_NAME_DUPLICATE(112002, "Panel name is duplicate"),
 
-    CHART_TITLE_ISNULL(111002, "Chart title can not be empty"),
-    CHART_SPAN_ISNULL(111003, "Chart span can not be empty"),
-    CHART_HEIGHT_ISNULL(111004, "Chart height can not be empty"),
-    CHART_TYPE_ISNULL(111005, "Chart type can not be empty"),
-    CHART_CREATEAT_ISNULL(111006, "Chart create time can not be empty"),
-    CHART_ELEMENT_ISNULL(111007, "Chart element can not be empty"),
-    CHART_TYPE_INVALIDE(113008, "Chart type is invalide"),
-    CHART_PANEL_ISNULL(116009, "Panel is not exsits"),
-    CHART_NOTEXSITS(116010, "Chart is not exsits"),
-    CHART_ID_ISNULL(111011, "Chart ID can not be empty"),
-    CHART_UNIT_ISNULL(111012, "Chart unit can not be empty"),
-    CHART_PREV_ISNULL(111013,"Chart prev can not be empty"),
-    CHART_NEXT_ISNULL(111014,"Chart next can not be empty"),
-    CHART_CANNOT_MODIFY(116015,"Chart can not modify"),
-    CHART_PREVNEXT_INCORRECT(113016,"Chart prev and next is incorrect"),
+
+    CHART_TITLE_ISNULL(111000, "Chart title can not be empty"),
+    CHART_SPAN_ISNULL(111001, "Chart span can not be empty"),
+    CHART_HEIGHT_ISNULL(111002, "Chart height can not be empty"),
+    CHART_TYPE_ISNULL(111003, "Chart type can not be empty"),
+    CHART_CREATEAT_ISNULL(111004, "Chart create time can not be empty"),
+    CHART_ELEMENT_ISNULL(111005, "Chart element can not be empty"),
+    CHART_TYPE_INVALIDE(113006, "Chart type is invalide"),
+    CHART_PANEL_ISNULL(116007, "Panel is not exsits"),
+    CHART_NOTEXSITS(116008, "Chart is not exsits"),
+    CHART_ID_ISNULL(111009, "Chart ID can not be empty"),
+    CHART_UNIT_ISNULL(111010, "Chart unit can not be empty"),
+    CHART_PREV_ISNULL(111011,"Chart prev can not be empty"),
+    CHART_NEXT_ISNULL(111012,"Chart next can not be empty"),
+    CHART_CANNOT_MODIFY(116013,"Chart can not modify"),
+    CHART_PREVNEXT_INCORRECT(113014,"Chart prev and next is incorrect"),
+    CHART_TITLE_DUPLICATE(112015,"Chart title is duplicate"),            // 同一个panel 下 chart title重复
 
 
     CHARTELEMENT_EXPRESSION_ISNULL(111000, "Chart element expression can not be empty"),
@@ -70,6 +73,7 @@ public enum RCode {
     PROJECT_BUILDIN_CAN_NOT_REMOVE(217002, "This project is built-in and cannot be deleted"),
     PROJECT_NAME_TOO_LONG(213003, "Project name too long"),
     PROJECT_REMARK_TOO_LONG(213004, "Project remark too long"),
+    PROJECT_NAME_DUPLICATE(212005, "Project name is duplicate"),
 
 
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
@@ -82,6 +86,7 @@ public enum RCode {
     MODULE_NAME_TOO_LONG(223007, "Module name too long"),
     MODULE_REMARK_TOO_LONG(223008, "Module remark too long"),
     SYS_CONFIG_MODULEKEY_ISNULL(221009, "System config init module node exporter can not be null"),// 内置module不能为空
+    MODULE_NAME_DUPLICATE(222010, "Module name is duplicate"),
 
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),

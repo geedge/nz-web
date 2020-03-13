@@ -202,6 +202,19 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         ValidateUtils.is(chart.getUnit()).notNull(RCode.CHART_UNIT_ISNULL);
 
+        // 同一个panel 下 chart title 保证唯一
+        List<Chart> list = this.list(new QueryWrapper<Chart>().eq("title", chart.getTitle()).eq("panel_id", panelId));
+        boolean flag = false;
+
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId().equals(chart.getId()))) {
+            flag = true;
+        }
+
+        if(!flag){
+            throw new NZException(RCode.CHART_TITLE_DUPLICATE);
+        }
+
         sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, chart.getType(), RCode.CHART_TYPE_INVALIDE);
 
         ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);

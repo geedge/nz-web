@@ -1,59 +1,19 @@
 package com.nis.modules.endpoint.service.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Cabinet;
-import com.nis.modules.asset.entity.Idc;
-import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.impl.AssetServiceImpl;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
-import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
@@ -61,8 +21,25 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysDictEntity;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service("endpointService")
 public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> implements EndpointService {
@@ -181,12 +158,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 		}
 		
-		Map moduleMap = new HashMap();
+		/*Map moduleMap = new HashMap();
 		if(modules!=null&&modules.size()>0) {
 			for(Module module : modules) {
 				moduleMap.put(module.getName(), module);
 			}
-		}
+		}*/
 		
 		Map assetMap = new HashMap();
 		if(assets!=null&&assets.size()>0) {
@@ -245,23 +222,32 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 
                 // 获取实际值为projectName
                 project = ExcelUtils.getCellValue(row.getCell(0));
-                Project projectObject = (Project) projectMap.get(project);
+                Project projectObject = null;
+                // Project projectObject = (Project) projectMap.get(project);
                 if (StringUtils.isEmpty(project)) {
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
                     failDetail.put("errorMsg", RCode.PROJECT_NAME_ISNULL);
                     failDetails.add(failDetail);
+                } else {
+                    projectObject = (Project) projectMap.get(project);
                 }
                 // 获取实际值为moduleName
                 module = ExcelUtils.getCellValue(row.getCell(1));
-                Module moduleObject = (Module) moduleMap.get(module);
+                // Module moduleObject = (Module) moduleMap.get(module);
+                Module moduleObject = null;
                 if (StringUtils.isEmpty(module)) {
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
                     failDetail.put("errorMsg", RCode.MODULE_NAME_ISNULL);
                     failDetails.add(failDetail);
+                } else {
+                    // 当前库中已有 project 不需要添加project 校验 module 是否存在于当前 project下
+                    if (projectObject != null) {
+                        moduleObject = this.checkModule(module, projectObject, modules);
+                    }
                 }
                 // 资产sn信息
                 sn = ExcelUtils.getCellValue(row.getCell(2));
@@ -379,11 +365,13 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
                 		// 手动开启事务
                         TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 		try {
-                			this.importTransactionHandle(projectObject, moduleObject, endpoint);
+                			this.importTransactionHandle(projectFlag,moduleFlag,projectObject, moduleObject, endpoint);
                 			if(projectFlag) {
                 				projectMap.put(project, projectObject);
-                			}else {
-                				moduleMap.put(module,moduleObject);
+                			}
+                			if(moduleFlag){
+                				// moduleMap.put(module,moduleObject);
+                                modules.add(moduleObject);
                 			}
                 			// 手动提交事务
                             dataSourceTransactionManager.commit(transactionStatus);
@@ -429,9 +417,27 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
                 e.printStackTrace();
             }
         }
-        
+
         return info;
-	}
+    }
+
+    private Module checkModule(String moduleName, Project project, List<Module> modulesList) {
+        Module module1 = new Module();
+        boolean flag = false;
+        for (Module entity : modulesList) {
+            // 如果该 project 下有该 module
+            if (moduleName.equals(entity.getName()) && project.getId().equals(entity.getProjectId())) {
+                module1 = entity;
+                flag = true;
+                break;
+            }
+        }
+        // 找不到 module
+        if (!flag) {
+            return null;
+        }
+        return module1;
+    }
 
 	private List<Map> validateExcelHeader(Sheet sheet, int firstRowNum) {
         Row row = sheet.getRow(firstRowNum);
@@ -458,10 +464,15 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
     }
 	
 	
-	public void importTransactionHandle(Project project,Module module,Endpoint endpoint) {
-		projectService.save(project);
-		module.setProjectId(project.getId());
-		moduleService.save(module);
+	public void importTransactionHandle(boolean projectFlag, boolean moduleFlag, Project project, Module module, Endpoint endpoint) {
+        if(projectFlag){
+            projectService.save(project);
+        }
+        if(moduleFlag){
+            module.setProjectId(project.getId());
+            moduleService.save(module);
+        }
+        endpoint.setModuleId(module.getId());
 		this.save(endpoint);
 	}
 	

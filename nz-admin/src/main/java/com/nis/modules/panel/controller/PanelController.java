@@ -1,5 +1,6 @@
 package com.nis.modules.panel.controller;
 
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -37,6 +38,11 @@ public class PanelController {
 
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
 
+        // 校验name是否重复
+        if(!panelService.validatePanelName(panel.getId(), panel.getName())){
+            throw new NZException(RCode.PANEL_NAME_DUPLICATE);
+        }
+
         Long userId = ShiroUtils.getUserId();
 
         panel.setCreateBy(userId.intValue());
@@ -54,6 +60,11 @@ public class PanelController {
 
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
         ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
+
+        // 校验name是否重复
+        if(!panelService.validatePanelName(panel.getId(), panel.getName())){
+            throw new NZException(RCode.PANEL_NAME_DUPLICATE);
+        }
 
         Long userId = ShiroUtils.getUserId();
 

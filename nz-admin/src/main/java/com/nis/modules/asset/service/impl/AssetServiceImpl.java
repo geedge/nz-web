@@ -389,7 +389,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID) {
-        logger.info("importAssets param endpointExcelFileName is {}", assetsExcelFile.getOriginalFilename());
+        logger.info("importAssets param assetsExcelFileName is {}", assetsExcelFile.getOriginalFilename());
         logger.info("importAssets param uuid is {}", seqUUID);
         String originalFilename = assetsExcelFile.getOriginalFilename();
 

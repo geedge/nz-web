@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
@@ -46,5 +47,18 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         this.removeByIds(Arrays.asList(ids));
 
         chartService.delChartsByPanelId(ids);
+    }
+
+    @Override
+    public boolean validatePanelName(Integer id, String name) {
+        List<Panel> list = this.list(new QueryWrapper<Panel>().eq("name", name));
+        boolean flag = false;
+
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
+            flag = true;
+        }
+        return flag;
     }
 }

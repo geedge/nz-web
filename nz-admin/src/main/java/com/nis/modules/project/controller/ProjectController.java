@@ -3,6 +3,7 @@ package com.nis.modules.project.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.exception.NZException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +42,12 @@ public class ProjectController extends AbstractController {
 		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
 		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
+
+		// 名称唯一
+		if(!projectService.validateProjectName(project.getId(), project.getName())){
+			throw new NZException(RCode.PROJECT_NAME_DUPLICATE);
+		}
+
 		projectService.save(project);
 		return R.ok();
 	}
@@ -53,6 +60,12 @@ public class ProjectController extends AbstractController {
 		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
 		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
+
+		// 名称唯一
+		if(!projectService.validateProjectName(project.getId(), project.getName())){
+			throw new NZException(RCode.PROJECT_NAME_DUPLICATE);
+		}
+
 		projectService.updateById(project);
 		return R.ok();
 	}

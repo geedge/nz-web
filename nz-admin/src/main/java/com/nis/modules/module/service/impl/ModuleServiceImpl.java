@@ -1,18 +1,12 @@
 package com.nis.modules.module.service.impl;
 
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant.AlertType;
 import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant.AlertType;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -22,10 +16,16 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
-	
+
 	@Autowired
 	private ModuleDao moduleDao;
 	@Autowired
@@ -34,7 +34,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	private AlertMessageService alertMessageService;
 	@Autowired
 	private EndpointService endpointService;
-	
+
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		IPage<Module> page = new Query<Module>().getPage(params);
@@ -47,12 +47,24 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	public void validateParam(Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL);
 		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
+
+        // 名称不能重复
+        List<Module> list = this.list(new QueryWrapper<Module>().eq("name", moduleEntity.getName()).eq("project_id", moduleEntity.getProjectId()));
+        boolean flag = false;
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId().equals(moduleEntity.getId()))) {
+            flag = true;
+        }
+        if(!flag){
+            throw new NZException(RCode.MODULE_NAME_DUPLICATE);
+        }
 		//ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
 		//ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
 		ValidateUtils.is(moduleEntity.getName()).maxLength(64,RCode.MODULE_NAME_TOO_LONG);
 		ValidateUtils.is(moduleEntity.getRemark()).maxLength(1024,RCode.MODULE_REMARK_TOO_LONG);
 		if (moduleEntity.getPort() != null) {
-            boolean flag = CommonUtils.checkPort(moduleEntity.getPort().toString());
+		    flag = CommonUtils.checkPort(moduleEntity.getPort().toString());
             if(!flag) {
                 throw new NZException(RCode.MODULE_PORT_ERROR);
             }
@@ -83,7 +95,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 				throw new NZException(RCode.MODULE_BUILDIN_CAN_NOT_REMOVE);
 			}
 		}
-		
+
 	}
 
 }

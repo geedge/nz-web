@@ -1,13 +1,5 @@
 package com.nis.modules.project.service.impl;
 
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -22,6 +14,13 @@ import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 @Service("projectService")
 public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> implements ProjectService {
@@ -73,6 +72,19 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 			}
 		}
 		
+	}
+
+	@Override
+	public boolean validateProjectName(Integer id, String name) {
+		List<Project> list = this.list(new QueryWrapper<Project>().eq("name", name));
+		boolean flag = false;
+
+		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+		if ((list == null || list.size() == 0) ||
+				(list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
+			flag = true;
+		}
+		return flag;
 	}
 
 }
