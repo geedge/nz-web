@@ -93,6 +93,8 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     private boolean sshLogin=false;
     
+    private boolean tabFlag=false;
+    
     private StringBuilder terminalCmd;
     
     private TerminalLogService terminalLogService;
@@ -133,7 +135,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         if(terminalLog==null) {
         	terminalLog=new TerminalLog();
         }
-        terminalLog.setUser(loginUserName);
+        
         terminalLog.setUserId(userId);
         
         //判断当前连接的数量 防止用户连接过多窗口
@@ -176,7 +178,8 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int width = toInt(session.getAttributes().get("width").toString());
                 int height = toInt(session.getAttributes().get("height").toString());
                 terminalClient.openTerminal(cols, rows, width, height);
-                terminalLog.setCmd("first login");
+                terminalLog.setCmd("First login");
+                terminalLog.setUser(terminal.getUser());
                 terminalLog.setStatus(1);
                 terminalLog.setTime(new Date());
                 terminalLogService.save(terminalLog);
@@ -186,15 +189,18 @@ public class TerminalHandler extends TextWebSocketHandler {
             	if (e.getMessage().toLowerCase().contains("userauth fail")) {
             		session.sendMessage(new TextMessage(" Login fail "));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
-                    session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. "));
+                    session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. \r\n"));
                 } else {
-                    session.sendMessage(new TextMessage("Sorry! Operation error, please try again. "));
+                    session.sendMessage(new TextMessage("Sorry! Operation error, please try again. \r\n"));
                 }
             	terminalLog.setStatus(0);
                 terminalLog.setTime(new Date());
+                terminalLog.setUser(StringUtils.isNotBlank(terminal.getUser())?terminal.getUser():"");
                 terminalLogService.save(terminalLog);
                 terminalClient.disconnect();
-                session.close();
+                TerminalSession.remove(session);
+                //           session.close();
+                unloginUserHandle(session);
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
@@ -218,11 +224,18 @@ public class TerminalHandler extends TextWebSocketHandler {
                 		terminalLog.setCmd(terminalCmd.toString());
                 		terminalCmd.delete(0,terminalCmd.length());
                 		TerminalSession.removeUnloginMessage("telnetFlag");
+                	}else if(message.asBytes()[0]==9){
+                		tabFlag=true;
+                		terminalCmd.append(" \t");
+                	}else if(tabFlag){
+                		terminalLog.setCmd(terminalCmd.toString());
+                		terminalCmd.delete(0,terminalCmd.length());
                 	}else {
                 		terminalCmd.append(message.getPayload());
                 	}
                     terminalClient.write(message.getPayload());
-                    if(message.getPayload().equals("\r")) {
+                    if(message.getPayload().equals("\r")||tabFlag) {
+                    	tabFlag=false;
                 		terminalLog.setStatus(1);
                         terminalLog.setTime(new Date());
                         terminalLogService.save(terminalLog);
@@ -232,7 +245,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             	/**
             	 * 如果用户未登录 使用uuid为key保存用户发送的指令信息 等到收到回车指令时才执行对应的操作
             	 */
-            	if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
+            	if(sshLogin&&message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
+            		nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
+            	}else if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
             		logger.info("user send terminal to start");
 //            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
             		// 处理用户空输入 直接回车操作
@@ -254,13 +269,22 @@ public class TerminalHandler extends TextWebSocketHandler {
             	}else{
             		logger.info("terminal unstart  uuid info {}",uuid);
             		TerminalSession.setUnloginMessage(uuid,message.getPayload());
-            		session.sendMessage(new TextMessage(message.getPayload()));
+            		// 不返回用户输入的ssh密码信息
+            		if(!sshLogin) {
+            			session.sendMessage(new TextMessage(message.getPayload()));
+            		}
             	}
             }
         } catch (Exception e) {
-            session.sendMessage(new TextMessage("Sorry! Nezha Terminal was closed, please try again. "));
+        	terminalLog.setStatus(0);
+        	terminalLog.setTime(new Date());
+        	terminalLogService.save(terminalLog);
+        	session.sendMessage(new TextMessage(e.getMessage()+"\r\n"));
+            session.sendMessage(new TextMessage("Sorry! Nezha Terminal was closed, please try again. \r\n"));
             terminalClient.disconnect();
-            session.close();
+            TerminalSession.remove(session);
+ //           session.close();
+            unloginUserHandle(session);
         }
     }
 
@@ -326,6 +350,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     		terminal.setAsset(asset);
     		terminal.setAuthType(SshType.ACCOUNT.getType());
     		terminal.setPwd(Base64.getEncoder().encodeToString(message.getBytes()));
+    		terminalLog.setUser(TerminalSession.getUnloginMessage(uuid+"user"));
     		//连接服务
     		try {
 				getClient(session, terminal);
@@ -355,8 +380,8 @@ public class TerminalHandler extends TextWebSocketHandler {
     				"telnet: Connects to a host using the TELNET protocol.\r\n" + 
     				"set: Sets options.\r\n" + 
     				"clear: Clears the screen/address/command history.\r\n" + 
-    				"help: Displays this help. '?' does the same.\r\n" + 
-    				"quit: Quits Local Shell. 'exit' does the same.\r\n" +
+    				"help: Displays this help. 'help' does the same.\r\n" + 
+    				"quit: Quits Local Shell. 'quit' does the same.\r\n" +
     				"$: "));
     	}else if(message.matches("help\\s+ssh")) {
     		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 

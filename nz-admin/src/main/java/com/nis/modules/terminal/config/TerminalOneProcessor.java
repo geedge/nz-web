@@ -93,6 +93,11 @@ public class TerminalOneProcessor {
         	success=false;
         	return R.error(RCode.TERMINAL_ISNULL);
         }
+        if(!terminalClient.isTransfer()) {
+        	logger.info("terminalClient upload fail telnet can not transfer");
+        	success=false;
+        	return R.error(RCode.TERMINAL_TELNET_TRANSFER);
+        }
         if (!file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
         }
@@ -119,6 +124,10 @@ public class TerminalOneProcessor {
         logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());
         if(CommonUtils.isEmpty(terminalClient)) {
         	logger.info("terminalClient download fail terminal is null");
+        	return;
+        }
+        if(!terminalClient.isTransfer()) {
+        	logger.info("terminalClient upload fail telnet can not transfer");
         	return;
         }
         try {

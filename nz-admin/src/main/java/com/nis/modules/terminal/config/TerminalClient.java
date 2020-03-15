@@ -73,7 +73,8 @@ public class TerminalClient {
     public static final int CHANNEL_TIMEOUT = 60000;
 
     private boolean closed = false;
-
+    // 是否可进行上传下载操作
+    private boolean transfer =true;
     public TerminalClient(WebSocketSession webSocketSession, Account terminal, String clientId) {
         this.webSocketSession = webSocketSession;
         this.terminal = terminal;
@@ -92,7 +93,7 @@ public class TerminalClient {
         this.jSch = new JSch();
     }
 
-    public void openTerminal(final int cols, int rows, int width, int height) throws Exception {
+    public void openTerminal(final int cols, int rows, int width, int height) throws Exception {	
         this.session = jSch.getSession(terminal.getUser(), terminal.getAsset().getHost(), terminal.getPort());
         Constants.SshType sshType = Constants.SshType.getByType(terminal.getAuthType());
         switch (sshType) {
@@ -205,6 +206,8 @@ public class TerminalClient {
     public void openTelnetTerminal(final int cols, int rows, int width, int height) throws Exception {
     	TelnetClient telnet = new TelnetClient("VT100");// VT100 VT52 VT220 VTNT ANSI  
         telnet.connect(terminal.getAsset().getHost(), terminal.getPort());  
+        // telnet 不允许上传下载操作
+        this.transfer=false;
         this.inputStream=telnet.getInputStream();
         this.outputStream=telnet.getOutputStream();
         this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
@@ -437,4 +440,12 @@ public class TerminalClient {
         return clientId;
     }
 
+	public boolean isTransfer() {
+		return transfer;
+	}
+
+	public void setTransfer(boolean transfer) {
+		this.transfer = transfer;
+	}
+    
 }
