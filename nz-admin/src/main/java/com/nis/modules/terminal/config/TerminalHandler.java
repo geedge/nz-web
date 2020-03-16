@@ -258,7 +258,11 @@ public class TerminalHandler extends TextWebSocketHandler {
     				}
             		//执行完当前指令后将指令删除
             		TerminalSession.removeUnloginMessage(uuid);
-            	}else if(message.asBytes()[0]==127){
+            	}else if(message.asBytes()[0]==127&&sshLogin){
+            		// ssh登录时处理用户退格键
+            		TerminalSession.backspaceMessage(uuid);
+            		return;
+            	}else if(message.asBytes()[0]==127) {
             		// 处理用户退格键
             		byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
             		boolean backspaceFlage = TerminalSession.backspaceMessage(uuid);
@@ -426,7 +430,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     	}else if(message.equals("clear")){
     		byte[] fromHexAscii = ByteUtils.fromHexAscii("1b5b333b4a1b5b481b5b324a");
     		session.sendMessage(new TextMessage(fromHexAscii));
-    		session.sendMessage(new TextMessage("\r\n$: "));
+    		session.sendMessage(new TextMessage("$: "));
     	}else {
     		// 其它未知指令提示信息
     		session.sendMessage(new TextMessage("\r\n$: command not found...\r\n" + 
