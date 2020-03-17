@@ -4,29 +4,23 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.common.utils.StringUtils;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.AssetPing;
-import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.entity.Model;
-import com.nis.modules.asset.service.AssetPingService;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.ModelService;
-import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.dao.OverviewDao;
+import com.nis.modules.overview.entity.AssetStat;
+import com.nis.modules.overview.entity.DcStat;
+import com.nis.modules.overview.entity.EndpointStat;
+import com.nis.modules.overview.entity.ProjectStat;
 import com.nis.modules.overview.service.OverviewService;
-import com.nis.modules.project.entity.Project;
-import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,29 +37,29 @@ public class OverviewServiceImpl implements OverviewService {
     @Autowired
     private OverviewDao overviewDao;
 
-    @Autowired
-    private AssetService assetService;
+    /*@Autowired
+    private AssetService assetService;*/
 
     @Autowired
     private ModelService modelService;
 
-    @Autowired
+    /*@Autowired
     private SysUserService sysUserService;
 
     @Autowired
     private IdcService idcService;
 
     @Autowired
-    private AssetPingService assetPingService;
+    private AssetPingService assetPingService;*/
 
     @Autowired
     private EndpointService endpointService;
 
-    @Autowired
+    /*@Autowired
     private ProjectService projectService;
 
     @Autowired
-    private ModuleService moduleService;
+    private ModuleService moduleService;*/
 
     @Autowired
     private AlertRuleService alertRuleService;
@@ -76,11 +70,17 @@ public class OverviewServiceImpl implements OverviewService {
     @Autowired
     private PromserverProxyServiceImpl promserverProxyService;
 
+    @Autowired
+    private SysDictService sysDictService;
+
+    @Autowired
+    private CabinetService cabinetService;
+
     @Value("${nezha.promApis.query}")
     private String query;
 
 
-    @Override
+    /*@Override
     public Map byTypeStat() {
         Map resultMap = new HashMap();
 
@@ -185,56 +185,9 @@ public class OverviewServiceImpl implements OverviewService {
         resultMap.put("prometheusServer", prometheusServer);
         resultMap.put("endpoint", endpoint);
         return resultMap;
-    }
+    }*/
 
-    // 请求prometheus 然后返回状态可用的endpoint ids
-    public Set<Integer> getEndpointStatus() {
-        Set<Integer> endPointIds = new HashSet<>();
-
-        // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
-        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
-        String url;
-        Map result;
-        for (Promserver promserver : promservers) {
-            // 2. 查询 up
-            url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
-            url += query + "?query=up";// url
-
-            result = promserverProxyService.requestPromAPI(url);
-            // 查询成功
-            if (result != null && "success".equals(result.get("status"))) {
-                Map data = (Map) result.get("data");
-                JSONArray array = (JSONArray) data.get("result");
-
-                JSONObject obj = null;
-                JSONArray timeAndState = null;
-                Map metricLabels;
-                String job = null;
-                String[] split = null;
-
-                for (int i = 0; i < array.size(); i++) {
-                    obj = (JSONObject) array.get(i);
-                    timeAndState = (JSONArray) obj.get("value");
-
-                    if ("1".equals(timeAndState.get(1).toString())) {
-                        metricLabels = (Map) obj.get("metric");
-                        job = metricLabels.get("job").toString();
-
-                        if (job.contains("_")) {
-                            // job 标签的格式为 ed_endpointId
-                            split = job.split("_");
-                            endPointIds.add(Integer.parseInt(split[1]));
-                        }
-                    }
-                }
-            } else {// 查询失败
-                logger.error("query endpoint status failed ,prometheus server is {}", promserver);
-            }
-        }
-        return endPointIds;
-    }
-
-    @Override
+    /*@Override
     public Map alertStat() {
         Map resultMap = new HashMap();
 
@@ -342,15 +295,9 @@ public class OverviewServiceImpl implements OverviewService {
                 map.put("name", assetIdAndHost.get(linkId));
             }
         }
-    }
+    }*/
 
-    @Override
-    public List<Map> alertRuleTopN(Integer topN) {
-        List<Map> list = overviewDao.alertRuleTopN(topN);
-        return list;
-    }
-
-    @Override
+   /* @Override
     public List<Map> alertUnprocessed(Integer pageNo, Integer pageSize) {
         if (pageNo == null) {
             pageNo = 1;
@@ -623,5 +570,250 @@ public class OverviewServiceImpl implements OverviewService {
         map.put("totalUser", list.size());
         map.put("loginUser", Constant.loginUsers.size());
         return map;
+    }*/
+
+    @Override
+    public List<Map> alertRuleTopN(Integer topN) {
+        List<Map> list = overviewDao.alertRuleTopN(topN);
+        return list;
+    }
+
+    @Override
+    public Map getAssetStat() {
+        // 统计总数
+        AssetStat assetTotalInfo = overviewDao.getAssetTotalInfo();
+
+        // 根据型号维度统计信息
+        List<AssetStat> assetStatInfoByModel = overviewDao.getAssetStatInfoByModel();
+        Map<String, AssetStat> modelNameAndStat = new HashMap<>();
+        for (AssetStat baseStat : assetStatInfoByModel) {
+            modelNameAndStat.put(baseStat.getName(), baseStat);
+        }
+
+
+        // 根据dc维度统计信息
+        List<AssetStat> assetStatInfoByIdc = overviewDao.getAssetStatInfoByIdc();
+
+        // 处理type为维度统计asset信息
+        List<AssetStat> assetStatInfoByType = new ArrayList<>();
+
+        Map<String, Object> map = new HashMap<>(2);
+        map.put("type", Constant.DICT_ASSET_MODEL_TYPE); // 字典表中资产类型 type 值 assetType
+        List<SysDictEntity> assetTypes = sysDictService.queryList(map);
+
+        List<Model> models = modelService.list();
+
+        AssetStat baseStat = null;
+        for (SysDictEntity entity : assetTypes) {
+            baseStat = new AssetStat();
+            baseStat.setName(entity.getValue());
+
+            for (Model model : models) {
+                if (entity.getCode().equals(model.getTypeCode())) {
+                    AssetStat baseStat1 = modelNameAndStat.get(model.getName());
+                    if (baseStat1 != null) {
+                        baseStat.setTotal((baseStat.getTotal()) + baseStat1.getTotal());
+                        baseStat.setInStock(baseStat.getInStock() + baseStat1.getInStock());
+                        baseStat.setOutStock(baseStat.getOutStock() + baseStat1.getOutStock());
+                        baseStat.setPingUp(baseStat.getPingUp() + baseStat1.getPingUp());
+                        baseStat.setPingDown(baseStat.getPingDown() + baseStat1.getPingDown());
+                        baseStat.setAlertTotal(baseStat.getAlertTotal() + baseStat1.getAlertTotal());
+                        baseStat.setAlertHigh(baseStat.getAlertHigh() + baseStat1.getAlertHigh());
+                        baseStat.setAlertMedium(baseStat.getAlertMedium() + baseStat1.getAlertMedium());
+                        baseStat.setAlertLow(baseStat.getAlertLow() + baseStat1.getAlertLow());
+                    }
+                }
+            }
+            assetStatInfoByType.add(baseStat);
+        }
+
+        // 返回结果
+        Map<String, Object> resultData = new HashMap<>();
+        resultData.put("totalStat", assetTotalInfo);
+        resultData.put("typeStat", assetStatInfoByType);
+        resultData.put("modelStat", assetStatInfoByModel);
+        resultData.put("dcStat", assetStatInfoByIdc);
+        return resultData;
+    }
+
+    @Override
+    public Map getProjectStat() {
+        Map resultData = new HashMap();
+
+        List<ProjectStat> projectStatInfo = overviewDao.getProjectStatInfo();
+        resultData.put("total", projectStatInfo.size());
+        resultData.put("projectStat", projectStatInfo);
+
+        return resultData;
+    }
+
+    @Override
+    public Map getEndpointStat() {
+        // 返回信息包含 name promUp promDown promTotal endPointTotal
+        List<EndpointStat> endpointInfoByDc = overviewDao.getEndpointInfoByDc();
+
+        // 补充 endpointTotal endpointUp endpointDown 信息
+        Map<String, List<Integer>> idcNameWithEndpointIdsMap = new HashMap<>();
+
+        List<Map<String, String>> idcNameWithEndpointIds = overviewDao.getIdcNameWithEndpointIds();
+        String idcName, endpointIds;
+        List<Integer> endpoindIdList;
+        for (Map<String, String> entity : idcNameWithEndpointIds) {
+            endpoindIdList = new ArrayList<>();
+            idcName = entity.get("name");
+            endpointIds = entity.get("endpointIds");
+            if (StringUtils.isNotEmpty(endpointIds)) {
+                for (String str : endpointIds.split(",")) {
+                    endpoindIdList.add(Integer.parseInt(str));
+                }
+            }
+            // 添加至map中
+            idcNameWithEndpointIdsMap.put(idcName, endpoindIdList);
+        }
+
+        // 服务健康的endpoint id列表
+        Set<Integer> endpointUpIds = this.getEndpointStatus();
+
+        for (EndpointStat stat : endpointInfoByDc) {
+            List<Integer> list = idcNameWithEndpointIdsMap.get(stat.getName());
+            int endpointUp = 0;
+            int total = list.size();
+            if (CollectionUtils.isNotEmpty(list)) {
+                for (Integer id : list) {
+                    if (endpointUpIds.contains(id)) {
+                        endpointUp++;
+                    }
+                }
+            }
+            stat.setEndpointTotal(total);
+            stat.setEndpointUp(endpointUp);
+            stat.setEndpointDown(total - endpointUp);
+        }
+
+        int count = endpointService.count();
+        Map resultData = new HashMap();
+        resultData.put("total", count);
+        resultData.put("up", endpointUpIds.size());
+        resultData.put("down", count - endpointUpIds.size());
+        resultData.put("dcStat", endpointInfoByDc);
+
+        return resultData;
+    }
+
+    @Override
+    public Map getDatacenterStat() {
+        List<DcStat> dcStatList = new ArrayList<>();
+        // 根据dc维度统计信息
+        List<AssetStat> assetStatInfoByIdc = overviewDao.getAssetStatInfoByIdc();
+
+        // endpoint stat 统计信息
+        Map endpointStatInfoMap = this.getEndpointStat();
+        Map<String, EndpointStat> dcNameWithEndpointStatMap = new HashMap<>();
+        List<EndpointStat> endpointInfoByDc = (List<EndpointStat>) endpointStatInfoMap.get("dcStat");
+
+        for (EndpointStat stat : endpointInfoByDc) {
+            dcNameWithEndpointStatMap.put(stat.getName(), stat);
+        }
+
+        DcStat dcStat;
+        EndpointStat endpointStat;
+        for (AssetStat assetStat : assetStatInfoByIdc) {
+            dcStat = new DcStat(assetStat.getTotal(), assetStat.getInStock(), assetStat.getOutStock(), assetStat.getPingUp(), assetStat.getPingDown(), assetStat.getAlertTotal(), assetStat.getAlertHigh(), assetStat.getAlertMedium(), assetStat.getAlertLow());
+
+            endpointStat = dcNameWithEndpointStatMap.get(assetStat.getName());
+            dcStat.setName(endpointStat.getName());
+            dcStat.setPromTotal(endpointStat.getPromTotal());
+            dcStat.setPromUp(endpointStat.getPromUp());
+            dcStat.setPromDown(endpointStat.getPromDown());
+            dcStat.setEndpointTotal(endpointStat.getEndpointTotal());
+            dcStat.setEndpointUp(endpointStat.getEndpointUp());
+            dcStat.setEndpointDown(endpointStat.getEndpointDown());
+
+            dcStatList.add(dcStat);
+        }
+
+        int cabinetTotal = cabinetService.count();
+
+        Map resultData = new HashMap();
+        resultData.put("dcTotal", dcStatList.size());
+        resultData.put("cabinetTotal", cabinetTotal);
+        resultData.put("dcStat", dcStatList);
+
+        return resultData;
+    }
+
+    @Override
+    public Map getAlertRuleStat() {
+        int alertRuleTotal = alertRuleService.count();
+        List<Map> alertRuleStat = overviewDao.getAlertRuleStat();
+
+        Map resultData = new HashMap();
+        resultData.put("alertRuleTotal", alertRuleTotal);
+        resultData.put("alertRule", alertRuleStat);
+
+        return resultData;
+    }
+
+    @Override
+    public List<Map> alertStatByAssetTopN(Integer top) {
+        List<Map> alertStatByAssetTopN = overviewDao.getAlertStatByAssetTopN(top);
+        return alertStatByAssetTopN;
+    }
+
+
+    // 请求prometheus 然后返回状态可用的endpoint ids
+    public Set<Integer> getEndpointStatus() {
+        Set<Integer> endPointIds = new HashSet<>();
+
+        // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
+        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
+        String url;
+        Map result;
+        for (Promserver promserver : promservers) {
+            // 2. 查询 up
+            url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
+            url += query + "?query=up";// url
+
+            result = promserverProxyService.requestPromAPI(url);
+            // 查询成功
+            if (result != null && "success".equals(result.get("status"))) {
+                Map data = (Map) result.get("data");
+                JSONArray array = (JSONArray) data.get("result");
+
+                JSONObject obj = null;
+                JSONArray timeAndState = null;
+                Map metricLabels;
+                String job = null;
+                String[] split = null;
+                Integer endpointId = null;
+
+                for (int i = 0; i < array.size(); i++) {
+                    obj = (JSONObject) array.get(i);
+                    timeAndState = (JSONArray) obj.get("value");
+
+                    if ("1".equals(timeAndState.get(1).toString())) {
+                        metricLabels = (Map) obj.get("metric");
+                        job = metricLabels.get("job").toString();
+
+                        if (job.contains("_")) {
+                            // job 标签的格式为 ed_endpointId
+                            split = job.split("_");
+                            try {
+                                endpointId = Integer.parseInt(split[1]);
+                            } catch (NumberFormatException e) {
+                                endpointId = null;
+                                logger.debug("prometheus server is {} And the {} label's job label does not contain endpoint id", promserver, job);
+                            }
+                            if (endpointId != null) {
+                                endPointIds.add(endpointId);
+                            }
+                        }
+                    }
+                }
+            } else {// 查询失败
+                logger.error("query endpoint status failed ,prometheus server is {}", promserver);
+            }
+        }
+        return endPointIds;
     }
 }

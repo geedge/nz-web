@@ -5,15 +5,13 @@ import java.util.Map;
 
 public interface OverviewService {
 
-    Map byTypeStat();
+    /*Map byTypeStat();
 
     Map scrapeModuleStat();
 
     Map alertStat();
 
     List<Map> alertNumTopN(Integer topN);
-
-    List<Map> alertRuleTopN(Integer topN);
 
     List<Map> alertUnprocessed(Integer pageNo, Integer pageSize);
 
@@ -25,5 +23,19 @@ public interface OverviewService {
 
     List<Map> promDCStat();
 
-    Map sysUserStat();
+    Map sysUserStat();*/
+
+    List<Map> alertRuleTopN(Integer topN);
+
+    Map getAssetStat();
+
+    Map getProjectStat();
+
+    Map getEndpointStat();
+
+    Map getDatacenterStat();
+
+    Map getAlertRuleStat();
+
+    List<Map> alertStatByAssetTopN(Integer top);
 }
