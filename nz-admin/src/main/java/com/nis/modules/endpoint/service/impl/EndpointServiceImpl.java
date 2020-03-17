@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
@@ -21,6 +22,8 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
+import com.nis.modules.promserver.service.PromserverService;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -28,6 +31,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -61,7 +65,10 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
     private DataSourceTransactionManager dataSourceTransactionManager;
 	@Autowired
 	private TransactionDefinition transactionDefinition;
-	
+	@Autowired
+	private RedisTemplate redisTemplate;
+	@Autowired
+	private PromserverService promserverService;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -86,27 +93,38 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					}
 				}
 				for(Endpoint data: datas) {
-					Promserver promserver = data.getPromserver();
-					Integer promStatus = promserver.getStatus();
-					StateInfo stateInfo =new StateInfo();
-					String jn="ed_"+data.getId();
-					JSONArray valueList = (JSONArray) resultMap.get(jn);
-					if(valueList!=null) {
-						BigDecimal time = (BigDecimal) valueList.get(0);
-						long timeStamp = time.longValue();
-						data.setLastUpdate(timeStamp);
-						String stateValue=(String)valueList.get(1);
-						Integer state = Integer.valueOf(stateValue);
-						data.setState(state);
-						if(state.equals(0)) {
-							// promtheus 不可用
-							stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
-							stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
-						}else {
-							stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_ON_USE.getCode());
-							stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_ON_USE.getMsg());
-						}
-					}else {
+					 // 从redis中根据endpointId获取promserver id
+			        Object promeId = redisTemplate.opsForHash().get(Constant.REDIS_KEY_ENDPOINT_PROM, data.getId().toString());
+			        Promserver promserver =null;
+			        StateInfo stateInfo =new StateInfo();
+			        if (promeId != null) {
+			            promserver = promserverService.getById(promeId.toString());
+			            if(promserver!=null) {
+				            Integer promStatus = promserver.getStatus();
+							String jn="ed_"+data.getId();
+							JSONArray valueList = (JSONArray) resultMap.get(jn);
+							if(valueList!=null) {
+								BigDecimal time = (BigDecimal) valueList.get(0);
+								long timeStamp = time.longValue();
+								data.setLastUpdate(timeStamp);
+								String stateValue=(String)valueList.get(1);
+								Integer state = Integer.valueOf(stateValue);
+								data.setState(state);
+								if(state.equals(0)) {
+									// promtheus 不可用
+									stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
+									stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
+								}else {
+									stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_ON_USE.getCode());
+									stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_ON_USE.getMsg());
+								}
+							}
+			            }else {
+			            	data.setState(0);
+							stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getCode());
+							stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getMsg());
+			            }
+			        }else {
 						data.setState(0);
 						stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getCode());
 						stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getMsg());
