@@ -75,7 +75,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
 		List<AlertRuleEntity> records = page.getRecords();
 		for (AlertRuleEntity alertRule:records){
-			if(alertRule.getBuildIn()) {
+			if(alertRule.getBuildIn().equals(1)) {
 				//如果为内置规则 则跳过剩余关联关系查询
 				break;
 			}
@@ -157,7 +157,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	public void validateBulitinRule(List<Integer> ids) {
 		List<AlertRuleEntity> objs = alertRuleDao.selectBatchIds(ids);
 		for(AlertRuleEntity obj : objs) {
-			if(obj!=null&&obj.getBuildIn()){
+			if(obj!=null&&obj.getBuildIn().equals(1)){
 				throw new NZException(RCode.ALERTRULE_BUILDIN_CAN_NOT_REMOVE);
 			}
 		}
