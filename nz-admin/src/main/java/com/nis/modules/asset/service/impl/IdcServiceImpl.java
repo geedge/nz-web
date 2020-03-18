@@ -15,6 +15,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.overview.dao.OverviewDao;
+import com.nis.modules.overview.entity.AssetStat;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,43 +55,30 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         IPage<Idc> page = new Query<Idc>().getPage(params);
         // dc列表数据
         List<Idc> datas = idcDao.queryPage(page, params);
-        Map<Integer, Idc> idcMap = new HashMap<>();
-        for (Idc idc : datas) {
-            idcMap.put(idc.getId(), idc);
+
+        // 获取idc 中 asset alert 统计信息
+        List<AssetStat> assetStatInfoByIdc = overviewDao.getAssetStatInfoByIdc();
+        Map<String, AssetStat> idcNameAndStatMap = new HashMap<>();
+        for (AssetStat stat : assetStatInfoByIdc) {
+            idcNameAndStatMap.put(stat.getName(), stat);
         }
 
-        // 按照DC维度统计alert数量 在库的资产
-        List<Map> mapList = overviewDao.assetDcAndAlertSeveritysNums(1);
-        Integer idcId, highNum, mediumNum, lowNum;
-        Idc idc;
+        AssetStat assetStat;
         Map alertStat;
-        for (Map map : mapList) {
-            idcId = Integer.parseInt(map.get("idcId").toString());
-            idc = idcMap.get(idcId);
-            if (idc != null) {
-                alertStat = new HashMap();
-                highNum = Integer.parseInt(map.get("alertHigh").toString());
-                mediumNum = Integer.parseInt(map.get("alertMedium").toString());
-                lowNum = Integer.parseInt(map.get("alertLow").toString());
-                alertStat.put("high", highNum);
-                alertStat.put("medium", mediumNum);
-                alertStat.put("low", lowNum);
-                alertStat.put("total", highNum + mediumNum + lowNum);
-                idc.setAlertStat(alertStat);
-            }
+        for (Idc idc : datas) {
+            assetStat = idcNameAndStatMap.get(idc.getName());
+
+            alertStat = new HashMap();
+            alertStat.put("total", assetStat.getAlertTotal());
+            alertStat.put("high", assetStat.getAlertHigh());
+            alertStat.put("medium", assetStat.getAlertMedium());
+            alertStat.put("low", assetStat.getAlertLow());
+
+            idc.setAssetStat(assetStat);
+            idc.setAlertStat(alertStat);
         }
 
-        alertStat = new HashMap();
-        alertStat.put("high", 0);
-        alertStat.put("medium", 0);
-        alertStat.put("low", 0);
-        alertStat.put("total", 0);
-        for (Idc entity : idcMap.values()) {
-            if(entity.getAlertStat() == null){
-                entity.setAlertStat(alertStat);
-            }
-        }
-        page.setRecords(new ArrayList<>(idcMap.values()));
+        page.setRecords(datas);
         return new PageUtils(page);
     }
 

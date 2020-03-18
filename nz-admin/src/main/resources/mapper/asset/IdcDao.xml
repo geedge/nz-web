@@ -21,12 +21,12 @@
 	    	<result column="i18n" property="i18n"/>
 	    </association>
 	    
-	    <association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.asset.entity.AssetStat">
+	    <!--<association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.asset.entity.AssetStat">
 	    	<result column="total" property="total"/>
 	    	<result column="inStock" property="inStock"/>
 	    	<result column="outStock" property="outStock"/>
 	    	<result column="cabinetNum" property="cabinetNum"/>
-	    </association>
+	    </association>-->
 	    
     </resultMap>
     
@@ -39,12 +39,12 @@
        sa.longitude AS sa_longitude,
        sa.latitude AS sa_latitude,
        sa.i18n AS sa_i18n,
-       count(*) as_total,
+       /*count(*) as_total,
 	     sum(case a.state when 1 then 1 else 0 end) as_inStock,
-       sum(case a.state when 2 then 1 else 0 end) as_outStock,
+       sum(case a.state when 2 then 1 else 0 end) as_outStock,*/
        count(DISTINCT c.id) cabinetNum
        from idc i left join sys_area sa on i.area_id=sa.id 
-       left join asset a on i.id =a.idc_id 
+       /*left join asset a on i.id =a.idc_id*/
        left join cabinet c on i.id=c.idc_id
        where 1=1
        <if test="params.id != null and params.id != ''">

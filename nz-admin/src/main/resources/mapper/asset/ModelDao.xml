@@ -20,7 +20,7 @@
         <result property="type.code" column="assetCode"/>
         <result property="type.type" column="assetType"/>
 
-        <association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.asset.entity.AssetStat">
+        <association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.overview.entity.AssetStat">
             <result column="total" property="total"/>
             <result column="inStock" property="inStock"/>
             <result column="outStock" property="outStock"/>
