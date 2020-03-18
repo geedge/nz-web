@@ -26,6 +26,7 @@ import com.nis.modules.terminal.entity.Account;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -51,14 +52,47 @@ public class TerminalSession implements Serializable {
     
     public static Map<String,String> unloginMessageInfo = new HashMap<String,String>();
     
+    public static Map<String,List<String>> userInstructions =new HashMap<String,List<String>>();
+    
+    public static String getHistoryInstruction(String uuid,Integer index) {
+    	List<String> lists = userInstructions.get(uuid);
+    	if(ObjectUtils.isEmpty(lists)) {
+    		return "";
+    	}else if(index>lists.size()){
+    		return "";
+    	}else if(lists.size()-index==lists.size()){
+    		return "";
+    	}else {
+    		return lists.get(lists.size()-index);
+    	}
+    }
+    
+    public static void setHistoryInstruction(String uuid,String message) {
+    	List<String> lists = userInstructions.get(uuid);
+    	if(ObjectUtils.isEmpty(lists)) {
+    		lists=new ArrayList<String>();
+    		lists.add(message);
+    		userInstructions.put(uuid, lists);
+    	}else {
+    		lists.add(message);
+    	}
+    }
+    
     public static String getUnloginMessage(String uuid) {
     	return unloginMessageInfo.get(uuid);
     }
     
-    public static void setUnloginMessage(String uuid,String message) {
+    public static void setUnloginMessage(String uuid,String message,Integer cursorIndex) {
     	String string = unloginMessageInfo.get(uuid);
     	if(StringUtils.isNoneBlank(string)) {
-    		string=string+message;
+    		// 根据光标位置来追加字符出现的位置
+    		if(cursorIndex==string.length()||cursorIndex==null) {
+    			string=string+message;
+    		}else {
+    			String prefix = string.substring(0, cursorIndex);
+    			String suffix = string.substring(cursorIndex, string.length());
+    			string=prefix+message+suffix;
+    		}
     	}else {
     		string=message;
     	}
@@ -72,11 +106,20 @@ public class TerminalSession implements Serializable {
     	unloginMessageInfo.remove(uuid);
     }
     
-    public static boolean backspaceMessage(String uuid) {
+    public static boolean backspaceMessage(String uuid,Integer cursorIndex) {
     	boolean flag=false;
     	String string = unloginMessageInfo.get(uuid);
     	if(StringUtils.isNotBlank(string)) {
-    		string=string.substring(0, string.length()-1);
+    		if(cursorIndex==string.length()) {
+    			string=string.substring(0, string.length()-1);
+    		}else if(cursorIndex==0&&string.length()>0){
+    			// 如果用户将光标移到最开始的地方 则不进行任何删除操作
+    			return false;
+    		}else {
+    			String prefix = string.substring(0, cursorIndex-1);
+    			String suffix = string.substring(cursorIndex, string.length());
+    			string=prefix+suffix;
+    		}
     		if(StringUtils.isNotBlank(string)) {
     			unloginMessageInfo.put(uuid, string);
     			flag=true;

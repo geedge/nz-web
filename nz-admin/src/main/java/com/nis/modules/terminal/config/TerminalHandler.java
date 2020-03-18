@@ -91,6 +91,13 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     private Long userId;
     
+    // 光标位置
+    private Integer cursorIndex=0;
+    // 判断光标是否被移动过
+    private boolean cursorFlag=false;
+    
+    private Integer historyIndex=0;
+    
     private boolean sshLogin=false;
     
     private boolean tabFlag=false;
@@ -242,44 +249,196 @@ public class TerminalHandler extends TextWebSocketHandler {
                 	}
                 }
             }else {
+            	//处理用户上下左右方向键操作
+            	if(message.asBytes()[0]==27) {
+            		// 判断用户是在ssh登录输入密码时操作  则直接返回不进行任何操作
+            		if(sshLogin) {
+            			return;
+            		}
+            		String operation = ByteUtils.toHexAscii(message.asBytes());
+            		if(operation.equals("1B5B44")){
+            			// 左方向操作
+            			if(cursorIndex!=0) {
+            				// 光标在初始位置不可移动
+            				cursorIndex--;
+            				session.sendMessage(new TextMessage(message.getPayload()));
+            				cursorFlag=true;
+            			}else if(TerminalSession.getUnloginMessage(uuid)==null && cursorIndex==TerminalSession.getUnloginMessage(uuid).length()){
+            				cursorFlag=false;
+            			}
+            			return;
+            		} else if(operation.equals("1B5B43")) {
+            			// 右方向操作
+            			if((cursorIndex==0 && (TerminalSession.getUnloginMessage(uuid)==null || TerminalSession.getUnloginMessage(uuid).length()==0))  || cursorIndex==TerminalSession.getUnloginMessage(uuid).length()) {
+            				// 光标位置在初始位置 或者已经为当前输入内容最右处
+            				cursorFlag=false;
+            			}else {
+            				cursorIndex++;
+            				session.sendMessage(new TextMessage(message.getPayload()));
+            				cursorFlag=true;
+            			}
+            			return;
+            		} else if(operation.equals("1B5B41")) {
+            			// 上方向操作 获取用户之前保存的指令信息
+            			// 获取当前字符串位置 将光标移到开头 同时清空信息 补充历史指令信息
+        				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
+            			if(historyIndex==0) {
+            				String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            				if(StringUtils.isEmpty(unloginMessage)) {
+            					session.sendMessage(new TextMessage(historyInstruction));
+            				}else {
+            					for(int i=0;i<unloginMessage.length()-1;i++) {
+            						session.sendMessage(new TextMessage("\b"));
+            					}
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+            					session.sendMessage(new TextMessage(fromHexAscii));
+            					session.sendMessage(new TextMessage(historyInstruction));
+            				}
+            				if(StringUtils.isNoneBlank(historyInstruction)) {
+            					historyIndex++;
+            				}
+            			}else {
+            				if(StringUtils.isNoneBlank(historyInstruction)) {
+            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+                				for(int i=0;i<prefixInstruction.length()-1;i++) {
+            						session.sendMessage(new TextMessage("\b"));
+            					}
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+            					session.sendMessage(new TextMessage(fromHexAscii));
+            					session.sendMessage(new TextMessage(historyInstruction));
+            					historyIndex++;
+            				}
+            			}
+            			return;
+            		} else if(operation.equals("1B5B42")) {
+            			// 下方向操作
+            			if(historyIndex==0) {
+            				return;
+            			}else{
+            				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex-1);
+            				if(StringUtils.isEmpty(historyInstruction)) {
+            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+                				for(int i=0;i<prefixInstruction.length()-1;i++) {
+            						session.sendMessage(new TextMessage("\b"));
+            					}
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+            					session.sendMessage(new TextMessage(fromHexAscii));
+            					String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            					if(StringUtils.isEmpty(unloginMessage)) {
+            						unloginMessage="";
+            					}
+            					session.sendMessage(new TextMessage(unloginMessage));
+            					historyIndex--;
+            				}else {
+            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+                				for(int i=0;i<prefixInstruction.length()-1;i++) {
+            						session.sendMessage(new TextMessage("\b"));
+            					}
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+            					session.sendMessage(new TextMessage(fromHexAscii));
+            					session.sendMessage(new TextMessage(historyInstruction));
+            					historyIndex--;
+            				}
+            			}
+            			return;
+            		}
+            	}
             	/**
             	 * 如果用户未登录 使用uuid为key保存用户发送的指令信息 等到收到回车指令时才执行对应的操作
             	 */
             	if(sshLogin&&message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
-            		nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
+            		String sshPwd = TerminalSession.getUnloginMessage(uuid);
+            		//将当前执行指令删除 防止用户保存ssh登录密码  同时将光标等属性重置
+            		TerminalSession.removeUnloginMessage(uuid);
+            		//同时将光标位置重置
+            		cursorIndex=0;
+            		cursorFlag=false;
+            		historyIndex=0;
+            		nezhaMessageHandle(session,sshPwd);
             	}else if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
             		logger.info("user send terminal to start");
 //            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
             		// 处理用户空输入 直接回车操作
-    				if(StringUtils.isEmpty(TerminalSession.getUnloginMessage(uuid))&&(!sshLogin)) {
+            		String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            		if(historyIndex!=0) {
+            			if(StringUtils.isEmpty(unloginMessage)) {
+            				unloginMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+            			}
+            		}
+    				if(StringUtils.isEmpty(unloginMessage)&&(!sshLogin)) {
     					session.sendMessage(new TextMessage(message.getPayload()+"\n$:"));
     				}else {
-    					nezhaMessageHandle(session,TerminalSession.getUnloginMessage(uuid));
+    					// 将用户已经执行的指令存储到历史记录里
+						if(!sshLogin) {
+							TerminalSession.setHistoryInstruction(uuid,unloginMessage);
+						}
+						nezhaMessageHandle(session,unloginMessage);
+						//将当前执行指令删除
+	            		TerminalSession.removeUnloginMessage(uuid);
+	            		//同时将光标位置重置
+	            		cursorIndex=0;
+	            		cursorFlag=false;
+	            		historyIndex=0;
     				}
-            		//执行完当前指令后将指令删除
-            		TerminalSession.removeUnloginMessage(uuid);
             	}else if(message.asBytes()[0]==127&&sshLogin){
             		// ssh登录时处理用户退格键
-            		TerminalSession.backspaceMessage(uuid);
+            		TerminalSession.backspaceMessage(uuid,cursorIndex);
             		return;
             	}else if(message.asBytes()[0]==127) {
+            		String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            		if(historyIndex!=0) {
+            			if(StringUtils.isEmpty(unloginMessage)) {
+            				unloginMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+                			TerminalSession.setUnloginMessage(uuid, unloginMessage, null);
+                			cursorIndex=unloginMessage.length();
+            			}
+            		}
+            		if(StringUtils.isEmpty(unloginMessage)) {
+            			return;
+            		}
             		// 处理用户退格键
             		byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-            		boolean backspaceFlage = TerminalSession.backspaceMessage(uuid);
-            		if(backspaceFlage) {
+            		boolean backspaceFlag = TerminalSession.backspaceMessage(uuid,cursorIndex);
+            		if(backspaceFlag) {
             			session.sendMessage(new TextMessage(fromHexAscii));
+            			if(cursorFlag) {
+            				String substring = unloginMessage.substring(cursorIndex, unloginMessage.length());
+            				session.sendMessage(new TextMessage(substring));
+            				// 将光标移到对应位置
+            				for(int i =0;i<Integer.valueOf(unloginMessage.length())-cursorIndex;i++) {
+            					fromHexAscii = ByteUtils.fromHexAscii("1B5B44");
+                				session.sendMessage(new TextMessage(fromHexAscii));
+            				}
+            			}
+            			cursorIndex--;
             		}
             		return;
             	}else{
             		logger.info("terminal unstart  uuid info {}",uuid);
-            		TerminalSession.setUnloginMessage(uuid,message.getPayload());
+            		TerminalSession.setUnloginMessage(uuid,message.getPayload(),cursorIndex);
+            		//光标位置
+            		cursorIndex++;
             		// 不返回用户输入的ssh密码信息
             		if(!sshLogin) {
             			session.sendMessage(new TextMessage(message.getPayload()));
+            			if(cursorFlag) { 
+            				String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            				String substring = unloginMessage.substring(cursorIndex, unloginMessage.length());
+            				session.sendMessage(new TextMessage(substring));
+            				// 将光标移到对应位置
+            				for(int i =0;i<Integer.valueOf(unloginMessage.length())-cursorIndex;i++) {
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("1B5B44");
+                				session.sendMessage(new TextMessage(fromHexAscii));
+            				}
+            			}
             		}
             	}
             }
         } catch (Exception e) {
+        	// 出现异常将光标信息重置防止下一次无法正常执行命令
+        	cursorFlag=false;
+        	cursorIndex=0;
+        	historyIndex=0;
         	terminalLog.setStatus(0);
         	terminalLog.setTime(new Date());
         	terminalLogService.save(terminalLog);
@@ -302,6 +461,10 @@ public class TerminalHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         super.afterConnectionClosed(session, status);
         this.closeTerminal(session);
+        // 将之前存的光标信息重置
+        cursorIndex=0;
+        cursorFlag=false;
+        historyIndex=0;
     }
 
     private TerminalClient getClient(WebSocketSession session, Account terminal) {
@@ -490,9 +653,9 @@ public class TerminalHandler extends TextWebSocketHandler {
 				sshLoginInfo.add(user);
 				sshLoginInfo.add(ip);
 				sshLoginInfo.add(port);
-				TerminalSession.setUnloginMessage(uuid+"user",user);
-				TerminalSession.setUnloginMessage(uuid+"ip",ip);
-				TerminalSession.setUnloginMessage(uuid+"port",port);
+				TerminalSession.setUnloginMessage(uuid+"user",user,null);
+				TerminalSession.setUnloginMessage(uuid+"ip",ip,null);
+				TerminalSession.setUnloginMessage(uuid+"port",port,null);
 				sshLogin=true;
 				session.sendMessage(new TextMessage("\r\n"+TerminalSession.getUnloginMessage(uuid+"user")+"@"+TerminalSession.getUnloginMessage(uuid+"ip")+"'s password: "));
 			}
@@ -544,9 +707,9 @@ public class TerminalHandler extends TextWebSocketHandler {
 		if(StringUtils.isBlank(user)) {
 			user="";
 		}
-		TerminalSession.setUnloginMessage(uuid+"teluser",user);
-		TerminalSession.setUnloginMessage(uuid+"telip",ip);
-		TerminalSession.setUnloginMessage(uuid+"telport",port);
+		TerminalSession.setUnloginMessage(uuid+"teluser",user,null);
+		TerminalSession.setUnloginMessage(uuid+"telip",ip,null);
+		TerminalSession.setUnloginMessage(uuid+"telport",port,null);
 		//获取到用户ssh pwd
 		Asset asset=new Asset();
 		asset.setHost(ip);

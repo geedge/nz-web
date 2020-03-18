@@ -22,6 +22,7 @@
 package com.nis.modules.terminal.config;
 
 import com.jcraft.jsch.*;
+import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.DigestUtils;
 import com.nis.common.utils.IOUtils;
@@ -254,7 +255,7 @@ public class TerminalClient {
                             }else {
                             	// 防止用户登录日志记录用户输入的密码信息
                             	if(message.matches("Password:.*")) {
-                            		TerminalSession.setUnloginMessage("telnetFlag", "1");
+//                            		TerminalSession.setUnloginMessage("telnetFlag", "1");
                             	}
                             	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
                             		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
