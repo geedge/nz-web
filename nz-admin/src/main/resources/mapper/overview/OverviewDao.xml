@@ -305,7 +305,7 @@
             LEFT JOIN module mo ON pro.id = mo.project_id
             LEFT JOIN endpoint en ON mo.id = en.module_id
             LEFT JOIN alert_message am ON pro.id = am.link_id
-            AND am.type = 1
+            AND am.type = 1 AND am.state = 1
         GROUP BY
             pro.id
     </select>
