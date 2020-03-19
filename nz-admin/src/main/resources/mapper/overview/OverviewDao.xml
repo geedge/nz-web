@@ -249,6 +249,7 @@
             GROUP BY
                 mo.id
         ) temp_b ON temp_a.name = temp_b.name
+        WHERE total > 0
     </select>
 
     <select id="getAssetStatInfoByIdc" resultType="com.nis.modules.overview.entity.AssetStat">

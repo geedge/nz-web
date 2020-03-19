@@ -624,7 +624,10 @@ public class OverviewServiceImpl implements OverviewService {
                     }
                 }
             }
-            assetStatInfoByType.add(baseStat);
+
+            if(baseStat.getTotal() > 0){
+                assetStatInfoByType.add(baseStat);
+            }
         }
 
         // 返回结果
