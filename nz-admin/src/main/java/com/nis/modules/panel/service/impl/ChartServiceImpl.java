@@ -347,8 +347,11 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         List<Chart> chartList = this.list(new QueryWrapper<Chart>().eq("panel_id", panelId).orderByAsc("prev"));
 
         // 就只有一个图表 不让其调整位置
-        if (chartList.size() <= 1) {
-            throw new NZException(RCode.CHART_CANNOT_MODIFY);
+        if (chartList.size() == 1) {
+            chart.setPrev(0);
+            chart.setNext(-1);
+            this.updateById(chart);
+            return;
         }
 
         Map<Integer, Chart> idAndChartMap = new HashMap<>();
@@ -364,7 +367,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         // 校验 prev next 参数是否合法
-        this.validatePrevAndNext(idAndChartMap, chart);
+        if(this.validatePrevAndNext(idAndChartMap, chart)){
+            // 没有改变位置 直接修改库中 span height属性
+            this.updateById(chart);
+        }
 
         Integer firstIndex = 0;
         Integer lastIndex = -1;
@@ -520,7 +526,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
      * @param idAndChartMap
      * @param chart
      */
-    private void validatePrevAndNext(Map<Integer, Chart> idAndChartMap, Chart chart) {
+    private boolean validatePrevAndNext(Map<Integer, Chart> idAndChartMap, Chart chart) {
+        // 如果没有改变位置
+        Chart entity = this.getById(chart.getId());
+        if(entity.getPrev().equals(chart.getPrev()) && entity.getNext().equals(chart.getNext())){
+            return true;
+        }
 
         Integer prev = chart.getPrev();
         Integer next = chart.getNext();
@@ -553,6 +564,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 throw new NZException(RCode.CHART_PREVNEXT_INCORRECT);
             }
         }
+        return false;
     }
 
 }
