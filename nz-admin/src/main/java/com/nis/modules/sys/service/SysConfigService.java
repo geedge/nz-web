@@ -9,9 +9,8 @@
 package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.sys.entity.SysConfigEntity;
 
 import java.util.Map;
 
@@ -57,5 +56,8 @@ public interface SysConfigService extends IService<SysConfigEntity> {
 	 * @param clazz  Object对象
 	 */
 	<T> T getConfigObject(String key, Class<T> clazz);
-	
+
+    Map getConfigListByTypes(String[] types);
+
+    void updateConfigs(Map<String, Object> param);
 }

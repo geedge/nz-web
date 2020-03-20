@@ -132,7 +132,10 @@ public class Constant {
     public static final String TOOL_PATH = System.getProperty("user.dir") + File.separator + "tools";
 
     public static final List<String> SPECIAL_SYS_DICT;
-    
+
+    // 当前sys_config 配置中配置项和所属类别map
+    public static final Map<String, List<String>> SYSCONFIG_TYPEWITHKEYS_MAP;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -158,9 +161,16 @@ public class Constant {
 		ALERTMESSAGE_STATE.add(1);
 		ALERTMESSAGE_STATE.add(2);
 
-		SPECIAL_SYS_DICT = new ArrayList<String>();
-		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_TYPE);
-		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_VENDOR);
+        SPECIAL_SYS_DICT = new ArrayList<String>();
+        SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_TYPE);
+        SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_VENDOR);
+
+        SYSCONFIG_TYPEWITHKEYS_MAP = new HashMap<>();
+
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("basic", Arrays.asList(new String[]{"alert_api", "asset_ping_switch", "asset_ping_interval", "node_exporter_target_path"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("email", Arrays.asList(new String[]{"email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account", "email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag", "email_tls_flag"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("terminal", Arrays.asList(new String[]{"max_terminal_num"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[]{"ldap_address", "ldap_dn", "ldap_password", "ldap_user_filter", "ldap_mapping", "ldap_enable"}));
     }
     
     /**
@@ -434,5 +444,12 @@ public class Constant {
     public static final String CONFAGENT_PATH="confagent_path";
     
     //最大窗口允许的连接数
-    public static final String MAX_TERMINAL_NUM="max_terminal_num";
+    public static final String MAX_TERMINAL_NUM = "max_terminal_num";
+
+    // 开关开启
+    public static final Integer SWITCH_OPEN = 1;
+
+    // 开关关闭
+    public static final Integer SWITCH_CLOSE = 0;
+
 }

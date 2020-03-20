@@ -9,19 +9,22 @@
 package com.nis.modules.sys.controller;
 
 
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.validator.ValidatorUtils;
-
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.nis.common.annotation.SysLog;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 系统配置信息
@@ -29,7 +32,7 @@ import java.util.Map;
 
  */
 @RestController
-@RequestMapping("/sys/config")
+@RequestMapping("/sysConfig")
 public class SysConfigController extends AbstractController {
 	@Autowired
 	private SysConfigService sysConfigService;
@@ -98,4 +101,51 @@ public class SysConfigController extends AbstractController {
 		return R.ok();
 	}
 
+    /**
+     * 根据 系统设置类别分类获取包含的设置数据
+     * @param type
+     * @return
+     */
+    @GetMapping
+    public R getConfigList(String... type) {
+        ValidateUtils.is(type).notNull(RCode.SYS_CONFIG_TYPE_ISNULL);
+
+        // 校验type值是否在枚举值内
+        Set<String> configTypes = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.keySet();
+        for (String t : type) {
+            if (!configTypes.contains(t)) {
+                throw new NZException(RCode.SYS_CONFIG_TYPE_INVALIDE);
+            }
+        }
+
+        Map resultData = sysConfigService.getConfigListByTypes(type);
+
+        return R.ok(resultData);
+    }
+
+
+    /**
+     *
+     * 保存配置
+     * @param param
+     * @return
+     */
+    @PutMapping
+    public R updateConfig(@RequestBody Map<String, Object> param) {
+        ValidateUtils.is(param).notNull(RCode.SYS_CONFIG_SAVEENTITY_ISNULL);
+
+        // 校验type值是否在枚举值内
+        Set<String> configTypes = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.keySet();
+
+        Set<String> types = param.keySet();
+        for (String type : types) {
+            if (!configTypes.contains(type)) {
+                throw new NZException(RCode.SYS_CONFIG_TYPE_INVALIDE);
+            }
+        }
+
+        sysConfigService.updateConfigs(param);
+
+        return R.ok();
+    }
 }

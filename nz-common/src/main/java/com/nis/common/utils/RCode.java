@@ -251,6 +251,40 @@ public enum RCode {
 
     SNMP_MIB_FILE_ISNULL(561000,"Snmp mib file can not be empty"), // snmp mib文件不能为空
     SNMP_MIB_ID_ISNULL(561001,"Snmp mib id can not be empty"),     // snmp mib id 不能为空
+
+
+    SYS_CONFIG_TYPE_ISNULL(571000,"System config type can not be null"), // sysConfig 查询type参数不能为空
+    SYS_CONFIG_TYPE_INVALIDE(574001,"System config type is invalide"),   // type 不在枚举值类
+    SYS_CONFIG_SAVEENTITY_ISNULL(571002,"System config save entity can not be null"),// 保存实体数据不能为空
+    SYS_CONFIG_MAXTERMINALNUM_ISNULL(571003, "System config max terminal num can not be null"),// 每个用户最大打开窗口数量不能为空
+    SYS_CONFIG_MAXTERMINALNUM_INVALIDE(575004, "System config max terminal num is invalide, Its minimum value is 1"),// 参数值不正确
+    SYS_CONFIG_ALERTAPI_ISNULL(571005,"System config alert api can not be null"),    //  alert api 不能为空
+    SYS_CONFIG_SWITCHVAUE_INVALIDE(574006,"System config switch value is invalida"), // 开关值不在枚举范围内
+    SYS_CONFIG_ASSETPINGSWITCH_ISNULL(571007,"System config asset pings witch can not be null"), // assetpingswitch不能为空
+    SYS_CONFIG_NODETARGETPATH_ISNULL(571008,"System config node export target path can not be null"), // node exporter targer path不能为空
+    SYS_CONFIG_ASSETPINGINTERVAL_ISNULL(571009,"System config asset ping interval can not be null"),  // asset_ping_interval不能为空
+    SYS_CONFIG_ASSETPINGINTERVAL_INVALIDE(573010,"System config asset ping interval is invalide"),    // asset_ping_interval参数与要求不符合
+    SYS_CONFIG_EMAILENABLE_ISNULL(571011,"System config email enable can not be empty"),               // email_enable 不能为空
+    SYS_CONFIG_EMAILSMTPHOST_ISNULL(571012,"System config email smtp host can not be empty"),         // email_smtp_host 不能为空
+    SYS_CONFIG_EMAILSMTPHOST_FORMAT(573013,"System config email smtp host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"), // email_smtp_host 格式不正确
+    SYS_CONFIG_EMAILSMTPPORT_ISNULL(571014,"System config email smtp port can not be empty"), // email_smtp_port 不能为空
+    SYS_CONFIG_EMAILSMTPPORT_ERROR(575015,"System config email smtp port is invalide"),        // email_smtp_port 端口错误
+    SYS_CONFIG_EMAILSMTPACCOUNT_ISNULL(571016,"System config email smtp account can not be empty"), // email_smtp_account 不能为空
+    SYS_CONFIG_EMAILSMTPPASSWORD_ISNULL(571017,"System config email smtp password can not be empty"), // email_smtp_password 不能为空
+    SYS_CONFIG_EMAILSENDACCOUNT_ISNULL(571018,"System config email send account can not be empty"), // email_send_account 不能为空
+    SYS_CONFIG_EMAILTESTRECIVER_ISNULL(571019,"System config email test reciver can not be empty"), // email_test_reciver 不能为空
+    SYS_CONFIG_EMAILTESTRECIVER_FORMAT(573020,"System config email test reciver format error, format such as xxx@xxx.com"), // email_test_reciver 邮箱格式错误
+    SYS_CONFIG_EMAILSSLFLAG_FORMAT(571021,"System config email ssl flag can not be empty"),         // email_ssl_flag 不能为空
+    SYS_CONFIG_EMAILTLSFLAG_FORMAT(571022,"System config email tls flag can not be empty"),         // email_tls_flag 不能为空
+    SYS_CONFIG_EMAILSSLFLAG_INVALIDE(573023,"System config email ssl flag is invalide"),            // email_ssl_flag 参数与要求不符合
+    SYS_CONFIG_EMAILTLSFLAG_INVALIDE(573024,"System config email tls flag is invalide"),            // email_tls_flag 参数与要求不符合
+    SYS_CONFIG_LDAPENABLE_ISNULL(571025,"System config ldap enable can not be empty"),              // ldap_enable 不能为空
+    SYS_CONFIG_LDAPADDRESS_ISNULL(571026,"System config ldap address can not be empty"),            // ldap_address 不能为空
+    SYS_CONFIG_LDAPDN_ISNULL(571027,"System config ldap dn can not be empty"),                      // ldap_dn 不能为空
+    SYS_CONFIG_LDAPPASSWORD_ISNULL(571028,"System config ldap password can not be empty"),         // ldap_password 不能为空
+    SYS_CONFIG_LDAPUSERFILTER_ISNULL(571029,"System config ldap user filter can not be empty"),    // ldap_user_filter 不能为空
+    SYS_CONFIG_LDAPMAPPING_ISNULL(571030,"System config ldap mapping can not be empty"),            // ldap_mapping 不能为空
+
     /**
      * webshell相关
      */
