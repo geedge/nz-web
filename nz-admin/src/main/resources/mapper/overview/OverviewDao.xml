@@ -355,8 +355,8 @@
             COUNT( am.id ) AS nums
         FROM
             asset ass
-            LEFT JOIN alert_message am ON ass.host = am.host
-            AND am.state = 1
+			LEFT JOIN alert_message am ON ass.id = am.link_id
+			AND am.state = 1 and am.type = 3
         GROUP BY
             ass.host
         HAVING
