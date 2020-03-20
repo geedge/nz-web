@@ -359,6 +359,8 @@
             AND am.state = 1
         GROUP BY
             ass.host
+        HAVING
+            nums > 0
         ORDER BY
             nums DESC
             LIMIT #{topN}
