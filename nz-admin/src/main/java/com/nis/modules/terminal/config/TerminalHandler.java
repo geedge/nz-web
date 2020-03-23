@@ -324,6 +324,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             					historyIndex++;
             				}
             			}
+            			TerminalSession.removeTerminalMessage(uuid);
+            			TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
+            			cursorIndex=historyInstruction.length();
             			return;
             		} else if(operation.equals("1B5B42")) {
             			// 下方向操作
@@ -343,6 +346,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             						TerminalMessage="";
             					}
             					session.sendMessage(new TextMessage(TerminalMessage));
+            					TerminalSession.removeTerminalMessage(uuid);
+            					TerminalSession.setTerminalMessage(uuid, TerminalMessage, null);
+            					cursorIndex=TerminalMessage.length();
             					historyIndex--;
             				}else {
             					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
@@ -352,6 +358,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
             					session.sendMessage(new TextMessage(fromHexAscii));
             					session.sendMessage(new TextMessage(historyInstruction));
+            					TerminalSession.removeTerminalMessage(uuid);
+            					TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
+            					cursorIndex=historyInstruction.length();
             					historyIndex--;
             				}
             			}
