@@ -99,7 +99,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     private Integer historyIndex=0;
     
     private boolean sshLogin=false;
-    
+        
     private boolean tabFlag=false;
     
     private StringBuilder terminalCmd;
@@ -184,14 +184,14 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int rows = toInt(session.getAttributes().get("rows").toString());
                 int width = toInt(session.getAttributes().get("width").toString());
                 int height = toInt(session.getAttributes().get("height").toString());
-                terminalClient.openTerminal(cols, rows, width, height);
                 terminalLog.setCmd("First login");
                 terminalLog.setUser(terminal.getUser());
                 terminalLog.setStatus(1);
                 terminalLog.setTime(new Date());
+                terminalClient.openTerminal(cols, rows, width, height);
                 terminalLogService.save(terminalLog);
             } catch (Exception e) {
-            	logger.error(e.getMessage());
+            	logger.error("error info :",e);
             	e.printStackTrace();
             	if (e.getMessage().toLowerCase().contains("userauth fail")) {
             		session.sendMessage(new TextMessage(" Login fail "));
@@ -230,22 +230,37 @@ public class TerminalHandler extends TextWebSocketHandler {
                 	if(message.getPayload().equals("\r")) {
                 		terminalLog.setCmd(terminalCmd.toString());
                 		terminalCmd.delete(0,terminalCmd.length());
-                		TerminalSession.removeUnloginMessage("telnetFlag");
-                	}else if(message.asBytes()[0]==9){
-                		tabFlag=true;
-                		terminalCmd.append(" \t");
-                	}else if(tabFlag){
+                	}else if(message.asBytes()[0]==9){  // 处理用户tab操作记录日志
                 		terminalLog.setCmd(terminalCmd.toString());
-                		terminalCmd.delete(0,terminalCmd.length());
+                		terminalLog.setStatus(1);
+                        terminalLog.setTime(new Date());
+                        terminalLogService.save(terminalLog);
                 	}else {
                 		terminalCmd.append(message.getPayload());
                 	}
                     terminalClient.write(message.getPayload());
-                    if(message.getPayload().equals("\r")||tabFlag) {
-                    	tabFlag=false;
-                		terminalLog.setStatus(1);
+                    
+                    // 处理用户telnet登录相关日志操作
+                    if(StringUtils.isNotBlank(TerminalSession.getTerminalMessage(uuid+"telnetFlag"))&&TerminalSession.getTerminalMessage(uuid+"telnetFlag").equals("1")) {
+                    	terminalLog.setStatus(1);
+                    	terminalLog.setProtocol("TELNET");
                         terminalLog.setTime(new Date());
+                        terminalLog.setCmd("First Login");
                         terminalLogService.save(terminalLog);
+                        TerminalSession.removeTerminalMessage(uuid+"telnetFlag");
+                    }else if(StringUtils.isNotBlank(TerminalSession.getTerminalMessage(uuid+"telnetFlag"))&&TerminalSession.getTerminalMessage(uuid+"telnetFlag").equals("0")){
+                    	terminalLog.setStatus(0);
+                        terminalLog.setTime(new Date());
+                        terminalLog.setProtocol("TELNET");
+                        terminalLog.setCmd("First Login");
+                        terminalLogService.save(terminalLog);
+                        TerminalSession.removeTerminalMessage(uuid+"telnetFlag");
+                    }else if(message.getPayload().equals("\r")) {
+                    	if(StringUtils.isBlank(TerminalSession.getTerminalMessage(uuid+"telnetFlag"))) {
+                    		terminalLog.setStatus(1);
+                            terminalLog.setTime(new Date());
+                            terminalLogService.save(terminalLog);
+                    	}
                 	}
                 }
             }else {
@@ -263,13 +278,13 @@ public class TerminalHandler extends TextWebSocketHandler {
             				cursorIndex--;
             				session.sendMessage(new TextMessage(message.getPayload()));
             				cursorFlag=true;
-            			}else if(TerminalSession.getUnloginMessage(uuid)==null && cursorIndex==TerminalSession.getUnloginMessage(uuid).length()){
+            			}else if(TerminalSession.getTerminalMessage(uuid)==null || cursorIndex==TerminalSession.getTerminalMessage(uuid).length()){
             				cursorFlag=false;
             			}
             			return;
             		} else if(operation.equals("1B5B43")) {
             			// 右方向操作
-            			if((cursorIndex==0 && (TerminalSession.getUnloginMessage(uuid)==null || TerminalSession.getUnloginMessage(uuid).length()==0))  || cursorIndex==TerminalSession.getUnloginMessage(uuid).length()) {
+            			if((cursorIndex==0 && (TerminalSession.getTerminalMessage(uuid)==null || TerminalSession.getTerminalMessage(uuid).length()==0))  || cursorIndex==TerminalSession.getTerminalMessage(uuid).length()) {
             				// 光标位置在初始位置 或者已经为当前输入内容最右处
             				cursorFlag=false;
             			}else {
@@ -283,11 +298,11 @@ public class TerminalHandler extends TextWebSocketHandler {
             			// 获取当前字符串位置 将光标移到开头 同时清空信息 补充历史指令信息
         				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
             			if(historyIndex==0) {
-            				String unloginMessage = TerminalSession.getUnloginMessage(uuid);
-            				if(StringUtils.isEmpty(unloginMessage)) {
+            				String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
+            				if(StringUtils.isEmpty(TerminalMessage)) {
             					session.sendMessage(new TextMessage(historyInstruction));
             				}else {
-            					for(int i=0;i<unloginMessage.length()-1;i++) {
+            					for(int i=0;i<TerminalMessage.length()-1;i++) {
             						session.sendMessage(new TextMessage("\b"));
             					}
             					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
@@ -323,11 +338,11 @@ public class TerminalHandler extends TextWebSocketHandler {
             					}
             					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
             					session.sendMessage(new TextMessage(fromHexAscii));
-            					String unloginMessage = TerminalSession.getUnloginMessage(uuid);
-            					if(StringUtils.isEmpty(unloginMessage)) {
-            						unloginMessage="";
+            					String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
+            					if(StringUtils.isEmpty(TerminalMessage)) {
+            						TerminalMessage="";
             					}
-            					session.sendMessage(new TextMessage(unloginMessage));
+            					session.sendMessage(new TextMessage(TerminalMessage));
             					historyIndex--;
             				}else {
             					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
@@ -347,9 +362,9 @@ public class TerminalHandler extends TextWebSocketHandler {
             	 * 如果用户未登录 使用uuid为key保存用户发送的指令信息 等到收到回车指令时才执行对应的操作
             	 */
             	if(sshLogin&&message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
-            		String sshPwd = TerminalSession.getUnloginMessage(uuid);
+            		String sshPwd = TerminalSession.getTerminalMessage(uuid);
             		//将当前执行指令删除 防止用户保存ssh登录密码  同时将光标等属性重置
-            		TerminalSession.removeUnloginMessage(uuid);
+            		TerminalSession.removeTerminalMessage(uuid);
             		//同时将光标位置重置
             		cursorIndex=0;
             		cursorFlag=false;
@@ -357,24 +372,24 @@ public class TerminalHandler extends TextWebSocketHandler {
             		nezhaMessageHandle(session,sshPwd);
             	}else if(message.getPayload().matches("\\r\\n|\\n|\\r|\\n\\r")) {
             		logger.info("user send terminal to start");
-//            		session.sendMessage(new TextMessage(TerminalSession.getUnloginMessage(uuid)+message.getPayload()));
+//            		session.sendMessage(new TextMessage(TerminalSession.getTerminalMessage(uuid)+message.getPayload()));
             		// 处理用户空输入 直接回车操作
-            		String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            		String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
             		if(historyIndex!=0) {
-            			if(StringUtils.isEmpty(unloginMessage)) {
-            				unloginMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+            			if(StringUtils.isEmpty(TerminalMessage)) {
+            				TerminalMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
             			}
             		}
-    				if(StringUtils.isEmpty(unloginMessage)&&(!sshLogin)) {
+    				if(StringUtils.isEmpty(TerminalMessage)&&(!sshLogin)) {
     					session.sendMessage(new TextMessage(message.getPayload()+"\n$:"));
     				}else {
     					// 将用户已经执行的指令存储到历史记录里
 						if(!sshLogin) {
-							TerminalSession.setHistoryInstruction(uuid,unloginMessage);
+							TerminalSession.setHistoryInstruction(uuid,TerminalMessage);
 						}
-						nezhaMessageHandle(session,unloginMessage);
+						nezhaMessageHandle(session,TerminalMessage);
 						//将当前执行指令删除
-	            		TerminalSession.removeUnloginMessage(uuid);
+	            		TerminalSession.removeTerminalMessage(uuid);
 	            		//同时将光标位置重置
 	            		cursorIndex=0;
 	            		cursorFlag=false;
@@ -385,15 +400,15 @@ public class TerminalHandler extends TextWebSocketHandler {
             		TerminalSession.backspaceMessage(uuid,cursorIndex);
             		return;
             	}else if(message.asBytes()[0]==127) {
-            		String unloginMessage = TerminalSession.getUnloginMessage(uuid);
+            		String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
             		if(historyIndex!=0) {
-            			if(StringUtils.isEmpty(unloginMessage)) {
-            				unloginMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-                			TerminalSession.setUnloginMessage(uuid, unloginMessage, null);
-                			cursorIndex=unloginMessage.length();
+            			if(StringUtils.isEmpty(TerminalMessage)) {
+            				TerminalMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+                			TerminalSession.setTerminalMessage(uuid, TerminalMessage, null);
+                			cursorIndex=TerminalMessage.length();
             			}
             		}
-            		if(StringUtils.isEmpty(unloginMessage)) {
+            		if(StringUtils.isEmpty(TerminalMessage)) {
             			return;
             		}
             		// 处理用户退格键
@@ -402,10 +417,10 @@ public class TerminalHandler extends TextWebSocketHandler {
             		if(backspaceFlag) {
             			session.sendMessage(new TextMessage(fromHexAscii));
             			if(cursorFlag) {
-            				String substring = unloginMessage.substring(cursorIndex, unloginMessage.length());
+            				String substring = TerminalMessage.substring(cursorIndex, TerminalMessage.length());
             				session.sendMessage(new TextMessage(substring));
             				// 将光标移到对应位置
-            				for(int i =0;i<Integer.valueOf(unloginMessage.length())-cursorIndex;i++) {
+            				for(int i =0;i<Integer.valueOf(TerminalMessage.length())-cursorIndex;i++) {
             					fromHexAscii = ByteUtils.fromHexAscii("1B5B44");
                 				session.sendMessage(new TextMessage(fromHexAscii));
             				}
@@ -415,18 +430,18 @@ public class TerminalHandler extends TextWebSocketHandler {
             		return;
             	}else{
             		logger.info("terminal unstart  uuid info {}",uuid);
-            		TerminalSession.setUnloginMessage(uuid,message.getPayload(),cursorIndex);
+            		TerminalSession.setTerminalMessage(uuid,message.getPayload(),cursorIndex);
             		//光标位置
             		cursorIndex++;
             		// 不返回用户输入的ssh密码信息
             		if(!sshLogin) {
             			session.sendMessage(new TextMessage(message.getPayload()));
             			if(cursorFlag) { 
-            				String unloginMessage = TerminalSession.getUnloginMessage(uuid);
-            				String substring = unloginMessage.substring(cursorIndex, unloginMessage.length());
+            				String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
+            				String substring = TerminalMessage.substring(cursorIndex, TerminalMessage.length());
             				session.sendMessage(new TextMessage(substring));
             				// 将光标移到对应位置
-            				for(int i =0;i<Integer.valueOf(unloginMessage.length())-cursorIndex;i++) {
+            				for(int i =0;i<Integer.valueOf(TerminalMessage.length())-cursorIndex;i++) {
             					byte[] fromHexAscii = ByteUtils.fromHexAscii("1B5B44");
                 				session.sendMessage(new TextMessage(fromHexAscii));
             				}
@@ -436,9 +451,12 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         } catch (Exception e) {
         	// 出现异常将光标信息重置防止下一次无法正常执行命令
+        	logger.error("error info :",e);
         	cursorFlag=false;
         	cursorIndex=0;
         	historyIndex=0;
+        	TerminalSession.removeTerminalMessage(uuid+"telnetFlag");
+        	
         	terminalLog.setStatus(0);
         	terminalLog.setTime(new Date());
         	terminalLogService.save(terminalLog);
@@ -505,19 +523,19 @@ public class TerminalHandler extends TextWebSocketHandler {
     	if(sshLogin) {
     		terminalLog.setProtocol("SSH");
     		terminalLog.setCmd("SSH Login");
-    		terminalLog.setHost(TerminalSession.getUnloginMessage(uuid+"ip"));
-    		terminalLog.setPort(Integer.valueOf(TerminalSession.getUnloginMessage(uuid+"port")));
+    		terminalLog.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
+    		terminalLog.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid+"port")));
     		sshLogin=false;
     		//获取到用户ssh pwd
     		Asset asset=new Asset();
-    		asset.setHost(TerminalSession.getUnloginMessage(uuid+"ip"));
+    		asset.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
     		Account terminal=new Account();
-    		terminal.setUser(TerminalSession.getUnloginMessage(uuid+"user"));
-    		terminal.setPort(Integer.valueOf(TerminalSession.getUnloginMessage(uuid+"port")));
+    		terminal.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
+    		terminal.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid+"port")));
     		terminal.setAsset(asset);
     		terminal.setAuthType(SshType.ACCOUNT.getType());
     		terminal.setPwd(Base64.getEncoder().encodeToString(message.getBytes()));
-    		terminalLog.setUser(TerminalSession.getUnloginMessage(uuid+"user"));
+    		terminalLog.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
     		//连接服务
     		try {
 				getClient(session, terminal);
@@ -534,7 +552,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 				terminalLog.setTime(new Date());
 				sshLogin=false;
 				TerminalSession.remove(session);
-				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
+				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"ip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
 			}
     		terminalLogService.save(terminalLog);
     	}else if(message.startsWith("ssh")) {
@@ -612,9 +630,9 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     public void sshLoginHandle(WebSocketSession session,String message) throws Exception{
     	// 清空之前缓存的ssh登录系信息
-    	TerminalSession.removeUnloginMessage(uuid+"user");
-    	TerminalSession.removeUnloginMessage(uuid+"ip");
-    	TerminalSession.removeUnloginMessage(uuid+"port");
+    	TerminalSession.removeTerminalMessage(uuid+"user");
+    	TerminalSession.removeTerminalMessage(uuid+"ip");
+    	TerminalSession.removeTerminalMessage(uuid+"port");
     	String userInfo=null;
 		String port=null;
 		String user=null;
@@ -653,20 +671,20 @@ public class TerminalHandler extends TextWebSocketHandler {
 				sshLoginInfo.add(user);
 				sshLoginInfo.add(ip);
 				sshLoginInfo.add(port);
-				TerminalSession.setUnloginMessage(uuid+"user",user,null);
-				TerminalSession.setUnloginMessage(uuid+"ip",ip,null);
-				TerminalSession.setUnloginMessage(uuid+"port",port,null);
+				TerminalSession.setTerminalMessage(uuid+"user",user,null);
+				TerminalSession.setTerminalMessage(uuid+"ip",ip,null);
+				TerminalSession.setTerminalMessage(uuid+"port",port,null);
 				sshLogin=true;
-				session.sendMessage(new TextMessage("\r\n"+TerminalSession.getUnloginMessage(uuid+"user")+"@"+TerminalSession.getUnloginMessage(uuid+"ip")+"'s password: "));
+				session.sendMessage(new TextMessage("\r\n"+TerminalSession.getTerminalMessage(uuid+"user")+"@"+TerminalSession.getTerminalMessage(uuid+"ip")+"'s password: "));
 			}
 		}
     }
     
     public void telnetLoginHandle(WebSocketSession session,String message) throws Exception{
     	// 清空之前缓存的telnet登录系信息
-    	TerminalSession.removeUnloginMessage(uuid+"telip");
-    	TerminalSession.removeUnloginMessage(uuid+"telport");
-    	TerminalSession.removeUnloginMessage(uuid+"teluser");
+    	TerminalSession.removeTerminalMessage(uuid+"telip");
+    	TerminalSession.removeTerminalMessage(uuid+"telport");
+    	TerminalSession.removeTerminalMessage(uuid+"teluser");
 		String port=null;
 		String ip=null;
 		String userInfo=null;
@@ -707,9 +725,9 @@ public class TerminalHandler extends TextWebSocketHandler {
 		if(StringUtils.isBlank(user)) {
 			user="";
 		}
-		TerminalSession.setUnloginMessage(uuid+"teluser",user,null);
-		TerminalSession.setUnloginMessage(uuid+"telip",ip,null);
-		TerminalSession.setUnloginMessage(uuid+"telport",port,null);
+		TerminalSession.setTerminalMessage(uuid+"teluser",user,null);
+		TerminalSession.setTerminalMessage(uuid+"telip",ip,null);
+		TerminalSession.setTerminalMessage(uuid+"telport",port,null);
 		//获取到用户ssh pwd
 		Asset asset=new Asset();
 		asset.setHost(ip);
@@ -719,7 +737,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 		terminal.setUser(user);
 		//连接服务
 		terminalLog.setAuthType(1);
-		terminalLog.setCmd("Telnet Login");
+		terminalLog.setCmd("First Login");
 		terminalLog.setHost(ip);
 		terminalLog.setPort(Integer.valueOf(port));
 		terminalLog.setProtocol("TELNET");
@@ -730,9 +748,6 @@ public class TerminalHandler extends TextWebSocketHandler {
 			int width = toInt(session.getAttributes().get("width").toString());
 			int height = toInt(session.getAttributes().get("height").toString());
 			terminalClient.openTelnetTerminal(cols, rows, width, height);
-			terminalLog.setStatus(1);
-			terminalLog.setTime(new Date());
-			terminalLogService.save(terminalLog);
 		} catch (Exception e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
 			terminalLog.setStatus(0);
@@ -740,7 +755,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 			terminalLogService.save(terminalLog);
 			sshLogin=false;
 			TerminalSession.remove(session);
-			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getUnloginMessage(uuid+"ip")+"' (port "+TerminalSession.getUnloginMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
+			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"ip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
 		}
 		
     }

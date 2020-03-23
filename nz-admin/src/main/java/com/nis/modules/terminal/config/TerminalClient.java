@@ -28,17 +28,22 @@ import com.nis.common.utils.DigestUtils;
 import com.nis.common.utils.IOUtils;
 import com.nis.common.utils.StringUtils;
 import com.nis.modules.terminal.entity.Account;
+import com.nis.modules.terminal.entity.TerminalLog;
+import com.nis.modules.terminal.service.TerminalLogService;
+
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
 import org.apache.commons.net.telnet.TelnetClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.*;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
@@ -46,7 +51,6 @@ import javax.servlet.http.HttpServletResponse;
 public class TerminalClient {
 
     private final Logger logger = LoggerFactory.getLogger(TerminalClient.class);
-
     private String clientId;//每次生成的唯一值token
     private String httpSessionId;//打开该终端的SessionId
     private WebSocketSession webSocketSession;
@@ -76,6 +80,8 @@ public class TerminalClient {
     private boolean closed = false;
     // 是否可进行上传下载操作
     private boolean transfer =true;
+    // telnet连接次数
+    private Integer telnetConnectCount=0;
     public TerminalClient(WebSocketSession webSocketSession, Account terminal, String clientId) {
         this.webSocketSession = webSocketSession;
         this.terminal = terminal;
@@ -170,13 +176,8 @@ public class TerminalClient {
                             }
                         } else {
                             if((message.replaceAll("\r\n", "")).equals("logout")) {
-                            	System.out.println(session);
-                            	StringBuilder sb=new StringBuilder();
-                            	sb.append("\r\nlogout\r\n");
-                                sb.append("Welcome to Nezha Terminal! \r\n");
-                            	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
-                            	sb.append("$: ");
-                            	webSocketSession.sendMessage(new TextMessage(sb.toString()));	
+                            	String unloginInfo = getUnloginInfo();
+                            	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
                             }else {
                             	webSocketSession.sendMessage(new TextMessage(message));
                             }
@@ -212,6 +213,9 @@ public class TerminalClient {
         this.inputStream=telnet.getInputStream();
         this.outputStream=telnet.getOutputStream();
         this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
+      
+        // telnetFlag 登录状态 0--失败  1--成功  2--正在尝试telnet登录中
+        TerminalSession.setTerminalMessage(clientId+"telnetFlag", "2", null);
         
         new Thread(new Runnable() {
             @Override
@@ -245,18 +249,19 @@ public class TerminalClient {
                             }
                         } else {
                             if((message.replaceAll("\r\n", "")).equals("logout")) {
-                            	System.out.println(session);
-                            	StringBuilder sb=new StringBuilder();
-                            	sb.append("\r\nlogout\r\n");
-                                sb.append("Welcome to Nezha Terminal! \r\n");
-                            	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
-                            	sb.append("$: ");
-                            	webSocketSession.sendMessage(new TextMessage(sb.toString()));	
+                            	String unloginInfo = getUnloginInfo();
+                            	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
                             }else {
-                            	// 防止用户登录日志记录用户输入的密码信息
-                            	if(message.matches("Password:.*")) {
-//                            		TerminalSession.setUnloginMessage("telnetFlag", "1");
+                            	//telnet登录状态修改
+                            	if(StringUtils.isNotEmpty(TerminalSession.getTerminalMessage(clientId+"telnetFlag"))&&TerminalSession.getTerminalMessage(clientId+"telnetFlag").equals("2")&&message.contains("Last login")) {
+                            		TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
+                            		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "1", null);
                             	}
+                            
+                            	//判断用户登录telnet连接次数 
+                            	if(message.contains("Login incorrect")) {
+                        			telnetConnectCount++;
+                        		}
                             	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
                             		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
                             		write(terminal.getUser()+"\r");
@@ -264,9 +269,25 @@ public class TerminalClient {
                             		webSocketSession.sendMessage(new TextMessage("\r\n"+message));
                             	}else if(message.contains("timed out after 60 seconds")) {
                             		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
+                            		// 连接超时
+                            		TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
+                            		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "0", null);
+                            		
                             		TerminalSession.remove(webSocketSession);
+                            		closed=true;
+                            		String unloginInfo = getUnloginInfo();
+                                	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
                             	}else{
                             		webSocketSession.sendMessage(new TextMessage(message));
+                            		if(telnetConnectCount==3) {
+                            			// 连接错误达到限制 关闭连接 连接失败
+                            			TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
+                                		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "0", null);
+                            			TerminalSession.remove(webSocketSession);
+                            			closed=true;
+                            			String unloginInfo = getUnloginInfo();
+                                    	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
+                            		}
                             	}
                             }
                             if (sendEnter) {
@@ -449,4 +470,12 @@ public class TerminalClient {
 		this.transfer = transfer;
 	}
     
+	public String getUnloginInfo() {
+		StringBuilder sb=new StringBuilder();
+    	sb.append("\r\nlogout\r\n");
+        sb.append("Welcome to Nezha Terminal! \r\n");
+    	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+    	sb.append("$: ");
+    	return sb.toString();
+	}
 }

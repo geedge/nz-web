@@ -50,7 +50,7 @@ public class TerminalSession implements Serializable {
     //key--->token value---->terminalInfo
     public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
     
-    public static Map<String,String> unloginMessageInfo = new HashMap<String,String>();
+    public static Map<String,String> terminalMessageInfo = new HashMap<String,String>();
     
     public static Map<String,List<String>> userInstructions =new HashMap<String,List<String>>();
     
@@ -78,15 +78,15 @@ public class TerminalSession implements Serializable {
     	}
     }
     
-    public static String getUnloginMessage(String uuid) {
-    	return unloginMessageInfo.get(uuid);
+    public static String getTerminalMessage(String uuid) {
+    	return terminalMessageInfo.get(uuid);
     }
     
-    public static void setUnloginMessage(String uuid,String message,Integer cursorIndex) {
-    	String string = unloginMessageInfo.get(uuid);
+    public static void setTerminalMessage(String uuid,String message,Integer cursorIndex) {
+    	String string = terminalMessageInfo.get(uuid);
     	if(StringUtils.isNoneBlank(string)) {
     		// 根据光标位置来追加字符出现的位置
-    		if(cursorIndex==string.length()||cursorIndex==null) {
+    		if(cursorIndex==null||cursorIndex==string.length()) {
     			string=string+message;
     		}else {
     			String prefix = string.substring(0, cursorIndex);
@@ -96,19 +96,19 @@ public class TerminalSession implements Serializable {
     	}else {
     		string=message;
     	}
-    	unloginMessageInfo.put(uuid,string);
+    	terminalMessageInfo.put(uuid,string);
     }
     /**
      * 清空当前用户指令
      * @param uuid
      */
-    public static void removeUnloginMessage(String uuid) {
-    	unloginMessageInfo.remove(uuid);
+    public static void removeTerminalMessage(String uuid) {
+    	terminalMessageInfo.remove(uuid);
     }
     
     public static boolean backspaceMessage(String uuid,Integer cursorIndex) {
     	boolean flag=false;
-    	String string = unloginMessageInfo.get(uuid);
+    	String string = terminalMessageInfo.get(uuid);
     	if(StringUtils.isNotBlank(string)) {
     		if(cursorIndex==string.length()) {
     			string=string.substring(0, string.length()-1);
@@ -121,10 +121,10 @@ public class TerminalSession implements Serializable {
     			string=prefix+suffix;
     		}
     		if(StringUtils.isNotBlank(string)) {
-    			unloginMessageInfo.put(uuid, string);
+    			terminalMessageInfo.put(uuid, string);
     			flag=true;
     		}else {
-    			unloginMessageInfo.remove(uuid);
+    			terminalMessageInfo.remove(uuid);
     			flag=true;
     		}    		
     	}
