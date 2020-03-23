@@ -50,4 +50,68 @@
 			#{id}
 		</foreach>
     </delete>
+
+    <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
+        SELECT
+            ar.id,
+            ar.alert_name AS alertName,
+            ar.link_id AS linkId,
+            ar.type,
+            ar.expr,
+            ar.last,
+            ar.severity,
+            ar.summary,
+            ar.description,
+            ar.receiver,
+            ar.build_in AS buildIn,
+            COUNT(am.id) AS alertNum
+        FROM alert_rule ar
+        LEFT JOIN alert_message am ON ar.id = am.rule_id AND am.state = 1
+
+        <where>
+
+            <if test="params.id != null and params.id != ''">
+                ar.id = #{params.id}
+            </if>
+
+            <if test="params.alertName != null and params.alertName != ''">
+                AND ar.alert_name LIKE CONCAT('%', #{params.alertName}, '%')
+            </if>
+
+            <if test="params.type != null and params.type != ''">
+                AND ar.type = #{params.type}
+            </if>
+
+            <if test="params.type != null and params.type != '' and params.linkId != null and params.linkId != ''">
+                AND ar.link_id = #{params.linkId}
+            </if>
+
+            <if test="params.expr != null and params.expr != ''">
+                AND ar.expr LIKE CONCAT('%', #{params.expr}, '%')
+            </if>
+
+            <if test="params.last != null and params.last != ''">
+                AND ar.last = #{params.last}
+            </if>
+
+            <if test="params.severity != null and params.severity != ''">
+                AND ar.severity = #{params.severity}
+            </if>
+
+            <if test="params.summary != null and params.summary != ''">
+                AND ar.summary LIKE CONCAT('%', #{params.summary}, '%')
+            </if>
+
+            <if test="params.description != null and params.description != ''">
+                AND ar.description LIKE CONCAT('%', #{params.description}, '%')
+            </if>
+
+            <if test="params.buildIn != null and params.buildIn != ''">
+                AND ar.build_in = #{params.buildIn}
+            </if>
+
+        </where>
+
+        GROUP BY ar.id
+    </select>
 </mapper>

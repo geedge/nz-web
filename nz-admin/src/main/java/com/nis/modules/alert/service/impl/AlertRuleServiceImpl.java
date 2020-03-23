@@ -1,9 +1,18 @@
 package com.nis.modules.alert.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertNameMapUserDTO;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -17,16 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.AlertNameMapUserDTO;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.service.AlertRuleService;
 import static com.nis.common.utils.Constant.AlertType;
 
 @Service("alertRuleService")
@@ -43,7 +42,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-    	Integer searchId = null;
+    	/*Integer searchId = null;
     	Integer searchType=null;
     	Integer searchLinkId=null;
     	if (params.get("id") != null && !StringUtils.isBlank(params.get("id").toString())) {
@@ -61,8 +60,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 			try{
 				searchLinkId = Integer.parseInt(params.get("linkId").toString());
 			}catch (NumberFormatException e){}
-		}
-    	IPage<AlertRuleEntity> page = this.page(
+		}*/
+    	/*IPage<AlertRuleEntity> page = this.page(
                 new Query<AlertRuleEntity>().getPage(params),
                 new QueryWrapper<AlertRuleEntity>()
                 	.like(!StringUtils.isEmpty((String)params.get("alertName")), "alert_name", (String)params.get("alertName"))
@@ -71,13 +70,16 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 	.eq(searchId != null, "id", searchId)
 					.eq(params.get("type")!=null,"type",searchType)
 					.eq(searchType!=null&&searchLinkId!=null,"link_id",searchLinkId)
-        );
+        );*/
 
-		List<AlertRuleEntity> records = page.getRecords();
-		for (AlertRuleEntity alertRule:records){
+		IPage<AlertRuleEntity> page = new Query<AlertRuleEntity>().getPage(params);
+		List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params);
+
+//		List<AlertRuleEntity> records = page.getRecords();
+		for (AlertRuleEntity alertRule:ruleEntityList){
 			if(alertRule.getBuildIn().equals(1)) {
 				//如果为内置规则 则跳过剩余关联关系查询
-				break;
+				continue;
 			}
 			if(alertRule.getType()!=null){
 				IService service=getServiceImpl(alertRule.getType());
@@ -90,6 +92,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 				alertRule.setLinkObject(linkObject);
 			}
 		}
+
+		page.setRecords(ruleEntityList);
 		
 		return new PageUtils(page);
     }

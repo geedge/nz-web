@@ -73,18 +73,18 @@
         LEFT JOIN sys_user su ON mr.create_by = su.user_id
         LEFT JOIN sys_user su1 ON mr.update_by = su1.user_id
 
-        WHERE 1=1
+        <where>
+            <if test="params.id != null and params.id != ''">
+                mr.id = #{params.id}
+            </if>
 
-        <if test="params.id != null and params.id != ''">
-            AND mr.id = #{params.id}
-        </if>
+            <if test="params.assetId != null and params.assetId != ''">
+                AND mr.asset_id = #{params.assetId}
+            </if>
 
-        <if test="params.assetId != null and params.assetId != ''">
-            AND mr.asset_id = #{params.assetId}
-        </if>
-
-        <if test="params.content != null and params.content != ''">
-            AND mr.content like CONCAT('%', #{params.content}, '%')
-        </if>
+            <if test="params.content != null and params.content != ''">
+                AND mr.content like CONCAT('%', #{params.content}, '%')
+            </if>
+        </where>
     </select>
 </mapper>

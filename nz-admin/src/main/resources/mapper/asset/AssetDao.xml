@@ -181,50 +181,52 @@
         LEFT JOIN asset_ping assp ON ass.host = assp.host
         LEFT JOIN sys_area sa ON idc.area_id = sa.id
 
-        WHERE 1=1
+        <where>
 
-        <if test="params.id != null and params.id != ''">
-            AND ass.id = #{params.id}
-        </if>
+            <if test="params.id != null and params.id != ''">
+                ass.id = #{params.id}
+            </if>
 
-        <if test="params.modelId != null and params.modelId != ''">
-            AND ass.model_id = #{params.modelId}
-        </if>
+            <if test="params.modelId != null and params.modelId != ''">
+                AND ass.model_id = #{params.modelId}
+            </if>
 
-        <if test="params.idcId != null and params.idcId != ''">
-            AND ass.idc_id = #{params.idcId}
-        </if>
+            <if test="params.idcId != null and params.idcId != ''">
+                AND ass.idc_id = #{params.idcId}
+            </if>
 
-        <if test="params.idcIds != null and params.idcIds.size > 0">
-            AND ass.idc_id IN
-            <foreach collection="params.idcIds" item="idcId" index="no" open="(" separator="," close=")">
-                #{idcId}
-            </foreach>
-        </if>
+            <if test="params.idcIds != null and params.idcIds.size > 0">
+                AND ass.idc_id IN
+                <foreach collection="params.idcIds" item="idcId" index="no" open="(" separator="," close=")">
+                    #{idcId}
+                </foreach>
+            </if>
 
-        <if test="params.cabinetId != null and params.cabinetId != ''">
-            AND ass.cabinet_id = #{params.cabinetId}
-        </if>
+            <if test="params.cabinetId != null and params.cabinetId != ''">
+                AND ass.cabinet_id = #{params.cabinetId}
+            </if>
 
-        <if test="params.state != null and params.state != ''">
-            AND ass.state = #{params.state}
-        </if>
+            <if test="params.state != null and params.state != ''">
+                AND ass.state = #{params.state}
+            </if>
 
-        <if test="params.host != null and params.host != ''">
-            AND ass.host like CONCAT('%', #{params.host}, '%')
-        </if>
+            <if test="params.host != null and params.host != ''">
+                AND ass.host like CONCAT('%', #{params.host}, '%')
+            </if>
 
-        <if test="params.sn != null and params.sn != ''">
-            AND ass.sn like CONCAT('%', #{params.sn}, '%')
-        </if>
+            <if test="params.sn != null and params.sn != ''">
+                AND ass.sn like CONCAT('%', #{params.sn}, '%')
+            </if>
 
-        <if test="params.purchaseDate != null and params.purchaseDate != ''">
-            AND ass.purchase_date like CONCAT('%', #{params.purchaseDate}, '%')
-        </if>
+            <if test="params.purchaseDate != null and params.purchaseDate != ''">
+                AND ass.purchase_date like CONCAT('%', #{params.purchaseDate}, '%')
+            </if>
 
-        <if test="params.pingStatus != null and params.pingStatus != ''">
-            AND assp.status = #{params.pingStatus}
-        </if>
+            <if test="params.pingStatus != null and params.pingStatus != ''">
+                AND assp.status = #{params.pingStatus}
+            </if>
+
+        </where>
     </select>
 
 
