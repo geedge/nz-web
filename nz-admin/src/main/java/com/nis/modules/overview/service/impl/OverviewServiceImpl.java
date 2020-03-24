@@ -593,6 +593,13 @@ public class OverviewServiceImpl implements OverviewService {
 
         // 根据dc维度统计信息
         List<AssetStat> assetStatInfoByIdc = overviewDao.getAssetStatInfoByIdc();
+        // 去掉 total 为 0 的数据
+        for (int i = 0; i < assetStatInfoByIdc.size(); i++) {
+            if(assetStatInfoByIdc.get(i).getTotal() < 1){
+                assetStatInfoByIdc.remove(i);
+                i--;
+            }
+        }
 
         // 处理type为维度统计asset信息
         List<AssetStat> assetStatInfoByType = new ArrayList<>();
