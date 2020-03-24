@@ -234,6 +234,15 @@ public enum RCode {
     IDC_CABINETUSIZE_MINIMUM(535013, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
     IDC_CABINET_ASSETS_EXISTS(533014, "There are assets in the cabinet"),// 机柜中有资产
     IDC_CABINET_MAXU(535015, "The maximum U of current cabinet is 47"),  // 当前机柜最大U为47
+    IDC_Y_MINIMUM(535016,"Idc y is a minimum of 1"),                       // 数据中心行数最少为1
+    IDC_X_MINIMUM(535017,"Idc x is a minimum of 1"),                       // 数据中心列数最少为1
+    IDC_Y_ALREADYINUSE(535018,"Idc y is already in use"),                  // 数据中心行已经被使用
+    IDC_X_ALREADYINUSE(535019,"Idc x is already in use"),                  // 数据中心列已经被使用
+    CABINET_Y_MINIMUM(535020,"Cabinet y is a minimum of 1"),               // 机柜所在行至少为1
+    CABINET_X_MINIMUM(535021,"Cabinet x is a minimum of 1"),               // 机柜所在列至少为1
+    CABINET_Y_INCORRECT(535022,"Cabinet y is not in this idc"),            // 机柜所选行不在idc范围内
+    CABINET_X_INCORRECT(535023,"Cabinet x is not in this idc"),            // 机柜所选列不在idc范围内
+    CABINET_POSITION_OCCUPIED(535024,"Cabinet position is occupied"),     // 机柜所选位置已被占用
 
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）

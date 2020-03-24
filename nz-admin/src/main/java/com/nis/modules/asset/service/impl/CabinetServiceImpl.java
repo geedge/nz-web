@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -93,8 +94,37 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     public void saveOrUpdateCabinet(Cabinet cabinet) {
+        // 校验行列参数是否正确
+        this.validatePosition(cabinet);
+
         // 入库
         this.saveOrUpdate(cabinet);
+    }
+
+    // 校验所在机房行列值是否正确
+    private void validatePosition(Cabinet cabinet) {
+        Idc idc = idcService.getById(cabinet.getIdcId());
+
+        Integer y = cabinet.getY();
+        Integer x = cabinet.getX();
+
+
+        if (y != null) {
+            ValidateUtils.is(cabinet.getY()).max(idc.getY(), RCode.CABINET_Y_INCORRECT);
+        }
+
+        if (x != null) {
+            ValidateUtils.is(cabinet.getX()).max(idc.getX(), RCode.CABINET_X_INCORRECT);
+        }
+
+        // 当行列都不会空时 校验位置是否被占用 如果只单独填写了行或列的话 暂时不做具体位置校验
+        if (y != null && x != null) {
+            Cabinet entity = this.getOne(new QueryWrapper<Cabinet>().eq("idc_id", cabinet.getIdcId()).eq("y", y).eq("x", x));
+            if(entity != null && cabinet.getId() != entity.getId()){
+                // 此位置已被占用
+                throw new NZException(RCode.CABINET_POSITION_OCCUPIED);
+            }
+        }
     }
 
     @Override

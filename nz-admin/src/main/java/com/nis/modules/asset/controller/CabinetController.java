@@ -50,7 +50,9 @@ public class CabinetController {
     @SysLog("save cabinet")
     public R save(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
-                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL);
+                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+                .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
+                .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
 
         if (cabinet.getuSize() == null) {
             cabinet.setuSize(1);
@@ -80,7 +82,9 @@ public class CabinetController {
     public R update(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getId()).notNull(RCode.IDC_CABINETID_ISNULL)
                 .and(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
-                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL);
+                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+                .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
+                .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);;
 
         if (cabinet.getuSize() != null) {
             ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM)

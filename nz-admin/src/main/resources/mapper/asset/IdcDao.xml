@@ -10,6 +10,8 @@
         <result property="principal" column="principal"/>
         <result property="seq" column="seq"/>
         <result property="areaId" column="area_id"/>
+        <result property="x" column="x"/>
+        <result property="y" column="y"/>
         <result property="cabinetNum" column="cabinetNum" />
         <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
 	    	<id column="id" property="id"/>

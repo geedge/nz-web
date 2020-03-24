@@ -53,6 +53,16 @@ public class Cabinet implements Serializable {
     private String seq;
 
     /**
+     * 在机房的那一列
+     */
+    private Integer x;
+
+    /**
+     * 在机房的那一行
+     */
+    private Integer y;
+
+    /**
      * 资产统计
      */
     @TableField(exist = false)

@@ -21,5 +21,7 @@ public interface IdcService extends IService<Idc> {
     void delete(Integer ... ids);
 
     boolean checkName(Integer id, String name);
+
+    void validateIdcSize(Idc idc);
 }
 

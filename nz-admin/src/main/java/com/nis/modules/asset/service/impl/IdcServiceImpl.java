@@ -7,6 +7,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.IdcDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
@@ -21,7 +22,10 @@ import com.nis.modules.sys.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 数据中心    serviceImpl
@@ -49,6 +53,9 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
 
     @Autowired
     private OverviewDao overviewDao;
+
+    @Autowired
+    private CabinetDao cabinetDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -101,7 +108,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     public void delete(Integer... ids) {
         // 1. 校验是否存在关联的机柜信息 资产信息
         for (Integer id : ids) {
-            if(id == null){
+            if (id == null) {
                 continue;
             }
 
@@ -143,5 +150,31 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             flag = true;
         }
         return flag;
+    }
+
+    @Override
+    public void validateIdcSize(Idc idc) {
+        Integer y = idc.getY();
+        Integer x = idc.getX();
+
+        // 查询数据库中 机柜已占用机房最大行列
+        Map<String, Integer> cabinetMaxXY = cabinetDao.getCabinetMaxXY(idc.getId());
+        if (cabinetMaxXY != null && cabinetMaxXY.size() > 0) {
+            // 行 不为 null ，校验行
+            Integer maxY = cabinetMaxXY.get("y");
+            if (y != null && maxY != null) {
+                if (y < maxY) {
+                    throw new NZException(RCode.IDC_Y_ALREADYINUSE);
+                }
+            }
+
+            // 列 不为 null ，校验列
+            Integer maxX = cabinetMaxXY.get("x");
+            if (x != null && maxX != null) {
+                if (x < maxX) {
+                    throw new NZException(RCode.IDC_X_ALREADYINUSE);
+                }
+            }
+        }
     }
 }

@@ -49,7 +49,10 @@ public class IdcController {
     @PostMapping
     @SysLog("save idc")
     public R save(@RequestBody Idc idc) {
-        ValidateUtils.is(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL);
+        ValidateUtils.is(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
+                .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
+                .and(idc.getX()).min(1, RCode.IDC_X_MINIMUM);
+
         // 电话格式校验
         if (StringUtils.isNotEmpty(idc.getTel())) {
             ValidateUtils.is(idc.getTel()).phone(RCode.IDC_IDCPHONE_FORMAT);
@@ -59,6 +62,14 @@ public class IdcController {
         if (!idcService.checkName(idc.getId(), idc.getName())) {
             // 名称重复
             throw new NZException(RCode.IDC_NAME_DUPLICATE);
+        }
+
+        // 默认 行列值
+        if(idc.getY() == null){
+            idc.setY(1);
+        }
+        if(idc.getX() == null){
+            idc.setX(1);
         }
 
         idcService.saveOrUpdateIdc(idc);
@@ -75,7 +86,10 @@ public class IdcController {
     @SysLog("update idc")
     public R update(@RequestBody Idc idc) {
         ValidateUtils.is(idc.getId()).notNull(RCode.IDC_IDCID_ISNULL)
-                .and(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL);
+                .and(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
+                .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
+                .and(idc.getX()).min(1, RCode.IDC_X_MINIMUM);
+
         // 电话格式校验
         if (StringUtils.isNotEmpty(idc.getTel())) {
             ValidateUtils.is(idc.getTel()).phone(RCode.IDC_IDCPHONE_FORMAT);
@@ -85,6 +99,11 @@ public class IdcController {
         if (!idcService.checkName(idc.getId(), idc.getName())) {
             // 名称重复
             throw new NZException(RCode.IDC_NAME_DUPLICATE);
+        }
+
+        // 校验行列是否可以修改
+        if(idc.getX() != null || idc.getY() != null){
+            idcService.validateIdcSize(idc);
         }
 
         idcService.saveOrUpdateIdc(idc);

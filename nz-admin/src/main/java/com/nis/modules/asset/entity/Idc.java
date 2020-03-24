@@ -61,6 +61,16 @@ public class Idc implements Serializable {
     private Integer areaId;
 
     /**
+     * 列
+     */
+    private Integer x;
+
+    /**
+     * 行
+     */
+    private Integer y;
+
+    /**
      * 地域信息
      */
     @TableField(exist = false)
