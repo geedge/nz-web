@@ -89,5 +89,10 @@ public class SysUserEntity implements Serializable {
 
 	@TableField(exist=false)
 	private String name;
+	
+	/**
+	 * 来源
+	 */
+	private String source;
 
 }

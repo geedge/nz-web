@@ -196,6 +196,19 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>${apache.poi.version}</version>
 		</dependency>
+		
+		<!-- ldap -->
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-data-ldap</artifactId>
+		</dependency>
+		<!-- ldap测试 -->
+		<dependency>
+		    <groupId>com.unboundid</groupId>
+		    <artifactId>unboundid-ldapsdk</artifactId>
+		    <scope>test</scope>
+		</dependency>
+		
     </dependencies>
 
 	<build>
