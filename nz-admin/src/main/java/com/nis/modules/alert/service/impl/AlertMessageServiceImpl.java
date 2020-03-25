@@ -89,6 +89,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     	Integer searchState=resolveParamToInteger(params,"state");
 		params.put("state",searchState);
 
+		Integer searchRuleId=resolveParamToInteger(params,"ruleId");
+		params.put("ruleId",searchRuleId);
+
 		IPage<AlertMessageEntity> page=this.page(new Query<AlertMessageEntity>().getPage(params));
 
 		List<AlertMessageEntity> alertMessages=this.baseMapper.list(page,params);

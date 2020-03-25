@@ -56,6 +56,10 @@
 			<if test="params.endAt != null">
 				AND am.start_at &lt;= #{params.endAt}
 			</if>
+
+			<if test="params.ruleId != null and params.ruleId != ''">
+				AND am.rule_id = #{params.ruleId}
+			</if>
 		</where>
 
 		/* 如果排序字段为null , 使用默认排序 */
