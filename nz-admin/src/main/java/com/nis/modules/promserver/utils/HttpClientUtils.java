@@ -86,7 +86,7 @@ public class HttpClientUtils {
         HttpPost httpPost = new HttpPost(url);
         httpPost.setConfig(requestConfig);
         try {
-            if (null != strParam) {
+            if (null != strParam && !"".equals(strParam)) {
                 // 解决中文乱码问题
                 StringEntity entity = new StringEntity(strParam, "utf-8");
                 entity.setContentEncoding("UTF-8");

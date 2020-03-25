@@ -148,4 +148,20 @@ public class SysConfigController extends AbstractController {
 
         return R.ok();
     }
+
+	/**
+	 * 系统重置
+	 * @param password
+	 * @param type
+	 * @return
+	 */
+	@DeleteMapping("/reset")
+	public R resetConfig(String password,String ...type) throws Exception{
+		try {
+			sysConfigService.resetConfig(password,type);
+		}catch (Exception e){
+			throw e;
+		}
+    	return R.ok();
+	}
 }

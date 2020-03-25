@@ -32,5 +32,11 @@ public interface SysConfigDao extends BaseMapper<SysConfigEntity> {
 	 * 根据key，更新value
 	 */
 	int updateValueByKey(@Param("paramKey") String paramKey, @Param("paramValue") String paramValue);
+
+	/**
+	 * 系统重置删除用户输入的内容
+	 * @param tableName
+	 */
+	void clearByTableName(@Param("tableName") String tableName);
 	
 }

@@ -60,4 +60,6 @@ public interface SysConfigService extends IService<SysConfigEntity> {
     Map getConfigListByTypes(String[] types);
 
     void updateConfigs(Map<String, Object> param);
+
+    void resetConfig(String password, String[] type) throws Exception;
 }

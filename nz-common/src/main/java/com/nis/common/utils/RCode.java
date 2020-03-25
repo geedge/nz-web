@@ -293,7 +293,8 @@ public enum RCode {
     SYS_CONFIG_LDAPPASSWORD_ISNULL(571028,"System config ldap password can not be empty"),         // ldap_password 不能为空
     SYS_CONFIG_LDAPUSERFILTER_ISNULL(571029,"System config ldap user filter can not be empty"),    // ldap_user_filter 不能为空
     SYS_CONFIG_LDAPMAPPING_ISNULL(571030,"System config ldap mapping can not be empty"),            // ldap_mapping 不能为空
-
+    SYS_CONFIG_PASSWORDORTYPE_INVALID(571031,"The password or type is invalid when reset"),
+    SYS_CONFIG_PASSWORD_ERROR(571032,"The password is different from the original one when reset"),
     /**
      * webshell相关
      */

@@ -56,6 +56,8 @@ spring:
             class: javax.net.ssl.SSLSocketFactory
 
 nezha:
+  userId:
+    expire: 300
   cluster: false  #集群配置  true集群环境   false单机环境，还需打开pom.xml里的spring-session-data-redis注释
   globalSessionTimeout: 3600   #单机环境，session过期时间为60分钟
   redis:
