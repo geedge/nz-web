@@ -87,6 +87,15 @@ public enum RCode {
     MODULE_REMARK_TOO_LONG(223008, "Module remark too long"),
     SYS_CONFIG_MODULEKEY_ISNULL(221009, "System config init module node exporter can not be null"),// 内置module不能为空
     MODULE_NAME_DUPLICATE(222010, "Module name is duplicate"),
+    MODULE_TYPE_ISNULL(221011, "Module type can not be empty"),
+    MODULE_TYPE_INVALID(224012, "Module type must be http or snmp"),
+    MODULE_SNMPVERSION_INVALID(224013,"Snmp version must be 2 or 3"),
+    MODULE_AUTHSECURITYLEVEL_INVALID(224014,"Security level must be one of authPriv, authNoPriv or noAuthNoPriv"),
+    MODULE_PRIVPASSWORD_ISNULL(221015,"Priv password is missing, required for SNMPv3 with priv"),
+    MODULE_PRIVPROTOCOL_INVALID(224016,"Priv protocol must be DES or AES"),
+    MODULE_AUTHPROTOCOL_INVALID(224017,"Auth protocol must be SHA or MD5"),
+    MODULE_PASSWORD_INVALID(221018,"Auth password is missing, required for SNMPv3 with auth"),
+    MODULE_USERNAME_INVALID(221019,"Auth username is missing, required for SNMPv3"),
 
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),

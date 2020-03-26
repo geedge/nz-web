@@ -146,6 +146,12 @@ public class Constant {
     // 当前sys_config 配置中配置项和所属类别map
     public static final Map<String, List<String>> SYSCONFIG_TYPEWITHKEYS_MAP;
 
+    // module 类型 可选值 http、snmp
+    public static final String MODULE_TYPE_HTTP = "http";
+    public static final String MODULE_TYPE_SNMP = "snmp";
+
+    public static final Integer SNMP_DEFAULT_PORT = 161;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);

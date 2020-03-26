@@ -1,15 +1,13 @@
 package com.nis.modules.module.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.AlertType;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.endpoint.service.EndpointService;
@@ -45,8 +43,21 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
 	@Override
 	public void validateParam(Module moduleEntity) {
-		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL);
-		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
+		String type = moduleEntity.getType();
+		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
+				.and(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL)
+				.and(type).notNull(RCode.MODULE_TYPE_ISNULL);
+
+		// 校验 type 类型是否在枚举范围内
+		if (Constant.MODULE_TYPE_HTTP.equals(type)) {
+			moduleEntity.setSnmpParam(null);
+		}else if(Constant.MODULE_TYPE_SNMP.equals(type)){
+			if(moduleEntity.getPort() == null){
+				moduleEntity.setPort(Constant.SNMP_DEFAULT_PORT);
+			}
+		}else{
+			throw new NZException(RCode.MODULE_TYPE_INVALID);
+		}
 
         // 名称不能重复
         List<Module> list = this.list(new QueryWrapper<Module>().eq("name", moduleEntity.getName()).eq("project_id", moduleEntity.getProjectId()));
@@ -69,6 +80,77 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                 throw new NZException(RCode.MODULE_PORT_ERROR);
             }
         }
+
+		// 校验 snmpParam参数是否合法
+		String snmpParam = moduleEntity.getSnmpParam();
+		if (StringUtils.isNotEmpty(snmpParam)) {
+
+			// snmp param 参数
+			Map params = JSONObject.parseObject(snmpParam, Map.class);
+
+			// 注： snmp version 实际版本 为 1，2，3 ，此处只做 2，3 版本限制
+			Integer version = (Integer) params.get("version");
+			if (version != null) {
+				if (version < 2 || version > 3) {
+					// 版本不在可选范围内
+					throw new NZException(RCode.MODULE_SNMPVERSION_INVALID);
+				}
+
+				if (version.equals(3)) {
+					Map authInfo = JSONObject.parseObject(params.get("auth").toString(), Map.class);
+
+					// 默认为noAuthNoPriv。可以是 noAuthNoPriv（不认证不加密），authNoPriv（认证不加密）或 authPriv（认证且加密）
+					String securityLevel = (String) authInfo.get("security_level");
+
+					String username = (String) authInfo.get("username");
+
+					if (StringUtils.isEmpty(username)) {
+						throw new NZException(RCode.MODULE_USERNAME_INVALID);
+					}
+
+					// 不为 null 时校验参数是否正确
+					if (StringUtils.isNotEmpty(securityLevel)) {
+						String password = (String) authInfo.get("password");
+
+						String privPassword = (String) authInfo.get("priv_password");
+						String privProtocol = (String) authInfo.get("priv_protocol");
+						String authProtocol = (String) authInfo.get("auth_protocol");
+
+
+						if (securityLevel.equals("authPriv")) { // 认证且加密
+							if (StringUtils.isEmpty(privPassword)) {
+								throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
+								throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
+							}
+
+							if (StringUtils.isEmpty(password)) {
+								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+							}
+						} else if (securityLevel.equals("authNoPriv")) { // 认证不加密
+							if (StringUtils.isEmpty(password)) {
+								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+							}
+						} else if (securityLevel.equals("noAuthNoPriv")) {
+							// do nothhing
+						} else {
+							// 不在枚举范围内
+							throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	@Override

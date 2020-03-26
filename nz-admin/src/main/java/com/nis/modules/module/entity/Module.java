@@ -1,13 +1,12 @@
 package com.nis.modules.module.entity;
 
-import javax.validation.constraints.NotBlank;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.project.entity.Project;
-
 import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
 
 @Data
 @TableName("module")
@@ -28,4 +27,14 @@ public class Module {
 	private String remark;
 	private Integer buildIn;
 	private String seq;
+
+	/**
+	 * modulle 类型 可选值 ： http 、snmp
+	 */
+	private String type;
+
+	/**
+	 * 	snmp配置参数
+	 */
+	private String snmpParam;
 }
