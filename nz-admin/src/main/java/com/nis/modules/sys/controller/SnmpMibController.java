@@ -112,6 +112,7 @@ public class SnmpMibController extends AbstractController {
                 response.setCharacterEncoding("utf-8");
                 response.setContentType("multipart/form-data");
                 response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+                response.setHeader("Access-Control-Expose-Headers","Content-Disposition");
 
                 os.write(snmpMib.getContent());
                 os.flush();
