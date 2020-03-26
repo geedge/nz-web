@@ -34,6 +34,10 @@ public class SnmpMib implements Serializable {
     private byte[] content;
 
     /**
+     *   关联设备型号
+     */
+    private String models;
+    /**
      * 备注信息
      */
     private String remark;

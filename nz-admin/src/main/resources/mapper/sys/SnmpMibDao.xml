@@ -8,6 +8,7 @@
         <result property="name" column="name"/>
         <result property="fileName" column="file_name"/>
         <result property="content" column="content"/>
+        <result property="models" column="models"/>
         <result property="remark" column="remark"/>
         <result property="updateAt" column="update_at"/>
 
@@ -23,6 +24,7 @@
 		sm.name,
 		sm.file_name,
 		sm.content,
+		sm.models,
 		sm.remark,
 		sm.update_at,
 		su.user_id,
