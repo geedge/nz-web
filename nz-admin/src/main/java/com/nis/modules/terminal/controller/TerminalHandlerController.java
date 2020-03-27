@@ -10,25 +10,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.nis.common.utils.*;
+import com.nis.modules.terminal.entity.TerminalLog;
+import com.nis.modules.terminal.service.TerminalLogService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
 import com.nis.modules.terminal.config.TerminalClient;
 import com.nis.modules.terminal.config.TerminalContext;
 import com.nis.modules.terminal.config.TerminalOneProcessor;
@@ -44,6 +39,8 @@ public class TerminalHandlerController {
 	
 	@Autowired
     private TerminalOneProcessor terminalOneProcessor;
+	@Autowired
+    private TerminalLogService terminalLogService;
 	
 	@Value("${nezha.uploadTempPath}")
     private String configUploadPath;
@@ -138,5 +135,13 @@ public class TerminalHandlerController {
             throw new NZException(RCode.SYS_ERROR);
         }
     }
+
+    @GetMapping(value = "/log")
+    @ResponseBody
+    public R queryPage(Map<String, Object> params) throws Exception {
+        PageUtils page = terminalLogService.queryPage(params);
+        return R.ok(page);
+    }
+
 	
 }

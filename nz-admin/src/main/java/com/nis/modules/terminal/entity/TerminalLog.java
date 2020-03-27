@@ -1,11 +1,15 @@
 package com.nis.modules.terminal.entity;
 
+import java.io.Serializable;
 import java.util.Date;
 
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-public class TerminalLog {
+@TableName("terminal_log")
+public class TerminalLog implements Serializable {
 	private Integer id;
 	private String host;
 	private Integer port;
@@ -16,4 +20,17 @@ public class TerminalLog {
 	private Long userId;
 	private Date time;
 	private Integer status;
+
+	/**
+	 * 操作查询开始时间参数
+	 */
+	@TableField(exist = false)
+	private String startTime;
+	/**
+	 * 操作查询结束时间参数
+	 */
+	@TableField(exist = false)
+	private String endTime;
+	@TableField(exist = false)
+	private String userName;
 }

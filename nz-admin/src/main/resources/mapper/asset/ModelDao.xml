@@ -26,6 +26,15 @@
             <result column="outStock" property="outStock"/>
         </association>
     </resultMap>
+    <resultMap id="modelWithMib" type="com.nis.modules.asset.entity.ModelWithMib">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="vendor" column="vendor"/>
+        <result property="type"   column="type"/>
+    </resultMap>
+
+
+
 
 
     <sql id="model_info_columns">
@@ -83,5 +92,20 @@
         </where>
 
         GROUP BY mo.id
+    </select>
+
+    <select id="selectByModels" resultMap="modelWithMib">
+    SELECT
+	m.id id,m.name name, sd.value vendor,sd1.value type
+    FROM
+	model m INNER JOIN sys_dict sd on m.vendor = sd.code AND sd.type='vendor'AND sd.del_flag=0
+            INNER JOIN  sys_dict sd1 ON m.type  =sd1.code AND sd1.type='assetType' AND sd1.del_flag=0
+    WHERE m.id
+        <if test="models != null and models.length > 0">
+            AND m.id IN
+            <foreach collection="models" item="id" index="no" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
     </select>
 </mapper>

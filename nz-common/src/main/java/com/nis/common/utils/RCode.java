@@ -307,6 +307,10 @@ public enum RCode {
     
     NOT_NULL_ERROR(990, "not null error"), //not null错误
     NOT_NUMBER_ERROR(991, "not number error"), //not number错误
+    /**
+     * 错误的时间格式
+     */
+    DateFormatWrong(40090018,"Incorrect Date Format"),
 
     ERROR(999, "error"); //通用错误/未知错误
 
