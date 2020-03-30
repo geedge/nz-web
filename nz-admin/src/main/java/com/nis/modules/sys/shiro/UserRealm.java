@@ -201,7 +201,7 @@ public class UserRealm extends AuthorizingRealm {
 	 */
 	public R getLdapAuthentication(String userName,String password) {
 		// 获取sys_config中的ldap信息 判断是否支持ldap登录
-		Map ldapInfos = sysConfigService.getConfigListByTypes(new String[] {"ldap"});
+		Map ldapInfos = sysConfigService.getConfigListByTypes(new String[] {"ldap"}, null);
 		Map ldap = (Map) ldapInfos.get("ldap");
 		if(ObjectUtils.isEmpty(ldap)) {
 			return null;

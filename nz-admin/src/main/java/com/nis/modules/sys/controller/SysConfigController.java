@@ -104,21 +104,27 @@ public class SysConfigController extends AbstractController {
     /**
      * 根据 系统设置类别分类获取包含的设置数据
      * @param type
+     * @param paramKey
      * @return
      */
     @GetMapping
-    public R getConfigList(String... type) {
-        ValidateUtils.is(type).notNull(RCode.SYS_CONFIG_TYPE_ISNULL);
+    public R getConfigList(String[] type, String[] paramKey) {
+    	// 查询参数不能同时为空
+		if((type == null || type.length == 0) && (paramKey == null || paramKey.length == 0)){
+			throw new NZException(RCode.SYS_CONFIG_QUERYPARAMS_ISNULL);
+		}
 
-        // 校验type值是否在枚举值内
-        Set<String> configTypes = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.keySet();
-        for (String t : type) {
-            if (!configTypes.contains(t)) {
-                throw new NZException(RCode.SYS_CONFIG_TYPE_INVALIDE);
-            }
-        }
+		if(type != null && type.length > 0){
+			// 校验type值是否在枚举值内
+			Set<String> configTypes = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.keySet();
+			for (String t : type) {
+				if (!configTypes.contains(t)) {
+					throw new NZException(RCode.SYS_CONFIG_TYPE_INVALIDE);
+				}
+			}
+		}
 
-        Map resultData = sysConfigService.getConfigListByTypes(type);
+        Map resultData = sysConfigService.getConfigListByTypes(type, paramKey);
 
         return R.ok(resultData);
     }

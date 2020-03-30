@@ -8,7 +8,6 @@
 
 package com.nis.modules.sys.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -20,7 +19,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import com.nis.modules.promserver.utils.HttpClientUtils;
@@ -30,7 +28,6 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import lombok.AllArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -128,36 +125,64 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 		}
 	}
     @Override
-    public Map getConfigListByTypes(String[] types) {
+    public Map getConfigListByTypes(String[] types, String[] paramKey) {
 
-        List<String> paramKeys = new ArrayList<>();
-        for (String type : types) {
-            paramKeys.addAll(Constant.SYSCONFIG_TYPEWITHKEYS_MAP.get(type));
+        List<String> paramKeys = paramKey == null || paramKey.length == 0 ? new ArrayList<>() : new ArrayList<>(Arrays.asList(paramKey));
+
+        boolean typeFlag = false;
+        if(types != null && types.length > 0){
+            typeFlag = true;
+            for (String type : types) {
+                paramKeys.addAll(Constant.SYSCONFIG_TYPEWITHKEYS_MAP.get(type));
+            }
         }
 
         List<SysConfigEntity> list = this.list(new QueryWrapper<SysConfigEntity>()
                 .eq("status", 1)
                 .in(CollectionUtils.isNotEmpty(paramKeys), "param_key", paramKeys));
+        
+        Map<String, String> paramKeyWithValueMap = new HashMap<>();
+        for (SysConfigEntity entity: list) {
+            paramKeyWithValueMap.put(entity.getParamKey(), entity.getParamValue());
+        }
 
 
         // 组织返回数据
-        Map typeMap = new HashMap(), values;
+        Map resultMap = new HashMap(), values;
 
-        List<String> keys;
-        for (String typeName : types) {
-            values = new HashMap();
+        // 如果type存在 则返回此type包含的所有内容
+        if(typeFlag){
+            List<String> keys;
+            String value;
+            for (String typeName : types) {
+                values = new HashMap();
 
-            keys = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.get(typeName);
-            for (SysConfigEntity entity : list) {
-                if (keys.contains(entity.getParamKey())) {
-                    values.put(entity.getParamKey(), entity.getParamValue());
+                keys = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.get(typeName);
+                for (String str : keys) {
+                    value = paramKeyWithValueMap.get(str);
+                    if(StringUtils.isNotEmpty(value)){
+                        values.put(str, value);
+                    }
                 }
+               
+                resultMap.put(typeName, values);
             }
-
-            typeMap.put(typeName, values);
         }
 
-        return typeMap;
+        // 处理 paramKey参数查询
+        if(paramKey != null && paramKey.length > 0){
+            String value;
+            Map paramValues = new HashMap();
+            for (String key : paramKey) {
+                value = paramKeyWithValueMap.get(key);
+                if(StringUtils.isNotEmpty(value)){
+                    paramValues.put(key, value);
+                }
+            }
+            resultMap.put("paramKey",paramValues);
+        }
+
+        return resultMap;
     }
 
 

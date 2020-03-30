@@ -295,6 +295,7 @@ public enum RCode {
     SYS_CONFIG_LDAPMAPPING_ISNULL(571030,"System config ldap mapping can not be empty"),            // ldap_mapping 不能为空
     SYS_CONFIG_PASSWORDORTYPE_INVALID(571031,"The password or type is invalid when reset"),
     SYS_CONFIG_PASSWORD_ERROR(571032,"The password is different from the original one when reset"),
+    SYS_CONFIG_QUERYPARAMS_ISNULL(571033,"Type and paramKey cannot be empty at the same time when sysconfig queries"),// 查询sysConfig时， type 和 paramKey不能同时为空
     /**
      * webshell相关
      */
