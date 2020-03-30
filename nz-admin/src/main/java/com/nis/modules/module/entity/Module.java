@@ -37,4 +37,9 @@ public class Module {
 	 * 	snmp配置参数
 	 */
 	private String snmpParam;
+
+	/**
+	 * snmp_exporter需要的配置部分， 由web端根据snmp_param生成
+	 */
+	private String snmpYml;
 }

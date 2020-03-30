@@ -433,6 +433,9 @@ public class Constant {
     // asset fping 命令语句 key
     public static final String SYSCONFIG_KEY_ASSET_FPING_COMMAND = "asset_ping_command";
 
+    // 内置 generator 路径
+    public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 

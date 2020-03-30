@@ -14,15 +14,23 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
+
+    protected Logger logger = LoggerFactory.getLogger(ModuleServiceImpl.class);
 
 	@Autowired
 	private ModuleDao moduleDao;
@@ -32,6 +40,12 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	private AlertMessageService alertMessageService;
 	@Autowired
 	private EndpointService endpointService;
+
+    @Autowired
+    private YamlUtil yamlUtil;
+
+    @Autowired
+    private SysConfigService sysConfigService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -153,16 +167,90 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		}
 	}
 
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public void removeHandle(List ids) {
-		moduleDao.deleteBatchIds(ids);
-		//同时删除endpoint信息
-		endpointService.removeByModuleIds(ids);
-		//删除alert相关信息
-		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-	}
+    // 根据snmp param生成
+    @Override
+    public String generateYmlFromSnmpParam(Map snmpParam, Module moduleEntity) {
+        // 取出generator路径
+        SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", Constant.SYSCONFIG_KEY_GENERATOR_PATH));
+        String generatorPath = entity.getParamValue();
+
+        Map modules = new HashMap();
+
+        Map module = new HashMap();
+        module.put(moduleEntity.getName(), snmpParam);
+
+        modules.put("modules", module);
+
+        try {
+            logger.debug("Start writing snmp param to the generator.yml file");
+
+            // 将json写入到generator.yml文件中
+            yamlUtil.createYaml(generatorPath + File.separator + "generator.yml", JSONObject.toJSONString(modules));
+
+            logger.debug("Write snmp param to generator.yml file succeeded");
+        } catch (Exception e) {
+            logger.error("Failed to write snmp param to generator.yml file", e);
+        }
+
+        StringReader result = null;
+        StringWriter sw = null;
+        try {
+			logger.debug("Start generate snmp.yml file");
+
+            // 先设置环境变量 然后 赋可执行权限 最后 执行生成命令
+            String[] envp = {"MIBDIRS=" + generatorPath + File.separator + "mibs"};
+            String generatorFile = generatorPath + File.separator + "generator";
+            String[] chmodCommand = {"chmod", "+x", generatorFile};
+            String[] generateCommand = {generatorFile, "generate"};
+            result = RuntimeUtil.run(envp, new File(generatorPath), chmodCommand, generateCommand);
+
+            sw = new StringWriter();
+            char[] buf = new char[1024];
+            while (result.read(buf) != -1) {
+                sw.write(buf);
+            }
+
+            logger.debug("Generate snmp.yml file succeeded {}", sw.toString());
+        } catch (Exception e) {
+            logger.error("Failed to generate snmp.yml file", e);
+        } finally {
+            if (sw != null) {
+                try {
+                    sw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (result != null) {
+                result.close();
+            }
+        }
+
+        String snmpYml = null;
+
+        try {
+            // 读取生成之后的snmp.yml 并以json格式
+            snmpYml = yamlUtil.yamlToJson(generatorPath + File.separator + "snmp.yml");
+            logger.debug("Read the contents of snmp.yml file succeeded");
+        } catch (FileNotFoundException e) {
+            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found", e);
+        } catch (Exception e) {
+            logger.error("Failed to read the contents of snmp.yml file", e);
+        }
+
+        return snmpYml;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeHandle(List ids) {
+        moduleDao.deleteBatchIds(ids);
+        //同时删除endpoint信息
+        endpointService.removeByModuleIds(ids);
+        //删除alert相关信息
+        alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+        alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+    }
 
 	@Override
 	public List queryModuleIdsByProjectIds(List projectIds) {
