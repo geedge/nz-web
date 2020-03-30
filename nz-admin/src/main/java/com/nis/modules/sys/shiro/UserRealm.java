@@ -119,9 +119,9 @@ public class UserRealm extends AuthorizingRealm {
 				userInfo.setCreateTime(new Date());
 				userInfo.setUsername(token.getUsername());
 				//sha256加密
-				String salt = RandomStringUtils.randomAlphanumeric(20);
+				/*String salt = RandomStringUtils.randomAlphanumeric(20);
 				userInfo.setSalt(salt);
-				userInfo.setPassword(ShiroUtils.sha256(new String(token.getPassword()), userInfo.getSalt()));
+				userInfo.setPassword(ShiroUtils.sha256(new String(token.getPassword()), userInfo.getSalt()));*/
 				userInfo.setSource("ldap");
 				userInfo.setStatus(1);
 				
