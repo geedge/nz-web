@@ -1,9 +1,11 @@
 package com.nis.modules.panel.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
@@ -192,15 +194,36 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             validateChartExists(panelId, chart.getId());
         }
 
-        ValidateUtils.is(chart.getTitle()).notNull(RCode.CHART_TITLE_ISNULL);
+        String type = chart.getType();
 
-        ValidateUtils.is(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL);
+        ValidateUtils.is(chart.getTitle()).notNull(RCode.CHART_TITLE_ISNULL)
+                .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
+                .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
+                .and(type).notNull(RCode.CHART_TYPE_ISNULL);
 
-        ValidateUtils.is(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL);
+        // 验证type是否在枚举范围内
+        sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, chart.getType(), RCode.CHART_TYPE_INVALIDE);
 
-        ValidateUtils.is(chart.getType()).notNull(RCode.CHART_TYPE_ISNULL);
-
-        ValidateUtils.is(chart.getUnit()).notNull(RCode.CHART_UNIT_ISNULL);
+        // 当type为url时 ， param不能为空，且格式为json
+        if ("url".equals(type)) {
+            String param = chart.getParam();
+            ValidateUtils.is(param).notNull(RCode.CHART_PARAM_ISNULL);
+            Map map = new HashMap();
+            try {
+                map = JSONObject.parseObject(param, Map.class);
+            } catch (Exception e) {
+                throw new NZException(RCode.CHART_PARAM_FORMAT);
+            }
+            Object url = map.get("url");
+            if (url == null) {
+                throw new NZException(RCode.CHART_PARAMURL_ISNULL);
+            }
+            if (!CommonUtils.checkUrl(url.toString())) {
+                throw new NZException(RCode.CHART_PARAMURL_FORMAT);
+            }
+        }else{
+            chart.setParam(null);
+        }
 
         // 同一个panel 下 chart title 保证唯一
         List<Chart> list = this.list(new QueryWrapper<Chart>().eq("title", chart.getTitle()).eq("panel_id", panelId));
@@ -211,11 +234,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             flag = true;
         }
 
-        if(!flag){
+        if (!flag) {
             throw new NZException(RCode.CHART_TITLE_DUPLICATE);
         }
-
-        sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, chart.getType(), RCode.CHART_TYPE_INVALIDE);
 
         ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
 
@@ -225,12 +246,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private void validateChartExists(Integer panelId, Integer id) {
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
-        chartQueryWrapper.eq("panel_id",panelId);
-        chartQueryWrapper.eq("id",id);
+        chartQueryWrapper.eq("panel_id", panelId);
+        chartQueryWrapper.eq("id", id);
 
         Chart chart = this.getOne(chartQueryWrapper);
 
-        if(chart == null){
+        if (chart == null) {
             throw new NZException(RCode.CHART_NOTEXSITS);
         }
     }

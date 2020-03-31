@@ -57,6 +57,10 @@ public enum RCode {
     CHART_CANNOT_MODIFY(116013,"Chart can not modify"),
     CHART_PREVNEXT_INCORRECT(113014,"Chart prev and next is incorrect"),
     CHART_TITLE_DUPLICATE(112015,"Chart title is duplicate"),            // 同一个panel 下 chart title重复
+    CHART_PARAM_ISNULL(111016,"Chart param cannot be empty when type is url"), // 当type为url时，param不能为空
+    CHART_PARAM_FORMAT(113017,"Chart param must be JSON format"),               // param类型必须为json格式
+    CHART_PARAMURL_ISNULL(111018,"Chart param url key not found"),              // param 中未找到url key值
+    CHART_PARAMURL_FORMAT(113019,"Chart param url value must be URL format"),  // param 中url的值必须为网址类型
 
 
     CHARTELEMENT_EXPRESSION_ISNULL(111000, "Chart element expression can not be empty"),

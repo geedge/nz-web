@@ -573,4 +573,15 @@ public class CommonUtils {
         }
         return true;
 	}
+
+    /**
+     * 校验url
+     * @param str
+     * @return
+     */
+    public static boolean checkUrl(String str) {
+        String regex = "^([hH][tT]{2}[pP]:/*|[hH][tT]{2}[pP][sS]:/*|[fF][tT][pP]:/*)(([A-Za-z0-9-~]+).)+([A-Za-z0-9-~\\/])+(\\?{0,1}(([A-Za-z0-9-~]+\\={0,1})([A-Za-z0-9-~]*)\\&{0,1})*)$";
+        Pattern pat = Pattern.compile(regex.trim());
+        return pat.matcher(str.trim()).matches();
+    }
 }

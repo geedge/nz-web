@@ -1,5 +1,6 @@
 package com.nis.modules.panel.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -51,6 +52,12 @@ public class Chart {
      * 排序字段，后一个元素
      */
     private Integer next;
+
+    /**
+     * 参数
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private String param;
 
     @TableField(exist = false)
     private List<ChartElement> elements;
