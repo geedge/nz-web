@@ -178,9 +178,9 @@ public class Constant {
         SYSCONFIG_TYPEWITHKEYS_MAP = new HashMap<>();
 
         SYSCONFIG_TYPEWITHKEYS_MAP.put("basic", Arrays.asList(new String[]{"alert_api", "asset_ping_switch", "asset_ping_interval", "node_exporter_target_path", "scrape_interval", "storage_local_retention","system_name"}));
-        SYSCONFIG_TYPEWITHKEYS_MAP.put("email", Arrays.asList(new String[]{"email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account", "email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag", "email_tls_flag"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("email", Arrays.asList(new String[]{"email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account", "email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag", "email_tls_flag", "test"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("terminal", Arrays.asList(new String[]{"max_terminal_num"}));
-        SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[]{"ldap_address", "ldap_dn", "ldap_password", "ldap_user_filter", "ldap_mapping", "ldap_enable"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[]{"ldap_address", "ldap_dn", "ldap_password", "ldap_ou", "ldap_user_filter", "ldap_mapping", "ldap_enable", "test"}));
     }
     
     /**
@@ -397,6 +397,10 @@ public class Constant {
     // ip 校验正则
     public static final String REGEX_IP = "(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)";
 
+    // 二级域名
+    public static final String  REGEX_DOMAIN = "(\\w*\\.?){2}\\.(com.cn|net.cn|gov.cn|org\\.nz|org.cn|com|net|org|gov|cc|biz|info|cn|co)$";
+
+
     // 系统配置表中 内置 module 的 key名
     public static final String SYSCONFIG_KEY_INIT_MODULE = "init_module_node_exporter";
 
@@ -456,10 +460,10 @@ public class Constant {
     //最大窗口允许的连接数
     public static final String MAX_TERMINAL_NUM = "max_terminal_num";
 
-    // 开关开启
-    public static final Integer SWITCH_OPEN = 1;
+    // 开关开启状态
+    public static final String SWITCH_OPEN = "on";
 
-    // 开关关闭
-    public static final Integer SWITCH_CLOSE = 0;
+    // 开关关闭状态
+    public static final String SWITCH_CLOSE = "off";
 
 }

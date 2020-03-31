@@ -10,6 +10,7 @@ package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.sys.entity.SysConfigEntity;
 
 import java.util.Map;
@@ -59,7 +60,7 @@ public interface SysConfigService extends IService<SysConfigEntity> {
 
     Map getConfigListByTypes(String[] types, String[] paramKey);
 
-    void updateConfigs(Map<String, Object> param);
+    R updateConfigs(Map<String, Object> param);
 
     void resetConfig(String password, String[] type) throws Exception;
 }

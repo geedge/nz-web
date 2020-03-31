@@ -150,9 +150,9 @@ public class SysConfigController extends AbstractController {
             }
         }
 
-        sysConfigService.updateConfigs(param);
+		R result = sysConfigService.updateConfigs(param);
 
-        return R.ok();
+		return result;
     }
 
 	/**
