@@ -9,6 +9,11 @@ import lombok.Data;
 public class EndpointStat {
 
     /**
+     * id
+     */
+    private Integer id;
+
+    /**
      * dc 名称
      */
     private String name;

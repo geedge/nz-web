@@ -9,6 +9,11 @@ import lombok.Data;
 public class ProjectStat {
 
     /**
+     * id
+     */
+    private Integer id;
+
+    /**
      * project 名称
      */
     private String name;

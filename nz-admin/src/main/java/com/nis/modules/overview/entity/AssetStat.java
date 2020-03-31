@@ -11,6 +11,11 @@ import org.apache.ibatis.type.Alias;
 public class AssetStat {
 
     /**
+     * id
+     */
+    private Integer id;
+
+    /**
      * 各类维度统计名称
      */
     private String name;

@@ -135,7 +135,7 @@
     -->
 
     <select id="alertRuleTopN" resultType="java.util.Map">
-        SELECT ar.alert_name AS alertName,ar.severity AS level, COUNT(am.rule_id) AS nums FROM alert_rule ar
+        SELECT ar.id AS id,ar.alert_name AS alertName,ar.severity AS level, COUNT(am.rule_id) AS nums FROM alert_rule ar
         LEFT JOIN alert_message am ON ar.id = am.rule_id
         WHERE am.state = 1
         GROUP BY am.rule_id
@@ -278,7 +278,7 @@
             ) temp_a
             LEFT JOIN (
                 SELECT
-                    idc.id AS idcId,
+                    idc.id AS id,
                     idc.name AS name,
                     COUNT( ass.id ) AS total,
                     COUNT( CASE WHEN ass.state = '1' THEN 0 END ) AS inStock,
@@ -297,6 +297,7 @@
 
     <select id="getProjectStatInfo" resultType="com.nis.modules.overview.entity.ProjectStat">
         SELECT
+            pro.id AS id,
             pro.name AS name,
             count( DISTINCT mo.id ) AS moduleNum,
             count( DISTINCT en.id ) AS endpointNum,
@@ -313,6 +314,7 @@
 
     <select id="getEndpointInfoByDc" resultType="com.nis.modules.overview.entity.EndpointStat">
         SELECT
+            idc.id as id,
             idc.name,
             count( ps.id ) AS promTotal,
             COUNT( CASE WHEN ps.STATUS = '1' THEN 0 END ) AS promUp,

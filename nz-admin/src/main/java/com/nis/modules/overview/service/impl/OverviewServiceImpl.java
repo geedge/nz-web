@@ -738,6 +738,7 @@ public class OverviewServiceImpl implements OverviewService {
             dcStat.setEndpointTotal(endpointStat.getEndpointTotal());
             dcStat.setEndpointUp(endpointStat.getEndpointUp());
             dcStat.setEndpointDown(endpointStat.getEndpointDown());
+            dcStat.setId(endpointStat.getId());
 
             dcStatList.add(dcStat);
         }
