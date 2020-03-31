@@ -58,9 +58,14 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	@Override
 	public void validateParam(Module moduleEntity) {
 		String type = moduleEntity.getType();
+		// 默认type为http
+		if(StringUtils.isEmpty(type)){
+			type = Constant.MODULE_TYPE_HTTP;
+			moduleEntity.setType(type);
+		}
 		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
-				.and(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL)
-				.and(type).notNull(RCode.MODULE_TYPE_ISNULL);
+				.and(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
+				// .and(type).notNull(RCode.MODULE_TYPE_ISNULL);
 
 		// 校验 type 类型是否在枚举范围内
 		if (Constant.MODULE_TYPE_HTTP.equals(type)) {
