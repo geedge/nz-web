@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
@@ -81,13 +82,14 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     @Override
     public JSONObject series(String api, Map<String, Object> params){
 
-        if(!params.containsKey("match[]")||StringUtils.isBlank((String)params.get("match[]"))){
+        if(!params.containsKey("match[]")||ObjectUtils.isEmpty(params.get("match[]"))){
             throw new NZException(RCode.PROMSERVER_PARAM_MATCH_ISNULL);
         }else{
-            String matchsParam=(String)params.get("match[]");
+            /*String matchsParam=(String)params.get("match[]");
             String[] matchs=matchsParam.split(",");
 
-            params.put("match[]", Arrays.asList(matchs));
+            params.put("match[]", Arrays.asList(matchs));*/
+        	params.put("match[]", params.get("match[]"));
         }
 
 
