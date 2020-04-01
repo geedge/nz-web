@@ -161,7 +161,7 @@ public class SysConfigController extends AbstractController {
 	 * @param type
 	 * @return
 	 */
-	@DeleteMapping("/reset")
+	@PutMapping("/reset")
 	public R resetConfig(String password,String ...type) throws Exception{
 		try {
 			sysConfigService.resetConfig(password,type);

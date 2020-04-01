@@ -39,7 +39,7 @@ public class TerminalLogServiceImpl extends ServiceImpl<TerminalLogDao, Terminal
                 .like(ToolUtil.isNotEmpty(params.get("cmd")), TerminalLog::getCmd, params.get("cmd"))
                 .ge(ToolUtil.isNotEmpty( params.get("startTime")), TerminalLog::getTime, params.get("startTime"))
                 .lt(ToolUtil.isNotEmpty( params.get("endTime")), TerminalLog::getTime, params.get("endTime"))
-                .orderByAsc(TerminalLog::getId);
+                .orderByDesc(TerminalLog::getTime);
         IPage<TerminalLog> terminalLogIPage = this.page(new Query<TerminalLog>().getPage(params),queryWrapper);
         List<TerminalLog> records = terminalLogIPage.getRecords();
         records.forEach(terminalLog -> {
