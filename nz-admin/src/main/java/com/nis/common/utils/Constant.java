@@ -146,6 +146,12 @@ public class Constant {
     // 当前sys_config 配置中配置项和所属类别map
     public static final Map<String, List<String>> SYSCONFIG_TYPEWITHKEYS_MAP;
 
+    // module 类型 可选值 http、snmp
+    public static final String MODULE_TYPE_HTTP = "http";
+    public static final String MODULE_TYPE_SNMP = "snmp";
+
+    public static final Integer SNMP_DEFAULT_PORT = 161;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -430,6 +436,9 @@ public class Constant {
 
     // asset fping 命令语句 key
     public static final String SYSCONFIG_KEY_ASSET_FPING_COMMAND = "asset_ping_command";
+
+    // 内置 generator 路径
+    public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
 
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";

@@ -1,23 +1,22 @@
 package com.nis.common.utils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
-import com.nis.modules.alert.entity.AlertRuleEntity;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class YamlUtil {
@@ -102,6 +101,45 @@ public class YamlUtil {
 		
 		return toCheck;
 	}
+
+    /**
+     * 读取 yaml 生成 json 并返回
+     *
+     * @param file
+     * @return
+     */
+    public String yamlToJson(String file) throws FileNotFoundException {
+        Map<String, Object> loaded = null;
+        FileInputStream fis = new FileInputStream(file);
+        loaded = (Map<String, Object>) y.load(fis);
+        return JSONObject.toJSONString(loaded);
+    }
+
+
+    /**
+     * 將json 转化为 yaml 格式并生成 yaml 文件
+     *
+     * @param jsonString
+     * @return
+     * @throws JsonProcessingException
+     * @throws IOException
+     */
+    public void createYaml(String yaml_url, String jsonString) throws JsonProcessingException, IOException {
+        // parse JSON
+        JsonNode jsonNodeTree = new ObjectMapper().readTree(jsonString);
+        // save it as YAML
+        String jsonAsYaml = new YAMLMapper().writeValueAsString(jsonNodeTree);
+
+        Map<String, Object> map = (Map<String, Object>) y.load(jsonAsYaml);
+
+        FileWriter writer;
+        try {
+            writer = new FileWriter(yaml_url);
+            y.dump(map, writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 	
 	public static void main(String[] args) throws Exception {
 		/*AlertRuleEntity alertRule = new AlertRuleEntity();
