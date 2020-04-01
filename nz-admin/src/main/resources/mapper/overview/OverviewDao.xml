@@ -317,8 +317,8 @@
             idc.id as id,
             idc.name,
             count( ps.id ) AS promTotal,
-            COUNT( CASE WHEN ps.STATUS = '1' THEN 0 END ) AS promUp,
-            COUNT( CASE WHEN ps.STATUS = '0' THEN 0 END ) AS promDown
+            COUNT( CASE WHEN ps.STATUS = '1' or ps.STATUS = '-1' THEN 0 END ) AS promUp,
+            COUNT( CASE WHEN ps.STATUS = '0' or ps.STATUS = '-2' THEN 0 END ) AS promDown
         FROM
             idc idc
             LEFT JOIN prom_server ps ON idc.id = ps.idc_id
