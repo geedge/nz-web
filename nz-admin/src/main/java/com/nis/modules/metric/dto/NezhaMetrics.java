@@ -13,8 +13,10 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
 
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
+import io.micrometer.core.instrument.search.Search;
 
 @Component
 public class NezhaMetrics implements MeterBinder {
@@ -40,7 +42,12 @@ public class NezhaMetrics implements MeterBinder {
          *   alert_nums指标
          */
         List<MetricsDto> alertNums = alertMessageService.queryAlertMessageStatisticsInfo();
-        
+        // 先清空指标 再更新数据防止旧数据存在
+        Search find = meterRegistry.find("nz_alert_nums");
+        Meter meter = find.meter();
+        if(meter!=null) {
+        	meterRegistry.remove(meter);
+        }
         if(alertNums!=null&&alertNums.size()>0) {
         	for(int i=0;i<alertNums.size();i++) {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN

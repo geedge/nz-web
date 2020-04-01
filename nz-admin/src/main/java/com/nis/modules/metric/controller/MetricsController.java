@@ -16,7 +16,8 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.controller.AbstractController;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,7 +34,10 @@ import java.util.Map;
 public class MetricsController extends AbstractController {
     @Autowired
     private NezhaMetrics nezhaMetrics;
-
+    
+    @Autowired
+	private MeterRegistry meterRegistry;
+    
     @Autowired
     private ProjectService projectService;
 
@@ -60,7 +64,7 @@ public class MetricsController extends AbstractController {
 
     @RequestMapping(value = "/metrics", method = RequestMethod.GET)
     public ModelAndView counter1() {
-        nezhaMetrics.bindTo(new SimpleMeterRegistry());
+        nezhaMetrics.bindTo(meterRegistry);
         ModelAndView mv = new ModelAndView();
         mv.setViewName("redirect:/prometheus");
         return mv;
