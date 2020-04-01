@@ -88,7 +88,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					for(int i=0;i<str.size();i++) {
 						Map resultPromeMap = (Map) str.get(i);
 						JSONObject metric = (JSONObject) resultPromeMap.get("metric");
-						String jobName = (String) metric.get("job");
+						String jobName = (String) metric.get("endpoint");
 						resultMap.put(jobName, resultPromeMap.get("value"));
 					}
 				}
@@ -101,7 +101,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			            promserver = promserverService.getById(promeId.toString());
 			            if(promserver!=null) {
 				            Integer promStatus = promserver.getStatus();
-							String jn="ed_"+data.getId();
+							String jn=data.getId()+"";
 							JSONArray valueList = (JSONArray) resultMap.get(jn);
 							if(valueList!=null) {
 								BigDecimal time = (BigDecimal) valueList.get(0);
