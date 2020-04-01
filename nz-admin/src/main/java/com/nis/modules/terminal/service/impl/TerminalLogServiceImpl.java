@@ -44,7 +44,7 @@ public class TerminalLogServiceImpl extends ServiceImpl<TerminalLogDao, Terminal
         List<TerminalLog> records = terminalLogIPage.getRecords();
         records.forEach(terminalLog -> {
             terminalLog.setUserName(userDao.selectById(terminalLog.getUserId()).getUsername());
-            terminalLog.setId(null);
+            terminalLog.setUserId(null);
         });
         return new PageUtils(terminalLogIPage);
     }

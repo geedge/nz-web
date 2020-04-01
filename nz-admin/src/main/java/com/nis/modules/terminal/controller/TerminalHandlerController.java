@@ -138,7 +138,7 @@ public class TerminalHandlerController {
 
     @GetMapping(value = "/log")
     @ResponseBody
-    public R queryPage(Map<String, Object> params) throws Exception {
+    public R queryPage(@RequestParam Map<String, Object> params) throws Exception {
         PageUtils page = terminalLogService.queryPage(params);
         return R.ok(page);
     }
