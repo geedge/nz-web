@@ -5,12 +5,14 @@
 	<resultMap type="com.nis.modules.module.entity.Module" id="module">
         <result property="id" column="id"/>
         <result property="projectId" column="project_id"/>
+        <result property="type" column="type"/>
         <result property="port" column="port"/>
         <result property="param" column="param"/>
         <result property="path" column="path"/>
         <result property="remark" column="remark"/>
         <result property="name" column="name"/>
         <result property="buildIn" column="build_in"/>
+        <result property="snmpParam" column="snmp_param"/>
         
         <association property="project" columnPrefix="p_" javaType="com.nis.modules.project.entity.Project">
 	    	<id column="id" property="id"/>
@@ -65,7 +67,11 @@
             <if test="_databaseId == 'mysql'">CONCAT('%', #{params.path}, '%')</if>
             <if test="_databaseId == 'postgresql'">CONCAT('%', #{params.path}, '%')</if>
         </if>
-        
+
+        <if test="params.type != null and params.type != ''">
+            AND m.type = #{params.type}
+        </if>
+
         <if test="params.assetId != null and params.assetId != ''">
         	AND a.id=#{params.assetId}
         </if>

@@ -19,6 +19,7 @@
 		<swagger.version>2.7.0</swagger.version>
 		<commons-lang3.version>3.3.2</commons-lang3.version>
 		<apache.poi.version>3.14</apache.poi.version>
+		<jackson.version>2.10.1</jackson.version>
 	</properties>
 
 	<dependencies>
@@ -208,8 +209,21 @@
 		    <artifactId>unboundid-ldapsdk</artifactId>
 		    <scope>test</scope>
 		</dependency>
-		
-    </dependencies>
+
+		<!--jackjson yaml支持-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<finalName>${project.artifactId}</finalName>

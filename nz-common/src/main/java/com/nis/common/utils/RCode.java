@@ -91,6 +91,15 @@ public enum RCode {
     MODULE_REMARK_TOO_LONG(223008, "Module remark too long"),
     SYS_CONFIG_MODULEKEY_ISNULL(221009, "System config init module node exporter can not be null"),// 内置module不能为空
     MODULE_NAME_DUPLICATE(222010, "Module name is duplicate"),
+    MODULE_TYPE_ISNULL(221011, "Module type can not be empty"),
+    MODULE_TYPE_INVALID(224012, "Module type must be http or snmp"),
+    MODULE_SNMPVERSION_INVALID(224013,"Snmp version must be 2 or 3"),
+    MODULE_AUTHSECURITYLEVEL_INVALID(224014,"Security level must be one of authPriv, authNoPriv or noAuthNoPriv"),
+    MODULE_PRIVPASSWORD_ISNULL(221015,"Priv password is missing, required for SNMPv3 with priv"),
+    MODULE_PRIVPROTOCOL_INVALID(224016,"Priv protocol must be DES or AES"),
+    MODULE_AUTHPROTOCOL_INVALID(224017,"Auth protocol must be SHA or MD5"),
+    MODULE_PASSWORD_INVALID(221018,"Auth password is missing, required for SNMPv3 with auth"),
+    MODULE_USERNAME_INVALID(221019,"Auth username is missing, required for SNMPv3"),
 
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
@@ -270,16 +279,16 @@ public enum RCode {
     SYS_CONFIG_TYPE_INVALIDE(574001,"System config type is invalide"),   // type 不在枚举值类
     SYS_CONFIG_SAVEENTITY_ISNULL(571002,"System config save entity can not be null"),// 保存实体数据不能为空
     SYS_CONFIG_MAXTERMINALNUM_ISNULL(571003, "System config max terminal num can not be null"),// 每个用户最大打开窗口数量不能为空
-    SYS_CONFIG_MAXTERMINALNUM_INVALIDE(575004, "System config max terminal num is invalide, Its minimum value is 1"),// 参数值不正确
+    SYS_CONFIG_MAXTERMINALNUM_INVALIDE(575004, "System config max terminal num is invalide, Its minimum value is integer 1"),// 参数值不正确
     SYS_CONFIG_ALERTAPI_ISNULL(571005,"System config alert api can not be null"),    //  alert api 不能为空
-    SYS_CONFIG_SWITCHVAUE_INVALIDE(574006,"System config switch value is invalida"), // 开关值不在枚举范围内
+    SYS_CONFIG_SWITCHVAUE_INVALIDE(574006,"System config switch value is invalid, must be on or off"), // 开关值不在枚举范围内
     SYS_CONFIG_ASSETPINGSWITCH_ISNULL(571007,"System config asset pings witch can not be null"), // assetpingswitch不能为空
     SYS_CONFIG_NODETARGETPATH_ISNULL(571008,"System config node export target path can not be null"), // node exporter targer path不能为空
     SYS_CONFIG_ASSETPINGINTERVAL_ISNULL(571009,"System config asset ping interval can not be null"),  // asset_ping_interval不能为空
-    SYS_CONFIG_ASSETPINGINTERVAL_INVALIDE(573010,"System config asset ping interval is invalide"),    // asset_ping_interval参数与要求不符合
+    SYS_CONFIG_ASSETPINGINTERVAL_INVALIDE(573010,"System config asset ping interval should be an integer"),    // asset_ping_interval参数与要求不符合
     SYS_CONFIG_EMAILENABLE_ISNULL(571011,"System config email enable can not be empty"),               // email_enable 不能为空
     SYS_CONFIG_EMAILSMTPHOST_ISNULL(571012,"System config email smtp host can not be empty"),         // email_smtp_host 不能为空
-    SYS_CONFIG_EMAILSMTPHOST_FORMAT(573013,"System config email smtp host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"), // email_smtp_host 格式不正确
+    SYS_CONFIG_EMAILSMTPHOST_FORMAT(573013,"System config email smtp host format error, format such as xxx.xxx.com"), // email_smtp_host 格式不正确
     SYS_CONFIG_EMAILSMTPPORT_ISNULL(571014,"System config email smtp port can not be empty"), // email_smtp_port 不能为空
     SYS_CONFIG_EMAILSMTPPORT_ERROR(575015,"System config email smtp port is invalide"),        // email_smtp_port 端口错误
     SYS_CONFIG_EMAILSMTPACCOUNT_ISNULL(571016,"System config email smtp account can not be empty"), // email_smtp_account 不能为空
@@ -300,6 +309,22 @@ public enum RCode {
     SYS_CONFIG_PASSWORDORTYPE_INVALID(571031,"The password or type is invalid when reset"),
     SYS_CONFIG_PASSWORD_ERROR(571032,"The password is different from the original one when reset"),
     SYS_CONFIG_QUERYPARAMS_ISNULL(571033,"Type and paramKey cannot be empty at the same time when sysconfig queries"),// 查询sysConfig时， type 和 paramKey不能同时为空
+    SYS_CONFIG_SCRAPEINTERVAL_ISNULL(571034,"System config scrape interval can not be empty"),            // scrape_interval 不能为空
+    SYS_CONFIG_LOCALRETENTION_ISNULL(571035,"System config storage local retention can not be empty"),   // storage_local_retention 不能为空
+    SYS_CONFIG_SYSTEMNAME_ISNULL(571036,"System config system name can not be empty"),                    // system_name 不能为空
+    SYS_CONFIG_SCRAPEINTERVAL_INVALIDE(573037,"System config scrape interval should be an integer"),    // scrape_interval参数与要求不符合
+    SYS_CONFIG_LOCALRETENTION_INVALIDE(573038,"System config storage local retention should be an integer"),    // storage_local_retention参数与要求不符合
+    SYS_CONFIG_EMAILSMTPPORT_INVALIDE(573039,"System config email smtp port should be an integer"),     // email_smtp_port参数与要求不符合
+    SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT(573040,"System config email smtp account format error, format such as xxx@xxx.com"), //email_smtp_account应为邮件格式
+    SYS_CONFIG_LDAPOU_ISNULL(571041,"System config ldap ou can not be empty"),                            // ldap_ou 不能为空
+    SYS_CONFIG_TEST_ISNULL(571042,"System config test can not be empty"),                                 // test 不能为空
+    SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL(570043,"Authentication failed to connect to SMTP server,such as incorrect account or password"),
+    SYS_CONFIG_EMAIL_CONNECTFAIL(570044,"Failed to connect to SMTP server,please check whether the host and port is correct"),
+    SYS_CONFIG_EMAIL_OTHERFAILURES(570045,"Failed to connect to SMTP server"),
+    SYS_CONFIG_LDAP_AUTHENTICATIONFAIL(570046,"ldap service config connection failed : username/password wrong"),
+    SYS_CONFIG_LDAP_CONNECTIONFAILED(570047,"ldap service config connection failed"),
+
+
     /**
      * webshell相关
      */

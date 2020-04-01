@@ -1,30 +1,36 @@
 package com.nis.modules.module.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.AlertType;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
+
+    protected Logger logger = LoggerFactory.getLogger(ModuleServiceImpl.class);
 
 	@Autowired
 	private ModuleDao moduleDao;
@@ -34,6 +40,12 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	private AlertMessageService alertMessageService;
 	@Autowired
 	private EndpointService endpointService;
+
+    @Autowired
+    private YamlUtil yamlUtil;
+
+    @Autowired
+    private SysConfigService sysConfigService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -45,8 +57,26 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
 	@Override
 	public void validateParam(Module moduleEntity) {
-		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL);
-		ValidateUtils.is(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
+		String type = moduleEntity.getType();
+		// 默认type为http
+		if(StringUtils.isEmpty(type)){
+			type = Constant.MODULE_TYPE_HTTP;
+			moduleEntity.setType(type);
+		}
+		ValidateUtils.is(moduleEntity.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
+				.and(moduleEntity.getName()).notNull(RCode.MODULE_NAME_ISNULL);
+				// .and(type).notNull(RCode.MODULE_TYPE_ISNULL);
+
+		// 校验 type 类型是否在枚举范围内
+		if (Constant.MODULE_TYPE_HTTP.equals(type)) {
+			moduleEntity.setSnmpParam(null);
+		}else if(Constant.MODULE_TYPE_SNMP.equals(type)){
+			if(moduleEntity.getPort() == null){
+				moduleEntity.setPort(Constant.SNMP_DEFAULT_PORT);
+			}
+		}else{
+			throw new NZException(RCode.MODULE_TYPE_INVALID);
+		}
 
         // 名称不能重复
         List<Module> list = this.list(new QueryWrapper<Module>().eq("name", moduleEntity.getName()).eq("project_id", moduleEntity.getProjectId()));
@@ -69,18 +99,163 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                 throw new NZException(RCode.MODULE_PORT_ERROR);
             }
         }
+
+		// 校验 snmpParam参数是否合法
+		String snmpParam = moduleEntity.getSnmpParam();
+		if (StringUtils.isNotEmpty(snmpParam)) {
+
+			// snmp param 参数
+			Map params = JSONObject.parseObject(snmpParam, Map.class);
+
+			// 注： snmp version 实际版本 为 1，2，3 ，此处只做 2，3 版本限制
+			Integer version = (Integer) params.get("version");
+			if (version != null) {
+				if (version < 2 || version > 3) {
+					// 版本不在可选范围内
+					throw new NZException(RCode.MODULE_SNMPVERSION_INVALID);
+				}
+
+				if (version.equals(3)) {
+					Map authInfo = JSONObject.parseObject(params.get("auth").toString(), Map.class);
+
+					// 默认为noAuthNoPriv。可以是 noAuthNoPriv（不认证不加密），authNoPriv（认证不加密）或 authPriv（认证且加密）
+					String securityLevel = (String) authInfo.get("security_level");
+
+					String username = (String) authInfo.get("username");
+
+					if (StringUtils.isEmpty(username)) {
+						throw new NZException(RCode.MODULE_USERNAME_INVALID);
+					}
+
+					// 不为 null 时校验参数是否正确
+					if (StringUtils.isNotEmpty(securityLevel)) {
+						String password = (String) authInfo.get("password");
+
+						String privPassword = (String) authInfo.get("priv_password");
+						String privProtocol = (String) authInfo.get("priv_protocol");
+						String authProtocol = (String) authInfo.get("auth_protocol");
+
+
+						if (securityLevel.equals("authPriv")) { // 认证且加密
+							if (StringUtils.isEmpty(privPassword)) {
+								throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
+								throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
+							}
+
+							if (StringUtils.isEmpty(password)) {
+								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+							}
+						} else if (securityLevel.equals("authNoPriv")) { // 认证不加密
+							if (StringUtils.isEmpty(password)) {
+								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+							}
+							// 不为 null 则进行枚举校验
+							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+							}
+						} else if (securityLevel.equals("noAuthNoPriv")) {
+							// do nothhing
+						} else {
+							// 不在枚举范围内
+							throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
+						}
+					}
+				}
+			}
+		}
 	}
 
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public void removeHandle(List ids) {
-		moduleDao.deleteBatchIds(ids);
-		//同时删除endpoint信息
-		endpointService.removeByModuleIds(ids);
-		//删除alert相关信息
-		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-	}
+    // 根据snmp param生成
+    @Override
+    public String generateYmlFromSnmpParam(Map snmpParam, Module moduleEntity) {
+        // 取出generator路径
+        SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", Constant.SYSCONFIG_KEY_GENERATOR_PATH));
+        String generatorPath = entity.getParamValue();
+
+        Map modules = new HashMap();
+
+        Map module = new HashMap();
+        module.put(moduleEntity.getName(), snmpParam);
+
+        modules.put("modules", module);
+
+        try {
+            logger.debug("Start writing snmp param to the generator.yml file");
+
+            // 将json写入到generator.yml文件中
+            yamlUtil.createYaml(generatorPath + File.separator + "generator.yml", JSONObject.toJSONString(modules));
+
+            logger.debug("Write snmp param to generator.yml file succeeded");
+        } catch (Exception e) {
+            logger.error("Failed to write snmp param to generator.yml file", e);
+        }
+
+        StringReader result = null;
+        StringWriter sw = null;
+        try {
+			logger.debug("Start generate snmp.yml file");
+
+            // 先设置环境变量 然后 赋可执行权限 最后 执行生成命令
+            String[] envp = {"MIBDIRS=" + generatorPath + File.separator + "mibs"};
+            String generatorFile = generatorPath + File.separator + "generator";
+            String[] chmodCommand = {"chmod", "+x", generatorFile};
+            String[] generateCommand = {generatorFile, "generate"};
+            result = RuntimeUtil.run(envp, new File(generatorPath), chmodCommand, generateCommand);
+
+            sw = new StringWriter();
+            char[] buf = new char[1024];
+            while (result.read(buf) != -1) {
+                sw.write(buf);
+            }
+
+            logger.debug("Generate snmp.yml file succeeded {}", sw.toString());
+        } catch (Exception e) {
+            logger.error("Failed to generate snmp.yml file", e);
+        } finally {
+            if (sw != null) {
+                try {
+                    sw.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (result != null) {
+                result.close();
+            }
+        }
+
+        String snmpYml = null;
+
+        try {
+            // 读取生成之后的snmp.yml 并以json格式
+            snmpYml = yamlUtil.yamlToJson(generatorPath + File.separator + "snmp.yml");
+            logger.debug("Read the contents of snmp.yml file succeeded");
+        } catch (FileNotFoundException e) {
+            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found", e);
+        } catch (Exception e) {
+            logger.error("Failed to read the contents of snmp.yml file", e);
+        }
+
+        return snmpYml;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeHandle(List ids) {
+        moduleDao.deleteBatchIds(ids);
+        //同时删除endpoint信息
+        endpointService.removeByModuleIds(ids);
+        //删除alert相关信息
+        alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+        alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+    }
 
 	@Override
 	public List queryModuleIdsByProjectIds(List projectIds) {
