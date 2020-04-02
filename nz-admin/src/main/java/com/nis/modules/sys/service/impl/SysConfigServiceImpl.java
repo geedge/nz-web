@@ -245,8 +245,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                 } else if ("true".equals(emailTest)) {
                     // 只做测试连接  不进行入库操作
-                    this.testConnectionSmtpServer(saveMap.get("email_smtp_host"), saveMap.get("email_smtp_port"), "10000", saveMap.get("email_smtp_account"), saveMap.get("email_smtp_password"), Constant.SWITCH_OPEN.equals(saveMap.get("email_ssl_flag")), Constant.SWITCH_OPEN.equalsIgnoreCase(saveMap.get("email_tls_flag")));
-                    return R.ok("Test connection to SMTP server succeeded");
+                    R r = this.testConnectionSmtpServer(saveMap.get("email_smtp_host"), saveMap.get("email_smtp_port"), "10000", saveMap.get("email_smtp_account"), saveMap.get("email_smtp_password"), Constant.SWITCH_OPEN.equals(saveMap.get("email_ssl_flag")), Constant.SWITCH_OPEN.equalsIgnoreCase(saveMap.get("email_tls_flag")));
+                    return r;
                 } else {
                     if (emailEnableFlag) {
                         this.updateEntity(saveMap);
@@ -278,8 +278,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                 } else if ("true".equals(ldapTest)) {
                     // 只做测试连接  不进行入库操作
-                    this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"));
-                    return R.ok("Test connection to LDAP server succeeded");
+                    R r = this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"));
+                    return r;
                 } else {
                     if (ldapEnableFlag) {
                         this.updateEntity(saveMap);
@@ -546,7 +546,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * @param tlsFlag
      * @return
      */
-    public void testConnectionSmtpServer(String smtpHost, String smtpPort, String timeOut, String account, String password, boolean sslFlag, boolean tlsFlag) {
+    public R testConnectionSmtpServer(String smtpHost, String smtpPort, String timeOut, String account, String password, boolean sslFlag, boolean tlsFlag) {
         Properties prop = new Properties();
         prop.setProperty("mail.snmp.host", smtpHost);
         prop.setProperty("mail.smtp.port", smtpPort);
@@ -585,18 +585,18 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         } catch (AuthenticationFailedException e) {
             // for authentication failures
             logger.error("Authentication failed to connect to SMTP server", e);
-            throw new NZException(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
+            return R.error(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
         } catch (MailConnectException e) {
             // 连接smtp服务异常
             logger.error("Failed to connect to SMTP server", e);
-            throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
+            return R.error(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
         } catch (MessagingException e) {
             // 其他关于登陆的错误 比如 连接超时
             logger.error("Failed to connect to SMTP server", e);
-            throw new NZException(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
+            return R.error(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
         } catch (Exception e) {
             logger.error("Failed to connect to SMTP server", e);
-            throw new NZException(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
+            return R.error(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
         } finally {
             if (ts != null) {
                 try {
@@ -606,6 +606,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 }
             }
         }
+        return R.ok("Test connection to SMTP server succeeded");
     }
 
     /**
@@ -614,7 +615,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * @param password
      * @param address
      */
-    public void testConnectionLdapConfig(String dn, String password, String address) {
+    public R testConnectionLdapConfig(String dn, String password, String address) {
         InitialDirContext initialDirContext = null;
         try {
             Hashtable<String, String> environment = new Hashtable<>();
@@ -626,13 +627,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             initialDirContext = new InitialDirContext(environment);
         } catch (AuthenticationException e) {
             logger.error("ldap service config connection failed : username/password wrong", e);
-            throw new NZException(RCode.SYS_CONFIG_LDAP_AUTHENTICATIONFAIL);
+            return R.error(RCode.SYS_CONFIG_LDAP_AUTHENTICATIONFAIL);
         } catch (NamingException e) {
             logger.error("ldap service config connection failed", e);
-            throw new NZException(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
+            return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } catch (Exception e) {
             logger.error("ldap service config connection failed", e);
-            throw new NZException(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
+            return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } finally {
             if (initialDirContext != null) {
                 try {
@@ -642,5 +643,6 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 }
             }
         }
+        return R.ok("Test connection to LDAP server succeeded");
     }
 }
