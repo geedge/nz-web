@@ -191,6 +191,13 @@
                 AND ass.model_id = #{params.modelId}
             </if>
 
+            <if test="params.innerModelIds != null and params.innerModelIds.size > 0">
+                AND ass.model_id IN
+                <foreach collection="params.innerModelIds" item="modelId" index="no" open="(" separator="," close=")">
+                    #{modelId}
+                </foreach>
+            </if>
+
             <if test="params.idcId != null and params.idcId != ''">
                 AND ass.idc_id = #{params.idcId}
             </if>
@@ -201,7 +208,12 @@
                     #{idcId}
                 </foreach>
             </if>
-
+            <if test="params.states !=null and params.states.length >0">
+                AND ass.state IN
+                <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
+                    #{state}
+                </foreach>
+            </if>
             <if test="params.cabinetId != null and params.cabinetId != ''">
                 AND ass.cabinet_id = #{params.cabinetId}
             </if>
@@ -224,6 +236,12 @@
 
             <if test="params.pingStatus != null and params.pingStatus != ''">
                 AND assp.status = #{params.pingStatus}
+            </if>
+            <if test="params.pingStates !=null and params.pingStates.length >0">
+                AND assp.status IN
+                <foreach collection="params.pingStates" item="status" index="no" open="(" separator="," close=")">
+                    #{status}
+                </foreach>
             </if>
 
         </where>

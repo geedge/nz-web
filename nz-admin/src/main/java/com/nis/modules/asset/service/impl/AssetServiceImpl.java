@@ -2,8 +2,10 @@ package com.nis.modules.asset.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -49,6 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 资产    serviceImpl
@@ -110,6 +113,27 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+
+        // vendorIds typeIds
+        LambdaQueryWrapper<Model> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(
+                ToolUtil.isNotEmpty(params.get("vendorIds")),
+                Model::getVendorCode,
+                String.valueOf(params.get("vendorIds")).split(StringPool.COMMA))
+                .in(ToolUtil.isNotEmpty(params.get("typeIds")),
+                        Model::getTypeCode,
+                        String.valueOf(params.get("typeIds")).split(StringPool.COMMA));
+        List<Model> modelListByVendorIdsOrTypeIds = modelService.list(wrapper);
+        if(ToolUtil.isNotEmpty(modelListByVendorIdsOrTypeIds)){
+            List<Integer> innerModelIds=modelListByVendorIdsOrTypeIds.stream().map(Model::getId).collect(Collectors.toList());
+            params.put("innerModelIds",innerModelIds);
+        }
+        if(ToolUtil.isNotEmpty(params.get("states"))){
+            params.put("states",String.valueOf(params.get("states")).split(StringPool.COMMA));
+        }
+        if(ToolUtil.isNotEmpty(params.get("pingStates"))){
+            params.put("pingStates",String.valueOf(params.get("pingStates")).split(StringPool.COMMA));
+        }
         String idcIds = null;
         if (params != null && params.size() > 0) {
             idcIds = (String) params.get("idcIds");
