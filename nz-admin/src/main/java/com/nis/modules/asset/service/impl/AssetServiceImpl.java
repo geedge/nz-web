@@ -13,6 +13,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Idc;
@@ -111,21 +112,24 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private SftpUtils sftpUtils;
 
+    @Autowired
+    private ModelDao modelDao;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-
-        // vendorIds typeIds
-        LambdaQueryWrapper<Model> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(
-                ToolUtil.isNotEmpty(params.get("vendorIds")),
-                Model::getVendorCode,
-                String.valueOf(params.get("vendorIds")).split(StringPool.COMMA))
-                .in(ToolUtil.isNotEmpty(params.get("typeIds")),
-                        Model::getTypeCode,
-                        String.valueOf(params.get("typeIds")).split(StringPool.COMMA));
-        List<Model> modelListByVendorIdsOrTypeIds = modelService.list(wrapper);
-        if(ToolUtil.isNotEmpty(modelListByVendorIdsOrTypeIds)){
-            List<Integer> innerModelIds=modelListByVendorIdsOrTypeIds.stream().map(Model::getId).collect(Collectors.toList());
+        String [] vendorIds = {};
+        String [] typeIds = {};
+        if (ToolUtil.isNotEmpty(params.get("vendorIds"))){
+            vendorIds = String.valueOf(params.get("vendorIds")).split(StringPool.COMMA);
+        }
+        if (ToolUtil.isNotEmpty(params.get("typeIds"))){
+            typeIds = String.valueOf(params.get("typeIds")).split(StringPool.COMMA);
+        }
+        List<Integer> innerModelIds=new ArrayList<>();
+        if(vendorIds.length>0||typeIds.length>0){
+            innerModelIds=modelDao.selectIdByDictIds(vendorIds,typeIds);
+        }
+        if(ToolUtil.isNotEmpty(innerModelIds)){
             params.put("innerModelIds",innerModelIds);
         }
         if(ToolUtil.isNotEmpty(params.get("states"))){

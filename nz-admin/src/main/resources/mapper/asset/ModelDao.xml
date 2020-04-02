@@ -108,4 +108,26 @@
             </foreach>
         </if>
     </select>
+    <select id="selectIdByDictIds" resultType="int">
+       SELECT id
+       FROM model
+       WHERE 1=1
+        <if test="vendorIds != null and vendorIds.length > 0">
+        AND vendor in
+        (select code from sys_dict where id in
+            <foreach collection="vendorIds" item="id" index="no" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        )
+        </if>
+        <if test="typeIds != null and typeIds.length > 0">
+            AND type in
+            (select code from sys_dict where id in
+            <foreach collection="typeIds" item="id" index="no" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            )
+        </if>
+    </select>
+
 </mapper>

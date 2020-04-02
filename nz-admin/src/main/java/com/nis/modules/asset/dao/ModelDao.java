@@ -25,4 +25,6 @@ public interface ModelDao extends BaseMapper<Model> {
     List<Model> queryList(IPage<Model> page, @Param("params") Map<String, Object> params);
 
     List<ModelWithMib> selectByModels(@Param("models") int[] models);
+
+    List<Integer> selectIdByDictIds(@Param("vendorIds") String[] vendorIds,@Param("typeIds") String[] typeIds);
 }
