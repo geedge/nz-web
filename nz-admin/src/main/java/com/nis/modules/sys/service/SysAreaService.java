@@ -9,6 +9,6 @@ import com.nis.modules.sys.entity.SysArea;
 
 public interface SysAreaService extends IService<SysArea> {
 	
-	List queryPage(Map<String, Object> params);
+	Map queryPage(Map<String, Object> params);
 	
 }

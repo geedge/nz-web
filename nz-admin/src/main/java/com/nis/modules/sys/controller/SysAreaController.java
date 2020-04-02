@@ -25,8 +25,8 @@ public class SysAreaController {
 	private SysAreaService sysAreaService;
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
-		List areas = sysAreaService.queryPage(params);
-		return R.ok(areas);
+		Map map = sysAreaService.queryPage(params);
+		return R.ok(map);
 	}
 	
 }

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -32,7 +33,8 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public List queryPage(Map<String, Object> params) {
+	public Map queryPage(Map<String, Object> params) {
+		Map result=new HashMap();
 		String id = (String) params.get("id");
 		String pid = (String)params.get("pid");
 		String name = (String) params.get("name");
@@ -82,8 +84,11 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 				}
 			}
 		}
-		
-		return datas;
+		if(ObjectUtils.isEmpty(datas)) {
+			datas=new ArrayList();
+		}
+		result.put("list", datas);
+		return result;
 	}
 
 }
