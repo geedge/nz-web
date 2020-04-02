@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,8 @@ public class SysAreaController {
 	private SysAreaService sysAreaService;
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
-		PageUtils page = sysAreaService.queryPage(params);
-		return R.ok(page);
+		List areas = sysAreaService.queryPage(params);
+		return R.ok(areas);
 	}
 	
 }
