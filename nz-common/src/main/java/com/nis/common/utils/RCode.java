@@ -324,6 +324,10 @@ public enum RCode {
     SYS_CONFIG_EMAIL_OTHERFAILURES(570045,"Failed to connect to SMTP server"),
     SYS_CONFIG_LDAP_AUTHENTICATIONFAIL(570046,"ldap service config connection failed : username/password wrong"),
     SYS_CONFIG_LDAP_CONNECTIONFAILED(570047,"ldap service config connection failed"),
+    SYS_CONFIG_TIMEZONE_ISNULL(571048,"System config timezone can not be empty"),                    // timezone 不能为空
+    SYS_CONFIG_TIMEZONE_INVALIDE(573049,"System config timezone should be an integer"),             // timezone参数与要求不符合
+    SYS_CONFIG_TIMEZONE_INTERVAL(575050,"The interval value of timezone is between -12 and +12"),  // timezone 区间值为-12至+12之间
+
 
 
     /**

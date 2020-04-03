@@ -419,6 +419,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         String assetPingInterval = saveMap.get("asset_ping_interval");
         String scrapeInterval = saveMap.get("scrape_interval");
         String storageLocalRetention = saveMap.get("storage_local_retention");
+        String timezone = saveMap.get("timezone");
 
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
                 .and(saveMap.get("node_exporter_target_path")).notNull(RCode.SYS_CONFIG_NODETARGETPATH_ISNULL)
@@ -426,7 +427,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 .and(assetPingInterval).notNull(RCode.SYS_CONFIG_ASSETPINGINTERVAL_ISNULL)
                 .and(scrapeInterval).notNull(RCode.SYS_CONFIG_SCRAPEINTERVAL_ISNULL)
                 .and(storageLocalRetention).notNull(RCode.SYS_CONFIG_LOCALRETENTION_ISNULL)
-                .and(saveMap.get("system_name")).notNull(RCode.SYS_CONFIG_SYSTEMNAME_ISNULL);
+                .and(saveMap.get("system_name")).notNull(RCode.SYS_CONFIG_SYSTEMNAME_ISNULL)
+                .and(timezone).notNull(RCode.SYS_CONFIG_TIMEZONE_ISNULL);
 
         // 校验开关类型值
         this.validateSwitchValue(assetPingSwitch);
@@ -444,6 +446,14 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             throw new NZException(RCode.SYS_CONFIG_LOCALRETENTION_INVALIDE);
         }
 
+        Integer timezoneIntValue = CommonUtils.toInt(timezone);
+        if (timezoneIntValue == null) {
+            throw new NZException(RCode.SYS_CONFIG_TIMEZONE_INVALIDE);
+        }
+
+        if (timezoneIntValue < -12 || timezoneIntValue > 12) {
+            throw new NZException(RCode.SYS_CONFIG_TIMEZONE_INTERVAL);
+        }
     }
 
     private boolean validateEmailParams(Map<String, String> saveMap) {
