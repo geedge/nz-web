@@ -304,15 +304,15 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
     /**
      * 系统设置重置
-     * @param password
-     * @param type
+     * @param param
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetConfig(String password, String[] type) throws Exception{
+    public void resetConfig(Map<String, Object> param) throws Exception{
+        String password = param.get("password").toString();
+        List<String> types = (List<String>)param.get("type");
         try {
-            if(StringUtils.isEmpty(password)||ArrayUtils.isEmpty(type)
-                    || !ArrayUtils.contains(Constant.SYSCONFIG_RESET_TYPE,type[0])){
+            if(ToolUtil.isEmpty(password)||ToolUtil.isEmpty(types)){
                 throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
             }
             // 当前登录用户
@@ -327,12 +327,17 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 // 密码不对，禁止重置
                 throw new NZException(RCode.SYS_CONFIG_PASSWORD_ERROR);
             }
-            if("metric".equals(type[0])){
-                resetMetric();
-            }else if("alert".equals(type[0])){
-                resetAlert();
-            }else {
-                resetEnterData();
+            for (String type: types){
+                if(!ArrayUtils.contains(Constant.SYSCONFIG_RESET_TYPE,type)){
+                    throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
+                }
+                if("metric".equals(type)){
+                    resetMetric();
+                }else if("alert".equals(type)){
+                    resetAlert();
+                }else {
+                    resetEnterData();
+                }
             }
         }catch (Exception e){
             throw e;

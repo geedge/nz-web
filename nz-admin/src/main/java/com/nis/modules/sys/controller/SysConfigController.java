@@ -162,9 +162,9 @@ public class SysConfigController extends AbstractController {
 	 * @return
 	 */
 	@PutMapping("/reset")
-	public R resetConfig(String password,String ...type) throws Exception{
+	public R resetConfig(@RequestBody Map<String, Object> param) throws Exception{
 		try {
-			sysConfigService.resetConfig(password,type);
+			sysConfigService.resetConfig(param);
 		}catch (Exception e){
 			throw e;
 		}

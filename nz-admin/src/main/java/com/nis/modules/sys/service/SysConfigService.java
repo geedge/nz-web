@@ -62,5 +62,5 @@ public interface SysConfigService extends IService<SysConfigEntity> {
 
     R updateConfigs(Map<String, Object> param);
 
-    void resetConfig(String password, String[] type) throws Exception;
+    void resetConfig(Map<String, Object> param) throws Exception;
 }
