@@ -128,10 +128,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Integer> innerModelIds=new ArrayList<>();
         if(vendorIds.length>0||typeIds.length>0){
             innerModelIds=modelDao.selectIdByDictIds(vendorIds,typeIds);
+            if(innerModelIds.size()==0){
+                innerModelIds.add(-99999);
+            }
         }
-        if(ToolUtil.isNotEmpty(innerModelIds)){
-            params.put("innerModelIds",innerModelIds);
-        }
+        params.put("innerModelIds",innerModelIds);
         if(ToolUtil.isNotEmpty(params.get("states"))){
             params.put("states",String.valueOf(params.get("states")).split(StringPool.COMMA));
         }
