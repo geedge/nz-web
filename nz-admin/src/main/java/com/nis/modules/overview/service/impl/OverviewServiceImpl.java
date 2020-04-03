@@ -780,6 +780,14 @@ public class OverviewServiceImpl implements OverviewService {
         List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
         String url;
         Map result;
+
+        Map data;
+        JSONArray resultArray;
+        JSONObject obj = null;
+        List<String> timeAndState = null;
+        String endPointValue = null;
+        Integer endpointId = null;
+        Map<String,String> metricLabels;
         for (Promserver promserver : promservers) {
             // 2. 查询 up
             url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
@@ -788,25 +796,30 @@ public class OverviewServiceImpl implements OverviewService {
             result = promserverProxyService.requestPromAPI(url);
             // 查询成功
             if (result != null && "success".equals(result.get("status"))) {
-                Map data = (Map) result.get("data");
-                JSONArray array = (JSONArray) data.get("result");
+                data = (Map) result.get("data");
+                resultArray = (JSONArray) data.get("result");
 
-                JSONObject obj = null;
-                JSONArray timeAndState = null;
-                Map metricLabels;
-                String job = null;
-                String[] split = null;
-                Integer endpointId = null;
-
-                for (int i = 0; i < array.size(); i++) {
-                    obj = (JSONObject) array.get(i);
-                    timeAndState = (JSONArray) obj.get("value");
-
-                    if ("1".equals(timeAndState.get(1).toString())) {
+                for (int i = 0; i < resultArray.size(); i++) {
+                    obj = (JSONObject) resultArray.get(i);
+                    timeAndState = (List<String>) obj.get("value");
+                    if ("1".equals(timeAndState.get(1))) {
                         metricLabels = (Map) obj.get("metric");
-                        job = metricLabels.get("job").toString();
+                        endPointValue = metricLabels.get(Constant.PROMSERVERUP_ENDPOINT_LABEL);
 
-                        if (job.contains("_")) {
+                        if(StringUtils.isNotEmpty(endPointValue)){
+                            try {
+                                endpointId = Integer.parseInt(endPointValue);
+                            } catch (NumberFormatException e) {
+                                endpointId = null;
+                                logger.error("The prometheus server is {}, the value of endpoint value error {}", promserver, endPointValue);
+                            }
+                            if(endpointId != null){
+                                endPointIds.add(endpointId);
+                            }
+                        }else{
+                            logger.debug("The prometheus server is {} And the {} label's job label does not contain endpoint id", promserver, obj);
+                        }
+                        /*if (job.contains("_")) {
                             // job 标签的格式为 ed_endpointId
                             split = job.split("_");
                             try {
@@ -818,7 +831,7 @@ public class OverviewServiceImpl implements OverviewService {
                             if (endpointId != null) {
                                 endPointIds.add(endpointId);
                             }
-                        }
+                        }*/
                     }
                 }
             } else {// 查询失败
