@@ -55,6 +55,11 @@ public class Model implements Serializable {
     private String seq;
 
     /**
+     * u位大小
+     */
+    private Integer usize;
+
+    /**
      * 厂商对象 (字典表)
      */
     @TableField(exist = false)

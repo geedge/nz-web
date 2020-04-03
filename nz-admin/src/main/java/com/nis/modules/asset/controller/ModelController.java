@@ -46,6 +46,11 @@ public class ModelController {
                 .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
                 .and(model.getTypeCode()).notNull(RCode.ASSET_TYPE_ISNULL);
 
+        Integer usize = model.getUsize();
+        if(usize != null){
+            ValidateUtils.is(usize).min(1, RCode.ASSET_MODEL_USIZEMINIMUM);
+        }
+
         // 校验名称重复
         if (!modelService.checkName(model.getId(), model.getName())) {
             // 资产型号名称重复
@@ -70,6 +75,11 @@ public class ModelController {
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
                 .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
                 .and(model.getTypeCode()).notNull(RCode.ASSET_TYPE_ISNULL);
+
+        Integer usize = model.getUsize();
+        if(usize != null){
+            ValidateUtils.is(usize).min(1, RCode.ASSET_MODEL_USIZEMINIMUM);
+        }
 
         // 校验名称重复
         if (!modelService.checkName(model.getId(), model.getName())) {

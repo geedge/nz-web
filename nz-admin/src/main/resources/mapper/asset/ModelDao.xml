@@ -6,6 +6,7 @@
 
         <result property="id" column="id"/>
         <result property="name" column="name"/>
+        <result property="usize" column="usize"/>
         <result property="remark" column="remark"/>
 
         <!--厂商-->
@@ -40,6 +41,7 @@
     <sql id="model_info_columns">
           mo.id,
           mo.name,
+          mo.usize,
           mo.remark,
 
           /*厂商*/

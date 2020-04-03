@@ -149,6 +149,7 @@ public enum RCode {
     ASSET_MODELTYPE_NOTFOUND(326003, "Asset model type not found"),      // 资产型号类型未找到
     ASSET_MODELRELATED_ASSET(323004, "There are assets in the model"),   // 资产型号关联资产
     ASSET_MODEL_NOTFOUND(326005, "Asset model not found"),               // 资产型号未找到
+    ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
 
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
