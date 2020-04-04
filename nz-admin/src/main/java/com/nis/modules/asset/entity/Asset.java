@@ -91,6 +91,16 @@ public class Asset implements Serializable {
     private String seq;
 
     /**
+     * 机柜开始位置
+     */
+    private Integer cabinetStart;
+
+    /**
+     * 机柜结束位置
+     */
+    private Integer cabinetEnd;
+
+    /**
      * 资产型号
      */
     @TableField(exist = false)
