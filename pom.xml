@@ -40,6 +40,7 @@
         <joda.time.version>2.9.9</joda.time.version>
         <lombok.version>1.18.4</lombok.version>
         <swagger.version>2.7.0</swagger.version>
+        <mibble.version>2.9.3</mibble.version>
     </properties>
 
     <dependencies>
@@ -175,6 +176,19 @@
             <version>${swagger.version}</version>
         </dependency>
 
+        <!-- https://mvnrepository.com/artifact/net.percederberg.mibble/mibble-mibs -->
+        <dependency>
+            <groupId>net.percederberg.mibble</groupId>
+            <artifactId>mibble-mibs</artifactId>
+            <version>${mibble.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/net.percederberg.mibble/mibble -->
+        <dependency>
+            <groupId>net.percederberg.mibble</groupId>
+            <artifactId>mibble</artifactId>
+            <version>${mibble.version}</version>
+        </dependency>
     </dependencies>
 
     <!-- 阿里云maven仓库 -->
@@ -188,6 +202,12 @@
             </releases>
         </repository>
 
+        <!--opennum仓库-->
+        <repository>
+            <id>opennms</id>
+            <name>opennms</name>
+            <url>https://repo.opennms.org/maven2/</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>

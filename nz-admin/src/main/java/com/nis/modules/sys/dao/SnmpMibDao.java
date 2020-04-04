@@ -3,7 +3,6 @@ package com.nis.modules.sys.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.sys.entity.SnmpMib;
-import com.nis.modules.sys.entity.SysArea;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,4 +13,6 @@ import java.util.Map;
 public interface SnmpMibDao extends BaseMapper<SnmpMib> {
 
     List<SnmpMib> queryList(IPage<SnmpMib> page, @Param("params") Map<String, Object> params);
+
+    List<SnmpMib> getMibTreesByIdsAndModels(@Param("ids")String[] ids, @Param("models")String[] models);
 }

@@ -144,4 +144,18 @@ public class SnmpMibController extends AbstractController {
             }
         }
     }
+
+    /**
+     * 查询mib tree
+     *
+     * @param ids
+     * @param models
+     * @return
+     */
+    @GetMapping("/tree")
+    public R mibTree(String[] ids, String[] models) {
+        String mibTrees = snmpMibService.getMibTrees(ids, models);
+        return R.ok((Object) mibTrees);
+    }
+
 }

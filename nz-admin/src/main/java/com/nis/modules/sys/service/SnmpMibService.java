@@ -12,4 +12,6 @@ public interface SnmpMibService extends IService<SnmpMib> {
     PageUtils queryPage(Map<String, Object> params);
 
     void saveOrUpdateSnmpMib(SnmpMib snmpMib, MultipartFile file);
+
+    String getMibTrees(String[] ids, String[] models);
 }

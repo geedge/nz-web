@@ -3,7 +3,6 @@ package com.nis.modules.sys.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.entity.ModelWithMib;
 import lombok.Data;
 
@@ -43,6 +42,7 @@ public class SnmpMib implements Serializable {
     /**
      * 关联设备的详细信息
      */
+    @TableField(exist = false)
     private List<ModelWithMib> modelsDetail;
     /**
      * 备注信息
@@ -58,6 +58,12 @@ public class SnmpMib implements Serializable {
      * 更新日期
      */
     private Date updateAt;
+
+
+    /**
+     * Mib tree
+     */
+    private String tree;
 
     /**
      * 更新人

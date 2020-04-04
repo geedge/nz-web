@@ -274,6 +274,7 @@ public enum RCode {
 
     SNMP_MIB_FILE_ISNULL(561000,"Snmp mib file can not be empty"), // snmp mib文件不能为空
     SNMP_MIB_ID_ISNULL(561001,"Snmp mib id can not be empty"),     // snmp mib id 不能为空
+    SNMP_MIB_PARSING_FAILED(569002,"SNMP MIB file parsing failed"),// snmp mib 解析失败
 
 
     SYS_CONFIG_TYPE_ISNULL(571000,"System config type can not be null"), // sysConfig 查询type参数不能为空

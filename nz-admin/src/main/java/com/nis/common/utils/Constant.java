@@ -480,4 +480,16 @@ public class Constant {
     // 开关关闭状态
     public static final String SWITCH_CLOSE = "off";
 
+    /**
+     * MIB四种数据类型
+     * IDENTIFIER 、OBJECT、TABLE、ENTRY
+     */
+    public static final String MIB_IDENTIFIER_TYPE = "IDENTIFIER";
+    public static final String MIB_OBJECT_TYPE = "OBJECT";
+    public static final String MIB_TABLE_TYPE = "TABLE";
+    public static final String MIB_ENTRY_TYPE = "ENTRY";
+    // mib定义中 entry采用的格式为sequence 用以区分type 为 entry
+    public static final String MIB_ENTRY_SYNTAX = "SEQUENCE";
+
+
 }
