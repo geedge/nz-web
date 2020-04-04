@@ -206,6 +206,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 }
             }
         }
+        Collections.sort(occupyList);
         resuleData.put("occupy", occupyList);
         resuleData.put("available", size - occupyList.size());
         return resuleData;
