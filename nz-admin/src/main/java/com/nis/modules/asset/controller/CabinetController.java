@@ -116,4 +116,16 @@ public class CabinetController {
         return R.ok();
     }
 
+    /**
+     * 机柜u位查询
+     * @param id
+     * @return
+     */
+    @GetMapping("/u")
+    public R getUInfo(Integer id) {
+        ValidateUtils.is(id).notNull(RCode.IDC_CABINETID_ISNULL);
+
+        Map uInfo = cabinetService.getUInfo(id);
+        return R.ok(uInfo);
+    }
 }

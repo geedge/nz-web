@@ -176,5 +176,40 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         return flag;
     }
 
+    @Override
+    public Map getUInfo(Integer id) {
+        Cabinet cabinet = this.getById(id);
+        if (cabinet == null) {
+            throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
+        }
+
+        // 返回结果
+        Map resuleData = new HashMap();
+
+        Integer size = cabinet.getuSize();
+        if (size == null) {
+            resuleData.put("total", 0);
+            resuleData.put("available", 0);
+            resuleData.put("occupy", new ArrayList<>());
+            return resuleData;
+        }
+
+        resuleData.put("total", size);
+
+        List<Asset> assets = assetService.list(new QueryWrapper<Asset>().eq("cabinet_id", cabinet.getId()));
+        // 已经被占用位置
+        List<Integer> occupyList = new ArrayList<>();
+        for (Asset asset : assets) {
+            if (asset.getCabinetStart() != null && asset.getCabinetEnd() != null) {
+                for (int i = asset.getCabinetStart(); i < asset.getCabinetEnd(); i++) {
+                    occupyList.add(i);
+                }
+            }
+        }
+        resuleData.put("occupy", occupyList);
+        resuleData.put("available", size - occupyList.size());
+        return resuleData;
+    }
+
 
 }

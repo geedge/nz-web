@@ -21,5 +21,7 @@ public interface CabinetService extends IService<Cabinet> {
     void delete(Integer ... ids);
 
     boolean cabinetNameCheck(Integer id, String name, Integer idcId);
+
+    Map getUInfo(Integer id);
 }
 
