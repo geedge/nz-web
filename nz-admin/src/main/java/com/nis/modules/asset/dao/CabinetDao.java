@@ -24,4 +24,7 @@ public interface CabinetDao extends BaseMapper<Cabinet> {
 
     // 根据 数据中心id 获取包含机柜最大行列值
     Map<String,Integer> getCabinetMaxXY(@Param("id") Integer id);
+
+    // 返回机柜信息中包含所属的资产集合
+    List<Cabinet> getCabinetWithAssets();
 }

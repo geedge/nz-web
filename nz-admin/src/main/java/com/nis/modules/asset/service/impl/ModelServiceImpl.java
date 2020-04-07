@@ -15,6 +15,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -115,6 +116,44 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
             flag = true;
         }
         return flag;
+    }
+
+    @Override
+    public void checkUsize(Model model) {
+        List<Asset> assets = assetService.list(new QueryWrapper<Asset>().eq("model_id", model.getId()));
+
+        // 只校验关联资产的型号
+        if(CollectionUtils.isNotEmpty(assets)){
+            Model modelEntity = this.getById(model.getId());
+            Integer usize = modelEntity.getUsize();
+
+            int minUsize = 1;
+            // 有关联的情况下 修改usize值不能小于当前设备的最小U
+            if(usize != null){
+                minUsize = usize;
+            }
+
+            Integer start, end;
+            boolean flag = false;
+            for (Asset asset : assets) {
+                start = asset.getCabinetStart();
+                end = asset.getCabinetEnd();
+                if (start != null && end != null) {
+                    flag = true;
+                    if (end - start < minUsize) {
+                        minUsize = end - start;
+                    }
+                }
+            }
+
+            if(!flag){
+                minUsize = 1;
+            }
+
+            if (model.getUsize() < minUsize) {
+                throw new NZException(RCode.ASSET_MODEL_USIZEERROR);
+            }
+        }
     }
 
     /**

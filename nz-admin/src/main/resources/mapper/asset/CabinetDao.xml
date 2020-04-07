@@ -19,6 +19,20 @@
 
     </resultMap>
 
+    <resultMap id="cabinetWithAssets" type="com.nis.modules.asset.entity.Cabinet">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="uSize" column="u_size"/>
+        <result property="idcId" column="idc_id"/>
+
+        <collection property="assetList" ofType="com.nis.modules.asset.entity.Asset" columnPrefix="as_">
+            <result column="id" property="id"/>
+            <result column="cabinetId" property="cabinetId"/>
+            <result column="cabinetStart" property="cabinetStart"/>
+            <result column="cabinetEnd" property="cabinetEnd"/>
+        </collection>
+    </resultMap>
+
     <select id="queryPage" resultMap="cabinetWithAssetStat">
         SELECT cab.id,cab.name,cab.idc_id AS idcId,cab.u_size AS uSize,cab.remark,cab.x,cab.y,COUNT(ass.id) as_total,
 			SUM(CASE ass.state WHEN 1 THEN 1 ELSE 0 END) as_inStock,
@@ -67,5 +81,13 @@
             cabinet cab
         WHERE
             cab.idc_id = #{id}
+    </select>
+
+    <select id="getCabinetWithAssets" resultMap="cabinetWithAssets">
+        SELECT
+	        cab.id,cab.name,cab.u_size,cab.idc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
+        FROM
+            cabinet cab
+            LEFT JOIN asset ass ON cab.id = ass.cabinet_id
     </select>
 </mapper>

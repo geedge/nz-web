@@ -110,11 +110,17 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
 
         if (y != null) {
-            ValidateUtils.is(cabinet.getY()).max(idc.getY(), RCode.CABINET_Y_INCORRECT);
+            Integer idcY = idc.getY();
+            if(idcY != null){
+                ValidateUtils.is(cabinet.getY()).max(idcY, RCode.CABINET_Y_INCORRECT);
+            }
         }
 
         if (x != null) {
-            ValidateUtils.is(cabinet.getX()).max(idc.getX(), RCode.CABINET_X_INCORRECT);
+            Integer idcX = idc.getX();
+            if(idcX != null){
+                ValidateUtils.is(cabinet.getX()).max(idcX, RCode.CABINET_X_INCORRECT);
+            }
         }
 
         // 当行列都不会空时 校验位置是否被占用 如果只单独填写了行或列的话 暂时不做具体位置校验

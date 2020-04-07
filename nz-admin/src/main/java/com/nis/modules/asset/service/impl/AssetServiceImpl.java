@@ -2,7 +2,6 @@ package com.nis.modules.asset.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -13,6 +12,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
@@ -52,7 +52,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 资产    serviceImpl
@@ -114,6 +113,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private ModelDao modelDao;
+
+    @Autowired
+    private CabinetDao cabinetDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -208,6 +210,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             throw new NZException(RCode.ASSET_IDC_NOTFOUND);
         }
 
+        Integer start = asset.getCabinetStart();
+        Integer end = asset.getCabinetEnd();
         // 5.机柜有效性校验
         if (asset.getCabinetId() != null) {
             Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
@@ -218,6 +222,27 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             if (!idc.getId().equals(cabinet.getIdcId())) {
                 // 数据中心与机柜不符  当前数据中心没有含有所选机柜
                 throw new NZException(RCode.IDC_NOTHAS_CABINET);
+            }
+
+            // 选择了机柜再进行处理usize 相关数据
+            if (start != null && end != null) {
+                end = end + 1;
+                asset.setCabinetEnd(end);
+                Integer cabuSize = cabinet.getuSize();
+                if (start < 0 || end < 0 || start >= end || start > cabuSize || end > cabuSize + 1) {
+                    throw new NZException(RCode.ASSET_POSITION_INVALID);
+                }
+
+                // 校验所选位置在该机柜中是否被占用
+                boolean flag = this.validateUSize(asset);
+                if (!flag) {
+                    throw new NZException(RCode.ASSET_POSITION_OCCUPY);
+                }
+            }
+        } else {
+            // 指定了起始位置 但未选择机柜情况
+            if (start != null || end != null) {
+                throw new NZException(RCode.ASSET_CABINET_ISNULL);
             }
         }
 
@@ -454,7 +479,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             idcMap.put(idc.getName(), idc);
         }
 
-        List<Cabinet> cabinetList = cabinetService.list();
+//        List<Cabinet> cabinetList = cabinetService.list();
+        List<Cabinet> cabinetList = cabinetDao.getCabinetWithAssets();
 
         List<Asset> assetList = this.list();
         for (Asset asset : assetList) {
@@ -468,6 +494,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().eq("status", 1));
         for (SysConfigEntity config : sysConfigs) {
             configs.put(config.getParamKey(), config.getParamValue());
+        }
+
+        String configDefaultCabUsize = configs.get(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        Integer defaultCabinetUsize = null;
+        try {
+            defaultCabinetUsize = Integer.parseInt(configDefaultCabUsize);
+        } catch (NumberFormatException e) {
+            logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+        }
+
+        if (defaultCabinetUsize == null) {
+            throw new NZException(RCode.SYS_CONFIG_DEFALUTCABINETU_INTERVAL);
         }
 
         Map info = new HashMap();
@@ -502,11 +540,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 成功条数
             int successNum = 0;
 
-            String sn, type, vendor, model, dcName, cabinetName, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter;
-            Integer accountAuthType;
+            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter;
+            Integer accountAuthType, start, end;
 
             Map saveEntitys;
             Long userId = ShiroUtils.getUserId();
+            Model modelEntity = null;
 
             // 没有关联关系的资产数据,采取批量入库的方式
             List<Asset> noRelationAssets = new ArrayList<>();
@@ -516,8 +555,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 saveEntitys = new HashMap();
 
                 account = accountCli = null;
+                start = end = null;
                 boolean saveFlag = true;
                 boolean relaFlag = true;
+                boolean modelFlag = true;
                 asset = new Asset();
                 row = sheet.getRow(i);
 
@@ -531,7 +572,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_SN_ISNULL);
+                    failDetail.put("errorMsg", RCode.ASSET_SN_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 } else {
                     // 校验资产序列号是否唯一
@@ -541,7 +582,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         saveFlag = false;
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ASSET_SN_DUPLICATE);
+                        failDetail.put("errorMsg", RCode.ASSET_SN_DUPLICATE.getMsg());
                         failDetails.add(failDetail);
                     }
                 }
@@ -551,7 +592,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_TYPE_ISNULL);
+                    failDetail.put("errorMsg", RCode.ASSET_TYPE_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 }
                 // 资产类型
@@ -560,7 +601,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_VENDOR_ISNULL);
+                    failDetail.put("errorMsg", RCode.ASSET_VENDOR_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 }
                 // 型号
@@ -569,14 +610,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_MODELNAME_ISNULL);
+                    failDetail.put("errorMsg", RCode.ASSET_MODELNAME_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 }
 
                 // 处理类型 厂商 型号
                 if (StringUtils.isNotEmpty(type) && StringUtils.isNotEmpty(vendor) && StringUtils.isNotEmpty(model)) {
-                    Integer modelId = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelMap, seqUUID, saveEntitys);
+                    modelEntity = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelMap, seqUUID, saveEntitys);
                     // modelid 可能为null,入库之后返回
+                    Integer modelId = modelEntity.getId();
                     asset.setModelId(modelId);
                     // 当前库中不存在改型号
                     if (modelId == null) {
@@ -591,7 +633,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.IDC_IDCNAME_ISNULL);
+                    failDetail.put("errorMsg", RCode.IDC_IDCNAME_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 } else {
                     idcId = this.checkIdc(dcName, idcMap, seqUUID, saveEntitys);
@@ -605,31 +647,144 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
                 // cabinet
                 cabinetName = ExcelUtils.getCellValue(row.getCell(5));
+
+                cabinetStart = ExcelUtils.getCellValue(row.getCell(6));
+                cabinetEnd = ExcelUtils.getCellValue(row.getCell(7));
                 if (StringUtils.isNotEmpty(cabinetName) && StringUtils.isNotEmpty(dcName)) {
+                    if (StringUtils.isNotEmpty(cabinetStart) && StringUtils.isNotEmpty(cabinetEnd)) {
+                        try {
+                            start = Integer.parseInt(cabinetStart);
+                        } catch (NumberFormatException e) {
+                            saveFlag = false;
+                            failDetail = new HashMap();
+                            failDetail.put("lineNo", i);
+                            failDetail.put("errorMsg", RCode.ASSET_CABINETSTART_INVALIDE.getMsg());
+                            failDetails.add(failDetail);
+                        }
+                        try {
+                            end = Integer.parseInt(cabinetEnd);
+                        } catch (NumberFormatException e) {
+                            saveFlag = false;
+                            failDetail = new HashMap();
+                            failDetail.put("lineNo", i);
+                            failDetail.put("errorMsg", RCode.ASSET_CABINETEND_INVALIDE.getMsg());
+                            failDetails.add(failDetail);
+                        }
+                    }
+
                     if (idcId != null) { // idc已存在，不需要添加
-                        Integer cabinetId = this.checkCabinet(cabinetName, idcId, cabinetList, seqUUID, saveEntitys);
+                        Cabinet cabinet = this.checkCabinet(cabinetName, idcId, cabinetList, seqUUID, saveEntitys, defaultCabinetUsize);
                         // cabinetId 可能为null,入库之后返回
+                        Integer cabinetId = cabinet.getId();
                         asset.setCabinetId(cabinetId);
                         if (cabinetId == null) {
                             relaFlag = false;
+                            // 因为这里是新增加的机柜 默认usize为 40 ,所以只简单校验一下start end值就可以
+                            if (start != null && end != null) {
+                                end = end + 1;
+                                if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
+                                    saveFlag = false;
+                                    failDetail = new HashMap();
+                                    failDetail.put("lineNo", i);
+                                    failDetail.put("errorMsg", RCode.ASSET_POSITION_INVALID.getMsg());
+                                    failDetails.add(failDetail);
+                                }else{
+                                    asset.setCabinetStart(start);
+                                    asset.setCabinetEnd(end);
+                                }
+                            }
+                        } else {
+                            // cabinetId不为空  证明此 cabinet 已存在
+                            if (start != null && end != null) {
+                                end = end + 1;
+                                if (start < 0 || end < 0 || start >= end || start > cabinet.getuSize() || end > cabinet.getuSize() + 1) {
+                                    saveFlag = false;
+                                    failDetail = new HashMap();
+                                    failDetail.put("lineNo", i);
+                                    failDetail.put("errorMsg", RCode.ASSET_POSITION_INVALID.getMsg());
+                                    failDetails.add(failDetail);
+                                } else {
+                                    if (modelEntity != null && modelEntity.getUsize() != null) {
+                                        if ((end - start) < modelEntity.getUsize()) {
+                                            saveFlag = false;
+                                            modelFlag = false;
+                                            failDetail = new HashMap();
+                                            failDetail.put("lineNo", i);
+                                            failDetail.put("errorMsg", RCode.ASSET_POSITION_MISMATCH.getMsg());
+                                            failDetails.add(failDetail);
+                                        }
+                                    }
+                                    // 符合型号大小则继续校验位置是否被占用
+                                    if(modelFlag){
+                                        // 参数正确 校验位置是否被占用
+                                        boolean flag = this.validateUSizeForImport(start, end, cabinet);
+                                        if (!flag) {
+                                            saveFlag = false;
+                                            failDetail = new HashMap();
+                                            failDetail.put("lineNo", i);
+                                            failDetail.put("errorMsg", RCode.ASSET_POSITION_OCCUPY.getMsg());
+                                            failDetails.add(failDetail);
+                                        } else {
+                                            // 位置正确
+                                            asset.setCabinetStart(start);
+                                            asset.setCabinetEnd(end);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else {
                         // idc不存在 需要添加之后才能获取idcId供添加cabinet使用
                         Cabinet cabinet = new Cabinet();
                         cabinet.setName(cabinetName);
-                        cabinet.setuSize(1);
+                        cabinet.setuSize(defaultCabinetUsize);
                         cabinet.setSeq(seqUUID);
                         saveEntitys.put("cabinet", cabinet);
+                        // 因为这里是新增加的机柜 默认usize为 40 ,所以只简单校验一下start end值就可以
+                        if (start != null && end != null) {
+                            end = end + 1;
+
+                            if (modelEntity != null && modelEntity.getUsize() != null) {
+                                if ((end - start) < modelEntity.getUsize()) {
+                                    saveFlag = false;
+                                    modelFlag = false;
+                                    failDetail = new HashMap();
+                                    failDetail.put("lineNo", i);
+                                    failDetail.put("errorMsg", RCode.ASSET_POSITION_MISMATCH.getMsg());
+                                    failDetails.add(failDetail);
+                                }
+                            }
+
+                            if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
+                                saveFlag = false;
+                                failDetail = new HashMap();
+                                failDetail.put("lineNo", i);
+                                failDetail.put("errorMsg", RCode.ASSET_POSITION_INVALID.getMsg());
+                                failDetails.add(failDetail);
+                            }else{
+                                asset.setCabinetStart(start);
+                                asset.setCabinetEnd(end);
+                            }
+                        }
+                    }
+                } else {
+                    // 指定了起始位置 但未选择机柜情况
+                    if (StringUtils.isNotEmpty(cabinetStart) || StringUtils.isNotEmpty(cabinetEnd)) {
+                        saveFlag = false;
+                        failDetail = new HashMap();
+                        failDetail.put("lineNo", i);
+                        failDetail.put("errorMsg", RCode.ASSET_CABINET_ISNULL.getMsg());
+                        failDetails.add(failDetail);
                     }
                 }
 
                 // host
-                host = ExcelUtils.getCellValue(row.getCell(6));
+                host = ExcelUtils.getCellValue(row.getCell(8));
                 if (StringUtils.isEmpty(host)) {
                     saveFlag = false;
                     failDetail = new HashMap();
                     failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_HOST_ISNULL);
+                    failDetail.put("errorMsg", RCode.ASSET_HOST_ISNULL.getMsg());
                     failDetails.add(failDetail);
                 } else {
                     // host唯一校验
@@ -641,27 +796,27 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             saveFlag = false;
                             failDetail = new HashMap();
                             failDetail.put("lineNo", i);
-                            failDetail.put("errorMsg", RCode.ASSET_HOST_FORMAT);
+                            failDetail.put("errorMsg", RCode.ASSET_HOST_FORMAT.getMsg());
                             failDetails.add(failDetail);
                         }
                     } else {
                         saveFlag = false;
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ASSET_HOST_DUPLICATE);
+                        failDetail.put("errorMsg", RCode.ASSET_HOST_DUPLICATE.getMsg());
                         failDetails.add(failDetail);
                     }
                 }
 
                 // state
-                state = ExcelUtils.getCellValue(row.getCell(7));
+                state = ExcelUtils.getCellValue(row.getCell(9));
                 if (StringUtils.isEmpty(state)) {
                     state = "1";
                 }
                 asset.setState(Integer.parseInt(state));
 
                 // 购买日期
-                purchaseDate = ExcelUtils.getCellValue(row.getCell(8));
+                purchaseDate = ExcelUtils.getCellValue(row.getCell(10));
                 if (StringUtils.isNotEmpty(purchaseDate)) {
                     asset.setPurchaseDate(purchaseDate);
                 }
@@ -706,18 +861,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }*/
 
                 // 账号相关
-                protocol = ExcelUtils.getCellValue(row.getCell(9));       // 协议信息
-                authType = ExcelUtils.getCellValue(row.getCell(10));      // 认证类型
-                user = ExcelUtils.getCellValue(row.getCell(11));          // 用户名
-                pwd = ExcelUtils.getCellValue(row.getCell(12));           // 密码
-                privateKey = ExcelUtils.getCellValue(row.getCell(13));    // 密钥文件
-                port = ExcelUtils.getCellValue(row.getCell(14));          // 端口
-                userTip = ExcelUtils.getCellValue(row.getCell(15));       // telnet协议有效 用户名提示
-                passwordTip = ExcelUtils.getCellValue(row.getCell(16));   // telnet协议有效 密码提示
-                reloginPasswordTip = ExcelUtils.getCellValue(row.getCell(17));// telnet协议有效 重复登陆提示
+                protocol = ExcelUtils.getCellValue(row.getCell(11));       // 协议信息
+                authType = ExcelUtils.getCellValue(row.getCell(12));      // 认证类型
+                user = ExcelUtils.getCellValue(row.getCell(13));          // 用户名
+                pwd = ExcelUtils.getCellValue(row.getCell(14));           // 密码
+                privateKey = ExcelUtils.getCellValue(row.getCell(15));    // 密钥文件
+                port = ExcelUtils.getCellValue(row.getCell(16));          // 端口
+                userTip = ExcelUtils.getCellValue(row.getCell(17));       // telnet协议有效 用户名提示
+                passwordTip = ExcelUtils.getCellValue(row.getCell(18));   // telnet协议有效 密码提示
+                reloginPasswordTip = ExcelUtils.getCellValue(row.getCell(19));// telnet协议有效 重复登陆提示
 
                 // 是否内置exporter
-                exporter = ExcelUtils.getCellValue(row.getCell(18));
+                exporter = ExcelUtils.getCellValue(row.getCell(20));
 
                 // 满足添加Account所需
                 if (StringUtils.isNotEmpty(protocol) && StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
@@ -728,7 +883,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         saveFlag = false;
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ACCOUNT_PROTOCOL_INCORRECT);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_PROTOCOL_INCORRECT.getMsg());
                         failDetails.add(failDetail);
                     }
                     // 验证认证类型
@@ -737,7 +892,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         saveFlag = false;
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
                         failDetails.add(failDetail);
                     }
                     if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
@@ -745,7 +900,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             saveFlag = false;
                             failDetail = new HashMap();
                             failDetail.put("lineNo", i);
-                            failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+                            failDetail.put("errorMsg", RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
                             failDetails.add(failDetail);
                         }
                     }
@@ -753,14 +908,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     account.setAuthType(accountAuthType);
                     account.setUser(user);
                     account.setPort(Integer.parseInt(port));
-                    if(Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)){
+                    if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
                         if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
                             account.setPwd(pwd);
                         }
                         if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(privateKey)) {
                             account.setPrivateKey(privateKey);
                         }
-                    }else if(Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)){
+                    } else if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
                         account.setUserTip(userTip);
                         account.setPasswordTip(passwordTip);
                         account.setReloginPasswordTip(reloginPasswordTip);
@@ -774,7 +929,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         saveFlag = false;
                         failDetail = new HashMap();
                         failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ACCOUNT_PORT_ERROR);
+                        failDetail.put("errorMsg", RCode.ACCOUNT_PORT_ERROR.getMsg());
                         failDetails.add(failDetail);
                         account = accountCli = null;
                     }
@@ -795,13 +950,23 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 更新sn host map
                         assetSnMap.put(asset.getSn(), 1);
                         assetHostMap.put(asset.getHost(), 1);
+
+                        if (asset.getCabinetStart() != null && asset.getCabinetEnd() != null) {
+                            // 更新cabinetList中对应的关系
+                            for (Cabinet cabinet : cabinetList) {
+                                if (cabinet.getId().equals(asset.getCabinetId())) {
+                                    cabinet.getAssetList().add(asset);
+                                    break;
+                                }
+                            }
+                        }
                         successNum++;
                     } else {
                         saveEntitys.put("asset", asset);
                         // 账号信息正常
                         if (account != null) {
                             // 密码加密
-                            if(StringUtils.isNotEmpty(account.getPwd())){
+                            if (StringUtils.isNotEmpty(account.getPwd())) {
                                 account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
                             }
                             account.setSeq(seqUUID);
@@ -812,7 +977,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 if (!this.uploadBuildNodeExporter(configs, asset, accountCli)) {
                                     failDetail = new HashMap();
                                     failDetail.put("lineNo", i);
-                                    failDetail.put("errorMsg", RCode.ASSET_EXPORTER_UPLOAD_FAIL);
+                                    failDetail.put("errorMsg", RCode.ASSET_EXPORTER_UPLOAD_FAIL.getMsg());
                                     failDetails.add(failDetail);
                                 }
                             }
@@ -850,6 +1015,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             if (updateAsset != null) {
                                 assetSnMap.put(updateAsset.getSn(), 1);
                                 assetHostMap.put(updateAsset.getHost(), 1);
+                                if (updateAsset.getCabinetStart() != null && updateAsset.getCabinetEnd() != null) {
+                                    // 更新cabinetList中对应的关系
+                                    for (Cabinet cabinet : cabinetList) {
+                                        if (cabinet.getId().equals(updateAsset.getCabinetId())) {
+                                            if(CollectionUtils.isEmpty(cabinet.getAssetList())){
+                                                cabinet.setAssetList(new ArrayList<>());
+                                            }
+                                            cabinet.getAssetList().add(updateAsset);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
 
                             successNum++;
@@ -960,7 +1137,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Map> mapList = new ArrayList<>();
         Map map;
 
-        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "host", "state", "purchasedate", "protocol", "authtype", "user", "pwd", "cert", "port", "usertip", "passwordtip", "reloginpasswordtip", "exporter"};
+        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "cabinetstart", "cabinetend", "host", "state", "purchasedate", "protocol", "authtype", "user", "pwd", "cert", "port", "usertip", "passwordtip", "reloginpasswordtip", "exporter"};
         List<String> titles = Arrays.asList(str);
 
         String titleValue, title;
@@ -995,7 +1172,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
 
-    private Integer checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys) {
+    private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {
         Cabinet cabinet = new Cabinet();
         boolean flag = false;
         for (Cabinet entity : cabinetList) {
@@ -1010,11 +1187,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (!flag) {
             cabinet.setName(cabinetName);
             cabinet.setIdcId(idcId);
-            cabinet.setuSize(1);
+            cabinet.setuSize(defaultCabinetUsize);
             cabinet.setSeq(seqUUID);
             saveEntitys.put("cabinet", cabinet);
         }
-        return cabinet.getId();
+        return cabinet;
     }
 
     private Integer checkIdc(String dcName, Map<String, Idc> idcMap, String seqUUID, Map saveEntitys) {
@@ -1028,7 +1205,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return idc.getId();
     }
 
-    public Integer checkAssetTypeVendorModel(String assetType, Map<String, SysDictEntity> assetTypesMap, String assetVendor, Map<String, SysDictEntity> vendorsMap, String modelName, Map<String, Model> modelMap, String seqUUID, Map saveEntitys) {
+    public Model checkAssetTypeVendorModel(String assetType, Map<String, SysDictEntity> assetTypesMap, String assetVendor, Map<String, SysDictEntity> vendorsMap, String modelName, Map<String, Model> modelMap, String seqUUID, Map saveEntitys) {
         // 是否新增 model 标识 由于model名称目前是唯一的，所以暂且不处理资产类型，厂商更改，型号名称不变情况
         //boolean flag = false;
 
@@ -1061,11 +1238,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             model.setName(modelName);
             model.setTypeCode(type.getCode());
             model.setVendorCode(vendor.getCode());
+            // 此处 model usize 不设置默认值
+            // model.setUsize(1);
             model.setSeq(seqUUID);
             saveEntitys.put("model", model);
         }
         // 如果型号存在则会返回modelId
-        return model.getId();
+        return model;
     }
 
     public boolean checkImportSnOnly(String sn, Map<String, Integer> assetSnMap) {
@@ -1122,5 +1301,141 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             sftpUtils.logout();
         }
         return true;
+    }
+
+
+    /**
+     * 检擦位置是否合理
+     *
+     * @param asset
+     * @return
+     */
+    public boolean validateUSize(Asset asset) {
+        // 修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
+        Integer assetId = asset.getId();
+        Integer cabinetId = asset.getCabinetId();
+        Integer start = asset.getCabinetStart();
+        Integer end = asset.getCabinetEnd();
+
+        Model model = modelService.getById(asset.getModelId());
+        // 校验 开始和结束位置占用的机柜是否符合 关联 model 的 usize值
+        Integer modelUsize = model.getUsize();
+        if (modelUsize != null && (end - start) < modelUsize) {
+            throw new NZException(RCode.ASSET_POSITION_MISMATCH);
+        }
+
+        Integer oldCabinetId = null;
+        if (assetId != null) {
+            Asset assetEntity = this.getById(assetId);
+            oldCabinetId = assetEntity.getCabinetId();
+        }
+
+        // 得到机柜下包含的节点信息
+        List<Asset> assets = this.list(new QueryWrapper<Asset>().eq("cabinet_id", cabinetId));
+
+        // 获取当前机柜的全部位置
+        Cabinet cab = cabinetService.getById(cabinetId);
+
+        // 所有位置 从1开始到uSize
+        Integer[] allPosition = new Integer[cab.getuSize()];
+        for (int i = 0; i < allPosition.length; i++) {
+            allPosition[i] = i + 1;
+        }
+
+        // 已经占用的位置
+        List<Integer> occList = new ArrayList<>();
+
+        // 修改时节点的所属的机柜  应还回节点 再做校验
+        if (oldCabinetId != null && oldCabinetId.equals(cabinetId)) {
+
+            // 根据得到的节点信息 得到占用的位置
+            for (Asset nodeInfo : assets) {
+                if (nodeInfo.getId().equals(assetId)) {
+                    // 修改的情况下 不记录当前占用位置
+                    continue;
+                }
+                if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+                    for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
+                        occList.add(i);
+                    }
+                }
+            }
+
+        } else {
+            for (Asset nodeInfo : assets) {
+                if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+                    for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
+                        occList.add(i);
+                    }
+                }
+            }
+
+        }
+        // 空闲的位置
+        List<Integer> freePosition = new ArrayList<>(Arrays.asList(allPosition));
+        freePosition.removeAll(occList); // 例如 (1),2,3,4,(5,) 6,7,8,(9),10
+
+        if (!freePosition.contains(start)) {
+            // 空闲位置中没有符合条件的位置
+            return false;
+        } else {
+            // 判断结尾字段是否成立
+            Integer uSize = end - start;
+            if (uSize == 1) {
+                return true;
+            } else {
+                // usize大于1 判断开始和结束位置中是否存在被占用的位置
+                for (int i = start; i <= (end - 1); i++) {
+                    if (!freePosition.contains(i)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+    }
+
+
+    public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {
+
+        // 所有位置 从1开始到uSize
+        Integer[] allPosition = new Integer[cab.getuSize()];
+        for (int i = 0; i < allPosition.length; i++) {
+            allPosition[i] = i + 1;
+        }
+
+        // 已经占用的位置
+        List<Integer> occList = new ArrayList<>();
+
+        for (Asset nodeInfo : cab.getAssetList()) {
+            if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+                for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
+                    occList.add(i);
+                }
+            }
+        }
+
+        // 空闲的位置
+        List<Integer> freePosition = new ArrayList<>(Arrays.asList(allPosition));
+        freePosition.removeAll(occList); // 例如 (1),2,3,4,(5,) 6,7,8,(9),10
+
+        if (!freePosition.contains(start)) {
+            // 空闲位置中没有符合条件的位置
+            return false;
+        } else {
+            // 判断结尾字段是否成立
+            Integer uSize = end - start;
+            if (uSize == 1) {
+                return true;
+            } else {
+                // usize大于1 判断开始和结束位置中是否存在被占用的位置
+                for (int i = start; i <= (end - 1); i++) {
+                    if (!freePosition.contains(i)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
     }
 }

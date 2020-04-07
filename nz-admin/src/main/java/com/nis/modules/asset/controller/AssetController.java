@@ -261,7 +261,7 @@ public class AssetController {
 
         int rowNum = 0;
         // 添加标题行
-        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip"};
+        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip"};
         Row row = sheet.createRow(rowNum);
         Cell cell;
 
@@ -282,6 +282,7 @@ public class AssetController {
         List<Account> accountList;
         Model model;
         Account account;
+        Integer start, end;
         for (Asset asset : list) {
             account = null;
             row1 = sheet.createRow(++rowNum);
@@ -299,12 +300,18 @@ public class AssetController {
             row1.createCell(4).setCellValue(asset.getIdc().getName());
             // cabinet
             row1.createCell(5).setCellValue(asset.getCabinet() == null ? null : asset.getCabinet().getName());
+            // cabinetstart
+            start = asset.getCabinetStart();
+            row1.createCell(6).setCellValue(start == null ? "" : start + "");
+            // cabinetend
+            end = asset.getCabinetEnd();
+            row1.createCell(7).setCellValue(end == null ? "" : end + "");
             // host
-            row1.createCell(6).setCellValue(asset.getHost());
+            row1.createCell(8).setCellValue(asset.getHost());
             // state
-            row1.createCell(7).setCellValue(statesMap.get(asset.getState()));
+            row1.createCell(9).setCellValue(statesMap.get(asset.getState()));
             // PurchaseDate
-            row1.createCell(8).setCellValue(asset.getPurchaseDate());
+            row1.createCell(10).setCellValue(asset.getPurchaseDate());
 
             accountList = asset.getAccounts();
             if (CollectionUtils.isNotEmpty(accountList)) {
@@ -313,32 +320,32 @@ public class AssetController {
             }
             if (account != null) {
                 // protocol
-                row1.createCell(9).setCellValue(account.getProtocol());
+                row1.createCell(11).setCellValue(account.getProtocol());
                 // authtype
-                row1.createCell(10).setCellValue(account.getAuthType());
+                row1.createCell(12).setCellValue(account.getAuthType());
                 // user
-                row1.createCell(11).setCellValue(account.getUser());
+                row1.createCell(13).setCellValue(account.getUser());
                 if (StringUtils.isNotEmpty(account.getPwd())) {
                     // pwd
-                    row1.createCell(12).setCellValue(account.getPwd());
+                    row1.createCell(14).setCellValue(account.getPwd());
                 }
                 if (StringUtils.isNotEmpty(account.getPrivateKey())) {
                     // sshKeys
-                    row1.createCell(13).setCellValue(account.getPrivateKey());
+                    row1.createCell(15).setCellValue(account.getPrivateKey());
                 }
                 // port
-                row1.createCell(14).setCellValue(account.getPort());
+                row1.createCell(16).setCellValue(account.getPort());
                 if (StringUtils.isNotEmpty(account.getUserTip())) {
                     // userTip
-                    row1.createCell(15).setCellValue(account.getUserTip());
+                    row1.createCell(17).setCellValue(account.getUserTip());
                 }
                 if (StringUtils.isNotEmpty(account.getPasswordTip())) {
                     // passwordTip
-                    row1.createCell(16).setCellValue(account.getPasswordTip());
+                    row1.createCell(18).setCellValue(account.getPasswordTip());
                 }
                 if (StringUtils.isNotEmpty(account.getReloginPasswordTip())) {
                     // reloginPasswordTip
-                    row1.createCell(17).setCellValue(account.getReloginPasswordTip());
+                    row1.createCell(19).setCellValue(account.getReloginPasswordTip());
                 }
             }
         }

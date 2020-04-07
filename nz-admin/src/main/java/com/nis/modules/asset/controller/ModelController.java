@@ -87,6 +87,8 @@ public class ModelController {
             throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
         }
 
+        modelService.checkUsize(model);
+
         modelService.saveOrUpdateModel(model);
         return R.ok();
     }

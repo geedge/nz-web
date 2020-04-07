@@ -7,6 +7,8 @@
         <result property="id" column="id"/>
         <result property="sn" column="sn"/>
         <result property="host" column="host"/>
+        <result property="cabinetStart" column="cabinet_start"/>
+        <result property="cabinetEnd" column="cabinet_end"/>
         <result property="state" column="state"/>
         <result property="purchaseDate" column="purchase_date"/>
         <result property="createAt" column="create_at"/>
@@ -93,6 +95,8 @@
        ass.sn,
        ass.model_id,
        ass.host,
+       ass.cabinet_start,
+       ass.cabinet_end,
        ass.state,
        ass.purchase_date,
        ass.create_at,
@@ -290,10 +294,10 @@
     </select>
 
     <insert id="saveAsset">
-        INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, host, state, purchase_date, create_at, update_at,
+        INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, cabinet_start, cabinet_end, host, state, purchase_date, create_at, update_at,
         create_by, update_by)
         VALUES
-        (NULL, #{asset.sn},#{asset.modelId},#{asset.idcId},#{asset.cabinetId},#{asset.host},
+        (NULL, #{asset.sn},#{asset.modelId},#{asset.idcId},#{asset.cabinetId},#{asset.cabinetStart},#{asset.cabinetEnd},#{asset.host},
         #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy})
 
         <selectKey keyProperty="asset.id" order="AFTER" resultType="java.lang.Integer">

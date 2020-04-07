@@ -445,6 +445,9 @@ public class Constant {
     // 内置 generator 路径
     public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
 
+    // 机柜默认大小
+    public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_uszie";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 

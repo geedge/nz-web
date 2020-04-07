@@ -141,6 +141,12 @@ public enum RCode {
     ASSET_CANCELIMPORTSEQ_ISNULL(311021, "Asset cancel import seq can not be null"),//  导入撤销 seq不能为空
     ASSET_IMPORT_FILE_ISNULL(311022, "Asset import file can not be null"),//  导入文件不能为空
     ASSET_EXPORTER_UPLOAD_FAIL(319023, "Export upload error. You can upload files manually, sorry."),
+    ASSET_CABINET_ISNULL(311024,"Cabinet must be selected when start or end position is not empty"), // 机柜起始位置不为空 必须指定机柜才可以
+    ASSET_POSITION_INVALID(315025,"Asset cabinet start or end value is invalid"),   // 位置选值有误 不在合理返回内
+    ASSET_POSITION_MISMATCH(315026,"Asset usize does not match the usize of the associated model"),   // 位置选值有误 不在合理返回内
+    ASSET_POSITION_OCCUPY(315027,"Asset selected position is already occupied"),   // 位置已被占用
+    ASSET_CABINETSTART_INVALIDE(313028,"Asset cabinet start must be an integer"),  // 开始位置必须为数字类型
+    ASSET_CABINETEND_INVALIDE(313029,"Asset cabinet end must be an integer"),      // 结束位置必须为数字类型
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
@@ -150,6 +156,7 @@ public enum RCode {
     ASSET_MODELRELATED_ASSET(323004, "There are assets in the model"),   // 资产型号关联资产
     ASSET_MODEL_NOTFOUND(326005, "Asset model not found"),               // 资产型号未找到
     ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
+    ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be smaller than associated asset size"),// 修改的时候model uSize 不能小于关联 asset 的大小
 
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
@@ -328,6 +335,7 @@ public enum RCode {
     SYS_CONFIG_TIMEZONE_ISNULL(571048,"System config timezone can not be empty"),                    // timezone 不能为空
     SYS_CONFIG_TIMEZONE_INVALIDE(573049,"System config timezone should be an integer"),             // timezone参数与要求不符合
     SYS_CONFIG_TIMEZONE_INTERVAL(575050,"The interval value of timezone is between -12 and +12"),  // timezone 区间值为-12至+12之间
+    SYS_CONFIG_DEFALUTCABINETU_INTERVAL(573051,"System config default cabinet usize is invalide"), // 配置表中机柜默认值有误
 
 
 

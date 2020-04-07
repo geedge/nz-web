@@ -7,6 +7,7 @@ import com.nis.modules.overview.entity.AssetStat;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 
@@ -73,6 +74,12 @@ public class Cabinet implements Serializable {
      */
     @TableField(exist = false)
     private Map alertStat;
+
+    /**
+     * 当前cabinet包含的asset集合
+     */
+    @TableField(exist = false)
+    private List<Asset> assetList;
 
     // 解决lombok自动生成方法命名问题
     public Integer getuSize() {
