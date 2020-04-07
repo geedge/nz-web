@@ -126,7 +126,15 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         for (SnmpMib snmpMib : mibList) {
             resultData.putAll(JSONObject.parseObject(snmpMib.getTree(), Map.class));
         }
-        return JSONObject.toJSONString(resultData);
+
+        // 默认排序 a-z
+        Map<String, Object> sortMap = new TreeMap<>(new Comparator<String>() {
+            public int compare(String obj1, String obj2) {
+                return obj1.compareTo(obj2);
+            }
+        });
+        sortMap.putAll(resultData);
+        return JSONObject.toJSONString(sortMap);
     }
 
     /**
