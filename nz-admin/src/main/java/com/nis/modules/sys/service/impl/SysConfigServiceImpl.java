@@ -377,7 +377,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         redisTemplate.opsForValue().set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
         // 删除用户输入的数据
         Arrays.stream(Constant.TABLESWITHCLEAR).forEach(table->{
-            this.baseMapper.clearByTableName(table);
+            if("sys_dict".equals(table)){
+                this.baseMapper.clearDict();
+            }else {
+                this.baseMapper.clearByTableName(table);
+            }
         });
         // 删除redis中key=reset的数据
         redisTemplate.delete("reset");

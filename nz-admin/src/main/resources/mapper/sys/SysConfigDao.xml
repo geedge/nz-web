@@ -15,4 +15,7 @@
 	<delete id="clearByTableName" parameterType="string">
 		DELETE FROM ${tableName}
 	</delete>
+	<delete id="clearDict">
+		DELETE FROM sys_dict where type IN ('assetType','vendor')
+	</delete>
 </mapper>

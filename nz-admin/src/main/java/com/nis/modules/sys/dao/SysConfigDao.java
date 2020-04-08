@@ -38,5 +38,7 @@ public interface SysConfigDao extends BaseMapper<SysConfigEntity> {
 	 * @param tableName
 	 */
 	void clearByTableName(@Param("tableName") String tableName);
+
+	void clearDict();
 	
 }
