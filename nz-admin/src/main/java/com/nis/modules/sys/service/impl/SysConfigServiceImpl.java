@@ -245,7 +245,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                 } else if ("true".equals(emailTest)) {
                     // 只做测试连接  不进行入库操作
-                    R r = this.testConnectionSmtpServer(saveMap.get("email_smtp_host"), saveMap.get("email_smtp_port"), "10000", saveMap.get("email_smtp_account"), saveMap.get("email_smtp_password"), Constant.SWITCH_OPEN.equals(saveMap.get("email_ssl_flag")), Constant.SWITCH_OPEN.equalsIgnoreCase(saveMap.get("email_tls_flag")));
+                    R r = this.testConnectionSmtpServer(saveMap.get("email_smtp_host"), saveMap.get("email_smtp_port"), Constant.CONNECTION_SMTP_TIMEOUT, saveMap.get("email_smtp_account"), saveMap.get("email_smtp_password"), Constant.SWITCH_OPEN.equals(saveMap.get("email_ssl_flag")), Constant.SWITCH_OPEN.equalsIgnoreCase(saveMap.get("email_tls_flag")));
                     return r;
                 } else {
                     if (emailEnableFlag) {
@@ -602,7 +602,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             logger.error("Authentication failed to connect to SMTP server", e);
             return R.error(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
         } catch (MailConnectException e) {
-            // 连接smtp服务异常
+            // 连接smtp服务异常 造成此类问题的原因：  1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
             logger.error("Failed to connect to SMTP server", e);
             return R.error(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
         } catch (MessagingException e) {
@@ -611,7 +611,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             return R.error(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
         } catch (Exception e) {
             logger.error("Failed to connect to SMTP server", e);
-            return R.error(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
+            return R.error(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
         } finally {
             if (ts != null) {
                 try {
@@ -641,9 +641,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             environment.put(Context.PROVIDER_URL, address);
             initialDirContext = new InitialDirContext(environment);
         } catch (AuthenticationException e) {
+            // 账户类异常 造成原因： 用户名或者密码错误 也就是 dn和password
             logger.error("ldap service config connection failed : username/password wrong", e);
             return R.error(RCode.SYS_CONFIG_LDAP_AUTHENTICATIONFAIL);
         } catch (NamingException e) {
+            // 连接类异常 造成原因 1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
             logger.error("ldap service config connection failed", e);
             return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } catch (Exception e) {

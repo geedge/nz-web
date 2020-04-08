@@ -489,6 +489,9 @@ public class Constant {
     // 资产excel表头
     public static final String[] ASSET_EXCEL_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip","IpmiHost","IpmiPort"};
 
+    // 连接smtp邮箱服务器超时时间 10秒
+    public static final String CONNECTION_SMTP_TIMEOUT = "10000";
+
     /**
      * MIB四种数据类型
      * IDENTIFIER 、OBJECT、TABLE、ENTRY

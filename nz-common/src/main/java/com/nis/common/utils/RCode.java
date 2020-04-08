@@ -330,11 +330,11 @@ public enum RCode {
     SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT(573040,"System config email smtp account format error, format such as xxx@xxx.com"), //email_smtp_account应为邮件格式
     SYS_CONFIG_LDAPOU_ISNULL(571041,"System config ldap ou can not be empty"),                            // ldap_ou 不能为空
     SYS_CONFIG_TEST_ISNULL(571042,"System config test can not be empty"),                                 // test 不能为空
-    SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL(570043,"Authentication failed to connect to SMTP server,such as incorrect account or password"),
-    SYS_CONFIG_EMAIL_CONNECTFAIL(570044,"Failed to connect to SMTP server,please check whether the host and port is correct"),
-    SYS_CONFIG_EMAIL_OTHERFAILURES(570045,"Failed to connect to SMTP server"),
+    SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL(570043,"Failed to connect to SMTP service: username/password wrong"),
+    SYS_CONFIG_EMAIL_CONNECTFAIL(570044,"Unable to establish a connection with the SMTP service. Please check whether the SMTP service is running normally and can connect externally, such as host and port information."),
+    SYS_CONFIG_EMAIL_OTHERFAILURES(570045,"The connection to the SMTP service timed out. Please check the network condition"),
     SYS_CONFIG_LDAP_AUTHENTICATIONFAIL(570046,"ldap service config connection failed : username/password wrong"),
-    SYS_CONFIG_LDAP_CONNECTIONFAILED(570047,"ldap service config connection failed"),
+    SYS_CONFIG_LDAP_CONNECTIONFAILED(570047,"Unable to establish a connection with the ldap service. Please check whether the LDAP service is running normally and can connect externally."),
     SYS_CONFIG_TIMEZONE_ISNULL(571048,"System config timezone can not be empty"),                    // timezone 不能为空
     SYS_CONFIG_TIMEZONE_INVALIDE(573049,"System config timezone should be an integer"),             // timezone参数与要求不符合
     SYS_CONFIG_TIMEZONE_INTERVAL(575050,"The interval value of timezone is between -12 and +12"),  // timezone 区间值为-12至+12之间
