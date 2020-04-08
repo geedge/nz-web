@@ -7,6 +7,7 @@
         <result property="id" column="id"/>
         <result property="sn" column="sn"/>
         <result property="host" column="host"/>
+        <result property="ipmi" column="ipmi"/>
         <result property="cabinetStart" column="cabinet_start"/>
         <result property="cabinetEnd" column="cabinet_end"/>
         <result property="state" column="state"/>
@@ -95,6 +96,7 @@
        ass.sn,
        ass.model_id,
        ass.host,
+       ass.ipmi,
        ass.cabinet_start,
        ass.cabinet_end,
        ass.state,
@@ -295,10 +297,10 @@
 
     <insert id="saveAsset">
         INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, cabinet_start, cabinet_end, host, state, purchase_date, create_at, update_at,
-        create_by, update_by)
+        create_by, update_by,ipmi)
         VALUES
         (NULL, #{asset.sn},#{asset.modelId},#{asset.idcId},#{asset.cabinetId},#{asset.cabinetStart},#{asset.cabinetEnd},#{asset.host},
-        #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy})
+        #{asset.state},#{asset.purchaseDate},#{asset.createAt},#{asset.updateAt},#{asset.createBy},#{asset.updateBy},#{asset.ipmi})
 
         <selectKey keyProperty="asset.id" order="AFTER" resultType="java.lang.Integer">
             SELECT LAST_INSERT_ID();

@@ -483,6 +483,12 @@ public class Constant {
     // 开关关闭状态
     public static final String SWITCH_CLOSE = "off";
 
+    // 资产服务器类型
+    public static final String ASSET_SERVER_TYPE = "server";
+
+    // 资产excel表头
+    public static final String[] ASSET_EXCEL_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip","IpmiHost","IpmiPort"};
+
     /**
      * MIB四种数据类型
      * IDENTIFIER 、OBJECT、TABLE、ENTRY

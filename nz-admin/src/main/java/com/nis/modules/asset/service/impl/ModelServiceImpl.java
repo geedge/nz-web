@@ -73,7 +73,13 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         // 1.校验资产型号 厂商 类型 有效性
         this.checkAssetVendorAndTypeExist(model);
 
-        // 2.入库
+        // 2. 校验是否存在该型号
+        Model entity = this.getOne(new QueryWrapper<Model>().eq("name", model.getName()).eq("type", model.getTypeCode()).eq("vendor", model.getVendorCode()));
+        if(entity != null && !entity.getId().equals(model.getId())){
+            throw new NZException(RCode.ASSET_MODEL_EXISTS);
+        }
+
+        // 3.入库
         this.saveOrUpdate(model);
     }
 
@@ -168,6 +174,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         for (SysDictEntity entity : assetTypes) {
             if (model.getTypeCode().equals(entity.getCode())) {
                 flag = true;
+                break;
             }
         }
         if (!flag) {
@@ -182,6 +189,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         for (SysDictEntity entity : vendors) {
             if (model.getVendorCode().equals(entity.getCode())) {
                 flag = true;
+                break;
             }
         }
         if (!flag) {

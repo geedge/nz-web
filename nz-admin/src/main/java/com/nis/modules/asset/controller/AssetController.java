@@ -10,11 +10,11 @@ import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.terminal.entity.Account;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
@@ -261,7 +261,7 @@ public class AssetController {
 
         int rowNum = 0;
         // 添加标题行
-        String[] columnNames = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip"};
+        String[] columnNames = Constant.ASSET_EXCEL_HEADER;
         Row row = sheet.createRow(rowNum);
         Cell cell;
 
@@ -282,7 +282,9 @@ public class AssetController {
         List<Account> accountList;
         Model model;
         Account account;
-        Integer start, end;
+        Integer start, end, ipmiPort;
+        Map ipmiMap;
+        String ipmiHost;
         for (Asset asset : list) {
             account = null;
             row1 = sheet.createRow(++rowNum);
@@ -346,6 +348,19 @@ public class AssetController {
                 if (StringUtils.isNotEmpty(account.getReloginPasswordTip())) {
                     // reloginPasswordTip
                     row1.createCell(19).setCellValue(account.getReloginPasswordTip());
+                }
+            }
+
+            // ipmi
+            ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
+            if (ToolUtil.isNotEmpty(ipmiMap)) {
+                ipmiHost = (String) ipmiMap.get("host");
+                if (ToolUtil.isNotEmpty(ipmiHost)) {
+                    row1.createCell(20).setCellValue(ipmiHost);
+                }
+                ipmiPort = (Integer) ipmiMap.get("port");
+                if(ToolUtil.isNotEmpty(ipmiPort)){
+                    row1.createCell(21).setCellValue(ipmiPort);
                 }
             }
         }

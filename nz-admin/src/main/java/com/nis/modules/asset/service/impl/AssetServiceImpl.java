@@ -172,6 +172,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         IPage<Asset> page = new Query<Asset>().getPage(params);
 
         List<Asset> assetEntities = assetDao.queryList(page, params);
+        String ipmi = null;
+        for (Asset asset : assetEntities) {
+            ipmi = (String) asset.getIpmi();
+            if (StringUtils.isNotEmpty(ipmi)) {
+                asset.setIpmi(JSONObject.parseObject(ipmi, Map.class));
+            }
+        }
         page.setRecords(assetEntities);
 
         return new PageUtils(page);
@@ -201,6 +208,29 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (model == null) {
             // 所选资产型号不存在
             throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
+        } else {
+            // 校验 ipmi 信息 只有在assetType 为 server 时才进行入库操作
+            SysDictEntity type = sysDictService.getOne(new QueryWrapper<SysDictEntity>().eq("type", Constant.DICT_ASSET_MODEL_TYPE).eq("code", model.getTypeCode()).eq("del_flag", 0));
+            if (Constant.ASSET_SERVER_TYPE.equals(type.getValue().toLowerCase())) {
+                // 校验 ipmi信息
+                Map<String, Object> ipmi = (Map<String, Object>) asset.getIpmi();
+                if (ipmi != null) {
+                    String host = (String) ipmi.get("host");
+                    if (StringUtils.isNotEmpty(host)) {
+                        ValidateUtils.is(host).ip(RCode.ASSET_SERVERHOST_ERROR);
+                    }
+                    Integer port = (Integer) ipmi.get("port");
+                    if (port != null) {
+                        boolean flag = CommonUtils.checkPort(port.toString());
+                        if (!flag) {
+                            throw new NZException(RCode.ASSET_SERVERPORT_ERROR);
+                        }
+                    }
+                    asset.setIpmi(JSONObject.toJSONString(ipmi));
+                }
+            } else {
+                asset.setIpmi(null);
+            }
         }
 
         // 4.数据中心有效性校验
@@ -449,7 +479,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         Map<String, SysDictEntity> assetTypesMap = new HashMap();
         Map<String, SysDictEntity> vendorsMap = new HashMap();
-        Map<String, Model> modelMap = new HashMap();
+//        Map<String, Model> modelMap = new HashMap();
         Map<String, Idc> idcMap = new HashMap();
         Map<String, Integer> assetSnMap = new HashMap();
         Map<String, Integer> assetHostMap = new HashMap();
@@ -469,10 +499,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             vendorsMap.put(entity.getValue(), entity);
         }
 
+        // model 名称可以重复了，这里不能采取 map的结构了
         List<Model> modelList = modelService.list();
-        for (Model model : modelList) {
+        /*for (Model model : modelList) {
             modelMap.put(model.getName(), model);
-        }
+        }*/
 
         List<Idc> idcList = idcService.list();
         for (Idc idc : idcList) {
@@ -540,8 +571,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 成功条数
             int successNum = 0;
 
-            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter;
+            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter, ipmiHost, ipmiPort;
             Integer accountAuthType, start, end;
+            Map ipmiMap;
 
             Map saveEntitys;
             Long userId = ShiroUtils.getUserId();
@@ -616,13 +648,46 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
                 // 处理类型 厂商 型号
                 if (StringUtils.isNotEmpty(type) && StringUtils.isNotEmpty(vendor) && StringUtils.isNotEmpty(model)) {
-                    modelEntity = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelMap, seqUUID, saveEntitys);
+                    modelEntity = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelList, seqUUID, saveEntitys);
                     // modelid 可能为null,入库之后返回
                     Integer modelId = modelEntity.getId();
                     asset.setModelId(modelId);
                     // 当前库中不存在改型号
                     if (modelId == null) {
                         relaFlag = false;
+                    }
+                    // 如果 type 为 server 的情况下 处理 ipmi 信息
+                    if (type.toLowerCase().equals(Constant.ASSET_SERVER_TYPE)) {
+                        ipmiMap = new HashMap();
+                        ipmiHost = ExcelUtils.getCellValue(row.getCell(21));
+                        ipmiPort = ExcelUtils.getCellValue(row.getCell(22));
+                        // 校验 ipmi信息
+                        if (StringUtils.isNotEmpty(ipmiHost)) {
+                            if (ipmiHost.matches(Constant.REGEX_IP)) {
+                                ipmiMap.put("host", ipmiHost);
+                            } else {
+                                saveFlag = false;
+                                failDetail = new HashMap();
+                                failDetail.put("lineNo", i);
+                                failDetail.put("errorMsg", RCode.ASSET_SERVERHOST_ERROR.getMsg());
+                                failDetails.add(failDetail);
+                            }
+                        }
+                        if (StringUtils.isNotEmpty(ipmiPort)) {
+                            boolean flag = CommonUtils.checkPort(ipmiPort);
+                            if (!flag) {
+                                saveFlag = false;
+                                failDetail = new HashMap();
+                                failDetail.put("lineNo", i);
+                                failDetail.put("errorMsg", RCode.ASSET_SERVERPORT_ERROR.getMsg());
+                                failDetails.add(failDetail);
+                            } else {
+                                ipmiMap.put("port", Integer.parseInt(ipmiPort));
+                            }
+                        }
+                        if (ToolUtil.isNotEmpty(ipmiMap)) {
+                            asset.setIpmi(JSONObject.toJSONString(ipmiMap));
+                        }
                     }
                 }
 
@@ -688,7 +753,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                     failDetail.put("lineNo", i);
                                     failDetail.put("errorMsg", RCode.ASSET_POSITION_INVALID.getMsg());
                                     failDetails.add(failDetail);
-                                }else{
+                                } else {
                                     asset.setCabinetStart(start);
                                     asset.setCabinetEnd(end);
                                 }
@@ -715,7 +780,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                         }
                                     }
                                     // 符合型号大小则继续校验位置是否被占用
-                                    if(modelFlag){
+                                    if (modelFlag) {
                                         // 参数正确 校验位置是否被占用
                                         boolean flag = this.validateUSizeForImport(start, end, cabinet);
                                         if (!flag) {
@@ -761,7 +826,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 failDetail.put("lineNo", i);
                                 failDetail.put("errorMsg", RCode.ASSET_POSITION_INVALID.getMsg());
                                 failDetails.add(failDetail);
-                            }else{
+                            } else {
                                 asset.setCabinetStart(start);
                                 asset.setCabinetEnd(end);
                             }
@@ -1001,7 +1066,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             }
                             Model updateModel = (Model) updateMap.get("model");
                             if (updateModel != null) {
-                                modelMap.put(updateModel.getName(), updateModel);
+                                modelList.add(updateModel);
                             }
                             Idc updateIdc = (Idc) updateMap.get("idc");
                             if (updateIdc != null) {
@@ -1019,7 +1084,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                     // 更新cabinetList中对应的关系
                                     for (Cabinet cabinet : cabinetList) {
                                         if (cabinet.getId().equals(updateAsset.getCabinetId())) {
-                                            if(CollectionUtils.isEmpty(cabinet.getAssetList())){
+                                            if (CollectionUtils.isEmpty(cabinet.getAssetList())) {
                                                 cabinet.setAssetList(new ArrayList<>());
                                             }
                                             cabinet.getAssetList().add(updateAsset);
@@ -1137,13 +1202,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Map> mapList = new ArrayList<>();
         Map map;
 
-        String[] str = {"sn", "type", "vendor", "model", "idc", "cabinet", "cabinetstart", "cabinetend", "host", "state", "purchasedate", "protocol", "authtype", "user", "pwd", "cert", "port", "usertip", "passwordtip", "reloginpasswordtip", "exporter"};
+        String[] str = Constant.ASSET_EXCEL_HEADER;
         List<String> titles = Arrays.asList(str);
 
         String titleValue, title;
         for (int i = 0; i < titles.size(); i++) {
             titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
-            title = titles.get(i);
+            title = titles.get(i).toLowerCase();
             if (!titleValue.contains(title)) {
                 map = new HashMap();
                 map.put("lineNo", firstRowNum);
@@ -1205,9 +1270,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return idc.getId();
     }
 
-    public Model checkAssetTypeVendorModel(String assetType, Map<String, SysDictEntity> assetTypesMap, String assetVendor, Map<String, SysDictEntity> vendorsMap, String modelName, Map<String, Model> modelMap, String seqUUID, Map saveEntitys) {
-        // 是否新增 model 标识 由于model名称目前是唯一的，所以暂且不处理资产类型，厂商更改，型号名称不变情况
-        //boolean flag = false;
+    public Model checkAssetTypeVendorModel(String assetType, Map<String, SysDictEntity> assetTypesMap, String assetVendor, Map<String, SysDictEntity> vendorsMap, String modelName, List<Model> modelList, String seqUUID, Map saveEntitys) {
+        // 是否新增 model 标识 由于model 名称取消唯一限制
+        boolean flag = false;
 
         // 如果没有获取倒该资产类型
         SysDictEntity type = assetTypesMap.get(assetType);
@@ -1216,7 +1281,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             type.setType(Constant.DICT_ASSET_MODEL_TYPE);
             type.setValue(assetType);
             type.setSeq(seqUUID);
-            //flag = true;
+            flag = true;
             saveEntitys.put("type", type);
         }
 
@@ -1227,23 +1292,40 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             vendor.setType(Constant.DICT_ASSET_MODEL_VENDOR);
             vendor.setValue(assetVendor);
             vendor.setSeq(seqUUID);
-            //flag = true;
+            flag = true;
             saveEntitys.put("vendor", vendor);
         }
 
-        // 如果没有资产型号
-        Model model = modelMap.get(modelName);
-        if (model == null) {
+        // 有新增的type 或者 vendor 意味着 model 必将新增
+        Model model = null;
+        if (flag) {
             model = new Model();
             model.setName(modelName);
             model.setTypeCode(type.getCode());
             model.setVendorCode(vendor.getCode());
-            // 此处 model usize 不设置默认值
-            // model.setUsize(1);
             model.setSeq(seqUUID);
             saveEntitys.put("model", model);
+        } else {
+            // type vendor 没有新增 比对 model name是否改变 没有需要新增
+            boolean modelFlag = true;
+            for (Model entity : modelList) {
+                // 如果 名称 类型 厂商 都一致的话 不用添加model
+                if (entity.getName().equals(modelName) && entity.getTypeCode().equals(type.getCode()) && entity.getVendorCode().equals(vendor.getCode())) {
+                    model = entity;
+                    modelFlag = false;
+                    break;
+                }
+            }
+            // 没有找到同名的 model 新增操作
+            if (modelFlag) {
+                model = new Model();
+                model.setName(modelName);
+                model.setTypeCode(type.getCode());
+                model.setVendorCode(vendor.getCode());
+                model.setSeq(seqUUID);
+                saveEntitys.put("model", model);
+            }
         }
-        // 如果型号存在则会返回modelId
         return model;
     }
 

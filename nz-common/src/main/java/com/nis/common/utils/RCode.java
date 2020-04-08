@@ -147,6 +147,8 @@ public enum RCode {
     ASSET_POSITION_OCCUPY(315027,"Asset selected position is already occupied"),   // 位置已被占用
     ASSET_CABINETSTART_INVALIDE(313028,"Asset cabinet start must be an integer"),  // 开始位置必须为数字类型
     ASSET_CABINETEND_INVALIDE(313029,"Asset cabinet end must be an integer"),      // 结束位置必须为数字类型
+    ASSET_SERVERPORT_ERROR(315030,"Asset ipmi port is incorrect"),
+    ASSET_SERVERHOST_ERROR(313031,"Asset ipmi host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"),
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
@@ -157,6 +159,7 @@ public enum RCode {
     ASSET_MODEL_NOTFOUND(326005, "Asset model not found"),               // 资产型号未找到
     ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
     ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be smaller than associated asset size"),// 修改的时候model uSize 不能小于关联 asset 的大小
+    ASSET_MODEL_EXISTS(322008,"Model already exists"),                     // 型号已经存在
 
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),

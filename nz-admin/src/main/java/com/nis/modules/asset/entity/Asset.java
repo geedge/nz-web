@@ -101,6 +101,12 @@ public class Asset implements Serializable {
     private Integer cabinetEnd;
 
     /**
+     * ipmi配置信息，只有当 type = server才有
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private Object ipmi;
+
+    /**
      * 资产型号
      */
     @TableField(exist = false)
