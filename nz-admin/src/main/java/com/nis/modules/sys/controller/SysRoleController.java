@@ -78,7 +78,6 @@ public class SysRoleController extends AbstractController {
 	/**
 	 * 保存角色
 	 */
-	@SysLog("保存角色")
 	@RequestMapping("/save")
 	@RequiresPermissions("sys:role:save")
 	public R save(@RequestBody SysRoleEntity role){
@@ -92,7 +91,6 @@ public class SysRoleController extends AbstractController {
 	/**
 	 * 修改角色
 	 */
-	@SysLog("修改角色")
 	@RequestMapping("/update")
 	@RequiresPermissions("sys:role:update")
 	public R update(@RequestBody SysRoleEntity role){
@@ -106,7 +104,6 @@ public class SysRoleController extends AbstractController {
 	/**
 	 * 删除角色
 	 */
-	@SysLog("删除角色")
 	@RequestMapping("/delete")
 	@RequiresPermissions("sys:role:delete")
 	public R delete(@RequestBody Long[] roleIds){

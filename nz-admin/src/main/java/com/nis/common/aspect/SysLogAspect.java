@@ -1,7 +1,10 @@
 package com.nis.common.aspect;
 
+import com.alibaba.fastjson.JSON;
 import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.R;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
@@ -47,20 +50,35 @@ public class SysLogAspect {
 		long time = System.currentTimeMillis() - beginTime;
 
 		//保存日志
-		saveSysLog(point, time);
+		saveSysLog(point, time , result);
 
 		return result;
 	}
 
-	private void saveSysLog(ProceedingJoinPoint joinPoint, long time) {
+	private void saveSysLog(ProceedingJoinPoint joinPoint, long time ,Object result) {
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		Method method = signature.getMethod();
 
 		SysLogEntity sysLog = new SysLogEntity();
 		SysLog syslog = method.getAnnotation(SysLog.class);
+		// 获取执行结果
+		R r = (R)result;
 		if(syslog != null){
 			//注解上的描述
-			sysLog.setOperation(syslog.value());
+			sysLog.setOperation(syslog.operation().getValue());
+			//类型
+			sysLog.setType(syslog.type().getValue());
+			// 当 operation = query 时，只记录 code != 200 的内容
+			if("query".equals(syslog.operation().getValue())){
+				if(!"200".equals(r.get("code"))){
+					sysLog.setResponse(JSON.toJSONString(r));
+				}
+			}else {
+				sysLog.setResponse(JSON.toJSONString(r));
+			}
+			if(!"200".equals(r.get("code"))){
+				sysLog.setException((String) r.get("msg"));
+			}
 		}
 
 		//请求的方法名
@@ -83,8 +101,8 @@ public class SysLogAspect {
 		sysLog.setIp(IPUtils.getIpAddr(request));
 
 		//用户名
-		String username = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUsername();
-		sysLog.setUsername(username);
+		Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
+		sysLog.setUserId(userId.intValue());
 
 		sysLog.setTime(time);
 		sysLog.setCreateDate(new Date());

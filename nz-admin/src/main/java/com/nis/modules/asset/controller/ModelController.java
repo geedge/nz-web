@@ -3,9 +3,7 @@ package com.nis.modules.asset.controller;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.ModelService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +26,7 @@ public class ModelController {
     private ModelService modelService;
 
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MODEL)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = modelService.queryPage(params);
         return R.ok(page);
@@ -40,7 +39,7 @@ public class ModelController {
      * @return
      */
     @PostMapping
-    @SysLog("save model")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MODEL)
     public R save(@RequestBody Model model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
                 .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
@@ -69,7 +68,7 @@ public class ModelController {
      * @return
      */
     @PutMapping
-    @SysLog("update model")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
     public R update(@RequestBody Model model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
@@ -100,7 +99,7 @@ public class ModelController {
      * @return
      */
     @DeleteMapping
-    @SysLog("delete model")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MODEL)
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 

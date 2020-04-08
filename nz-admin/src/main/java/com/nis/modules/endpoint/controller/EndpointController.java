@@ -2,10 +2,7 @@ package com.nis.modules.endpoint.controller;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
@@ -39,13 +36,14 @@ public class EndpointController extends AbstractController {
 	private RedisTemplate redisTemplate;
 
 	@GetMapping
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ENDPOINT)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = endpointService.queryPage(params);
 		return R.ok(page);
 	}
 	
 	@PostMapping
-	@SysLog("save endpoint")
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ENDPOINT)
 	public R save(@RequestBody List<Endpoint> endpointEntitys) {
 		for(Endpoint endpointEntity : endpointEntitys) {
 			endpointService.validateParam(endpointEntity);
@@ -55,7 +53,7 @@ public class EndpointController extends AbstractController {
 	}
 	
 	@PutMapping
-	@SysLog("update endpoint")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ENDPOINT)
 	public R modify(@RequestBody List<Endpoint> endpointEntitys) {
 		for(Endpoint endpointEntity : endpointEntitys) {
 			ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
@@ -66,7 +64,7 @@ public class EndpointController extends AbstractController {
 	}
 	
 	@DeleteMapping
-	@SysLog("delete endpoint")
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ENDPOINT)
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ENDPOINT_ID_ISNULL);
 		String[] split = ids.split(",");
@@ -87,7 +85,7 @@ public class EndpointController extends AbstractController {
 	 * @return
 	 */
 	@PostMapping("/import")
-	@SysLog("import endpoint")
+	@SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ENDPOINT)
 	public R importEndpoint(MultipartFile endpointExcelFile) {
 		ValidateUtils.is(endpointExcelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
         // 本次导入的 uuid
@@ -102,7 +100,7 @@ public class EndpointController extends AbstractController {
 	 * @param params
 	 */
 	@GetMapping("/export")
-	@SysLog("export endpoint")
+	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ENDPOINT)
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
 		PageUtils page = endpointService.queryPage(params);
         List<Endpoint> list = (List<Endpoint>) page.getList();
@@ -171,7 +169,7 @@ public class EndpointController extends AbstractController {
 	 * @return
 	 */
 	@DeleteMapping("/cancelImport")
-	@SysLog("cancelImport endpoint")
+	@SysLog()
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ENDPOINT_CANCELIMPORTSEQ_ISNULL);
         endpointService.cancelImport(seq);

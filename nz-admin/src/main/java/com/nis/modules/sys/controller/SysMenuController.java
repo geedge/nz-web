@@ -97,7 +97,6 @@ public class SysMenuController extends AbstractController {
 	/**
 	 * 保存
 	 */
-	@SysLog("保存菜单")
 	@RequestMapping("/save")
 	@RequiresPermissions("sys:menu:save")
 	public R save(@RequestBody SysMenuEntity menu){
@@ -112,7 +111,6 @@ public class SysMenuController extends AbstractController {
 	/**
 	 * 修改
 	 */
-	@SysLog("修改菜单")
 	@RequestMapping("/update")
 	@RequiresPermissions("sys:menu:update")
 	public R update(@RequestBody SysMenuEntity menu){
@@ -127,7 +125,6 @@ public class SysMenuController extends AbstractController {
 	/**
 	 * 删除
 	 */
-	@SysLog("删除菜单")
 	@RequestMapping("/delete")
 	@RequiresPermissions("sys:menu:delete")
 	public R delete(long menuId){

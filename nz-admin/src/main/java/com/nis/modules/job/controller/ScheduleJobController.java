@@ -8,6 +8,7 @@
 
 package com.nis.modules.job.controller;
 
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.validator.ValidatorUtils;
@@ -58,7 +59,7 @@ public class ScheduleJobController {
 	/**
 	 * 保存定时任务
 	 */
-	@SysLog("保存定时任务")
+	@SysLog(operation = OperationEnum.ADD)
 	@RequestMapping("/save")
 	@RequiresPermissions("sys:schedule:save")
 	public R save(@RequestBody ScheduleJobEntity scheduleJob){
@@ -72,7 +73,7 @@ public class ScheduleJobController {
 	/**
 	 * 修改定时任务
 	 */
-	@SysLog("修改定时任务")
+	@SysLog(operation = OperationEnum.UPDATE)
 	@RequestMapping("/update")
 	@RequiresPermissions("sys:schedule:update")
 	public R update(@RequestBody ScheduleJobEntity scheduleJob){
@@ -86,7 +87,7 @@ public class ScheduleJobController {
 	/**
 	 * 删除定时任务
 	 */
-	@SysLog("删除定时任务")
+	@SysLog(operation = OperationEnum.DELETE)
 	@RequestMapping("/delete")
 	@RequiresPermissions("sys:schedule:delete")
 	public R delete(@RequestBody Long[] jobIds){
@@ -98,7 +99,7 @@ public class ScheduleJobController {
 	/**
 	 * 立即执行任务
 	 */
-	@SysLog("立即执行任务")
+	@SysLog
 	@RequestMapping("/run")
 	@RequiresPermissions("sys:schedule:run")
 	public R run(@RequestBody Long[] jobIds){
@@ -110,7 +111,7 @@ public class ScheduleJobController {
 	/**
 	 * 暂停定时任务
 	 */
-	@SysLog("暂停定时任务")
+	@SysLog
 	@RequestMapping("/pause")
 	@RequiresPermissions("sys:schedule:pause")
 	public R pause(@RequestBody Long[] jobIds){
@@ -122,7 +123,7 @@ public class ScheduleJobController {
 	/**
 	 * 恢复定时任务
 	 */
-	@SysLog("恢复定时任务")
+	@SysLog
 	@RequestMapping("/resume")
 	@RequiresPermissions("sys:schedule:resume")
 	public R resume(@RequestBody Long[] jobIds){

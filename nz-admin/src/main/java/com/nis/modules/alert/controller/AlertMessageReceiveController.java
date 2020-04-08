@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +25,6 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.google.gson.Gson;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-
 
 
 /**
@@ -48,6 +46,7 @@ public class AlertMessageReceiveController {
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTMESSAGE)
     public R alerts(@RequestBody AlertMessageReceiveDTO[] receiveData){
     	//dto转化为entity，存库
     	try {

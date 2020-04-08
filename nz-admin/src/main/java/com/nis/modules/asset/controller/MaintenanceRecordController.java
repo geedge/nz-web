@@ -2,6 +2,7 @@ package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -33,6 +34,7 @@ public class MaintenanceRecordController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = maintenanceRecordService.queryPage(params);
         return R.ok(page);
@@ -45,7 +47,7 @@ public class MaintenanceRecordController {
      * @return
      */
     @PostMapping
-    @SysLog("save maintenanceRecord")
+    @SysLog(operation = OperationEnum.ADD)
     public R save(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(maintenance.getContent()).notNull(RCode.ASSET_MAINTENANCE_CONTENT_ISNULL);
@@ -55,6 +57,7 @@ public class MaintenanceRecordController {
     }
 
     @PutMapping
+    @SysLog(operation = OperationEnum.UPDATE)
     public R update(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getId()).notNull(RCode.ASSET_MAINTENANCEID_ISNULL)
                 .and(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)

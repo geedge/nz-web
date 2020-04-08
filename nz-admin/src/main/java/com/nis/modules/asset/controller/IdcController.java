@@ -3,9 +3,7 @@ package com.nis.modules.asset.controller;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.IdcService;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +33,7 @@ public class IdcController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.DATACENTER)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = idcService.queryPage(params);
         return R.ok(page);
@@ -47,7 +46,7 @@ public class IdcController {
      * @return
      */
     @PostMapping
-    @SysLog("save idc")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.DATACENTER)
     public R save(@RequestBody Idc idc) {
         ValidateUtils.is(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
                 .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
@@ -83,7 +82,7 @@ public class IdcController {
      * @return
      */
     @PutMapping
-    @SysLog("update idc")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.DATACENTER)
     public R update(@RequestBody Idc idc) {
         ValidateUtils.is(idc.getId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
@@ -118,7 +117,7 @@ public class IdcController {
      * @return
      */
     @DeleteMapping
-    @SysLog("delete idc")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
 

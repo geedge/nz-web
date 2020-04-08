@@ -3,7 +3,9 @@ package com.nis.modules.alert.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-
 
 
 /**
@@ -45,6 +42,7 @@ public class AlertMessageController {
      * 列表
      */
     @RequestMapping(method = RequestMethod.GET)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page;
 		try {
@@ -60,6 +58,7 @@ public class AlertMessageController {
      * 修改
      */
     @RequestMapping( method = RequestMethod.PUT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
     public R update(@RequestBody AlertMessageEntity alertMessage) {
     	ValidateUtils.is(alertMessage.getIds()).notNull(RCode.ALERTMSG_IDS_ISNULL)
     					.and(alertMessage.getState()).notNull(RCode.ALERTMSG_STATE_ISNULL);
@@ -76,6 +75,7 @@ public class AlertMessageController {
      * 删除
      */
     @RequestMapping( method = RequestMethod.DELETE)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTMESSAGE)
     public R delete(String ids) {
     	ValidateUtils.is(ids).notNull();
     	String[] split = ids.split(",");

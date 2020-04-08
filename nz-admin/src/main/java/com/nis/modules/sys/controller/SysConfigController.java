@@ -64,7 +64,7 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 保存配置
 	 */
-	@SysLog("保存配置")
+	@SysLog
 	@RequestMapping("/save")
 	@RequiresPermissions("sys:config:save")
 	public R save(@RequestBody SysConfigEntity config){
@@ -78,7 +78,7 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 修改配置
 	 */
-	@SysLog("修改配置")
+	@SysLog
 	@RequestMapping("/update")
 	@RequiresPermissions("sys:config:update")
 	public R update(@RequestBody SysConfigEntity config){
@@ -92,7 +92,7 @@ public class SysConfigController extends AbstractController {
 	/**
 	 * 删除配置
 	 */
-	@SysLog("删除配置")
+	@SysLog
 	@RequestMapping("/delete")
 	@RequiresPermissions("sys:config:delete")
 	public R delete(@RequestBody Long[] ids){
@@ -157,8 +157,7 @@ public class SysConfigController extends AbstractController {
 
 	/**
 	 * 系统重置
-	 * @param password
-	 * @param type
+	 * @param param
 	 * @return
 	 */
 	@PutMapping("/reset")

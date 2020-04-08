@@ -3,6 +3,8 @@ package com.nis.modules.alert.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.nis.common.annotation.SysLog;
+import com.nis.common.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +19,6 @@ import com.nis.modules.alert.service.AlertRuleService;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.YamlUtil;
 
 /**
  * @author song
@@ -41,6 +38,7 @@ public class AlertRuleController {
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.GET)
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = alertRuleService.queryPage(params);
 
@@ -51,6 +49,7 @@ public class AlertRuleController {
      * 保存
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTRULE)
     public R save(@RequestBody AlertRuleEntity alertRule) {
     	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
     					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
@@ -87,6 +86,7 @@ public class AlertRuleController {
      * 修改
      */
     @RequestMapping(value = "", method = RequestMethod.PUT)
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTRULE)
     public R update(@RequestBody AlertRuleEntity alertRule){
     	alertRuleService.validateBulitinRule(Arrays.asList(alertRule.getId()));
     	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
@@ -124,6 +124,7 @@ public class AlertRuleController {
      * 删除
      */
     @RequestMapping(value = "", method = RequestMethod.DELETE)
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTRULE)
     public R delete(@RequestParam Integer ... ids){
     	ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
     	alertRuleService.validateBulitinRule(Arrays.asList(ids));

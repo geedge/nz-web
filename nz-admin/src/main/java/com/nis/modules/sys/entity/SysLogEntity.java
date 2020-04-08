@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -31,6 +32,9 @@ public class SysLogEntity implements Serializable {
 	/**
 	 * 用户名
 	 */
+	private Integer userId;
+
+	@TableField(exist = false)
 	private String username;
 	/**
 	 * 用户操作
@@ -52,6 +56,23 @@ public class SysLogEntity implements Serializable {
 	 * IP地址
 	 */
 	private String ip;
+	/**
+	 *类型
+	 */
+	private String type;
+	/**
+	 *
+	 */
+	private String operaId;
+	/**
+	 *
+	 */
+	private String response;
+	/**
+	 *
+	 */
+	private String exception;
+
 	/**
 	 * 创建时间
 	 */

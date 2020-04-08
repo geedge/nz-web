@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -45,6 +42,7 @@ public class CabinetController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CABINET)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = cabinetService.queryPage(params);
         return R.ok(page);
@@ -57,7 +55,7 @@ public class CabinetController {
      * @return
      */
     @PostMapping
-    @SysLog("save cabinet")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CABINET)
     public R save(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
                 .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
@@ -102,7 +100,7 @@ public class CabinetController {
      * @return
      */
     @PutMapping
-    @SysLog("update cabinet")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CABINET)
     public R update(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getId()).notNull(RCode.IDC_CABINETID_ISNULL)
                 .and(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
@@ -132,7 +130,7 @@ public class CabinetController {
      * @return
      */
     @DeleteMapping
-    @SysLog("delete cabinet")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_CABINETID_ISNULL);
 

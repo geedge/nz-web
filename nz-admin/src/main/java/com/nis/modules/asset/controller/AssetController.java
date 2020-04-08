@@ -63,6 +63,7 @@ public class AssetController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = assetService.queryPage(params);
         return R.ok(page);
@@ -75,7 +76,7 @@ public class AssetController {
      * @return
      */
     @PostMapping
-    @SysLog("save asset")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ASSET)
     public R save(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
@@ -168,7 +169,7 @@ public class AssetController {
      * @return
      */
     @PutMapping
-    @SysLog("update asset")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ASSET)
     public R update(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
@@ -213,7 +214,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping
-    @SysLog("delete asset")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET)
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
@@ -228,6 +229,7 @@ public class AssetController {
      * @return
      */
     @PostMapping("/import")
+    @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
     public R importAssetsFromExcel(MultipartFile assetsExcelFile) {
         ValidateUtils.is(assetsExcelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
         // 本次导入的 uuid
@@ -243,6 +245,7 @@ public class AssetController {
      * @param params
      */
     @GetMapping("/export")
+    @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
 
         Map<String, Object> queryParam = new HashMap<>(2);

@@ -2,9 +2,7 @@ package com.nis.modules.terminal.controller;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +18,7 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = accountService.queryPage(params);
         return R.ok(page);
@@ -27,7 +26,7 @@ public class AccountController {
 
 
     @PostMapping
-    @SysLog("save account")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
     public R save(@RequestBody Account account) {
         // 校验参数
         accountService.validateAccount(account);
@@ -37,7 +36,7 @@ public class AccountController {
     }
 
     @PutMapping
-    @SysLog("update account")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
     public R update(@RequestBody Account account) {
         // 校验参数
         ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
@@ -49,7 +48,7 @@ public class AccountController {
 
     @DeleteMapping
     @ResponseBody
-    @SysLog("delete accounts")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ACCOUNT_ID_ISNULL);
 
