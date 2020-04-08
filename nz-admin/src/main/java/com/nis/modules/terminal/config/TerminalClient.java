@@ -21,6 +21,9 @@
 
 package com.nis.modules.terminal.config;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.google.common.primitives.Bytes;
 import com.jcraft.jsch.*;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
@@ -36,20 +39,22 @@ import static com.nis.common.utils.CommonUtils.notEmpty;
 import org.apache.commons.net.telnet.TelnetClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
 public class TerminalClient {
-
     private final Logger logger = LoggerFactory.getLogger(TerminalClient.class);
     private String clientId;//每次生成的唯一值token
     private String httpSessionId;//打开该终端的SessionId
@@ -82,6 +87,10 @@ public class TerminalClient {
     private boolean transfer =true;
     // telnet连接次数
     private Integer telnetConnectCount=0;
+    // 标识telnet连接状态 true是正在尝试连接  false为连接成功或失败
+    private boolean telnetConnect=false;
+    private boolean telnetUser=false;
+    private StringBuilder sb=new StringBuilder();
     public TerminalClient(WebSocketSession webSocketSession, Account terminal, String clientId) {
         this.webSocketSession = webSocketSession;
         this.terminal = terminal;
@@ -147,6 +156,8 @@ public class TerminalClient {
         new Thread(new Runnable() {
             @Override
             public void run() {
+            	TerminalLogService terminalLogService = (TerminalLogService) TerminalSession.clientAttributeInfo.get("terminalLogService");
+            	TerminalLog terminalLog=(TerminalLog) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalLog");
                 byte[] buffer = new byte[1024 * 4];
                 StringBuilder builder = new StringBuilder();
                 try {
@@ -163,6 +174,7 @@ public class TerminalClient {
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
                             if (message.contains(sendTempCmdId)) {
@@ -199,6 +211,8 @@ public class TerminalClient {
                         }
                     }
                 } catch (Exception e) {
+                	logger.error("TerminalClient error info :",e);
+                	TerminalSession.remove(webSocketSession);
                 }
             }
         }).start();
@@ -213,15 +227,17 @@ public class TerminalClient {
         this.inputStream=telnet.getInputStream();
         this.outputStream=telnet.getOutputStream();
         this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
-      
-        // telnetFlag 登录状态 0--失败  1--成功  2--正在尝试telnet登录中
-        TerminalSession.setTerminalMessage(clientId+"telnetFlag", "2", null);
+        //当前正在进行telnet连接  相关日志不记录
+        this.telnetConnect=true;
         
         new Thread(new Runnable() {
             @Override
             public void run() {
+            	TerminalLogService terminalLogService = (TerminalLogService) TerminalSession.clientAttributeInfo.get("terminalLogService");
+            	TerminalLog terminalLog=(TerminalLog) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalLog");
                 byte[] buffer = new byte[1024 * 4];
                 StringBuilder builder = new StringBuilder();
+                telnetUser=true;
                 try {
                     while (webSocketSession != null && webSocketSession.isOpen()) {
                         builder.setLength(0);
@@ -236,6 +252,7 @@ public class TerminalClient {
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
                             if (message.contains(sendTempCmdId)) {
@@ -253,9 +270,15 @@ public class TerminalClient {
                             	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
                             }else {
                             	//telnet登录状态修改
-                            	if(StringUtils.isNotEmpty(TerminalSession.getTerminalMessage(clientId+"telnetFlag"))&&TerminalSession.getTerminalMessage(clientId+"telnetFlag").equals("2")&&message.contains("Last login")) {
-                            		TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
-                            		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "1", null);
+                            	if(message.contains("Last login")) {
+                            		terminalLog.setCmd("Login");
+                            		terminalLog.setStatus(1);
+                            		terminalLog.setTime(new Date());
+                            		terminalLog.setUser(terminal.getUser());
+                            		terminalLogService.save(terminalLog);
+                            		telnetConnect=false;
+                            		// 登录成功后清空 前端输入字符 防止日志保存空数据
+                            		TerminalSession.clientAttributeInfo.put(clientId+"shell", null);
                             	}
                             
                             	//判断用户登录telnet连接次数 
@@ -266,23 +289,30 @@ public class TerminalClient {
                             		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
                             		write(terminal.getUser()+"\r");
                             	}else if(message.matches("Password:.*")&&StringUtils.isBlank(terminal.getUser())){
+                            		telnetUser=false;
                             		webSocketSession.sendMessage(new TextMessage("\r\n"+message));
                             	}else if(message.contains("timed out after 60 seconds")) {
                             		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
                             		// 连接超时
-                            		TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
-                            		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "0", null);
-                            		
+                            		terminalLog.setCmd("Login");
+                            		terminalLog.setStatus(0);
+                            		terminalLog.setTime(new Date());
+                            		terminalLog.setUser(terminal.getUser());
+                            		terminalLogService.save(terminalLog);
                             		TerminalSession.remove(webSocketSession);
                             		closed=true;
+                            		telnetConnect=false;
                             		String unloginInfo = getUnloginInfo();
                                 	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
                             	}else{
                             		webSocketSession.sendMessage(new TextMessage(message));
                             		if(telnetConnectCount==3) {
                             			// 连接错误达到限制 关闭连接 连接失败
-                            			TerminalSession.removeTerminalMessage(clientId+"telnetFlag");
-                                		TerminalSession.setTerminalMessage(clientId+"telnetFlag", "0", null);
+                            			terminalLog.setCmd("Login");
+                                		terminalLog.setStatus(0);
+                                		terminalLog.setTime(new Date());
+                                		terminalLog.setUser(terminal.getUser());
+                                		terminalLogService.save(terminalLog);
                             			TerminalSession.remove(webSocketSession);
                             			closed=true;
                             			String unloginInfo = getUnloginInfo();
@@ -308,13 +338,122 @@ public class TerminalClient {
                         }
                     }
                 } catch (Exception e) {
+                	logger.error("TerminalClient error info :",e);
+                	TerminalSession.remove(webSocketSession);
                 }
             }
         }).start();
-
     }
     
+    /**
+     * 处理服务器方向键以及tab操作返回的指令信息 便于做日志记录
+     * @param terminalLogService    
+     * @param terminalLog       日志信息
+     * @param serverResponse    服务器响应内容
+     */
+    public void clientMessageHandle(TerminalLogService terminalLogService,TerminalLog terminalLog,String serverResponse) {
+    	Map terminalAttributeInfo = TerminalSession.getTerminalAttributeInfo(clientId);
+    	Integer cursorIndex = (Integer) terminalAttributeInfo.get("cursorIndex");
+        boolean cursorFlag = (boolean) terminalAttributeInfo.get("cursorFlag");
+        Integer  historyIndex = (Integer) terminalAttributeInfo.get("historyIndex");
+    	// 前端每次传给后端服务器的指令字符
+    	TextMessage message = (TextMessage) TerminalSession.clientAttributeInfo.get(clientId+"shell");
+    	if(ObjectUtils.isNotEmpty(message)) {
+    		// 处理前端方向键
+    		if(message.asBytes()[0]==27) {
+        		String operation = ByteUtils.toHexAscii(message.asBytes());
+        		if(operation.equals("1B5B44")){
+        			// 左方向操作
+        			if(cursorIndex!=0) {
+        				// 光标在初始位置不可移动
+        				cursorIndex--;
+        				cursorFlag=true;
+        			}else if(TerminalSession.getTerminalMessage(clientId)==null || cursorIndex==TerminalSession.getTerminalMessage(clientId).length()){
+        				cursorFlag=false;
+        			}
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorFlag", cursorFlag);
+        			return;
+        		} else if(operation.equals("1B5B43")) {
+        			// 右方向操作
+        			if((cursorIndex==0 && (TerminalSession.getTerminalMessage(clientId)==null || TerminalSession.getTerminalMessage(clientId).length()==0))  || cursorIndex==TerminalSession.getTerminalMessage(clientId).length()) {
+        				// 光标位置在初始位置 或者已经为当前输入内容最右处
+        				cursorFlag=false;
+        			}else {
+        				cursorIndex++;
+        				cursorFlag=true;
+        			}
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorFlag", cursorFlag);
+        			return;
+        		} else if(operation.equals("1B5B41")||operation.equals("1B5B42")) {
+        			// 上方向操作 获取用户之前保存的指令信息
+        			String data = terminalResponseHandle(serverResponse);
+        			TerminalSession.removeTerminalMessage(clientId);
+        			TerminalSession.setTerminalMessage(clientId, data, null);
+        			cursorIndex=data.length();
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+        		} 
+    		}else if(message.asBytes()[0]==9) {
+    			//处理用户tab键操作
+    			String data = terminalResponseHandle(serverResponse);
+    			TerminalSession.setTerminalMessage(clientId, data, cursorIndex);
+    			cursorIndex+=data.length();
+    		}else if(message.getPayload().equals("\r")) {
+    			// 服务器执行完命令 保存日志
+    			if(!telnetConnect) {
+    				terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
+            		terminalLog.setStatus(1);
+            		terminalLog.setTime(new Date());
+            		terminalLog.setUser(terminal.getUser());
+            		terminalLogService.save(terminalLog);
+            		TerminalSession.removeTerminalMessage(clientId);
+            		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
+            		TerminalSession.clientAttributeInfo.put(clientId+"shell",null);
+    			}
+    		}else if(message.asBytes()[0]==127) {
+    			// 处理用户删除退格操作
+    			TerminalSession.backspaceMessage(clientId,cursorIndex);
+    			cursorIndex--;
+    			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    		}else{
+    			TerminalSession.setTerminalMessage(clientId, message.getPayload(), cursorIndex);
+        		cursorIndex++;
+        		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    		}    		
+    	}
+    }
     
+	/**
+	 * 处理终端响应信息
+	 * @param param
+	 * @return
+	 */
+	public String terminalResponseHandle(String param) {
+		byte[] bytes = param.getBytes();
+		List<Byte> asList = Bytes.asList(bytes);
+		List<Byte> asList2=new ArrayList(asList);
+		for(int i=asList2.size()-1;i>=0;i--) {
+			if(asList2.get(i)==8){
+				asList2.remove(i);
+			}else if(asList2.get(i)==13) {
+				asList2.remove(i);
+			}else if(asList2.get(i)==10) {
+				asList2.remove(i);
+			}else if(asList2.get(i)==27) {
+				asList2.remove(i);
+			}else if(asList2.get(i)==91) {
+				asList2.remove(i);
+			}else if(i!=0&&asList2.get(i-1)==91) {
+				asList2.remove(i);
+			}else if(asList2.get(i)==7) {
+				asList2.remove(i);
+			}
+		}
+		byte[] array = Bytes.toArray(asList2);
+		return new String(array);
+	}
+	
     /**
      * 向ssh终端输入内容
      *
@@ -322,6 +461,12 @@ public class TerminalClient {
      * @throws IOException
      */
     public void write(String message) throws IOException {
+    	// 获取telnet登录用户名信息
+    	if(telnetUser&&telnetConnect&&StringUtils.isEmpty(terminal.getUser())) {
+    		sb.append(message);
+    	}else if(StringUtils.isNotEmpty(sb.toString())){
+    		terminal.setUser(sb.toString());
+    	}
         if (message.equals("\r")) {
             if (closed) {
                 disconnect();

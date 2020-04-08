@@ -44,15 +44,69 @@ import static com.nis.common.utils.CommonUtils.notEmpty;
 
 public class TerminalSession implements Serializable {
 
-    //key--->WebSocketSession value--->TerminalClient
+    /**
+     * 当前websockt连接信息对应的服务器信息   将来可以实现远程连接列表 用以进行主动断开服务器连接功能
+     */
     public static Map<WebSocketSession, TerminalClient> terminalSession = new HashMap<WebSocketSession, TerminalClient>();
     
-    //key--->token value---->terminalInfo
+    /**
+     * 保存所有正在连接的服务器列表信息
+     */
     public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
     
+    /**
+     * 当前用户操作的服务器指令信息
+     */
     public static Map<String,String> terminalMessageInfo = new HashMap<String,String>();
     
+    /**
+     * 用以保存用户连接websocket后的指令历史记录信息 包含未登录以及登录服务器后的历史指令
+     */
     public static Map<String,List<String>> userInstructions =new HashMap<String,List<String>>();
+    
+    /**
+     * 主要用于存放client相关需要属性
+     */
+    public static Map<String,Object> clientAttributeInfo =new HashMap<String,Object>();
+    /**
+     * 保存用户连接当前websocket的一些配置信息 包括光标位置、未登录时的一些状态信息
+     * 每个连接功能会公用一个terminalHandler类 将各自属性根据uuid以及相应的状态信息进行保存
+     */
+    public static Map<String,Map> terminalAttributeInfo = new HashMap<String,Map>();
+    
+    
+    
+    public static void setTerminalAttributeInfo(String uuid,String key,Object value) {
+    	Map map = terminalAttributeInfo.get(uuid);
+    	if(!ObjectUtils.isEmpty(map)) {
+    		map.put(key, value);
+    		terminalAttributeInfo.put(uuid, map);
+    	}
+    }
+    
+    public static Map getTerminalAttributeInfo(String uuid) {
+    	Map map = terminalAttributeInfo.get(uuid);
+    	if(ObjectUtils.isEmpty(map)) {
+    		//第一次获取基础配置的时候 初始化配置信息
+    		map=new HashMap();
+    		//指令光标位置信息
+    		map.put("cursorIndex", 0);
+    		//光标是否移动标识
+    		map.put("cursorFlag", false);
+    		//历史记录位置信息
+    		map.put("historyIndex", 0);
+    		//ssh连接登录标识
+    		map.put("sshLogin", false);
+    		//tab键标识
+    		map.put("tabFlag", false);
+    		terminalAttributeInfo.put(uuid, map);
+    	}
+    	return map;
+    }
+    
+    public static void removeTerminalAttributeInfo(String uuid) {
+    	terminalAttributeInfo.remove(uuid);
+    }
     
     public static String getHistoryInstruction(String uuid,Integer index) {
     	List<String> lists = userInstructions.get(uuid);

@@ -22,7 +22,7 @@ public class TerminalLog implements Serializable {
 	private Long userId;
 	private Date time;
 	private Integer status;
-
+	private String uuid;
 	/**
 	 * 操作查询开始时间参数
 	 */
