@@ -8,18 +8,17 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONArray;
+import com.nis.common.utils.Constant;
 import com.nis.modules.sys.entity.SysArea;
 import com.nis.modules.sys.service.SysAreaService;
 
 @Component
 public class SettingConfig implements CommandLineRunner{
-	@SuppressWarnings("rawtypes")
 	@Autowired
-	private RedisTemplate redisTemplate;
+	private RedisTemplate<String,String> redisTemplate;
 	@Autowired
 	private SysAreaService sysAreaService;
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public void run(String... args) throws Exception {		 
 		List<SysArea> areas = sysAreaService.list();
@@ -29,7 +28,7 @@ public class SettingConfig implements CommandLineRunner{
 				redisTemplate.opsForList().leftPop("area");
 			}
 			redisTemplate.opsForList().rightPushAll("area", areas);*/
-			redisTemplate.opsForValue().set("area", JSONArray.toJSONString(areas));
+			redisTemplate.opsForValue().set(Constant.REDIS_KEY_AREA, JSONArray.toJSONString(areas));
 		}
 	}
 

@@ -166,7 +166,7 @@ public class UserRealm extends AuthorizingRealm {
 				return info;
 			}else {
 				// 验证失败 则登录失败
-				throw new UnknownAccountException("账号或密码不正确");
+				throw new IncorrectCredentialsException("账号或密码不正确");
 			}
 		}else if(user.getSource().equals("ldap")) {
 			// 判断用户是否为ldap用户 是则进行ldap验证登录
@@ -175,7 +175,7 @@ public class UserRealm extends AuthorizingRealm {
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPassword(), ByteSource.Util.bytes(user.getSalt()), getName());
 				return info;
 			}else {
-				throw new UnknownAccountException("账号或密码不正确");
+				throw new IncorrectCredentialsException("账号或密码不正确");
 			}
 		}else {
 			//账号锁定
@@ -210,7 +210,7 @@ public class UserRealm extends AuthorizingRealm {
 		// 如果不支持用户ldap登录同时用户信息为空 则登录失败
 		if(ObjectUtils.isEmpty(ldapEnable)) {
 			return null;
-		}else if(Integer.valueOf((String)ldapEnable)==0){
+		}else if(ldapEnable.equals("off")){
 			return null;
 		}else{
 			String ldapAddress = (String) ldap.get("ldap_address");
@@ -218,7 +218,7 @@ public class UserRealm extends AuthorizingRealm {
 			String ldapPassword = (String) ldap.get("ldap_password");
 			String ldapUserFilter = (String) ldap.get("ldap_user_filter");
 			String ldapMapping = (String) ldap.get("ldap_mapping");
-			
+			String ldapOu = (String) ldap.get("ldap_ou");
 			if(StringUtils.isEmpty(ldapAddress)||StringUtils.isEmpty(ldapDN)||StringUtils.isEmpty(ldapPassword)||StringUtils.isEmpty(ldapUserFilter)) {
 				// 参数不正确
 				return null;
@@ -230,6 +230,9 @@ public class UserRealm extends AuthorizingRealm {
 				return null;
 			}
 			String base = split[split.length-2]+","+split[split.length-1];
+			if(StringUtils.isNotBlank(ldapOu)) {
+				base="ou="+ldapOu+","+base;
+			}
 			// 允许ldap登录 进行ldap验证
 			LdapContextSource ldapContextSource = new LdapContextSource();
 			ldapContextSource.setUrl(ldapAddress);

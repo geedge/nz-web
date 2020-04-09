@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.endpoint.entity.MetadataMetric;
@@ -31,7 +32,7 @@ import io.micrometer.core.instrument.util.StringUtils;
 public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> implements SysAreaService {
 	private static Logger logger = LoggerFactory.getLogger(SysAreaServiceImpl.class);
 	@Autowired
-	private RedisTemplate redisTemplate;
+	private RedisTemplate<String,String> redisTemplate;
 	
 	@SuppressWarnings("unchecked")
 	@Override
@@ -60,7 +61,7 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 //			List<SysArea> datas = page.getRecords();
 //			List<SysArea> allDatas = this.list();
 //			List<SysArea> allDatas = redisTemplate.opsForList().range("area", 0, -1);
-			Object areaCache = redisTemplate.opsForValue().get("area");
+			Object areaCache = redisTemplate.opsForValue().get(Constant.REDIS_KEY_AREA);
 			logger.debug("-----------------------------");
 			logger.debug(JSON.toJSONString(areaCache));
 			logger.debug("--------------------------");
