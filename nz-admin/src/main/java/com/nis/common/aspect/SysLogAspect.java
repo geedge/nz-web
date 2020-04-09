@@ -1,8 +1,12 @@
 package com.nis.common.aspect;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.smartvalidate.ann.IdCard;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
 import com.nis.modules.sys.entity.SysLogEntity;
@@ -22,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 
@@ -70,16 +75,17 @@ public class SysLogAspect {
 			sysLog.setType(syslog.type().getValue());
 			// 当 operation = query 时，只记录 code != 200 的内容
 			if("query".equals(syslog.operation().getValue())){
-				if(!"200".equals(r.get("code"))){
+				if(!"200".equals(r.get("code").toString())){
 					sysLog.setResponse(JSON.toJSONString(r));
 				}
 			}else {
 				sysLog.setResponse(JSON.toJSONString(r));
 			}
-			if(!"200".equals(r.get("code"))){
+			if(!"200".equals(r.get("code").toString())){
 				sysLog.setException((String) r.get("msg"));
 			}
 		}
+
 
 		//请求的方法名
 		String className = joinPoint.getTarget().getClass().getName();
@@ -88,6 +94,28 @@ public class SysLogAspect {
 
 		//请求的参数
 		Object[] args = joinPoint.getArgs();
+		// 获取请求参数名
+		Class clazz = args[0].getClass();
+		String oera_id = null;
+		if("add".equals(syslog.operation().getValue())||"update".equals(syslog.operation().getValue())){
+			Field[] fields = clazz.getDeclaredFields();
+			for (Field field: fields){
+				Boolean isId = field.isAnnotationPresent(TableId.class);
+				if(isId){
+					field.setAccessible(true); // 私有属性必须设置访问权限;
+					try {
+						oera_id = field.get(args[0]).toString();
+					} catch (IllegalAccessException e) {
+						e.printStackTrace();
+					}
+					break;
+				}
+			}
+		}
+		if("delete".equals(syslog.operation().getValue())){
+			oera_id = args[0].toString();
+		}
+		sysLog.setOperaId(oera_id);
 		try{
 			String params = new Gson().toJson(args[0]);
 			sysLog.setParams(params);

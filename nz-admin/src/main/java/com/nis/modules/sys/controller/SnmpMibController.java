@@ -1,9 +1,8 @@
 package com.nis.modules.sys.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.service.SnmpMibService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +51,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @PostMapping
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MIB)
     public R save(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(file).notNull(RCode.SNMP_MIB_FILE_ISNULL);
 
@@ -68,6 +68,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @PutMapping
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB)
     public R update(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL);
 
@@ -82,6 +83,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @DeleteMapping
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MIB)
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.SNMP_MIB_ID_ISNULL);
 

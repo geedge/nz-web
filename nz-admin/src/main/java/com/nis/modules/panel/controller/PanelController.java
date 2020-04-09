@@ -1,10 +1,9 @@
 package com.nis.modules.panel.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
@@ -13,6 +12,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +26,7 @@ public class PanelController {
     private ChartService chartService;
 
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PANEL)
     public R panelList(@RequestParam Map<String,Object> params){
 
         PageUtils page=panelService.queryPanels(params);
@@ -34,6 +35,7 @@ public class PanelController {
     }
 
     @RequestMapping(method = {RequestMethod.POST})
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.PANEL)
     public R panelSave( @RequestBody Panel panel){
 
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
@@ -56,6 +58,7 @@ public class PanelController {
     }
 
     @RequestMapping(method = {RequestMethod.PUT})
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
     public R panelUpdate( @RequestBody Panel panel){
 
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
@@ -79,6 +82,7 @@ public class PanelController {
     }
 
     @DeleteMapping
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.PANEL)
     public R panleDelete(@RequestParam Integer ... ids){
         ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
 

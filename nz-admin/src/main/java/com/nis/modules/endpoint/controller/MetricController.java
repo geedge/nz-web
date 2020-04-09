@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;

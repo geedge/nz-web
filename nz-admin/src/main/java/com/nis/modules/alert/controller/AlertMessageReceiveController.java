@@ -46,7 +46,6 @@ public class AlertMessageReceiveController {
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
-	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTMESSAGE)
     public R alerts(@RequestBody AlertMessageReceiveDTO[] receiveData){
     	//dto转化为entity，存库
     	try {

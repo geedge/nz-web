@@ -18,7 +18,8 @@ public enum TypeEnum {
     UNKNOWN("unknown"),
     MODEL("model"),
     PROMSERVER("promServer"),
-    ACCOUNT("account");
+    ACCOUNT("account"),
+    MIB("mib");
 
     private String value;
 

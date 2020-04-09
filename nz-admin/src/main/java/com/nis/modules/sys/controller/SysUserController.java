@@ -2,9 +2,7 @@ package com.nis.modules.sys.controller;
 
 
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.common.validator.Assert;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -99,6 +97,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@RequestMapping("/save")
 //	@RequiresPermissions("sys:user:save")
+	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
 	public R save(@RequestBody SysUserEntity user){
 		ValidateUtils.is(user.getUsername()).notNull().maxLength(64)
 						.and(user.getPassword()).notNull().maxLength(64)
@@ -112,7 +111,7 @@ public class SysUserController extends AbstractController {
 	 * 修改用户
 	 */
 	@RequestMapping("/update")
-//	@RequiresPermissions("sys:user:update")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
 	public R update(@RequestBody SysUserEntity user){
 		ValidateUtils.is(user.getUsername()).notNull().max(64)
 		.and(user.getEmail()).notNull().email();
@@ -127,7 +126,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@RequestMapping("/delete")
 //	@RequiresPermissions("sys:user:delete")
-//	public R delete(@RequestBody Long[] userIds){
+	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
 	public R delete(String userIds) {
 		ValidateUtils.is(userIds).notNull();
 		String[] split = userIds.split(",");
