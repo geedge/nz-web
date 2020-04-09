@@ -284,6 +284,7 @@ public class TerminalClient {
                             	//判断用户登录telnet连接次数 
                             	if(message.contains("Login incorrect")) {
                         			telnetConnectCount++;
+                        			telnetUser=true;
                         		}
                             	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
                             		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
@@ -402,14 +403,17 @@ public class TerminalClient {
     		}else if(message.getPayload().equals("\r")) {
     			// 服务器执行完命令 保存日志
     			if(!telnetConnect) {
-    				terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
-            		terminalLog.setStatus(1);
-            		terminalLog.setTime(new Date());
-            		terminalLog.setUser(terminal.getUser());
-            		terminalLogService.save(terminalLog);
-            		TerminalSession.removeTerminalMessage(clientId);
-            		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
-            		TerminalSession.clientAttributeInfo.put(clientId+"shell",null);
+    				String cmd = TerminalSession.getTerminalMessage(clientId);
+    				if(StringUtils.isNotEmpty(cmd)) {
+    					terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
+                		terminalLog.setStatus(1);
+                		terminalLog.setTime(new Date());
+                		terminalLog.setUser(terminal.getUser());
+                		terminalLogService.save(terminalLog);
+                		TerminalSession.removeTerminalMessage(clientId);
+                		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
+                		TerminalSession.clientAttributeInfo.put(clientId+"shell",null);
+    				}
     			}
     		}else if(message.asBytes()[0]==127) {
     			// 处理用户删除退格操作

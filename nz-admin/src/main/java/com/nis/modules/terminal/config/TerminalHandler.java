@@ -399,7 +399,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             		return;
             	}else if(message.asBytes()[0]==127) {
             		String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
-            		if(historyIndex!=0) {
+            		if(historyIndex!=0 && cursorIndex != 0) {
             			if(StringUtils.isEmpty(TerminalMessage)) {
             				TerminalMessage = TerminalSession.getHistoryInstruction(uuid, historyIndex);
                 			TerminalSession.setTerminalMessage(uuid, TerminalMessage, null);
@@ -452,11 +452,12 @@ public class TerminalHandler extends TextWebSocketHandler {
         } catch (Exception e) {
         	// 出现异常将光标信息重置防止下一次无法正常执行命令
         	logger.error("error info :",e);
-        	TerminalLog terminalLog = new TerminalLog();
+        	TerminalLog terminalLog = (TerminalLog) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalLog");
         	terminalLog.setUuid(uuid);
         	terminalLog.setUserId((Long)TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
         	terminalLog.setStatus(0);
         	terminalLog.setTime(new Date());
+        	terminalLog.setCmd("Terminal due to abnormal disconnection");
         	terminalLogService.save(terminalLog);
         	TerminalSession.removeTerminalAttributeInfo(uuid);
         	TerminalSession.removeTerminalMessage(uuid+"telnetFlag");

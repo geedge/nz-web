@@ -162,6 +162,9 @@ public class UserRealm extends AuthorizingRealm {
 					} 
 				}
 				sysUserDao.insert(userInfo);
+				String salt = RandomStringUtils.randomAlphanumeric(20);
+				userInfo.setSalt(salt);
+				userInfo.setPassword(ShiroUtils.sha256(new String(token.getPassword()), userInfo.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(userInfo, userInfo.getPassword(), ByteSource.Util.bytes(userInfo.getSalt()), getName());
 				return info;
 			}else {
@@ -172,6 +175,9 @@ public class UserRealm extends AuthorizingRealm {
 			// 判断用户是否为ldap用户 是则进行ldap验证登录
 			R result = getLdapAuthentication(token.getUsername(),new String(token.getPassword()));
 			if(ObjectUtils.isNotEmpty(result)) {
+				String salt = RandomStringUtils.randomAlphanumeric(20);
+				user.setSalt(salt);
+				user.setPassword(ShiroUtils.sha256(new String(token.getPassword()), user.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPassword(), ByteSource.Util.bytes(user.getSalt()), getName());
 				return info;
 			}else {
