@@ -137,6 +137,11 @@ public class Constant {
     public static final String PROMSERVERUP_ENDPOINT_LABEL = "endpoint";
 
     /**
+     * redis缓存区域配置信息key值
+     */
+    public static final String REDIS_KEY_AREA="area";
+    
+    /**
      * 临时目录 
      */
     public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
