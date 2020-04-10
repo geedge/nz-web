@@ -40,10 +40,10 @@ import java.util.Date;
 public class SysLogAspect {
 	@Autowired
 	private SysLogService sysLogService;
-	
+
 	@Pointcut("@annotation(com.nis.common.annotation.SysLog)")
-	public void logPointCut() { 
-		
+	public void logPointCut() {
+
 	}
 
 	@Around("logPointCut()")
@@ -135,6 +135,10 @@ public class SysLogAspect {
 		sysLog.setTime(time);
 		sysLog.setCreateDate(new Date());
 		//保存系统日志
-		sysLogService.save(sysLog);
+		// 查询操作若无异常不记录操作日志
+		if(!"query".equals(syslog.operation().getValue()) ||
+				("query".equals(syslog.operation().getValue()) && !"200".equals(r.get("code").toString()))){
+			sysLogService.save(sysLog);
+		}
 	}
 }

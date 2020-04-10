@@ -29,6 +29,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -38,7 +39,103 @@ import java.util.regex.Pattern;
  */
 public class ToolUtil {
 
+
+    /**
+     * 字符连接符
+     */
+    private static final char SEPARATOR = '_';
+    /**
+     * 默认编码
+     */
+    private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+
 	private static Pattern humpPattern = Pattern.compile("[A-Z]");
+
+
+
+
+
+    /**
+     * 下划线命名 转 驼峰命名 首字母小写
+     *
+     * @param s the s
+     * @return String  toCamelCase("hello_world") == "helloWorld" toCapitalizeCamelCase("hello_world") == "HelloWorld" toUnderScoreCase("helloWorld") = "hello_world"
+     */
+    public static String toCamelCase(String s) {
+        if (s == null) {
+            return null;
+        }
+
+        String ls = s.toLowerCase();
+
+        StringBuilder sb = new StringBuilder(ls.length());
+        boolean upperCase = false;
+        for (int i = 0; i < ls.length(); i++) {
+            char c = ls.charAt(i);
+
+            if (c == SEPARATOR) {
+                upperCase = true;
+            } else if (upperCase) {
+                sb.append(Character.toUpperCase(c));
+                upperCase = false;
+            } else {
+                sb.append(c);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 下划线命名 转 驼峰命名 首字母大写
+     *
+     * @param s the s
+     * @return String  toCamelCase("hello_world") == "helloWorld" toCapitalizeCamelCase("hello_world") == "HelloWorld" toUnderScoreCase("helloWorld") = "hello_world"
+     */
+    public static String toCapitalizeCamelCase(String s) {
+        if (s == null) {
+            return null;
+        }
+        String cs = toCamelCase(s);
+        return cs.substring(0, 1).toUpperCase() + cs.substring(1);
+    }
+
+    /**
+     * 驼峰命名 转 下划线命名
+     *
+     * @param s the s
+     * @return String  toCamelCase("hello_world") == "helloWorld" toCapitalizeCamelCase("hello_world") == "HelloWorld" toUnderScoreCase("helloWorld") = "hello_world"
+     */
+    public static String toUnderScoreCase(String s) {
+        if (s == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        boolean upperCase = false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            boolean nextUpperCase = true;
+
+            if (i < (s.length() - 1)) {
+                nextUpperCase = Character.isUpperCase(s.charAt(i + 1));
+            }
+
+            if ((i > 0) && Character.isUpperCase(c)) {
+                if (!upperCase || !nextUpperCase) {
+                    sb.append(SEPARATOR);
+                }
+                upperCase = true;
+            } else {
+                upperCase = false;
+            }
+
+            sb.append(Character.toLowerCase(c));
+        }
+
+        return sb.toString();
+    }
 
     /**
      * 获取随机位数的字符串

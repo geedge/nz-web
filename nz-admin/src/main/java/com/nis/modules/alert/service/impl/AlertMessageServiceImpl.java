@@ -1,6 +1,10 @@
 package com.nis.modules.alert.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -10,21 +14,30 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertMessageWithExport;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,8 +50,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service("alertMessageService")
@@ -60,9 +79,11 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private RedisTemplate<String, Object> redisTemplate;
 	@Autowired
 	private AlertMessageDao alertMessageDao;
-    
+	@Autowired
+	private SysConfigService configService;
+
 	private static Gson gson = new Gson();
-	
+
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
     	try {
@@ -186,7 +207,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    	}
     	}
     }
-    
+
 	@Override
 	public boolean updateByIds(AlertMessageEntity alertMessage) {
 		String ids = alertMessage.getIds();
@@ -235,5 +256,128 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		// TODO Auto-generated method stub
 		return alertMessageDao.selectAlertMessageStatisticsInfo();
 	}
+
+	@Override
+	public void export(HttpServletResponse response, Map<String, Object> params) {
+		if(ToolUtil.isNotEmpty(params.get("alertName"))) {
+			List<AlertRuleEntity> ruleEntityList = alertRuleService.list(
+					new LambdaQueryWrapper<AlertRuleEntity>().like(ToolUtil.isNotEmpty(params.get("alertName")), AlertRuleEntity::getAlertName, params.get("alertName").toString()));
+			List<Integer> ruleIds = ruleEntityList.stream().map(AlertRuleEntity::getId).distinct().collect(Collectors.toList());
+			params.put("ruleIds", ruleIds);
+		}
+		//根据页面参数查询需要导出的alert_message数据
+		int total ;
+		int pageNo = Integer.parseInt(params.get("pageNo").toString());
+		int pageSize = Integer.parseInt(params.get("pageSize").toString());
+
+		//Excel2003版最大行数是65536，Excel2007最大行数是1048576
+		//Excel2003版最大列数是256，Excel2007最大列数是16384
+		//使用SXSSFWorkbook避免Excel数据超出65536行时报错
+		SXSSFWorkbook  workbook = new SXSSFWorkbook();
+		Sheet sheet = workbook.createSheet("AlertMessages");
+		// 创建样式对象
+		CellStyle style = workbook.createCellStyle();
+		style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
+		style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
+
+		int rowNum = 0;
+		Row row = sheet.createRow(rowNum);
+		Cell cell;
+		// 添加标题行
+		// 获取导出的语言选择
+		String language = ToolUtil.isEmpty(params.get("language"))?"en":params.get("language").toString();
+		// 从sys_config获取表头和查询数量限制
+		String [] keys  =  {"alert_export_header","export_pagesize"};
+		List<SysConfigEntity> paramValues = this.configService.list(
+				new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,keys));
+		// 得到表头
+		Map map = (Map)(JSON.parseObject(paramValues.get(0).getParamValue(), Feature.OrderedField).get(language));
+		Collection values =  map.values();
+		List<String> valueList = new ArrayList<>(values.size());
+		values.stream().forEach(value-> valueList.add(value.toString()));
+		// 筛选表头并添加表头至excel
+		for (int i = 0; i < valueList.size(); i++) {
+			// 创建列、单元格
+			cell = row.createCell(i);
+			cell.setCellValue(valueList.get(i));
+			cell.setCellStyle(style);
+		}
+
+		// 添加数据
+		if("-1".equals(params.get("pageSize").toString())){
+			total = this.count();
+			int exportPagesize = Integer.parseInt(paramValues.get(1).getParamValue());
+			pageNo = (total % exportPagesize == 0) ? (total / exportPagesize) : (total / exportPagesize + 1);
+			for(int i =1;i<=pageNo;i++){
+				int start = (i-1)*exportPagesize;
+				int end = exportPagesize;
+				params.put("pageNo",start);
+				params.put("pageSize",end);
+				List<AlertMessageWithExport> list =this.baseMapper.selectWithExport(params);
+				rowNum = fill(list,rowNum,sheet);
+			}
+		}else {  //部分导出
+			int start = (pageNo-1)*pageSize;
+			int end = pageSize;
+			params.put("pageNo",start);
+			params.put("pageSize",end);
+			List<AlertMessageWithExport> list = this.baseMapper.selectWithExport(params);
+			fill(list,rowNum,sheet);
+		}
+
+		try {
+			// 响应为流
+			String fileName = "AlertMessagesExport.xlsx"; // 默认名称
+			response.setContentType("application/excel");
+			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+			workbook.write(response.getOutputStream());
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 填充表格数据
+	 */
+	private static int fill(List<AlertMessageWithExport> list,int rowNum,Sheet sheet){
+		for (AlertMessageWithExport alertMessageWithExport : list) {
+			Row r = sheet.createRow(++rowNum);
+			Integer id = alertMessageWithExport.getId();
+			String alertName = alertMessageWithExport.getAlertName();
+			String datacenter = alertMessageWithExport.getDatacenter();
+			String project = alertMessageWithExport.getProject();
+			String module = alertMessageWithExport.getModule();
+			String endpoint = alertMessageWithExport.getEndpoint();
+			String asset = alertMessageWithExport.getAsset();
+			String labels = alertMessageWithExport.getLabels();
+			String severity = alertMessageWithExport.getSeverity();
+			String summary = alertMessageWithExport.getSummary();
+			String description = alertMessageWithExport.getDescription();
+			String startAt = alertMessageWithExport.getStartAt();
+			String endAt = alertMessageWithExport.getEndAt() ;
+			String state = alertMessageWithExport.getState() == 1 ? "pending" : "expired";
+
+			r.createCell(0).setCellValue(id);
+			r.createCell(1).setCellValue(alertName);
+			r.createCell(2).setCellValue(datacenter);
+			r.createCell(3).setCellValue(project);
+			r.createCell(4).setCellValue(module);
+			r.createCell(5).setCellValue(endpoint);
+			r.createCell(6).setCellValue(asset);
+			r.createCell(7).setCellValue(labels);
+			r.createCell(8).setCellValue(severity);
+			r.createCell(9).setCellValue(summary);
+			r.createCell(10).setCellValue(description);
+			r.createCell(11).setCellValue(startAt);
+			r.createCell(12).setCellValue(endAt);
+			r.createCell(13).setCellValue(state);
+		}
+		return rowNum;
+	}
+
+
+
 
 }

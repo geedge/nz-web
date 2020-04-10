@@ -53,12 +53,12 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogDao, SysLogEntity> impl
                     .in(SysLogEntity::getUserId, userIds)
                     .like(ToolUtil.isNotEmpty(operation),SysLogEntity::getOperation,operation)
                     .like(ToolUtil.isNotEmpty(type),SysLogEntity::getType,type)
+                     .orderByDesc(SysLogEntity::getCreateDate)
         );
         page.getRecords().stream().forEach(item-> {
             SysUserEntity userEntity = userService.getById(item.getUserId());
             if(ToolUtil.isNotEmpty(userEntity)){
                 item.setUsername(userEntity.getUsername());
-                item.setUserId(null);
             }
         });
 

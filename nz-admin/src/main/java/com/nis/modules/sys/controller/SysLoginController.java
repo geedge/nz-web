@@ -10,14 +10,14 @@ package com.nis.modules.sys.controller;
 
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
@@ -41,6 +41,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -57,7 +58,9 @@ public class SysLoginController extends AbstractController {
 	private RedisTemplate<String,String> redisTemplate;
 	@Value(value="${nezha.loginExpiration:30}")
 	private Integer loginExpiration;
-	
+	@Autowired
+	private SysConfigService configService;
+
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
         response.setHeader("Cache-Control", "no-store, no-cache");
@@ -69,11 +72,11 @@ public class SysLoginController extends AbstractController {
         BufferedImage image = producer.createImage(text);
         //保存到shiro session
         ShiroUtils.setSessionAttribute(Constants.KAPTCHA_SESSION_KEY, text);
-        
+
         ServletOutputStream out = response.getOutputStream();
         ImageIO.write(image, "jpg", out);
 	}
-	
+
 	/**
 	 * 登录
 	 */
@@ -102,9 +105,11 @@ public class SysLoginController extends AbstractController {
 			String json=JSON.toJSONString(map);
 			String value = Base64.getEncoder().encodeToString(json.getBytes());
 			ops.set(loginToken,value ,this.loginExpiration, TimeUnit.MINUTES);
-
+			// 查询系统配置信息
+			String [] paramkeys = {"system_name","timezone","default_cabinet_uszie","max_terminal_num","asset_ping_switch"};
+			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
 			Constant.loginUsers.add(username);
-
+            configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
@@ -142,5 +147,5 @@ public class SysLoginController extends AbstractController {
 
 		return R.ok();
 	}
-	
+
 }

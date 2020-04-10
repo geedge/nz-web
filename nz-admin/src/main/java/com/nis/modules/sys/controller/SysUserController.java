@@ -36,18 +36,19 @@ public class SysUserController extends AbstractController {
 	private SysUserService sysUserService;
 	@Autowired
 	private SysUserRoleService sysUserRoleService;
-	
+
 	/**
 	 * 所有用户列表
 	 */
 	@RequestMapping("/list")
 //	@RequiresPermissions("sys:user:list")
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysUserService.queryPage(params);
 
 		return R.ok(page);
 	}
-	
+
 	/**
 	 * 获取登录的用户信息
 	 */
@@ -55,7 +56,7 @@ public class SysUserController extends AbstractController {
 	public R info(){
 		return R.ok().put("user", getUser());
 	}
-	
+
 	/**
 	 * 修改登录用户密码
 	 */
@@ -67,16 +68,16 @@ public class SysUserController extends AbstractController {
 		password = ShiroUtils.sha256(password, getUser().getSalt());
 		//新密码
 		newPassword = ShiroUtils.sha256(newPassword, getUser().getSalt());
-				
+
 		//更新密码
 		boolean flag = sysUserService.updatePassword(getUserId(), password, newPassword);
 		if(!flag){
 			throw new NZException(RCode.SYS_USER_OLDPWD);
 		}
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 用户信息
 	 */
@@ -84,14 +85,14 @@ public class SysUserController extends AbstractController {
 //	@RequiresPermissions("sys:user:info")
 	public R info(@PathVariable("userId") Long userId){
 		SysUserEntity user = sysUserService.getById(userId);
-		
+
 		//获取用户所属的角色列表
 //		List<Long> roleIdList = sysUserRoleService.queryRoleIdList(userId);
 //		user.setRoleIdList(roleIdList);
-		
+
 		return R.ok().put("user", user);
 	}
-	
+
 	/**
 	 * 保存用户
 	 */
@@ -103,10 +104,10 @@ public class SysUserController extends AbstractController {
 						.and(user.getPassword()).notNull().maxLength(64)
 						.and(user.getEmail()).notNull().email();
 		sysUserService.saveUser(user);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 修改用户
 	 */
@@ -117,10 +118,10 @@ public class SysUserController extends AbstractController {
 		.and(user.getEmail()).notNull().email();
 
 		sysUserService.update(user);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 删除用户
 	 */
@@ -133,16 +134,16 @@ public class SysUserController extends AbstractController {
 		if(ArrayUtils.contains(split, "1")){
 			throw new NZException(RCode.SYS_USER_DELADMIN);
 		}
-		
+
 		if(ArrayUtils.contains(split, getUserId().toString())){
 			throw new NZException(RCode.SYS_USER_CANNOTDEL);
 		}
 
 		sysUserService.removeByIds(Arrays.asList(split));
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 用户名称校验
 	 * @param params
@@ -159,7 +160,7 @@ public class SysUserController extends AbstractController {
 			queryParam.setUserId(Long.valueOf((String)object));
 		}
 		queryParam.setUsername((String)params.get("name"));
-		
+
 		if (sysUserService.checkName(queryParam)) {
 			throw new NZException(RCode.SYS_USER_DUPLICATENAME);
 		} else {

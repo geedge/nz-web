@@ -75,17 +75,78 @@
 			#{hashKey}
 		</foreach>
 	</update>
-	
+
 	<delete id="deleteByTypeIds">
     	delete from alert_message where type=#{typeId} and link_id in
     	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
 		</foreach>
     </delete>
-    
+
     <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
-    	select count(*) total,type,severity 
-    	from alert_message 
+    	select count(*) total,type,severity
+    	from alert_message
     	where state=1 group by type,severity
     </select>
+
+	<select id="selectWithExport" resultType="com.nis.modules.alert.entity.AlertMessageWithExport">
+		SELECT am.id,am.labels,am.endpoint_id endpoint,am.severity,am.summary,am.description,am.start_at startAt,am.end_at endAt,am.state state,
+		ar.alert_name alertName,a. host asset,p.name project,i.name datacenter,m.name module
+        FROM alert_message am
+        LEFT JOIN alert_rule ar ON ar.id = am.rule_id LEFT JOIN asset a ON a.id = am.asset_id
+        LEFT JOIN project p ON p.id = am.project_id LEFT JOIN idc i ON i.id = am.dc_id
+        LEFT JOIN module m ON m.id = am.module_id
+        WHERE 1=1
+		<if test="params.id != null and params.id != ''">
+			AND am.id = #{params.id}
+		</if>
+		<if test="params.ruleId != null and params.ruleId != ''">
+			AND am.rule_id= #{params.ruleId}
+		</if>
+		<if test="params.dcId != null and params.dcId != ''">
+			AND am.dc_id= #{params.dcId}
+		</if>
+		<if test="params.projectId != null and params.projectId != ''">
+			AND am.project_id= #{params.projectId}
+		</if>
+		<if test="params.moduleId != null and params.moduleId != ''">
+			AND am.module_id= #{params.moduleId}
+		</if>
+		<if test="params.assetId != null and params.assetId != ''">
+			AND am.asset_id= #{params.assetId}
+		</if>
+		<if test="params.endpointId != null and params.endpointId != ''">
+			AND am.endpoint_id= #{params.endpointId}
+		</if>
+		<if test="params.severity != null and params.severity != ''">
+			AND am.severity= #{params.severity}
+		</if>
+		<if test="params.summary != null and params.summary != ''">
+			AND am.summary  like concat('%',#{params.summary},'%')
+		</if>
+		<if test="params.description != null and params.description != ''">
+			AND am.description like concat('%',#{params.description},'%')
+		</if>
+		<if test="params.labels!=null and params.labels!='' ">
+			and am.labels like concat('%',#{params.labels},'%')
+		</if>
+		<if test="params.state != null and params.state != ''">
+			AND am.state = #{params.state}
+		</if>
+		<if test="params.startAt != null and params.startAt != ''">
+			AND am.start_at = #{params.startAt}
+		</if>
+		<if test="params.endAt != null and params.endAt != ''">
+			AND am.end_at = #{params.endAt}
+		</if>
+		<if test="params.ruleIds!=null and params.ruleIds.size>0">
+			and ar.id in
+			<foreach collection="params.ruleIds" item="ruleId" open="(" separator="," close=")">
+				#{ruleId}
+			</foreach>
+		</if>
+		LIMIT #{params.pageNo},#{params.pageSize}
+	</select>
+
+
 </mapper>

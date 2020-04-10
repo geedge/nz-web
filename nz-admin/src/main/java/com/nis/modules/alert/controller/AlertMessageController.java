@@ -10,31 +10,29 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.common.smartvalidate.ValidateUtils;
 
+import javax.servlet.http.HttpServletResponse;
+
 
 /**
- * 
+ *
  *
  * @author song
- * @email 
+ * @email
  * @date 2019-11-25 10:11:01
  */
 @RestController
 @RequestMapping("alert/message")
 public class AlertMessageController {
-	
+
 	private final static Logger logger = LoggerFactory.getLogger(AlertMessageController.class);
-    
+
 	@Autowired
     private AlertMessageService alertMessageService;
 
@@ -84,4 +82,11 @@ public class AlertMessageController {
         return R.ok();
     }
 
+	/**
+	 * alert message导出
+	 */
+	@GetMapping(value = "/export")
+	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
+		alertMessageService.export(response,params);
+	}
 }
