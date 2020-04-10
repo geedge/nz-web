@@ -355,8 +355,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			String severity = alertMessageWithExport.getSeverity();
 			String summary = alertMessageWithExport.getSummary();
 			String description = alertMessageWithExport.getDescription();
-			String startAt = alertMessageWithExport.getStartAt();
-			String endAt = alertMessageWithExport.getEndAt() ;
+			String startAt = ToolUtil.isNotEmpty(alertMessageWithExport.getStartAt()) ? alertMessageWithExport.getStartAt() : "";
+			String endAt = ToolUtil.isNotEmpty(alertMessageWithExport.getEndAt()) ? alertMessageWithExport.getEndAt() : "";
 			String state = alertMessageWithExport.getState() == 1 ? "pending" : "expired";
 
 			r.createCell(0).setCellValue(id);

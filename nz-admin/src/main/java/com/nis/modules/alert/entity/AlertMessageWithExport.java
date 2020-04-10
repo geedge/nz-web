@@ -97,7 +97,7 @@ public class AlertMessageWithExport implements Serializable{
 		return endAt;
 	}
 
-	public void setEndAt(String endAt) {
+	public void setEndAt(Date endAt) {
 		this.endAt = ToolUtil.isNotEmpty(endAt)?format.format(endAt):null;
 	}
 }
