@@ -259,7 +259,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         endpointService.removeByModuleIds(ids);
         //删除alert相关信息
         alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-        alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
+        alertMessageService.removeByModuleIds(ids);
     }
 
 	@Override

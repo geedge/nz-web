@@ -4,10 +4,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.project.entity.Project;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
-import lombok.Data;
 
 /**
  * 
@@ -38,11 +42,11 @@ public class AlertMessageEntity implements Serializable {
 	/**
 	 * 告警类型
 	 * */
-	private Integer type;
+	//private Integer type;
 	/**
 	 * 告警类型关联id
 	 */
-	private Integer linkId;
+	//private Integer linkId;
 	/**
 	 * 告警主机ip
 	 */
@@ -80,6 +84,26 @@ public class AlertMessageEntity implements Serializable {
 	 * 状态
 	 */
 	private Integer state;
+	/**
+	 * 关联project id
+	 */
+	private Integer projectId;
+	/**
+	 * 关联module Id
+	 */
+	private Integer moduleId;
+	/**
+	 * 关联endpoint_id
+	 */
+	private Integer endpointId;
+	/**
+	 * 关联asset id
+	 */
+	private Integer assetId;
+	/**
+	 * 关联idc
+	 */
+	private  Integer dcId;
 
 	/**
 	 * redis hash key
@@ -95,4 +119,27 @@ public class AlertMessageEntity implements Serializable {
 	@TableField(exist = false)
 	private AlertRuleEntity alertRule;
 
+	/**
+	 * 对应的project
+	 */
+	@TableField(exist = false)
+	private Project project;
+
+	/**
+	 * module
+	 */
+	@TableField(exist = false)
+	private Module module;
+
+	/**
+	 * endpoint
+	 */
+	@TableField(exist = false)
+	private Endpoint endpoint;
+
+	/**
+	 * idc
+	 */
+	@TableField(exist = false)
+	private Idc dc;
 }

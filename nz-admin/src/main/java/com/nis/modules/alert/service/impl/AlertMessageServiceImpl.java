@@ -1,7 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -20,9 +19,13 @@ import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -35,9 +38,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +56,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.util.*;
@@ -70,11 +73,17 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private AssetService assetService;
 	@Autowired
+	private AssetDao assetDao;
+	@Autowired
 	private ModuleService moduleService;
 	@Autowired
 	private ProjectService projectService;
 	@Autowired
 	private AlertRuleService alertRuleService;
+	@Autowired
+	private EndpointService endpointService;
+	@Autowired
+	private IdcService idcService;
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
 	@Autowired
@@ -83,7 +92,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private SysConfigService configService;
 
 	private static Gson gson = new Gson();
-
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
     	try {
@@ -101,11 +110,20 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     	Integer searchId=resolveParamToInteger(params,"id");
     	params.put("id",searchId);
 
-    	Integer searchType=resolveParamToInteger(params,"type");
-		params.put("type",searchType);
+		Integer projectId=resolveParamToInteger(params,"projectId");
+		params.put("projectId",projectId);
 
-    	Integer searchLinkId=resolveParamToInteger(params,"linkId");
-		params.put("linkId",searchLinkId);
+		Integer moduleId=resolveParamToInteger(params,"moduleId");
+		params.put("moduleId",moduleId);
+
+		Integer endpointId=resolveParamToInteger(params,"endpointId");
+		params.put("endpointId",endpointId);
+
+		Integer assetId=resolveParamToInteger(params,"assetId");
+		params.put("assetId",assetId);
+
+		Integer dcId=resolveParamToInteger(params,"dcId");
+		params.put("dcId",dcId);
 
     	Integer searchState=resolveParamToInteger(params,"state");
 		params.put("state",searchState);
@@ -117,7 +135,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 		List<AlertMessageEntity> alertMessages=this.baseMapper.list(page,params);
 
-		for (AlertMessageEntity am:alertMessages){
+		// 处理返回结果
+		this.handleResultData(alertMessages);
+
+		/*for (AlertMessageEntity am:alertMessages){
 			if(am.getType()!=null){
 				IService service=getServiceImpl(am.getType());
 				Object linkObject = service.getById(am.getLinkId());
@@ -128,11 +149,73 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				}
 				am.setLinkObject(linkObject);
 			}
-		}
+		}*/
+
 		page.setRecords(alertMessages);
 
         return new PageUtils(page);
     }
+
+    private void handleResultData(List<AlertMessageEntity> alertMessages){
+
+		if(CollectionUtils.isEmpty(alertMessages)){
+			return;
+		}
+
+		List<Idc> idcList = idcService.list();
+		Map<Integer,Idc> idcMap = new HashMap<>();
+		for (Idc dc:idcList) {
+			idcMap.put(dc.getId(), dc);
+		}
+
+		List<Project> projectList = projectService.list();
+		Map<Integer,Project> projectMap= new HashMap<>();
+		for (Project project:projectList) {
+			projectMap.put(project.getId(), project);
+		}
+
+		List<Module> moduleList = moduleService.list();
+		Map<Integer,Module> moduleMap= new HashMap<>();
+		for (Module module:moduleList) {
+			moduleMap.put(module.getId(),module);
+		}
+
+		List<Endpoint> endpointList = endpointService.list();
+		Map<Integer,Endpoint> endpointMap= new HashMap<>();
+		for (Endpoint endpoint: endpointList) {
+			endpointMap.put(endpoint.getId(),endpoint);
+		}
+
+		List<Asset> assetList = assetService.list();
+		Map<Integer,Asset> assetMap= new HashMap<>();
+		for (Asset asset:assetList) {
+			assetMap.put(asset.getId(), asset);
+		}
+
+		Integer projectId ,moduleId ,endpointId, assetId, dcId;
+		for (AlertMessageEntity entity:alertMessages) {
+			projectId = entity.getProjectId();
+			if(projectId != null){
+				entity.setProject(projectMap.get(projectId));
+			}
+			moduleId = entity.getModuleId();
+			if(moduleId != null){
+				entity.setModule(moduleMap.get(moduleId));
+			}
+			endpointId = entity.getEndpointId();
+			if(endpointId != null){
+				entity.setEndpoint(endpointMap.get(endpointId));
+			}
+			assetId = entity.getAssetId();
+			if(assetId != null){
+				entity.setAsset(assetMap.get(assetId));
+			}
+			dcId = entity.getDcId();
+			if(dcId != null){
+				entity.setDc(idcMap.get(dcId));
+			}
+		}
+	}
 
     @Override
     public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
@@ -157,6 +240,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 				for (AlertMessageReceiveDTO dto : receiveData) {
 					try{
+						getReceiveLabels(dto);
 //						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
                         AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, assetIpWithId);
 						ruleIds.add(entity.getRuleId());
@@ -208,6 +292,47 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     	}
     }
 
+    private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto){
+		Map receiveLabels = dto.getLabels();
+		Integer assertId=null,moduleId=null,projectId=null,endpointId=null,dcId=null ;
+		// 有endpointId ,即可查出所有
+		if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
+			endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
+			Endpoint endpoint = endpointService.getById(endpointId);
+			assertId = endpoint.getAssetId();
+			moduleId = endpoint.getModuleId();
+			Module module = moduleService.getById(moduleId);
+			projectId = module.getProjectId();
+			Asset asset = assetService.getById(assertId);
+			dcId = asset.getIdcId();
+		}else{
+			if(ToolUtil.isNotEmpty(receiveLabels.get("module"))){
+				Module module = moduleService.getOne(new LambdaQueryWrapper<Module>().eq(Module::getName, receiveLabels.get("module").toString()));
+				moduleId = module.getId();
+				projectId = module.getProjectId();
+			}
+			if(ToolUtil.isNotEmpty(receiveLabels.get("project"))&&ToolUtil.isEmpty(receiveLabels.get("module"))){
+				Project project = projectService.getOne(new LambdaQueryWrapper<Project>().eq(Project::getName,receiveLabels.get("project").toString()));
+				projectId = project.getId();
+			}
+			if(ToolUtil.isNotEmpty(receiveLabels.get("asset"))){
+				Asset asset = assetService.getOne(new LambdaQueryWrapper<Asset>().eq(Asset::getHost,receiveLabels.get("asset").toString()));
+				assertId = asset.getId();
+				dcId = asset.getIdcId();
+			}
+			if(ToolUtil.isNotEmpty(receiveLabels.get("datacenter"))&&ToolUtil.isEmpty(receiveLabels.get("asset"))){
+				Idc dc = idcService.getOne(new LambdaQueryWrapper<Idc>().eq(Idc::getName,receiveLabels.get("datacenter").toString()));
+				dcId = dc.getId();
+			}
+		}
+		receiveLabels.put("endpoint",endpointId);
+		receiveLabels.put("project",projectId);
+		receiveLabels.put("assetId",assertId);
+		receiveLabels.put("module",moduleId);
+		receiveLabels.put("datacenter",dcId);
+    	return dto;
+	}
+
 	@Override
 	public boolean updateByIds(AlertMessageEntity alertMessage) {
 		String ids = alertMessage.getIds();
@@ -245,16 +370,34 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		return param;
 	}
 
-	@Override
-	@Transactional(rollbackFor = Exception.class)
+	/*@Override
+
 	public void removeByTypeIds(Integer typeId, List ids) {
 		alertMessageDao.deleteByTypeIds(typeId, ids);
-	}
+	}*/
 
 	@Override
 	public List<MetricsDto> queryAlertMessageStatisticsInfo() {
 		// TODO Auto-generated method stub
 		return alertMessageDao.selectAlertMessageStatisticsInfo();
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByAssetIds(List<Integer> idList) {
+		alertMessageDao.deleteByAssetIds(idList);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByModuleIds(List ids) {
+		alertMessageDao.deleteByModuleIds(ids);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByProjectIds(List ids) {
+		alertMessageDao.deleteByProjectIds(ids);
 	}
 
 	@Override

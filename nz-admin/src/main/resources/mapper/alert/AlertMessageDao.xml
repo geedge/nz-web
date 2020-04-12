@@ -8,8 +8,8 @@
         <result property="id" column="id"/>
         <result property="severity" column="severity"/>
         <result property="summary" column="summary"/>
-		<result property="type" column="type"/>
-		<result property="linkId" column="link_id"/>
+		<!--<result property="type" column="type"/>
+		<result property="linkId" column="link_id"/>-->
 		<result property="host" column="host"/>
         <result property="description" column="description"/>
         <result property="labels" column="labels"/>
@@ -19,10 +19,17 @@
 		<result property="hashKey" column="hash_key"/>
 		<result property="alertRule.id" column="rule_id" />
 		<result property="alertRule.alertName" column="alert_name"/>
+
+		<result property="projectId" column="project_id"/>
+		<result property="moduleId" column="module_id"/>
+		<result property="endpointId" column="endpoint_id"/>
+		<result property="assetId" column="asset_id"/>
+		<result property="dcId" column="dc_id"/>
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
-		select am.*,ar.alert_name from alert_message am left join alert_rule ar on am.rule_id=ar.id
+		select am.*,ar.alert_name from alert_message am
+		left join alert_rule ar on am.rule_id=ar.id
 		<where>
 			<if test="params.alertName != null and params.alertName != ''">
 				ar.alert_name like concat('%', #{params.alertName}, '%')
@@ -30,15 +37,18 @@
 			<if test="params.host != null and params.host != ''">
 				AND am.host like concat('%', #{params.host}, '%')
 			</if>
-			<if test="params.type != null">
-				and am.type = #{params.type}
-			</if>
-			<if test="params.linkId != null">
-				and am.link_id = #{params.linkId}
-			</if>
 			<if test="params.severity != null and params.severity != ''">
 				AND am.severity=#{params.severity}
 			</if>
+
+			<if test="params.summary != null and params.summary != ''">
+				AND am.summary like concat('%', #{params.summary}, '%')
+			</if>
+
+			<if test="params.description != null and params.description != ''">
+				AND am.description like concat('%', #{params.description}, '%')
+			</if>
+
 			<if test="params.id != null ">
 				AND am.id=#{params.id}
 			</if>
@@ -60,6 +70,31 @@
 			<if test="params.ruleId != null and params.ruleId != ''">
 				AND am.rule_id = #{params.ruleId}
 			</if>
+
+			<if test="params.projectId != null and params.projectId != ''">
+				AND am.project_id = #{params.projectId}
+			</if>
+
+			<if test="params.moduleId != null and params.moduleId != ''">
+				AND am.module_id = #{params.moduleId}
+			</if>
+
+			<if test="params.endpointId != null and params.endpointId != ''">
+				AND am.endpoint_id = #{params.endpointId}
+			</if>
+
+			<if test="params.assetId != null and params.assetId != ''">
+				AND am.asset_id = #{params.assetId}
+			</if>
+
+			<if test="params.dcId != null and params.dcId != ''">
+				AND am.dc_id = #{params.dcId}
+			</if>
+
+			<if test="params.labels != null and params.labels != ''">
+				AND am.labels = #{params.labels}
+			</if>
+
 		</where>
 
 		/* 如果排序字段为null , 使用默认排序 */
@@ -75,19 +110,40 @@
 			#{hashKey}
 		</foreach>
 	</update>
-
-	<delete id="deleteByTypeIds">
+	
+	<!--<delete id="deleteByTypeIds">
     	delete from alert_message where type=#{typeId} and link_id in
     	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
 		</foreach>
-    </delete>
-
+    </delete>-->
+    
     <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
-    	select count(*) total,type,severity
+    	select count(*) total,severity
     	from alert_message
-    	where state=1 group by type,severity
+    	where state=1 group by severity
     </select>
+
+	<delete id="deleteByAssetIds">
+		delete from alert_message where asset_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</delete>
+
+	<delete id="deleteByModuleIds">
+		delete from alert_message where module_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</delete>
+
+	<delete id="deleteByProjectIds">
+		delete from alert_message where project_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</delete>
 
 	<select id="selectWithExport" resultType="com.nis.modules.alert.entity.AlertMessageWithExport">
 		SELECT am.id,am.labels,am.endpoint_id endpoint,am.severity,am.summary,am.description,am.start_at startAt,am.end_at endAt,am.state state,

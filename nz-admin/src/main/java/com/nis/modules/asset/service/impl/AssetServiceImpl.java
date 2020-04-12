@@ -404,7 +404,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 3. 删除关联的alert信息
         alertRuleService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
-        alertMessageService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
+        alertMessageService.removeByAssetIds(idList);
     }
 
     @Override

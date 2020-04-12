@@ -153,7 +153,7 @@
          (SELECT COUNT(ep.id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS endpointNum,
         /*alert统计 关联alert_rule表*//*
         (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum*/
-        (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.link_id AND am.type = 3 AND am.state = 1) AS alertNum
+        (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.asset_id AND am.state = 1) AS alertNum
     </sql>
 
     <sql id="model_info_columns">

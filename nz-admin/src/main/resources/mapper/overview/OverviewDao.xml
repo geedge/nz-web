@@ -3,137 +3,6 @@
 
 <mapper namespace="com.nis.modules.overview.dao.OverviewDao">
 
-    <!--<select id="getAlertMessageAllSeverityInfos" resultType="java.util.Map">
-        SELECT
-            COUNT(DISTINCT am.link_id) AS nums, am.severity AS severity, am.type AS type
-        FROM alert_message am
-        WHERE am.state = 1
-        GROUP BY am.type,am.severity
-    </select>
-
-    <select id="getProjectNotRelationAlertCount" resultType="java.lang.Integer">
-        SELECT COUNT(1)
-        FROM project
-        WHERE id NOT IN (
-            SELECT DISTINCT am.link_id
-            FROM alert_message am WHERE am.type = 1 AND am.state = 1
-        )
-    </select>
-
-    <select id="getModuletNotRelationAlertCount" resultType="java.lang.Integer">
-        SELECT COUNT(1)
-        FROM module
-        WHERE id NOT IN (
-            SELECT DISTINCT am.link_id
-            FROM alert_message am WHERE am.type = 2 AND am.state = 1
-        )
-    </select>
-
-    <select id="getAssetNotRelationAlertCount" resultType="java.lang.Integer">
-        SELECT COUNT(1)
-        FROM asset
-        WHERE id NOT IN (
-            SELECT DISTINCT am.link_id
-            FROM alert_message am WHERE am.type = 3 AND am.state = 1
-        )
-    </select>
-
-
-    <select id="alertNumTopN" resultType="java.util.Map">
-        SELECT COUNT(am.id) AS nmus,am.type,am.link_id AS linkId FROM alert_message am
-        WHERE am.state = 1
-        GROUP BY am.type,am.link_id
-        ORDER BY nmus DESC,type
-        limit #{topN}
-    </select>
-
-    <select id="alertUnprocessed" resultType="java.util.Map">
-        SELECT am.id,am.type,am.link_id AS linkId,am.rule_id AS ruleId,am.severity AS level,am.summary,am.start_at AS time FROM alert_message am
-        WHERE am.state = 1
-        ORDER BY
-        field( am.severity,'high','medium','low'), am.type
-        limit #{pageNo},#{pageSize}
-    </select>
-
-    <select id="assetModelAndAlertSeveritysNums" resultType="java.util.Map">
-        SELECT
-        ass.model_id as modelId,
-        COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
-        COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
-        COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
-        FROM asset ass
-        LEFT JOIN alert_message am ON ass.id = am.link_id
-        WHERE am.type = 3 AND am.state = 1
-
-        /*是否只统计在库资产*/
-        <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
-            AND ass.state = #{onlyInUse}
-        </if>
-        GROUP BY ass.model_id
-        ORDER BY ass.model_id
-    </select>
-
-    <select id="assetModelAndPingActivesNums" resultType="java.util.Map">
-        SELECT
-        ass.model_id AS modelId,
-        COUNT(CASE WHEN assp.status = '1' THEN 0 END) AS pingActive,
-        COUNT(CASE WHEN assp.status = '0' THEN 0 END) AS pingInactive
-        FROM asset ass
-        LEFT JOIN asset_ping assp ON ass.host = assp.host
-        /*是否只统计在库资产*/
-        <where>
-            <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
-                AND ass.state = #{onlyInUse}
-            </if>
-        </where>
-        GROUP BY ass.model_id
-        ORDER BY ass.model_id
-    </select>
-
-    <select id="assetDcAndPingActivesNums" resultType="java.util.Map">
-        SELECT
-        ass.idc_id AS idcId,
-        COUNT(CASE WHEN assp.status = '1' THEN 0 END) AS pingActive,
-        COUNT(CASE WHEN assp.status = '0' THEN 0 END) AS pingInactive
-        FROM asset ass
-        LEFT JOIN asset_ping assp ON ass.host = assp.host
-        /*是否只统计在库资产*/
-        <where>
-            <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
-                AND ass.state = #{onlyInUse}
-            </if>
-        </where>
-        GROUP BY ass.idc_id
-        ORDER BY ass.idc_id
-    </select>
-
-    <select id="alertRuleStat" resultType="java.util.Map">
-        SELECT
-        COUNT(CASE WHEN ar.severity = 'high' THEN 0 END) AS high,
-        COUNT(CASE WHEN ar.severity = 'medium' THEN 0 END) AS medium,
-        COUNT(CASE WHEN ar.severity = 'low' THEN 0 END) AS low
-        FROM alert_rule ar
-    </select>
-
-    <select id="promDCAndActiveNums" resultType="java.util.Map">
-        SELECT
-        ps.idc_id AS idcId,
-        COUNT(CASE WHEN ps.status = '1' THEN 0 END) AS prometheusServerActive,
-        COUNT(CASE WHEN ps.status = '0' THEN 0 END) AS prometheusServerInactive
-        FROM prom_server ps
-        GROUP BY ps.idc_id
-    </select>
-
-    <select id="getIdcAndEndpointIds" resultType="java.util.Map">
-        SELECT
-        ass.idc_id AS idcId,
-        GROUP_CONCAT(en.id) AS endpointIds
-        FROM endpoint en
-        LEFT JOIN asset ass ON en.asset_id = ass.id
-        GROUP BY ass.idc_id
-    </select>
-    -->
-
     <select id="alertRuleTopN" resultType="java.util.Map">
         SELECT ar.id AS id,ar.alert_name AS alertName,ar.severity AS level, COUNT(am.rule_id) AS nums FROM alert_rule ar
         LEFT JOIN alert_message am ON ar.id = am.rule_id
@@ -143,32 +12,14 @@
         limit #{topN}
     </select>
 
-    <select id="assetDcAndAlertSeveritysNums" resultType="java.util.Map">
-        SELECT ass.idc_id AS idcId,
-        COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
-        COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
-        COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
-        FROM asset ass
-        LEFT JOIN alert_message am ON ass.id = am.link_id
-        WHERE am.type = 3 AND am.state = 1
-
-        /*是否只统计在库资产*/
-        <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
-            AND ass.state = #{onlyInUse}
-        </if>
-
-        GROUP BY ass.idc_id
-        ORDER BY ass.idc_id
-    </select>
-
     <select id="assetCabAndAlertSeveritysNums" resultType="java.util.Map">
         SELECT ass.cabinet_id AS cabinetId,
         COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
         COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
         COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
         FROM asset ass
-        LEFT JOIN alert_message am ON ass.id = am.link_id
-        WHERE am.type = 3 AND am.state = 1
+        LEFT JOIN alert_message am ON ass.id = am.asset_id
+        WHERE am.state = 1
 
         /*是否只统计在库资产*/
         <if test="onlyInUse != null and onlyInUse != '' and onlyInUse == 1">
@@ -198,7 +49,7 @@
                                 COUNT(CASE WHEN am.severity = 'high' THEN 0 END) AS alertHigh,
                                 COUNT(CASE WHEN am.severity = 'medium' THEN 0 END) AS alertMedium,
                                 COUNT(CASE WHEN am.severity = 'low' THEN 0 END) AS alertLow
-                FROM alert_message am WHERE am.state = 1 AND am.type = 3
+                FROM alert_message am WHERE am.state = 1 AND am.asset_id > 0
             ) temp_b
         ON 1=1
     </select>
@@ -216,20 +67,23 @@
             temp_a.alertHigh,
             temp_a.alertMedium,
             temp_a.alertLow,
+            temp_a.type,
+            temp_a.vendor,
             temp_b.*
     FROM
         (
             SELECT
-                mo.name AS name,
+                mo.name AS name,vendict.value AS vendor,assdict.value AS type,
                 count( am.id ) AS alertTotal,
                 COUNT( CASE WHEN am.severity = 'high' THEN 0 END ) AS alertHigh,
                 COUNT( CASE WHEN am.severity = 'medium' THEN 0 END ) AS alertMedium,
                 COUNT( CASE WHEN am.severity = 'low' THEN 0 END ) AS alertLow
             FROM
                 model mo
+                LEFT JOIN sys_dict vendict ON vendict.code = mo.vendor AND vendict.type = 'vendor'
+                LEFT JOIN sys_dict assdict ON assdict.code = mo.type AND assdict.type = 'assetType'
                 LEFT JOIN asset ass ON mo.id = ass.model_id
-                LEFT JOIN alert_message am ON ass.id = am.link_id
-                AND am.type = 3
+                LEFT JOIN alert_message am ON ass.id = am.asset_id
                 AND am.state = 1
             GROUP BY
                 mo.id
@@ -237,6 +91,7 @@
         LEFT JOIN (
             SELECT
                 mo.name,
+                mo.id,
                 COUNT( ass.id ) AS total,
                 COUNT( CASE WHEN ass.state = '1' THEN 0 END ) AS inStock,
                 COUNT( CASE WHEN ass.state = '2' THEN 0 END ) AS outStock,
@@ -269,9 +124,7 @@
                     COUNT( CASE WHEN am.severity = 'low' THEN 0 END ) AS alertLow
                 FROM
                     idc idc
-                    LEFT JOIN asset ass ON idc.id = ass.idc_id
-                    LEFT JOIN alert_message am ON ass.id = am.link_id
-                    AND am.type = 3
+                    LEFT JOIN alert_message am ON idc.id = am.dc_id
                     AND am.state = 1
                 GROUP BY
                     idc.id
@@ -306,8 +159,8 @@
             project pro
             LEFT JOIN module mo ON pro.id = mo.project_id
             LEFT JOIN endpoint en ON mo.id = en.module_id
-            LEFT JOIN alert_message am ON pro.id = am.link_id
-            AND am.type = 1 AND am.state = 1
+            LEFT JOIN alert_message am ON pro.id = am.project_id
+            AND am.state = 1
         GROUP BY
             pro.id
     </select>
@@ -357,8 +210,8 @@
             COUNT( am.id ) AS nums
         FROM
             asset ass
-			LEFT JOIN alert_message am ON ass.id = am.link_id
-			AND am.state = 1 and am.type = 3
+			LEFT JOIN alert_message am ON ass.id = am.asset_id
+			AND am.state = 1
         GROUP BY
             ass.host
         HAVING

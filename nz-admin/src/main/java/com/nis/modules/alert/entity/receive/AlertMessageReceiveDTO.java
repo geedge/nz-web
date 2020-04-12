@@ -1,7 +1,7 @@
 package com.nis.modules.alert.entity.receive;
 
 import com.google.gson.Gson;
-import com.nis.common.utils.Constant;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import lombok.Data;
 import org.springframework.util.DigestUtils;
@@ -90,6 +90,21 @@ public class AlertMessageReceiveDTO implements Serializable {
         // entity.setEndAt(ea);
         entity.setState(1);
 
+        if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
+            entity.setEndpointId(Integer.parseInt( receiveLabels.get("endpoint").toString()));
+        }
+        if(ToolUtil.isNotEmpty(receiveLabels.get("project"))){
+            entity.setProjectId(Integer.parseInt(receiveLabels.get("project").toString()));
+        }
+        if(ToolUtil.isNotEmpty(receiveLabels.get("assetId"))){
+            entity.setAssetId(Integer.parseInt(receiveLabels.get("assetId").toString()));
+        }
+        if(ToolUtil.isNotEmpty(receiveLabels.get("module"))){
+            entity.setModuleId(Integer.parseInt(receiveLabels.get("module").toString()));
+        }
+        if(ToolUtil.isNotEmpty(receiveLabels.get("datacenter"))){
+            entity.setDcId(Integer.parseInt( receiveLabels.get("datacenter").toString()));
+        }
         // snmptrap 处理
         if (dto.getSnmptrap() != null && dto.getSnmptrap().equals(true)) {
 
@@ -97,16 +112,16 @@ public class AlertMessageReceiveDTO implements Serializable {
             entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
             entity.setSeverity((String) receiveLabels.get("severity"));
             entity.setHost(receiveLabels.get("asset").toString().trim());
-            entity.setType(Constant.AlertType.ALERT_TYPE_ASSET.getCode());
-            entity.setLinkId(assetIpWithId.get(receiveLabels.get("asset").toString().trim()));
+            //entity.setType(Constant.AlertType.ALERT_TYPE_ASSET.getCode());
+            //entity.setLinkId(assetIpWithId.get(receiveLabels.get("asset").toString().trim()));
         } else {
 
             // 非内置
             entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
             entity.setSeverity((String) receiveLabels.get("severity"));
             entity.setHost(((String) receiveLabels.get("asset")));
-            entity.setType(Integer.parseInt((String) receiveLabels.get("type")));
-            entity.setLinkId(Integer.parseInt((String) receiveLabels.get("linkId")));
+            //entity.setType(Integer.parseInt((String) receiveLabels.get("type")));
+            //entity.setLinkId(Integer.parseInt((String) receiveLabels.get("linkId")));
         }
         return entity;
     }

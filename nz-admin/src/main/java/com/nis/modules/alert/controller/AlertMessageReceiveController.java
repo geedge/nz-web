@@ -1,30 +1,19 @@
 package com.nis.modules.alert.controller;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.nis.common.annotation.SysLog;
+import com.google.gson.Gson;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.alert.service.AlertMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.google.gson.Gson;
 
 
 /**

@@ -60,7 +60,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		}
 		//删除alert表相关数据信息
 		alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
-		alertMessageService.removeByTypeIds(AlertType.ALERT_TYPE_PROJECT.getCode(), ids);
+		alertMessageService.removeByProjectIds(ids);
 	}
 
 	@Override

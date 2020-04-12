@@ -1,22 +1,19 @@
 package com.nis.modules.metric.dto;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
-
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.search.Search;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class NezhaMetrics implements MeterBinder {
@@ -53,18 +50,26 @@ public class NezhaMetrics implements MeterBinder {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("alertNums"+i, alertNums.get(i).getTotal());
         		String key="alertNums"+i;
-        		Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+        		/*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
                 .tags("type",alertNums.get(i).getType().toString(),"severity",alertNums.get(i).getSeverity(),"name","alert_message")
                 .description("Alert message statistics info")
-                .register(meterRegistry);
+                .register(meterRegistry);*/
+                Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+                        .tags("severity",alertNums.get(i).getSeverity(),"name","alert_message")
+                        .description("Alert message statistics info")
+                        .register(meterRegistry);
         	}
         }else {
         	map.put("alertNums", 0.0);
     		String key="alertNums";
-    		Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+    		/*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
             .tags("type","null","severity","null","name","alert_message")
             .description("Alert message statistics info")
-            .register(meterRegistry);
+            .register(meterRegistry);*/
+            Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+                    .tags("severity","null","name","alert_message")
+                    .description("Alert message statistics info")
+                    .register(meterRegistry);
         }
         /**
          * asset_nums指标

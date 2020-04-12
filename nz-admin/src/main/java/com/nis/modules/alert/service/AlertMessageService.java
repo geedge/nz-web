@@ -7,15 +7,14 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.metric.dto.MetricsDto;
 
 import javax.servlet.http.HttpServletResponse;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * 
  *
  * @author song
- * @email
+ * @email 
  * @date 2019-11-25 10:11:01
  */
 public interface AlertMessageService extends IService<AlertMessageEntity> {
@@ -25,10 +24,16 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	boolean updateByIds(AlertMessageEntity alertMessage);
 
 	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
-
-	void removeByTypeIds(Integer typeId,List ids);
-
+	
+	//void removeByTypeIds(Integer typeId,List ids);
+	
 	List<MetricsDto> queryAlertMessageStatisticsInfo();
+
+	void removeByAssetIds(List<Integer> idList);
+
+	void removeByModuleIds(List ids);
+
+	void removeByProjectIds(List ids);
 
     void export(HttpServletResponse response, Map<String, Object> params);
 }

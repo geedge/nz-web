@@ -21,6 +21,16 @@ public class AssetStat {
     private String name;
 
     /**
+     * 以model为维度时使用，代表assetType
+     */
+    private String type;
+
+    /**
+     * 以model为维度时使用，代表vendor
+     */
+    private String vendor;
+
+    /**
      * 资产总数
      */
     private int total;
