@@ -469,8 +469,8 @@ public class Constant {
     // 主机连通性检查开关，1：开启，0：关闭
     public static final String SYSCONFIG_KEY_ASSET_PING_SWITCH = "asset_ping_switch";
 
-    // 主机连通性检查开关  打开状态 1
-    public static final Integer ASSET_PING_OPEN_SWITCH = 1;
+    // 主机连通性检查开关  打开状态 on
+    public static final String ASSET_PING_OPEN_SWITCH = "on";
 
     // asset IP 不可达时返回表述信息
     public static final String ASSET_PING_DOWN_FLAG = "unreachable";

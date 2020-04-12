@@ -65,11 +65,11 @@ public class AssetPingJob extends QuartzJobBean {
         }
 
         // 开启主机连通性开关
-        if (Constant.ASSET_PING_OPEN_SWITCH.equals(Integer.valueOf(configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim()))) {
+        if (Constant.ASSET_PING_OPEN_SWITCH.equals(configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
             logger.info("asset ping switch is open");
 
-            // 获取 asset state 为 1 的IP信息
-            List<Asset> assets = assetService.list(new QueryWrapper<Asset>().eq("state", 1));
+            // 获取 所有 asset
+            List<Asset> assets = assetService.list();
 
             File file = null;
             if (CollectionUtils.isNotEmpty(assets)) {
