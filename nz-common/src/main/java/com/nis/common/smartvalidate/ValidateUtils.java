@@ -317,6 +317,11 @@ public class ValidateUtils {
         return this;
     }
 
+    public ValidateUtils port(RCode code) {
+        ValidateHandler.port(value, code);
+        return this;
+    }
+
     /**
      * 对象校验（通过注解）
      *

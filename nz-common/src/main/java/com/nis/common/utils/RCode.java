@@ -285,6 +285,19 @@ public enum RCode {
     SNMP_MIB_FILE_ISNULL(561000,"Snmp mib file can not be empty"), // snmp mib文件不能为空
     SNMP_MIB_ID_ISNULL(561001,"Snmp mib id can not be empty"),     // snmp mib id 不能为空
     SNMP_MIB_PARSING_FAILED(569002,"SNMP MIB file parsing failed"),// snmp mib 解析失败
+    SNMP_MIB_OPERATION_ISNULL(561003,"Snmp mib operation can not be empty"),// operation不能为空
+    SNMP_MIB_HOST_ISNULL(561004,"Snmp mib host can not be empty"),// host 不能为空
+    SNMP_MIB_HOST_FORMAT(563005,"Snmp mib host must be in IP format"),// host 必须为IP格式
+    SNMP_MIB_PORT_ISNULL(561006,"Snmp mib port can not be empty"),// port 不能为空
+    SNMP_MIB_PORT_INVALIDE(565007,"Snmp mib port is invalide"),   // port 错误
+    SNMP_MIB_VERSION_ISNULL(561008,"Snmp mib version can not be empty"),// version 不能为空
+    SNMP_MIB_OID_ISNULL(561009,"Snmp mib oid can not be empty"),// oid 不能为空
+    SNMP_MIB_OPERATION_INVALIDE(563010,"Snmp operation type must be get, walk, getnext or set "),// operation值不在合理返回内
+    SNMP_MIB_VERSION_INVALIDE(563011,"Snmp version must be 2 or 3"),// version值不在合理返回内
+    SNMP_MIB_AUTH_ISNULL(561012,"Snmp auth can not be empty"),      // auth值不在合理返回内
+    SNMP_MIB_BROWSER_FAILED(560013,"Failed to execute Broswer according by oid"),
+    SNMP_MIB_BROWSER_TIMEOUT(560014,"Browse failed, response timeout"),
+    SNMP_MIB_VALUE_ISNULL(561015,"Snmp value cannot be empty when operation is set"),
 
 
     SYS_CONFIG_TYPE_ISNULL(571000,"System config type can not be null"), // sysConfig 查询type参数不能为空

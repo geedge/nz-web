@@ -25,6 +25,7 @@ class ValidateProcess {
     private final static String REGEX_AREA = "^[0-9]{2}$";
     private final static String REGEX_DATE8 = "^[0-9]{8}$";
     private final static String REGEX_IP = "(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)\\.(25[0-5]|2[0-4]\\d|[0-1]\\d{2}|[1-9]?\\d|\\*)";
+    private final static String REGEX_PORT = "^[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]{1}|6553[0-5]$";
     //private final static String REGEX_DATE = "^((\\d{2}(([02468][048])|([13579][26]))[\\-\\/\\s]?((((0?[13578])|(1[02]))[\\-\\/\\s]?((0?[1-9])|([1-2][0-9])|(3[01])))|(((0?[469])|(11))[\\-\\/\\s]?((0?[1-9])|([1-2][0-9])|(30)))|(0?2[\\-\\/\\s]?((0?[1-9])|([1-2][0-9])))))|(\\d{2}(([02468][1235679])|([13579][01345789]))[\\-\\/\\s]?((((0?[13578])|(1[02]))[\\-\\/\\s]?((0?[1-9])|([1-2][0-9])|(3[01])))|(((0?[469])|(11))[\\-\\/\\s]?((0?[1-9])|([1-2][0-9])|(30)))|(0?2[\\-\\/\\s]?((0?[1-9])|(1[0-9])|(2[0-8]))))))(\\s(((0?[0-9])|([1-2][0-3]))\\:([0-5]?[0-9])((\\s)|(\\:([0-5]?[0-9])))))?$";
     //private final static String REGEX_CHINESE = "^[\\u4e00-\\u9fa5]{1,}$";
     private final static String REGEX_ENGLISH = "^[a-zA-z]{1,}$";
@@ -333,5 +334,9 @@ class ValidateProcess {
 
     static void email(String value) {
         regex(REGEX_EMAIL, value, EmailErrorMsg + ", value:" + value);
+    }
+
+    public static void isPort(String value) {
+        regex(REGEX_PORT, value, IpErrorMsg + ", value:" + value);
     }
 }

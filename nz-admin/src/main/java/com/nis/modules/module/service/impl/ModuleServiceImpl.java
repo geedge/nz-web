@@ -115,62 +115,67 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 					throw new NZException(RCode.MODULE_SNMPVERSION_INVALID);
 				}
 
-				if (version.equals(3)) {
-					Map authInfo = JSONObject.parseObject(params.get("auth").toString(), Map.class);
+                if (version.equals(3)) {
+                    this.ValidateAuthForSnmpV3(params.get("auth").toString());
+                }
+            }
+        }
+    }
 
-					// 默认为noAuthNoPriv。可以是 noAuthNoPriv（不认证不加密），authNoPriv（认证不加密）或 authPriv（认证且加密）
-					String securityLevel = (String) authInfo.get("security_level");
+    // 当snmp版本为V3时，需要校验用户信息
+    public void ValidateAuthForSnmpV3(String auth) {
+        Map authInfo = JSONObject.parseObject(auth, Map.class);
 
-					String username = (String) authInfo.get("username");
+        // 默认为noAuthNoPriv。可以是 noAuthNoPriv（不认证不加密），authNoPriv（认证不加密）或 authPriv（认证且加密）
+        String securityLevel = (String) authInfo.get("security_level");
 
-					if (StringUtils.isEmpty(username)) {
-						throw new NZException(RCode.MODULE_USERNAME_INVALID);
-					}
+        String username = (String) authInfo.get("username");
 
-					// 不为 null 时校验参数是否正确
-					if (StringUtils.isNotEmpty(securityLevel)) {
-						String password = (String) authInfo.get("password");
+        if (StringUtils.isEmpty(username)) {
+            throw new NZException(RCode.MODULE_USERNAME_INVALID);
+        }
 
-						String privPassword = (String) authInfo.get("priv_password");
-						String privProtocol = (String) authInfo.get("priv_protocol");
-						String authProtocol = (String) authInfo.get("auth_protocol");
+        // 不为 null 时校验参数是否正确
+        if (StringUtils.isNotEmpty(securityLevel)) {
+            String password = (String) authInfo.get("password");
+
+            String privPassword = (String) authInfo.get("priv_password");
+            String privProtocol = (String) authInfo.get("priv_protocol");
+            String authProtocol = (String) authInfo.get("auth_protocol");
 
 
-						if (securityLevel.equals("authPriv")) { // 认证且加密
-							if (StringUtils.isEmpty(privPassword)) {
-								throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
-							}
-							// 不为 null 则进行枚举校验
-							if (StringUtils.isNotEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
-								throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
-							}
+            if (securityLevel.equals("authPriv")) { // 认证且加密
+                if (StringUtils.isEmpty(privPassword)) {
+                    throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
+                }
+                // 不为 null 则进行枚举校验
+                if (StringUtils.isNotEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
+                    throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
+                }
 
-							if (StringUtils.isEmpty(password)) {
-								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
-							}
-							// 不为 null 则进行枚举校验
-							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
-								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
-							}
-						} else if (securityLevel.equals("authNoPriv")) { // 认证不加密
-							if (StringUtils.isEmpty(password)) {
-								throw new NZException(RCode.MODULE_PASSWORD_INVALID);
-							}
-							// 不为 null 则进行枚举校验
-							if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
-								throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
-							}
-						} else if (securityLevel.equals("noAuthNoPriv")) {
-							// do nothhing
-						} else {
-							// 不在枚举范围内
-							throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
-						}
-					}
-				}
-			}
-		}
-	}
+                if (StringUtils.isEmpty(password)) {
+                    throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+                }
+                // 不为 null 则进行枚举校验
+                if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                    throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+                }
+            } else if (securityLevel.equals("authNoPriv")) { // 认证不加密
+                if (StringUtils.isEmpty(password)) {
+                    throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+                }
+                // 不为 null 则进行枚举校验
+                if (StringUtils.isNotEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                    throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+                }
+            } else if (securityLevel.equals("noAuthNoPriv")) {
+                // do nothhing
+            } else {
+                // 不在枚举范围内
+                throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
+            }
+        }
+    }
 
     // 根据snmp param生成
     @Override
@@ -200,7 +205,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         StringReader result = null;
         StringWriter sw = null;
         try {
-			logger.debug("Start generate snmp.yml file");
+            logger.debug("Start generate snmp.yml file");
 
             // 先设置环境变量 然后 赋可执行权限 最后 执行生成命令
             String[] envp = {"MIBDIRS=" + generatorPath + File.separator + "mibs"};

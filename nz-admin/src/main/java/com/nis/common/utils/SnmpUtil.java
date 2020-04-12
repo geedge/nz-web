@@ -1,0 +1,350 @@
+package com.nis.common.utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snmp4j.*;
+import org.snmp4j.event.ResponseEvent;
+import org.snmp4j.mp.MPv3;
+import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.security.*;
+import org.snmp4j.smi.*;
+import org.snmp4j.transport.DefaultUdpTransportMapping;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class SnmpUtil {
+
+    private static Logger logger = LoggerFactory.getLogger(SnmpUtil.class);
+
+    private static Snmp snmp = null;
+
+    // 默认版本 v2
+    public static final int DEFAULT_VERSION = SnmpConstants.version2c;
+    public static final String DEFAULT_PROTOCOL = "udp";
+    public static final long DEFAULT_TIMEOUT = 3 * 1000L;
+    public static final int DEFAULT_RETRY = 3;
+
+    // 默认团体名
+    public static final String DEFAULT_COMMUNITY = "public";
+
+    /**
+     * 获取target
+     *
+     * @param version
+     * @param community
+     * @param auth
+     * @param ip
+     * @param port
+     * @return
+     */
+    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port) {
+        Target target = null;
+        if (version == SnmpConstants.version3) {
+            // 添加用户
+            OID authProtocolOid = null;
+            String authProtocol = auth.get("authProtocol");
+            if ("MD5".equals(authProtocol.toUpperCase())) {
+                authProtocolOid = AuthMD5.ID;
+            } else if ("SHA".equals(authProtocol.toUpperCase())) {
+                authProtocolOid = AuthSHA.ID;
+            }
+
+            OID privProtocolOid = null;
+            String privProtocol = auth.get("privProtocol");
+            if ("DES".equals(privProtocol.toUpperCase())) {
+                privProtocolOid = PrivDES.ID;
+            } else if ("AES".equals(privProtocol.toUpperCase())) {
+                privProtocolOid = PrivAES128.ID;
+            }
+
+            OctetString username = new OctetString(auth.get("username"));
+            UsmUser user = new UsmUser(username, authProtocolOid, new OctetString(auth.get("privProtocol")), privProtocolOid, new OctetString(auth.get("privPassword")));
+            snmp.getUSM().addUser(username, user);
+            target = new UserTarget();
+
+            String level = auth.get("securityLevel");
+            // 设置安全级别
+            switch (level) {
+                case "authPriv": {
+                    ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_PRIV);
+                    break;
+                }
+                case "noAuthNoPriv": {
+                    ((UserTarget) target).setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
+                    break;
+                }
+                case "authNoPriv": {
+                    ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
+                    break;
+                }
+            }
+            ((UserTarget) target).setSecurityName(username);
+            target.setVersion(SnmpConstants.version3);
+        } else {
+            target = new CommunityTarget();
+            target.setVersion(SnmpConstants.version2c);
+            // 如果没有设置团体名 默认使用public
+            if (StringUtils.isEmpty(community)) {
+                community = DEFAULT_COMMUNITY;
+            }
+            ((CommunityTarget) target).setCommunity(new OctetString(community));
+        }
+        // 超时时间
+        target.setTimeout(DEFAULT_TIMEOUT);
+        // 重试次数
+        target.setRetries(DEFAULT_RETRY);
+
+        Address address = GenericAddress.parse(DEFAULT_PROTOCOL + ":" + ip + "/" + port);
+        target.setAddress(address);
+
+        return target;
+    }
+
+    /**
+     * snmpget or getnext
+     *
+     * @param ip
+     * @param port
+     * @param version
+     * @param community
+     * @param oid
+     * @param auth
+     * @param operation
+     * @return
+     * @throws IOException
+     */
+    public static List snmpGetOrGetNext(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String operation) throws IOException {
+        List<Map> list = new ArrayList<>();
+        Target target = getTatget(version, community, auth, ip, port);
+        try {
+            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+
+            // 如果是v3版本
+            if (version == SnmpConstants.version3) {
+                // 设置安全模式
+                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+                SecurityModels.getInstance().addSecurityModel(usm);
+            }
+            snmp.listen();
+
+            // 根据版本不同获取不同的pdu对象
+            PDU pdu = getPdu(version);
+            pdu.add(new VariableBinding(new OID(oid)));
+
+            if (Constant.SnmpOperationType.GET.getValue().equals(operation.toLowerCase())) {
+                pdu.setType(PDU.GET);
+            } else if (Constant.SnmpOperationType.GETNEXT.equals(operation.toLowerCase())) {
+                pdu.setType(PDU.GETNEXT);
+            }
+
+            ResponseEvent respEvent = snmp.send(pdu, target);
+            PDU response = respEvent.getResponse();
+            if (response == null) {
+                logger.error("response is null, request time out,ipAddress is {},oid is {}", ip + ":" + port, oid);
+                return null;
+            } else {
+                VariableBinding vb = null;
+                Map map;
+                for (int i = 0; i < response.size(); i++) {
+                    map = new HashMap();
+                    vb = response.get(i);
+                    map.put("oid", vb.getOid().toString());
+                    map.put("value", vb.getVariable().toString());
+                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    list.add(map);
+                }
+            }
+            logger.info("SNMP GET one OID value finished !");
+        } finally {
+            if (snmp != null) {
+                try {
+                    snmp.close();
+                } catch (IOException e) {
+                    logger.error("关闭snmp失败", e);
+                }
+            }
+            return list;
+        }
+    }
+
+    private static PDU getPdu(Integer version) {
+        if (version == SnmpConstants.version3) {
+            ScopedPDU pdu = new ScopedPDU();
+            // 如果agent上设定的contextEngineId和snmpEngineId不一致 这里需要设置引擎id
+            // pdu.setContextEngineID(new OctetString(""));
+            // 如果agent上设定了contextName 这里需要设置contextName
+            // pdu.setContextName(new OctetString(""));
+            return pdu;
+        } else {
+            PDU pdu = new PDU();
+            return pdu;
+        }
+    }
+
+    /**
+     * snmpwalk
+     *
+     * @param ip
+     * @param port
+     * @param version
+     * @param community
+     * @param oid
+     * @param auth
+     * @return
+     * @throws IOException
+     */
+    public static List<Map> snmpWalk(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth) throws IOException {
+        List<Map> resultData = new ArrayList<>();
+        Target target = getTatget(version, community, auth, ip, port);
+
+        try {
+            TransportMapping transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+
+            // 如果是v3版本
+            if (version == SnmpConstants.version3) {
+                // 设置安全模式
+                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+                SecurityModels.getInstance().addSecurityModel(usm);
+            }
+            transport.listen();
+
+            PDU pdu = getPdu(version);
+
+            OID targetOID = new OID(oid);
+            pdu.add(new VariableBinding(targetOID));
+
+            // 结束标识
+            boolean finished = false;
+
+            Map map;
+            while (!finished) {
+                VariableBinding vb = null;
+                ResponseEvent respEvent = snmp.getNext(pdu, target);
+
+                PDU response = respEvent.getResponse();
+
+                // 为空则直接结束
+                if (response == null) {
+                    finished = true;
+                    break;
+                } else {
+                    vb = response.get(0);
+                }
+
+                // 判断是否结束
+                finished = checkWalkFinished(targetOID, pdu, vb);
+                if (!finished) {
+                    pdu.setRequestID(new Integer32(0));
+                    pdu.set(0, vb);
+
+                    map = new HashMap();
+                    map.put("oid", vb.getOid().toString());
+                    map.put("value", vb.getVariable().toString());
+                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("ip", ip);
+                    map.put("port", port);
+                    resultData.add(map);
+                } else {
+                    // 获取结束
+                    snmp.close();
+                }
+            }
+        } finally {
+            if (snmp != null) {
+                try {
+                    snmp.close();
+                } catch (Exception e) {
+                    logger.error("关闭snmp失败", e);
+                }
+            }
+        }
+        return resultData;
+    }
+
+    /**
+     * 判断walk结束标识
+     *
+     * @param targetOID
+     * @param pdu
+     * @param vb
+     * @return
+     */
+    private static boolean checkWalkFinished(OID targetOID, PDU pdu, VariableBinding vb) {
+        boolean finished = false;
+        if (pdu.getErrorStatus() != 0) {
+            finished = true;
+        } else if (vb.getOid() == null) {
+            finished = true;
+        } else if (vb.getOid().size() < targetOID.size()) {
+            finished = true;
+        } else if (targetOID.leftMostCompare(targetOID.size(), vb.getOid()) != 0) {
+            finished = true;
+        } else if (Null.isExceptionSyntax(vb.getVariable().getSyntax())) {
+            finished = true;
+        } else if (vb.getOid().compareTo(targetOID) <= 0) {
+            finished = true;
+        }
+        return finished;
+    }
+
+
+    /**
+     * snmpSet
+     *
+     * @param ip
+     * @param port
+     * @param version
+     * @param community
+     * @param oid
+     * @param auth
+     * @param value
+     * @return
+     * @throws IOException
+     */
+    public static R setPDU(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String value) throws IOException {
+        try {
+            Target target = getTatget(version, community, auth, ip, port);
+
+            PDU pdu = getPdu(version);
+            pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
+            pdu.setType(PDU.SET);
+
+            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
+
+            // 如果是v3版本
+            if (version == SnmpConstants.version3) {
+                // 设置安全模式
+                USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
+                SecurityModels.getInstance().addSecurityModel(usm);
+            }
+
+            snmp.listen();
+            ResponseEvent responseEvent = snmp.send(pdu, target);
+            PDU response = responseEvent.getResponse();
+            if (response == null) {
+                logger.error("response is null, request time out,ipAddress is {},oid is {}", ip + ":" + port, oid);
+                R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
+            } else {
+                return R.ok(response.getErrorStatusText());
+            }
+        } finally {
+            if (snmp != null) {
+                try {
+                    snmp.close();
+                } catch (Exception e) {
+                    logger.error("关闭snmp失败", e);
+                }
+            }
+        }
+        return R.ok();
+    }
+}

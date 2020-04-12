@@ -210,4 +210,15 @@ public class ValidateHandler {
         }
         throw new NZException(code);
     }
+
+    public static void port(Object value, RCode code) {
+        try {
+            if (null == value) {
+                return;
+            }
+            ValidateProcess.isPort(value.toString());
+        } catch (NZException e) {
+            errorMsgHandler(e, code);
+        }
+    }
 }

@@ -312,6 +312,37 @@ public class Constant {
     }
 
 
+    public static final Integer SNMPV2 = 2;
+    public static final Integer SNMPV3 = 3;
+
+    public enum SnmpOperationType{
+        GET("get"),
+        WALK("walk"),
+        GETNEXT("getnext"),
+        SET("set");
+
+        private String value;
+        SnmpOperationType(String value){
+            this.value=value;
+        }
+
+        public static String getOperationType(String value){
+            for (SnmpOperationType type:SnmpOperationType.values()){
+                if(type.getValue().equals(value)){
+                    return type.getValue();
+                }
+            }
+            return null;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
 
     //permission type
     public static final String PM_TYPE_DETESET = "2";
