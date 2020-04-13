@@ -38,6 +38,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
@@ -279,7 +280,64 @@ public class TerminalHandler extends TextWebSocketHandler {
             		} else if(operation.equals("1B5B41")) {
             			// 上方向操作 获取用户之前保存的指令信息
             			// 获取当前字符串位置 将光标移到开头 同时清空信息 补充历史指令信息
-        				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
+            			List<String> list = TerminalSession.userInstructions.get(uuid);
+            			if(ObjectUtils.isEmpty(list)||list.size()==historyIndex) {
+            				// 用户初进入没有任何历史指令 或者历史指令已经到最后一条位置
+            				return;
+            			}
+            			String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
+        				if(historyIndex==0) {
+        					String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
+            				if(StringUtils.isEmpty(TerminalMessage)) {
+            					// 用户并无任何输入情况
+            					session.sendMessage(new TextMessage(historyInstruction));
+            				}else {
+            					int positionIndex=0;
+            					positionIndex=TerminalMessage.length();
+            					if(cursorFlag) {
+            						// 存在光标位置移动情况 将光标位置复原情况
+            						for(int i=0;i<TerminalMessage.length()-cursorIndex;i++) {
+            							byte[] fromHexAscii = ByteUtils.fromHexAscii("1B5B43");
+            							session.sendMessage(new TextMessage(fromHexAscii));
+            						}
+            					}else {
+            						// 光标未移动用户使用回退操作情况
+            						if(TerminalMessage.length()!=cursorIndex) {
+            							positionIndex=cursorIndex;
+            						}
+            					}
+            					for(int i=0;i<positionIndex-1;i++) {
+            						session.sendMessage(new TextMessage("\b"));
+            					}
+            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+            					session.sendMessage(new TextMessage(fromHexAscii));
+            					session.sendMessage(new TextMessage(historyInstruction));
+            				}
+        				}else {
+        					// 无改变--->上一条历史信息    改变---->当前指令信息
+        					String prefixInstruction = TerminalSession.getTerminalMessage(uuid);
+        					int positionIndex=0;
+        					positionIndex=prefixInstruction.length();
+        					if(cursorFlag) {
+        						// 存在光标位置移动情况 将光标位置复原情况
+        						for(int i=0;i<prefixInstruction.length()-cursorIndex;i++) {
+        							byte[] fromHexAscii = ByteUtils.fromHexAscii("1B5B43");
+        							session.sendMessage(new TextMessage(fromHexAscii));
+        						}
+        					}else {
+        						// 光标未移动用户使用回退操作情况或者用户新增输入操作
+        						if(prefixInstruction.length()!=cursorIndex) {
+        							positionIndex=cursorIndex;
+        						}
+        					}
+        					for(int i=0;i<positionIndex-1;i++) {
+        						session.sendMessage(new TextMessage("\b"));
+        					}
+        					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+        					session.sendMessage(new TextMessage(fromHexAscii));
+        					session.sendMessage(new TextMessage(historyInstruction));
+            			}
+        				/*String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
             			if(historyIndex==0) {
             				String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
             				if(StringUtils.isEmpty(TerminalMessage)) {
@@ -306,7 +364,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             					session.sendMessage(new TextMessage(historyInstruction));
             					historyIndex++;
             				}
-            			}
+            			}*/
+        				historyIndex++;
             			TerminalSession.removeTerminalMessage(uuid);
             			TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
             			cursorIndex=historyInstruction.length();
@@ -315,40 +374,58 @@ public class TerminalHandler extends TextWebSocketHandler {
             			return;
             		} else if(operation.equals("1B5B42")) {
             			// 下方向操作
-            			if(historyIndex==0) {
+            			if(historyIndex==0||historyIndex==1) {
             				return;
-            			}else{
-            				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex-1);
-            				if(StringUtils.isEmpty(historyInstruction)) {
-            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-                				for(int i=0;i<prefixInstruction.length()-1;i++) {
-            						session.sendMessage(new TextMessage("\b"));
-            					}
-            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-            					session.sendMessage(new TextMessage(fromHexAscii));
-            					String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
-            					if(StringUtils.isEmpty(TerminalMessage)) {
-            						TerminalMessage="";
-            					}
-            					session.sendMessage(new TextMessage(TerminalMessage));
-            					TerminalSession.removeTerminalMessage(uuid);
-            					TerminalSession.setTerminalMessage(uuid, TerminalMessage, null);
-            					cursorIndex=TerminalMessage.length();
-            					historyIndex--;
-            				}else {
-            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-                				for(int i=0;i<prefixInstruction.length()-1;i++) {
-            						session.sendMessage(new TextMessage("\b"));
-            					}
-            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-            					session.sendMessage(new TextMessage(fromHexAscii));
-            					session.sendMessage(new TextMessage(historyInstruction));
-            					TerminalSession.removeTerminalMessage(uuid);
-            					TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
-            					cursorIndex=historyInstruction.length();
-            					historyIndex--;
-            				}
             			}
+            			// 要回溯的历史指令
+        				String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex-1);
+        				// 当前指令信息
+        				String currentInstruction = TerminalSession.getTerminalMessage(uuid);
+        				int positionIndex=0;
+    					positionIndex=currentInstruction.length();
+        				if(cursorFlag) {
+        					// 存在光标位置移动情况 将光标位置复原情况
+    						for(int i=0;i<currentInstruction.length()-cursorIndex;i++) {
+    							byte[] fromHexAscii = ByteUtils.fromHexAscii("1B5B43");
+    							session.sendMessage(new TextMessage(fromHexAscii));
+    						}
+    						
+        				}else {
+        					if(currentInstruction.length()!=cursorIndex) {
+    							positionIndex=cursorIndex;
+    						}
+        				}
+        				for(int i=0;i<positionIndex-1;i++) {
+    						session.sendMessage(new TextMessage("\b"));
+    					}
+    					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+    					session.sendMessage(new TextMessage(fromHexAscii));
+    					session.sendMessage(new TextMessage(historyInstruction));
+        				/*if(StringUtils.isEmpty(historyInstruction)) {
+        					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+            				for(int i=0;i<prefixInstruction.length()-1;i++) {
+        						session.sendMessage(new TextMessage("\b"));
+        					}
+        					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+        					session.sendMessage(new TextMessage(fromHexAscii));
+        					String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
+        					if(StringUtils.isEmpty(TerminalMessage)) {
+        						TerminalMessage="";
+        					}
+        					session.sendMessage(new TextMessage(TerminalMessage));
+        				}else {
+        					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
+            				for(int i=0;i<prefixInstruction.length()-1;i++) {
+        						session.sendMessage(new TextMessage("\b"));
+        					}
+        					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
+        					session.sendMessage(new TextMessage(fromHexAscii));
+        					session.sendMessage(new TextMessage(historyInstruction));
+        				}*/
+            			TerminalSession.removeTerminalMessage(uuid);
+    					TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
+    					cursorIndex=historyInstruction.length();
+    					historyIndex--;
             			TerminalSession.setTerminalAttributeInfo(uuid, "cursorIndex", cursorIndex);
                         TerminalSession.setTerminalAttributeInfo(uuid, "historyIndex", historyIndex);
             			return;
@@ -771,12 +848,6 @@ public class TerminalHandler extends TextWebSocketHandler {
 			TerminalSession.remove(session);
 		}
 		
-    }
-    
-    
-    public String terminalResponseHandle(String message) {
-    	
-    	return null;
     }
 }
 

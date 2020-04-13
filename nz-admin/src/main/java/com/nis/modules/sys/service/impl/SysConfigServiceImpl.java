@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -30,6 +31,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.mail.util.MailConnectException;
 import com.sun.mail.util.MailSSLSocketFactory;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -40,14 +42,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.sun.jndi.ldap.*;
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 import java.security.GeneralSecurityException;
 import java.util.*;
@@ -278,7 +283,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                 } else if ("true".equals(ldapTest)) {
                     // 只做测试连接  不进行入库操作
-                    R r = this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"));
+                    R r = this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"),saveMap.get("ldap_ou"));
                     return r;
                 } else {
                     if (ldapEnableFlag) {
@@ -634,7 +639,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * @param password
      * @param address
      */
-    public R testConnectionLdapConfig(String dn, String password, String address) {
+    public R testConnectionLdapConfig(String dn, String password, String address, String ou) {
         InitialDirContext initialDirContext = null;
         try {
             Hashtable<String, String> environment = new Hashtable<>();
@@ -644,6 +649,29 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
             environment.put(Context.PROVIDER_URL, address);
             initialDirContext = new InitialDirContext(environment);
+            
+            // 校验ou属性
+            String[] split = dn.split(",");
+			String base = split[split.length-2]+","+split[split.length-1];
+			if(StringUtils.isNotBlank(ou)) {
+				base="ou="+ou+","+base;
+			}
+			boolean ouFlag=true;
+        	Attributes attributes = initialDirContext.getAttributes(base);
+            NamingEnumeration<String> nEnum = attributes.getIDs();  
+            for( ; nEnum.hasMore() ; ){ 
+                String attrID = nEnum.next(); 
+                Attribute attribute = attributes.get(attrID);
+                if(attribute.toString().startsWith("ou:")) {
+                	if(attribute.toString().contains(ou)) {
+                		ouFlag=false;
+                	}
+                }
+            }
+            if(ouFlag) {
+            	return R.error(RCode.SYS_CONFIG_LDAP_OU_NOT_EXIST);
+            }
+            
         } catch (AuthenticationException e) {
             // 账户类异常 造成原因： 用户名或者密码错误 也就是 dn和password
             logger.error("ldap service config connection failed : username/password wrong", e);

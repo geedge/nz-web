@@ -400,6 +400,7 @@ public class TerminalClient {
     			String data = terminalResponseHandle(serverResponse);
     			TerminalSession.setTerminalMessage(clientId, data, cursorIndex);
     			cursorIndex+=data.length();
+    			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
     		}else if(message.getPayload().equals("\r")) {
     			// 服务器执行完命令 保存日志
     			if(!telnetConnect) {
@@ -417,9 +418,11 @@ public class TerminalClient {
     			}
     		}else if(message.asBytes()[0]==127) {
     			// 处理用户删除退格操作
-    			TerminalSession.backspaceMessage(clientId,cursorIndex);
-    			cursorIndex--;
-    			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    			boolean flag = TerminalSession.backspaceMessage(clientId,cursorIndex);
+    			if(flag) {
+    				cursorIndex--;
+        			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    			}
     		}else{
     			TerminalSession.setTerminalMessage(clientId, message.getPayload(), cursorIndex);
         		cursorIndex++;
