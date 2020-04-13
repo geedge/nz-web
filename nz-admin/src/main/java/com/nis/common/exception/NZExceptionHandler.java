@@ -59,6 +59,6 @@ public class NZExceptionHandler {
 	@ResponseStatus(value=HttpStatus.INTERNAL_SERVER_ERROR)
 	public R handleException(Exception e){
 		logger.error(e.getMessage(), e);
-		return R.error().put("msg", e);
+		return R.error().put("msg", e.getMessage());
 	}
 }

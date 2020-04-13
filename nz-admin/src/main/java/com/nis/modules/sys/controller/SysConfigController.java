@@ -12,10 +12,7 @@ package com.nis.modules.sys.controller;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.common.validator.ValidatorUtils;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
@@ -36,7 +33,7 @@ import java.util.Set;
 public class SysConfigController extends AbstractController {
 	@Autowired
 	private SysConfigService sysConfigService;
-	
+
 	/**
 	 * 所有配置列表
 	 */
@@ -47,8 +44,8 @@ public class SysConfigController extends AbstractController {
 
 		return R.ok().put("page", page);
 	}
-	
-	
+
+
 	/**
 	 * 配置信息
 	 */
@@ -57,10 +54,10 @@ public class SysConfigController extends AbstractController {
 	@ResponseBody
 	public R info(@PathVariable("id") Long id){
 		SysConfigEntity config = sysConfigService.getById(id);
-		
+
 		return R.ok().put("config", config);
 	}
-	
+
 	/**
 	 * 保存配置
 	 */
@@ -71,10 +68,10 @@ public class SysConfigController extends AbstractController {
 		ValidatorUtils.validateEntity(config);
 
 		sysConfigService.saveConfig(config);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 修改配置
 	 */
@@ -83,12 +80,12 @@ public class SysConfigController extends AbstractController {
 	@RequiresPermissions("sys:config:update")
 	public R update(@RequestBody SysConfigEntity config){
 		ValidatorUtils.validateEntity(config);
-		
+
 		sysConfigService.update(config);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 删除配置
 	 */
@@ -97,7 +94,7 @@ public class SysConfigController extends AbstractController {
 	@RequiresPermissions("sys:config:delete")
 	public R delete(@RequestBody Long[] ids){
 		sysConfigService.deleteBatch(ids);
-		
+
 		return R.ok();
 	}
 
@@ -108,6 +105,7 @@ public class SysConfigController extends AbstractController {
      * @return
      */
     @GetMapping
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
     public R getConfigList(String[] type, String[] paramKey) {
     	// 查询参数不能同时为空
 		if((type == null || type.length == 0) && (paramKey == null || paramKey.length == 0)){
@@ -137,6 +135,7 @@ public class SysConfigController extends AbstractController {
      * @return
      */
     @PutMapping
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
     public R updateConfig(@RequestBody Map<String, Object> param) {
         ValidateUtils.is(param).notNull(RCode.SYS_CONFIG_SAVEENTITY_ISNULL);
 
@@ -161,6 +160,7 @@ public class SysConfigController extends AbstractController {
 	 * @return
 	 */
 	@PutMapping("/reset")
+	@SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYSTEM)
 	public R resetConfig(@RequestBody Map<String, Object> param) throws Exception{
 		try {
 			sysConfigService.resetConfig(param);

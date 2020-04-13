@@ -16,6 +16,7 @@ import com.nis.modules.sys.service.SysLogService;
 import com.nis.common.utils.HttpContextUtils;
 import com.nis.common.utils.IPUtils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -37,6 +38,7 @@ import java.util.Date;
  */
 @Aspect
 @Component
+@Slf4j
 public class SysLogAspect {
 	@Autowired
 	private SysLogService sysLogService;
@@ -50,7 +52,14 @@ public class SysLogAspect {
 	public Object around(ProceedingJoinPoint point) throws Throwable {
 		long beginTime = System.currentTimeMillis();
 		//执行方法
-		Object result = point.proceed();
+		Object result = new Object();
+		try {
+			 result = point.proceed();
+		}catch (Exception e){
+			log.error("日志记录错误",e.getMessage());
+			result = R.error().put("msg",e.getMessage());
+		}
+
 		//执行时长(毫秒)
 		long time = System.currentTimeMillis() - beginTime;
 

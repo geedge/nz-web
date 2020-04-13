@@ -19,7 +19,8 @@ public enum TypeEnum {
     MODEL("model"),
     PROMSERVER("promServer"),
     ACCOUNT("account"),
-    MIB("mib");
+    MIB("mib"),
+    SYSTEM("system");
 
     private String value;
 

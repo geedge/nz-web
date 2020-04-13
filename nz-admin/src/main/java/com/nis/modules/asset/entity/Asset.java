@@ -1,8 +1,6 @@
 package com.nis.modules.asset.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldStrategy;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
@@ -26,6 +24,7 @@ public class Asset implements Serializable {
     /**
      * 主键
      */
+    @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**

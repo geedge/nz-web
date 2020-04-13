@@ -45,6 +45,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @GetMapping
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MIB)
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = snmpMibService.queryPage(params);
         return R.ok(page);

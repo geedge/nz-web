@@ -11,6 +11,7 @@ public enum OperationEnum {
     IMPORT("import"),
     EXPORT("export"),
     DELETE("delete"),
+    RESET("reset"),
     UNKNOWN("unknown");
 
 
