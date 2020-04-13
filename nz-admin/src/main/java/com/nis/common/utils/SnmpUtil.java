@@ -334,7 +334,28 @@ public class SnmpUtil {
                 logger.error("response is null, request time out,ipAddress is {},oid is {}", ip + ":" + port, oid);
                 R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
             } else {
-                return R.ok(response.getErrorStatusText());
+                int errorIndex = response.getErrorIndex();
+                if(errorIndex != 0){
+                    int errorStatus = response.getErrorStatus();
+                    switch(errorStatus){
+                        case 1:{
+                            return R.error(RCode.SNMP_MIB_TOOBIG);
+                        }
+                        case 2:{
+                            return R.error(RCode.SNMP_MIB_NOSUCHNAME);
+                        }
+                        case 3:{
+                            return R.error(RCode.SNMP_MIB_BADVALUE);
+                        }
+                        case 4:{
+                            return R.error(RCode.SNMP_MIB_READONLY);
+                        }
+                        case 6:{
+                            return R.error(RCode.SNMP_MIB_NOACCESS);
+                        }
+                    }
+                }
+                return R.ok();
             }
         } finally {
             if (snmp != null) {

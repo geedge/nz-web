@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -231,7 +232,9 @@ public class SnmpMibController extends AbstractController {
             return R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
         }
 
-        return R.ok(resultData);
+        Map map = new HashMap();
+        map.put("list", resultData);
+        return R.ok(map);
     }
 
 }

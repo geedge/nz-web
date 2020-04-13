@@ -299,6 +299,11 @@ public enum RCode {
     SNMP_MIB_BROWSER_FAILED(560013,"Failed to execute Broswer according by oid"),
     SNMP_MIB_BROWSER_TIMEOUT(560014,"Browse failed, response timeout"),
     SNMP_MIB_VALUE_ISNULL(561015,"Snmp value cannot be empty when operation is set"),
+    SNMP_MIB_TOOBIG(560016,"PDU encoding is too big for the transport used."),
+    SNMP_MIB_NOSUCHNAME(560017,"No such variable binding name."),
+    SNMP_MIB_BADVALUE(560018,"Bad value in variable binding"),
+    SNMP_MIB_READONLY(560019,"The variable binding is read-only"),
+    SNMP_MIB_NOACCESS(560020,"The variable binding is not accessible by the current MIB view,No assess"),
 
 
     SYS_CONFIG_TYPE_ISNULL(571000,"System config type can not be null"), // sysConfig 查询type参数不能为空
