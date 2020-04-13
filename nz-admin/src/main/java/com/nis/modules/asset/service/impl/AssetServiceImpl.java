@@ -173,10 +173,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         List<Asset> assetEntities = assetDao.queryList(page, params);
         String ipmi = null;
+        Integer cabinetEnd;
         for (Asset asset : assetEntities) {
             ipmi = (String) asset.getIpmi();
             if (StringUtils.isNotEmpty(ipmi)) {
                 asset.setIpmi(JSONObject.parseObject(ipmi, Map.class));
+            }
+            cabinetEnd = asset.getCabinetEnd();
+            if (ToolUtil.isNotEmpty(cabinetEnd)) {
+                asset.setCabinetEnd(cabinetEnd - 1);
             }
         }
         page.setRecords(assetEntities);
