@@ -160,6 +160,7 @@
         mo.id,
         mo.name,
         mo.remark,
+        mo.usize,
 
         /*厂商*/
         dict.id AS vendorId,

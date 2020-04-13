@@ -105,6 +105,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 break;
             }
         }
+        String param;
+        for (Chart chart : resultList) {
+            param = (String) chart.getParam();
+            if(StringUtils.isNotEmpty(param)){
+                chart.setParam(JSONObject.parseObject(param, Map.class));
+            }
+        }
         return resultList;
     }
 
