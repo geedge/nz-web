@@ -353,6 +353,7 @@ public enum RCode {
     SYS_CONFIG_TIMEZONE_INVALIDE(573049,"System config timezone should be an integer"),             // timezone参数与要求不符合
     SYS_CONFIG_TIMEZONE_INTERVAL(575050,"The interval value of timezone is between -12 and +12"),  // timezone 区间值为-12至+12之间
     SYS_CONFIG_DEFALUTCABINETU_INTERVAL(573051,"System config default cabinet usize is invalide"), // 配置表中机柜默认值有误
+    SYS_CONFIG_LDAP_OU_NOT_EXIST(570052,"Ldap ou not exist"),                                      // ldap连接ou不存在
 
 
 
