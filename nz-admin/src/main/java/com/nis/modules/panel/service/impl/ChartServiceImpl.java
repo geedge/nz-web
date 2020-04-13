@@ -109,6 +109,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveChart(Chart chart) {
 
         // 保存chart信息
@@ -132,10 +133,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             this.updateById(endChart);
         }
         // 保存chart elements信息
-        for (ChartElement element : chart.getElements()) {
-            element.setChartId(chart.getId());
+        if(CollectionUtils.isNotEmpty(chart.getElements())){
+            for (ChartElement element : chart.getElements()) {
+                element.setChartId(chart.getId());
+            }
+            chartElementService.saveBatch(chart.getElements());
         }
-        chartElementService.saveBatch(chart.getElements());
     }
 
     @Override
@@ -217,8 +220,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             }
             String strParam = JSONObject.toJSONString(param);
             chart.setParam(strParam);
+
+            chart.setElements(null);
         }else{
             chart.setParam(null);
+
+            // url 类型不需要校验 elements
+            ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
+            chartElementService.validateElements(chart.getId(), chart.getElements());
         }
 
         // 同一个panel 下 chart title 保证唯一
@@ -233,11 +242,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (!flag) {
             throw new NZException(RCode.CHART_TITLE_DUPLICATE);
         }
-
-        ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
-
-        chartElementService.validateElements(chart.getId(), chart.getElements());
-
     }
 
     private void validateChartExists(Integer panelId, Integer id) {
