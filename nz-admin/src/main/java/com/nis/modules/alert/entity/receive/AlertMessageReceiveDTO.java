@@ -38,7 +38,7 @@ public class AlertMessageReceiveDTO implements Serializable {
         List<AlertMessageEntity> list = new ArrayList<>();
         for (AlertMessageReceiveDTO entity : entities) {
             // list.add(toAlertMessageEntity(entity));
-            list.add(toAlertMessageEntity(entity, null));
+            list.add(toAlertMessageEntity(entity));
         }
         return list;
     }
@@ -70,7 +70,7 @@ public class AlertMessageReceiveDTO implements Serializable {
         return entity;
     }*/
 
-    public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto, Map<String, Integer> assetIpWithId) throws ParseException {
+    public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto) throws ParseException {
         AlertMessageEntity entity = new AlertMessageEntity();
         //取出labels，计算hash，查询redis看是否有重复
         Map receiveLabels = dto.getLabels();
@@ -111,7 +111,7 @@ public class AlertMessageReceiveDTO implements Serializable {
             // 内置
             entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
             entity.setSeverity((String) receiveLabels.get("severity"));
-            entity.setHost(receiveLabels.get("asset").toString().trim());
+            //entity.setHost(receiveLabels.get("asset").toString().trim());
             //entity.setType(Constant.AlertType.ALERT_TYPE_ASSET.getCode());
             //entity.setLinkId(assetIpWithId.get(receiveLabels.get("asset").toString().trim()));
         } else {
@@ -119,7 +119,7 @@ public class AlertMessageReceiveDTO implements Serializable {
             // 非内置
             entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
             entity.setSeverity((String) receiveLabels.get("severity"));
-            entity.setHost(((String) receiveLabels.get("asset")));
+            //entity.setHost(((String) receiveLabels.get("asset")));
             //entity.setType(Integer.parseInt((String) receiveLabels.get("type")));
             //entity.setLinkId(Integer.parseInt((String) receiveLabels.get("linkId")));
         }

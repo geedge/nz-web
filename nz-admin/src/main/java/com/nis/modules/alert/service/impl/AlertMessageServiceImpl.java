@@ -43,6 +43,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.shiro.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -230,19 +232,19 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			public Object doInRedis(RedisConnection redis) throws DataAccessException {
 
 			    // 获取当前asset集合 并将ip 与 id 抽出来， 在收集snmptrap信息时需要使用
- 				List<Asset> assetList = assetService.list();
+ 				/*List<Asset> assetList = assetService.list();
 				Map<String,Integer> assetIpWithId = new HashMap<>();
 				if(CollectionUtils.isNotEmpty(assetList)){
                     for (Asset asset : assetList) {
                         assetIpWithId.put(asset.getHost(), asset.getId());
                     }
-				}
+				}*/
 
 				for (AlertMessageReceiveDTO dto : receiveData) {
 					try{
 						getReceiveLabels(dto);
 //						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
-                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, assetIpWithId);
+                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
 						ruleIds.add(entity.getRuleId());
 
 						// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
@@ -479,6 +481,24 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void updateAlertStateByIds(Map<String, Object> params) {
+		// 当前时间
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String formatDate = df.format(new Date());
+		// 当前用户
+		SysUserEntity user = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
+
+		String remark = (String) params.get("remark");
+		remark = formatDate + "  " + user.getUsername() + "  " + remark;
+		params.put("remark", remark);
+
+		String ids = (String) params.get("ids");
+		List<String> idList = Arrays.asList(ids.split(","));
+
+		alertMessageDao.updateAlertStateByIds(idList, params);
 	}
 
 	/**

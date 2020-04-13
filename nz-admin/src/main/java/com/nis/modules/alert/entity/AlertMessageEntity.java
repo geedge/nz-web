@@ -50,7 +50,7 @@ public class AlertMessageEntity implements Serializable {
 	/**
 	 * 告警主机ip
 	 */
-	private String host;
+	// private String host;
 	/**
 	 * 告警主机对象
 	 */
@@ -109,6 +109,11 @@ public class AlertMessageEntity implements Serializable {
 	 * redis hash key
 	 * */
 	private String hashKey;
+
+	/**
+	 * remark 修改时使用此参数 记录手动关闭的备注信息
+	 */
+	private String remark;
 
 	/**
 	 * linkId对应实体类

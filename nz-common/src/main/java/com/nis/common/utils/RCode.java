@@ -185,6 +185,7 @@ public enum RCode {
     ALERTMSG_PARSE_ERROR(413003, "Data parse error"),       //告警信息解析失败
     ALERTMSG_SAVE_ERROR(413004, "Data save faild"),         //告警信息解析失败
     ALERTMSG_TOPN_ISNULL(411005, "TopN is required"),        //告警信息topn不能为空
+    ALERTMSG_REMARK_ISNULL(411006, "Remark is required"),    //告警信息topn不能为空
 
 
     ALERTRULE_ID_ISNULL(421000, "ID is required"), //告警规则ID不能为空

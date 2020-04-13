@@ -36,5 +36,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	void removeByProjectIds(List ids);
 
     void export(HttpServletResponse response, Map<String, Object> params);
+
+    void updateAlertStateByIds(Map<String, Object> params);
 }
 

@@ -1,23 +1,18 @@
 package com.nis.modules.alert.controller;
 
-import java.util.Arrays;
-import java.util.Map;
-
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.nis.modules.alert.service.AlertMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.common.smartvalidate.ValidateUtils;
-
 import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.Map;
 
 
 /**
@@ -55,7 +50,7 @@ public class AlertMessageController {
     /**
      * 修改
      */
-    @RequestMapping( method = RequestMethod.PUT)
+    /*@RequestMapping( method = RequestMethod.PUT)
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
     public R update(@RequestBody AlertMessageEntity alertMessage) {
     	ValidateUtils.is(alertMessage.getIds()).notNull(RCode.ALERTMSG_IDS_ISNULL)
@@ -67,6 +62,24 @@ public class AlertMessageController {
     	alertMessageService.updateByIds(alertMessage);
 
         return R.ok();
+    }*/
+
+
+	@RequestMapping( method = RequestMethod.PUT)
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
+    public R update(@RequestBody Map<String, Object> params) {
+		ValidateUtils.is(params.get("ids")).notNull(RCode.ALERTMSG_IDS_ISNULL)
+				.and(params.get("state")).notNull(RCode.ALERTMSG_STATE_ISNULL)
+				.and(params.get("remark")).notNull(RCode.ALERTMSG_REMARK_ISNULL);
+
+		//校验state合法性
+		Integer state = (Integer) params.get("state");
+		if (!Constant.ALERTMESSAGE_STATE.contains(state)) {
+			throw new NZException(RCode.ALERTMSG_STATE_INCORRECT);
+		}
+
+		alertMessageService.updateAlertStateByIds(params);
+    	return R.ok();
     }
 
     /**
