@@ -206,21 +206,17 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         // 当type为url时 ， param不能为空，且格式为json
         if ("url".equals(type)) {
-            String param = chart.getParam();
+            Map param = (Map) chart.getParam();
             ValidateUtils.is(param).notNull(RCode.CHART_PARAM_ISNULL);
-            Map map = new HashMap();
-            try {
-                map = JSONObject.parseObject(param, Map.class);
-            } catch (Exception e) {
-                throw new NZException(RCode.CHART_PARAM_FORMAT);
-            }
-            Object url = map.get("url");
+            Object url = param.get("url");
             if (url == null) {
                 throw new NZException(RCode.CHART_PARAMURL_ISNULL);
             }
             if (!CommonUtils.checkUrl(url.toString())) {
                 throw new NZException(RCode.CHART_PARAMURL_FORMAT);
             }
+            String strParam = JSONObject.toJSONString(param);
+            chart.setParam(strParam);
         }else{
             chart.setParam(null);
         }

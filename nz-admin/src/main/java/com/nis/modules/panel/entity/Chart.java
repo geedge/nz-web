@@ -57,7 +57,7 @@ public class Chart {
      * 参数
      */
     @TableField(strategy = FieldStrategy.IGNORED)
-    private String param;
+    private Object param;
 
     @TableField(exist = false)
     private List<ChartElement> elements;
