@@ -384,17 +384,31 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         // 取出改panel下所有的charts
         List<Chart> chartList = this.list(new QueryWrapper<Chart>().eq("panel_id", panelId).orderByAsc("prev"));
 
+        String str;
+        for (Chart entity : chartList) {
+            str = (String) entity.getParam();
+            if (StringUtils.isNotEmpty(str)) {
+                entity.setParam(str);
+            }
+        }
+
+        Map<Integer, Chart> idAndChartMap = new HashMap<>();
+        for (Chart chart1 : chartList) {
+            idAndChartMap.put(chart1.getId(), chart1);
+        }
+
+        Chart oldEntity = idAndChartMap.get(chart.getId());
+        String param = (String) oldEntity.getParam();
+        if(param != null){
+            chart.setParam(param);
+        }
+
         // 就只有一个图表 不让其调整位置
         if (chartList.size() == 1) {
             chart.setPrev(0);
             chart.setNext(-1);
             this.updateById(chart);
             return;
-        }
-
-        Map<Integer, Chart> idAndChartMap = new HashMap<>();
-        for (Chart chart1 : chartList) {
-            idAndChartMap.put(chart1.getId(), chart1);
         }
 
         Chart oldChart = idAndChartMap.get(chart.getId());
