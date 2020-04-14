@@ -140,15 +140,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             this.updateById(endChart);
         }
         // 保存chart elements信息
-        if(CollectionUtils.isNotEmpty(chart.getElements())){
-            for (ChartElement element : chart.getElements()) {
-                element.setChartId(chart.getId());
-            }
-            chartElementService.saveBatch(chart.getElements());
+        for (ChartElement element : chart.getElements()) {
+            element.setChartId(chart.getId());
         }
+        chartElementService.saveBatch(chart.getElements());
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateChart(Chart chart) {
         Integer prev = chart.getPrev();
         Integer next = chart.getNext();
@@ -228,8 +227,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             String strParam = JSONObject.toJSONString(param);
             chart.setParam(strParam);
 
-            chart.setElements(null);
-        }else{
+            chart.setElements(new ArrayList<>());
+        } else {
             chart.setParam(null);
 
             // url 类型不需要校验 elements
@@ -319,6 +318,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             // 剩余一个
             if (deletedChartList.size() == 1) {
                 firstChart.setNext(-1);
+                Object param = firstChart.getParam();
+                if (param != null) {
+                    firstChart.setParam(JSONObject.toJSONString(param));
+                }
                 this.updateById(firstChart);
             } else {
                 // 剩余数量大于 1
@@ -341,6 +344,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     }
                 }
                 updateCharts.get(updateCharts.size() - 1).setNext(-1);
+                Object param;
+                for (Chart chart : updateCharts) {
+                    param = chart.getParam();
+                    if (param != null) {
+                        chart.setParam(JSONObject.toJSONString(param));
+                    }
+                }
                 this.saveOrUpdateBatch(updateCharts);
             }
         }
