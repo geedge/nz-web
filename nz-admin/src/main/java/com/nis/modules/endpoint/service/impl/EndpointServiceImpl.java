@@ -142,10 +142,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		ValidateUtils.is(endpointEntity.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
 		ValidateUtils.is(endpointEntity.getPort()).notNull(RCode.ENDPOINT_PORT_ISNULL);
 		Module module = moduleService.getById(endpointEntity.getModuleId());
-		// 当module的类型为http时校验path参数
-		if(module.getType().equals(Constant.MODULE_TYPE_HTTP)) {
+		
+		/*if(module.getType().equals(Constant.MODULE_TYPE_HTTP)) {
 			ValidateUtils.is(endpointEntity.getPath()).notNull(RCode.ENDPOINT_PATH_ISNULL);
-		}
+		}*/
+		
 	}
 
 	@Override
