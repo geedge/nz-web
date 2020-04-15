@@ -46,12 +46,12 @@ public class SysMenuController extends AbstractController {
 		List<SysMenuEntity> menuList = sysMenuService.getUserMenuList(getUserId());
 		return R.ok().put("menuList", menuList);
 	}
-	
+
 	/**
 	 * 所有菜单列表
 	 */
 	@RequestMapping("/list")
-	@RequiresPermissions("sys:menu:list")
+	//@RequiresPermissions("sys:menu:list")
 	public List<SysMenuEntity> list(){
 		List<SysMenuEntity> menuList = sysMenuService.list();
 		for(SysMenuEntity sysMenuEntity : menuList){
@@ -63,16 +63,16 @@ public class SysMenuController extends AbstractController {
 
 		return menuList;
 	}
-	
+
 	/**
 	 * 选择菜单(添加、修改菜单)
 	 */
 	@RequestMapping("/select")
-	@RequiresPermissions("sys:menu:select")
+	//@RequiresPermissions("sys:menu:select")
 	public R select(){
 		//查询列表数据
 		List<SysMenuEntity> menuList = sysMenuService.queryNotButtonList();
-		
+
 		//添加顶级菜单
 		SysMenuEntity root = new SysMenuEntity();
 		root.setMenuId(0L);
@@ -80,53 +80,53 @@ public class SysMenuController extends AbstractController {
 		root.setParentId(-1L);
 		root.setOpen(true);
 		menuList.add(root);
-		
+
 		return R.ok().put("menuList", menuList);
 	}
-	
+
 	/**
 	 * 菜单信息
 	 */
 	@RequestMapping("/info/{menuId}")
-	@RequiresPermissions("sys:menu:info")
+	//@RequiresPermissions("sys:menu:info")
 	public R info(@PathVariable("menuId") Long menuId){
 		SysMenuEntity menu = sysMenuService.getById(menuId);
 		return R.ok().put("menu", menu);
 	}
-	
+
 	/**
 	 * 保存
 	 */
 	@RequestMapping("/save")
-	@RequiresPermissions("sys:menu:save")
+	//@RequiresPermissions("sys:menu:save")
 	public R save(@RequestBody SysMenuEntity menu){
 		//数据校验
 		verifyForm(menu);
-		
+
 		sysMenuService.save(menu);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 修改
 	 */
 	@RequestMapping("/update")
-	@RequiresPermissions("sys:menu:update")
+	//@RequiresPermissions("sys:menu:update")
 	public R update(@RequestBody SysMenuEntity menu){
 		//数据校验
 		verifyForm(menu);
-				
+
 		sysMenuService.updateById(menu);
-		
+
 		return R.ok();
 	}
-	
+
 	/**
 	 * 删除
 	 */
 	@RequestMapping("/delete")
-	@RequiresPermissions("sys:menu:delete")
+	//@RequiresPermissions("sys:menu:delete")
 	public R delete(long menuId){
 		if(menuId <= 31){
 			throw new NZException(RCode.SYS_MENU_SYSMENUDEL);
@@ -142,7 +142,7 @@ public class SysMenuController extends AbstractController {
 
 		return R.ok();
 	}
-	
+
 	/**
 	 * 验证参数是否正确
 	 */
@@ -150,25 +150,25 @@ public class SysMenuController extends AbstractController {
 		if(StringUtils.isBlank(menu.getName())){
 			throw new NZException("菜单名称不能为空");
 		}
-		
+
 		if(menu.getParentId() == null){
 			throw new NZException("上级菜单不能为空");
 		}
-		
+
 		//菜单
 		if(menu.getType() == Constant.MenuType.MENU.getValue()){
 			if(StringUtils.isBlank(menu.getUrl())){
 				throw new NZException("菜单URL不能为空");
 			}
 		}
-		
+
 		//上级菜单类型
 		int parentType = Constant.MenuType.CATALOG.getValue();
 		if(menu.getParentId() != 0){
 			SysMenuEntity parentMenu = sysMenuService.getById(menu.getParentId());
 			parentType = parentMenu.getType();
 		}
-		
+
 		//目录、菜单
 		if(menu.getType() == Constant.MenuType.CATALOG.getValue() ||
 				menu.getType() == Constant.MenuType.MENU.getValue()){
@@ -177,7 +177,7 @@ public class SysMenuController extends AbstractController {
 			}
 			return ;
 		}
-		
+
 		//按钮
 		if(menu.getType() == Constant.MenuType.BUTTON.getValue()){
 			if(parentType != Constant.MenuType.MENU.getValue()){

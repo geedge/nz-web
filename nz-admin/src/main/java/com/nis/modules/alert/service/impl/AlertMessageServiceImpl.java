@@ -94,7 +94,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private SysConfigService configService;
 
 	private static Gson gson = new Gson();
-	
+
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
     	try {

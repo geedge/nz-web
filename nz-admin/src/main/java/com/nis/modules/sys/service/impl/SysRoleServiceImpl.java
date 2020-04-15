@@ -9,11 +9,13 @@
 package com.nis.modules.sys.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.annotation.DataFilter;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.service.*;
@@ -49,8 +51,8 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
 		IPage<SysRoleEntity> page = this.page(
 			new Query<SysRoleEntity>().getPage(params),
-			new QueryWrapper<SysRoleEntity>()
-				.like(StringUtils.isNotBlank(roleName),"role_name", roleName)
+			new LambdaUpdateWrapper<SysRoleEntity>()
+				.like(ToolUtil.isNotEmpty(roleName),SysRoleEntity::getRoleName, roleName)
 				.apply(params.get(Constant.SQL_FILTER) != null, (String)params.get(Constant.SQL_FILTER))
 		);
 

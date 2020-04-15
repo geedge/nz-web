@@ -117,7 +117,7 @@
 			#{id}
 		</foreach>
     </delete>-->
-    
+
     <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
     	select count(*) total,severity
     	from alert_message
@@ -186,9 +186,14 @@
 		<if test="params.labels!=null and params.labels!='' ">
 			and am.labels like concat('%',#{params.labels},'%')
 		</if>
-		<if test="params.state != null and params.state != ''">
-			AND am.state = #{params.state}
-		</if>
+		<choose>
+			<when test="params.state != null ">
+				AND am.state=#{params.state}
+			</when>
+			<otherwise>
+				AND am.state=1
+			</otherwise>
+		</choose>
 		<if test="params.startAt != null and params.startAt != ''">
 			AND am.start_at = #{params.startAt}
 		</if>

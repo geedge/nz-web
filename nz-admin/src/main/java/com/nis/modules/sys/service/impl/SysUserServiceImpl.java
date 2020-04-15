@@ -9,11 +9,14 @@
 package com.nis.modules.sys.service.impl;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Query;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserRoleService;
@@ -55,8 +58,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		IPage<SysUserEntity> page = this.page(
 			new Query<SysUserEntity>().getPage(params),
-			new QueryWrapper<SysUserEntity>()
-				.like(StringUtils.isNotBlank(username),"username", username)
+			new LambdaQueryWrapper<SysUserEntity>()
+				.like(StringUtils.isNotBlank(username),SysUserEntity::getUsername, username)
 				.apply(params.get(Constant.SQL_FILTER) != null, (String)params.get(Constant.SQL_FILTER))
 		);
 
@@ -77,7 +80,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		user.setSalt(salt);
 		user.setPassword(ShiroUtils.sha256(user.getPassword(), user.getSalt()));
 		this.save(user);
-		
+
 		//保存用户与角色关系
 //		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIdList());
 	}
@@ -92,7 +95,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			user.setPassword(ShiroUtils.sha256(user.getPassword(), userEntity.getSalt()));
 		}
 		this.updateById(user);
-		
+
 		//保存用户与角色关系
 //		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIdList());
 	}
@@ -103,16 +106,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         SysUserEntity userEntity = new SysUserEntity();
         userEntity.setPassword(newPassword);
         return this.update(userEntity,
-        	new QueryWrapper<SysUserEntity>().eq("user_id", userId).eq("password", password));
+        	new LambdaUpdateWrapper<SysUserEntity>()
+					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getUserId, userId)
+					.eq(ToolUtil.isNotEmpty(password),SysUserEntity::getPassword, password));
     }
 
 	@Override
 	public boolean checkName(SysUserEntity user) {
-		List<SysUserEntity> list = this.list(new QueryWrapper<SysUserEntity>()
-				.eq(true, "username", user.getUsername())
-				.eq(true, "status", 1));
+		List<SysUserEntity> list = this.list(new LambdaUpdateWrapper<SysUserEntity>()
+				.eq(ToolUtil.isNotEmpty(user.getUsername()), SysUserEntity::getUsername, user.getUsername())
+				.eq(ToolUtil.isNotEmpty(user.getStatus()), SysUserEntity::getStatus, 1));
 		boolean dumpFlag = true; //是否名称重复，true为重复
-		
+
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if ((list == null || list.size() == 0) ||
 					(list.size() == 1 && list.get(0).getUserId().longValue() == user.getUserId().longValue())) {
