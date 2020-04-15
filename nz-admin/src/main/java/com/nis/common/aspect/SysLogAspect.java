@@ -104,9 +104,9 @@ public class SysLogAspect {
 		//请求的参数
 		Object[] args = joinPoint.getArgs();
 		// 获取请求参数名
-		Class clazz = args[0].getClass();
 		String oera_id = null;
 		if("add".equals(syslog.operation().getValue())||"update".equals(syslog.operation().getValue())){
+			Class clazz = args[0].getClass();
 			Field[] fields = clazz.getDeclaredFields();
 			for (Field field: fields){
 				Boolean isId = field.isAnnotationPresent(TableId.class);
