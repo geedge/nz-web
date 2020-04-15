@@ -1,5 +1,6 @@
 package com.nis.common.utils;
 
+import com.nis.common.exception.NZException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.*;
@@ -25,7 +26,7 @@ public class SnmpUtil {
     // 默认版本 v2
     public static final int DEFAULT_VERSION = SnmpConstants.version2c;
     public static final String DEFAULT_PROTOCOL = "udp";
-    public static final long DEFAULT_TIMEOUT = 3 * 1000L;
+    public static final long DEFAULT_TIMEOUT = 1000L;
     public static final int DEFAULT_RETRY = 3;
 
     // 默认团体名
@@ -47,39 +48,55 @@ public class SnmpUtil {
             // 添加用户
             OID authProtocolOid = null;
             String authProtocol = auth.get("authProtocol");
-            if ("MD5".equals(authProtocol.toUpperCase())) {
+            if ("MD5".equals(authProtocol)) {
                 authProtocolOid = AuthMD5.ID;
-            } else if ("SHA".equals(authProtocol.toUpperCase())) {
+            } else if ("SHA".equals(authProtocol)) {
                 authProtocolOid = AuthSHA.ID;
             }
 
             OID privProtocolOid = null;
             String privProtocol = auth.get("privProtocol");
-            if ("DES".equals(privProtocol.toUpperCase())) {
+            if ("DES".equals(privProtocol)) {
                 privProtocolOid = PrivDES.ID;
-            } else if ("AES".equals(privProtocol.toUpperCase())) {
+            } else if ("AES".equals(privProtocol)) {
                 privProtocolOid = PrivAES128.ID;
             }
 
+            String privPassword = auth.get("privPassword");
+            OctetString octetPrivPassword = null;
+            if(StringUtils.isNotEmpty(privPassword)){
+                octetPrivPassword = new OctetString(privPassword);
+            }
+
+            String password = auth.get("assword");
+            OctetString octetpassword = null;
+            if(StringUtils.isNotEmpty(password)){
+                octetpassword = new OctetString(password);
+            }
+
             OctetString username = new OctetString(auth.get("username"));
-            UsmUser user = new UsmUser(username, authProtocolOid, new OctetString(auth.get("privProtocol")), privProtocolOid, new OctetString(auth.get("privPassword")));
+            UsmUser user = new UsmUser(username, authProtocolOid, octetpassword, privProtocolOid, octetPrivPassword);
             snmp.getUSM().addUser(username, user);
+//            snmp.getUSM().addUser(user);
             target = new UserTarget();
 
             String level = auth.get("securityLevel");
-            // 设置安全级别
-            switch (level) {
-                case "authPriv": {
-                    ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_PRIV);
-                    break;
-                }
-                case "noAuthNoPriv": {
-                    ((UserTarget) target).setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
-                    break;
-                }
-                case "authNoPriv": {
-                    ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
-                    break;
+            // 不为空时设置安全级别 如果为空则不处理 默认的安全级别为noAuthNoPriv 不认证不加密
+            if(StringUtils.isNotEmpty(level)){
+                // 设置安全级别
+                switch (level) {
+                    case "authPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_PRIV);
+                        break;
+                    }
+                    case "noAuthNoPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.NOAUTH_NOPRIV);
+                        break;
+                    }
+                    case "authNoPriv": {
+                        ((UserTarget) target).setSecurityLevel(SecurityLevel.AUTH_NOPRIV);
+                        break;
+                    }
                 }
             }
             ((UserTarget) target).setSecurityName(username);
@@ -119,17 +136,17 @@ public class SnmpUtil {
      */
     public static List snmpGetOrGetNext(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String operation) throws IOException {
         List<Map> list = new ArrayList<>();
-        Target target = getTatget(version, community, auth, ip, port);
         try {
             DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
             snmp = new Snmp(transport);
-
             // 如果是v3版本
             if (version == SnmpConstants.version3) {
                 // 设置安全模式
                 USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
+
+            Target target = getTatget(version, community, auth, ip, port);
             snmp.listen();
 
             // 根据版本不同获取不同的pdu对象
@@ -202,8 +219,6 @@ public class SnmpUtil {
      */
     public static List<Map> snmpWalk(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth) throws IOException {
         List<Map> resultData = new ArrayList<>();
-        Target target = getTatget(version, community, auth, ip, port);
-
         try {
             TransportMapping transport = new DefaultUdpTransportMapping();
             snmp = new Snmp(transport);
@@ -214,7 +229,9 @@ public class SnmpUtil {
                 USM usm = new USM(SecurityProtocols.getInstance(), new OctetString(MPv3.createLocalEngineID()), 0);
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
-            transport.listen();
+
+            Target target = getTatget(version, community, auth, ip, port);
+            snmp.listen();
 
             PDU pdu = getPdu(version);
 
@@ -311,8 +328,6 @@ public class SnmpUtil {
      */
     public static R setPDU(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String value) throws IOException {
         try {
-            Target target = getTatget(version, community, auth, ip, port);
-
             PDU pdu = getPdu(version);
             pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
             pdu.setType(PDU.SET);
@@ -327,6 +342,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
+            Target target = getTatget(version, community, auth, ip, port);
             snmp.listen();
             ResponseEvent responseEvent = snmp.send(pdu, target);
             PDU response = responseEvent.getResponse();
@@ -353,6 +369,9 @@ public class SnmpUtil {
                         case 6:{
                             return R.error(RCode.SNMP_MIB_NOACCESS);
                         }
+                        case 17:{
+                            return R.error(RCode.SNMP_MIB_NOTWRITABLE);
+                        }
                     }
                 }
                 return R.ok();
@@ -367,5 +386,57 @@ public class SnmpUtil {
             }
         }
         return R.ok();
+    }
+
+    public static void ValidateAuthForSnmpV3(Map<String, String> authInfo) {
+        // 默认为noAuthNoPriv。可以是 noAuthNoPriv（不认证不加密），authNoPriv（认证不加密）或 authPriv（认证且加密）
+        String securityLevel = authInfo.get("securityLevel");
+
+        String username = authInfo.get("username");
+
+        if (StringUtils.isEmpty(username)) {
+            throw new NZException(RCode.MODULE_USERNAME_INVALID);
+        }
+
+        // 不为 null 时校验参数是否正确
+        if (StringUtils.isNotEmpty(securityLevel)) {
+            String password = authInfo.get("assword");
+
+            String privPassword = authInfo.get("privPassword");
+            String privProtocol = authInfo.get("privProtocol");
+            String authProtocol = authInfo.get("authProtocol");
+
+
+            if (securityLevel.equals("authPriv")) { // 认证且加密
+                if (StringUtils.isEmpty(privPassword)) {
+                    throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
+                }
+
+                if (StringUtils.isEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
+                    throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
+                }
+
+                if (StringUtils.isEmpty(password)) {
+                    throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+                }
+
+                if (StringUtils.isEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                    throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+                }
+            } else if (securityLevel.equals("authNoPriv")) { // 认证不加密
+                if (StringUtils.isEmpty(password)) {
+                    throw new NZException(RCode.MODULE_PASSWORD_INVALID);
+                }
+
+                if (StringUtils.isEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                    throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
+                }
+            } else if (securityLevel.equals("noAuthNoPriv")) {
+                // do nothhing
+            } else {
+                // 不在枚举范围内
+                throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
+            }
+        }
     }
 }

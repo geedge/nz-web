@@ -162,6 +162,9 @@ public class Constant {
 
     public static final Integer SNMP_DEFAULT_PORT = 161;
 
+    // snmp set value 可选类型集合
+    public static final List<String> SNMP_SETVLAUE_TYPE;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -197,6 +200,18 @@ public class Constant {
         SYSCONFIG_TYPEWITHKEYS_MAP.put("email", Arrays.asList(new String[]{"email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account", "email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag", "email_tls_flag", "test"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("terminal", Arrays.asList(new String[]{"max_terminal_num"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[]{"ldap_address", "ldap_dn", "ldap_password", "ldap_ou", "ldap_user_filter", "ldap_mapping", "ldap_enable", "test"}));
+
+        SNMP_SETVLAUE_TYPE = new ArrayList<>();
+        SNMP_SETVLAUE_TYPE.add("OctetString");
+        SNMP_SETVLAUE_TYPE.add("Integer");
+        SNMP_SETVLAUE_TYPE.add("OID");
+        SNMP_SETVLAUE_TYPE.add("Counter32");
+        SNMP_SETVLAUE_TYPE.add("IpAddress");
+        SNMP_SETVLAUE_TYPE.add("TimeTicks");
+        SNMP_SETVLAUE_TYPE.add("UnsignedInteger");
+        SNMP_SETVLAUE_TYPE.add("BITS");
+        SNMP_SETVLAUE_TYPE.add("Float");
+        SNMP_SETVLAUE_TYPE.add("DateAndTime");
     }
     
     /**
@@ -523,7 +538,8 @@ public class Constant {
     public static final String ASSET_SERVER_TYPE = "server";
 
     // 资产excel表头
-    public static final String[] ASSET_EXCEL_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "Usertip", "PasswordTip", "ReloginPasswordTip","IpmiHost","IpmiPort"};
+    public static final String[] ASSET_EXCEL_IMPORT_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "UserTip", "PasswordTip", "ReloginPasswordTip", "Exporter","IpmiHost","IpmiPort"};
+    public static final String[] ASSET_EXCEL_EXPORT_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "UserTip", "PasswordTip", "ReloginPasswordTip","IpmiHost","IpmiPort"};
 
     // 连接smtp邮箱服务器超时时间 10秒
     public static final String CONNECTION_SMTP_TIMEOUT = "10000";

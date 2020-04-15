@@ -264,7 +264,7 @@ public class AssetController {
 
         int rowNum = 0;
         // 添加标题行
-        String[] columnNames = Constant.ASSET_EXCEL_HEADER;
+        String[] columnNames = Constant.ASSET_EXCEL_EXPORT_HEADER;
         Row row = sheet.createRow(rowNum);
         Cell cell;
 

@@ -196,8 +196,14 @@ public class SnmpMibController extends AbstractController {
         }
 
         String value = (String) params.get("value");
+        String type = (String) params.get("type");
         if (Constant.SnmpOperationType.SET.getValue().equals(operation)) {
-            ValidateUtils.is(value).notNull(RCode.SNMP_MIB_VALUE_ISNULL);
+            ValidateUtils.is(value).notNull(RCode.SNMP_MIB_VALUE_ISNULL)
+                    .and(type).notNull(RCode.SNMP_MIB_TYPE_ISNULL);
+
+            if(!Constant.SNMP_SETVLAUE_TYPE.contains(type)){
+                throw new NZException(RCode.SNMP_MIB_TYPE_INVALIDE);
+            }
         }
 
         String community = (String) params.get("community");
@@ -209,7 +215,7 @@ public class SnmpMibController extends AbstractController {
             if (ToolUtil.isEmpty(auth)) {
                 throw new NZException(RCode.SNMP_MIB_AUTH_ISNULL);
             } else {
-                moduleService.ValidateAuthForSnmpV3(auth.toString());
+                SnmpUtil.ValidateAuthForSnmpV3(auth);
             }
         }
 

@@ -1207,7 +1207,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Map> mapList = new ArrayList<>();
         Map map;
 
-        String[] str = Constant.ASSET_EXCEL_HEADER;
+        String[] str = Constant.ASSET_EXCEL_IMPORT_HEADER;
         List<String> titles = Arrays.asList(str);
 
         String titleValue, title;
