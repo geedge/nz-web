@@ -76,7 +76,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 		List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params);
 
 //		List<AlertRuleEntity> records = page.getRecords();
-		for (AlertRuleEntity alertRule:ruleEntityList){
+		/*for (AlertRuleEntity alertRule:ruleEntityList){
 			if(alertRule.getBuildIn().equals(1)) {
 				//如果为内置规则 则跳过剩余关联关系查询
 				continue;
@@ -91,7 +91,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 				}
 				alertRule.setLinkObject(linkObject);
 			}
-		}
+		}*/
 
 		page.setRecords(ruleEntityList);
 		
@@ -114,14 +114,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	/**
 	 * 校验linkId关联的对象是否存在
 	 * */
-	@Override
+	/*@Override
 	public void validateTypeLink(Integer type,Integer linkId){
     	IService service=getServiceImpl(type);
 		Object obj = service.getById(linkId);
 		if(obj==null){
 			throw new NZException(RCode.ALERTRULE_LINK_OBJECT_ISNULL);
 		}
-	}
+	}*/
 
 	@Override
 	public List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds) {
@@ -132,7 +132,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	/**
 	 * 根据type获取相应service
 	 * */
-	private IService getServiceImpl(Integer typeId){
+	/*private IService getServiceImpl(Integer typeId){
 		Constant.AlertType alertType = Constant.AlertType.getAlertType(typeId);
 		if(alertType==null){
 			throw new NZException(RCode.ALERTRULE_TYPE_INVALIDE);
@@ -146,13 +146,13 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 				return assetService;
 		}
 		return null;
-	}
+	}*/
 
-	@Override
+	/*@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void removeByTypeIds(Integer typeId, List ids) {
 		alertRuleDao.deleteByTypeIds(typeId,ids);
-	}
+	}*/
 	
 	/**
 	 * 查询当前规则是否为内置规则

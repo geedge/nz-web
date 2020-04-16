@@ -87,8 +87,8 @@ public class YamlUtil {
 		
 		Map labels = new HashMap();
 		labels.put("severity", alertRule.getSeverity());
-		labels.put("type",alertRule.getType());
-		labels.put("linkId",alertRule.getLinkId());
+		//labels.put("type",alertRule.getType());
+		//labels.put("linkId",alertRule.getLinkId());
 		Map annotations = new HashMap();
 		annotations.put("summary", alertRule.getSummary());
 		annotations.put("description", alertRule.getDescription());

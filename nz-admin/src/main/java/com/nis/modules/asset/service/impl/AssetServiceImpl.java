@@ -408,7 +408,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         endpointService.remove(new QueryWrapper<Endpoint>().in("asset_id", idList));
 
         // 3. 删除关联的alert信息
-        alertRuleService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
+        //alertRuleService.removeByTypeIds(Constant.AlertType.ALERT_TYPE_ASSET.getCode(), idList);
         alertMessageService.removeByAssetIds(idList);
     }
 

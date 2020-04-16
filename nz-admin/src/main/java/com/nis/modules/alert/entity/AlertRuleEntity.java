@@ -36,11 +36,11 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 *告警类型
 	 * */
-	private Integer type;
+	//private Integer type;
 	/**
 	 * 关联Id
 	 * */
-	private Integer linkId;
+	//private Integer linkId;
 
 	/**
 	 * 运算表达式

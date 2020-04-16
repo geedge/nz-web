@@ -9,12 +9,12 @@
         <result property="alertName" column="alert_name"/>
         <result property="expr" column="expr"/>
         <result property="last" column="last"/>
-        <result property="type" column="type"/>
+        <!--result property="type" column="type"/>-->
         <result property="severity" column="severity"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
-        <result property="linkId" column="link_id" />
+        <!--<result property="linkId" column="link_id" />-->
     </resultMap>
     
     <resultMap type="com.nis.modules.alert.entity.AlertNameMapUserDTO" id="alertRuleMapUser">
@@ -44,19 +44,19 @@
         select id from alert_rule where alert_name like concat('%',#{alertName},'%')
     </select>
     
-    <delete id="deleteByTypeIds">
+   <!-- <delete id="deleteByTypeIds">
     	delete from alert_rule where type=#{typeId} and link_id in
     	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
 		</foreach>
-    </delete>
+    </delete>-->
 
     <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
         SELECT
             ar.id,
             ar.alert_name AS alertName,
-            ar.link_id AS linkId,
-            ar.type,
+            /*ar.link_id AS linkId,*/
+            /*ar.type,*/
             ar.expr,
             ar.last,
             ar.severity,
@@ -78,13 +78,13 @@
                 AND ar.alert_name LIKE CONCAT('%', #{params.alertName}, '%')
             </if>
 
-            <if test="params.type != null and params.type != ''">
+         <!--   <if test="params.type != null and params.type != ''">
                 AND ar.type = #{params.type}
-            </if>
+            </if>-->
 
-            <if test="params.type != null and params.type != '' and params.linkId != null and params.linkId != ''">
+            <!--if test="params.type != null and params.type != '' and params.linkId != null and params.linkId != ''">
                 AND ar.link_id = #{params.linkId}
-            </if>
+            </if>-->
 
             <if test="params.expr != null and params.expr != ''">
                 AND ar.expr LIKE CONCAT('%', #{params.expr}, '%')
