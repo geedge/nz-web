@@ -68,7 +68,7 @@ public class SnmpUtil {
                 octetPrivPassword = new OctetString(privPassword);
             }
 
-            String password = auth.get("assword");
+            String password = auth.get("password");
             OctetString octetpassword = null;
             if(StringUtils.isNotEmpty(password)){
                 octetpassword = new OctetString(password);
@@ -400,7 +400,7 @@ public class SnmpUtil {
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String password = authInfo.get("assword");
+            String password = authInfo.get("password");
 
             String privPassword = authInfo.get("privPassword");
             String privProtocol = authInfo.get("privProtocol");
