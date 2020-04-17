@@ -41,7 +41,7 @@ public class AssetPingJob extends QuartzJobBean {
     @Autowired
     private AssetPingService assetPingService;
 
-    private static Pattern NUMBER_PATTERN = Pattern.compile("(\\d+\\.\\d+)");
+    private static Pattern NUMBER_PATTERN = Pattern.compile("[0-9]+(\\.[0-9]+)?");
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
