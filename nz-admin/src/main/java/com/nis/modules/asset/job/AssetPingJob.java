@@ -219,7 +219,7 @@ public class AssetPingJob extends QuartzJobBean {
         String returnRrt = null;
         Matcher m = NUMBER_PATTERN.matcher(str);
         if (m.find()) {
-            returnRrt = m.group(1);
+            returnRrt = m.group();
         }
         return returnRrt;
     }
