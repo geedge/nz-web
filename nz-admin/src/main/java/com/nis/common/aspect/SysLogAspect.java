@@ -80,21 +80,23 @@ public class SysLogAspect {
 	 135      */
     @AfterThrowing(pointcut = "logPointCut()", throwing = "e")
      public void saveExceptionLog(JoinPoint joinPoint, Throwable e) {
-		NZException nzException =(NZException) e;
+    	R r =new R();
+    	if(e instanceof NZException){
+    		r = R.error(((NZException) e).getCode(),((NZException) e).getMsg());
+		}else {
+    		r = R.error(999,e.getMessage());
+		}
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		Method method = signature.getMethod();
 
 		SysLogEntity sysLog = new SysLogEntity();
 		SysLog syslog = method.getAnnotation(SysLog.class);
-		Map result = new HashMap<>();
-		result.put("code",nzException.getCode());
-		result.put("msg",nzException.getMsg());
 		if(syslog != null) {
 			sysLog.setOperation(syslog.operation().getValue());
 			sysLog.setType(syslog.type().getValue());
 		}
-		sysLog.setResponse(JSON.toJSONString(result));
-		sysLog.setException(nzException.getMsg());
+		sysLog.setResponse(JSON.toJSONString(r));
+		sysLog.setException(r.get("msg").toString());
 		sysLog.setTime(0L);
 		//获取request
 		HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
@@ -109,22 +111,22 @@ public class SysLogAspect {
 		Object[] args = joinPoint.getArgs();
 		// 获取请求参数名
 		String oepra_id = null;
-//		if("update".equals(syslog.operation().getValue())){
-//			Class clazz = args[0].getClass();
-//			Field[] fields = clazz.getDeclaredFields();
-//			for (Field field: fields){
-//				Boolean isId = field.isAnnotationPresent(TableId.class);
-//				if(isId){
-//					field.setAccessible(true); // 私有属性必须设置访问权限;
-//					try {
-//						oepra_id = field.get(args[0]).toString();
-//					} catch (IllegalAccessException e1) {
-//						e1.printStackTrace();
-//					}
-//					break;
-//				}
-//			}
-//		}
+		if("update".equals(syslog.operation().getValue())){
+			Class clazz = args[0].getClass();
+			Field[] fields = clazz.getDeclaredFields();
+			for (Field field: fields){
+				Boolean isId = field.isAnnotationPresent(TableId.class);
+				if(isId){
+					field.setAccessible(true); // 私有属性必须设置访问权限;
+					try {
+						oepra_id = field.get(args[0]).toString();
+					} catch (IllegalAccessException e1) {
+						e1.printStackTrace();
+					}
+					break;
+				}
+			}
+		}
 		sysLog.setOperaId(oepra_id);
 		sysLog.setParams(JSON.toJSONString(args));
 		//用户名
@@ -132,6 +134,7 @@ public class SysLogAspect {
 		sysLog.setUserId(userId.intValue());
 
 		sysLog.setCreateDate(new Date());
+		sysLog.setState("fail");
 		sysLogService.save(sysLog);
 
 
@@ -156,8 +159,8 @@ public class SysLogAspect {
 				sysLog.setResponse(JSON.toJSONString(r));
 			}
 		}
-
-
+		String state = r.get("code").toString().equals("200")?"success":"fail";
+		sysLog.setState(state);
 		//请求的方法名
 		String className = joinPoint.getTarget().getClass().getName();
 		String methodName = signature.getName();
@@ -184,7 +187,7 @@ public class SysLogAspect {
 			}
 		}
 		if("delete".equals(syslog.operation().getValue())){
-			oera_id = args[0].toString();
+			oera_id = JSON.toJSONString(args[0]).replace("\"","");
 		}
 		sysLog.setOperaId(oera_id);
 		try{

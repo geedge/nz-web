@@ -68,8 +68,8 @@ import java.util.stream.Collectors;
 @Service("alertMessageService")
 public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertMessageEntity> implements AlertMessageService {
 	private Logger logger= LoggerFactory.getLogger(AlertMessageServiceImpl.class);
-	@Value("${spring.mail.open}")
-	private Integer sendEmail; //0不通知，1通知  默认通知
+	//@Value("${spring.mail.open}")
+	//private Integer sendEmail; //0不通知，1通知  默认通知
 	@Autowired
 	private MailUtil mailUtil;
 	@Autowired
@@ -223,7 +223,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
     	logger.debug("receive promethues alert message {}",receiveData==null?null:Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
-    	Set<Integer> ruleIds = new HashSet<>();
 
 	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -245,7 +244,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 						getReceiveLabels(dto);
 //						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
                         AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
-						ruleIds.add(entity.getRuleId());
+						//ruleIds.add(entity.getRuleId());
 
 						// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
 						Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
@@ -270,26 +269,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		logger.debug("数据格式化完成 : {}",entities.toString());
     	if (!CollectionUtils.isEmpty(entities)) {
 	    	this.saveBatch(entities);
+	    	String emailEnable = configService.getValue("email_enable");
 	    	//邮件通知
-	    	if (sendEmail == null || sendEmail == 1) {
-	    		List<AlertNameMapUserDTO> alertNameMapEmail = alertRuleService.queryUserByRuleId(ruleIds);
-	    		for (AlertMessageEntity entity : entities) {
-	        		for (AlertNameMapUserDTO dto : alertNameMapEmail) {
-	        			if (entity.getRuleId().intValue()==dto.getRuleId().intValue()) {
-	        				List<String> toSendEmails = new ArrayList<>();
-	        				List<SysUserEntity> users = dto.getUsers();
-	        				for (SysUserEntity user : users) {
-	        					if (!StringUtils.isBlank(user.getEmail())) {
-	        						toSendEmails.add(user.getEmail());
-	        					}
-	        				}
-							//TODO 邮件内容/格式 待定
-							mailUtil.sendHTML(toSendEmails, entity.getSummary(), entity.getDescription());
-
-							break;
-	        			}
-	        		}
-	        	}
+	    	if ("on" .equals(emailEnable)) {
+	    		redisTemplate.opsForList().leftPush("alert_message_list",entities);
 	    	}
     	}
     }

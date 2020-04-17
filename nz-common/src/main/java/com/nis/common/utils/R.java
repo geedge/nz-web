@@ -27,7 +27,7 @@ public class R extends HashMap<String, Object> {
 		return r;
 	}
 	
-	private static R error(Integer code, String msg) {
+	public static R error(Integer code, String msg) {
 		R r = new R();
 		r.put("code", code);
 		r.put("msg", msg);

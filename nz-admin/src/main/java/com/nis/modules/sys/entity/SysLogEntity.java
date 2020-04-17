@@ -67,6 +67,7 @@ public class SysLogEntity implements Serializable {
 	/**
 	 *
 	 */
+	private String state;
 	private String response;
 	/**
 	 *
