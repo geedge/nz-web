@@ -74,8 +74,6 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 			if(moduleEntity.getPort() == null){
 				moduleEntity.setPort(Constant.SNMP_DEFAULT_PORT);
 			}
-			// snmp类型时 补充path路径信息
-			moduleEntity.setPath("/snmp");
 		}else{
 			throw new NZException(RCode.MODULE_TYPE_INVALID);
 		}
