@@ -98,11 +98,13 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
             }
 
             Map queryParam = new HashMap();
-            String job = "{job=\"ed_" + endpointId + "\"}";
-            queryParam.put("match_target", DigestUtils.urlEncode(job));
+            String endpoint = "{" + Constant.PROMSERVERUP_ENDPOINT_LABEL + "=\"" + endpointId + "\"}";
+            queryParam.put("match_target", DigestUtils.urlEncode(endpoint));
 
             // 处理请求url
             String url = this.buildUrl(promserver.getHost(), promserver.getPort(), apiMetadata, queryParam);
+
+            logger.debug("query api/v1/targets/metadata url {}", url);
 
             Map result = promserverProxyService.requestPromAPI(url);
             // 查询成功的
