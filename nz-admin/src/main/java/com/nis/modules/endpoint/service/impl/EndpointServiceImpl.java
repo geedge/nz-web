@@ -123,8 +123,8 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			        }
 			        if(data.getState()==null){
 						data.setState(0);
-						stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getCode());
-						stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_AVAILABLE.getMsg());
+						stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNAVAILABLE.getCode());
+						stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNAVAILABLE.getMsg());
 					}
 					data.setStateInfo(stateInfo);
 				}
