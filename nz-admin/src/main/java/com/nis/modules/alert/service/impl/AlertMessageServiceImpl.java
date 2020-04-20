@@ -279,6 +279,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
     private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto){
 		Map receiveLabels = dto.getLabels();
+		Map labelIds = new HashMap();
 		Integer assertId=null,moduleId=null,projectId=null,endpointId=null,dcId=null ;
 		// 有endpointId ,即可查出所有
 		if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
@@ -310,11 +311,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				dcId = dc.getId();
 			}
 		}
-		receiveLabels.put("endpoint",endpointId);
-		receiveLabels.put("project",projectId);
-		receiveLabels.put("assetId",assertId);
-		receiveLabels.put("module",moduleId);
-		receiveLabels.put("datacenter",dcId);
+		labelIds.put("endpoint",endpointId);
+		labelIds.put("project",projectId);
+		labelIds.put("assetId",assertId);
+		labelIds.put("module",moduleId);
+		labelIds.put("datacenter",dcId);
+		dto.setLabelIds(labelIds);
+
     	return dto;
 	}
 

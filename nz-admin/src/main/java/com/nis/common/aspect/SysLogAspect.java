@@ -9,6 +9,7 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ann.IdCard;
 import com.nis.common.utils.*;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
@@ -32,6 +33,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -110,22 +112,9 @@ public class SysLogAspect {
 		//请求的参数
 		Object[] args = joinPoint.getArgs();
 		// 获取请求参数名
-		String oepra_id = null;
+		String oepra_id = "";
 		if("update".equals(syslog.operation().getValue())){
-			Class clazz = args[0].getClass();
-			Field[] fields = clazz.getDeclaredFields();
-			for (Field field: fields){
-				Boolean isId = field.isAnnotationPresent(TableId.class);
-				if(isId){
-					field.setAccessible(true); // 私有属性必须设置访问权限;
-					try {
-						oepra_id = field.get(args[0]).toString();
-					} catch (IllegalAccessException e1) {
-						e1.printStackTrace();
-					}
-					break;
-				}
-			}
+			oepra_id = getOpId(syslog,args);
 		}
 		sysLog.setOperaId(oepra_id);
 		sysLog.setParams(JSON.toJSONString(args));
@@ -169,22 +158,9 @@ public class SysLogAspect {
 		//请求的参数
 		Object[] args = joinPoint.getArgs();
 		// 获取请求参数名
-		String oera_id = null;
+		String oera_id = "";
 		if("add".equals(syslog.operation().getValue())||"update".equals(syslog.operation().getValue())){
-			Class clazz = args[0].getClass();
-			Field[] fields = clazz.getDeclaredFields();
-			for (Field field: fields){
-				Boolean isId = field.isAnnotationPresent(TableId.class);
-				if(isId){
-					field.setAccessible(true); // 私有属性必须设置访问权限;
-					try {
-						oera_id = field.get(args[0]).toString();
-					} catch (IllegalAccessException e) {
-						e.printStackTrace();
-					}
-					break;
-				}
-			}
+			oera_id = getOpId(syslog,args);
 		}
 		if("delete".equals(syslog.operation().getValue())){
 			oera_id = JSON.toJSONString(args[0]).replace("\"","");
@@ -194,7 +170,7 @@ public class SysLogAspect {
 			String params = new Gson().toJson(args[0]);
 			sysLog.setParams(params);
 		}catch (Exception e){
-
+			Class clazz = args[0].getClass();
 		}
 
 		//获取request
@@ -213,5 +189,47 @@ public class SysLogAspect {
 		if(!"query".equals(syslog.operation().getValue())){
 			sysLogService.save(sysLog);
 		}
+	}
+
+
+	private static String getOpId(SysLog syslog,Object[] object){
+		String oepraId = "";
+		if(syslog.type().getValue().equals(TypeEnum.ENDPOINT.getValue())){
+			List<Object> list = (List<Object>) object[0];
+			for (Object obj:list){
+				Class clazz = obj.getClass();
+				Field[] fields = clazz.getDeclaredFields();
+				for (Field field : fields) {
+					Boolean isId = field.isAnnotationPresent(TableId.class);
+					if (isId) {
+						// 私有属性必须设置访问权限;
+						field.setAccessible(true);
+						try {
+							oepraId += field.get(obj).toString()+",";
+						} catch (IllegalAccessException e) {
+							e.printStackTrace();
+						}
+						break;
+					}
+				}
+			}
+			oepraId = oepraId.substring(0, oepraId.length() -1);
+		}else {
+			Class clazz = object[0].getClass();
+			Field[] fields = clazz.getDeclaredFields();
+			for (Field field : fields) {
+				Boolean isId = field.isAnnotationPresent(TableId.class);
+				if (isId) {
+					field.setAccessible(true); // 私有属性必须设置访问权限;
+					try {
+						oepraId = field.get(object[0]).toString();
+					} catch (IllegalAccessException e) {
+						e.printStackTrace();
+					}
+					break;
+				}
+			}
+		}
+		return oepraId;
 	}
 }

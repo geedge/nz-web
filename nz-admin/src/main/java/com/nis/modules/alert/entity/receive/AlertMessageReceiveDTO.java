@@ -24,6 +24,8 @@ public class AlertMessageReceiveDTO implements Serializable {
 
     private Map labels;
 
+    private Map labelIds;
+
     private Map annotations;
 
     private String startsAt;
@@ -90,20 +92,22 @@ public class AlertMessageReceiveDTO implements Serializable {
         // entity.setEndAt(ea);
         entity.setState(1);
 
-        if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
-            entity.setEndpointId(Integer.parseInt( receiveLabels.get("endpoint").toString()));
+        Map labelIds = dto.labelIds;
+
+        if(ToolUtil.isNotEmpty(labelIds.get("endpoint"))){
+            entity.setEndpointId(Integer.parseInt( labelIds.get("endpoint").toString()));
         }
-        if(ToolUtil.isNotEmpty(receiveLabels.get("project"))){
-            entity.setProjectId(Integer.parseInt(receiveLabels.get("project").toString()));
+        if(ToolUtil.isNotEmpty(labelIds.get("project"))){
+            entity.setProjectId(Integer.parseInt(labelIds.get("project").toString()));
         }
-        if(ToolUtil.isNotEmpty(receiveLabels.get("assetId"))){
-            entity.setAssetId(Integer.parseInt(receiveLabels.get("assetId").toString()));
+        if(ToolUtil.isNotEmpty(labelIds.get("assetId"))){
+            entity.setAssetId(Integer.parseInt(labelIds.get("assetId").toString()));
         }
-        if(ToolUtil.isNotEmpty(receiveLabels.get("module"))){
-            entity.setModuleId(Integer.parseInt(receiveLabels.get("module").toString()));
+        if(ToolUtil.isNotEmpty(labelIds.get("module"))){
+            entity.setModuleId(Integer.parseInt(labelIds.get("module").toString()));
         }
-        if(ToolUtil.isNotEmpty(receiveLabels.get("datacenter"))){
-            entity.setDcId(Integer.parseInt( receiveLabels.get("datacenter").toString()));
+        if(ToolUtil.isNotEmpty(labelIds.get("datacenter"))){
+            entity.setDcId(Integer.parseInt( labelIds.get("datacenter").toString()));
         }
         // snmptrap 处理
         if (dto.getSnmptrap() != null && dto.getSnmptrap().equals(true)) {
