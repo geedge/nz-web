@@ -1,5 +1,6 @@
 package com.nis.modules.overview.controller;
 
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.modules.overview.service.OverviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +91,7 @@ public class OverviewController {
     @GetMapping("/alertStatByRule")
     public R alertStatByRule(Integer top) {
         if (top == null) {
-            top = 10;
+            top = (int) Constant.PAGESIZE;
         }
 
         List<Map> list = overviewService.alertRuleTopN(top);
@@ -109,10 +110,51 @@ public class OverviewController {
     @GetMapping("/alertStatByAsset")
     public R alertStatByAsset(Integer top) {
         if (top == null) {
-            top = 10;
+            top = (int) Constant.PAGESIZE;
         }
 
         List<Map> list = overviewService.alertStatByAssetTopN(top);
+
+        Map data = new HashMap();
+        data.put("list", list);
+        return R.ok(data);
+    }
+
+    /**
+     * module统计信息
+     *
+     * @return
+     */
+    @GetMapping("/moduleStat")
+    public R moduleStat() {
+        Map moduleStat = overviewService.getModuleStat();
+        return R.ok(moduleStat);
+    }
+
+    /**
+     * 告警消息统计信息
+     *
+     * @return
+     */
+    @GetMapping("/alertMessageStat")
+    public R alertMessageStat() {
+        Map data = overviewService.alertMessageStat();
+        return R.ok(data);
+    }
+
+    /**
+     * 按module维度统计告警信息的topN
+     *
+     * @param top
+     * @return
+     */
+    @GetMapping("/alertStatByModule")
+    public R alertStatByModule(Integer top) {
+        if (top == null) {
+            top = (int) Constant.PAGESIZE;
+        }
+
+        List<Map> list = overviewService.alertStatByModuleTopN(top);
 
         Map data = new HashMap();
         data.put("list", list);

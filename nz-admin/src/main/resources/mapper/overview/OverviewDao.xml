@@ -220,4 +220,57 @@
             nums DESC
             LIMIT #{topN}
     </select>
+
+    <select id="getModuleStatInfo" resultType="com.nis.modules.overview.entity.ModuleStat">
+        SELECT
+            mo.id,
+            mo.NAME,
+            COUNT( am.id ) AS alertNum
+        FROM
+            module mo
+            LEFT JOIN alert_message am ON mo.id = am.module_id
+            AND am.state = 1
+        GROUP BY
+            mo.id
+    </select>
+
+    <select id="getEndPointNumByModule" resultType="com.nis.modules.overview.entity.ModuleStat">
+        SELECT
+            mo.id,
+            count( en.id ) AS endpointNum
+        FROM
+            module mo
+            LEFT JOIN endpoint en ON mo.id = en.module_id
+        GROUP BY
+            mo.id
+    </select>
+
+    <select id="getAlertMessageStatGroupByLevel" resultType="java.util.Map">
+        SELECT
+            am.severity AS level,
+            COUNT( am.id ) AS alertNum
+        FROM
+            alert_message am
+        WHERE
+            am.state = 1
+        GROUP BY
+            am.severity
+    </select>
+
+    <select id="getAlertStatByModuleTopN" resultType="java.util.Map">
+        SELECT
+            mo.name as module,
+            COUNT( am.id ) AS nums
+        FROM
+            module mo
+            LEFT JOIN alert_message am ON mo.id = am.module_id
+            AND am.state = 1
+        GROUP BY
+            mo.id
+        HAVING
+            nums > 0
+        ORDER BY
+            nums DESC
+            LIMIT #{topN}
+    </select>
 </mapper>

@@ -2,6 +2,7 @@ package com.nis.modules.overview.dao;
 
 import com.nis.modules.overview.entity.AssetStat;
 import com.nis.modules.overview.entity.EndpointStat;
+import com.nis.modules.overview.entity.ModuleStat;
 import com.nis.modules.overview.entity.ProjectStat;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -37,4 +38,12 @@ public interface OverviewDao {
     List<Map> getAlertRuleStat();
 
     List<Map> getAlertStatByAssetTopN(@Param("topN") Integer topN);
+
+    List<ModuleStat> getModuleStatInfo();
+
+    List<ModuleStat> getEndPointNumByModule();
+
+    List<Map> getAlertMessageStatGroupByLevel();
+
+    List<Map> getAlertStatByModuleTopN(@Param("topN")Integer topN);
 }

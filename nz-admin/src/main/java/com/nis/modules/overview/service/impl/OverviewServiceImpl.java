@@ -5,16 +5,17 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.dao.OverviewDao;
-import com.nis.modules.overview.entity.AssetStat;
-import com.nis.modules.overview.entity.DcStat;
-import com.nis.modules.overview.entity.EndpointStat;
-import com.nis.modules.overview.entity.ProjectStat;
+import com.nis.modules.overview.entity.*;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("overviewService")
 public class OverviewServiceImpl implements OverviewService {
@@ -57,6 +59,12 @@ public class OverviewServiceImpl implements OverviewService {
 
     @Autowired
     private CabinetService cabinetService;
+
+    @Autowired
+    private ModuleService moduleService;
+
+    @Autowired
+    private AlertMessageService alertMessageService;
 
     @Value("${nezha.promApis.query}")
     private String query;
@@ -260,6 +268,51 @@ public class OverviewServiceImpl implements OverviewService {
         return alertStatByAssetTopN;
     }
 
+    @Override
+    public Map getModuleStat() {
+        Map resultData = new HashMap();
+
+        List<ModuleStat> moduleStatInfo = overviewDao.getModuleStatInfo();
+
+        // module id 和 包含的endpoint计数
+        List<ModuleStat> endPointNumByModule = overviewDao.getEndPointNumByModule();
+        Map<Integer, Integer> moduleIdWithEndpointNumMap = endPointNumByModule.stream().collect(Collectors.toMap(ModuleStat::getId, ModuleStat::getEndpointNum));
+
+        // 补充 endpointNum
+        Integer endPointNum;
+        for (ModuleStat moduleStat : moduleStatInfo) {
+            endPointNum = moduleIdWithEndpointNumMap.get(moduleStat.getId());
+            if (ToolUtil.isNotEmpty(endPointNum)) {
+                moduleStat.setEndpointNum(endPointNum);
+            }
+        }
+
+        int moduleCount = moduleService.count();
+
+        resultData.put("moduleStat", moduleStatInfo);
+        resultData.put("total", moduleCount);
+
+        return resultData;
+    }
+
+    @Override
+    public Map alertMessageStat() {
+        Map resultData = new HashMap();
+
+        List<Map> byLevel = overviewDao.getAlertMessageStatGroupByLevel();
+        int alertMessageTotal = alertMessageService.count(new QueryWrapper<AlertMessageEntity>().eq("state", 1));
+
+        resultData.put("alertMessageTotal", alertMessageTotal);
+        resultData.put("alertMessage", byLevel);
+
+        return resultData;
+    }
+
+    @Override
+    public List<Map> alertStatByModuleTopN(Integer top) {
+        List<Map> alertStatByModuleTopN = overviewDao.getAlertStatByModuleTopN(top);
+        return alertStatByModuleTopN;
+    }
 
     // 请求prometheus 然后返回状态可用的endpoint ids
     public Set<Integer> getEndpointStatus() {
