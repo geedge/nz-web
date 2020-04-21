@@ -131,6 +131,16 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			// 处理prometheus不可用时 出现异常 无状态显示问题
+			for(Endpoint data: datas) {
+				StateInfo stateInfo =new StateInfo();
+				if(data.getState()==null){
+					data.setState(0);
+					stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNAVAILABLE.getCode());
+					stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNAVAILABLE.getMsg());
+				}
+				data.setStateInfo(stateInfo);
+			}
 		}
         page.setRecords(datas);
         return new PageUtils(page);
