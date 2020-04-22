@@ -555,5 +555,7 @@ public class Constant {
     // mib定义中 entry采用的格式为sequence 用以区分type 为 entry
     public static final String MIB_ENTRY_SYNTAX = "SEQUENCE";
 
+    // snmp browser 中返回oid 与 mib文件中name对应，当前截取位置为  倒数1位
+    public static final int OIDNAME_TRUNCATION_INDEX = 1;
 
 }

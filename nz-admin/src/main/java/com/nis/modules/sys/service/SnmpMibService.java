@@ -14,4 +14,6 @@ public interface SnmpMibService extends IService<SnmpMib> {
     void saveOrUpdateSnmpMib(SnmpMib snmpMib, MultipartFile file);
 
     String getMibTrees(String[] ids, String[] models);
+
+    Map<String, String> getAllTreeNodeOidAndNameMap();
 }

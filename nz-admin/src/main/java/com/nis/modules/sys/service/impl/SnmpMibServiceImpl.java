@@ -1,6 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -29,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("snmpMibService")
 public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> implements SnmpMibService {
@@ -303,6 +305,50 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 List<MmMib> c_node = handleDataFormat(mibs, oid);
                 object.setSubTree(c_node);
                 resultList.add(object);
+            }
+        }
+        return resultList;
+    }
+
+
+    @Override
+    public Map<String, String> getAllTreeNodeOidAndNameMap() {
+        List<SnmpMib> mibList = this.list();
+        List<String> treeList = mibList.stream().map(SnmpMib::getTree).collect(Collectors.toList());
+
+        Map map;
+        List<MmMib> values = new ArrayList<>();
+        for (String str : treeList) {
+            map = JSONObject.parseObject(str, Map.class);
+            values.addAll(JSONArray.parseArray(JSONArray.toJSONString(new ArrayList<JSONArray>(map.values()).get(0)), MmMib.class));
+        }
+
+        Map<String, String> oidWithNameMap = new HashMap<>();
+
+        List<MmMib> subTree;
+        Map<String, String> collectMap;
+
+        for (MmMib mmMib : values) {
+            oidWithNameMap.put(mmMib.getObjectID(), mmMib.getName());
+            // 如果存在子树 则继续
+            if (CollectionUtils.isNotEmpty(mmMib.getSubTree())) {
+                subTree = getSubTree(mmMib.getSubTree());
+                collectMap = subTree.stream().collect(Collectors.toMap(MmMib::getObjectID, MmMib::getName));
+                oidWithNameMap.putAll(collectMap);
+            }
+        }
+
+        return oidWithNameMap;
+    }
+
+
+    public List<MmMib> getSubTree(List<MmMib> list) {
+        List<MmMib> resultList = new ArrayList<>();
+        for (MmMib mmMib : list) {
+            resultList.add(mmMib);
+            if (CollectionUtils.isNotEmpty(mmMib.getSubTree())) {
+                List<MmMib> subTree = getSubTree(mmMib.getSubTree());
+                resultList.addAll(subTree);
             }
         }
         return resultList;

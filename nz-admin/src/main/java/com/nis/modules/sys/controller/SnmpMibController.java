@@ -7,6 +7,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.service.SnmpMibService;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -237,6 +238,36 @@ public class SnmpMibController extends AbstractController {
 
         if (resultData == null) {
             return R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
+        }
+
+        if (CollectionUtils.isNotEmpty(resultData)) {
+            // 获取当前所有的mib tree
+            Map<String, String> oidWithNameMap = snmpMibService.getAllTreeNodeOidAndNameMap();
+
+            String resultOid;
+            String name, str;
+            for (Map map : resultData) {
+                resultOid = map.get("oid").toString();
+                str = resultOid;
+                // 处理对应关系
+                name = oidWithNameMap.get(resultOid);
+
+                // name 为null 截取之后再次获取
+                if (StringUtils.isEmpty(name)) {
+                    // 从最后开始截取 目前暂定截取最后一个 .
+                    for (int i = 0; i < Constant.OIDNAME_TRUNCATION_INDEX; i++) {
+                        resultOid = resultOid.substring(0, resultOid.lastIndexOf("."));
+                    }
+
+                    name = oidWithNameMap.get(resultOid);
+                    if (StringUtils.isNotEmpty(name)) {
+                        str = str.replaceAll(resultOid, "");
+                        name += str;
+                    }
+                }
+
+                map.put("name", name);
+            }
         }
 
         Map map = new HashMap();
