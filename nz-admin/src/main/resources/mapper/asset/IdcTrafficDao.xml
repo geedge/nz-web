@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.IdcTrafficDao">
+
+    <resultMap type="com.nis.modules.asset.entity.IdcTraffic" id="traffic">
+        <result property="id" column="id"/>
+        <result property="direction" column="direction"/>
+        <result property="ifindex" column="ifindex"/>
+        <result property="ifdescr" column="ifdescr"/>
+        <result property="tags" column="tags"/>
+
+        <association columnPrefix="idc_" property="idc" javaType="com.nis.modules.asset.entity.Idc">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="location" column="location"/>
+            <result property="tel" column="tel"/>
+            <result property="principal" column="principal"/>
+            <result property="seq" column="seq"/>
+            <result property="areaId" column="areaId"/>
+            <result property="x" column="x"/>
+            <result property="y" column="y"/>
+        </association>
+
+        <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.Asset">
+            <result property="id" column="id"/>
+            <result property="sn" column="sn"/>
+            <result property="modelId" column="modelId"/>
+            <result property="host" column="host"/>
+            <result property="ipmi" column="ipmi"/>
+            <result property="cabinetStart" column="cabinetStart"/>
+            <result property="cabinetEnd" column="cabinetEnd"/>
+            <result property="state" column="state"/>
+            <result property="purchaseDate" column="purchaseDate"/>
+            <result property="createAt" column="createAt"/>
+            <result property="updateAt" column="updateAt"/>
+        </association>
+    </resultMap>
+
+    <sql id="traffic_info_columns">
+        tra.id,
+        tra.direction,
+        tra.ifindex,
+        tra.ifdescr,
+        tra.tags,
+
+        idc.id AS idc_id,
+        idc.NAME AS idc_name,
+        idc.location AS idc_location,
+        idc.tel AS idc_tel,
+        idc.principal AS idc_principal,
+        idc.seq AS idc_seq,
+        idc.area_id AS idc_areaId,
+        idc.x AS idc_x,
+        idc.y AS idc_y,
+
+        ass.id AS ass_id,
+        ass.sn AS ass_sn,
+        ass.model_id AS ass_modelId,
+        ass.HOST AS ass_host,
+        ass.ipmi AS ass_ipmi,
+        ass.cabinet_start AS ass_cabinetStart,
+        ass.cabinet_end AS ass_cabinetEnd,
+        ass.state AS ass_state,
+        ass.purchase_date AS ass_purchaseDate,
+        ass.create_at AS ass_createAt,
+        ass.update_at AS ass_updateAt
+    </sql>
+
+
+    <select id="queryTrafficSetting" resultMap="traffic">
+        SELECT
+        <include refid="traffic_info_columns"></include>
+        FROM
+        idc_traffic tra
+        LEFT JOIN idc idc ON tra.idc_id = idc.id
+        LEFT JOIN asset ass ON tra.asset_id = ass.id
+        <where>
+            <if test="params.id != null and params.id != ''">
+                tra.idc_id = #{params.id}
+            </if>
+
+            <if test="params.direction != null and params.direction != ''">
+                and tra.direction like CONCAT('%', #{params.direction}, '%')
+            </if>
+        </where>
+    </select>
+
+</mapper>

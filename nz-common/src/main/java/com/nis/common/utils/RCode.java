@@ -269,7 +269,13 @@ public enum RCode {
     CABINET_Y_INCORRECT(535022,"Cabinet y is not in this idc"),            // 机柜所选行不在idc范围内
     CABINET_X_INCORRECT(535023,"Cabinet x is not in this idc"),            // 机柜所选列不在idc范围内
     CABINET_POSITION_OCCUPIED(535024,"Cabinet position is occupied"),     // 机柜所选位置已被占用
-
+    IDC_PROMSERVER_EXISTS(533025, "There are promservers in the idc"),
+    IDC_TRAFFIC_DIRECTIONS_INVALIDE(533026, "Idc traffic direction must be rx or tx"),
+    IDC_TRAFFIC_SETTING_ISNULL(531027, "Idc traffic setting can not be empty"),
+    IDC_TRAFFIC_DIRECTIONS_ISNULL(531028, "Idc traffic direction can not be empty"),
+    IDC_TRAFFIC_IFINDEX_ISNULL(531029, "Idc traffic Ifindex can not be empty"),
+    IDC_TRAFFIC_IFDESCR_ISNULL(531030, "Idc traffic ifdescr can not be empty"),
+    IDC_NOT_INCLUDED_ASSET(533031,"Current asset is not included under the data center"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang

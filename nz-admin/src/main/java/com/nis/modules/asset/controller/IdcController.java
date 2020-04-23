@@ -5,11 +5,14 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.IdcTraffic;
 import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.IdcTrafficService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -25,6 +28,9 @@ public class IdcController {
 
     @Autowired
     private IdcService idcService;
+
+    @Autowired
+    private IdcTrafficService idcTrafficService;
 
     /**
      * 数据中心请求列表
@@ -122,6 +128,26 @@ public class IdcController {
         ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
 
         idcService.delete(ids);
+        return R.ok();
+    }
+
+
+    @GetMapping("/trafficSetting")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.DATACENTER)
+    public R queryTrafficSetting(@RequestParam Map<String, Object> params) {
+        PageUtils page = idcTrafficService.queryTrafficSetting(params);
+        return R.ok(page);
+    }
+
+    @PutMapping("/trafficSetting")
+//    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
+    public R updateTrafficSetting(@RequestBody IdcTraffic idcTraffic) {
+        Integer idcId = idcTraffic.getIdcId();
+        List<IdcTraffic> setting = idcTraffic.getSetting();
+
+        idcTrafficService.validateTrafficInfo(idcId, setting);
+
+        idcTrafficService.updateTraffic(idcId, setting);
         return R.ok();
     }
 }

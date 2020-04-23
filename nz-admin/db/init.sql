@@ -872,6 +872,22 @@ CREATE TABLE `user_group_rel`  (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Compact;
 
+
+-- ----------------------------
+-- Table structure for idc_traffic
+-- ----------------------------
+DROP TABLE IF EXISTS `idc_traffic`;
+CREATE TABLE `idc_traffic`  (
+  `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `idc_id` int(10) NOT NULL COMMENT '	数据中心id',
+  `asset_id` int(10) NOT NULL COMMENT '资产Id',
+  `direction` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '流量方向 可选值 rx：接收流量\r\n\r\ntx：发送流量',
+  `ifindex` int(10) NOT NULL COMMENT '端口号',
+  `ifdescr` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '端口描述',
+  `tags` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '标签 格式为json对象',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
 -- ----------------------------
 -- Triggers structure for table alert_rule
 -- ----------------------------

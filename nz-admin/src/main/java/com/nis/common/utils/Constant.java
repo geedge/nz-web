@@ -165,6 +165,9 @@ public class Constant {
     // snmp set value 可选类型集合
     public static final List<String> SNMP_SETVLAUE_TYPE;
 
+    // idc trafficSetting direction 流量方向 可选值 rx(接收） tx（发送）
+    public static final List<String> TRAFFIC_DIRECTIONS;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -212,6 +215,10 @@ public class Constant {
         SNMP_SETVLAUE_TYPE.add("BITS");
         SNMP_SETVLAUE_TYPE.add("Float");
         SNMP_SETVLAUE_TYPE.add("DateAndTime");
+
+        TRAFFIC_DIRECTIONS = new ArrayList<>();
+        TRAFFIC_DIRECTIONS.add("rx");
+        TRAFFIC_DIRECTIONS.add("tx");
     }
     
     /**
