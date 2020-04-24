@@ -236,7 +236,7 @@ public class SnmpMibController extends AbstractController {
             R.error(RCode.SNMP_MIB_BROWSER_FAILED);
         }
 
-        if (resultData == null) {
+        if (CollectionUtils.isEmpty(resultData)){
             return R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
         }
 

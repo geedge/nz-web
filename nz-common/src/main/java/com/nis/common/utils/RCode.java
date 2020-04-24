@@ -304,7 +304,7 @@ public enum RCode {
     SNMP_MIB_VERSION_INVALIDE(563011,"Snmp version must be 2 or 3"),// version值不在合理返回内
     SNMP_MIB_AUTH_ISNULL(561012,"Snmp auth can not be empty"),      // auth值不在合理返回内
     SNMP_MIB_BROWSER_FAILED(560013,"Failed to execute Broswer according by oid"),
-    SNMP_MIB_BROWSER_TIMEOUT(560014,"Browse failed, response timeout"),
+    SNMP_MIB_BROWSER_TIMEOUT(560014,"Browse timed out.It may be caused by 1.The SNMP version number is not supported by agent 2.Agent is down or not reachable 3.Agent is too slow to respond.You can increase the timeout value 4.Browser request has been blocked by firewall 5.Authentication failed.Community name or password is not right"),
     SNMP_MIB_VALUE_ISNULL(561015,"Snmp value cannot be empty when operation is set"),
     SNMP_MIB_TOOBIG(560016,"PDU encoding is too big for the transport used."),
     SNMP_MIB_NOSUCHNAME(560017,"No such variable binding name."),
