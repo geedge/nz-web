@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.panel.dao.ChartDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.ChartElement;
@@ -37,7 +34,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public List<Chart> queryCharts(Integer panelId, Integer id, String title) {
 
         List<Chart> charts = this.baseMapper.queryCharts(panelId);
-        if(CollectionUtils.isEmpty(charts)){
+        if (CollectionUtils.isEmpty(charts)) {
             return charts;
         }
 
@@ -108,7 +105,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         String param;
         for (Chart chart : resultList) {
             param = (String) chart.getParam();
-            if(StringUtils.isNotEmpty(param)){
+            if (StringUtils.isNotEmpty(param)) {
                 chart.setParam(JSONObject.parseObject(param, Map.class));
             }
         }
@@ -124,7 +121,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         chart.setNext(-1);
 
         // 判断当前panel下是否存在chart
-        List<Chart> list = this.list(new QueryWrapper<Chart>().eq("panel_id", chart.getPanelId()));
+        List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, chart.getPanelId()));
 
         if (CollectionUtils.isEmpty(list)) {
             // 一开始没有内容
@@ -132,7 +129,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             this.save(chart);
         } else {
             // 已存在chart 再次新增时自动排到末尾
-            Chart endChart = this.getOne(new QueryWrapper<Chart>().eq("next", -1).eq("panel_id", chart.getPanelId()));
+            Chart endChart = this.getOne(new QueryWrapper<Chart>().lambda().eq(Chart::getNext, -1).eq(Chart::getPanelId, chart.getPanelId()));
             chart.setPrev(endChart.getId());
             this.save(chart);
             // 更新原来最后图表顺序
@@ -159,7 +156,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         // 处理 chart element 信息
         QueryWrapper<ChartElement> chartElementQueryWrapper = new QueryWrapper<>();
-        chartElementQueryWrapper.eq("chart_id", chart.getId());
+        chartElementQueryWrapper.lambda().eq(ChartElement::getChartId, chart.getId());
         List<ChartElement> list = chartElementService.list(chartElementQueryWrapper);
 
         List<ChartElement> saveList = new ArrayList<ChartElement>();
@@ -213,31 +210,51 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         // 验证type是否在枚举范围内
         sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, chart.getType(), RCode.CHART_TYPE_INVALIDE);
 
-        // 当type为url时 ， param不能为空，且格式为json
-        if ("url".equals(type)) {
-            Map param = (Map) chart.getParam();
-            ValidateUtils.is(param).notNull(RCode.CHART_PARAM_ISNULL);
-            Object url = param.get("url");
-            if (url == null) {
-                throw new NZException(RCode.CHART_PARAMURL_ISNULL);
-            }
-            if (!CommonUtils.checkUrl(url.toString())) {
-                throw new NZException(RCode.CHART_PARAMURL_FORMAT);
-            }
-            String strParam = JSONObject.toJSONString(param);
-            chart.setParam(strParam);
+        Map param = (Map) chart.getParam();
+        switch (type) {
+            // url类型
+            case Constant.CHART_URL_TYPE: {
+                ValidateUtils.is(param).notNull(RCode.CHART_URLPARAM_ISNULL);
+                Object url = param.get(Constant.CHART_URL_TYPE);
+                if (ToolUtil.isEmpty(url)) {
+                    throw new NZException(RCode.CHART_PARAMURL_ISNULL);
+                }
+                if (!CommonUtils.checkUrl(url.toString())) {
+                    throw new NZException(RCode.CHART_PARAMURL_FORMAT);
+                }
+                String strParam = JSONObject.toJSONString(param);
+                chart.setParam(strParam);
 
-            chart.setElements(new ArrayList<>());
-        } else {
-            chart.setParam(null);
+                chart.setElements(new ArrayList<>());
+                break;
+            }
+            // singleStat 类型
+            case Constant.CHART_SINGLESTAT_TYPE: {
+                ValidateUtils.is(param).notNull(RCode.CHART_SINGLESTATPARAM_ISNULL);
+                Object statistics = param.get(Constant.CHART_SINGLESTAT_PARAMkEY);
+                if (ToolUtil.isEmpty(statistics)) {
+                    throw new NZException(RCode.CHART_PARAMSINGLESTAT_ISNULL);
+                }
+                if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
+                    throw new NZException(RCode.CHART_PARAMSINGLESTAT_INVALIDE);
+                }
+                String strParam = JSONObject.toJSONString(param);
+                chart.setParam(strParam);
 
-            // url 类型不需要校验 elements
-            ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
-            chartElementService.validateElements(chart.getId(), chart.getElements());
+                chart.setElements(new ArrayList<>());
+                break;
+            }
+            default: {
+                chart.setParam(null);
+
+                // url 类型不需要校验 elements
+                ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
+                chartElementService.validateElements(chart.getId(), chart.getElements());
+            }
         }
 
         // 同一个panel 下 chart title 保证唯一
-        List<Chart> list = this.list(new QueryWrapper<Chart>().eq("title", chart.getTitle()).eq("panel_id", panelId));
+        List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getTitle, chart.getTitle()).eq(Chart::getPanelId, panelId));
         boolean flag = false;
 
         if ((list == null || list.size() == 0) ||
@@ -252,8 +269,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private void validateChartExists(Integer panelId, Integer id) {
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
-        chartQueryWrapper.eq("panel_id", panelId);
-        chartQueryWrapper.eq("id", id);
+        chartQueryWrapper.lambda().eq(Chart::getPanelId, panelId);
+        chartQueryWrapper.lambda().eq(Chart::getId, id);
 
         Chart chart = this.getOne(chartQueryWrapper);
 
@@ -266,7 +283,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public void validatePanel(Integer panelId) {
         Panel panel = panelService.getById(panelId);
 
-        if(panel == null){
+        if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);
         }
     }
@@ -358,16 +375,16 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
 
     @Override
-    public void delChartsByPanelId(Integer... panelIds){
-        if(panelIds.length<1){
-            return ;
+    public void delChartsByPanelId(Integer... panelIds) {
+        if (panelIds.length < 1) {
+            return;
         }
         QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
-        chartQueryWrapper.in("panel_id",panelIds);
+        chartQueryWrapper.lambda().in(Chart::getPanelId, panelIds);
 
         this.remove(chartQueryWrapper);
 
-        List<Integer> chartIds=this.baseMapper.queryChartIds(panelIds);
+        List<Integer> chartIds = this.baseMapper.queryChartIds(panelIds);
 
         chartElementService.delElementByChartIds(chartIds);
     }
@@ -382,7 +399,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     @Override
     public void modify(Integer panelId, Chart chart) {
         // 取出改panel下所有的charts
-        List<Chart> chartList = this.list(new QueryWrapper<Chart>().eq("panel_id", panelId).orderByAsc("prev"));
+        List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, panelId).orderByAsc(Chart::getPrev));
 
         String str;
         for (Chart entity : chartList) {
@@ -399,7 +416,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         Chart oldEntity = idAndChartMap.get(chart.getId());
         String param = (String) oldEntity.getParam();
-        if(param != null){
+        if (param != null) {
             chart.setParam(param);
         }
 
@@ -419,7 +436,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         // 校验 prev next 参数是否合法
-        if(this.validatePrevAndNext(idAndChartMap, chart)){
+        if (this.validatePrevAndNext(idAndChartMap, chart)) {
             // 没有改变位置 直接修改库中 span height属性
             this.updateById(chart);
         }
@@ -581,7 +598,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     private boolean validatePrevAndNext(Map<Integer, Chart> idAndChartMap, Chart chart) {
         // 如果没有改变位置
         Chart entity = this.getById(chart.getId());
-        if(entity.getPrev().equals(chart.getPrev()) && entity.getNext().equals(chart.getNext())){
+        if (entity.getPrev().equals(chart.getPrev()) && entity.getNext().equals(chart.getNext())) {
             return true;
         }
 

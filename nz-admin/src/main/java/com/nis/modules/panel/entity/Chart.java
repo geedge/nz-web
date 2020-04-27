@@ -2,6 +2,7 @@ package com.nis.modules.panel.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @TableName("chart")
 public class Chart {
 
+    @TableId
     private Integer id;
     /**
      * 图表id，关联panel表

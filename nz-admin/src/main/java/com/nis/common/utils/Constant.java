@@ -168,6 +168,9 @@ public class Constant {
     // idc trafficSetting direction 流量方向 可选值 rx(接收） tx（发送）
     public static final List<String> TRAFFIC_DIRECTIONS;
 
+    // 图表 singleStat statistics可选值列表
+    public static final List<String> CHART_SINGLESTAT_STATISTICS;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -219,6 +222,16 @@ public class Constant {
         TRAFFIC_DIRECTIONS = new ArrayList<>();
         TRAFFIC_DIRECTIONS.add("rx");
         TRAFFIC_DIRECTIONS.add("tx");
+
+        CHART_SINGLESTAT_STATISTICS = new ArrayList<>();
+        CHART_SINGLESTAT_STATISTICS.add("min");
+        CHART_SINGLESTAT_STATISTICS.add("max");
+        CHART_SINGLESTAT_STATISTICS.add("average");
+        CHART_SINGLESTAT_STATISTICS.add("total");
+        CHART_SINGLESTAT_STATISTICS.add("first");
+        CHART_SINGLESTAT_STATISTICS.add("last");
+        CHART_SINGLESTAT_STATISTICS.add("range");
+        CHART_SINGLESTAT_STATISTICS.add("different");
     }
     
     /**
@@ -565,4 +578,12 @@ public class Constant {
     // snmp browser 中返回oid 与 mib文件中name对应，当前截取位置为  倒数1位
     public static final int OIDNAME_TRUNCATION_INDEX = 1;
 
+    // 图表 url类型
+    public static final String CHART_URL_TYPE = "url";
+
+    // 图表 singleStat 类型
+    public static final String CHART_SINGLESTAT_TYPE = "singleStat";
+
+    // 图表singleStat 类型 paramkey名称
+    public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
 }

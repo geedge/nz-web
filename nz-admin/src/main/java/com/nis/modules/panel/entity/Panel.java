@@ -1,6 +1,7 @@
 package com.nis.modules.panel.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.Data;
 @TableName("panel")
 public class Panel {
 
+    @TableId
     private Integer id;
     /**
      * 图表名
