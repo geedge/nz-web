@@ -196,8 +196,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             } catch (Exception e) {
             	logger.error("error info :",e);
             	e.printStackTrace();
-            	if (e.getMessage().toLowerCase().contains("userauth fail")) {
-            		session.sendMessage(new TextMessage(" Login fail "));
+            	if (e.getMessage().toLowerCase().contains("auth fail")) {
+            		session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
                     session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. \r\n"));
                 } else {
@@ -214,6 +214,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             }
         }else {
         	//如果用户没有传入asset信息 则友情提示用户
+        	session.sendMessage(new TextMessage("Login fail! No login account is configured. \r\n"));	
         	unloginUserHandle(session);
         	logger.info("user stateless access server");
         }
