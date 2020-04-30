@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 常量
@@ -349,6 +350,8 @@ public class Constant {
 
     public static final Integer SNMPV2 = 2;
     public static final Integer SNMPV3 = 3;
+    // snmp默认团体名
+    public static final String SNMP_DEFAULT_COMMUNITY = "public";
 
     public enum SnmpOperationType{
         GET("get"),
@@ -586,4 +589,7 @@ public class Constant {
 
     // 图表singleStat 类型 paramkey名称
     public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
+
+    // IDC traffic中tags key正则校验表达式
+    public static final Pattern TRAFFIC_TAGSKEY_PATTERN = Pattern.compile("^[a-zA-Z_:][a-zA-Z0-9_:]*$");
 }

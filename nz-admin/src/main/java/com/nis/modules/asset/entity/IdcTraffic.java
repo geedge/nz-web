@@ -26,11 +26,6 @@ public class IdcTraffic implements Serializable {
     private Integer idcId;
 
     /**
-     * 资产id
-     */
-    private Integer assetId;
-
-    /**
      * 流量方向 可选值 rx(接收） tx（发送）
      */
     private String direction;
@@ -51,16 +46,35 @@ public class IdcTraffic implements Serializable {
     private Object tags;
 
     /**
+     * ip地址
+     */
+    private String host;
+
+    /**
+     * 端口 默认161
+     */
+    private Integer port;
+
+    /**
+     * snmp版本 默认v2
+    */
+    private Integer version;
+
+    /**
+     * snmp团体名 默认 public
+     */
+    private String community;
+
+    /**
+     * snmp认证信息
+     */
+    private Object auth;
+
+    /**
      * 关联idc对象
      */
     @TableField(exist = false)
     private Idc idc;
-
-    /**
-     * 关联asset对象
-     */
-    @TableField(exist = false)
-    private Asset asset;
 
     @TableField(exist = false)
     private List<IdcTraffic> setting;

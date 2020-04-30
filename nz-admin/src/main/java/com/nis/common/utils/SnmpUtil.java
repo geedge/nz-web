@@ -407,12 +407,12 @@ public class SnmpUtil {
             String authProtocol = authInfo.get("authProtocol");
 
 
-            if (securityLevel.equals("authPriv")) { // 认证且加密
+            if ("authPriv".equals(securityLevel)) { // 认证且加密
                 if (StringUtils.isEmpty(privPassword)) {
                     throw new NZException(RCode.MODULE_PRIVPASSWORD_ISNULL);
                 }
 
-                if (StringUtils.isEmpty(privProtocol) && !privProtocol.equals("DES") && !privProtocol.equals("AES")) {
+                if (StringUtils.isEmpty(privProtocol) || (!"DES".equals(privProtocol) && !"AES".equals(privProtocol))) {
                     throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
                 }
 
@@ -420,18 +420,18 @@ public class SnmpUtil {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
 
-                if (StringUtils.isEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                if (StringUtils.isEmpty(authProtocol) || (!"MD5".equals(authProtocol) && !"SHA".equals(authProtocol))) {
                     throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
                 }
-            } else if (securityLevel.equals("authNoPriv")) { // 认证不加密
+            } else if ("authNoPriv".equals(securityLevel)) { // 认证不加密
                 if (StringUtils.isEmpty(password)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
 
-                if (StringUtils.isEmpty(authProtocol) && !authProtocol.equals("MD5") && !authProtocol.equals("SHA")) {
+                if (StringUtils.isEmpty(authProtocol) || (!"MD5".equals(authProtocol) && !"SHA".equals(authProtocol))) {
                     throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
                 }
-            } else if (securityLevel.equals("noAuthNoPriv")) {
+            } else if ("noAuthNoPriv".equals(securityLevel)) {
                 // do nothhing
             } else {
                 // 不在枚举范围内

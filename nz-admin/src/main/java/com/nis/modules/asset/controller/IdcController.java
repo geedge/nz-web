@@ -1,5 +1,7 @@
 package com.nis.modules.asset.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -140,10 +142,10 @@ public class IdcController {
     }
 
     @PutMapping("/trafficSetting")
-//    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
-    public R updateTrafficSetting(@RequestBody IdcTraffic idcTraffic) {
-        Integer idcId = idcTraffic.getIdcId();
-        List<IdcTraffic> setting = idcTraffic.getSetting();
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
+    public R updateTrafficSetting(@RequestBody Map params) {
+        Integer idcId = (Integer) params.get("idcId");
+        List<IdcTraffic> setting = JSONArray.parseArray(JSON.toJSONString(params.get("setting")), IdcTraffic.class);
 
         idcTrafficService.validateTrafficInfo(idcId, setting);
 

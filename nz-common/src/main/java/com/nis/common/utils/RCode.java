@@ -279,6 +279,12 @@ public enum RCode {
     IDC_TRAFFIC_IFINDEX_ISNULL(531029, "Idc traffic Ifindex can not be empty"),
     IDC_TRAFFIC_IFDESCR_ISNULL(531030, "Idc traffic ifdescr can not be empty"),
     IDC_NOT_INCLUDED_ASSET(533031,"Current asset is not included under the data center"),
+    IDC_TRAFFIC_HOST_FORMAT(533032,"Idc traffic host must be in IP format"),
+    IDC_TRAFFIC_HOST_ISNULL(531033,"Idc traffic host can not be empty"),
+    IDC_TRAFFIC_PORT_ISNULL(531034,"Idc traffic port can not be empty"),
+    IDC_TRAFFIC_VERSION_ISNULL(531035,"Idc traffic version can not be empty"),
+    IDC_TRAFFIC_PORT_INVALIDE(535036,"Idc traffic port is invalide"),
+    IDC_TRAFFIC_TAGSKEY_FORMAT(533037,"Idc traffic tags key format is incorrect"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang
@@ -305,7 +311,7 @@ public enum RCode {
     SNMP_MIB_OID_ISNULL(561009,"Snmp mib oid can not be empty"),// oid 不能为空
     SNMP_MIB_OPERATION_INVALIDE(563010,"Snmp operation type must be get, walk, getnext or set "),// operation值不在合理返回内
     SNMP_MIB_VERSION_INVALIDE(563011,"Snmp version must be 2 or 3"),// version值不在合理返回内
-    SNMP_MIB_AUTH_ISNULL(561012,"Snmp auth can not be empty"),      // auth值不在合理返回内
+    SNMP_MIB_AUTH_ISNULL(561012,"Snmp auth can not be empty when version is 3"),      // auth值不在合理返回内
     SNMP_MIB_BROWSER_FAILED(560013,"Failed to execute Broswer according by oid"),
     SNMP_MIB_BROWSER_TIMEOUT(560014,"Browse timed out.It may be caused by 1.The SNMP version number is not supported by agent 2.Agent is down or not reachable 3.Agent is too slow to respond.You can increase the timeout value 4.Browser request has been blocked by firewall 5.Authentication failed.Community name or password is not right"),
     SNMP_MIB_VALUE_ISNULL(561015,"Snmp value cannot be empty when operation is set"),

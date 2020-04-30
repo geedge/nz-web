@@ -8,7 +8,6 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.IdcTrafficDao;
-import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.entity.IdcTraffic;
 import com.nis.modules.asset.service.AssetService;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 数据中心    serviceImpl
@@ -57,6 +55,9 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             if (ToolUtil.isNotEmpty(idcTraffic.getTags())) {
                 idcTraffic.setTags(JSONObject.parseObject(idcTraffic.getTags().toString(), Map.class));
             }
+            if (ToolUtil.isNotEmpty(idcTraffic.getAuth())) {
+                idcTraffic.setAuth(JSONObject.parseObject(idcTraffic.getAuth().toString(), Map.class));
+            }
         });
         page.setRecords(traffics);
         return new PageUtils(page);
@@ -72,32 +73,67 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             throw new NZException(RCode.IDC_NOT_EXISTS);
         }
 
-        List<Asset> assetList = assetService.list();
-        Map<Integer, Integer> assetIdAndDcIdMap = assetList.stream().collect(Collectors.toMap(Asset::getId, Asset::getIdcId));
+        String host, direction;
+        Integer port, version;
+        for (IdcTraffic traffic : setting) {
+            host = traffic.getHost();
+            port = traffic.getPort();
+            version = traffic.getVersion();
+            direction = traffic.getDirection();
 
-        setting.stream().forEach(idcTraffic -> {
-            ValidateUtils.is(idcTraffic.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
-                    .and(idcTraffic.getDirection()).notNull(RCode.IDC_TRAFFIC_DIRECTIONS_ISNULL)
-                    .and(idcTraffic.getIfindex()).notNull(RCode.IDC_TRAFFIC_IFINDEX_ISNULL)
-                    .and(idcTraffic.getIfdescr()).notNull(RCode.IDC_TRAFFIC_IFDESCR_ISNULL);
+            ValidateUtils.is(host).notNull(RCode.IDC_TRAFFIC_HOST_ISNULL)
+                    .and(port).notNull(RCode.IDC_TRAFFIC_PORT_ISNULL)
+                    .and(version).notNull(RCode.IDC_TRAFFIC_VERSION_ISNULL)
+                    .and(direction).notNull(RCode.IDC_TRAFFIC_DIRECTIONS_ISNULL)
+                    .and(traffic.getIfindex()).notNull(RCode.IDC_TRAFFIC_IFINDEX_ISNULL)
+                    .and(traffic.getIfdescr()).notNull(RCode.IDC_TRAFFIC_IFDESCR_ISNULL);
 
-            Integer dcId = assetIdAndDcIdMap.get(idcTraffic.getAssetId());
-            if (ToolUtil.isEmpty(dcId)) {
-                throw new NZException(RCode.ASSET_NOT_EXIST);
+            // host
+            if (!CommonUtils.checkUrl(host)) {
+                throw new NZException(RCode.IDC_TRAFFIC_HOST_FORMAT);
             }
 
-            if (!idcId.equals(dcId)) {
-                throw new NZException(RCode.IDC_NOT_INCLUDED_ASSET);
+            // PORT
+            if (!CommonUtils.checkPort(port.toString())) {
+                throw new NZException(RCode.IDC_TRAFFIC_PORT_INVALIDE);
+            }
+
+            // version
+            if (!Constant.SNMPV2.equals(version) && !Constant.SNMPV3.equals(version)) {
+                throw new NZException(RCode.SNMP_MIB_VERSION_INVALIDE);
+            }
+
+            if (StringUtils.isEmpty(traffic.getCommunity())) {
+                traffic.setCommunity(Constant.SNMP_DEFAULT_COMMUNITY);
             }
 
             // 流量方向可多选
-            String[] split = idcTraffic.getDirection().split(",");
+            String[] split = direction.split(",");
             Arrays.asList(split).stream().forEach(s -> {
                 if (!Constant.TRAFFIC_DIRECTIONS.contains(s)) {
                     throw new NZException(RCode.IDC_TRAFFIC_DIRECTIONS_INVALIDE);
                 }
             });
-        });
+
+            if (Constant.SNMPV3.equals(version)) {
+                Map auth = (Map) traffic.getAuth();
+                // 校验参数是否正确
+                if (ToolUtil.isEmpty(auth)) {
+                    throw new NZException(RCode.SNMP_MIB_AUTH_ISNULL);
+                } else {
+                    SnmpUtil.ValidateAuthForSnmpV3(auth);
+                }
+            }
+
+            Map tags = (Map) traffic.getTags();
+            if (ToolUtil.isNotEmpty(tags)) {
+                tags.keySet().stream().forEach(key -> {
+                    if (!Constant.TRAFFIC_TAGSKEY_PATTERN.matcher(key.toString()).matches()) {
+                        throw new NZException("tags's key " + key + " format is incorrect", RCode.IDC_TRAFFIC_TAGSKEY_FORMAT.getCode());
+                    }
+                });
+            }
+        }
     }
 
     @Override
@@ -110,6 +146,9 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             idcTraffic.setIdcId(idcId);
             if (ToolUtil.isNotEmpty(idcTraffic.getTags())) {
                 idcTraffic.setTags(JSONObject.toJSONString(idcTraffic.getTags()));
+            }
+            if (ToolUtil.isNotEmpty(idcTraffic.getAuth())) {
+                idcTraffic.setAuth(JSONObject.toJSONString(idcTraffic.getAuth()));
             }
         });
 
