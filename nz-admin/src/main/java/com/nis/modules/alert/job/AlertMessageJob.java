@@ -2,32 +2,32 @@ package com.nis.modules.alert.job;
 
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.MailUtil;
-import com.nis.common.utils.RedisUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertNameMapUserDTO;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -41,6 +41,8 @@ public class AlertMessageJob extends QuartzJobBean {
     @Autowired
     SysConfigService configService;
 
+    @Autowired
+    private SysUserService sysUserService;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -65,31 +67,40 @@ public class AlertMessageJob extends QuartzJobBean {
         if(ToolUtil.isEmpty(obj)){
             return;
         }
-        List<AlertMessageEntity> entities  = (List<AlertMessageEntity>) obj;
-        Set<Integer> ruleIds = new HashSet<>();
-        for(AlertMessageEntity alertMessageEntity:entities){
-            ruleIds.add(alertMessageEntity.getRuleId());
-        }
-        List<AlertNameMapUserDTO> alertNameMapEmail = alertRuleService.queryUserByRuleId(ruleIds);
-	    		for (AlertMessageEntity entity : entities) {
-	        		for (AlertNameMapUserDTO dto : alertNameMapEmail) {
-	        			if (entity.getRuleId().intValue()==dto.getRuleId().intValue()) {
-	        				List<String> toSendEmails = new ArrayList<>();
-	        				List<SysUserEntity> users = dto.getUsers();
-	        				for (SysUserEntity user : users) {
-	        					if (!StringUtils.isBlank(user.getEmail())) {
-	        						toSendEmails.add(user.getEmail());
-	        					}
-	        				}
-                            log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
-	        				if(ToolUtil.isNotEmpty(toSendEmails)){
-                                mailUtil.sendHTML(toSendEmails, entity.getSummary(), this.sendMail(entity.getDescription()));
-                            }
 
-							break;
-	        			}
-	        		}
-	        	}
+        // 告警消息集合
+        List<AlertMessageEntity> entities  = (List<AlertMessageEntity>) obj;
+        if(CollectionUtils.isEmpty(entities)){
+            return;
+        }
+        // 规则及通知人信息
+        List<AlertRuleEntity> ruleList = alertRuleService.list();
+        Map<Integer, String> ruleIdAndReceiver = ruleList.stream().collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getReceiver));
+
+        // 用户及邮箱信息
+        List<SysUserEntity> userList = sysUserService.list();
+        Map<Long, String> userIdAndEmail = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
+
+        for (AlertMessageEntity messageEntity : entities) {
+            String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
+            // 通知人不为空 发件
+            if(StringUtils.isNotEmpty(receiver)){
+
+                List<String> toSendEmails = new ArrayList<>();
+
+                Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
+                    String email = userIdAndEmail.get(Long.valueOf(receiverId));
+                    if(StringUtils.isNotEmpty(email)){
+                        toSendEmails.add(email);
+                    }
+                });
+
+                log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
+                if(ToolUtil.isNotEmpty(toSendEmails)){
+                    mailUtil.sendHTML(toSendEmails, messageEntity.getSummary(), this.sendMail(messageEntity.getDescription()));
+                }
+            }
+        }
     }
 
 

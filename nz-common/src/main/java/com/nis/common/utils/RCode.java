@@ -206,6 +206,7 @@ public enum RCode {
     ALERTRULE_BUILDIN_CAN_NOT_REMOVE(427012, "This rule is built-in and cannot be deleted"),
     ALERTRULE_TOPN_ISNULL(421013, "TopN is required"), //告警信息topn不能为空
     ALERTRULE_SUMMARY_ISNULL(421014, "Alert summary is required"),
+    ALERTRULE_RECEIVER_FORMAT(423015, "Alert receiver id format error , it's should be integer"),
 
 
     /**
@@ -227,6 +228,7 @@ public enum RCode {
     SYS_USER_DELADMIN(517012, "del admin error"), //系统管理员不能删除
     SYS_USER_CANNOTDEL(517013, "cannot del user error"),          //当前用户不能删除
     SYS_USER_DUPLICATENAME(517014, "user name duplicate error"), //业务系统选择错误
+    SYS_USER_NOT_EXIST(516015, "System user does not exist"),    //系统用户不存在
 
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),

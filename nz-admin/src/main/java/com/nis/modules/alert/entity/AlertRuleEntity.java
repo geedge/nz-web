@@ -3,18 +3,18 @@ package com.nis.modules.alert.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
-import java.io.Serializable;
-
+import com.nis.modules.sys.entity.SysUserEntity;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
-import lombok.Data;
+import java.io.Serializable;
+import java.util.List;
 
 /**
- * 
- * 
+ *
+ *
  * @author song
- * @email 
+ * @email
  * @date 2019-11-25 10:11:01
  */
 @Data
@@ -32,15 +32,6 @@ public class AlertRuleEntity implements Serializable {
 	 * 告警名称
 	 */
 	private String alertName;
-
-	/**
-	 *告警类型
-	 * */
-	//private Integer type;
-	/**
-	 * 关联Id
-	 * */
-	//private Integer linkId;
 
 	/**
 	 * 运算表达式
@@ -62,14 +53,12 @@ public class AlertRuleEntity implements Serializable {
 	 * 告警详细描述
 	 */
 	private String description;
-	/**
-	 * 通知用户组
-	 */
-	private Integer receiver;
 
-	@TableField(exist = false)
-	private Object linkObject;
-	
+	/**
+	 * 通知用户ids 可多个
+	 */
+	private String receiver;
+
 	/**
 	 * 是否为内置规则
 	 */
@@ -80,5 +69,11 @@ public class AlertRuleEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Integer alertNum;
+
+	/**
+	 * 通知的用户信息
+	 */
+	@TableField(exist = false)
+	private List<SysUserEntity> receivers;
 
 }

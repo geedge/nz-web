@@ -25,14 +25,11 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	 * @return true:可用;false:不可用
 	 */
 	boolean checkName(AlertRuleEntity queryParam);
-	
-
-	//void validateTypeLink(Integer type, Integer linkId);
 
 	List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds);
 
-	//void removeByTypeIds(Integer typeId,List ids);
-	
 	void validateBulitinRule(List<Integer> id);
+
+	void validateReceiver(String receiver);
 }
 

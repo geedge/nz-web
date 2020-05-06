@@ -3,68 +3,57 @@
 
 <mapper namespace="com.nis.modules.alert.dao.AlertRuleDao">
 
-	<!-- 可根据自己的需求，是否要使用 -->
+    <!-- 可根据自己的需求，是否要使用 -->
     <resultMap type="com.nis.modules.alert.entity.AlertRuleEntity" id="alertRuleMap">
         <result property="id" column="id"/>
         <result property="alertName" column="alert_name"/>
         <result property="expr" column="expr"/>
         <result property="last" column="last"/>
-        <!--result property="type" column="type"/>-->
         <result property="severity" column="severity"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
-        <!--<result property="linkId" column="link_id" />-->
     </resultMap>
-    
+
     <resultMap type="com.nis.modules.alert.entity.AlertNameMapUserDTO" id="alertRuleMapUser">
         <result property="ruleId" column="ruleId"/>
         <result property="receiver" column="receiver"/>
         <collection property="users" ofType="com.nis.modules.sys.entity.SysUserEntity">
-	        <result property="email" column="email"/>
+            <result property="email" column="email"/>
         </collection>
     </resultMap>
 
-	<select id="queryUserByRuleIds" resultMap="alertRuleMapUser">
-		SELECT 
-			a.id ruleId,
-			a.receiver,
-			u.email
-		FROM alert_rule a
-		LEFT JOIN user_group_rel ugr ON ugr.group_id=a.receiver
-		LEFT JOIN sys_user u ON ugr.user_id=u.user_id
-		WHERE 
-			a.id in
-			<foreach item="ruleId" collection="ruleIds" separator="," open="(" close=")" index="">
-				#{ruleId}
-			</foreach>
-	</select>
+    <select id="queryUserByRuleIds" resultMap="alertRuleMapUser">
+        SELECT
+        a.id ruleId,
+        a.receiver,
+        u.email
+        FROM alert_rule a
+        LEFT JOIN user_group_rel ugr ON ugr.group_id=a.receiver
+        LEFT JOIN sys_user u ON ugr.user_id=u.user_id
+        WHERE
+        a.id in
+        <foreach item="ruleId" collection="ruleIds" separator="," open="(" close=")" index="">
+            #{ruleId}
+        </foreach>
+    </select>
 
     <select id="queryIdsByAlertName" resultType="integer">
         select id from alert_rule where alert_name like concat('%',#{alertName},'%')
     </select>
-    
-   <!-- <delete id="deleteByTypeIds">
-    	delete from alert_rule where type=#{typeId} and link_id in
-    	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
-			#{id}
-		</foreach>
-    </delete>-->
 
     <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
         SELECT
-            ar.id,
-            ar.alert_name AS alertName,
-            /*ar.link_id AS linkId,*/
-            /*ar.type,*/
-            ar.expr,
-            ar.last,
-            ar.severity,
-            ar.summary,
-            ar.description,
-            ar.receiver,
-            ar.build_in AS buildIn,
-            COUNT(am.id) AS alertNum
+        ar.id,
+        ar.alert_name AS alertName,
+        ar.expr,
+        ar.last,
+        ar.severity,
+        ar.summary,
+        ar.description,
+        ar.receiver,
+        ar.build_in AS buildIn,
+        COUNT(am.id) AS alertNum
         FROM alert_rule ar
         LEFT JOIN alert_message am ON ar.id = am.rule_id AND am.state = 1
 
@@ -77,14 +66,6 @@
             <if test="params.alertName != null and params.alertName != ''">
                 AND ar.alert_name LIKE CONCAT('%', #{params.alertName}, '%')
             </if>
-
-         <!--   <if test="params.type != null and params.type != ''">
-                AND ar.type = #{params.type}
-            </if>-->
-
-            <!--if test="params.type != null and params.type != '' and params.linkId != null and params.linkId != ''">
-                AND ar.link_id = #{params.linkId}
-            </if>-->
 
             <if test="params.expr != null and params.expr != ''">
                 AND ar.expr LIKE CONCAT('%', #{params.expr}, '%')
@@ -108,6 +89,20 @@
 
             <if test="params.buildIn != null and params.buildIn != ''">
                 AND ar.build_in = #{params.buildIn}
+            </if>
+
+            <if test="receivers != null and receivers.size > 0">
+                <choose>
+                    <when test="receivers.size == 1">
+                        AND FIND_IN_SET(#{receivers[0]}, receiver)
+                    </when>
+                    <otherwise>
+                        AND FIND_IN_SET(#{receivers[0]}, receiver)
+                        <foreach item="receiver" collection="receivers" index="">
+                            OR FIND_IN_SET(#{receiver}, receiver)
+                        </foreach>
+                    </otherwise>
+                </choose>
             </if>
 
         </where>

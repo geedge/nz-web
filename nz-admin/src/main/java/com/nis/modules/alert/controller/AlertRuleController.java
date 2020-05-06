@@ -1,24 +1,19 @@
 package com.nis.modules.alert.controller;
 
-import java.util.Arrays;
-import java.util.Map;
-
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.service.AlertRuleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
+import java.util.Arrays;
+import java.util.Map;
 
 /**
  * @author song
@@ -77,7 +72,12 @@ public class AlertRuleController {
 				throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
 			}
 		}
-    	
+
+	    String receiver = alertRule.getReceiver();
+    	if(StringUtils.isNotEmpty(receiver)){
+		    alertRuleService.validateReceiver(receiver);
+	    }
+
 		alertRuleService.save(alertRule);
 
         return R.ok();
@@ -117,6 +117,11 @@ public class AlertRuleController {
 				throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
 			}
 		}
+
+	    String receiver = alertRule.getReceiver();
+	    if(StringUtils.isNotEmpty(receiver)){
+		    alertRuleService.validateReceiver(receiver);
+	    }
     	
     	alertRuleService.updateById(alertRule);
         return R.ok();
