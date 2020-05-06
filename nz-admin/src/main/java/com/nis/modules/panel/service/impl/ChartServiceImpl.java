@@ -241,7 +241,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String strParam = JSONObject.toJSONString(param);
                 chart.setParam(strParam);
 
-                chart.setElements(new ArrayList<>());
+                ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
+                chartElementService.validateElements(chart.getId(), chart.getElements());
                 break;
             }
             default: {
