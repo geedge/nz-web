@@ -146,6 +146,8 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             idcTraffic.setIdcId(idcId);
             if (ToolUtil.isNotEmpty(idcTraffic.getTags())) {
                 idcTraffic.setTags(JSONObject.toJSONString(idcTraffic.getTags()));
+            } else {
+                idcTraffic.setTags("");
             }
             if (ToolUtil.isNotEmpty(idcTraffic.getAuth())) {
                 idcTraffic.setAuth(JSONObject.toJSONString(idcTraffic.getAuth()));
