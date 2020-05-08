@@ -14,12 +14,10 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertMessageWithExport;
-import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
@@ -47,7 +45,6 @@ import org.apache.shiro.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.HashOperations;
@@ -68,14 +65,9 @@ import java.util.stream.Collectors;
 @Service("alertMessageService")
 public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertMessageEntity> implements AlertMessageService {
 	private Logger logger= LoggerFactory.getLogger(AlertMessageServiceImpl.class);
-	//@Value("${spring.mail.open}")
-	//private Integer sendEmail; //0不通知，1通知  默认通知
-	@Autowired
-	private MailUtil mailUtil;
+
 	@Autowired
 	private AssetService assetService;
-	@Autowired
-	private AssetDao assetDao;
 	@Autowired
 	private ModuleService moduleService;
 	@Autowired
@@ -93,8 +85,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private SysConfigService configService;
 
-	private static Gson gson = new Gson();
-
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
     	try {
@@ -107,7 +97,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				params.put("endAt", searchEndAt);
 			}
 
-		} catch (ParseException e) {}
+		} catch (ParseException e) {
+		    logger.error("时间转换异常,参数是 {}", params, e);
+	    }
 
     	Integer searchId=resolveParamToInteger(params,"id");
     	params.put("id",searchId);
@@ -139,19 +131,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 		// 处理返回结果
 		this.handleResultData(alertMessages);
-
-		/*for (AlertMessageEntity am:alertMessages){
-			if(am.getType()!=null){
-				IService service=getServiceImpl(am.getType());
-				Object linkObject = service.getById(am.getLinkId());
-				if(Constant.AlertType.ALERT_TYPE_MODULE.getCode().intValue()==am.getType().intValue()){
-					Module module=(Module)linkObject;
-					Project project = projectService.getById(module.getProjectId());
-					module.setProject(project);
-				}
-				am.setLinkObject(linkObject);
-			}
-		}*/
 
 		page.setRecords(alertMessages);
 
@@ -230,21 +209,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			@Override
 			public Object doInRedis(RedisConnection redis) throws DataAccessException {
 
-			    // 获取当前asset集合 并将ip 与 id 抽出来， 在收集snmptrap信息时需要使用
- 				/*List<Asset> assetList = assetService.list();
-				Map<String,Integer> assetIpWithId = new HashMap<>();
-				if(CollectionUtils.isNotEmpty(assetList)){
-                    for (Asset asset : assetList) {
-                        assetIpWithId.put(asset.getHost(), asset.getId());
-                    }
-				}*/
-
 				for (AlertMessageReceiveDTO dto : receiveData) {
 					try{
 						getReceiveLabels(dto);
-//						AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
                         AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
-						//ruleIds.add(entity.getRuleId());
 
 						// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
 						Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
@@ -252,7 +220,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
                             entities.add(entity);
 						}
 
-						// entities.add(entity);
 						HashMap<String, Object> map = new HashMap<>();
 						map.put("id",entity.getRuleId());
 						map.put("time", System.currentTimeMillis());
@@ -271,7 +238,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    	this.saveBatch(entities);
 	    	String emailEnable = configService.getValue("email_enable");
 	    	//邮件通知
-	    	if ("on" .equals(emailEnable)) {
+	    	if (Constant.SWITCH_OPEN.equals(emailEnable)) {
 	    		redisTemplate.opsForList().leftPush("alert_message_list",entities);
 	    	}
     	}
@@ -328,24 +295,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		baseMapper.update(null, new UpdateWrapper<AlertMessageEntity>().in("id", splitedIds).set("state", alertMessage.getState()));
 		return true;
 	}
-	/**
-	 * 根据type获取相应service
-	 * */
-	private IService getServiceImpl(Integer typeId){
-		Constant.AlertType alertType = Constant.AlertType.getAlertType(typeId);
-		if(alertType==null){
-			throw new NZException(RCode.ALERTRULE_TYPE_INVALIDE);
-		}
-		switch (alertType){
-			case ALERT_TYPE_PROJECT:
-				return projectService;
-			case ALERT_TYPE_MODULE:
-				return moduleService;
-			case ALERT_TYPE_ASSET:
-				return assetService;
-		}
-		return null;
-	}
 
 	private Integer resolveParamToInteger(Map<String,Object> params,String paramName){
 		Integer param=null;
@@ -357,12 +306,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 		return param;
 	}
-
-	/*@Override
-
-	public void removeByTypeIds(Integer typeId, List ids) {
-		alertMessageDao.deleteByTypeIds(typeId, ids);
-	}*/
 
 	@Override
 	public List<MetricsDto> queryAlertMessageStatisticsInfo() {

@@ -50,12 +50,6 @@ public class ModelController {
             ValidateUtils.is(usize).min(1, RCode.ASSET_MODEL_USIZEMINIMUM);
         }
 
-        // 校验名称重复          --- 可能会出现厂商类型不一致但型号一致的情况 所以取消名称限制
-        /*if (!modelService.checkName(model.getId(), model.getName())) {
-            // 资产型号名称重复
-            throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
-        }*/
-
         modelService.saveOrUpdateModel(model);
         return R.ok();
     }
@@ -79,12 +73,6 @@ public class ModelController {
         if(usize != null){
             ValidateUtils.is(usize).min(1, RCode.ASSET_MODEL_USIZEMINIMUM);
         }
-
-        // 校验名称重复        --- 可能会出现厂商类型不一致但型号一致的情况 所以取消名称限制
-        /*if (!modelService.checkName(model.getId(), model.getName())) {
-            // 资产型号名称重复
-            throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
-        }*/
 
         modelService.checkUsize(model);
 

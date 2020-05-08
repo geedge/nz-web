@@ -1,12 +1,6 @@
 package com.nis.modules.alert.entity;
 
-import com.alibaba.fastjson.annotation.JSONField;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.asset.entity.Asset;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -24,7 +18,7 @@ import java.util.Date;
 public class AlertMessageWithExport implements Serializable{
 	private static final long serialVersionUID = 1L;
 
-	private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 
 	/**
@@ -90,7 +84,7 @@ public class AlertMessageWithExport implements Serializable{
 	}
 
 	public void setStartAt(Date startAt) {
-		this.startAt = ToolUtil.isNotEmpty(startAt)?format.format(startAt):null;
+		this.startAt = ToolUtil.isNotEmpty(startAt)?DATE_FORMAT.format(startAt):null;
 	}
 
 	public String getEndAt() {
@@ -98,6 +92,6 @@ public class AlertMessageWithExport implements Serializable{
 	}
 
 	public void setEndAt(Date endAt) {
-		this.endAt = ToolUtil.isNotEmpty(endAt)?format.format(endAt):null;
+		this.endAt = ToolUtil.isNotEmpty(endAt)?DATE_FORMAT.format(endAt):null;
 	}
 }

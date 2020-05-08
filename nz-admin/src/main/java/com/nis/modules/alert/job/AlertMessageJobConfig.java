@@ -1,6 +1,5 @@
 package com.nis.modules.alert.job;
 
-import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.*;

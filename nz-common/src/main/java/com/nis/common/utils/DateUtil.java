@@ -288,6 +288,20 @@ public class DateUtil {
 		return parse(s, "yyyy-MM-dd HH:mm:ss") != null;
 	}
 
+	/**
+	 * 校验日期是否合法
+	 * @param time
+	 * @param pattern
+	 * @return
+	 */
+	public static boolean isValidDate(String time,String pattern){
+		try {
+			Date date = DateUtils.parseDate(time, new String[]{pattern});
+			return  true;
+		} catch (ParseException e) {
+			return  false;
+		}
+	}
 
 
 	public static int getDiffYear(String startTime, String endTime) {

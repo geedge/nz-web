@@ -592,4 +592,7 @@ public class Constant {
 
     // IDC traffic中tags key正则校验表达式
     public static final Pattern TRAFFIC_TAGSKEY_PATTERN = Pattern.compile("^[a-zA-Z_:][a-zA-Z0-9_:]*$");
+
+    // node_exporter shell 脚本中 替换路径的名称
+    public static final String NODEEXPORTER_SHELLREPLACE_PATH = "target_path";
 }

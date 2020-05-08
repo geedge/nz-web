@@ -22,10 +22,8 @@ import com.nis.modules.sys.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 数据中心    serviceImpl
@@ -107,24 +105,28 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     @Override
     public void delete(Integer... ids) {
         // 1. 校验是否存在关联的机柜信息 资产信息
+        List<Cabinet> cabinets = cabinetService.list();
+        Set<Integer> set = cabinets.stream().map(Cabinet::getIdcId).collect(Collectors.toSet());
+
+        List<Asset> assets = assetService.list();
+        Set<Integer> set1 = assets.stream().map(Asset::getIdcId).collect(Collectors.toSet());
+
+
+        Map<Integer, String> dcIdAndNameMap = this.list().stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+
         for (Integer id : ids) {
             if (id == null) {
                 continue;
             }
 
-            int countCabinet = cabinetService.count(new QueryWrapper<Cabinet>().eq("idc_id", id));
-
-            if (countCabinet > 0) {
+            if (set.contains(id)) {
                 // 数据中心下存在机柜
-                Idc idc = this.getById(id);
-                throw new NZException(idc.getName() + " related cabinets , not deletable", RCode.IDC_CABINETS_EXISTS.getCode());
+                throw new NZException(dcIdAndNameMap.get(id) + " related cabinets , not deletable", RCode.IDC_CABINETS_EXISTS.getCode());
             }
 
-            int countAsset = assetService.count(new QueryWrapper<Asset>().eq("idc_id", id));
-            if (countAsset > 0) {
+            if (set1.contains(id)) {
                 // 数据中心下存在资产
-                Idc idc = this.getById(id);
-                throw new NZException(idc.getName() + " related assets , not deletable", RCode.IDC_ASSETS_EXISTS.getCode());
+                throw new NZException(dcIdAndNameMap.get(id) + " related assets , not deletable", RCode.IDC_ASSETS_EXISTS.getCode());
             }
         }
 
@@ -141,7 +143,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
      */
     @Override
     public boolean checkName(Integer id, String name) {
-        List<Idc> list = this.list(new QueryWrapper<Idc>().eq("name", name));
+        List<Idc> list = this.list(new QueryWrapper<Idc>().lambda().eq(Idc::getName, name));
         boolean flag = false;
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复

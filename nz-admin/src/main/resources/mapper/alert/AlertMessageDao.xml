@@ -34,9 +34,7 @@
 			<if test="params.alertName != null and params.alertName != ''">
 				ar.alert_name like concat('%', #{params.alertName}, '%')
 			</if>
-			<!--<if test="params.host != null and params.host != ''">
-				AND am.host like concat('%', #{params.host}, '%')
-			</if>-->
+
 			<if test="params.severity != null and params.severity != ''">
 				AND am.severity=#{params.severity}
 			</if>

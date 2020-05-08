@@ -131,7 +131,7 @@ public enum RCode {
     ASSET_CABINET_NOTFOUND(336008, "Asset cabinet not found"),           // 机柜未找到
     ASSET_HOST_DUPLICATE(312009, "Asset host duplicate"),                // 资产主机地址重复
     ASSET_SN_DUPLICATE(312010, "Asset serial number duplicate"),         // 资产序列号重复
-    ASSET_PURCHASEDATE_FORMAT(313011, "Asset purchase date format error, format such as yyyy-MM-dd(2019-02-03)"),// 资产购买日期格式错误
+    ASSET_PURCHASEDATE_FORMAT(313011, "Asset purchase date format error"),// 资产购买日期格式错误
     ASSET_PURCHASEDATE_UNAVAILABLE(313012, "Asset purchase date unavailable"),// 资产购买日期不可用,不合法
     ASSET_STATE_NOTFOUND(316013, "Asset state not found"),                      // 资产状态未找到
     ASSET_ID_FORMAT(313014, "Id format error , type should be integer"),      // ID类型错误
@@ -152,6 +152,12 @@ public enum RCode {
     ASSET_CABINETEND_INVALIDE(313029,"Asset cabinet end must be an integer"),      // 结束位置必须为数字类型
     ASSET_SERVERPORT_ERROR(315030,"Asset ipmi port is incorrect"),
     ASSET_SERVERHOST_ERROR(313031,"Asset ipmi host format error, format such as xxx.xxx.xxx.xxx(192.168.40.247)"),
+    ASSET_LOGINSERVER_FAILED(310032,"exporter error: User login to target server failed, It may be caused by 1.Authentication failed 2.Server is down or not reachable 3.Server is too slow to respond."),
+    ASSET_UPLOADFILE_FAILED(310033,"exporter error: Built in exporter upload failed"),
+    ASSET_EXECCOMMAND_FAILED(310034,"exporter error: Failed to run exporter program"),
+    ASSET_STATE_INVALIDE(313035,"Asset state must be an integer"),       // 资产状态必须为数字类型
+    ASSET_IMPORTFILE_TYPE(319036,"Only support import XLS or XLSX file"),// 导入文件格式只能为xls xlsx
+    ASSET_IMPORTFILE_FAILED(319037,"Import file resolution failed"),     // 导入文件解析失败
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空

@@ -63,20 +63,4 @@ public class MaintenanceRecordController {
         maintenanceRecordService.saveOrUpdateMaintenance(maintenance);
         return R.ok();
     }
-
-
-    /**
-     * 删除
-     *
-     * @param ids
-     * @return
-     */
-    /*@DeleteMapping
-    @SysLog("delete maintenanceRecord")
-    public R delete(String ids) {
-        ValidateUtils.is(ids).notNull(RCode.ASSET_MAINTENANCEID_ISNULL);
-
-        maintenanceRecordService.delete(ids);
-        return R.ok();
-    }*/
 }

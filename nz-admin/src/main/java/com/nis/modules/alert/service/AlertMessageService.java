@@ -25,8 +25,6 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
 	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
 	
-	//void removeByTypeIds(Integer typeId,List ids);
-	
 	List<MetricsDto> queryAlertMessageStatisticsInfo();
 
 	void removeByAssetIds(List<Integer> idList);

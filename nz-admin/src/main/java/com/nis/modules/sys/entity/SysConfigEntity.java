@@ -28,6 +28,7 @@ public class SysConfigEntity {
 	private String paramKey;
 	@NotBlank(message="参数值不能为空")
 	private String paramValue;
+	private String status;
 	private String remark;
 
 }

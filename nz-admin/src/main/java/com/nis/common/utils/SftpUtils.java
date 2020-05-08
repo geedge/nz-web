@@ -105,7 +105,8 @@ public class SftpUtils {
                 sftp.cd(targetPath);
             } catch (SftpException e) {
                 logger.warn("directory is not exist");
-                sftp.mkdir(targetPath);
+                // 创建文件夹 并进入
+                this.createDir(targetPath);
                 sftp.cd(targetPath);
             }
             // 放进sftp中进行传输
@@ -166,4 +167,51 @@ public class SftpUtils {
         }
     }
 
+    /**
+     * 创建文件目录
+     */
+    private void createDir(String createpath) {
+        try {
+            if (isDirExist(createpath)) {
+                sftp.cd(createpath);
+                return;
+            }
+            String pathArry[] = createpath.split("/");
+            StringBuffer filePath = new StringBuffer("/");
+            for (String path : pathArry) {
+                if (path.equals("")) {
+                    continue;
+                }
+                filePath.append(path + "/");
+                if (isDirExist(filePath.toString())) {
+                    sftp.cd(filePath.toString());
+                } else {
+                    // 建立目录
+                    sftp.mkdir(filePath.toString());
+                    // 进入并设置为当前目录
+                    sftp.cd(filePath.toString());
+                }
+            }
+            sftp.cd(createpath);
+        } catch (Exception e) {
+            logger.error("创建目标目录失败，目标路径为" + createpath, e);
+        }
+    }
+
+    /**
+     * 判断目录是否存在
+     */
+    public boolean isDirExist(String directory) {
+        boolean isDirExistFlag = false;
+        try {
+            SftpATTRS sftpATTRS = sftp.lstat(directory);
+            isDirExistFlag = true;
+            return sftpATTRS.isDir();
+        } catch (SftpException e) {
+            if (e.getMessage().toLowerCase().equals("no such file")) {
+                isDirExistFlag = false;
+            }
+        }
+        return isDirExistFlag;
+    }
 }

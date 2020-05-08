@@ -8,6 +8,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 机柜    serviceImpl
@@ -111,22 +113,22 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         if (y != null) {
             Integer idcY = idc.getY();
-            if(idcY != null){
+            if (idcY != null) {
                 ValidateUtils.is(cabinet.getY()).max(idcY, RCode.CABINET_Y_INCORRECT);
             }
         }
 
         if (x != null) {
             Integer idcX = idc.getX();
-            if(idcX != null){
+            if (idcX != null) {
                 ValidateUtils.is(cabinet.getX()).max(idcX, RCode.CABINET_X_INCORRECT);
             }
         }
 
         // 当行列都不会空时 校验位置是否被占用 如果只单独填写了行或列的话 暂时不做具体位置校验
         if (y != null && x != null) {
-            Cabinet entity = this.getOne(new QueryWrapper<Cabinet>().eq("idc_id", cabinet.getIdcId()).eq("y", y).eq("x", x));
-            if(entity != null && cabinet.getId() != entity.getId()){
+            Cabinet entity = this.getOne(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getIdcId, cabinet.getIdcId()).eq(Cabinet::getY, y).eq(Cabinet::getX, x));
+            if (entity != null && cabinet.getId().equals(entity.getId())) {
                 // 此位置已被占用
                 throw new NZException(RCode.CABINET_POSITION_OCCUPIED);
             }
@@ -135,18 +137,25 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Override
     public void delete(Integer... ids) {
-        // 1.校验是否关联资产  to do
+        List<Asset> assets = assetService.list();
+
+        Set<Integer> set = assets.stream().filter(asset -> {
+            if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
+                return true;
+            }
+            return false;
+        }).map(Asset::getCabinetId).collect(Collectors.toSet());
+
+        Map<Integer, String> cabIdAndNameMap = this.list().stream().collect(Collectors.toMap(Cabinet::getId, Cabinet::getName));
+
+        // 1.校验是否关联资产
         for (Integer id : ids) {
-            if(id == null){
+            if (id == null) {
                 continue;
             }
 
-            int count = assetService.count(new QueryWrapper<Asset>().eq("cabinet_id", id));
-            if (count > 0) {
-                // 机柜中有资产
-                Cabinet cab = this.getById(id);
-                //throw new NZException(RCode.IDC_CABINET_ASSETS_EXISTS);
-                throw new NZException("There are assets in the " + cab.getName(), RCode.IDC_CABINET_ASSETS_EXISTS.getCode());
+            if (set.contains(id)) {
+                throw new NZException("There are assets in the " + cabIdAndNameMap.get(id), RCode.IDC_CABINET_ASSETS_EXISTS.getCode());
             }
         }
 
@@ -172,7 +181,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         }
 
         // 2. 校验机柜名称唯一
-        List<Cabinet> list = this.list(new QueryWrapper<Cabinet>().eq("name", name).eq("idc_id", idcId));
+        List<Cabinet> list = this.list(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getName, name).eq(Cabinet::getIdcId, idcId));
         boolean flag = false;
 
         if ((list == null || list.size() == 0) ||
@@ -202,7 +211,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
         resuleData.put("total", size);
 
-        List<Asset> assets = assetService.list(new QueryWrapper<Asset>().eq("cabinet_id", cabinet.getId()));
+        List<Asset> assets = assetService.list(new QueryWrapper<Asset>().lambda().eq(Asset::getCabinetId, cabinet.getId()));
         // 已经被占用位置
         List<Integer> occupyList = new ArrayList<>();
         for (Asset asset : assets) {

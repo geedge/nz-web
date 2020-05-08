@@ -27,11 +27,11 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 /**
@@ -46,9 +46,6 @@ public class AssetController {
 
     @Autowired
     private AssetService assetService;
-
-    @Autowired
-    private SftpUtils sftpUtils;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -105,61 +102,21 @@ public class AssetController {
         }
         // 购买时间格式校验
         if (StringUtils.isNotEmpty(asset.getPurchaseDate())) {
-            String format = "yyyy-MM-dd";
-            ValidateUtils.is(asset.getPurchaseDate()).date(format, RCode.ASSET_PURCHASEDATE_FORMAT);
-
-            SimpleDateFormat sd = new SimpleDateFormat(format);
-            try {
-                sd.setLenient(false);
-                sd.parse(asset.getPurchaseDate());
-            } catch (Exception e) {
-                // 日期不合法
-                throw new NZException(RCode.ASSET_PURCHASEDATE_UNAVAILABLE);
-            }
+            ValidateUtils.is(asset.getPurchaseDate()).date("yyyy-MM-dd", RCode.ASSET_PURCHASEDATE_FORMAT);
         } else {
             asset.setPurchaseDate(null);
         }
 
         assetService.saveOrUpdateAsset(asset);
-        String msg = "The asset and account are saved successfully";
 
         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
-            List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().eq("status", 1));
-            Map<String, String> configs = new HashMap<>();
-            for (SysConfigEntity config : sysConfigs) {
-                configs.put(config.getParamKey(), config.getParamValue());
-            }
+            List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getStatus, 1));
+            Map<String, String> configs = sysConfigs.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-            // 上传文件
-            try {
-                // 内置 node_exporter 默认安装服务器路径
-                String targetExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH);
-                // 内置 node_exporter 初始执行脚本名称
-                String shellName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME);
-                // 内置 node_exporter 项目路径
-                String buildNodeExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_PATH);
-                // 内置 node_exporter 压缩包名称
-                String buildNodeExporterName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_NAME);
-
-                // 登录
-                sftpUtils.loginIn(asset.getHost(), accountCli.getPort(), accountCli.getUser(), accountCli.getAuthType(), accountCli.getPwd(), accountCli.getPrivateKey());
-
-                // 上传
-                sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);
-
-                // 执行脚本让exporter运行
-                String execCommand = "chmod +x " + targetExporterPath + "/" + shellName + " && " + targetExporterPath + "/" + shellName;
-                sftpUtils.exec(execCommand);
-            } catch (Exception e) {
-                // asset account 保存成功 但是 文件上传失败
-                return R.error(RCode.ASSET_UPLOAD_FAIL);
-            } finally {
-                // 退出
-                sftpUtils.logout();
-            }
-            msg += " and the file is uploaded successfully.";
+            R result = assetService.uploadBuildExporter(configs, asset, accountCli);
+            return result;
         }
-        return R.ok(msg);
+        return R.ok();
     }
 
     /**
@@ -188,17 +145,7 @@ public class AssetController {
 
         // 购买时间格式校验
         if (StringUtils.isNotEmpty(asset.getPurchaseDate())) {
-            String format = "yyyy-MM-dd";
-            ValidateUtils.is(asset.getPurchaseDate()).date(format, RCode.ASSET_PURCHASEDATE_FORMAT);
-
-            SimpleDateFormat sd = new SimpleDateFormat(format);
-            try {
-                sd.setLenient(false);
-                sd.parse(asset.getPurchaseDate());
-            } catch (Exception e) {
-                // 日期不合法
-                throw new NZException(RCode.ASSET_PURCHASEDATE_UNAVAILABLE);
-            }
+            ValidateUtils.is(asset.getPurchaseDate()).date("yyyy-MM-dd", RCode.ASSET_PURCHASEDATE_FORMAT);
         } else {
             asset.setPurchaseDate(null);
         }
@@ -225,16 +172,16 @@ public class AssetController {
     /**
      * 批量导入
      *
-     * @param assetsExcelFile
+     * @param excelFile
      * @return
      */
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
-    public R importAssetsFromExcel(MultipartFile assetsExcelFile) {
-        ValidateUtils.is(assetsExcelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
+    public R importAssetsFromExcel(MultipartFile excelFile) {
+        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
         // 本次导入的 uuid
         String seqUUID = UUID.randomUUID().toString();
-        Map map = assetService.importAssetsFromExcel(assetsExcelFile, seqUUID);
+        Map map = assetService.importAssetsFromExcel(excelFile, seqUUID);
         return R.ok(map);
     }
 

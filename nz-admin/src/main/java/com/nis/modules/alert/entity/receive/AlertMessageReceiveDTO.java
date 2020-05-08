@@ -39,38 +39,10 @@ public class AlertMessageReceiveDTO implements Serializable {
     public static List<AlertMessageEntity> toAlertMessageEntity(AlertMessageReceiveDTO[] entities) throws Exception {
         List<AlertMessageEntity> list = new ArrayList<>();
         for (AlertMessageReceiveDTO entity : entities) {
-            // list.add(toAlertMessageEntity(entity));
             list.add(toAlertMessageEntity(entity));
         }
         return list;
     }
-
-    /*public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto) throws ParseException {
-        AlertMessageEntity entity = new AlertMessageEntity();
-        //取出labels，计算hash，查询redis看是否有重复
-        Map receiveLabels = dto.getLabels();
-        String md5DigestAsHex = DigestUtils.md5DigestAsHex(gson.toJson(receiveLabels).getBytes());
-        entity.setHashKey(md5DigestAsHex);
-        entity.setLabels(gson.toJson(receiveLabels));
-        entity.setRuleId(Integer.parseInt((String)receiveLabels.get("alertname")));
-        entity.setSeverity((String)receiveLabels.get("severity"));
-        entity.setHost(((String)receiveLabels.get("instance")).split(":")[0]);
-        entity.setType(Integer.parseInt((String)receiveLabels.get("type")));
-        entity.setLinkId(Integer.parseInt((String)receiveLabels.get("linkId")));
-
-        Map receiveAnnotations = dto.getAnnotations();
-        entity.setDescription((String)receiveAnnotations.get("description"));
-        entity.setSummary((String)receiveAnnotations.get("summary"));
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        Date sa = sdf.parse(dto.getStartsAt());
-        Date ea = sdf.parse(dto.getEndsAt());
-        entity.setStartAt(sa);
-        // 新接收的告警信息 state 默认为1 ， 过期会更改为2 ， 此处不应设置 end_at
-        // entity.setEndAt(ea);
-        entity.setState(1);
-        return entity;
-    }*/
 
     public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto) throws ParseException {
         AlertMessageEntity entity = new AlertMessageEntity();
@@ -86,10 +58,8 @@ public class AlertMessageReceiveDTO implements Serializable {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date sa = sdf.parse(dto.getStartsAt());
-        // Date ea = sdf.parse(dto.getEndsAt());
         entity.setStartAt(sa);
-        // 新接收的告警信息 state 默认为1 ， 过期会更改为2 ， 此处不应设置 end_at
-        // entity.setEndAt(ea);
+
         entity.setState(1);
 
         Map labelIds = dto.labelIds;
@@ -109,24 +79,9 @@ public class AlertMessageReceiveDTO implements Serializable {
         if(ToolUtil.isNotEmpty(labelIds.get("datacenter"))){
             entity.setDcId(Integer.parseInt( labelIds.get("datacenter").toString()));
         }
-        // snmptrap 处理
-        if (dto.getSnmptrap() != null && dto.getSnmptrap().equals(true)) {
 
-            // 内置
-            entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
-            entity.setSeverity((String) receiveLabels.get("severity"));
-            //entity.setHost(receiveLabels.get("asset").toString().trim());
-            //entity.setType(Constant.AlertType.ALERT_TYPE_ASSET.getCode());
-            //entity.setLinkId(assetIpWithId.get(receiveLabels.get("asset").toString().trim()));
-        } else {
-
-            // 非内置
-            entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
-            entity.setSeverity((String) receiveLabels.get("severity"));
-            //entity.setHost(((String) receiveLabels.get("asset")));
-            //entity.setType(Integer.parseInt((String) receiveLabels.get("type")));
-            //entity.setLinkId(Integer.parseInt((String) receiveLabels.get("linkId")));
-        }
+        entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
+        entity.setSeverity((String) receiveLabels.get("severity"));
         return entity;
     }
 }

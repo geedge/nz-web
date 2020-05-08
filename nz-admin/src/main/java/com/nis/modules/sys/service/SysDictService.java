@@ -52,5 +52,6 @@ public interface SysDictService extends IService<SysDictEntity> {
 
     List<SysDictEntity> querySysDicByType(String type);
 
+    void saveSysDict(SysDictEntity dict);
 }
 

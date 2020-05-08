@@ -23,7 +23,7 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
     List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
-    // void deleteByTypeIds(@Param("typeId")Integer typeId,@Param("ids")List ids);
+
     List<MetricsDto> selectAlertMessageStatisticsInfo();
 
     List<AlertMessageWithExport> selectWithExport(@Param("params") Map<String, Object> params);

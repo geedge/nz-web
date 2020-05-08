@@ -23,6 +23,31 @@ public class ExcelUtils {
     private final static String excel2007U = ".xlsx";
 
     /**
+     * 校验文件格式
+     *
+     * @param filename
+     * @return
+     */
+    public static boolean validateFileType(String filename) {
+        if (!filename.contains(".")) {
+            return false;
+        } else {
+            String fileType = filename.substring(filename.lastIndexOf("."));
+            switch (fileType) {
+                case excel2003L: {
+                    return true;
+                }
+                case excel2007U: {
+                    return true;
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+    }
+
+    /**
      * 根据版本获取excel对象
      *
      * @param url

@@ -97,27 +97,8 @@ public class SysDictController extends AbstractController {
 
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
         ValidateUtils.is(dict.getValue()).notNull(RCode.SYS_DICT_VALUE_ISNULL);
-        //字典名称，非必填项，为空后台自动添加value值
-        if(StringUtils.isBlank(dict.getName())){
-            dict.setName(dict.getValue());
-        }
-        //字典码，当字典类型为：vendor,assetType时，可以不填，后台根据已有最大code值 +1 填写
-        if( dict.getCode()==null && Constant.SPECIAL_SYS_DICT.contains(dict.getType())){
-            Integer maxCode=sysDictService.queryMaxTypeCode(dict.getType());
-            if(maxCode != null){
-                maxCode+=1;
-            }else{
-                maxCode=1;
-            }
 
-            dict.setCode(maxCode);
-        }else{
-            throw new NZException(RCode.SYS_DICT_CODE_ISNULL);
-        }
-        dict.setOperator(getUserId());
-        dict.setOpTime(new Date());
-        sysDictService.save(dict);
-
+        sysDictService.saveSysDict(dict);
         return R.ok();
     }
 

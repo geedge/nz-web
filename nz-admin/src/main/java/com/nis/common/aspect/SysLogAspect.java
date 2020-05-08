@@ -1,19 +1,17 @@
 package com.nis.common.aspect;
 
 import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ann.IdCard;
-import com.nis.common.utils.*;
-import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.common.utils.HttpContextUtils;
+import com.nis.common.utils.IPUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.JoinPoint;
@@ -25,16 +23,12 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 系统日志，切面处理类
@@ -117,7 +111,7 @@ public class SysLogAspect {
 			oepra_id = getOpId(syslog,args);
 		}
 		sysLog.setOperaId(oepra_id);
-		sysLog.setParams(JSON.toJSONString(args));
+		sysLog.setParams(new Gson().toJson(args));
 		//用户名
 		Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
 		sysLog.setUserId(userId.intValue());

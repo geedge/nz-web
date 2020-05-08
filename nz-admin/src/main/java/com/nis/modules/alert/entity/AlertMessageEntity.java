@@ -40,18 +40,6 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	private Integer ruleId;
 	/**
-	 * 告警类型
-	 * */
-	//private Integer type;
-	/**
-	 * 告警类型关联id
-	 */
-	//private Integer linkId;
-	/**
-	 * 告警主机ip
-	 */
-	// private String host;
-	/**
 	 * 告警主机对象
 	 */
 	@TableField(exist = false)

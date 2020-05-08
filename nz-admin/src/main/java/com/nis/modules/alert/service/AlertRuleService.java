@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
 
 import java.util.List;
 import java.util.Map;

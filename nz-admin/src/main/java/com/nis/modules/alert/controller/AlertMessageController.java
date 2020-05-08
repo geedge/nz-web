@@ -47,24 +47,6 @@ public class AlertMessageController {
 		}
     }
 
-    /**
-     * 修改
-     */
-    /*@RequestMapping( method = RequestMethod.PUT)
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
-    public R update(@RequestBody AlertMessageEntity alertMessage) {
-    	ValidateUtils.is(alertMessage.getIds()).notNull(RCode.ALERTMSG_IDS_ISNULL)
-    					.and(alertMessage.getState()).notNull(RCode.ALERTMSG_STATE_ISNULL);
-    	//校验state合法性
-    	if (!Constant.ALERTMESSAGE_STATE.contains(alertMessage.getState())) {
-			throw new NZException(RCode.ALERTMSG_STATE_INCORRECT);
-    	}
-    	alertMessageService.updateByIds(alertMessage);
-
-        return R.ok();
-    }*/
-
-
 	@RequestMapping( method = RequestMethod.PUT)
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
     public R update(@RequestBody Map<String, Object> params) {

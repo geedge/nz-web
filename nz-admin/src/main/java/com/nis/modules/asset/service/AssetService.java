@@ -2,6 +2,7 @@ package com.nis.modules.asset.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.terminal.entity.Account;
@@ -38,4 +39,6 @@ public interface AssetService extends IService<Asset> {
     Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID);
 
     void cancelImport(String seq);
+
+    R uploadBuildExporter(Map<String, String> configs, Asset asset, Account accountCli);
 }

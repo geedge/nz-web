@@ -1,4 +1,4 @@
 #/bin/bash
-tar -zxf /opt/nezha/node_exporter/node_exporter.tar.gz -C /opt/nezha/node_exporter
-nohup /opt/nezha/node_exporter/node_exporter  > /opt/nezha/node_exporter/node_exporter.log 2>&1 &
-rm -rf /opt/nezha/node_exporter/node_exporter.tar.gz
+tar -zxf target_path/node_exporter.tar.gz -C target_path
+nohup target_path/node_exporter  > target_path/node_exporter.log 2>&1 &
+rm -rf target_path/node_exporter.tar.gz

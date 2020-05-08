@@ -70,7 +70,7 @@ public class CabinetController {
                 try {
                     defaultSize = Integer.parseInt(configEntity.getParamValue());
                 } catch (NumberFormatException e) {
-                    logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
+                    logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
                 }
 
                 if (defaultSize == null) {

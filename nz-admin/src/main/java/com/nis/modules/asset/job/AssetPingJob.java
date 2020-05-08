@@ -1,6 +1,5 @@
 package com.nis.modules.asset.job;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RuntimeUtil;
 import com.nis.common.utils.StringUtils;
@@ -186,7 +185,7 @@ public class AssetPingJob extends QuartzJobBean {
         FileWriter fw = null;
         BufferedWriter bw = null;
         try {
-            fw = new FileWriter(file = new File("assetPingFile_ips" + UUID.randomUUID()));
+            fw = new FileWriter(file = new File(Constant.TEMP_PATH + File.separator + "assetPingFile_ips" + UUID.randomUUID()));
             bw = new BufferedWriter(fw);
             for (Asset asset : assets) {
                 bw.write(asset.getHost());
