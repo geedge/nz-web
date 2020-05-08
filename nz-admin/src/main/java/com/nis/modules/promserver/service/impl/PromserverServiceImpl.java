@@ -34,23 +34,23 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		String status = (String)params.get("status");
 		IPage<Promserver> page = this.page(
 			new Query<Promserver>().getPage(params),
-			new QueryWrapper<Promserver>()
-				.eq(StringUtils.isNotBlank(id),"id", id)
-				.like(StringUtils.isNotBlank(host),"host", host)
-				.eq(StringUtils.isNotBlank(type), "type",type)
-				.eq(StringUtils.isNotBlank(idcId), "idc_id",idcId)
-				.eq(StringUtils.isNotBlank(port), "port",port)
-				.eq(StringUtils.isNotBlank(status),"status",status)
+			new QueryWrapper<Promserver>().lambda()
+				.eq(StringUtils.isNotBlank(id),Promserver::getId, id)
+				.like(StringUtils.isNotBlank(host),Promserver::getHost, host)
+				.eq(StringUtils.isNotBlank(type), Promserver::getType,type)
+				.eq(StringUtils.isNotBlank(idcId), Promserver::getIdcId,idcId)
+				.eq(StringUtils.isNotBlank(port), Promserver::getPort,port)
+				.eq(StringUtils.isNotBlank(status),Promserver::getStatus,status)
 		);
 		return new PageUtils(page);
 	}
 
 	@Override
 	public void validateParam(Promserver promserverEntity) {
-		Promserver promserver = this.getOne(new QueryWrapper<Promserver>()
-				.eq("host", promserverEntity.getHost())
-				.eq("port", promserverEntity.getPort())
-				.eq("type", promserverEntity.getType()));
+		Promserver promserver = this.getOne(new QueryWrapper<Promserver>().lambda()
+				.eq(Promserver::getHost, promserverEntity.getHost())
+				.eq(Promserver::getPort, promserverEntity.getPort())
+				.eq(Promserver::getType, promserverEntity.getType()));
 		if(promserver!=null) {
 			throw new NZException(RCode.PROMSERVER_EXIST_ERROR);
 		}

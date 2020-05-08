@@ -97,7 +97,7 @@ public class Constant {
     public static final String[] TABLESWITHCLEAR = {
             "account","alert_rule","asset","cabinet","chart","chart_element","chart_legend",
             "endpoint","idc","maintenance_record","model","module","panel","project","prom_server",
-            "snmp_mib","sys_area","sys_dict"};
+            "snmp_mib","sys_dict","idc_traffic"};
     
     /**
      * 告警等级

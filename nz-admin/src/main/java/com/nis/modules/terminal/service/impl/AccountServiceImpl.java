@@ -37,11 +37,11 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
         }
 
         QueryWrapper<Account> accountQueryWrapper = new QueryWrapper<Account>();
-        accountQueryWrapper.eq(StringUtils.isNotEmpty(id), "id", id);
-        accountQueryWrapper.eq(StringUtils.isNotEmpty(assetId), "asset_id", assetId);
-        accountQueryWrapper.like(StringUtils.isNotEmpty(protocol), "protocol", protocol);
-        accountQueryWrapper.eq(StringUtils.isNotEmpty(authType), "auth_type", authType);
-        accountQueryWrapper.like(StringUtils.isNotEmpty(user), "user", user);
+        accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(id), Account::getId, id);
+        accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(assetId), Account::getAssetId, assetId);
+        accountQueryWrapper.lambda().like(StringUtils.isNotEmpty(protocol), Account::getProtocol, protocol);
+        accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(authType), Account::getAuthType, authType);
+        accountQueryWrapper.lambda().like(StringUtils.isNotEmpty(user), Account::getUser, user);
 
         IPage<Account> page = this.page(new Query<Account>().getPage(params), accountQueryWrapper);
 

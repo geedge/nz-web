@@ -86,11 +86,11 @@ public class EndpointController extends AbstractController {
 	 */
 	@PostMapping("/import")
 	@SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ENDPOINT)
-	public R importEndpoint(MultipartFile endpointExcelFile) {
-		ValidateUtils.is(endpointExcelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
+	public R importEndpoint(MultipartFile excelFile) {
+		ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
         // 本次导入的 uuid
         String seqUUID = UUID.randomUUID().toString();
-        Map map = endpointService.importEndpoint(endpointExcelFile, seqUUID);
+        Map map = endpointService.importEndpoint(excelFile, seqUUID);
         return R.ok(map);
 	}
 	

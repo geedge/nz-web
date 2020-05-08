@@ -79,7 +79,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		}
 
         // 名称不能重复
-        List<Module> list = this.list(new QueryWrapper<Module>().eq("name", moduleEntity.getName()));
+        List<Module> list = this.list(new QueryWrapper<Module>().lambda().eq(Module::getName, moduleEntity.getName()));
         boolean flag = false;
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
         if ((list == null || list.size() == 0) ||
@@ -181,7 +181,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     @Override
     public String generateYmlFromSnmpParam(Map snmpParam, Module moduleEntity) {
         // 取出generator路径
-        SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", Constant.SYSCONFIG_KEY_GENERATOR_PATH));
+        SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_GENERATOR_PATH));
         String generatorPath = entity.getParamValue();
 
         Map modules = new HashMap();

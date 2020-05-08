@@ -41,10 +41,10 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		
 		IPage<Project> page = this.page(
 			new Query<Project>().getPage(params),
-			new QueryWrapper<Project>()
-				.eq(StringUtils.isNotBlank(id),"id", id)
-				.like(StringUtils.isNotBlank(name),"name", name)
-				.like(StringUtils.isNotBlank(remark), "remark",remark)
+			new QueryWrapper<Project>().lambda()
+				.eq(StringUtils.isNotBlank(id),Project::getId, id)
+				.like(StringUtils.isNotBlank(name),Project::getName, name)
+				.like(StringUtils.isNotBlank(remark), Project::getRemark,remark)
 		);
 		return new PageUtils(page);
 	}
@@ -76,7 +76,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 
 	@Override
 	public boolean validateProjectName(Integer id, String name) {
-		List<Project> list = this.list(new QueryWrapper<Project>().eq("name", name));
+		List<Project> list = this.list(new QueryWrapper<Project>().lambda().eq(Project::getName, name));
 		boolean flag = false;
 
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复

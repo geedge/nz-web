@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -171,10 +172,10 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
 	@Override
-	public Map importEndpoint(MultipartFile endpointExcelFile, String uuid) {
-		logger.info("importEndpoint param endpointExcelFileName is {}",endpointExcelFile.getOriginalFilename());
+	public Map importEndpoint(MultipartFile excelFile, String uuid) {
+		logger.info("importEndpoint param endpointExcelFileName is {}",excelFile.getOriginalFilename());
 		logger.info("importEndpoint param uuid is {}",uuid);
-		String originalFilename = endpointExcelFile.getOriginalFilename();
+		String originalFilename = excelFile.getOriginalFilename();
 		
 		//防止导入数据过多 查询关联数据是否存在 提前将需要的数据查询放置到集合中 减少数据库交互
 		List<Project> projects = projectService.list();
@@ -188,26 +189,34 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 		}
 		
-		/*Map moduleMap = new HashMap();
-		if(modules!=null&&modules.size()>0) {
-			for(Module module : modules) {
-				moduleMap.put(module.getName(), module);
-			}
-		}*/
-		
 		Map assetMap = new HashMap();
 		if(assets!=null&&assets.size()>0) {
 			for(Asset asset : assets) {
 				assetMap.put(asset.getSn(),asset);
 			}
 		}
+		
+		 // 校验文件格式
+        boolean b = ExcelUtils.validateFileType(originalFilename);
+        if (!b) {
+            throw new NZException(RCode.ENDPOINT_IMPORTFILE_TYPE);
+        }
+        
+		
         // 最终入库集合
         List<Endpoint> endpoints = new ArrayList<>();
         
         Map info = new HashMap();
+        
         Workbook work = null;
         try {
-            work = ExcelUtils.getWork(originalFilename, endpointExcelFile.getInputStream());
+            work = ExcelUtils.getWork(originalFilename, excelFile.getInputStream());
+        } catch (Exception e) {
+            logger.error("解析文件格式有误", e);
+            throw new NZException(RCode.ENDPOINT_IMPORTFILE_FAILED);
+        }
+        
+        try {
             // 默认得到第一个 sheet
             Sheet sheet = work.getSheetAt(0);
 //            Sheet sheet = work.getSheet("assets");
@@ -329,8 +338,19 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
                 }
                
                 param = ExcelUtils.getCellValue(row.getCell(4));
-                if (StringUtils.isEmpty(param)) {
-                    endpoint.setParam(param);
+                if (StringUtils.isNotEmpty(param)) {
+                	// 如果不为空 校验是否为正确json格式
+                	try {
+                		JSONObject.parseObject(param);
+						endpoint.setParam(param);
+					} catch (Exception e) {
+						saveFlag = false;
+						failDetail = new HashMap();
+	                    failDetail.put("lineNo", i);
+	                    failDetail.put("errorMsg", RCode.ENDPOINT_PARAM_FORMAT_ERROR);
+	                    failDetails.add(failDetail);
+					}
+                    
                 } 
 
                 // path
@@ -510,11 +530,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	public void cancelImport(String seq) {
 		logger.info("endpoint cancelImport start seq info is {}",seq);
 		// endpoint
-        this.remove(new QueryWrapper<Endpoint>().eq("seq", seq));
+        this.remove(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getSeq, seq));
         // module
-        moduleService.remove(new QueryWrapper<Module>().eq("seq", seq));
+        moduleService.remove(new QueryWrapper<Module>().lambda().eq(Module::getSeq, seq));
         // project
-        projectService.remove(new QueryWrapper<Project>().eq("seq", seq));
+        projectService.remove(new QueryWrapper<Project>().lambda().eq(Project::getSeq, seq));
         
         logger.info("endpoint cancelImport success seq info is {}",seq);
 	}
