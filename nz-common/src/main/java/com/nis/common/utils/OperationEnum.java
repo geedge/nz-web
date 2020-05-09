@@ -12,7 +12,9 @@ public enum OperationEnum {
     EXPORT("export"),
     DELETE("delete"),
     RESET("reset"),
-    UNKNOWN("unknown");
+    UNKNOWN("unknown"),
+    LOGIN("login"),
+    LOGOUT("logout");
 
 
     private String value;

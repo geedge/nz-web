@@ -95,7 +95,7 @@ public class Constant {
 
     // 系统输入内容的table
     public static final String[] TABLESWITHCLEAR = {
-            "account","alert_rule","asset","cabinet","chart","chart_element","chart_legend",
+            "account","alert_rule","asset","cabinet","chart","chart_element",
             "endpoint","idc","maintenance_record","model","module","panel","project","prom_server",
             "snmp_mib","sys_dict","idc_traffic"};
     

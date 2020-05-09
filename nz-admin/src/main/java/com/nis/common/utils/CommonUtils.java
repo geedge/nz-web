@@ -574,6 +574,11 @@ public class CommonUtils {
         return true;
 	}
 
+	public static boolean checkDomain(String domain){
+        boolean flag = Pattern.matches(DOMAIN_NAME_STR, domain);
+	    return flag;
+    }
+
     /**
      * 校验url
      *

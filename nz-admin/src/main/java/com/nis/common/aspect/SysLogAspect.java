@@ -12,6 +12,7 @@ import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.JoinPoint;
@@ -28,7 +29,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统日志，切面处理类
@@ -42,6 +45,8 @@ public class SysLogAspect {
 	@Autowired
 	private SysLogService sysLogService;
 
+	private static Gson gson = new Gson();
+
 	@Pointcut("@annotation(com.nis.common.annotation.SysLog)")
 	public void logPointCut() {
 
@@ -50,30 +55,27 @@ public class SysLogAspect {
 	@Around("logPointCut()")
 	public Object around(ProceedingJoinPoint point) throws Throwable {
 		long beginTime = System.currentTimeMillis();
+
+		// 当前登录用户
+		SysUserEntity currentLoginUser = ShiroUtils.getUserEntity();
+
 		//执行方法
-		Object result = new Object();
-		//try {
-			 result = point.proceed();
-//		}catch (Exception e){
-//			log.error("日志记录错误",e.getMessage());
-//			result = R.error().put("msg",e.getMessage());
-//		}
+		Object result = point.proceed();
 
 		//执行时长(毫秒)
 		long time = System.currentTimeMillis() - beginTime;
 
 		//保存日志
-		saveSysLog(point, time , result);
-
+		saveSysLog(point, time , result, currentLoginUser);
 		return result;
 	}
 
 	/**
-	 131      * 异常返回通知，用于拦截异常日志信息 连接点抛出异常后执行
-	 132      *
-	 133      * @param joinPoint 切入点
-	 134      * @param e         异常信息
-	 135      */
+	 * 异常返回通知，用于拦截异常日志信息 连接点抛出异常后执行
+	 *
+	 * @param joinPoint 切入点
+	 * @param e         异常信息
+	 */
     @AfterThrowing(pointcut = "logPointCut()", throwing = "e")
      public void saveExceptionLog(JoinPoint joinPoint, Throwable e) {
     	R r =new R();
@@ -111,10 +113,20 @@ public class SysLogAspect {
 			oepra_id = getOpId(syslog,args);
 		}
 		sysLog.setOperaId(oepra_id);
-		sysLog.setParams(new Gson().toJson(args));
-		//用户名
-		Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
-		sysLog.setUserId(userId.intValue());
+		sysLog.setParams(gson.toJson(args));
+
+		// 登录出现异常时
+		if("login".equals(syslog.operation().getValue())){
+            sysLog.setUserId(null);
+
+            Map map = gson.fromJson(gson.toJson(args[0]), Map.class);
+            map.remove("password");
+            sysLog.setParams(gson.toJson(map));
+		}else{
+            // 用户名
+            Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
+            sysLog.setUserId(userId.intValue());
+        }
 
 		sysLog.setCreateDate(new Date());
 		sysLog.setState("fail");
@@ -124,7 +136,7 @@ public class SysLogAspect {
 	}
 
 
-	private void saveSysLog(ProceedingJoinPoint joinPoint, long time ,Object result) {
+	private void saveSysLog(ProceedingJoinPoint joinPoint, long time, Object result, SysUserEntity currentLoginUser) {
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		Method method = signature.getMethod();
 
@@ -160,21 +172,40 @@ public class SysLogAspect {
 			oera_id = JSON.toJSONString(args[0]).replace("\"","");
 		}
 		sysLog.setOperaId(oera_id);
-		try{
-			String params = new Gson().toJson(args[0]);
-			sysLog.setParams(params);
-		}catch (Exception e){
-			Class clazz = args[0].getClass();
+
+		// 退出操作
+		if("logout".equals(syslog.operation().getValue())){
+			// 补全 params 为 当前退出者
+            Map map = new HashMap();
+            map.put("username", currentLoginUser.getUsername());
+            sysLog.setParams(gson.toJson(map));
+
+            sysLog.setUserId((int)currentLoginUser.getUserId().longValue());
+		}else{
+			try{
+				String params = gson.toJson(args[0]);
+
+				// 登录不记录密码
+				if("login".equals(syslog.operation().getValue())){
+					Map map = gson.fromJson(params, Map.class);
+					map.remove("password");
+					params = gson.toJson(map);
+				}
+
+				sysLog.setParams(params);
+			}catch (Exception e){
+				Class clazz = args[0].getClass();
+			}
+
+            // 用户名
+            Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
+            sysLog.setUserId(userId.intValue());
 		}
 
 		//获取request
 		HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
 		//设置IP地址
 		sysLog.setIp(IPUtils.getIpAddr(request));
-
-		//用户名
-		Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
-		sysLog.setUserId(userId.intValue());
 
 		sysLog.setTime(time);
 		sysLog.setCreateDate(new Date());

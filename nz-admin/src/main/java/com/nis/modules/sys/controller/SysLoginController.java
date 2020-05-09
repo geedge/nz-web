@@ -13,6 +13,7 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -82,6 +83,7 @@ public class SysLoginController extends AbstractController {
 	 */
 	@ResponseBody
 	@RequestMapping(value = "/sys/login", method = RequestMethod.POST)
+	@SysLog(operation = OperationEnum.LOGIN,type = TypeEnum.SYSTEM)
 	public R login(@RequestBody SysUserEntity sysUser) {
 		String username = sysUser.getUsername();
 		String password = sysUser.getPassword();
@@ -128,6 +130,7 @@ public class SysLoginController extends AbstractController {
 	 */
 	@RequestMapping(value = "logout", method = RequestMethod.GET)
 	@ResponseBody
+	@SysLog(operation = OperationEnum.LOGOUT,type = TypeEnum.SYSTEM)
 	public R logout(HttpServletRequest request) {
 
 		SysUserEntity userEntity = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();

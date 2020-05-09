@@ -8,7 +8,6 @@
 
 package com.nis.modules.sys.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -31,7 +30,6 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.sun.mail.util.MailConnectException;
 import com.sun.mail.util.MailSSLSocketFactory;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -42,7 +40,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.sun.jndi.ldap.*;
+
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -485,7 +483,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             String emailSslFlag = saveMap.get("email_ssl_flag");
             String emailTlsFlag = saveMap.get("email_tls_flag");
 
-            ValidateUtils.is(emailSmtpHost).notNull(RCode.SYS_CONFIG_EMAILSMTPHOST_ISNULL).regex(Constant.REGEX_DOMAIN, RCode.SYS_CONFIG_EMAILSMTPHOST_FORMAT)
+            ValidateUtils.is(emailSmtpHost).notNull(RCode.SYS_CONFIG_EMAILSMTPHOST_ISNULL) // .regex(Constant.REGEX_DOMAIN, RCode.SYS_CONFIG_EMAILSMTPHOST_FORMAT)
                     .and(emailSmtpPort).notNull(RCode.SYS_CONFIG_EMAILSMTPPORT_ISNULL)
                     .and(saveMap.get("email_smtp_account")).notNull(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_ISNULL).email(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT)
                     .and(saveMap.get("email_smtp_password")).notNull(RCode.SYS_CONFIG_EMAILSMTPPASSWORD_ISNULL)
@@ -493,6 +491,10 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     .and(saveMap.get("email_test_reciver")).notNull(RCode.SYS_CONFIG_EMAILTESTRECIVER_ISNULL).email(RCode.SYS_CONFIG_EMAILTESTRECIVER_FORMAT)
                     .and(emailSslFlag).notNull(RCode.SYS_CONFIG_EMAILSSLFLAG_FORMAT)
                     .and(emailTlsFlag).notNull(RCode.SYS_CONFIG_EMAILTLSFLAG_FORMAT);
+
+            if(!CommonUtils.checkIp(emailSmtpHost) && !CommonUtils.checkDomain(emailSmtpHost)){
+                throw new NZException(RCode.SYS_CONFIG_EMAILSMTPHOST_FORMAT);
+            }
 
             if (CommonUtils.toInt(emailSmtpPort) == null) {
                 throw new NZException(RCode.SYS_CONFIG_EMAILSMTPPORT_INVALIDE);
