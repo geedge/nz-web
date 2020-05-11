@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -548,6 +549,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     .and(saveMap.get("ldap_ou")).notNull(RCode.SYS_CONFIG_LDAPOU_ISNULL)
                     .and(saveMap.get("ldap_user_filter")).notNull(RCode.SYS_CONFIG_LDAPUSERFILTER_ISNULL)
                     .and(saveMap.get("ldap_mapping")).notNull(RCode.SYS_CONFIG_LDAPMAPPING_ISNULL);
+            String ldapMapping = saveMap.get("ldap_mapping");
+            try {
+				JSONObject.parseObject(ldapMapping);
+			} catch (Exception e) {
+				throw new NZException(RCode.SYS_CONFIG_LDAPMAPPING_FORMAT_ERROR);
+			}
             return true;
         }
         return false;

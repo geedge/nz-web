@@ -154,7 +154,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         	num=Integer.valueOf(maxNum);
         }
         List<TerminalClient> allTerminalClient = TerminalSession.getAllTerminalClient(token);
-        if(allTerminalClient.size()>num) {
+        if(allTerminalClient.size()>=num) {
         	session.sendMessage(new TextMessage("Unable to connect at the maximum number of connections"));
         	session.close();
         	return;
