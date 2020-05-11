@@ -15,6 +15,7 @@
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="port" property="port"/>
+	    	<result column="type" property="type"/>
 	    </association>
 	    
 	    <association columnPrefix="P_" property="project" javaType="com.nis.modules.project.entity.Project">
@@ -49,6 +50,7 @@
        m.id AS m_id,
        m.name AS m_name,
        m.port AS m_port,
+       m.type AS m_type,
        a.id AS a_id,
        a.host AS a_host,
        a.sn AS a_sn,

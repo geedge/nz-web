@@ -1,11 +1,16 @@
 package com.nis.common.interceptor;
 
 import com.alibaba.fastjson.JSON;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.LockedAccountException;
+import org.apache.shiro.authc.UnknownAccountException;
 import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
@@ -75,9 +80,23 @@ public class TokenCheckFilter extends AccessControlFilter {
         Map<String,String> map=JSON.parseObject(json, HashMap.class);
         String username=map.get("username");
         String password=map.get("password");
-        UsernamePasswordToken token = new UsernamePasswordToken(username, password);
-        subject.login(token); //登录
-        return true;
+        try{
+	        UsernamePasswordToken token = new UsernamePasswordToken(username, password);
+	        subject.login(token); //登录
+	        return true;
+        }catch (UnknownAccountException e) {
+			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT)).toString());
+            return false;
+		}catch (IncorrectCredentialsException e) {
+			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_USERPWD)).toString());
+            return false;
+		}catch (LockedAccountException e) {
+			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_LOCK)).toString());
+            return false;
+		}catch (AuthenticationException e) {
+			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_ACCOUNTAUTH)).toString());
+            return false;
+		}
     }
 
     @Override
