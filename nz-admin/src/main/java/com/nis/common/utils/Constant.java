@@ -522,6 +522,9 @@ public class Constant {
     // 机柜默认大小
     public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_uszie";
 
+    // 测试邮件发送模板
+    public static final String SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE = "test_email_send_template";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
@@ -595,4 +598,7 @@ public class Constant {
 
     // node_exporter shell 脚本中 替换路径的名称
     public static final String NODEEXPORTER_SHELLREPLACE_PATH = "target_path";
+
+    // 测试邮件发送标题
+    public static final String TESTEMAIL_SEND_TITLE = "Test";
 }

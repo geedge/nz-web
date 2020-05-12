@@ -29,8 +29,11 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.sun.mail.util.MailConnectException;
 import com.sun.mail.util.MailSSLSocketFactory;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -41,11 +44,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import javax.mail.AuthenticationFailedException;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Transport;
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -53,6 +53,7 @@ import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
+import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +75,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     private RedisTemplate<String,String> redisTemplate;
 	@Value("${nezha.userId.expire}")
     private int expire;
+
+    @Autowired
+    private MailUtil mailUtil;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -249,14 +253,14 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
                 } else if ("true".equals(emailTest)) {
                     // 只做测试连接  不进行入库操作
-                    R r = this.testConnectionSmtpServer(saveMap.get("email_smtp_host"), saveMap.get("email_smtp_port"), Constant.CONNECTION_SMTP_TIMEOUT, saveMap.get("email_smtp_account"), saveMap.get("email_smtp_password"), Constant.SWITCH_OPEN.equals(saveMap.get("email_ssl_flag")), Constant.SWITCH_OPEN.equalsIgnoreCase(saveMap.get("email_tls_flag")));
-                    return r;
+                    this.testConnectionSmtpServer(saveMap);
+                    return R.ok("Test connection to SMTP server succeeded");
                 } else {
                     if (emailEnableFlag) {
                         this.updateEntity(saveMap);
                     } else {
                         // email 开关关闭 只更新此开关
-                        SysConfigEntity emailEnable = this.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", "email_enable"));
+                        SysConfigEntity emailEnable = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "email_enable"));
                         // 数据库目前没有此项
                         if (emailEnable == null) {
                             emailEnable = new SysConfigEntity();
@@ -397,7 +401,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         // test字段不进行保存入库
         saveMap.remove("test");
         // 当前记录
-        List<SysConfigEntity> configs = this.list(new QueryWrapper<SysConfigEntity>().in("param_key", saveMap.keySet()));
+        List<SysConfigEntity> configs = this.list(new QueryWrapper<SysConfigEntity>().lambda().in(SysConfigEntity::getParamKey, saveMap.keySet()));
 
         // saveMap 中存在需要新增的数据
         if (configs.size() != saveMap.size()) {
@@ -437,7 +441,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
                 .and(saveMap.get("node_exporter_target_path")).notNull(RCode.SYS_CONFIG_NODETARGETPATH_ISNULL)
                 .and(assetPingSwitch).notNull(RCode.SYS_CONFIG_ASSETPINGSWITCH_ISNULL)
-                .and(assetPingInterval).notNull(RCode.SYS_CONFIG_ASSETPINGINTERVAL_ISNULL)
+                //.and(assetPingInterval).notNull(RCode.SYS_CONFIG_ASSETPINGINTERVAL_ISNULL)
                 .and(scrapeInterval).notNull(RCode.SYS_CONFIG_SCRAPEINTERVAL_ISNULL)
                 .and(storageLocalRetention).notNull(RCode.SYS_CONFIG_LOCALRETENTION_ISNULL)
                 .and(saveMap.get("system_name")).notNull(RCode.SYS_CONFIG_SYSTEMNAME_ISNULL)
@@ -447,7 +451,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(assetPingSwitch);
 
         // 校验数值类型参数是否正确
-        if (CommonUtils.toInt(assetPingInterval) == null) {
+        if (ToolUtil.isNotEmpty(assetPingInterval) && CommonUtils.toInt(assetPingInterval) == null) {
             throw new NZException(RCode.SYS_CONFIG_ASSETPINGINTERVAL_INVALIDE);
         }
 
@@ -488,12 +492,25 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     .and(emailSmtpPort).notNull(RCode.SYS_CONFIG_EMAILSMTPPORT_ISNULL)
                     .and(saveMap.get("email_smtp_account")).notNull(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_ISNULL).email(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT)
                     .and(saveMap.get("email_smtp_password")).notNull(RCode.SYS_CONFIG_EMAILSMTPPASSWORD_ISNULL)
-                    .and(saveMap.get("email_send_account")).notNull(RCode.SYS_CONFIG_EMAILSENDACCOUNT_ISNULL)
-                    .and(saveMap.get("email_test_reciver")).notNull(RCode.SYS_CONFIG_EMAILTESTRECIVER_ISNULL).email(RCode.SYS_CONFIG_EMAILTESTRECIVER_FORMAT)
+                    //.and(saveMap.get("email_send_account")).notNull(RCode.SYS_CONFIG_EMAILSENDACCOUNT_ISNULL)
+                    //.and(saveMap.get("email_test_reciver")).notNull(RCode.SYS_CONFIG_EMAILTESTRECIVER_ISNULL).email(RCode.SYS_CONFIG_EMAILTESTRECIVER_FORMAT)
                     .and(emailSslFlag).notNull(RCode.SYS_CONFIG_EMAILSSLFLAG_FORMAT)
                     .and(emailTlsFlag).notNull(RCode.SYS_CONFIG_EMAILTLSFLAG_FORMAT);
 
-            if(!CommonUtils.checkIp(emailSmtpHost) && !CommonUtils.checkDomain(emailSmtpHost)){
+            String emailTest = saveMap.get("test");
+            if (StringUtils.isEmpty(emailTest)) {
+                throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
+            } else if ("true".equals(emailTest)) {
+                // 测试连接时 text_reciver为必填
+                ValidateUtils.is(saveMap.get("email_test_reciver")).notNull(RCode.SYS_CONFIG_EMAILTESTRECIVER_ISNULL).email(RCode.SYS_CONFIG_EMAILTESTRECIVER_FORMAT);
+            }
+
+            String emailSendAccount = saveMap.get("email_send_account");
+            if (StringUtils.isNotEmpty(emailSendAccount)) {
+                ValidateUtils.is(emailSendAccount).email(RCode.SYS_CONFIG_EMAILSENDCCOUNT_FORMAT);
+            }
+
+            if (!CommonUtils.checkIp(emailSmtpHost) && !CommonUtils.checkDomain(emailSmtpHost)) {
                 throw new NZException(RCode.SYS_CONFIG_EMAILSMTPHOST_FORMAT);
             }
 
@@ -545,8 +562,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         if (ldapEnable.equals(Constant.SWITCH_OPEN)) {
             ValidateUtils.is(saveMap.get("ldap_address")).notNull(RCode.SYS_CONFIG_LDAPADDRESS_ISNULL)
                     .and(saveMap.get("ldap_dn")).notNull(RCode.SYS_CONFIG_LDAPDN_ISNULL)
-                    .and(saveMap.get("ldap_password")).notNull(RCode.SYS_CONFIG_LDAPPASSWORD_ISNULL)
-                    .and(saveMap.get("ldap_ou")).notNull(RCode.SYS_CONFIG_LDAPOU_ISNULL)
+                    //.and(saveMap.get("ldap_password")).notNull(RCode.SYS_CONFIG_LDAPPASSWORD_ISNULL)
+                    //.and(saveMap.get("ldap_ou")).notNull(RCode.SYS_CONFIG_LDAPOU_ISNULL)
                     .and(saveMap.get("ldap_user_filter")).notNull(RCode.SYS_CONFIG_LDAPUSERFILTER_ISNULL)
                     .and(saveMap.get("ldap_mapping")).notNull(RCode.SYS_CONFIG_LDAPMAPPING_ISNULL);
             String ldapMapping = saveMap.get("ldap_mapping");
@@ -568,26 +585,19 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         }
     }
 
-    /**
-     * 测试连接是否可用
-     * @param smtpHost
-     * @param smtpPort
-     * @param timeOut
-     * @param account
-     * @param password
-     * @param sslFlag
-     * @param tlsFlag
-     * @return
-     */
-    public R testConnectionSmtpServer(String smtpHost, String smtpPort, String timeOut, String account, String password, boolean sslFlag, boolean tlsFlag) {
+    public void testConnectionSmtpServer(Map<String, String> map) {
+        String smtpHost = map.get("email_smtp_host");
+        String smtpPort = map.get("email_smtp_port");
+
         Properties prop = new Properties();
         prop.setProperty("mail.snmp.host", smtpHost);
         prop.setProperty("mail.smtp.port", smtpPort);
         prop.setProperty("mail.transport.protocol", "smtp");
         prop.setProperty("mail.smtp.auth", "true");
         // 设置超时时间为10秒
-        prop.setProperty("mail.smtp.timeout", timeOut);
+        prop.setProperty("mail.smtp.timeout", Constant.CONNECTION_SMTP_TIMEOUT);
 
+        boolean sslFlag = Constant.SWITCH_OPEN.equals(map.get("email_ssl_flag"));
         if (sslFlag) {
             try {
                 prop.put("mail.smtp.port", "465");
@@ -601,45 +611,32 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             }
         }
 
+        boolean tlsFlag = Constant.SWITCH_OPEN.equalsIgnoreCase(map.get("email_tls_flag"));
         if (tlsFlag) {
             prop.put("mail.smtp.starttls.enable", "true");
             prop.put("mail.smtp.port", "587");
         }
 
-        // 1、创建session
-        Session session = Session.getInstance(prop);
-        session.setDebug(true);
-        // 2、通过session得到transport对象
-        Transport ts = null;
-        try {
-            // 3、使用邮箱的用户名和密码连上邮件服务器
-            ts = session.getTransport();
-            ts.connect(smtpHost, account, password);
-        } catch (AuthenticationFailedException e) {
-            // for authentication failures
-            logger.error("Authentication failed to connect to SMTP server", e);
-            return R.error(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
-        } catch (MailConnectException e) {
-            // 连接smtp服务异常 造成此类问题的原因：  1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
-            logger.error("Failed to connect to SMTP server", e);
-            return R.error(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
-        } catch (MessagingException e) {
-            // 其他关于登陆的错误 比如 连接超时
-            logger.error("Failed to connect to SMTP server", e);
-            return R.error(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
-        } catch (Exception e) {
-            logger.error("Failed to connect to SMTP server", e);
-            return R.error(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
-        } finally {
-            if (ts != null) {
-                try {
-                    ts.close();
-                } catch (MessagingException e) {
-                    logger.error("关闭Transport失败",e);
-                }
-            }
+        // 登录账户
+        String smtpAccount = map.get("email_smtp_account");
+        // 发件人
+        String sendAccount = map.get("email_send_account");
+        if (StringUtils.isEmpty(sendAccount)) {
+            sendAccount = smtpAccount;
         }
-        return R.ok("Test connection to SMTP server succeeded");
+
+        try {
+            String receicer = map.get("email_test_reciver");
+            String password = map.get("email_smtp_password");
+
+            mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, password, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
+        } catch (IOException e) {
+            logger.error("获取测试发送邮件模板失败", e);
+            throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND);
+        } catch (TemplateException e) {
+            logger.error("静态化模板内容失败", e);
+            throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED);
+        }
     }
 
     /**
@@ -702,5 +699,28 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             }
         }
         return R.ok("Test connection to LDAP server succeeded");
+    }
+
+    // 获取发送邮件内容
+    public String getSendMailContent(String sendEmail) throws IOException, TemplateException {
+        // 创建配置类
+        Configuration configuration = new Configuration(Configuration.getVersion());
+        // 加载模板文件
+        String templateString = this.getValue(Constant.SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE);
+        //创建模板加载器
+        StringTemplateLoader templateLoader = new StringTemplateLoader();
+        // 存入模板
+        templateLoader.putTemplate("template", templateString);  //template  = 虚拟名称, 用来当作获取静态文件的key
+        //加载模板加载器
+        configuration.setTemplateLoader(templateLoader);
+        //得到模板
+        Template template = configuration.getTemplate("template", "utf-8");
+        //创建模型数据
+       /* Map<String, Object> modelMap = new HashMap<String, Object>();
+        modelMap.put("sendEmail", sendEmail);*/
+        //执行静态化 方式1  获取静态化内容
+        String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, null);
+        //静态化内容;
+        return content;
     }
 }
