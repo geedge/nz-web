@@ -28,6 +28,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     @Autowired
     private SysUserService sysUserService;
 
+    @Autowired
+    private YamlUtil yamlUtil;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String receiverStr = (String) params.get("receiver");
@@ -63,8 +66,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Override
     public boolean checkName(AlertRuleEntity alertRule) {
-        List<AlertRuleEntity> list = this.list(new QueryWrapper<AlertRuleEntity>()
-                .eq("alert_name", alertRule.getAlertName()));
+        List<AlertRuleEntity> list = this.list(new QueryWrapper<AlertRuleEntity>().lambda()
+                .eq(AlertRuleEntity::getAlertName, alertRule.getAlertName()));
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
         if ((list == null || list.size() == 0) ||
@@ -111,5 +114,35 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 throw new NZException(RCode.ALERTRULE_RECEIVER_FORMAT);
             }
         });
+    }
+
+    @Override
+    public void saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
+        // 校验名称重复
+        if (!this.checkName(alertRule)) {
+            throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
+        }
+
+
+        // 校验expr
+        boolean checkRule = false;
+        try {
+            checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
+        } catch (Exception e) {
+            log.error("expr校验失败", e);
+        } finally {
+            if (!checkRule) {
+                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
+            }
+        }
+
+        // 校验关联用户
+        String receiver = alertRule.getReceiver();
+        if (com.baomidou.mybatisplus.core.toolkit.StringUtils.isNotEmpty(receiver)) {
+            this.validateReceiver(receiver);
+        }
+
+        // 入库
+        this.saveOrUpdate(alertRule);
     }
 }
