@@ -187,17 +187,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateAsset(Asset asset) {
-        List<Asset> list = this.list();
-
         // 1. sn 唯一校验
-        List<String> snList = list.stream().map(Asset::getSn).collect(Collectors.toList());
-        if (snList.contains(asset.getSn())) {
+        if (!this.validateFieldExist(asset.getId(), "sn", asset.getSn())) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
 
         // 2. host地址唯一校验
-        List<String> hostList = list.stream().map(Asset::getHost).collect(Collectors.toList());
-        if (hostList.contains(asset.getHost())) {
+        if (!this.validateFieldExist(asset.getId(), "host", asset.getHost())) {
             throw new NZException(RCode.ASSET_HOST_DUPLICATE);
         }
 
@@ -321,6 +317,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 accountService.saveOrUpdateAccount(account);
             }
         }
+    }
+
+    public boolean validateFieldExist(Integer id, String column, String columnValue) {
+        List<Asset> list = this.list(new QueryWrapper<Asset>().eq(column, columnValue));
+        boolean flag = false;
+
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) ||
+                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
+            flag = true;
+        }
+        return flag;
     }
 
     /**
