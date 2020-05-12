@@ -37,8 +37,5 @@ public interface SysConfigDao extends BaseMapper<SysConfigEntity> {
 	 * 系统重置删除用户输入的内容
 	 * @param tableName
 	 */
-	void clearByTableName(@Param("tableName") String tableName);
-
-	void clearDict();
-	
+	void clearData(@Param("sql") String sql);
 }

@@ -1,7 +1,10 @@
 package com.nis.modules.promserver.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+
 import org.apache.http.HttpEntity;
+import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -56,8 +59,11 @@ public class HttpClientUtils {
             // 请求发送成功，并得到响应
             String str = "";
             try {
-                // 读取服务器返回过来的json字符串数据
-                str = EntityUtils.toString(result.getEntity(), "utf-8");
+            	// 防止有的响应没有返回值报异常情况
+            	if(ObjectUtils.isNotEmpty(result.getEntity())) {
+            		// 读取服务器返回过来的json字符串数据
+                    str = EntityUtils.toString(result.getEntity(), "utf-8");
+            	}
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
             } catch (Exception e) {
@@ -97,8 +103,11 @@ public class HttpClientUtils {
             // 请求发送成功，并得到响应
             String str = "";
             try {
-                // 读取服务器返回过来的json字符串数据
-                str = EntityUtils.toString(result.getEntity(), "utf-8");
+            	// 防止有的响应没有返回值报异常情况
+            	if(ObjectUtils.isNotEmpty(result.getEntity())) {
+            		// 读取服务器返回过来的json字符串数据
+                    str = EntityUtils.toString(result.getEntity(), "utf-8");
+            	}
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
             } catch (Exception e) {

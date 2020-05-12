@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -43,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -379,21 +381,27 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     /**
      * 清除用户输入数据
      */
+    @Transactional(rollbackFor = Exception.class)
     private void resetEnterData() throws Exception{
-        // redis写入当前用户id
-        Long userId = ShiroUtils.getUserId();
-        redisTemplate.opsForValue().set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
-        // 删除用户输入的数据
-        Arrays.stream(Constant.TABLESWITHCLEAR).forEach(table->{
-            if("sys_dict".equals(table)){
-                this.baseMapper.clearDict();
-            }else {
-                this.baseMapper.clearByTableName(table);
-            }
-        });
-        // 删除redis中key=reset的数据
-        redisTemplate.delete("reset");
-
+        try {
+			// redis写入当前用户id
+			Long userId = ShiroUtils.getUserId();
+			redisTemplate.opsForValue().set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
+			// 删除用户输入的数据
+			String jsonTables = this.getValue(Constant.RESET_TABLE_INFOS);
+			if(StringUtils.isNotEmpty(jsonTables)) {
+				List<String> tables = (List<String>) JSONArray.parse(jsonTables);
+			    Arrays.stream(tables.toArray()).forEach(table->{
+			    	this.baseMapper.clearData((String)table);
+			    });
+			}
+			// 删除redis中key=reset的数据
+			redisTemplate.delete("reset");
+			logger.info("nezha reset success");
+		} catch (Exception e) {
+			logger.error("nezha reset fail",e);
+			throw new NZException(RCode.SYS_CONFIG_RESET_FAIL);
+		}
     }
 
 

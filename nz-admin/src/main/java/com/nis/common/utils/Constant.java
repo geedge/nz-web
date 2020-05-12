@@ -92,12 +92,6 @@ public class Constant {
 
     // 系统重置类型
     public static final String[] SYSCONFIG_RESET_TYPE = {"metric","alert","sysconfig"};
-
-    // 系统输入内容的table
-    public static final String[] TABLESWITHCLEAR = {
-            "account","alert_rule","asset","cabinet","chart","chart_element",
-            "endpoint","idc","maintenance_record","model","module","panel","project","prom_server",
-            "snmp_mib","sys_dict","idc_traffic"};
     
     /**
      * 告警等级
@@ -601,4 +595,7 @@ public class Constant {
 
     // 测试邮件发送标题
     public static final String TESTEMAIL_SEND_TITLE = "Test";
+    
+    // reset操作处理的表信息数据
+    public static final String RESET_TABLE_INFOS = "reset_table_infos";
 }

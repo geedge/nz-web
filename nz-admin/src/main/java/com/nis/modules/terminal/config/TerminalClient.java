@@ -359,7 +359,7 @@ public class TerminalClient {
         Integer  historyIndex = (Integer) terminalAttributeInfo.get("historyIndex");
     	// 前端每次传给后端服务器的指令字符
     	TextMessage message = (TextMessage) TerminalSession.clientAttributeInfo.get(clientId+"shell");
-    	if(ObjectUtils.isNotEmpty(message)) {
+    	if(ObjectUtils.isNotEmpty(message) && message.asBytes()[0]!=3) {
     		// 处理前端方向键
     		if(message.asBytes()[0]==27) {
         		String operation = ByteUtils.toHexAscii(message.asBytes());
@@ -481,8 +481,11 @@ public class TerminalClient {
                 sendEnter = true;
             }
         } else {
-            sendEnter = false;
-            sendBuffer.append(message);
+        	// 防止用户输入ctrl+c出现程序异常 以及记录日志异常
+        	if(ObjectUtils.isNotEmpty(message) && message.getBytes()[0]!=3) {
+        		sendEnter = false;
+                sendBuffer.append(message);
+        	}
         }
 
         if (writer != null) {

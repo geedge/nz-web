@@ -11,11 +11,10 @@
 	<select id="queryByKey" parameterType="string" resultType="com.nis.modules.sys.entity.SysConfigEntity">
 		select * from sys_config where param_key = #{paramKey}
 	</select>
-    <!-- 删除用户输入内容的表	-->
-	<delete id="clearByTableName" parameterType="string">
-		DELETE FROM ${tableName}
+    
+    <!-- reset清空表数据信息	-->
+	<delete id="clearData" parameterType="string">
+		${sql}
 	</delete>
-	<delete id="clearDict">
-		DELETE FROM sys_dict where type IN ('assetType','vendor')
-	</delete>
+	
 </mapper>

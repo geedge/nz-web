@@ -245,7 +245,7 @@ public enum RCode {
     PROMSERVER_TYPE_ISNULL(521002, "PromServer type can not be empty"),
     PROMSERVER_HOST_ISNULL(521003, "PromServer host can not be empty"),
     PROMSERVER_PORT_ISNULL(521004, "PromServer port can not be empty"),
-    PROMSERVER_REQUEST_FAILD(521005, "Qequest faild"),
+    PROMSERVER_REQUEST_FAILD(521005, "Request faild"),
     PROMSERVER_PARAM_TIME_INVALIDE(523006, "Invalid parameter for time type"),
     PROMSERVER_PARAM_QUERY_ISNULL(521007, "Parameter 'query' is required"),
     PROMSERVER_PARAM_START_ISNULL(521008, "Parameter 'start' is required"),
@@ -393,7 +393,7 @@ public enum RCode {
     SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND(576054,"System config test email sending template not found"),// 发送测试邮件模板未找到
     SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED(570055,"Test email template generation failed"),                // freemarker生成发送邮件模板内容失败
     SYS_CONFIG_EMAILSENDCCOUNT_FORMAT(573056,"System config email send account format error"),           //email_send_account应为邮件格式
-
+    SYS_CONFIG_RESET_FAIL(573057,"System reset fail, check config and try again later"),
 
     /**
      * webshell相关

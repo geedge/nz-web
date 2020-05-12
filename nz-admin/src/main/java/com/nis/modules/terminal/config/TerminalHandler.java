@@ -92,22 +92,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     
     private Long userId;
     
-    /*// 光标位置
-    private Integer cursorIndex=0;
-    // 判断光标是否被移动过
-    private boolean cursorFlag=false;
-    
-    private Integer historyIndex=0;
-    
-    private boolean sshLogin=false;
-        
-    private boolean tabFlag=false;
-    
-    private StringBuilder terminalCmd;*/
-    
     private TerminalLogService terminalLogService;
-    //记录日志
-	/*TerminalLog terminalLog = null;*/
     
     @Override
     public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -245,6 +230,9 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalClient.write(message.getPayload());
                     
             }else {
+            	if(ObjectUtils.isEmpty(message.asBytes())) {
+            		return;
+            	}
             	//处理用户上下左右方向键操作
             	if(message.asBytes()[0]==27) {
             		// 判断用户是在ssh登录输入密码时操作  则直接返回不进行任何操作
@@ -256,7 +244,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             			// 左方向操作
             			if(cursorIndex!=0) {
             				// 光标在初始位置不可移动
-            				cursorIndex--;
+            				cursorIndex-=message.getPayload().length();
             				session.sendMessage(new TextMessage(message.getPayload()));
             				cursorFlag=true;
             			}else if(TerminalSession.getTerminalMessage(uuid)==null || cursorIndex==TerminalSession.getTerminalMessage(uuid).length()){
@@ -271,7 +259,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             				// 光标位置在初始位置 或者已经为当前输入内容最右处
             				cursorFlag=false;
             			}else {
-            				cursorIndex++;
+            				cursorIndex+=message.getPayload().length();
             				session.sendMessage(new TextMessage(message.getPayload()));
             				cursorFlag=true;
             			}
@@ -338,34 +326,6 @@ public class TerminalHandler extends TextWebSocketHandler {
         					session.sendMessage(new TextMessage(fromHexAscii));
         					session.sendMessage(new TextMessage(historyInstruction));
             			}
-        				/*String historyInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex+1);
-            			if(historyIndex==0) {
-            				String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
-            				if(StringUtils.isEmpty(TerminalMessage)) {
-            					session.sendMessage(new TextMessage(historyInstruction));
-            				}else {
-            					for(int i=0;i<TerminalMessage.length()-1;i++) {
-            						session.sendMessage(new TextMessage("\b"));
-            					}
-            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-            					session.sendMessage(new TextMessage(fromHexAscii));
-            					session.sendMessage(new TextMessage(historyInstruction));
-            				}
-            				if(StringUtils.isNoneBlank(historyInstruction)) {
-            					historyIndex++;
-            				}
-            			}else {
-            				if(StringUtils.isNoneBlank(historyInstruction)) {
-            					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-                				for(int i=0;i<prefixInstruction.length()-1;i++) {
-            						session.sendMessage(new TextMessage("\b"));
-            					}
-            					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-            					session.sendMessage(new TextMessage(fromHexAscii));
-            					session.sendMessage(new TextMessage(historyInstruction));
-            					historyIndex++;
-            				}
-            			}*/
         				historyIndex++;
             			TerminalSession.removeTerminalMessage(uuid);
             			TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
@@ -402,27 +362,6 @@ public class TerminalHandler extends TextWebSocketHandler {
     					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
     					session.sendMessage(new TextMessage(fromHexAscii));
     					session.sendMessage(new TextMessage(historyInstruction));
-        				/*if(StringUtils.isEmpty(historyInstruction)) {
-        					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-            				for(int i=0;i<prefixInstruction.length()-1;i++) {
-        						session.sendMessage(new TextMessage("\b"));
-        					}
-        					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-        					session.sendMessage(new TextMessage(fromHexAscii));
-        					String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
-        					if(StringUtils.isEmpty(TerminalMessage)) {
-        						TerminalMessage="";
-        					}
-        					session.sendMessage(new TextMessage(TerminalMessage));
-        				}else {
-        					String prefixInstruction = TerminalSession.getHistoryInstruction(uuid, historyIndex);
-            				for(int i=0;i<prefixInstruction.length()-1;i++) {
-        						session.sendMessage(new TextMessage("\b"));
-        					}
-        					byte[] fromHexAscii = ByteUtils.fromHexAscii("081b5b4b");
-        					session.sendMessage(new TextMessage(fromHexAscii));
-        					session.sendMessage(new TextMessage(historyInstruction));
-        				}*/
             			TerminalSession.removeTerminalMessage(uuid);
     					TerminalSession.setTerminalMessage(uuid, historyInstruction, null);
     					cursorIndex=historyInstruction.length();
@@ -457,7 +396,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             			}
             		}
     				if(StringUtils.isEmpty(TerminalMessage)&&(!sshLogin)) {
-    					session.sendMessage(new TextMessage(message.getPayload()+"\n$:"));
+    					session.sendMessage(new TextMessage(message.getPayload()+"\n$: "));
     				}else {
     					// 将用户已经执行的指令存储到历史记录里
 						if(!sshLogin) {
@@ -474,6 +413,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             	}else if(message.asBytes()[0]==127&&sshLogin){
             		// ssh登录时处理用户退格键
             		TerminalSession.backspaceMessage(uuid,cursorIndex);
+            		cursorIndex--;
+            		TerminalSession.setTerminalAttributeInfo(uuid, "cursorIndex", cursorIndex);
             		return;
             	}else if(message.asBytes()[0]==127) {
             		String TerminalMessage = TerminalSession.getTerminalMessage(uuid);
@@ -509,7 +450,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             		logger.info("terminal unstart  uuid info {}",uuid);
             		TerminalSession.setTerminalMessage(uuid,message.getPayload(),cursorIndex);
             		//光标位置
-            		cursorIndex++;
+            		cursorIndex+=message.getPayload().length();
             		// 不返回用户输入的ssh密码信息
             		if(!sshLogin) {
             			session.sendMessage(new TextMessage(message.getPayload()));
