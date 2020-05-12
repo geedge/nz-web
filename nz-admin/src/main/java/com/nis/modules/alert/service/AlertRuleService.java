@@ -30,5 +30,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	void validateBulitinRule(List<Integer> id);
 
 	void validateReceiver(String receiver);
+
+	void saveOrUpdateAlertRule(AlertRuleEntity alertRule);
 }
 

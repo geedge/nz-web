@@ -7,8 +7,6 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,12 +20,8 @@ import java.util.Map;
 @RequestMapping("alert/rule")
 public class AlertRuleController {
 	
-	private final static Logger logger = LoggerFactory.getLogger(AlertRuleController.class);
-	
     @Autowired
     private AlertRuleService alertRuleService;
-    @Autowired
-    private YamlUtil yamlUtil;
 
     /**
      * 列表
@@ -52,33 +46,7 @@ public class AlertRuleController {
     					.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
 			            .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
 
-    	//校验名称重复
-    	if (!alertRuleService.checkName(alertRule)) {
-			throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
-    	}
-    	//校验告警级别合法性
-//    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-//    		throw new NZException(RCode.ALERTRULE_SEVERITY_INCORRECT);
-//    	}
-    	//校验expr
-    	boolean checkRule = false;
-    	try {
-			checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-		} catch (Exception e) {
-			logger.error("expr校验失败", e);
-		} finally {
-			if (!checkRule) {
-				throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
-			}
-		}
-
-	    String receiver = alertRule.getReceiver();
-    	if(StringUtils.isNotEmpty(receiver)){
-		    alertRuleService.validateReceiver(receiver);
-	    }
-
-		alertRuleService.save(alertRule);
-
+    	alertRuleService.saveOrUpdateAlertRule(alertRule);
         return R.ok();
     }
 
@@ -96,32 +64,7 @@ public class AlertRuleController {
 						.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
 			            .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
 
-    	//校验名称重复
-    	if (!alertRuleService.checkName(alertRule)) {
-    		throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
-    	}
-    	//校验告警级别合法性
-//    	if (!Constant.ALERT_LEVEL.contains(alertRule.getSeverity().toLowerCase())) {
-//    		throw new NZException(RCode.ALERTRULE_SEVERITY_INCORRECT);
-//    	}
-    	//校验expr
-    	boolean checkRule = false;
-    	try {
-			checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-		} catch (Exception e) {
-			logger.error("expr check faild", e);
-		} finally {
-			if (!checkRule) {
-				throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
-			}
-		}
-
-	    String receiver = alertRule.getReceiver();
-	    if(StringUtils.isNotEmpty(receiver)){
-		    alertRuleService.validateReceiver(receiver);
-	    }
-    	
-    	alertRuleService.updateById(alertRule);
+	    alertRuleService.saveOrUpdateAlertRule(alertRule);
         return R.ok();
     }
 

@@ -25,10 +25,11 @@
 		<result property="endpointId" column="endpoint_id"/>
 		<result property="assetId" column="asset_id"/>
 		<result property="dcId" column="dc_id"/>
+		<result property="expr" column="expr"/>
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
-		select am.*,ar.alert_name from alert_message am
+		select am.*,ar.alert_name,ar.expr from alert_message am
 		left join alert_rule ar on am.rule_id=ar.id
 		<where>
 			<if test="params.alertName != null and params.alertName != ''">
