@@ -30,7 +30,6 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.sun.mail.util.MailSSLSocketFactory;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -44,7 +43,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
@@ -56,7 +54,6 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -606,20 +603,18 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         prop.setProperty("mail.smtp.timeout", Constant.CONNECTION_SMTP_TIMEOUT);
 
         boolean sslFlag = Constant.SWITCH_OPEN.equals(map.get("email_ssl_flag"));
-        if (sslFlag) {
-            try {
-                prop.put("mail.smtp.port", "465");
-                prop.put("mail.smtp.socketFactory.port", "465");
-                MailSSLSocketFactory sf = new MailSSLSocketFactory();
-                sf.setTrustAllHosts(true);
-                prop.put("mail.smtp.ssl.enable", "true");
-                prop.put("mail.smtp.ssl.socketFactory", sf);
-            } catch (GeneralSecurityException e) {
-                logger.error("Failed to test connection smtp server using SSL", e);
-            }
+        boolean tlsFlag = Constant.SWITCH_OPEN.equalsIgnoreCase(map.get("email_tls_flag"));
+        if(sslFlag || tlsFlag){
+            prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            prop.put("mail.smtp.socketFactory.fallback", "false");
+            prop.put("mail.smtp.starttls.enable", "true");
         }
 
-        boolean tlsFlag = Constant.SWITCH_OPEN.equalsIgnoreCase(map.get("email_tls_flag"));
+        if (sslFlag) {
+            prop.put("mail.smtp.socketFactory.port", "465");
+            prop.remove("mail.smtp.port");
+        }
+
         if (tlsFlag) {
             prop.put("mail.smtp.starttls.enable", "true");
             prop.put("mail.smtp.port", "587");
@@ -665,25 +660,26 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             initialDirContext = new InitialDirContext(environment);
             
             // 校验ou属性
-            String[] split = dn.split(",");
-			String base = split[split.length-2]+","+split[split.length-1];
-			if(StringUtils.isNotBlank(ou)) {
-				base="ou="+ou+","+base;
-			}
-			boolean ouFlag=true;
-        	Attributes attributes = initialDirContext.getAttributes(base);
-            NamingEnumeration<String> nEnum = attributes.getIDs();  
-            for( ; nEnum.hasMore() ; ){ 
-                String attrID = nEnum.next(); 
-                Attribute attribute = attributes.get(attrID);
-                if(attribute.toString().startsWith("ou:")) {
-                	if(attribute.toString().contains(ou)) {
-                		ouFlag=false;
-                	}
+            if (StringUtils.isNotBlank(ou)) {
+                String[] split = dn.split(",");
+                String base = split[split.length - 2] + "," + split[split.length - 1];
+                base = "ou=" + ou + "," + base;
+
+                boolean ouFlag = true;
+                Attributes attributes = initialDirContext.getAttributes(base);
+                NamingEnumeration<String> nEnum = attributes.getIDs();
+                for (; nEnum.hasMore(); ) {
+                    String attrID = nEnum.next();
+                    Attribute attribute = attributes.get(attrID);
+                    if (attribute.toString().startsWith("ou:")) {
+                        if (attribute.toString().contains(ou)) {
+                            ouFlag = false;
+                        }
+                    }
                 }
-            }
-            if(ouFlag) {
-            	return R.error(RCode.SYS_CONFIG_LDAP_OU_NOT_EXIST);
+                if (ouFlag) {
+                    return R.error(RCode.SYS_CONFIG_LDAP_OU_NOT_EXIST);
+                }
             }
             
         } catch (AuthenticationException e) {

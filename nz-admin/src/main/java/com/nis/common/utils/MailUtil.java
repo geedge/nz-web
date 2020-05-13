@@ -61,7 +61,7 @@ public class MailUtil {
 			//props.setProperty("mail.smtp.socketFactory.port", "465");//端口
 			props.put("mail.smtp.auth", "true");
 			// 用刚刚设置好的props对象构建一个session
-			session = Session.getDefaultInstance(props);
+			session = Session.getInstance(props);
 			session.setDebug(true);
 		}
 		
@@ -122,7 +122,7 @@ public class MailUtil {
 	 * @return
 	 */
 	public void sendHTML(String smtpHost, Properties prop, String smtpAccount, String sendAccount, String password, String to, String subject, String txt) {
-		session = Session.getDefaultInstance(prop);
+		session = Session.getInstance(prop);
 		session.setDebug(true);
 
 		// 用session为参数定义消息对象
