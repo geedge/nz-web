@@ -135,10 +135,4 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Idc dc;
-
-	/**
-	 *  告警规则表达式
-	 */
-	@TableField(exist = false)
-	private String expr;
 }

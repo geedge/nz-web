@@ -19,13 +19,13 @@
 		<result property="hashKey" column="hash_key"/>
 		<result property="alertRule.id" column="rule_id" />
 		<result property="alertRule.alertName" column="alert_name"/>
+		<result property="alertRule.expr" column="expr"/>
 
 		<result property="projectId" column="project_id"/>
 		<result property="moduleId" column="module_id"/>
 		<result property="endpointId" column="endpoint_id"/>
 		<result property="assetId" column="asset_id"/>
 		<result property="dcId" column="dc_id"/>
-		<result property="expr" column="expr"/>
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
