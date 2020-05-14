@@ -1,5 +1,20 @@
 package com.nis.modules.overview.service.impl;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -15,22 +30,17 @@ import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.dao.OverviewDao;
-import com.nis.modules.overview.entity.*;
+import com.nis.modules.overview.entity.AssetStat;
+import com.nis.modules.overview.entity.DcStat;
+import com.nis.modules.overview.entity.EndpointStat;
+import com.nis.modules.overview.entity.ModuleStat;
+import com.nis.modules.overview.entity.ProjectStat;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
-import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service("overviewService")
 public class OverviewServiceImpl implements OverviewService {
@@ -320,9 +330,8 @@ public class OverviewServiceImpl implements OverviewService {
 
         // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
         List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
-        String url;
-        Map result;
-
+        String url = "/api/v1/query?query=up";
+        Map result = null;
         Map data;
         JSONArray resultArray;
         JSONObject obj = null;
@@ -331,23 +340,22 @@ public class OverviewServiceImpl implements OverviewService {
         Integer endpointId = null;
         Map<String,String> metricLabels;
         for (Promserver promserver : promservers) {
-            // 2. 查询 up
-            url = "http://" + promserver.getHost() + ":" + promserver.getPort();// ip+port
-            url += query + "?query=up";// url
-
-            result = promserverProxyService.requestPromAPI(url);
+        	//查询up
+            try {
+				result = promserverProxyService.promRequest(url, "GET", null, promserver.getId(), null, null, null);
+			} catch (Exception e1) {
+				logger.error("request error", e1);
+			}
             // 查询成功
             if (result != null && "success".equals(result.get("status"))) {
                 data = (Map) result.get("data");
                 resultArray = (JSONArray) data.get("result");
-
                 for (int i = 0; i < resultArray.size(); i++) {
                     obj = (JSONObject) resultArray.get(i);
                     timeAndState = (List<String>) obj.get("value");
                     if ("1".equals(timeAndState.get(1))) {
                         metricLabels = (Map) obj.get("metric");
                         endPointValue = metricLabels.get(Constant.PROMSERVERUP_ENDPOINT_LABEL);
-
                         if(StringUtils.isNotEmpty(endPointValue)){
                             try {
                                 endpointId = Integer.parseInt(endPointValue);
@@ -361,19 +369,6 @@ public class OverviewServiceImpl implements OverviewService {
                         }else{
                             logger.debug("The prometheus server is {} And the {} label's job label does not contain endpoint id", promserver, obj);
                         }
-                        /*if (job.contains("_")) {
-                            // job 标签的格式为 ed_endpointId
-                            split = job.split("_");
-                            try {
-                                endpointId = Integer.parseInt(split[1]);
-                            } catch (NumberFormatException e) {
-                                endpointId = null;
-                                logger.debug("prometheus server is {} And the {} label's job label does not contain endpoint id", promserver, job);
-                            }
-                            if (endpointId != null) {
-                                endPointIds.add(endpointId);
-                            }
-                        }*/
                     }
                 }
             } else {// 查询失败

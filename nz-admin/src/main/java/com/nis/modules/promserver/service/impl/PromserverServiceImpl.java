@@ -1,9 +1,10 @@
 package com.nis.modules.promserver.service.impl;
 
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -12,14 +13,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
@@ -68,5 +67,18 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		if(!portFlag) {
 			throw new NZException(RCode.PROMSERVER_PORT_ERROR);
 		}
+	}
+	
+	public Promserver getOneAvaPromServer(Integer promId,Integer idcId,Integer type) {
+		type = (type == null) ? 1 :type;
+		List<Promserver> list = this.list(new QueryWrapper<Promserver>().lambda()
+				.eq(true, Promserver::getStatus, 1)
+				.eq(promId!=null, Promserver::getId, promId)
+				.eq(promId==null&&type!=null, Promserver::getType, type)
+				.eq(promId==null&&idcId != null, Promserver::getIdcId, idcId));
+		// 校验是否有可用 prometheus server
+		ValidateUtils.is(list).notNull(RCode.PROMSERVER_HOST_ISNULL);
+		Promserver server = list.get(RandomUtils.nextInt(0, list.size()));
+		return server;
 	}
 }

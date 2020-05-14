@@ -1,26 +1,25 @@
 package com.nis.modules.promserver.service;
 
-import com.alibaba.fastjson.JSONObject;
-
 import java.util.Map;
 
+import com.alibaba.fastjson.JSONObject;
+
 public interface PromserverProxyService {
-    // /api/v1/query
-    JSONObject query(String api, Map<String, Object> params);
 
-    // /api/v1/query_range
-    JSONObject queryRange(String api, Map<String, Object> params);
+	JSONObject promRequest(String url, String method, Map<String, Object> params, Integer promId, Integer idcId,
+			Integer type, Integer endpointId) throws Exception;
 
-    // /api/v1/series
-    JSONObject series(String api, Map<String, Object> params);
+	// /api/v1/query
+	JSONObject query(Map<String, Object> params) throws Exception;
 
-    // /api/v1/labels
-    JSONObject labels(String api, Map<String, Object> params);
+	// /api/v1/query_range
+	JSONObject queryRange(Map<String, Object> params) throws Exception;
 
-    // /api/v1/label/<label_name>/values
-    JSONObject label(String api, Map<String, Object> params);
+	// /api/v1/series
+	JSONObject series(Map<String, Object> params) throws Exception;
 
-    JSONObject excuteMethod(String methodName, String api, Map<String, Object> params);
+	// /api/v1/labels
+	JSONObject labels(Map<String, Object> params) throws Exception;
 
-    JSONObject defaultExcute(String api, Map<String, Object> params);
+
 }

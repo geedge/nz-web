@@ -1,29 +1,14 @@
 package com.nis.modules.endpoint.service.impl;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.endpoint.entity.StateInfo;
-import com.nis.modules.endpoint.service.EndpointService;
-import com.nis.modules.metric.dto.MetricsDto;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.module.service.ModuleService;
-import com.nis.modules.project.entity.Project;
-import com.nis.modules.project.service.ProjectService;
-import com.nis.modules.promserver.entity.PromApi;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverProxyService;
-import com.nis.modules.promserver.service.PromserverService;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.poi.ss.usermodel.Row;
@@ -40,11 +25,35 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.*;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.endpoint.dao.EndpointDao;
+import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.StateInfo;
+import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.metric.dto.MetricsDto;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.promserver.entity.PromApi;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverProxyService;
+import com.nis.modules.promserver.service.PromserverService;
 
 @Service("endpointService")
 public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> implements EndpointService {
@@ -82,7 +91,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				Map resultMap=new HashMap();
 				Map map =new HashMap();
 				map.put("query", "up");
-				JSONObject promeResult = promserverProxyService.query(api, map);
+				JSONObject promeResult = promserverProxyService.query(map);
 				JSONObject promeObject = (JSONObject) promeResult.get("data");
 				JSONArray str = (JSONArray) promeObject.get("result");
 				if(str!=null&&str.size()>0) {
