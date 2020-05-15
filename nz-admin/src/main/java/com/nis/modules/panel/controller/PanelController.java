@@ -170,6 +170,8 @@ public class PanelController {
 		} catch (Exception e) {
 			return R.error(500, e.getMessage());
 		}
-        return R.ok(id);
+    	Map result =new HashMap();
+    	result.put("id", id);
+        return R.ok(result);
     }
 }
