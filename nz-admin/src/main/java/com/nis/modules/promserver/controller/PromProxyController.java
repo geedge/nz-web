@@ -142,6 +142,7 @@ public class PromProxyController {
 			}
 			response.setStatus(responseCode, responseMessage);
 			IOUtils.copy(connInputStream, resOutputStream);
+			resOutputStream.flush();//flush 输出流
 		} catch (Exception e) {
 			try {
 				response.sendError(500, "request error");
