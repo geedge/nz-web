@@ -152,4 +152,23 @@ public class PanelController {
         chartService.modify(panelId, chart);
         return R.ok();
     }
+    
+    /**
+     * chart复制
+     * @param panelId
+     * @param id
+     * @return
+     */
+    @PostMapping(value={"/{id}/charts/duplicate"})
+    public R duplicate(@PathVariable("id") Integer panelId, @RequestParam(value="id",required = false) Integer id){
+    	// 校验参数
+        chartService.validatePanel(panelId);
+    	ValidateUtils.is(id).notNull(RCode.CHART_ID_ISNULL);
+    	try {
+			chartService.duplicate(panelId, id);
+		} catch (Exception e) {
+			return R.error(500, e.getMessage());
+		}
+        return R.ok();
+    }
 }
