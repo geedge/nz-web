@@ -56,6 +56,16 @@ public class Chart {
     private Integer next;
 
     /**
+     * 模板ID
+     */
+    private Integer pid;
+
+    /**
+     * 是否为内置规则
+     */
+    private Integer buildIn;
+
+    /**
      * 参数
      */
     @TableField(strategy = FieldStrategy.IGNORED)

@@ -7,8 +7,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface PanelDao extends BaseMapper<Panel> {
-    List<Panel> queryPanelsWithPage(IPage<Panel> page, @Param("id") Integer id, @Param("name") String name, @Param("createBy") Integer createBy);
+    List<Panel> queryPanelsWithPage(IPage<Panel> page, @Param("params")Map<String, Object> params);
 }

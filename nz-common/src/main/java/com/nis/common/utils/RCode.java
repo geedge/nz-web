@@ -39,6 +39,10 @@ public enum RCode {
     PANEL_NAME_ISNULL(111000, "Panel name can not be empty"),
     PANEL_ID_ISNULL(111001, "Panel ID can not be empty"),
     PANEL_NAME_DUPLICATE(112002, "Panel name is duplicate"),
+    PANEL_TYPE_ISNULL(111003, "Panel type can not be empty when link is not empty"),
+    PANEL_TYPE_INVALIDE(114004, "Panel type must be dashboard, asset, project, module, endpoint or model"),
+    PANEL_LINK_ISNULL(111005,"Panel link can not be empty when the type is not dashboard"),
+    PANEL_BUILDIN_CAN_NOT_REMOVE(117006, "This panel is built-in and cannot be deleted"),
 
 
     CHART_TITLE_ISNULL(111000, "Chart title can not be empty"),
@@ -64,6 +68,8 @@ public enum RCode {
     CHART_PARAMSINGLESTAT_ISNULL(111020,"Chart param statistics not found when type is singleStat"),
     CHART_PARAMSINGLESTAT_INVALIDE(114021,"Chart param statistics must be min, max, average, total, first, last, range  or different"),
     CHART_SINGLESTATPARAM_ISNULL(111022,"Chart param cannot be empty when type is singleStat"),
+    CHART_BUILDIN_CAN_NOT_REMOVE(117023, "This chart is built-in and cannot be deleted"),
+
 
 
     CHARTELEMENT_EXPRESSION_ISNULL(111000, "Chart element expression can not be empty"),

@@ -21,6 +21,20 @@ public class Panel {
      * */
     private Integer createBy;
 
+    /**
+     * panel类型
+     */
+    private String type;
+
+    /**
+     * 关联id
+     */
+    private Integer link;
+
+    /**
+     * 是否为内置规则
+     */
+    private Integer buildIn;
 
     @TableField(exist = false)
     private SysUserEntity creator;

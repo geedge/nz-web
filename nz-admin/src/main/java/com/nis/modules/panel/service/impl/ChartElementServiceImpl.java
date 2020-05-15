@@ -6,6 +6,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.panel.dao.ChartElementDao;
 import com.nis.modules.panel.entity.ChartElement;
 import com.nis.modules.panel.service.ChartElementService;
@@ -15,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -44,9 +44,8 @@ public class ChartElementServiceImpl extends ServiceImpl<ChartElementDao, ChartE
                 }
             }
 
-            ValidateUtils.is(element.getExpression()).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL);
-
-            ValidateUtils.is(element.getType()).notNull(RCode.CHARTELEMENT_TYPE_ISNULL);
+            ValidateUtils.is(element.getExpression()).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL)
+                         .and(element.getType()).notNull(RCode.CHARTELEMENT_TYPE_ISNULL);
 
             if(!expressionTypes.contains(element.getType())){
                 throw new NZException(RCode.CHARTELEMENT_TYPE_INVALIDE);
@@ -55,18 +54,11 @@ public class ChartElementServiceImpl extends ServiceImpl<ChartElementDao, ChartE
     }
 
     @Override
-    public void delElementByChartIds(Integer... ids) {
-        delElementByChartIds(Arrays.asList(ids));
-    }
-
-    @Override
     public void delElementByChartIds(List<Integer> ids) {
-        if(ids.size()<1){
+        if(ToolUtil.isEmpty(ids)){
             return ;
         }
-        QueryWrapper<ChartElement> elementQueryWrapper = new QueryWrapper<>();
-        elementQueryWrapper.in("chart_id",ids);
 
-        this.remove(elementQueryWrapper);
+        this.remove(new QueryWrapper<ChartElement>().lambda().in(ChartElement::getChartId, ids));
     }
 }

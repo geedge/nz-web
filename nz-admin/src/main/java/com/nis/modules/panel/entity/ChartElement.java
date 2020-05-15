@@ -33,6 +33,11 @@ public class ChartElement {
      */
     private String legend;
 
+    /**
+     * 是否为内置规则
+     */
+    private Integer buildIn;
+
     @Override
     public boolean equals(Object compareObj){
         if(this ==  compareObj){

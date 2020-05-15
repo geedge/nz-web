@@ -1,18 +1,15 @@
 package com.nis.modules.panel.controller;
 
 import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
-import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,20 +34,9 @@ public class PanelController {
     @RequestMapping(method = {RequestMethod.POST})
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.PANEL)
     public R panelSave( @RequestBody Panel panel){
-
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
 
-        // 校验name是否重复
-        if(!panelService.validatePanelName(panel.getId(), panel.getName())){
-            throw new NZException(RCode.PANEL_NAME_DUPLICATE);
-        }
-
-        Long userId = ShiroUtils.getUserId();
-
-        panel.setCreateBy(userId.intValue());
-
-        panelService.save(panel);
-
+        panelService.saveOrUpdatePanel(panel);
         // 添加之后相应 panel 对象
         Map<String, Panel> resultMap = new HashMap<>(2);
         resultMap.put("panel", panel);
@@ -60,21 +46,10 @@ public class PanelController {
     @RequestMapping(method = {RequestMethod.PUT})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
     public R panelUpdate( @RequestBody Panel panel){
+        ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL)
+                     .and(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
 
-        ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
-        ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
-
-        // 校验name是否重复
-        if(!panelService.validatePanelName(panel.getId(), panel.getName())){
-            throw new NZException(RCode.PANEL_NAME_DUPLICATE);
-        }
-
-        Long userId = ShiroUtils.getUserId();
-
-        panel.setCreateBy(userId.intValue());
-
-        panelService.updateById(panel);
-
+        panelService.saveOrUpdatePanel(panel);
         // 修改之后相应 panel 对象
         Map<String, Panel> resultMap = new HashMap<>(2);
         resultMap.put("panel", panel);
