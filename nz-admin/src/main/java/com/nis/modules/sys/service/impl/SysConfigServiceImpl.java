@@ -54,6 +54,7 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -361,8 +362,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         List<Promserver> promserverList = promserverService.list(
                 new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus,1));
         if(promserverList.size()>0){
+        	final String key=URLEncoder.encode("{__name__=~'.+'}","UTF-8");
             promserverList.forEach(promserver -> {
-                HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+seriesUri,"match[]={_name_=~'.+'}");
+                HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+seriesUri,"match[]="+key);
                 HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+tombstonesUri,"");
             });
         }

@@ -13,8 +13,10 @@ import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
+import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.service.SysDictService;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -636,5 +638,47 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
         return false;
     }
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void duplicate(Integer panelId, Integer chartId) {
+		// 图表复制
+		Chart source = this.getById(chartId);
+		Chart target =new Chart();
+        Integer lastIndex = -1;
+        BeanUtils.copyProperties(source, target);
+        
+        // 防止同一个panel下面的title有重复值
+        target.setTitle(source.getTitle()+" copy"+UUID.randomUUID());
+		
+        if(lastIndex.equals(source.getNext())) {
+			//位于图表中最后一位时
+			target.setPrev(source.getId());
+			target.setNext(source.getNext());
+			this.save(target);
+			source.setNext(target.getId());
+			this.updateById(source);
+		}else {
+			target.setPrev(source.getId());
+			target.setNext(source.getNext());
+			this.save(target);
+			
+			List<Chart> charts =new ArrayList<Chart>();
+			Chart threeChart = this.getById(target.getNext());
+			threeChart.setPrev(target.getId());
+			source.setNext(target.getId());
+			charts.add(threeChart);
+			charts.add(source);
+			this.updateBatchById(charts);
+		}
+		// 保存图表的element配置
+		 QueryWrapper<ChartElement> chartElementQueryWrapper = new QueryWrapper<>();
+	     chartElementQueryWrapper.lambda().eq(ChartElement::getChartId, chartId);
+	     List<ChartElement> list = chartElementService.list(chartElementQueryWrapper);
+	     list.forEach(chartElement-> {
+	    	 chartElement.setChartId(target.getId());
+         });
+	     chartElementService.saveBatch(list);
+	}
 
 }
