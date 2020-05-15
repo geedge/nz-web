@@ -36,46 +36,41 @@ public enum RCode {
     /**
      * dashboard菜单项相关
      */
-    PANEL_NAME_ISNULL(111000, "Panel name can not be empty"),
-    PANEL_ID_ISNULL(111001, "Panel ID can not be empty"),
-    PANEL_NAME_DUPLICATE(112002, "Panel name is duplicate"),
-    PANEL_TYPE_ISNULL(111003, "Panel type can not be empty when link is not empty"),
-    PANEL_TYPE_INVALIDE(114004, "Panel type must be dashboard, asset, project, module, endpoint or model"),
-    PANEL_LINK_ISNULL(111005,"Panel link can not be empty when the type is not dashboard"),
-    PANEL_BUILDIN_CAN_NOT_REMOVE(117006, "This panel is built-in and cannot be deleted"),
-
-
-    CHART_TITLE_ISNULL(111000, "Chart title can not be empty"),
-    CHART_SPAN_ISNULL(111001, "Chart span can not be empty"),
-    CHART_HEIGHT_ISNULL(111002, "Chart height can not be empty"),
-    CHART_TYPE_ISNULL(111003, "Chart type can not be empty"),
-    CHART_CREATEAT_ISNULL(111004, "Chart create time can not be empty"),
-    CHART_ELEMENT_ISNULL(111005, "Chart element can not be empty"),
-    CHART_TYPE_INVALIDE(113006, "Chart type is invalide"),
-    CHART_PANEL_ISNULL(116007, "Panel is not exsits"),
-    CHART_NOTEXSITS(116008, "Chart is not exsits"),
-    CHART_ID_ISNULL(111009, "Chart ID can not be empty"),
-    CHART_UNIT_ISNULL(111010, "Chart unit can not be empty"),
-    CHART_PREV_ISNULL(111011,"Chart prev can not be empty"),
-    CHART_NEXT_ISNULL(111012,"Chart next can not be empty"),
-    CHART_CANNOT_MODIFY(116013,"Chart can not modify"),
-    CHART_PREVNEXT_INCORRECT(113014,"Chart prev and next is incorrect"),
-    CHART_TITLE_DUPLICATE(112015,"Chart title is duplicate"),            // 同一个panel 下 chart title重复
-    CHART_URLPARAM_ISNULL(111016,"Chart param cannot be empty when type is url"), // 当type为url时，param不能为空
-    CHART_PARAM_FORMAT(113017,"Chart param must be JSON format"),               // param类型必须为json格式
-    CHART_PARAMURL_ISNULL(111018,"Chart param url not found when type is url"),              // param 中未找到url key值
-    CHART_PARAMURL_FORMAT(113019,"Chart param url value must be URL format"),  // param 中url的值必须为网址类型
-    CHART_PARAMSINGLESTAT_ISNULL(111020,"Chart param statistics not found when type is singleStat"),
-    CHART_PARAMSINGLESTAT_INVALIDE(114021,"Chart param statistics must be min, max, average, total, first, last, range  or different"),
-    CHART_SINGLESTATPARAM_ISNULL(111022,"Chart param cannot be empty when type is singleStat"),
-    CHART_BUILDIN_CAN_NOT_REMOVE(117023, "This chart is built-in and cannot be deleted"),
-
-
-
-    CHARTELEMENT_EXPRESSION_ISNULL(111000, "Chart element expression can not be empty"),
-    CHARTELEMENT_TYPE_ISNULL(111001, "Chart element type can not be empty"),
-    CHARTELEMENT_TYPE_INVALIDE(113002, "Chart element type is invalide"),
-    CHARTELEMENT_NOTEXSITS(116003, "chart element is not exists"),
+    PANEL_NAME_ISNULL(121000, "Panel name can not be empty"),
+    PANEL_ID_ISNULL(121001, "Panel ID can not be empty"),
+    PANEL_NAME_DUPLICATE(122002, "Panel name is duplicate"),
+    PANEL_TYPE_ISNULL(121003, "Panel type can not be empty when link is not empty"),
+    PANEL_TYPE_INVALIDE(124004, "Panel type must be dashboard, asset, project, module, endpoint or model"),
+    PANEL_LINK_ISNULL(121005,"Panel link can not be empty when the type is not dashboard"),
+    PANEL_BUILDIN_CAN_NOT_REMOVE(127006, "This panel is built-in and cannot be deleted"),
+    CHART_TITLE_ISNULL(121007, "Chart title can not be empty"),
+    CHART_SPAN_ISNULL(121008, "Chart span can not be empty"),
+    CHART_HEIGHT_ISNULL(121009, "Chart height can not be empty"),
+    CHART_TYPE_ISNULL(121010, "Chart type can not be empty"),
+    CHART_CREATEAT_ISNULL(121011, "Chart create time can not be empty"),
+    CHART_ELEMENT_ISNULL(121012, "Chart element can not be empty"),
+    CHART_TYPE_INVALIDE(123013, "Chart type is invalide"),
+    CHART_PANEL_ISNULL(126014, "Panel is not exsits"),
+    CHART_NOTEXSITS(126015, "Chart is not exsits"),
+    CHART_ID_ISNULL(121016, "Chart ID can not be empty"),
+    CHART_UNIT_ISNULL(121017, "Chart unit can not be empty"),
+    CHART_PREV_ISNULL(121018,"Chart prev can not be empty"),
+    CHART_NEXT_ISNULL(121019,"Chart next can not be empty"),
+    CHART_CANNOT_MODIFY(126020,"Chart can not modify"),
+    CHART_PREVNEXT_INCORRECT(123021,"Chart prev and next is incorrect"),
+    CHART_TITLE_DUPLICATE(122022,"Chart title is duplicate"),            // 同一个panel 下 chart title重复
+    CHART_URLPARAM_ISNULL(121023,"Chart param cannot be empty when type is url"), // 当type为url时，param不能为空
+    CHART_PARAM_FORMAT(123024,"Chart param must be JSON format"),               // param类型必须为json格式
+    CHART_PARAMURL_ISNULL(121025,"Chart param url not found when type is url"),              // param 中未找到url key值
+    CHART_PARAMURL_FORMAT(123026,"Chart param url value must be URL format"),  // param 中url的值必须为网址类型
+    CHART_PARAMSINGLESTAT_ISNULL(121027,"Chart param statistics not found when type is singleStat"),
+    CHART_PARAMSINGLESTAT_INVALIDE(124028,"Chart param statistics must be min, max, average, total, first, last, range  or different"),
+    CHART_SINGLESTATPARAM_ISNULL(121029,"Chart param cannot be empty when type is singleStat"),
+    CHART_BUILDIN_CAN_NOT_REMOVE(127030, "This chart is built-in and cannot be deleted"),
+    CHARTELEMENT_EXPRESSION_ISNULL(121031, "Chart element expression can not be empty"),
+    CHARTELEMENT_TYPE_ISNULL(121032, "Chart element type can not be empty"),
+    CHARTELEMENT_TYPE_INVALIDE(123033, "Chart element type is invalide"),
+    CHARTELEMENT_NOTEXSITS(126034, "chart element is not exists"),
 
 
     /**
