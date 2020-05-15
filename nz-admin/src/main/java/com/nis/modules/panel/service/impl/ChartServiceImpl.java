@@ -671,7 +671,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public Integer duplicate(Integer panelId, Integer chartId) {
+	public Chart duplicate(Integer panelId, Integer chartId) {
 		// 图表复制
 		Chart source = this.getById(chartId);
 		Chart target =new Chart();
@@ -709,7 +709,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 	    	 chartElement.setChartId(target.getId());
          });
 	     chartElementService.saveBatch(list);
-	     return target.getId();
+	     target.setElements(list);
+	     return target;
 	}
 
 }
