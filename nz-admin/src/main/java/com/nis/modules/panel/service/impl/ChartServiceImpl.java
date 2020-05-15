@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements ChartService {
@@ -293,11 +294,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delCharts(Integer panelId, Integer... ids) {
-        if (ids.length < 1) {
+        if (ToolUtil.isEmpty(ids)) {
             return;
         }
         // 只能删除当前 panel 下的 charts 这里调用查询方法，保证查询出来的chart 是有序的
         List<Chart> chartList = this.queryCharts(panelId, null, null);
+
+        // 内置chart不能删除
+        this.validateBuildInCharts(Arrays.asList(ids));
+
         Map<Integer, Integer> idAndChartMap = new HashMap<>();
         for (Chart entity : chartList) {
             idAndChartMap.put(entity.getId(), 1);
@@ -377,18 +382,26 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delChartsByPanelId(Integer... panelIds) {
-        if (panelIds.length < 1) {
+        if (ToolUtil.isEmpty(panelIds)) {
             return;
         }
-        QueryWrapper<Chart> chartQueryWrapper = new QueryWrapper<>();
-        chartQueryWrapper.lambda().in(Chart::getPanelId, panelIds);
 
-        this.remove(chartQueryWrapper);
+        // 要删除的 charts id集合
+        List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, panelIds));
+        List<Integer> chartIds = charts.stream().map(Chart::getId).collect(Collectors.toList());
 
-        List<Integer> chartIds = this.baseMapper.queryChartIds(panelIds);
+        // 内置chart不能删除
+        this.validateBuildInCharts(chartIds);
 
-        chartElementService.delElementByChartIds(chartIds);
+        if(CollectionUtils.isNotEmpty(chartIds)){
+            // 删除 charts
+            this.removeByIds(chartIds);
+
+            // 删除关联 element
+            chartElementService.delElementByChartIds(chartIds);
+        }
     }
 
 
@@ -399,6 +412,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
      * @param chart
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void modify(Integer panelId, Chart chart) {
         // 取出改panel下所有的charts
         List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, panelId).orderByAsc(Chart::getPrev));
@@ -636,6 +650,23 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             }
         }
         return false;
+    }
+
+    /**
+     * 校验是否是内置chart
+     * @param chartIds
+     */
+    private void validateBuildInCharts(List<Integer> chartIds) {
+        // 内置charts
+        List<Chart> buildInCharts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getBuildIn, 1));
+        Map<Integer, String> buildInChartIdAndTitleMap = buildInCharts.stream().collect(Collectors.toMap(Chart::getId, Chart::getTitle));
+
+
+        chartIds.forEach(id -> {
+            if (ToolUtil.isNotEmpty(buildInChartIdAndTitleMap.get(id))) {
+                throw new NZException(buildInChartIdAndTitleMap.get(id) + " chart is built-in and cannot be deleted", RCode.CHART_BUILDIN_CAN_NOT_REMOVE.getCode());
+            }
+        });
     }
 
 	@Override

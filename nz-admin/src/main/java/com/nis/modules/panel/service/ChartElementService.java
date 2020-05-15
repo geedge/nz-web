@@ -10,8 +10,6 @@ public interface ChartElementService extends IService<ChartElement> {
 
     void validateElements(Integer chartId, List<ChartElement> elements);
 
-    void delElementByChartIds(Integer... ids);
-
     void delElementByChartIds(List<Integer> ids);
 
 }

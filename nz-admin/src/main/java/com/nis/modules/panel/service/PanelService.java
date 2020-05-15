@@ -12,4 +12,6 @@ public interface PanelService extends IService<Panel> {
     void delPanels(Integer... ids);
 
     boolean validatePanelName(Integer id, String name);
+
+    void saveOrUpdatePanel(Panel panel);
 }

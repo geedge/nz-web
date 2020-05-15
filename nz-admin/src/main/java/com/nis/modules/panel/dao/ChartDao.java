@@ -11,7 +11,5 @@ import java.util.List;
 public interface ChartDao extends BaseMapper<Chart> {
     List<Chart> queryCharts(@Param("panelId") Integer panelId);
 
-    List<Integer> queryChartIds(@Param("panelIds") Integer... panelIds);
-
     void deleteByIds(@Param("panelId") Integer panelId, @Param("ids") List<Integer> deleteIds);
 }

@@ -166,6 +166,9 @@ public class Constant {
     // 图表 singleStat statistics可选值列表
     public static final List<String> CHART_SINGLESTAT_STATISTICS;
 
+    // panel type可选值集合
+    public static final List<String> PANEL_TYPES;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -227,6 +230,8 @@ public class Constant {
         CHART_SINGLESTAT_STATISTICS.add("last");
         CHART_SINGLESTAT_STATISTICS.add("range");
         CHART_SINGLESTAT_STATISTICS.add("different");
+
+        PANEL_TYPES = Arrays.asList(new String[]{"dashboard", "asset", "project", "module", "endpoint", "model"});
     }
     
     /**

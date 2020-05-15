@@ -13,32 +13,12 @@
     </resultMap>
 
     <select id="queryCharts" resultMap="chartResult">
-
-        select * from chart where panel_id=#{panelId}
-
-        <!--<if test="id != null ">
-            and id=#{id}
-        </if>
-
-        <if test="title != null and title != ''" >
-            and title like concat('%',#{title},'%')
-        </if>-->
-
-        ORDER BY prev
-
+        SELECT * FROM chart WHERE panel_id = #{panelId} ORDER BY prev
     </select>
 
     <select id="queryChartElements" resultType="com.nis.modules.panel.entity.ChartElement">
         select * from chart_element where chart_id=#{id}
     </select>
-
-    <select id="queryChartIds" resultType="int">
-        select id from chart where panel_id in
-        <foreach collection="panelIds" open="(" close=")" separator="," item="panelId">
-            #{panelId}
-        </foreach>
-    </select>
-
 
     <delete id="deleteByIds">
         delete from chart where panel_id=#{panelId} and id in
