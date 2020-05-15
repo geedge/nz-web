@@ -13,7 +13,6 @@ import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
-import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.service.SysDictService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
@@ -649,7 +648,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         BeanUtils.copyProperties(source, target);
         
         // 防止同一个panel下面的title有重复值
-        target.setTitle(source.getTitle()+" copy"+UUID.randomUUID());
+        target.setTitle(source.getTitle()+" copy"+ System.currentTimeMillis());
 		
         if(lastIndex.equals(source.getNext())) {
 			//位于图表中最后一位时
