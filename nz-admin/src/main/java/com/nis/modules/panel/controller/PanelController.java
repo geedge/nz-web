@@ -160,12 +160,12 @@ public class PanelController {
      * @return
      */
     @PostMapping(value={"/{id}/charts/duplicate"})
-    public R duplicate(@PathVariable("id") Integer panelId, @RequestParam(value="id",required = false) Integer id){
+    public R duplicate(@PathVariable("id") Integer panelId, @RequestBody Chart chart){
     	// 校验参数
         chartService.validatePanel(panelId);
-    	ValidateUtils.is(id).notNull(RCode.CHART_ID_ISNULL);
+    	ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
     	try {
-			chartService.duplicate(panelId, id);
+			chartService.duplicate(panelId, chart.getId());
 		} catch (Exception e) {
 			return R.error(500, e.getMessage());
 		}
