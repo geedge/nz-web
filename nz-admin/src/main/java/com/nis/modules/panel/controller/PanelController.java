@@ -164,11 +164,12 @@ public class PanelController {
     	// 校验参数
         chartService.validatePanel(panelId);
     	ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
+    	Integer id = null;
     	try {
-			chartService.duplicate(panelId, chart.getId());
+			id = chartService.duplicate(panelId, chart.getId());
 		} catch (Exception e) {
 			return R.error(500, e.getMessage());
 		}
-        return R.ok();
+        return R.ok(id);
     }
 }

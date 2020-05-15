@@ -22,5 +22,5 @@ public interface ChartService extends IService<Chart> {
 
     void modify(Integer panelId, Chart chart);
     
-    void duplicate(Integer panelId,Integer chartId);
+    Integer duplicate(Integer panelId,Integer chartId);
 }
