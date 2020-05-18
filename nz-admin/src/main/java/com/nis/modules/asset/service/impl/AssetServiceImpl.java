@@ -26,6 +26,12 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.panel.dao.PanelDao;
+import com.nis.modules.panel.entity.Chart;
+import com.nis.modules.panel.entity.ChartElement;
+import com.nis.modules.panel.entity.Panel;
+import com.nis.modules.panel.service.ChartElementService;
+import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysConfigService;
@@ -106,29 +112,38 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private CabinetDao cabinetDao;
 
+    @Autowired
+    private PanelDao panelDao;
+
+    @Autowired
+    private ChartService chartService;
+
+    @Autowired
+    private ChartElementService chartElementService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String [] vendorIds = {};
-        String [] typeIds = {};
-        if (ToolUtil.isNotEmpty(params.get("vendorIds"))){
+        String[] vendorIds = {};
+        String[] typeIds = {};
+        if (ToolUtil.isNotEmpty(params.get("vendorIds"))) {
             vendorIds = String.valueOf(params.get("vendorIds")).split(StringPool.COMMA);
         }
-        if (ToolUtil.isNotEmpty(params.get("typeIds"))){
+        if (ToolUtil.isNotEmpty(params.get("typeIds"))) {
             typeIds = String.valueOf(params.get("typeIds")).split(StringPool.COMMA);
         }
-        List<Integer> innerModelIds=new ArrayList<>();
-        if(vendorIds.length>0||typeIds.length>0){
-            innerModelIds=modelDao.selectIdByDictIds(vendorIds,typeIds);
-            if(innerModelIds.size()==0){
+        List<Integer> innerModelIds = new ArrayList<>();
+        if (vendorIds.length > 0 || typeIds.length > 0) {
+            innerModelIds = modelDao.selectIdByDictIds(vendorIds, typeIds);
+            if (innerModelIds.size() == 0) {
                 innerModelIds.add(-99999);
             }
         }
-        params.put("innerModelIds",innerModelIds);
-        if(ToolUtil.isNotEmpty(params.get("states"))){
-            params.put("states",String.valueOf(params.get("states")).split(StringPool.COMMA));
+        params.put("innerModelIds", innerModelIds);
+        if (ToolUtil.isNotEmpty(params.get("states"))) {
+            params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
         }
-        if(ToolUtil.isNotEmpty(params.get("pingStates"))){
-            params.put("pingStates",String.valueOf(params.get("pingStates")).split(StringPool.COMMA));
+        if (ToolUtil.isNotEmpty(params.get("pingStates"))) {
+            params.put("pingStates", String.valueOf(params.get("pingStates")).split(StringPool.COMMA));
         }
         String idcIds = null;
         if (params != null && params.size() > 0) {
@@ -300,6 +315,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
                 this.saveInitEndpoint(asset);
             }
+            // 新增时需要新增 panel chart
+            this.saveAssetPanelAndChart(asset);
         } else {
             this.updateById(asset);
             // 修改的时候如果没有指定 account, 则视为删除asset关联account
@@ -317,6 +334,50 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 accountService.saveOrUpdateAccount(account);
             }
         }
+    }
+
+    private void saveAssetPanelAndChart(Asset asset) {
+        // 当前型号关联的panel对象
+        Panel modelLinkPanel = panelDao.selectOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").eq(Panel::getLink, asset.getModelId()));
+
+        Panel panel = new Panel();
+        panel.setType("asset");
+        panel.setLink(asset.getId());
+        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+        panel.setBuildIn(modelLinkPanel.getBuildIn());
+        // 固定格式 panel name format is asset_panel_link
+        panel.setName("asset_panel_" + asset.getId());
+        panelDao.insert(panel);
+
+        // 保证 新增的顺序和 model关联charts顺序一致 排序
+        List<Chart> charts = chartService.queryCharts(modelLinkPanel.getId(), null, null);
+        Date now = new Date();
+        Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
+        charts.forEach(chart -> {
+            List<ChartElement> elements = chart.getElements();
+
+            // 设置关联 panel为当前新增asset关联的panel
+            chart.setPanelId(panel.getId());
+            chart.setCreateAt(now);
+            chart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? JSONObject.toJSONString(chart.getParam()) : null);
+            chart.setElements(new ArrayList<>());
+            chart.setPid(chart.getId());
+
+            // 保存 chart
+            chartService.saveChart(chart);
+            saveElements.put(chart.getId(), elements);
+        });
+
+        for (Map.Entry<Integer, List<ChartElement>> entry : saveElements.entrySet()) {
+            Integer chartId = entry.getKey();
+            List<ChartElement> value = entry.getValue();
+            value.forEach(chartElement -> {
+                chartElement.setChartId(chartId);
+            });
+        }
+        // 保存 element
+        List<ChartElement> elements = saveElements.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        chartElementService.saveBatch(elements);
     }
 
     public boolean validateFieldExist(Integer id, String column, String columnValue) {
@@ -361,6 +422,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 3. 删除关联的alert信息
         alertMessageService.removeByAssetIds(idList);
+
+        // 4. 删除关联的 panel chart  chartElement信息
+        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "asset").in(Panel::getLink, ids));
+
+        Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
+
+        if (CollectionUtils.isNotEmpty(panelIds)) {
+            panelDao.deleteBatchIds(panelIds);
+            Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
+            chartService.delChartsByPanelId(removePanelIds);
+        }
     }
 
     @Override

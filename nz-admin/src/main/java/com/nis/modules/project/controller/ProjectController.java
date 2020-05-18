@@ -1,25 +1,16 @@
 package com.nis.modules.project.controller;
 
-import java.util.Arrays;
-import java.util.Map;
-
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.controller.AbstractController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/project")
@@ -38,34 +29,24 @@ public class ProjectController extends AbstractController {
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.PROJECT)
 	public R save(@RequestBody Project project) {
-		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
-		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
-		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
+		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL)
+				.and(project.getName()).maxLength(64, RCode.PROJECT_NAME_TOO_LONG)
+				.and(project.getRemark()).maxLength(1024, RCode.PROJECT_REMARK_TOO_LONG);
 
-		// 名称唯一
-		if(!projectService.validateProjectName(project.getId(), project.getName())){
-			throw new NZException(RCode.PROJECT_NAME_DUPLICATE);
-		}
-
-		projectService.save(project);
+		projectService.saveOrUpdateProject(project);
 		return R.ok();
 	}
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PROJECT)
 	public R modify(@RequestBody Project project) {
-		ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL);
+		ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL)
+				.and(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL)
+				.and(project.getName()).maxLength(64, RCode.PROJECT_NAME_TOO_LONG)
+				.and(project.getRemark()).maxLength(1024, RCode.PROJECT_REMARK_TOO_LONG);
 		projectService.validateBulitinRule(Arrays.asList(project.getId()));
-		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
-		ValidateUtils.is(project.getName()).maxLength(64,RCode.PROJECT_NAME_TOO_LONG);
-		ValidateUtils.is(project.getRemark()).maxLength(1024,RCode.PROJECT_REMARK_TOO_LONG);
 
-		// 名称唯一
-		if(!projectService.validateProjectName(project.getId(), project.getName())){
-			throw new NZException(RCode.PROJECT_NAME_DUPLICATE);
-		}
-
-		projectService.updateById(project);
+		projectService.saveOrUpdateProject(project);
 		return R.ok();
 	}
 	

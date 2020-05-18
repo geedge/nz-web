@@ -54,7 +54,7 @@ public class ChartElement {
             return this ==  compareObj;
         }
 
-        if(compareElement.getId()==this.getId()){
+        if(compareElement.getId().equals(this.getId())){
             return true;
         }else{
             return false;

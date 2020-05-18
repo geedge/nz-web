@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -10,11 +11,21 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.panel.dao.PanelDao;
+import com.nis.modules.panel.entity.Chart;
+import com.nis.modules.panel.entity.Panel;
+import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,6 +37,7 @@ import java.util.stream.Collectors;
  * @date 2019-11-21
  */
 @Service("modelService")
+@Slf4j
 public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements ModelService {
 
     // 资产  service
@@ -39,6 +51,15 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
     // 资产型号 dao
     @Autowired
     private ModelDao modelDao;
+
+    @Autowired
+    private PanelDao panelDao;
+
+    @Autowired
+    private ChartService chartService;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -64,6 +85,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdateModel(Model model) {
         // 1.校验资产型号 厂商 类型 有效性
         this.checkAssetVendorAndTypeExist(model);
@@ -75,7 +97,14 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         }
 
         // 3.入库
-        this.saveOrUpdate(model);
+        if (ToolUtil.isEmpty(model.getId())) {
+            this.save(model);
+
+            // 新增时需要新增 panel chart
+            this.saveModelPanelAndChart(model);
+        } else {
+            this.updateById(model);
+        }
     }
 
     @Override
@@ -99,6 +128,16 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
         // 2. 删除
         this.removeByIds(Arrays.asList(ids));
+
+        // 3. 删除关联 panel charts chartElement
+        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").in(Panel::getLink, ids));
+        Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
+
+        if (CollectionUtils.isNotEmpty(panelIds)) {
+            panelDao.deleteBatchIds(panelIds);
+            Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
+            chartService.delChartsByPanelId(removePanelIds);
+        }
     }
 
     /**
@@ -195,4 +234,36 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         }
     }
 
+
+    public void saveModelPanelAndChart(Model model) {
+        // 配置信息获取
+        SysConfigEntity modelConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_CHART_TPL));
+        if (ToolUtil.isEmpty(modelConfig)) {
+            log.error(String.format("获取model配置信息失败%s", Constant.SYSCONFIG_KEY_MODEL_CHART_TPL));
+            throw new NZException(RCode.SYS_CONFIG_MODELCHARTTPL_NOTFOUND);
+        }
+        // chart config
+        Chart chartConfig = JSONObject.parseObject(modelConfig.getParamValue(), Chart.class);
+
+
+        Panel panel = new Panel();
+        panel.setType("model");
+        panel.setLink(model.getId());
+        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+
+        panel.setBuildIn(chartConfig.getBuildIn() == null ? 0 : chartConfig.getBuildIn());
+        // 固定格式 panel name format is mode_panel_link
+        panel.setName("model_panel_" + model.getId());
+        panelDao.insert(panel);
+
+
+        Chart target = new Chart();
+        BeanUtils.copyProperties(chartConfig, target);
+        // 暂时以model name作为chart title
+        target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? model.getName() + " Chart" : target.getTitle());
+        target.setPanelId(panel.getId());
+        target.setCreateAt(new Date());
+        target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
+        chartService.saveChart(target);
+    }
 }

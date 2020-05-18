@@ -395,7 +395,7 @@ public enum RCode {
     SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED(570055,"Test email template generation failed"),                // freemarker生成发送邮件模板内容失败
     SYS_CONFIG_EMAILSENDCCOUNT_FORMAT(573056,"System config email send account format error"),           //email_send_account应为邮件格式
     SYS_CONFIG_RESET_FAIL(573057,"System reset fail, check config and try again later"),
-
+    SYS_CONFIG_MODELCHARTTPL_NOTFOUND(576058,"System config model chart tpl not found"),
     /**
      * webshell相关
      */

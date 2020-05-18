@@ -524,6 +524,9 @@ public class Constant {
     // 测试邮件发送模板
     public static final String SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE = "test_email_send_template";
 
+    // 新增model 添加chart配置
+    public static final String SYSCONFIG_KEY_MODEL_CHART_TPL = "model_chart_tpl";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
