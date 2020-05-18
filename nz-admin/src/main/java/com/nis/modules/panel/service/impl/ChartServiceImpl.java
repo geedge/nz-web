@@ -257,7 +257,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         // 同一个panel 下 chart title 保证唯一
-        List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getTitle, chart.getTitle()).eq(Chart::getPanelId, panelId));
+       /* List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getTitle, chart.getTitle()).eq(Chart::getPanelId, panelId));
         boolean flag = false;
 
         if ((list == null || list.size() == 0) ||
@@ -267,7 +267,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         if (!flag) {
             throw new NZException(RCode.CHART_TITLE_DUPLICATE);
-        }
+        }*/
     }
 
     private void validateChartExists(Integer panelId, Integer id) {
@@ -678,8 +678,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Integer lastIndex = -1;
         BeanUtils.copyProperties(source, target);
         
-        // 防止同一个panel下面的title有重复值
-        target.setTitle(source.getTitle()+" copy"+ System.currentTimeMillis());
+       /* // 防止同一个panel下面的title有重复值
+        target.setTitle(source.getTitle()+" copy"+ System.currentTimeMillis());*/
 		
         if(lastIndex.equals(source.getNext())) {
 			//位于图表中最后一位时
