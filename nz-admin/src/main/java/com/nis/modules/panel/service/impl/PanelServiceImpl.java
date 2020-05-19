@@ -28,6 +28,11 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     @Override
     public PageUtils queryPanels(Map<String, Object> params) {
+        String type = (String) params.get("type");
+        if (StringUtils.isEmpty(type)) {
+            params.put("type", "dashboard");
+        }
+
         IPage<Panel> page = new Query<Panel>().getPage(params);
 
         List<Panel> list = this.baseMapper.queryPanelsWithPage(page, params);
