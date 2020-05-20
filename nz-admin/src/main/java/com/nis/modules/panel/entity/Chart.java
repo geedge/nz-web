@@ -74,4 +74,9 @@ public class Chart {
     @TableField(exist = false)
     private List<ChartElement> elements;
 
+    /**
+     * 同步标识
+     */
+    @TableField(exist = false)
+    private Integer sync;
 }

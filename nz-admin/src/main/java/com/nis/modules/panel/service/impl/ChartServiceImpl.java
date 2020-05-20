@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.panel.dao.ChartDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.ChartElement;
@@ -27,10 +29,15 @@ import java.util.stream.Collectors;
 public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements ChartService {
     @Autowired
     private ChartElementService chartElementService;
+
     @Autowired
     private SysDictService sysDictService;
+
     @Autowired
     private PanelService panelService;
+
+    @Autowired
+    private AssetDao assetDao;
 
     @Override
     public List<Chart> queryCharts(Integer panelId, Integer id, String title) {
@@ -143,6 +150,31 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             element.setChartId(chart.getId());
         }
         chartElementService.saveBatch(chart.getElements());
+
+        // 同步新增处理
+        Integer sync = chart.getSync();
+        if (sync != null) {
+            Panel panel = panelService.getById(chart.getPanelId());
+            if ("model".equals(panel.getType()) && sync.equals(1)) {
+                List<Asset> assets = assetDao.selectList(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, panel.getLink()));
+                List<Integer> assetsIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
+                // 得到 asset panel
+                List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "asset").in(Panel::getLink, assetsIds));
+                this.saveAssetChartsSimultaneously(panels, chart);
+            }
+        }
+    }
+
+    private void saveAssetChartsSimultaneously(List<Panel> panels, Chart chart) {
+        Chart targetChart = new Chart();
+        for (Panel entity : panels) {
+            BeanUtils.copyProperties(chart, targetChart);
+            targetChart.setPanelId(entity.getId());
+            targetChart.setSync(null);
+            targetChart.setId(null);
+            targetChart.setPid(chart.getId());
+            this.saveChart(targetChart);
+        }
     }
 
     @Override
@@ -161,8 +193,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         chartElementQueryWrapper.lambda().eq(ChartElement::getChartId, chart.getId());
         List<ChartElement> list = chartElementService.list(chartElementQueryWrapper);
 
-        List<ChartElement> saveList = new ArrayList<ChartElement>();
-        List<ChartElement> updateList = new ArrayList<ChartElement>();
+        List<ChartElement> saveList = new ArrayList<>();
+        List<ChartElement> updateList = new ArrayList<>();
 
         for (ChartElement element : chart.getElements()) {
             element.setChartId(chart.getId());
@@ -173,7 +205,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 updateList.add(element);
             }
 
-            if (list.contains(element)) { //数据库存在 element列表中没有的element，删除
+            // 数据库存在 element列表中没有的element，删除
+            if (list.contains(element)) {
                 list.remove(element);
             }
         }
@@ -184,13 +217,55 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             chartElementService.updateBatchById(updateList);
         }
         if (list.size() > 0) {
-            List<Integer> elementIds = new ArrayList<Integer>();
-            for (ChartElement element : list) {
-                elementIds.add(element.getId());
-            }
+            List<Integer> elementIds = list.stream().map(ChartElement::getId).collect(Collectors.toList());
 
             chartElementService.removeByIds(elementIds);
         }
+
+        // 同步修改处理
+        Integer sync = chart.getSync();
+        if (sync != null) {
+            Panel panel = panelService.getById(chart.getPanelId());
+            if ("model".equals(panel.getType()) && sync.equals(1)) {
+                this.updateAssetChartsSimultaneously(chart);
+            }
+        }
+    }
+
+    private void updateAssetChartsSimultaneously(Chart chart) {
+        List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPid, chart.getId()));
+
+        // 没有引用的charts
+        if (CollectionUtils.isEmpty(charts)) {
+            return;
+        }
+
+        // 删除 element
+        List<Integer> idList = charts.stream().map(Chart::getId).collect(Collectors.toList());
+        chartElementService.delElementByChartIds(idList);
+
+        List<ChartElement> elements = chart.getElements();
+        List<ChartElement> saveElements = new ArrayList<>();
+        ChartElement tempElement;
+        for (Chart entity : charts) {
+            entity.setTitle(chart.getTitle());
+            entity.setSpan(chart.getSpan());
+            entity.setHeight(chart.getHeight());
+            entity.setType(chart.getType());
+            entity.setParam(chart.getParam());
+            if (CollectionUtils.isNotEmpty(elements)) {
+                for (ChartElement chartElement : elements) {
+                    tempElement = new ChartElement();
+                    BeanUtils.copyProperties(chartElement, tempElement);
+                    tempElement.setChartId(entity.getId());
+                    tempElement.setId(null);
+                    saveElements.add(tempElement);
+                }
+            }
+        }
+
+        this.saveOrUpdateBatch(charts);
+        chartElementService.saveBatch(saveElements);
     }
 
     @Override
@@ -255,19 +330,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 chartElementService.validateElements(chart.getId(), chart.getElements());
             }
         }
-
-        // 同一个panel 下 chart title 保证唯一
-       /* List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getTitle, chart.getTitle()).eq(Chart::getPanelId, panelId));
-        boolean flag = false;
-
-        if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId().equals(chart.getId()))) {
-            flag = true;
-        }
-
-        if (!flag) {
-            throw new NZException(RCode.CHART_TITLE_DUPLICATE);
-        }*/
     }
 
     private void validateChartExists(Integer panelId, Integer id) {
@@ -293,91 +355,164 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void delCharts(Integer panelId, Integer... ids) {
+    public void delCharts(Integer panelId, Integer[] ids, Integer sync) {
         if (ToolUtil.isEmpty(ids)) {
             return;
         }
-        // 只能删除当前 panel 下的 charts 这里调用查询方法，保证查询出来的chart 是有序的
-        List<Chart> chartList = this.queryCharts(panelId, null, null);
+
+        List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, panelId));
+        // 排序
+        chartList = this.getSequentialChartList(chartList);
+
 
         // 内置chart不能删除
         this.validateBuildInCharts(Arrays.asList(ids));
-
-        Map<Integer, Integer> idAndChartMap = new HashMap<>();
-        for (Chart entity : chartList) {
-            idAndChartMap.put(entity.getId(), 1);
-        }
+        List<Integer> chartIdList = chartList.stream().map(Chart::getId).collect(Collectors.toList());
 
         List<Integer> deleteIds = new ArrayList<>();
         for (Integer id : ids) {
-            if (idAndChartMap.get(id) != null) {
+            if (chartIdList.contains(id)) {
                 deleteIds.add(id);
             }
         }
 
         if (CollectionUtils.isNotEmpty(deleteIds)) {
+
+            if (sync != null) {
+                // 同步删除
+                Panel panel = panelService.getById(panelId);
+                if ("model".equals(panel.getType()) && sync.equals(1)) {
+                    this.syncDeleteAssetsCharts(deleteIds);
+                }
+            }
+
             // 删除自身
             this.baseMapper.deleteByIds(panelId, deleteIds);
 
             // 删除char element
             chartElementService.delElementByChartIds(deleteIds);
 
-            // 处理删除后的位置问题
-            // 全删除了
-            if (chartList.size() == deleteIds.size()) {
-                return;
-            }
+            // 处理删除之后的位置问题
+            this.handlePositionAfterDelete(chartList, deleteIds);
+        }
+    }
 
-            // 保证原先次序 并且 删除之后剩余的集合
-            List<Chart> deletedChartList = new ArrayList<>();
-            for (Chart obj : chartList) {
-                if (!deleteIds.contains(obj.getId())) {
-                    deletedChartList.add(obj);
-                }
-            }
+    /**
+     * 处理删除之后的位置信息
+     *
+     * @param sequentialChartList 有序集合列表
+     * @param deleteIds           删除的charts ids
+     */
+    private void handlePositionAfterDelete(List<Chart> sequentialChartList, List<Integer> deleteIds) {
+        // 全删除了
+        if (sequentialChartList.size() == deleteIds.size()) {
+            return;
+        }
 
-            Chart firstChart = deletedChartList.get(0);
-            firstChart.setPrev(0);
-
-            // 剩余一个
-            if (deletedChartList.size() == 1) {
-                firstChart.setNext(-1);
-                Object param = firstChart.getParam();
-                if (param != null) {
-                    firstChart.setParam(JSONObject.toJSONString(param));
-                }
-                this.updateById(firstChart);
-            } else {
-                // 剩余数量大于 1
-                // 最后批量更新的list
-                List<Chart> updateCharts = new ArrayList<>();
-
-                Chart tempChart = null;
-                int size = deletedChartList.size();
-                for (int i = 0; i < size; i++) {
-                    if (i == 0) {
-                        firstChart.setNext(deletedChartList.get(i + 1).getId());
-                        updateCharts.add(firstChart);
-                    } else {
-                        tempChart = deletedChartList.get(i);
-                        tempChart.setPrev(updateCharts.get(updateCharts.size() - 1).getId());
-                        if (i < size - 1) {
-                            tempChart.setNext(deletedChartList.get(i + 1).getId());
-                        }
-                        updateCharts.add(tempChart);
-                    }
-                }
-                updateCharts.get(updateCharts.size() - 1).setNext(-1);
-                Object param;
-                for (Chart chart : updateCharts) {
-                    param = chart.getParam();
-                    if (param != null) {
-                        chart.setParam(JSONObject.toJSONString(param));
-                    }
-                }
-                this.saveOrUpdateBatch(updateCharts);
+        // 保证原先次序 并且 删除之后剩余的集合
+        List<Chart> deletedChartList = new ArrayList<>();
+        for (Chart obj : sequentialChartList) {
+            if (!deleteIds.contains(obj.getId())) {
+                deletedChartList.add(obj);
             }
         }
+
+        Chart firstChart = deletedChartList.get(0);
+        firstChart.setPrev(0);
+
+        // 剩余一个
+        if (deletedChartList.size() == 1) {
+            firstChart.setNext(-1);
+            Object param = firstChart.getParam();
+            if (param != null) {
+                firstChart.setParam(param.toString());
+            }
+            this.updateById(firstChart);
+        } else {
+            // 剩余数量大于 1
+            List<Chart> updateCharts = new ArrayList<>();
+
+            Chart tempChart = null;
+            int size = deletedChartList.size();
+            for (int i = 0; i < size; i++) {
+                if (i == 0) {
+                    firstChart.setNext(deletedChartList.get(i + 1).getId());
+                    updateCharts.add(firstChart);
+                } else {
+                    tempChart = deletedChartList.get(i);
+                    tempChart.setPrev(updateCharts.get(updateCharts.size() - 1).getId());
+                    if (i < size - 1) {
+                        tempChart.setNext(deletedChartList.get(i + 1).getId());
+                    }
+                    updateCharts.add(tempChart);
+                }
+            }
+            updateCharts.get(updateCharts.size() - 1).setNext(-1);
+            Object param;
+            for (Chart chart : updateCharts) {
+                param = chart.getParam();
+                if (param != null) {
+                    chart.setParam(param.toString());
+                }
+            }
+            this.saveOrUpdateBatch(updateCharts);
+        }
+    }
+
+    private void syncDeleteAssetsCharts(List<Integer> deleteIds) {
+        // 关联charts
+        List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().in(Chart::getPid, deleteIds));
+        Map<Integer, List<Chart>> listMap = list.stream().collect(Collectors.groupingBy(Chart::getPanelId));
+
+        // 需要同步删除的panel 关联的 charts
+        List<Chart> chartsByPanel = this.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, listMap.keySet()));
+        Map<Integer, List<Chart>> chartsByPanelMap = chartsByPanel.stream().collect(Collectors.groupingBy(Chart::getPanelId));
+
+        List<Integer> allDeleteChartIds = listMap.values().stream().flatMap(Collection::stream).map(Chart::getId).collect(Collectors.toList());
+        // 删除自身
+        this.removeByIds(allDeleteChartIds);
+        // 删除关联的chart Elements
+        chartElementService.delElementByChartIds(allDeleteChartIds);
+
+        Integer panid;
+        List<Chart> sequentialChartList;
+        List<Integer> delIds;
+        for (Map.Entry<Integer, List<Chart>> entry : chartsByPanelMap.entrySet()) {
+            panid = entry.getKey();
+            sequentialChartList = this.getSequentialChartList(entry.getValue());
+            delIds = listMap.get(panid).stream().map(Chart::getId).collect(Collectors.toList());
+            // 处理删除后的位置信息
+            this.handlePositionAfterDelete(sequentialChartList, delIds);
+        }
+    }
+
+    private List<Chart> getSequentialChartList(List<Chart> charts) {
+        List<Chart> resultList = new ArrayList<>();
+
+        // 按照prev升序排序
+        charts = charts.stream().sorted(Comparator.comparing(Chart::getPrev)).collect(Collectors.toList());
+
+        Map<Integer, Chart> idAndChartMap = new HashMap<>();
+        for (Chart chart1 : charts) {
+            idAndChartMap.put(chart1.getId(), chart1);
+        }
+
+        Chart firstChart = charts.get(0);
+
+        Chart tempChar = firstChart;
+        resultList.add(firstChart);
+        Chart nextChart = null;
+
+        while (true) {
+            nextChart = idAndChartMap.get(tempChar.getNext());
+            if (nextChart != null) {
+                resultList.add(nextChart);
+                tempChar = nextChart;
+            } else {
+                break;
+            }
+        }
+        return resultList;
     }
 
 
@@ -395,7 +530,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         // 内置chart不能删除
         this.validateBuildInCharts(chartIds);
 
-        if(CollectionUtils.isNotEmpty(chartIds)){
+        if (CollectionUtils.isNotEmpty(chartIds)) {
             // 删除 charts
             this.removeByIds(chartIds);
 
@@ -654,6 +789,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     /**
      * 校验是否是内置chart
+     *
      * @param chartIds
      */
     private void validateBuildInCharts(List<Integer> chartIds) {
