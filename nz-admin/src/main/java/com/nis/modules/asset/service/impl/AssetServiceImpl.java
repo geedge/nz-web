@@ -27,8 +27,6 @@ import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.panel.dao.PanelDao;
-import com.nis.modules.panel.entity.Chart;
-import com.nis.modules.panel.entity.ChartElement;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
@@ -316,12 +314,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 this.saveInitEndpoint(asset);
             }
             // 新增时需要新增 panel chart
-            this.saveAssetPanelAndChart(asset);
+            chartService.saveAssetPanelAndChart(asset);
         } else {
+            Asset oldAsset = this.getById(asset.getId());
             this.updateById(asset);
             // 修改的时候如果没有指定 account, 则视为删除asset关联account
             if (CollectionUtils.isEmpty(asset.getAccounts())) {
                 accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, asset.getId()));
+            }
+
+            // 如果修改了Model
+            if (!oldAsset.getModelId().equals(asset.getModelId())) {
+                chartService.updateAssetChartsByNewModel(asset);
             }
         }
 
@@ -334,50 +338,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 accountService.saveOrUpdateAccount(account);
             }
         }
-    }
-
-    private void saveAssetPanelAndChart(Asset asset) {
-        // 当前型号关联的panel对象
-        Panel modelLinkPanel = panelDao.selectOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").eq(Panel::getLink, asset.getModelId()));
-
-        Panel panel = new Panel();
-        panel.setType("asset");
-        panel.setLink(asset.getId());
-        panel.setCreateBy(ShiroUtils.getUserId().intValue());
-        panel.setBuildIn(modelLinkPanel.getBuildIn());
-        // 固定格式 panel name format is asset_panel_link
-        panel.setName("asset_panel_" + asset.getId());
-        panelDao.insert(panel);
-
-        // 保证 新增的顺序和 model关联charts顺序一致 排序
-        List<Chart> charts = chartService.queryCharts(modelLinkPanel.getId(), null, null);
-        Date now = new Date();
-        Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
-        charts.forEach(chart -> {
-            List<ChartElement> elements = chart.getElements();
-
-            // 设置关联 panel为当前新增asset关联的panel
-            chart.setPanelId(panel.getId());
-            chart.setCreateAt(now);
-            chart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? JSONObject.toJSONString(chart.getParam()) : null);
-            chart.setElements(new ArrayList<>());
-            chart.setPid(chart.getId());
-
-            // 保存 chart
-            chartService.saveChart(chart);
-            saveElements.put(chart.getId(), elements);
-        });
-
-        for (Map.Entry<Integer, List<ChartElement>> entry : saveElements.entrySet()) {
-            Integer chartId = entry.getKey();
-            List<ChartElement> value = entry.getValue();
-            value.forEach(chartElement -> {
-                chartElement.setChartId(chartId);
-            });
-        }
-        // 保存 element
-        List<ChartElement> elements = saveElements.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
-        chartElementService.saveBatch(elements);
     }
 
     public boolean validateFieldExist(Integer id, String column, String columnValue) {

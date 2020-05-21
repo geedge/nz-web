@@ -16,6 +16,7 @@ import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -849,4 +850,81 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 	     return target;
 	}
 
+    @Override
+    public void saveAssetPanelAndChart(Asset asset) {
+        // 当前型号关联的panel对象
+        Panel modelPanel = panelService.getOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").eq(Panel::getLink, asset.getModelId()));
+
+        Panel panel = new Panel();
+        panel.setType("asset");
+        panel.setLink(asset.getId());
+        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+        panel.setBuildIn(modelPanel.getBuildIn());
+        // 固定格式 panel name format is asset_panel_link
+        panel.setName("asset_panel_" + asset.getId());
+        panelService.save(panel);
+
+        // 复制一份charts
+        this.copyChartsToAssetChartsByPanel(modelPanel, panel);
+    }
+
+    @Override
+    public void updateAssetChartsByNewModel(Asset asset) {
+        List<Panel> panels = panelService.list();
+
+        // 修改的Model 关联的panel
+        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
+        Panel assetPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+
+        List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, assetPanel.getId()));
+        List<Integer> delIds = list.stream().filter(chart -> chart.getPid() != null ? true : false).map(Chart::getId).collect(Collectors.toList());
+        // 删除之前model关联的图表
+        Integer[] ids = new Integer[delIds.size()];
+        delIds.toArray(ids);
+
+        // 删除旧model关联的charts
+        this.delCharts(assetPanel.getId(), ids, null);
+        // 复制一份charts
+        this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel);
+    }
+
+    private void copyChartsToAssetChartsByPanel(Panel modelPanel, Panel targetPanel) {
+        List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, modelPanel.getId()));
+        // 排序
+        charts = this.getSequentialChartList(charts);
+
+        List<Integer> chartIds = charts.stream().map(Chart::getId).collect(Collectors.toList());
+        List<ChartElement> chartElements = chartElementService.list(new QueryWrapper<ChartElement>().lambda().in(ChartElement::getChartId, chartIds));
+        Map<Integer, List<ChartElement>> chartIdAndElementsMap = chartElements.stream().collect(Collectors.groupingBy(ChartElement::getChartId));
+
+
+        Date now = new Date();
+        Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
+        List<ChartElement> elementList;
+        for (Chart chart : charts) {
+            elementList = chartIdAndElementsMap.get(chart.getId());
+
+            // 设置关联 panel为当前新增asset关联的panel
+            chart.setPanelId(targetPanel.getId());
+            chart.setCreateAt(now);
+            chart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? chart.getParam().toString() : null);
+            chart.setElements(new ArrayList<>());
+            chart.setPid(chart.getId());
+
+            // 保存 chart
+            this.saveChart(chart);
+            saveElements.put(chart.getId(), elementList == null ? new ArrayList<>() : elementList);
+        }
+
+        Integer chartId;
+        for (Map.Entry<Integer, List<ChartElement>> entry : saveElements.entrySet()) {
+            chartId = entry.getKey();
+            for (ChartElement chartElement : entry.getValue()) {
+                chartElement.setChartId(chartId);
+            }
+        }
+        // 保存 element
+        List<ChartElement> elements = saveElements.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+        chartElementService.saveBatch(elements);
+    }
 }
