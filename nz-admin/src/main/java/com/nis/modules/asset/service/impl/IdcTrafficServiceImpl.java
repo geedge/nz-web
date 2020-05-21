@@ -85,8 +85,7 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
                     .and(port).notNull(RCode.IDC_TRAFFIC_PORT_ISNULL)
                     .and(version).notNull(RCode.IDC_TRAFFIC_VERSION_ISNULL)
                     .and(direction).notNull(RCode.IDC_TRAFFIC_DIRECTIONS_ISNULL)
-                    .and(traffic.getIfindex()).notNull(RCode.IDC_TRAFFIC_IFINDEX_ISNULL)
-                    .and(traffic.getIfdescr()).notNull(RCode.IDC_TRAFFIC_IFDESCR_ISNULL);
+                    .and(traffic.getIfindex()).notNull(RCode.IDC_TRAFFIC_IFINDEX_ISNULL);
 
             // host
             if (!CommonUtils.checkUrl(host)) {
