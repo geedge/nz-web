@@ -9,14 +9,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.dao.AssetPingDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.ModelDao;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Cabinet;
-import com.nis.modules.asset.entity.Idc;
-import com.nis.modules.asset.entity.Model;
+import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
@@ -28,10 +27,11 @@ import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Panel;
-import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -117,7 +117,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private ChartService chartService;
 
     @Autowired
-    private ChartElementService chartElementService;
+    private SysUserDao sysUserDao;
+
+    @Autowired
+    private AssetPingDao assetPingDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -1205,6 +1208,68 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
         return R.ok();
+    }
+
+    @Override
+    public Map detail(Integer id) {
+        ValidateUtils.is(id).notNull(RCode.ASSET_ID_ISNULL);
+
+        Asset asset = this.getById(id);
+        if(ToolUtil.isEmpty(asset)){
+            throw new NZException(RCode.ASSET_NOT_EXIST);
+        }
+
+        Map resultMap = new HashMap();
+        Map basicInfo = new HashMap();
+
+        basicInfo.put("Host", asset.getHost());
+        basicInfo.put("ID", asset.getId());
+        basicInfo.put("SN", asset.getSn());
+        basicInfo.put("State", asset.getState() == 1 ? "In stock":"Not in stock");
+        basicInfo.put("Purchase$_$date", asset.getPurchaseDate());
+
+        Idc idc = idcService.getById(asset.getIdcId());
+        SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUserId, idc.getPrincipal()));
+        basicInfo.put("DC",idc.getName());
+        basicInfo.put("Administrator", userEntity.getUsername());
+        basicInfo.put("Telephone", idc.getTel());
+
+        if (ToolUtil.isEmpty(asset.getCabinetId())) {
+            basicInfo.put("Cabinet", "");
+        } else {
+            Cabinet cabinet = cabinetDao.selectById(asset.getCabinetId());
+            basicInfo.put("Cabinet", cabinet.getName());
+        }
+
+        Model model = modelDao.getModelDetailById(asset.getModelId());
+        basicInfo.put("Model",model.getName() );
+        basicInfo.put("Asset$_$type",model.getType().getValue());
+        basicInfo.put("Vendor",model.getVendor().getValue());
+
+        int endpointNum = endpointService.count(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getAssetId, id));
+        basicInfo.put("Endpoint", endpointNum);
+
+        int alertCount = alertMessageService.count(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1).eq(AlertMessageEntity::getAssetId, id));
+        basicInfo.put("Alerts", alertCount);
+
+        AssetPing assetPing = assetPingDao.selectOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getHost, asset.getHost()));
+        if (ToolUtil.isEmpty(assetPing)) {
+            basicInfo.put("Ping$_$status", "");
+            basicInfo.put("Ping$_$rtt", "");
+            basicInfo.put("Ping$_$last$_$reply", "");
+        } else {
+            basicInfo.put("Ping$_$status", assetPing.getStatus() == 1 ? "up":"down");
+            basicInfo.put("Ping$_$rtt", assetPing.getRtt());
+            basicInfo.put("Ping$_$last$_$reply", assetPing.getLastUpdate());
+        }
+
+        resultMap.put("Basic", basicInfo);
+
+        // 暂未完成
+        Map feature = new HashMap();
+
+        resultMap.put("Feature",feature);
+        return resultMap;
     }
 
     private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {

@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -146,11 +147,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             endChart.setNext(chart.getId());
             this.updateById(endChart);
         }
-        // 保存chart elements信息
-        for (ChartElement element : chart.getElements()) {
-            element.setChartId(chart.getId());
+
+        if (CollectionUtils.isNotEmpty(chart.getElements())) {
+            // 保存chart elements信息
+            for (ChartElement element : chart.getElements()) {
+                element.setChartId(chart.getId());
+            }
+            chartElementService.saveBatch(chart.getElements());
         }
-        chartElementService.saveBatch(chart.getElements());
 
         // 同步新增处理
         Integer sync = chart.getSync();
@@ -158,22 +162,52 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             Panel panel = panelService.getById(chart.getPanelId());
             if ("model".equals(panel.getType()) && sync.equals(1)) {
                 List<Asset> assets = assetDao.selectList(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, panel.getLink()));
+                // 当前没有需要同步的asset
+                if(CollectionUtils.isEmpty(assets)){
+                    return;
+                }
+                Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
+                for (Asset asset : assets) {
+                    assetIdAndEntityMap.put(asset.getId(), asset);
+                }
                 List<Integer> assetsIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
                 // 得到 asset panel
                 List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "asset").in(Panel::getLink, assetsIds));
-                this.saveAssetChartsSimultaneously(panels, chart);
+
+                Map<Integer, Asset> panelIdAndAsset = new HashMap<>();
+                for (Panel entity : panels) {
+                    panelIdAndAsset.put(entity.getId(), assetIdAndEntityMap.get(entity.getLink()));
+                }
+                this.saveAssetChartsSimultaneously(panelIdAndAsset, chart);
             }
         }
     }
 
-    private void saveAssetChartsSimultaneously(List<Panel> panels, Chart chart) {
+    private void saveAssetChartsSimultaneously(Map<Integer, Asset> panelIdAndAsset, Chart chart) {
         Chart targetChart = new Chart();
-        for (Panel entity : panels) {
-            BeanUtils.copyProperties(chart, targetChart);
-            targetChart.setPanelId(entity.getId());
+        String title;
+        Asset asset;
+        for (Map.Entry<Integer, Asset> entry : panelIdAndAsset.entrySet()) {
+            asset = entry.getValue();
+            targetChart = JSONObject.parseObject(JSON.toJSONString(chart), Chart.class);
+            targetChart.setPanelId(entry.getKey());
             targetChart.setSync(null);
             targetChart.setId(null);
             targetChart.setPid(chart.getId());
+
+            title = targetChart.getTitle();
+            targetChart.setTitle(this.replacAssetInfos(title, asset));
+
+            targetChart.setParam(ToolUtil.isNotEmpty(targetChart.getParam()) ? this.replacAssetInfos(targetChart.getParam().toString(), asset) : null);
+
+            if(CollectionUtils.isNotEmpty(targetChart.getElements())){
+                for (ChartElement element : targetChart.getElements()) {
+                    element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? this.replacAssetInfos(element.getExpression(), asset) : null);
+
+                }
+            }
+
+            // 添加
             this.saveChart(targetChart);
         }
     }
@@ -234,6 +268,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     private void updateAssetChartsSimultaneously(Chart chart) {
+        // 引用的charts
         List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPid, chart.getId()));
 
         // 没有引用的charts
@@ -245,21 +280,29 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         List<Integer> idList = charts.stream().map(Chart::getId).collect(Collectors.toList());
         chartElementService.delElementByChartIds(idList);
 
+
+        // 返回引用chartId 和 对应的 asset
+        List<Chart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(idList);
+        Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(Chart::getId, Chart::getAsset));
+
         List<ChartElement> elements = chart.getElements();
         List<ChartElement> saveElements = new ArrayList<>();
         ChartElement tempElement;
+        Asset asset;
         for (Chart entity : charts) {
-            entity.setTitle(chart.getTitle());
+            asset = chartIdAndAssetEntityMap.get(entity.getId());
+            entity.setTitle(this.replacAssetInfos(chart.getTitle(), asset));
             entity.setSpan(chart.getSpan());
             entity.setHeight(chart.getHeight());
             entity.setType(chart.getType());
-            entity.setParam(chart.getParam());
+            entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? this.replacAssetInfos(chart.getParam().toString(), asset) : null);
             if (CollectionUtils.isNotEmpty(elements)) {
                 for (ChartElement chartElement : elements) {
                     tempElement = new ChartElement();
                     BeanUtils.copyProperties(chartElement, tempElement);
                     tempElement.setChartId(entity.getId());
                     tempElement.setId(null);
+                    tempElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? this.replacAssetInfos(chartElement.getExpression(), asset) : null);
                     saveElements.add(tempElement);
                 }
             }
@@ -865,7 +908,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         panelService.save(panel);
 
         // 复制一份charts
-        this.copyChartsToAssetChartsByPanel(modelPanel, panel);
+        this.copyChartsToAssetChartsByPanel(modelPanel, panel, asset);
     }
 
     @Override
@@ -885,10 +928,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         // 删除旧model关联的charts
         this.delCharts(assetPanel.getId(), ids, null);
         // 复制一份charts
-        this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel);
+        this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel, asset);
     }
 
-    private void copyChartsToAssetChartsByPanel(Panel modelPanel, Panel targetPanel) {
+    private void copyChartsToAssetChartsByPanel(Panel modelPanel, Panel targetPanel, Asset asset) {
         List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, modelPanel.getId()));
         // 排序
         charts = this.getSequentialChartList(charts);
@@ -901,15 +944,20 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Date now = new Date();
         Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
         List<ChartElement> elementList;
+
+        String title;
         for (Chart chart : charts) {
             elementList = chartIdAndElementsMap.get(chart.getId());
 
             // 设置关联 panel为当前新增asset关联的panel
             chart.setPanelId(targetPanel.getId());
             chart.setCreateAt(now);
-            chart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? chart.getParam().toString() : null);
+            chart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? this.replacAssetInfos(chart.getParam().toString(), asset) : null);
             chart.setElements(new ArrayList<>());
             chart.setPid(chart.getId());
+
+            title = chart.getTitle();
+            chart.setTitle(this.replacAssetInfos(title, asset));
 
             // 保存 chart
             this.saveChart(chart);
@@ -921,10 +969,17 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             chartId = entry.getKey();
             for (ChartElement chartElement : entry.getValue()) {
                 chartElement.setChartId(chartId);
+                chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? this.replacAssetInfos(chartElement.getExpression(), asset) : null);
             }
         }
         // 保存 element
         List<ChartElement> elements = saveElements.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
         chartElementService.saveBatch(elements);
+    }
+
+    private String replacAssetInfos(String str, Asset asset){
+        str = str.replaceAll("\\{\\{asset.host\\}\\}", asset.getHost());
+        str = str.replaceAll("\\{\\{asset.sn\\}\\}", asset.getSn());
+        return str;
     }
 }

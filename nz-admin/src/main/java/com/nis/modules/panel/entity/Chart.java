@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.asset.entity.Asset;
 import lombok.Data;
 
 import java.util.Date;
@@ -79,4 +80,10 @@ public class Chart {
      */
     @TableField(exist = false)
     private Integer sync;
+
+    /**
+     * chart 对应的 asset
+     */
+    @TableField(exist = false)
+    private Asset asset;
 }

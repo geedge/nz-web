@@ -41,4 +41,6 @@ public interface AssetService extends IService<Asset> {
     void cancelImport(String seq);
 
     R uploadBuildExporter(Map<String, String> configs, Asset asset, Account accountCli);
+
+    Map detail(Integer id);
 }

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.metric.dto.MetricsDto;
-
+import com.nis.modules.panel.entity.Chart;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -35,4 +35,6 @@ public interface AssetDao extends BaseMapper<Asset> {
     List<MetricsDto> selectAssetStatisticsByModelOnLine();
     
     MetricsDto selectAssetStatisticsByModelOffLine();
+
+    List<Chart> getAssetsByChartIds(@Param("ids") List<Integer> idList);
 }

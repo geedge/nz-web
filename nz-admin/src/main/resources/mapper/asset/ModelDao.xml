@@ -34,6 +34,16 @@
         <result property="type"   column="type"/>
     </resultMap>
 
+    <resultMap id="modelDetail" type="com.nis.modules.asset.entity.Model">
+        <result property="name" column="name"/>
+        <association property="type" javaType="com.nis.modules.sys.entity.SysDictEntity">
+            <result property="value" column="typeName"/>
+        </association>
+        <association property="vendor" javaType="com.nis.modules.sys.entity.SysDictEntity">
+            <result property="value" column="vendorName"/>
+        </association>
+    </resultMap>
+
 
 
 
@@ -130,6 +140,14 @@
             </foreach>
             )
         </if>
+    </select>
+
+
+    <select id="getModelDetailById" resultMap="modelDetail">
+        select model.name,dict1.value as typeName,dict2.value as vendorName from model
+        left join sys_dict dict1 on model.type = dict1.code and dict1.type = "assetType"
+        left join sys_dict dict2 on model.vendor = dict2.code and dict2.type = "vendor"
+        where model.id = #{id}
     </select>
 
 </mapper>

@@ -67,6 +67,18 @@ public class AssetController {
     }
 
     /**
+     * 资产详情查询接口
+     * @param id
+     * @return
+     */
+    @GetMapping("/info")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
+    public R assetInfo(Integer id){
+        Map detail = assetService.detail(id);
+        return R.ok(detail);
+    }
+
+    /**
      * 保存
      *
      * @param asset
