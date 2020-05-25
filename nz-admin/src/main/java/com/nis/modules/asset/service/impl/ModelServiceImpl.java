@@ -162,37 +162,34 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Override
     public void checkUsize(Model model) {
+        Model oldModel = this.getById(model.getId());
+        // 如果之前 model usize为空 则不进行后续验证
+        if(ToolUtil.isEmpty(oldModel.getUsize())){
+            return;
+        }
+
         List<Asset> assets = assetService.list(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, model.getId()));
 
-        // 只校验关联资产的型号
-        if (CollectionUtils.isNotEmpty(assets)) {
-            Model modelEntity = this.getById(model.getId());
-            Integer usize = modelEntity.getUsize();
+        // 去除没有位置信息的asset
+        assets = assets.stream().filter(asset -> asset.getCabinetStart() != null && asset.getCabinetEnd() != null ? true : false).collect(Collectors.toList());
 
-            int minUsize = 1;
-            // 有关联的情况下 修改usize值不能小于当前设备的最小U
-            if (usize != null) {
-                minUsize = usize;
-            }
+        if (CollectionUtils.isNotEmpty(assets)) {
+            // 有关联的情况下 修改usize值不能大于当前设备的最小U
+
+            Asset tempAsset = assets.get(0);
+            int minUsize = tempAsset.getCabinetEnd() - tempAsset.getCabinetStart();
+
 
             Integer start, end;
-            boolean flag = false;
             for (Asset asset : assets) {
                 start = asset.getCabinetStart();
                 end = asset.getCabinetEnd();
-                if (start != null && end != null) {
-                    flag = true;
-                    if (end - start < minUsize) {
-                        minUsize = end - start;
-                    }
+                if (end - start < minUsize) {
+                    minUsize = end - start;
                 }
             }
 
-            if (!flag) {
-                minUsize = 1;
-            }
-
-            if (model.getUsize() < minUsize) {
+            if(model.getUsize() > minUsize){
                 throw new NZException(RCode.ASSET_MODEL_USIZEERROR);
             }
         }

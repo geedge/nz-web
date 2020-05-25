@@ -1,7 +1,6 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Model;

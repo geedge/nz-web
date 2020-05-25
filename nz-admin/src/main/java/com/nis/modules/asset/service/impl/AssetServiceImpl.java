@@ -1229,9 +1229,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         basicInfo.put("Purchase$_$date", asset.getPurchaseDate());
 
         Idc idc = idcService.getById(asset.getIdcId());
-        SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUserId, idc.getPrincipal()));
+        if (ToolUtil.isNotEmpty(idc.getPrincipal())) {
+            SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUserId, idc.getPrincipal()));
+            basicInfo.put("Administrator", userEntity.getUsername());
+        } else {
+            basicInfo.put("Administrator", "");
+        }
+
         basicInfo.put("DC",idc.getName());
-        basicInfo.put("Administrator", userEntity.getUsername());
+
         basicInfo.put("Telephone", idc.getTel());
 
         if (ToolUtil.isEmpty(asset.getCabinetId())) {

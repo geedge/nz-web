@@ -171,7 +171,7 @@ public enum RCode {
     ASSET_MODELRELATED_ASSET(323004, "There are assets in the model"),   // 资产型号关联资产
     ASSET_MODEL_NOTFOUND(326005, "Asset model not found"),               // 资产型号未找到
     ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
-    ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be smaller than associated asset size"),// 修改的时候model uSize 不能小于关联 asset 的大小
+    ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be larger than associated asset size"),// 修改的时候model uSize 不能大于关联 asset 的大小
     ASSET_MODEL_EXISTS(322008,"Model already exists"),                     // 型号已经存在
 
 
