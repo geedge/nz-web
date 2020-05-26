@@ -367,8 +367,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 break;
             }
             default: {
-                chart.setParam(null);
-
+            	if(ToolUtil.isNotEmpty(param)) {
+            		Object object = param.get(Constant.CHART_DEFAULT_PARAMkEY);
+                	if(ToolUtil.isNotEmpty(object)) {
+                		String strParam = JSONObject.toJSONString(param);
+                        chart.setParam(strParam);
+                	}else {
+                		chart.setParam(null);
+                	}
+            	}
                 // url 类型不需要校验 elements
                 ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
                 chartElementService.validateElements(chart.getId(), chart.getElements());

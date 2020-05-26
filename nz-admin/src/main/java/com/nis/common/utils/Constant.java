@@ -606,4 +606,8 @@ public class Constant {
     
     // reset操作处理的表信息数据
     public static final String RESET_TABLE_INFOS = "reset_table_infos";
+    
+    // 图表类型为line bar stackArea
+    public static final String CHART_DEFAULT_PARAMkEY = "threshold";
+ 
 }

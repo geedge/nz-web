@@ -62,6 +62,7 @@ public class ProjectController extends AbstractController {
 	@GetMapping(value="info")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROJECT)
 	public R info(@RequestParam Integer id) {
+		ValidateUtils.is(id).notNull(RCode.PROJECT_ID_ISNULL);
 		Map<String, Object> result = projectService.queryProjectInfo(id);
 		return R.ok(result);
 	}
