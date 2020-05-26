@@ -375,6 +375,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 	}else {
                 		chart.setParam(null);
                 	}
+            	}else {
+            		chart.setParam(null);
             	}
                 // url 类型不需要校验 elements
                 ValidateUtils.is(chart.getElements()).notNull(RCode.CHART_ELEMENT_ISNULL);
