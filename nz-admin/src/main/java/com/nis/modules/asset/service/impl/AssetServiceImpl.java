@@ -1222,51 +1222,51 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Map resultMap = new HashMap();
         Map basicInfo = new HashMap();
 
-        basicInfo.put("Host", asset.getHost());
-        basicInfo.put("ID", asset.getId());
-        basicInfo.put("SN", asset.getSn());
-        basicInfo.put("State", asset.getState() == 1 ? "In stock":"Not in stock");
-        basicInfo.put("Purchase$_$date", asset.getPurchaseDate());
+        basicInfo.put("host", asset.getHost());
+        basicInfo.put("id", asset.getId());
+        basicInfo.put("sn", asset.getSn());
+        basicInfo.put("state", asset.getState());
+        basicInfo.put("purchaseDate", asset.getPurchaseDate());
 
         Idc idc = idcService.getById(asset.getIdcId());
         if (ToolUtil.isNotEmpty(idc.getPrincipal())) {
             SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUserId, idc.getPrincipal()));
-            basicInfo.put("Administrator", userEntity.getUsername());
+            basicInfo.put("principal", userEntity.getUsername());
         } else {
-            basicInfo.put("Administrator", "");
+            basicInfo.put("principal", "");
         }
 
-        basicInfo.put("DC",idc.getName());
+        basicInfo.put("dataCenter",idc.getName());
 
-        basicInfo.put("Telephone", idc.getTel());
+        basicInfo.put("tel", idc.getTel());
 
         if (ToolUtil.isEmpty(asset.getCabinetId())) {
-            basicInfo.put("Cabinet", "");
+            basicInfo.put("cabinet", "");
         } else {
             Cabinet cabinet = cabinetDao.selectById(asset.getCabinetId());
-            basicInfo.put("Cabinet", cabinet.getName());
+            basicInfo.put("cabinet", cabinet.getName());
         }
 
         Model model = modelDao.getModelDetailById(asset.getModelId());
-        basicInfo.put("Model",model.getName() );
-        basicInfo.put("Asset$_$type",model.getType().getValue());
-        basicInfo.put("Vendor",model.getVendor().getValue());
+        basicInfo.put("model",model.getName() );
+        basicInfo.put("assetType",model.getType().getValue());
+        basicInfo.put("vendor",model.getVendor().getValue());
 
         int endpointNum = endpointService.count(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getAssetId, id));
-        basicInfo.put("Endpoint", endpointNum);
+        basicInfo.put("endpoint", endpointNum);
 
         int alertCount = alertMessageService.count(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1).eq(AlertMessageEntity::getAssetId, id));
-        basicInfo.put("Alerts", alertCount);
+        basicInfo.put("alert", alertCount);
 
         AssetPing assetPing = assetPingDao.selectOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getHost, asset.getHost()));
         if (ToolUtil.isEmpty(assetPing)) {
-            basicInfo.put("Ping$_$status", "");
-            basicInfo.put("Ping$_$rtt", "");
-            basicInfo.put("Ping$_$last$_$reply", "");
+            basicInfo.put("pingStatus", "");
+            basicInfo.put("pingRtt", "");
+            basicInfo.put("pingLastReply", "");
         } else {
-            basicInfo.put("Ping$_$status", assetPing.getStatus() == 1 ? "up":"down");
-            basicInfo.put("Ping$_$rtt", assetPing.getRtt());
-            basicInfo.put("Ping$_$last$_$reply", assetPing.getLastUpdate());
+            basicInfo.put("pingStatus", assetPing.getStatus());
+            basicInfo.put("pingRtt", assetPing.getRtt());
+            basicInfo.put("pingLastReply", assetPing.getLastUpdate());
         }
 
         resultMap.put("Basic", basicInfo);
