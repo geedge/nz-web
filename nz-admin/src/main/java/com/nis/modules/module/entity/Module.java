@@ -6,7 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.project.entity.Project;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.validation.constraints.NotBlank;
+
+import org.springframework.data.annotation.Transient;
 
 @Data
 @TableName("module")
@@ -42,4 +47,10 @@ public class Module {
 	 * snmp_exporter需要的配置部分， 由web端根据snmp_param生成
 	 */
 	private String snmpYml;
+	
+	@TableField(exist = false)
+	private List<Integer> endpointStat=new ArrayList<Integer>();
+	
+	@TableField(exist = false)
+	private List<Integer> alertStat=new ArrayList<Integer>();
 }

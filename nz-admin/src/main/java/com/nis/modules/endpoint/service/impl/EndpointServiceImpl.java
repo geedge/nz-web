@@ -25,6 +25,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -82,6 +83,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
+		logger.info("queryPage param is : {}",JSON.toJSON(params));
 		IPage<Endpoint> page = new Query<Endpoint>().getPage(params);
 		List<Endpoint> datas = endpointDao.queryPage(page, params);
 		//获取相关lastUpdate以及state数据信息

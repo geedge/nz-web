@@ -1,15 +1,24 @@
 package com.nis.modules.project.service.impl;
 
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.project.dao.ProjectDao;
@@ -23,8 +32,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service("projectService")
 public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> implements ProjectService {
@@ -36,9 +49,15 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 
 	@Autowired
 	private AlertMessageService alertMessageService;
-
+	
 	@Autowired
 	private PanelDao panelDao;
+	
+	@Autowired
+	private OverviewService overviewService;
+	
+	@Autowired
+	private EndpointService endpointService;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -120,6 +139,65 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 			flag = true;
 		}
 		return flag;
+	}
+
+	@Override
+	public Map<String,Object> queryProjectInfo(Integer id) {
+		Map<String,Object> result = new HashMap<String,Object>();
+		Project project = projectDao.selectById(id);
+		if(ObjectUtils.isNotEmpty(project)) {
+			
+			// project高中低alert message数据
+			List<Map<String, Object>> maps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("project_id", id).groupBy("severity").select("severity","count(*) as count"));
+			Map projectAlertMessageInfos =new HashMap();
+			List<Integer> alertStat = project.getAlertStat();
+			Map handleMap=new HashMap();
+			for(Map<String,Object> map:maps) {
+				projectAlertMessageInfos.put(map.get("severity"),((Long)map.get("count")).intValue());
+			}
+			
+			alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH));
+			alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM));
+			alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW));
+
+		    List<Module> modules = moduleService.list(new LambdaQueryWrapper<Module>().eq(Module::getProjectId, id));
+		    if(ObjectUtils.isEmpty(modules)) {
+		    	modules=new ArrayList<Module>();
+		    }
+		    
+		    Set<Integer> endpointStatus = overviewService.getEndpointStatus();
+		    
+		    for(Module module : modules) {
+		    	//module高中低alert message数据
+		    	List<Map<String, Object>> moduleMaps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("module_id", module.getId()).groupBy("severity").select("severity","count(*) as count"));
+		    	Map moduleAlertMessageInfos = new HashMap();
+		    	for(Map<String,Object> moduleMap : moduleMaps) {
+		    		moduleAlertMessageInfos.put(moduleMap.get("severity"),((Long)moduleMap.get("count")).intValue());
+		    	}
+		    	List<Integer> moduleAlertStat = module.getAlertStat();
+		    	moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH));
+		    	moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM));
+		    	moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW));
+		    	//组件endpoint up down统计
+		    	if(ObjectUtils.isNotEmpty(endpointStatus)) {
+		    		List<Integer> endpointStat = module.getEndpointStat();
+		    		// 初始化endpoint up down状态
+		    		endpointStat.add(0);
+		    		endpointStat.add(0);
+		    		List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().eq("module_id", module.getId()));
+			    	for(Endpoint endpoint : endpoints) {
+			    		if(endpointStatus.contains(endpoint.getId())) {
+			    			endpointStat.set(0, (endpointStat.get(0)+1));
+			    		}else {
+			    			endpointStat.set(1, (endpointStat.get(1)+1));
+			    		}
+			    	}
+		    	}
+		    }
+		    result.put("basic", project);
+		    result.put("module", modules);
+		}
+	    return result;
 	}
 
 }

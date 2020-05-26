@@ -2,6 +2,7 @@ package com.nis.modules.overview.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface OverviewService {
 
@@ -24,4 +25,6 @@ public interface OverviewService {
     Map alertMessageStat();
 
     List<Map> alertStatByModuleTopN(Integer top);
+    
+    Set<Integer> getEndpointStatus();
 }

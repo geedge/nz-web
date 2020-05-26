@@ -16,4 +16,6 @@ public interface ProjectService extends IService<Project> {
 	void validateBulitinRule(List<Integer> ids);
 
 	void saveOrUpdateProject(Project project);
+	
+	Map<String,Object> queryProjectInfo(Integer id);
 }

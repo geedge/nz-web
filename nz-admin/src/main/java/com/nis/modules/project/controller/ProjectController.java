@@ -58,5 +58,12 @@ public class ProjectController extends AbstractController {
 		projectService.removeHandle(Arrays.asList(ids));
 		return R.ok();
 	}
+	
+	@GetMapping(value="info")
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROJECT)
+	public R info(@RequestParam Integer id) {
+		Map<String, Object> result = projectService.queryProjectInfo(id);
+		return R.ok(result);
+	}
 }
 
