@@ -1,21 +1,7 @@
 package com.nis.common.utils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -597,6 +583,21 @@ public class CommonUtils {
                 + ")");
         return compile.matcher(url).matches();
     }
+
+    public static boolean checkUrlInModel(String url) {
+        Pattern compile = Pattern.compile("("
+                + "("
+                + "(?:" + PROTOCOL + "(?:" + USER_INFO + ")?" + ")?"
+                + "(?:" + DOMAIN_NAME_IN_MODEL + ")"
+                + "(?:" + PORT_NUMBER + ")?"
+                + ")"
+                + "(" + PATH_AND_QUERY + ")?"
+                + WORD_BOUNDARY
+                + ")");
+        return compile.matcher(url).matches();
+    }
+
+    private static  final String DOMAIN_NAME_IN_MODEL = "(" + "[a-zA-Z0-9.]*" + ")";
 
     private static final String IP_ADDRESS_STRING =
             "((25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\\.(25[0-5]|2[0-4]"
