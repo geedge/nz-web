@@ -610,4 +610,6 @@ public class Constant {
     // 图表类型为line bar stackArea
     public static final String CHART_DEFAULT_PARAMkEY = "threshold";
  
+    // 图表类型为alertList
+    public static final String CHART_ALERTLIST_TYPE = "alertList";
 }

@@ -366,6 +366,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 chartElementService.validateElements(chart.getId(), chart.getElements());
                 break;
             }
+            // alertList类型
+            case Constant.CHART_ALERTLIST_TYPE:{
+            	String strParam = JSONObject.toJSONString(param);
+            	chart.setParam(strParam);
+            	break;
+            }
             default: {
             	if(ToolUtil.isNotEmpty(param)) {
             		Object object = param.get(Constant.CHART_DEFAULT_PARAMkEY);
