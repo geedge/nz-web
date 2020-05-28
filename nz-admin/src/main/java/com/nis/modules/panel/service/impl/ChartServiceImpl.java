@@ -340,24 +340,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 if (ToolUtil.isEmpty(url)) {
                     throw new NZException(RCode.CHART_PARAMURL_ISNULL);
                 }
-
-                String urlStr = url.toString();
-                // 如果是model panel添加charts url类型支持{{}}替换
-                Panel panel = panelService.getById(panelId);
-                if ("model".equals(panel.getType())) {
-                    // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
-                    urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
-
-                    boolean b = CommonUtils.checkUrlInModel(urlStr);
-                    boolean b1 = CommonUtils.checkUrl(urlStr);
-
-                    if (!b && !b1) {
-                        throw new NZException(RCode.CHART_PARAMURL_FORMAT);
-                    }
-                } else {
-                    if (!CommonUtils.checkUrl(urlStr)) {
-                        throw new NZException(RCode.CHART_PARAMURL_FORMAT);
-                    }
+                if (!CommonUtils.checkUrl(url.toString())) {
+                    throw new NZException(RCode.CHART_PARAMURL_FORMAT);
                 }
                 String strParam = JSONObject.toJSONString(param);
                 chart.setParam(strParam);
@@ -386,6 +370,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             case Constant.CHART_ALERTLIST_TYPE:{
             	String strParam = JSONObject.toJSONString(param);
             	chart.setParam(strParam);
+            	chart.setElements(new ArrayList<>());
             	break;
             }
             default: {
