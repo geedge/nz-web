@@ -922,6 +922,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
          });
 	     chartElementService.saveBatch(list);
 	     target.setElements(list);
+	     String param = (String) target.getParam();
+	     if (StringUtils.isNotEmpty(param)) {
+	    	 target.setParam(JSONObject.parseObject(param, Map.class));
+         }
 	     return target;
 	}
 
