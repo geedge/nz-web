@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
@@ -64,7 +65,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         return new PageUtils(page);
     }
 
-    @Override
     public boolean checkName(AlertRuleEntity alertRule) {
         List<AlertRuleEntity> list = this.list(new QueryWrapper<AlertRuleEntity>().lambda()
                 .eq(AlertRuleEntity::getAlertName, alertRule.getAlertName()));
@@ -96,7 +96,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
     }
 
-    @Override
     public void validateReceiver(String receiver) {
 
         List<SysUserEntity> userEntityList = sysUserService.list();
@@ -118,6 +117,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Override
     public void saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
+        // 校验参数
+        this.validateParam(alertRule);
+
         // 校验名称重复
         if (!this.checkName(alertRule)) {
             throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
@@ -138,11 +140,38 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 校验关联用户
         String receiver = alertRule.getReceiver();
-        if (com.baomidou.mybatisplus.core.toolkit.StringUtils.isNotEmpty(receiver)) {
+        if (StringUtils.isNotEmpty(receiver)) {
             this.validateReceiver(receiver);
         }
 
         // 入库
-        this.saveOrUpdate(alertRule);
+        if (alertRule.getId() == null) {
+            this.save(alertRule);
+        } else {
+            // 校验内置规则
+            AlertRuleEntity ruleEntity = this.getById(alertRule.getId());
+            if (ruleEntity != null && ruleEntity.getBuildIn().equals(1)) {
+                throw new NZException(RCode.ALERTRULE_BUILDIN_CAN_NOT_UPDATE);
+            }
+
+            this.updateById(alertRule);
+        }
+    }
+
+    @Override
+    public void delete(Integer[] ids) {
+        ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
+        // 校验内置
+        this.validateBulitinRule(Arrays.asList(ids));
+        // 删除
+        this.removeByIds(Arrays.asList(ids));
+    }
+
+    private void validateParam(AlertRuleEntity alertRule) {
+        ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
+                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
+                .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
+                .and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
+                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
     }
 }

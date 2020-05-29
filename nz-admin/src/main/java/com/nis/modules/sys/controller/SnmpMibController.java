@@ -36,9 +36,6 @@ public class SnmpMibController extends AbstractController {
     @Autowired
     private SnmpMibService snmpMibService;
 
-    @Autowired
-    private ModuleService moduleService;
-
     /**
      * mib文件查询
      *

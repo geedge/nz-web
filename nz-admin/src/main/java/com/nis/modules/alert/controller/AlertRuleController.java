@@ -1,8 +1,6 @@
 package com.nis.modules.alert.controller;
 
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertRuleEntity;
@@ -10,7 +8,6 @@ import com.nis.modules.alert.service.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -40,11 +37,6 @@ public class AlertRuleController {
     @RequestMapping(value = "", method = RequestMethod.POST)
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTRULE)
     public R save(@RequestBody AlertRuleEntity alertRule) {
-    	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
-    					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
-    					.and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-    					.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
-			            .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
 
     	alertRuleService.saveOrUpdateAlertRule(alertRule);
         return R.ok();
@@ -56,13 +48,7 @@ public class AlertRuleController {
     @RequestMapping(value = "", method = RequestMethod.PUT)
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTRULE)
     public R update(@RequestBody AlertRuleEntity alertRule){
-    	alertRuleService.validateBulitinRule(Arrays.asList(alertRule.getId()));
-    	ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
-						.and(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL)
-    					.and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
-						.and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-						.and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
-			            .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
+        ValidateUtils.is(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL);
 
 	    alertRuleService.saveOrUpdateAlertRule(alertRule);
         return R.ok();
@@ -74,31 +60,8 @@ public class AlertRuleController {
     @RequestMapping(value = "", method = RequestMethod.DELETE)
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTRULE)
     public R delete(@RequestParam Integer ... ids){
-    	ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
-    	alertRuleService.validateBulitinRule(Arrays.asList(ids));
-		alertRuleService.removeByIds(Arrays.asList(ids));
 
+        alertRuleService.delete(ids);
         return R.ok();
-    }
-    
-    /**
-     * 校验alertName重复 
-     */
-    @RequestMapping(value = "checkName", method = RequestMethod.GET)
-    public R checkName(@RequestParam Map<String, Object> params){
-    	ValidateUtils.is(params.get("alertName")).notNull();
-		//校验名称重复
-		AlertRuleEntity queryParam = new AlertRuleEntity();
-		Object object = params.get("id");
-		if (object != null && !StringUtils.isEmpty(object.toString())) {
-			queryParam.setId(Integer.valueOf((String)object));
-		}
-		queryParam.setAlertName((String)params.get("alertName"));
-		
-		if (alertRuleService.checkName(queryParam)) {
-			return R.ok();
-		} else {
-			throw new NZException(RCode.ALERTRULE_NAME_DUPLICATE);
-		}
     }
 }
