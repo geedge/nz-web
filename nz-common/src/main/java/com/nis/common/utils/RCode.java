@@ -217,6 +217,7 @@ public enum RCode {
     ALERTRULE_TOPN_ISNULL(421013, "TopN is required"), //告警信息topn不能为空
     ALERTRULE_SUMMARY_ISNULL(421014, "Alert summary is required"),
     ALERTRULE_RECEIVER_FORMAT(423015, "Alert receiver id format error , it's should be integer"),
+    ALERTRULE_BUILDIN_CAN_NOT_UPDATE(427016, "This rule is built-in and cannot be updated"),
 
 
     /**
