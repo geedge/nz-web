@@ -8,9 +8,6 @@
         <result property="id" column="id"/>
         <result property="severity" column="severity"/>
         <result property="summary" column="summary"/>
-		<!--<result property="type" column="type"/>
-		<result property="linkId" column="link_id"/>-->
-		<!--<result property="host" column="host"/>-->
         <result property="description" column="description"/>
         <result property="labels" column="labels"/>
         <result property="startAt" column="start_at"/>
@@ -103,14 +100,8 @@
 		<foreach collection="hashKeys" item="hashKey" index="no" open="(" separator="," close=")">
 			#{hashKey}
 		</foreach>
+		AND state = 1
 	</update>
-
-	<!--<delete id="deleteByTypeIds">
-    	delete from alert_message where type=#{typeId} and link_id in
-    	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
-			#{id}
-		</foreach>
-    </delete>-->
 
     <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
     	select count(*) total,severity
