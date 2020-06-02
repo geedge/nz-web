@@ -427,6 +427,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		String ids = (String) params.get("ids");
 		List<String> idList = Arrays.asList(ids.split(","));
 
+		Integer state = (Integer) params.get("state");
+		// 如果状态设置为Expired 设置结束时间
+		if (state.equals(2)) {
+			params.put("endAt", formatDate);
+		}
+
 		alertMessageDao.updateAlertStateByIds(idList, params);
 	}
 

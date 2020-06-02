@@ -192,6 +192,9 @@
 
 	<update id="updateAlertStateByIds">
 		update alert_message am set remark = #{params.remark} , state = #{params.state}
+		<if test="params.endAt != null and params.endAt != ''">
+			, end_at = #{params.endAt}
+		</if>
 		where id in
 		<foreach collection="ids" item="id" open="(" separator="," close=")">
 			#{id}
