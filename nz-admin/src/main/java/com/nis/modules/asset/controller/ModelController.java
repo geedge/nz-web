@@ -93,4 +93,19 @@ public class ModelController {
         modelService.delete(ids);
         return R.ok();
     }
+
+
+    /**
+     * 模板图表更新
+     *
+     * @param modelId   C
+     * @param assetId   C
+     * @return
+     */
+    @PutMapping("/syncChart")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
+    public R syncChart(Integer modelId, Integer assetId) {
+        modelService.syncChart(modelId,assetId);
+        return R.ok();
+    }
 }

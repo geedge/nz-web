@@ -967,6 +967,42 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel, asset);
     }
 
+    @Override
+    public void updateAssetChartsThroughRelatedModel(Asset asset) {
+        List<Panel> panels = panelService.list();
+
+        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
+        Panel assetPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+
+        // 删除 assetPanel 下的 charts信息
+        this.delChartsByPanelId(assetPanel.getId());
+
+        // 新增 charts
+        this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel, asset);
+    }
+
+    @Override
+    public void updateuAllAssetChartsUnderCurrentModel(Integer modelId, List<Asset> assets) {
+        List<Panel> panels = panelService.list();
+
+        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(modelId) ? true : false).findAny().orElse(null);
+
+        Map<Asset, Panel> assetAndPanelMap = new HashMap<>();
+        Panel tempPanel;
+        for (Asset asset : assets) {
+            tempPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+            assetAndPanelMap.put(asset, tempPanel);
+        }
+
+        // 删除 新增
+        Panel assetPanel;
+        for (Map.Entry<Asset, Panel> entry : assetAndPanelMap.entrySet()) {
+            assetPanel = entry.getValue();
+            this.delChartsByPanelId(assetPanel.getId());
+            this.copyChartsToAssetChartsByPanel(modelPanel, assetPanel, entry.getKey());
+        }
+    }
+
     private void copyChartsToAssetChartsByPanel(Panel modelPanel, Panel targetPanel, Asset asset) {
         List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, modelPanel.getId()));
         // 排序

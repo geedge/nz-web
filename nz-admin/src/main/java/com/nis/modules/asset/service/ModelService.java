@@ -23,5 +23,7 @@ public interface ModelService extends IService<Model> {
     boolean checkName(Integer id, String name);
 
     void checkUsize(Model usize);
+
+    void syncChart(Integer modelId, Integer assetId);
 }
 

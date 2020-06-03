@@ -195,6 +195,51 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void syncChart(Integer modelId, Integer assetId) {
+        if (modelId != null && assetId != null) {
+            Asset asset = assetService.getById(assetId);
+            if (ToolUtil.isEmpty(asset)) {
+                throw new NZException(RCode.ASSET_NOT_EXIST);
+            }
+            if (!modelId.equals(asset.getModelId())) {
+                throw new NZException(RCode.ASSET_MODELID_INCONSISTENT);
+            }
+
+            this.updateAssetChartsThroughRelatedModel(assetId);
+        } else if (modelId == null && assetId != null) {
+            Asset asset = assetService.getById(assetId);
+            if (ToolUtil.isEmpty(asset)) {
+                throw new NZException(RCode.ASSET_NOT_EXIST);
+            }
+
+            this.updateAssetChartsThroughRelatedModel(assetId);
+        } else if (modelId != null && assetId == null) {
+
+            this.updateuAllAssetChartsUnderCurrentModel(modelId);
+        } else {
+            // modelId 与 assetId 不能同时为空
+            throw new NZException(RCode.ASSET_MODEL_PARAM_ISNULL);
+        }
+    }
+
+    // 全量更新此 asset 的 chart，与对应型号的chart 保持一致
+    private void updateAssetChartsThroughRelatedModel(Integer assetId) {
+        Asset asset = assetService.getById(assetId);
+        chartService.updateAssetChartsThroughRelatedModel(asset);
+    }
+
+    // 更新所有型号为 modelId 的asset chart
+    private void updateuAllAssetChartsUnderCurrentModel(Integer modelId) {
+        List<Asset> assetList = assetService.list(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, modelId));
+        if (CollectionUtils.isEmpty(assetList)) {
+            return;
+        }
+
+        chartService.updateuAllAssetChartsUnderCurrentModel(modelId, assetList);
+    }
+
     /**
      * 资产类型有效性校验
      */

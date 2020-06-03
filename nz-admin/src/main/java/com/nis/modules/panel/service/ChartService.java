@@ -28,4 +28,8 @@ public interface ChartService extends IService<Chart> {
     void saveAssetPanelAndChart(Asset asset);
 
     void updateAssetChartsByNewModel(Asset asset);
+
+    void updateAssetChartsThroughRelatedModel(Asset asset);
+
+    void updateuAllAssetChartsUnderCurrentModel(Integer modelId, List<Asset> assets);
 }

@@ -173,7 +173,8 @@ public enum RCode {
     ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
     ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be larger than associated asset size"),// 修改的时候model uSize 不能大于关联 asset 的大小
     ASSET_MODEL_EXISTS(322008,"Model already exists"),                     // 型号已经存在
-
+    ASSET_MODEL_PARAM_ISNULL(321009,"The model Id and asset Id cannot both be empty, when the model chart is updated."),
+    ASSET_MODELID_INCONSISTENT(323010,"Asset model is inconsistent with model Id"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
