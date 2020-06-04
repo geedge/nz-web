@@ -92,7 +92,7 @@ public class YamlUtil {
 		annotations.put("description", alertRule.getDescription());
 		
 		rule.put("alert", alertRule.getAlertName());
-		rule.put("expr", alertRule.getExpr() + alertRule.getOperator() + alertRule.getThreshold());
+        rule.put("expr", "(" + alertRule.getExpr() + ")" + alertRule.getOperator() + alertRule.getThreshold());
 		rule.put("for", alertRule.getLast() + "s");
 		rule.put("labels", labels);
 		rule.put("annotations", annotations);
