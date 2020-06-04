@@ -538,6 +538,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     private void syncDeleteAssetsCharts(List<Integer> deleteIds) {
         // 关联charts
         List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().in(Chart::getPid, deleteIds));
+        if (CollectionUtils.isEmpty(list)) {
+            return;
+        }
         Map<Integer, List<Chart>> listMap = list.stream().collect(Collectors.groupingBy(Chart::getPanelId));
 
         // 需要同步删除的panel 关联的 charts

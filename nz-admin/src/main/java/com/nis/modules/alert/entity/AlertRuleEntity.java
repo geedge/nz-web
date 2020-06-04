@@ -19,7 +19,6 @@ import java.util.List;
  */
 @Data
 @TableName("alert_rule")
-@Component
 public class AlertRuleEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -37,6 +36,21 @@ public class AlertRuleEntity implements Serializable {
 	 * 运算表达式
 	 */
 	private String expr;
+
+	/**
+	 * 比较符号
+	 */
+	private String operator;
+
+	/**
+	 * 阈值
+	 */
+	private Long threshold;
+
+	/**
+	 * 单位
+	 */
+	private Integer unit;
 	/**
 	 * 持续时间,单位s
 	 */

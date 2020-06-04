@@ -168,10 +168,26 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private void validateParam(AlertRuleEntity alertRule) {
+        String operator = alertRule.getOperator();
+        Integer unit = alertRule.getUnit();
         ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
                 .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
                 .and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
-                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL);
+                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL)
+                .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL)
+                .and(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL)
+                .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
+
+        operator = operator.replaceAll(" ", "");
+        alertRule.setOperator(operator);
+
+        if(!Constant.RULE_OPERATORS.contains(operator)){
+            throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
+        }
+
+        if(unit < 1 || unit > 33){
+            throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+        }
     }
 }

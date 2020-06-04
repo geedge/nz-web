@@ -17,6 +17,9 @@
 		<result property="alertRule.id" column="rule_id" />
 		<result property="alertRule.alertName" column="alert_name"/>
 		<result property="alertRule.expr" column="expr"/>
+		<result property="alertRule.operator" column="operator"/>
+		<result property="alertRule.threshold" column="threshold"/>
+		<result property="alertRule.unit" column="unit"/>
 
 		<result property="projectId" column="project_id"/>
 		<result property="moduleId" column="module_id"/>
@@ -26,8 +29,16 @@
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
-		select am.*,ar.alert_name,ar.expr from alert_message am
-		left join alert_rule ar on am.rule_id=ar.id
+		SELECT
+			am.*,
+			ar.alert_name,
+			ar.expr,
+			ar.operator,
+			ar.threshold,
+			ar.unit
+		FROM
+			alert_message am
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		<where>
 			<if test="params.alertName != null and params.alertName != ''">
 				ar.alert_name like concat('%', #{params.alertName}, '%')

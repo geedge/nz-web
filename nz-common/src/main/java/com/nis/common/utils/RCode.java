@@ -219,6 +219,11 @@ public enum RCode {
     ALERTRULE_SUMMARY_ISNULL(421014, "Alert summary is required"),
     ALERTRULE_RECEIVER_FORMAT(423015, "Alert receiver id format error , it's should be integer"),
     ALERTRULE_BUILDIN_CAN_NOT_UPDATE(427016, "This rule is built-in and cannot be updated"),
+    ALERTRULE_OPERATOR_ISNULL(421017, "Alert operator can not be empty"),
+    ALERTRULE_THRESHOLD_ISNULL(421018, "Alert threshold can not be empty"),
+    ALERTRULE_UNIT_ISNULL(421019, "Alert unit can not be empty"),
+    ALERTRULE_OPERATOR_INVALIDE(423020, "Alert operator is invalide"),
+    ALERTRULE_UNIT_INVALIDE(423021, "Alert unit is invalide"),
 
 
     /**

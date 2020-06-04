@@ -169,6 +169,9 @@ public class Constant {
     // panel type可选值集合
     public static final List<String> PANEL_TYPES;
 
+    // alert rule 比较符号
+    public static final List<String> RULE_OPERATORS;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -232,6 +235,8 @@ public class Constant {
         CHART_SINGLESTAT_STATISTICS.add("different");
 
         PANEL_TYPES = Arrays.asList(new String[]{"dashboard", "asset", "project", "module", "endpoint", "model"});
+
+        RULE_OPERATORS = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
     }
     
     /**
