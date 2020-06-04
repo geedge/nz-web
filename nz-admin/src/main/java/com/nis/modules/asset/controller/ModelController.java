@@ -98,14 +98,13 @@ public class ModelController {
     /**
      * 模板图表更新
      *
-     * @param modelId   C
-     * @param assetId   C
+     * @param params
      * @return
      */
     @PutMapping("/syncChart")
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
-    public R syncChart(Integer modelId, Integer assetId) {
-        modelService.syncChart(modelId,assetId);
+    //@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
+    public R syncChart(@RequestBody Map<String, Object> params) {
+        modelService.syncChart(params);
         return R.ok();
     }
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.Asset;
@@ -197,7 +198,11 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void syncChart(Integer modelId, Integer assetId) {
+    public void syncChart(Map<String, Object> params) {
+        ValidateUtils.is(params).notNull(RCode.ASSET_MODEL_PARAM_ISNULL);
+
+        Integer modelId = (Integer) params.get("modelId");
+        Integer assetId = (Integer) params.get("assetId");
         if (modelId != null && assetId != null) {
             Asset asset = assetService.getById(assetId);
             if (ToolUtil.isEmpty(asset)) {
