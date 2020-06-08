@@ -1,17 +1,14 @@
 package com.nis.modules.panel.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
 @Data
 @TableName("panel")
-public class Panel {
+public class Panel extends Node {
 
-    @TableId
-    private Integer id;
     /**
      * 图表名
      * */

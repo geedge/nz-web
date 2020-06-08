@@ -8,6 +8,7 @@ import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.terminal.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -43,4 +44,8 @@ public interface AssetService extends IService<Asset> {
     R uploadBuildExporter(Map<String, String> configs, Asset asset, Account accountCli);
 
     Map detail(Integer id);
+
+    void export(HttpServletResponse response, Map<String, Object> params);
+
+    R uploadExporter(Asset asset, Account accountCli);
 }

@@ -47,12 +47,6 @@ public class AssetController {
     @Autowired
     private AssetService assetService;
 
-    @Autowired
-    private SysConfigService sysConfigService;
-
-    @Autowired
-    private SysDictService sysDictService;
-
     /**
      * 资产请求列表
      *
@@ -122,10 +116,7 @@ public class AssetController {
         assetService.saveOrUpdateAsset(asset);
 
         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
-            List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getStatus, 1));
-            Map<String, String> configs = sysConfigs.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-
-            R result = assetService.uploadBuildExporter(configs, asset, accountCli);
+            R result = assetService.uploadExporter(asset, accountCli);
             return result;
         }
         return R.ok();
@@ -206,138 +197,7 @@ public class AssetController {
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
-
-        Map<String, Object> queryParam = new HashMap<>(2);
-        queryParam.put("type", Constant.DICT_ASSET_STATE_TYPE);
-        List<SysDictEntity> assetStates = sysDictService.queryList(queryParam);
-        Map<Integer, String> statesMap = new HashMap<>(4);
-        for (SysDictEntity dict : assetStates) {
-            statesMap.put(dict.getCode(), dict.getValue());
-        }
-
-        PageUtils page = assetService.queryPage(params);
-        List<Asset> list = (List<Asset>) page.getList();
-
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Assets");
-
-        int rowNum = 0;
-        // 添加标题行
-        String[] columnNames = Constant.ASSET_EXCEL_EXPORT_HEADER;
-        Row row = sheet.createRow(rowNum);
-        Cell cell;
-
-        // 创建样式对象
-        CellStyle style = workbook.createCellStyle();
-        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
-        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
-
-        for (int i = 0; i < columnNames.length; i++) {
-            // 创建列、单元格
-            cell = row.createCell(i);
-            cell.setCellValue(columnNames[i]);
-            cell.setCellStyle(style);
-        }
-
-        // 添加数据
-        Row row1;
-        List<Account> accountList;
-        Model model;
-        Account account;
-        Integer start, end, ipmiPort;
-        Map ipmiMap;
-        String ipmiHost;
-        for (Asset asset : list) {
-            account = null;
-            row1 = sheet.createRow(++rowNum);
-
-            model = asset.getModel();
-            // sn
-            row1.createCell(0).setCellValue(asset.getSn());
-            // assettype
-            row1.createCell(1).setCellValue(model.getType().getValue());
-            // vendor
-            row1.createCell(2).setCellValue(model.getVendor().getValue());
-            // model
-            row1.createCell(3).setCellValue(model.getName());
-            // idc
-            row1.createCell(4).setCellValue(asset.getIdc().getName());
-            // cabinet
-            row1.createCell(5).setCellValue(asset.getCabinet() == null ? null : asset.getCabinet().getName());
-            // cabinetstart
-            start = asset.getCabinetStart();
-            row1.createCell(6).setCellValue(start == null ? "" : start + "");
-            // cabinetend
-            end = asset.getCabinetEnd();
-            row1.createCell(7).setCellValue(end == null ? "" : end + "");
-            // host
-            row1.createCell(8).setCellValue(asset.getHost());
-            // state
-            row1.createCell(9).setCellValue(statesMap.get(asset.getState()));
-            // PurchaseDate
-            row1.createCell(10).setCellValue(asset.getPurchaseDate());
-
-            accountList = asset.getAccounts();
-            if (CollectionUtils.isNotEmpty(accountList)) {
-                // 当前账号信息和资产是一对一
-                account = accountList.get(0);
-            }
-            if (account != null) {
-                // protocol
-                row1.createCell(11).setCellValue(account.getProtocol());
-                // authtype
-                row1.createCell(12).setCellValue(account.getAuthType());
-                // user
-                row1.createCell(13).setCellValue(account.getUser());
-                if (StringUtils.isNotEmpty(account.getPwd())) {
-                    // pwd
-                    row1.createCell(14).setCellValue(account.getPwd());
-                }
-                if (StringUtils.isNotEmpty(account.getPrivateKey())) {
-                    // sshKeys
-                    row1.createCell(15).setCellValue(account.getPrivateKey());
-                }
-                // port
-                row1.createCell(16).setCellValue(account.getPort());
-                if (StringUtils.isNotEmpty(account.getUserTip())) {
-                    // userTip
-                    row1.createCell(17).setCellValue(account.getUserTip());
-                }
-                if (StringUtils.isNotEmpty(account.getPasswordTip())) {
-                    // passwordTip
-                    row1.createCell(18).setCellValue(account.getPasswordTip());
-                }
-                if (StringUtils.isNotEmpty(account.getReloginPasswordTip())) {
-                    // reloginPasswordTip
-                    row1.createCell(19).setCellValue(account.getReloginPasswordTip());
-                }
-            }
-
-            // ipmi
-            ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
-            if (ToolUtil.isNotEmpty(ipmiMap)) {
-                ipmiHost = (String) ipmiMap.get("host");
-                if (ToolUtil.isNotEmpty(ipmiHost)) {
-                    row1.createCell(20).setCellValue(ipmiHost);
-                }
-                ipmiPort = (Integer) ipmiMap.get("port");
-                if(ToolUtil.isNotEmpty(ipmiPort)){
-                    row1.createCell(21).setCellValue(ipmiPort);
-                }
-            }
-        }
-
-        try {
-            // 响应为流
-            String fileName = "AssetsExport.xlsx"; // 默认名称
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        assetService.export(response,params);
     }
 
     /**

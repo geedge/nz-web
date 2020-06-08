@@ -12,9 +12,11 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.panel.dao.ChartDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.ChartElement;
+import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.panel.service.NodeService;
 import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -40,6 +42,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Autowired
     private AssetDao assetDao;
+
+    @Autowired
+    private NodeService nodeService;
 
     @Override
     public List<Chart> queryCharts(Integer panelId, Integer id, String title) {
@@ -639,13 +644,18 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             }
         }
 
-        Map<Integer, Chart> idAndChartMap = new HashMap<>();
+        Map<Integer, Node> idAndChartMap = new HashMap<>();
         for (Chart chart1 : chartList) {
             idAndChartMap.put(chart1.getId(), chart1);
         }
 
-        Chart oldEntity = idAndChartMap.get(chart.getId());
-        String param = (String) oldEntity.getParam();
+        Node oldEntity = idAndChartMap.get(chart.getId());
+        // chart不存在于当前panel
+        if (oldEntity == null) {
+            throw new NZException(RCode.CHART_NOTEXSITS);
+        }
+        Chart oldChart = (Chart)oldEntity;
+        String param = (String) oldChart.getParam();
         if (param != null) {
             chart.setParam(param);
         }
@@ -658,164 +668,20 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             return;
         }
 
-        Chart oldChart = idAndChartMap.get(chart.getId());
-
-        // chart不存在于当前panel
-        if (oldChart == null) {
-            throw new NZException(RCode.CHART_NOTEXSITS);
-        }
-
         // 校验 prev next 参数是否合法
-        if (this.validatePrevAndNext(idAndChartMap, chart)) {
+        if (nodeService.validatePrevAndNext(idAndChartMap, chart)) {
             // 没有改变位置 直接修改库中 span height属性
             this.updateById(chart);
         }
 
-        Integer firstIndex = 0;
-        Integer lastIndex = -1;
-        // 最后需要更改的实体集合
-        List<Chart> updateCharts = new ArrayList<>();
-
-        Integer id = chart.getId();
-        // 判断旧位置是否为第一位 并且移动了位置
-        if (firstIndex.equals(oldChart.getPrev()) && !firstIndex.equals(chart.getPrev())) {
-            // 新的第一位
-            Chart newFirstIndex = idAndChartMap.get(oldChart.getNext());
-            newFirstIndex.setPrev(firstIndex);
-            // 第一种 移动到末尾
-            if (lastIndex.equals(chart.getNext())) {
-                // 新的倒数第二位
-                Chart newCountdownSecond = idAndChartMap.get(chart.getPrev());
-                newCountdownSecond.setNext(id);
-
-                updateCharts.add(newCountdownSecond);
-            } else {
-                // 第二种 不是移动到最后 而是移动到中间位置 即 有前有后
-                // 移动后 前面的
-                Chart newPrev = idAndChartMap.get(chart.getPrev());
-                // 移动后 后面的
-                Chart newNext = idAndChartMap.get(chart.getNext());
-                newPrev.setNext(id);
-                newNext.setPrev(id);
-                updateCharts.add(newPrev);
-                updateCharts.add(newNext);
-            }
-            updateCharts.add(chart);
-            updateCharts.add(newFirstIndex);
-        }
-
-        // 原来是末尾 并且移动了位置
-        if (lastIndex.equals(oldChart.getNext()) && !lastIndex.equals(chart.getNext())) {
-
-            // 新的最后一位
-            Chart newLastIndex = idAndChartMap.get(oldChart.getPrev());
-            newLastIndex.setNext(lastIndex);
-            // 第一种 末尾移动到了首位
-            if (firstIndex.equals(chart.getPrev())) {
-                // 新的第二位
-                Chart newSecond = idAndChartMap.get(chart.getNext());
-                newSecond.setPrev(id);
-
-                updateCharts.add(newSecond);
-            } else {
-                // 第二种 不是移动到开始 而是移动到中间位置 即 有前有后
-                // 移动后 前面的
-                Chart newPrev = idAndChartMap.get(chart.getPrev());
-                // 移动后 后面的
-                Chart newNext = idAndChartMap.get(chart.getNext());
-                newPrev.setNext(id);
-                newNext.setPrev(id);
-                updateCharts.add(newPrev);
-                updateCharts.add(newNext);
-            }
-
-            updateCharts.add(chart);
-            updateCharts.add(newLastIndex);
-        }
-
-        // 原来是中间的情况
-        if (!firstIndex.equals(oldChart.getPrev()) && !lastIndex.equals(oldChart.getNext())) {
-            boolean flag = false;
-
-            // 原来位置的前后
-            Chart oldPrevChart = idAndChartMap.get(oldChart.getPrev());
-            Chart oldNextChart = idAndChartMap.get(oldChart.getNext());
-            // 第一种 移动到了开头
-            if (firstIndex.equals(chart.getPrev())) {
-                // 新的第二位
-                Chart newSecondIndex = idAndChartMap.get(chart.getNext());
-                newSecondIndex.setPrev(id);
-
-                if (oldPrevChart.getId().equals(newSecondIndex.getId())) {
-                    flag = true;
-                    newSecondIndex.setNext(oldNextChart.getId());
-                    oldNextChart.setPrev(newSecondIndex.getId());
-                } else {
-                    oldPrevChart.setNext(oldNextChart.getId());
-                    oldNextChart.setPrev(oldPrevChart.getId());
-                }
-
-                updateCharts.add(chart);
-                updateCharts.add(newSecondIndex);
-                updateCharts.add(oldNextChart);
-                if (!flag) {
-                    updateCharts.add(oldPrevChart);
-                }
-            } else if (lastIndex.equals(chart.getNext())) {
-                // 第二种移动到末尾
-                // 新的倒数第二位
-                Chart newCountdownSecond = idAndChartMap.get(chart.getPrev());
-                newCountdownSecond.setNext(id);
-
-                // 原来位置的前后
-                if (oldNextChart.getId().equals(newCountdownSecond.getId())) {
-                    flag = true;
-                    newCountdownSecond.setPrev(oldPrevChart.getId());
-                    oldPrevChart.setNext(newCountdownSecond.getId());
-                } else {
-                    oldPrevChart.setNext(oldNextChart.getId());
-                    oldNextChart.setPrev(oldPrevChart.getId());
-                }
-
-                updateCharts.add(chart);
-                updateCharts.add(newCountdownSecond);
-                updateCharts.add(oldPrevChart);
-
-                if (!flag) {
-                    updateCharts.add(oldNextChart);
-                }
-            } else {
-                // 第三种 中间调整到中间
-                Chart newPrevChart = idAndChartMap.get(chart.getPrev());
-                Chart newNextChart = idAndChartMap.get(chart.getNext());
-
-                oldPrevChart.setNext(oldNextChart.getId());
-                oldNextChart.setPrev(oldPrevChart.getId());
-
-                newNextChart.setPrev(id);
-
-                // 换位前后面的 和 换位后前面的是同一个
-                if (oldNextChart.getId().equals(newPrevChart.getId())) {
-                    flag = true;
-                    oldNextChart.setNext(id);
-                } else {
-                    newPrevChart.setNext(id);
-                }
-
-                updateCharts.add(oldPrevChart);
-                updateCharts.add(oldNextChart);
-                updateCharts.add(newNextChart);
-
-                if (!flag) {
-                    updateCharts.add(newPrevChart);
-                }
-                updateCharts.add(chart);
-            }
-        }
-
+        List<Node> updateCharts = nodeService.modify(idAndChartMap, chart, oldChart);
         // 更新库中数据
-        if (CollectionUtils.isNotEmpty(updateCharts)) {
-            this.saveOrUpdateBatch(updateCharts);
+        if(CollectionUtils.isNotEmpty(updateCharts)){
+            Set<Chart> charts = new HashSet<>();
+            for (Node updatChart : updateCharts) {
+                charts.add((Chart) updatChart);
+            }
+            this.saveOrUpdateBatch(charts);
         }
     }
 
@@ -944,7 +810,22 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         panel.setBuildIn(modelPanel.getBuildIn());
         // 固定格式 panel name format is asset_panel_link
         panel.setName("asset_panel_" + asset.getId());
-        panelService.save(panel);
+        panel.setNext(-1);
+        // 保存
+        List<Panel> list = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
+        if (CollectionUtils.isEmpty(list)) {
+            panel.setPrev(0);
+            panelService.save(panel);
+        } else {
+            // 已存在chart 再次新增时自动排到末尾
+            Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
+            panel.setPrev(endPanel.getId());
+            panelService.save(panel);
+
+            // 更新原来最后图表顺序
+            endPanel.setNext(panel.getId());
+            panelService.updateById(endPanel);
+        }
 
         // 复制一份charts
         this.copyChartsToAssetChartsByPanel(modelPanel, panel, asset);

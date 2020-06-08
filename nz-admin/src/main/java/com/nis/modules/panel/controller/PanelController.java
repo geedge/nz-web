@@ -25,10 +25,10 @@ public class PanelController {
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PANEL)
     public R panelList(@RequestParam Map<String,Object> params){
-
-        PageUtils page=panelService.queryPanels(params);
-
-        return R.ok(page);
+        List<Panel> panels = panelService.queryList(params);
+        Map list = new HashMap();
+        list.put("list",panels);
+        return R.ok(list);
     }
 
     @RequestMapping(method = {RequestMethod.POST})
@@ -63,6 +63,22 @@ public class PanelController {
 
         panelService.delPanels(ids);
 
+        return R.ok();
+    }
+
+    /**
+     * panel位置调整
+     * @param panel
+     * @return
+     */
+    @PutMapping("/modify")
+    public R modify(@RequestBody Panel panel){
+        ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL)
+                .and(panel.getType()).notNull(RCode.PANEL_TYPE_ISNULL)
+                .and(panel.getPrev()).notNull(RCode.PANEL_PREV_ISNULL)
+                .and(panel.getNext()).notNull(RCode.PANEL_NEXT_ISNULL);
+
+        panelService.modify(panel);
         return R.ok();
     }
 

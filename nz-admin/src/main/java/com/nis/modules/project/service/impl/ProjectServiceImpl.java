@@ -1,17 +1,12 @@
 package com.nis.modules.project.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.endpoint.entity.Endpoint;
@@ -25,21 +20,17 @@ import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import javafx.scene.layout.Pane;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service("projectService")
+@Slf4j
 public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> implements ProjectService {
 	@Autowired
 	private ProjectDao projectDao;
@@ -126,7 +117,21 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		panel.setCreateBy(ShiroUtils.getUserId().intValue());
 		// 固定格式 panel name format is project_panel_link
 		panel.setName("project_panel_" + project.getId());
-		panelDao.insert(panel);
+		panel.setNext(-1);
+		List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
+		if (CollectionUtils.isEmpty(panels)) {
+			panel.setPrev(0);
+			panelDao.insert(panel);
+		} else {
+			// 已存在chart 再次新增时自动排到末尾
+			Panel endPanel = panels.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
+			panel.setPrev(endPanel.getId());
+			panelDao.insert(panel);
+
+			// 更新原来最后图表顺序
+			endPanel.setNext(panel.getId());
+			panelDao.updateById(endPanel);
+		}
 	}
 
 	public boolean validateProjectName(Integer id, String name) {

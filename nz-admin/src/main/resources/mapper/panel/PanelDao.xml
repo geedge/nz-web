@@ -7,6 +7,8 @@
         <result property="name" column="name"></result>
         <result property="type" column="type"></result>
         <result property="link" column="link"></result>
+        <result property="next" column="next"></result>
+        <result property="prev" column="prev"></result>
         <result property="buildIn" column="build_in"></result>
         <result property="createBy" column="create_by"></result>
         <association property="creator" columnPrefix="su_" javaType="com.nis.modules.sys.entity.SysUserEntity">
@@ -15,14 +17,11 @@
         </association>
     </resultMap>
     
-    <select id="queryPanelsWithPage" resultMap="panelResult">
+    <select id="queryList" resultType="com.nis.modules.panel.entity.Panel">
         SELECT
-            pan.*,
-            su.user_id AS su_userId,
-            su.username AS su_username
+        pan.*
         FROM
-            panel pan
-        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        panel pan
         <where>
             <if test="params.id != null and params.id != ''">
                 pan.id = #{params.id}
@@ -44,5 +43,17 @@
                 and pan.link=#{params.link}
             </if>
         </where>
+    </select>
+
+
+    <select id="queryListByType" resultMap="panelResult">
+        SELECT
+        pan.*,
+        su.user_id AS su_userId,
+        su.username AS su_username
+        FROM
+        panel pan
+        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        where pan.type = #{type}
     </select>
 </mapper>

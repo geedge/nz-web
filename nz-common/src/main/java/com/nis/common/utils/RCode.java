@@ -57,7 +57,7 @@ public enum RCode {
     CHART_PREV_ISNULL(121018,"Chart prev can not be empty"),
     CHART_NEXT_ISNULL(121019,"Chart next can not be empty"),
     CHART_CANNOT_MODIFY(126020,"Chart can not modify"),
-    CHART_PREVNEXT_INCORRECT(123021,"Chart prev and next is incorrect"),
+    CHART_PREVNEXT_INCORRECT(123021,"Prev and next is incorrect"),
     CHART_TITLE_DUPLICATE(122022,"Chart title is duplicate"),            // 同一个panel 下 chart title重复
     CHART_URLPARAM_ISNULL(121023,"Chart param cannot be empty when type is url"), // 当type为url时，param不能为空
     CHART_PARAM_FORMAT(123024,"Chart param must be JSON format"),               // param类型必须为json格式
@@ -71,6 +71,10 @@ public enum RCode {
     CHARTELEMENT_TYPE_ISNULL(121032, "Chart element type can not be empty"),
     CHARTELEMENT_TYPE_INVALIDE(123033, "Chart element type is invalide"),
     CHARTELEMENT_NOTEXSITS(126034, "chart element is not exists"),
+    PANEL_PREV_ISNULL(121035,"Panel prev can not be empty"),
+    PANEL_NEXT_ISNULL(121036,"Panel next can not be empty"),
+    PANEL_NOT_EXIST(126037,"Panel does not exist"),
+    PANEL_NOTFOUND_BYTYPE(126038,"There is no panel under this type"),
 
 
     /**
@@ -403,6 +407,7 @@ public enum RCode {
     SYS_CONFIG_EMAILSENDCCOUNT_FORMAT(573056,"System config email send account format error"),           //email_send_account应为邮件格式
     SYS_CONFIG_RESET_FAIL(573057,"System reset fail, check config and try again later"),
     SYS_CONFIG_MODELCHARTTPL_NOTFOUND(576058,"System config model chart tpl not found"),
+    SYS_CONFIG_PROJECTCHARTTPL_NOTFOUND(576059,"System config project chart tpl not found"),
     /**
      * webshell相关
      */
