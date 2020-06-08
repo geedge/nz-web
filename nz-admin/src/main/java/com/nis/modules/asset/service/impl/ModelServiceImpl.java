@@ -302,21 +302,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         // 固定格式 panel name format is mode_panel_link
         panel.setName("model_panel_" + model.getId());
 
+        panel.setPrev(0);
         panel.setNext(-1);
-        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
-        if (CollectionUtils.isEmpty(panels)) {
-            panel.setPrev(0);
-            panelDao.insert(panel);
-        } else {
-            // 已存在chart 再次新增时自动排到末尾
-            Panel endPanel = panels.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
-            panel.setPrev(endPanel.getId());
-            panelDao.insert(panel);
-
-            // 更新原来最后图表顺序
-            endPanel.setNext(panel.getId());
-            panelDao.updateById(endPanel);
-        }
+        panelDao.insert(panel);
 
 
         Chart target = new Chart();

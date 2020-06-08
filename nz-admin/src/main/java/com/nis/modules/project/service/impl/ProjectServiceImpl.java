@@ -129,21 +129,10 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		panel.setCreateBy(ShiroUtils.getUserId().intValue());
 		// 固定格式 panel name format is project_panel_link
 		panel.setName("project_panel_" + project.getId());
-		panel.setNext(-1);
-		List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
-		if (CollectionUtils.isEmpty(panels)) {
-			panel.setPrev(0);
-			panelDao.insert(panel);
-		} else {
-			// 已存在chart 再次新增时自动排到末尾
-			Panel endPanel = panels.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
-			panel.setPrev(endPanel.getId());
-			panelDao.insert(panel);
 
-			// 更新原来最后图表顺序
-			endPanel.setNext(panel.getId());
-			panelDao.updateById(endPanel);
-		}
+		panel.setPrev(0);
+		panel.setNext(-1);
+		panelDao.insert(panel);
 
         // 配置信息获取
         SysConfigEntity projectConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_PROJECT_CHART_TPL));
@@ -182,7 +171,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		if(ObjectUtils.isNotEmpty(project)) {
 			
 			// project高中低alert message数据
-			List<Map<String, Object>> maps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("project_id", id).groupBy("severity").select("severity","count(*) as count"));
+			List<Map<String, Object>> maps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("project_id", id).eq("state",1).groupBy("severity").select("severity","count(*) as count"));
 			Map projectAlertMessageInfos =new HashMap();
 			List<Integer> alertStat = project.getAlertStat();
 			Map handleMap=new HashMap();
@@ -203,7 +192,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		    
 		    for(Module module : modules) {
 		    	//module高中低alert message数据
-		    	List<Map<String, Object>> moduleMaps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("module_id", module.getId()).groupBy("severity").select("severity","count(*) as count"));
+		    	List<Map<String, Object>> moduleMaps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("module_id", module.getId()).eq("state",1).groupBy("severity").select("severity","count(*) as count"));
 		    	Map moduleAlertMessageInfos = new HashMap();
 		    	for(Map<String,Object> moduleMap : moduleMaps) {
 		    		moduleAlertMessageInfos.put(moduleMap.get("severity"),((Long)moduleMap.get("count")).intValue());

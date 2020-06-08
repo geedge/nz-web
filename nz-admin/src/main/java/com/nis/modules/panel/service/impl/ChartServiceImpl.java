@@ -810,22 +810,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         panel.setBuildIn(modelPanel.getBuildIn());
         // 固定格式 panel name format is asset_panel_link
         panel.setName("asset_panel_" + asset.getId());
+        panel.setPrev(0);
         panel.setNext(-1);
-        // 保存
-        List<Panel> list = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
-        if (CollectionUtils.isEmpty(list)) {
-            panel.setPrev(0);
-            panelService.save(panel);
-        } else {
-            // 已存在chart 再次新增时自动排到末尾
-            Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
-            panel.setPrev(endPanel.getId());
-            panelService.save(panel);
-
-            // 更新原来最后图表顺序
-            endPanel.setNext(panel.getId());
-            panelService.updateById(endPanel);
-        }
+        panelService.save(panel);
 
         // 复制一份charts
         this.copyChartsToAssetChartsByPanel(modelPanel, panel, asset);
