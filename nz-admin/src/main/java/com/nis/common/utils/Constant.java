@@ -532,6 +532,9 @@ public class Constant {
     // 新增model 添加chart配置
     public static final String SYSCONFIG_KEY_MODEL_CHART_TPL = "model_chart_tpl";
 
+    // 新增project 添加chart配置
+    public static final String SYSCONFIG_KEY_PROJECT_CHART_TPL = "project_chart_tpl";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 

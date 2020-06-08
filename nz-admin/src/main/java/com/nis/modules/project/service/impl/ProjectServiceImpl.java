@@ -1,5 +1,6 @@
 package com.nis.modules.project.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -15,14 +16,19 @@ import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.panel.dao.PanelDao;
+import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
+import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +55,12 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 	
 	@Autowired
 	private EndpointService endpointService;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private ChartService chartService;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -132,6 +144,23 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 			endPanel.setNext(panel.getId());
 			panelDao.updateById(endPanel);
 		}
+
+        // 配置信息获取
+        SysConfigEntity projectConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_PROJECT_CHART_TPL));
+        if (ToolUtil.isEmpty(projectConfig)) {
+            log.error(String.format("获取project配置信息失败%s", Constant.SYSCONFIG_KEY_PROJECT_CHART_TPL));
+            throw new NZException(RCode.SYS_CONFIG_PROJECTCHARTTPL_NOTFOUND);
+        }
+        // chart config
+        Chart chartConfig = JSONObject.parseObject(projectConfig.getParamValue(), Chart.class);
+
+        Chart target = new Chart();
+        BeanUtils.copyProperties(chartConfig, target);
+        target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? project.getId() + " Chart" : target.getTitle());
+        target.setPanelId(panel.getId());
+        target.setCreateAt(new Date());
+        target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
+        chartService.saveChart(target);
 	}
 
 	public boolean validateProjectName(Integer id, String name) {
