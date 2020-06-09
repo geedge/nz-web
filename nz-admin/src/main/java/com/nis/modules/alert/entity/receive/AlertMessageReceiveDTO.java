@@ -1,6 +1,7 @@
 package com.nis.modules.alert.entity.receive;
 
 import com.google.gson.Gson;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import lombok.Data;
@@ -58,6 +59,10 @@ public class AlertMessageReceiveDTO implements Serializable {
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date sa = sdf.parse(dto.getStartsAt());
+
+        // 时区转换 按照数据库配置时区入库
+        sa = DateUtil.getUTCTimeByConfigTimeZone(sa);
+
         entity.setStartAt(sa);
 
         entity.setState(1);

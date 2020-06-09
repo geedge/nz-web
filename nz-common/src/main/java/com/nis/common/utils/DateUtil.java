@@ -28,6 +28,10 @@ import java.util.*;
 
 public class DateUtil {
 
+	/**
+	 * 配置时区 默认为0
+	 */
+    public static int configTimeZone = 0;
 
 	private static final Object lock = new Object();
 
@@ -427,4 +431,63 @@ public class DateUtil {
             throw new NZException(RCode.DateFormatWrong);
         }
     }
+
+	/**
+	 * 获取配置时区
+	 *
+	 * @return
+	 */
+	public static TimeZone getConfigTimeZone() {
+		if (configTimeZone > 12 || configTimeZone < -12) {
+			configTimeZone = 0;
+		}
+
+		int newTime = configTimeZone * 60 * 60 * 1000;
+		TimeZone timeZone;
+		String[] ids = TimeZone.getAvailableIDs(newTime);
+		if (ids.length == 0) {
+			timeZone = TimeZone.getDefault();
+		} else {
+			timeZone = new SimpleTimeZone(newTime, ids[0]);
+		}
+		return timeZone;
+	}
+
+	/**
+	 * 根据sysConfig表中配置的时区获取当前UTC时间
+	 *
+	 * @return
+	 */
+	public static Date getUTCTimeByConfigTimeZone() {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		sdf.setTimeZone(DateUtil.getConfigTimeZone());
+		String format = sdf.format(new Date());
+		Date parse = null;
+		try {
+			sdf.setTimeZone(TimeZone.getDefault());
+			parse = sdf.parse(format);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return parse;
+	}
+
+	/**
+	 * 将传过来的时间按照配置时区解析并返回
+	 *
+	 * @param date
+	 * @return
+	 */
+	public static Date getUTCTimeByConfigTimeZone(Date date) {
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		sdf.setTimeZone(DateUtil.getConfigTimeZone());
+		String format = sdf.format(date);
+		try {
+			sdf.setTimeZone(TimeZone.getDefault());
+			date = sdf.parse(format);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return date;
+	}
 }

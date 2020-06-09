@@ -312,7 +312,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         // 暂时以model name作为chart title
         target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? model.getName() + " Chart" : target.getTitle());
         target.setPanelId(panel.getId());
-        target.setCreateAt(new Date());
+        target.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
         target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
         chartService.saveChart(target);
     }

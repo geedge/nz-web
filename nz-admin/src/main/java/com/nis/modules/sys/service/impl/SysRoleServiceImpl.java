@@ -8,27 +8,20 @@
 
 package com.nis.modules.sys.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.annotation.DataFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.service.*;
-
-import com.nis.common.utils.PageUtils;
-
-import org.apache.commons.lang.StringUtils;
+import com.nis.modules.sys.service.SysRoleMenuService;
+import com.nis.modules.sys.service.SysRoleService;
+import com.nis.modules.sys.service.SysUserRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Map;
 
 
@@ -69,7 +62,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void saveRole(SysRoleEntity role) {
-		role.setCreateTime(new Date());
+		role.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 		this.save(role);
 
 		//保存角色与菜单关系

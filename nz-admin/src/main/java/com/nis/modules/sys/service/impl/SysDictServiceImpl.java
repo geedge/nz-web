@@ -14,10 +14,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -27,7 +24,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 @Service("sysDictService")
@@ -80,7 +80,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		wrapper.eq("del_flag", Constant.DELFLAG_FALSE);
 		wrapper.set("del_flag", Constant.DELFLAG_TRUE);
 		wrapper.set("operator", ShiroUtils.getUserId());
-		wrapper.set("op_time", new Date());
+		wrapper.set("op_time", DateUtil.getUTCTimeByConfigTimeZone());
 		return update(wrapper);
 	}
 	
@@ -206,7 +206,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		}
 		Long userId = ShiroUtils.getUserId();
 		dict.setOperator(userId);
-		dict.setOpTime(new Date());
+		dict.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
 		this.save(dict);
 	}
 }

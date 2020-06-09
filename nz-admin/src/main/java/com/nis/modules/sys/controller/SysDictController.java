@@ -10,28 +10,17 @@ package com.nis.modules.sys.controller;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.validator.ValidatorUtils;
-
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysDictService;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.nis.modules.sys.entity.SysDictEntity;
-import com.nis.modules.sys.service.SysDictService;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -117,7 +106,7 @@ public class SysDictController extends AbstractController {
             dict.setName(dict.getValue());
         }
         dict.setOperator(getUserId());
-        dict.setOpTime(new Date());
+        dict.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
         
         sysDictService.update(dict);
 

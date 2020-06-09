@@ -1,6 +1,7 @@
 package com.nis.modules.asset.job;
 
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.RuntimeUtil;
 import com.nis.common.utils.StringUtils;
 import com.nis.modules.asset.dao.AssetPingDao;
@@ -134,7 +135,7 @@ public class AssetPingJob extends QuartzJobBean {
                             unCallAssetPings.add(new AssetPing(host, 0, null, null));
                         } else {
                             // 可达
-                            callAssetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), new Date()));
+                            callAssetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), DateUtil.getUTCTimeByConfigTimeZone()));
                         }
                     }
 

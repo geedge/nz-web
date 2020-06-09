@@ -8,6 +8,7 @@ import com.nis.modules.metric.dto.MetricsDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,7 @@ import java.util.Map;
 @Mapper
 public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
-    void updateBatch(@Param("hashKeys") List<String> updateCacheKeys);
+    void updateBatch(@Param("hashKeys") List<String> updateCacheKeys, @Param("nowDate") Date utcTimeByConfigTimeZone);
     List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 
     List<MetricsDto> selectAlertMessageStatisticsInfo();

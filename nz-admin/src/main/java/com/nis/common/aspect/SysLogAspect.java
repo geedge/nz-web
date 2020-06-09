@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.HttpContextUtils;
-import com.nis.common.utils.IPUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
@@ -28,7 +25,6 @@ import org.springframework.stereotype.Component;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +124,7 @@ public class SysLogAspect {
             sysLog.setUserId(userId.intValue());
         }
 
-		sysLog.setCreateDate(new Date());
+		sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
 		sysLog.setState("fail");
 		sysLogService.save(sysLog);
 
@@ -208,7 +204,7 @@ public class SysLogAspect {
 		sysLog.setIp(IPUtils.getIpAddr(request));
 
 		sysLog.setTime(time);
-		sysLog.setCreateDate(new Date());
+		sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
 		//保存系统日志
 		// 查询操作若无异常不记录操作日志
 		if(!"query".equals(syslog.operation().getValue())){

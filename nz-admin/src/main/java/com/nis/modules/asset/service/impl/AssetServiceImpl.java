@@ -304,7 +304,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             asset.setState(1);
         }
 
-        Date now = new Date();
+        Date now = DateUtil.getUTCTimeByConfigTimeZone();
         Long userId = ShiroUtils.getUserId();
         if (asset.getId() == null) {
             asset.setCreateAt(now);
@@ -904,7 +904,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 // 前面没有报错
                 if (saveFlag) {
                     asset.setSeq(seqUUID);
-                    asset.setCreateAt(new Date());
+                    asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
                     asset.setCreateBy(userId);
                     asset.setUpdateBy(userId);
 

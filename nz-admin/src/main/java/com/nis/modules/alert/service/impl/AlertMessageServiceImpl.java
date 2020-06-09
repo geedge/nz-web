@@ -6,9 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
@@ -415,8 +413,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Override
 	public void updateAlertStateByIds(Map<String, Object> params) {
 		// 当前时间
+		Date date = DateUtil.getUTCTimeByConfigTimeZone();
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		String formatDate = df.format(new Date());
+		String formatDate = df.format(date);
 		// 当前用户
 		SysUserEntity user = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
 

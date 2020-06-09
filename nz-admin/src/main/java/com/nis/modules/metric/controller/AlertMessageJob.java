@@ -2,6 +2,7 @@ package com.nis.modules.metric.controller;
 
 import com.google.gson.Gson;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -95,7 +96,7 @@ public class AlertMessageJob extends QuartzJobBean {
                 currentTimeMillis = System.currentTimeMillis();
 
                 // 当前时间 - 结束时间 大于等于 持续时间 证明已经失效
-                if (currentTimeMillis > cacheEndTime && (currentTimeMillis - cacheEndTime) / 1000 - last - alertInterval > 0) {
+                if ((currentTimeMillis - cacheEndTime) / 1000 - last - alertInterval > 0) {
                     updateCacheKeys.add(hashKey);
                 }
             } else {
@@ -105,7 +106,7 @@ public class AlertMessageJob extends QuartzJobBean {
 
         // 3. 处理变化  1. 修改数据库alert_message 中的state 2. 更新缓存
         if (CollectionUtils.isNotEmpty(updateCacheKeys)) {
-            alertMessageDao.updateBatch(updateCacheKeys);
+            alertMessageDao.updateBatch(updateCacheKeys, DateUtil.getUTCTimeByConfigTimeZone());
 
             String[] delKeys = new String[updateCacheKeys.size()];
             updateCacheKeys.toArray(delKeys);

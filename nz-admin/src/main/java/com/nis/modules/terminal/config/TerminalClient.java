@@ -21,38 +21,29 @@
 
 package com.nis.modules.terminal.config;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.google.common.primitives.Bytes;
 import com.jcraft.jsch.*;
 import com.mchange.lang.ByteUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.DigestUtils;
-import com.nis.common.utils.IOUtils;
-import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.*;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.service.TerminalLogService;
-
-import static com.nis.common.utils.CommonUtils.notEmpty;
-
 import org.apache.commons.net.telnet.TelnetClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
+import static com.nis.common.utils.CommonUtils.notEmpty;
 
 public class TerminalClient {
     private final Logger logger = LoggerFactory.getLogger(TerminalClient.class);
@@ -273,7 +264,7 @@ public class TerminalClient {
                             	if(message.contains("Last login")) {
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(1);
-                            		terminalLog.setTime(new Date());
+                            		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                             		terminalLog.setUser(terminal.getUser());
                             		terminalLogService.save(terminalLog);
                             		telnetConnect=false;
@@ -297,7 +288,7 @@ public class TerminalClient {
                             		// 连接超时
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(0);
-                            		terminalLog.setTime(new Date());
+                            		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                             		terminalLog.setUser(terminal.getUser());
                             		terminalLogService.save(terminalLog);
                             		TerminalSession.remove(webSocketSession);
@@ -311,7 +302,7 @@ public class TerminalClient {
                             			// 连接错误达到限制 关闭连接 连接失败
                             			terminalLog.setCmd("Login");
                                 		terminalLog.setStatus(0);
-                                		terminalLog.setTime(new Date());
+                                		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                                 		terminalLog.setUser(terminal.getUser());
                                 		terminalLogService.save(terminalLog);
                             			TerminalSession.remove(webSocketSession);
@@ -408,7 +399,7 @@ public class TerminalClient {
     				if(StringUtils.isNotEmpty(cmd)) {
     					terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
                 		terminalLog.setStatus(1);
-                		terminalLog.setTime(new Date());
+                		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 		terminalLog.setUser(terminal.getUser());
                 		terminalLogService.save(terminalLog);
                 		TerminalSession.removeTerminalMessage(clientId);

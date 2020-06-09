@@ -12,13 +12,13 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.R;
 import com.nis.modules.sys.dao.SysMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysMenuEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
-
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authc.*;
@@ -36,19 +36,13 @@ import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.filter.AndFilter;
 import org.springframework.ldap.filter.EqualsFilter;
-import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.stereotype.Component;
 
+import javax.naming.NamingException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
-
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
 
 /**
  * 认证
@@ -116,7 +110,7 @@ public class UserRealm extends AuthorizingRealm {
 				
 				// 验证成功 将当前用户信息存入数据库 同时登录成功
 				SysUserEntity userInfo =new SysUserEntity();
-				userInfo.setCreateTime(new Date());
+				userInfo.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 				userInfo.setUsername(token.getUsername());
 				//sha256加密
 				/*String salt = RandomStringUtils.randomAlphanumeric(20);

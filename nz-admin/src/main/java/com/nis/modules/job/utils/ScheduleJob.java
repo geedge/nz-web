@@ -8,8 +8,11 @@
 
 package com.nis.modules.job.utils;
 
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.SpringContextUtils;
-
+import com.nis.modules.job.entity.ScheduleJobEntity;
+import com.nis.modules.job.entity.ScheduleJobLogEntity;
+import com.nis.modules.job.service.ScheduleJobLogService;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -17,12 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.nis.modules.job.entity.ScheduleJobEntity;
-import com.nis.modules.job.entity.ScheduleJobLogEntity;
-import com.nis.modules.job.service.ScheduleJobLogService;
-
 import java.lang.reflect.Method;
-import java.util.Date;
 
 
 /**
@@ -46,7 +44,7 @@ public class ScheduleJob extends QuartzJobBean {
         log.setJobId(scheduleJob.getJobId());
         log.setBeanName(scheduleJob.getBeanName());
         log.setParams(scheduleJob.getParams());
-        log.setCreateTime(new Date());
+        log.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
         
         //任务开始时间
         long startTime = System.currentTimeMillis();

@@ -1,38 +1,25 @@
 package com.nis.modules.sys.controller;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
+import com.nis.common.config.I18nConfig;
 import com.nis.common.exception.NZException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysI18nEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysI18nService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
-import com.nis.common.config.I18nConfig;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -86,7 +73,7 @@ public class SysI18nController {
 			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		sysI18n.setOperator(ShiroUtils.getUserId());
-    		sysI18n.setOpTime(new Date());
+    		sysI18n.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
     		sysI18nService.save(sysI18n);
     		//刷新缓存
     		i18nConfig.reload();
@@ -111,7 +98,7 @@ public class SysI18nController {
 			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
-	    	sysI18n.setOpTime(new Date());
+	    	sysI18n.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
 			sysI18nService.updateById(sysI18n);
 			//刷新缓存
 			i18nConfig.reload();

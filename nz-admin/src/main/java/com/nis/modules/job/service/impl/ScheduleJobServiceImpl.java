@@ -12,14 +12,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.modules.job.dao.ScheduleJobDao;
 import com.nis.modules.job.entity.ScheduleJobEntity;
 import com.nis.modules.job.service.ScheduleJobService;
 import com.nis.modules.job.utils.ScheduleUtils;
-
-import com.nis.common.utils.PageUtils;
-
 import org.apache.commons.lang.StringUtils;
 import org.quartz.CronTrigger;
 import org.quartz.Scheduler;
@@ -27,8 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service("scheduleJobService")
 public class ScheduleJobServiceImpl extends ServiceImpl<ScheduleJobDao, ScheduleJobEntity> implements ScheduleJobService {
@@ -68,7 +69,7 @@ public class ScheduleJobServiceImpl extends ServiceImpl<ScheduleJobDao, Schedule
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void saveJob(ScheduleJobEntity scheduleJob) {
-		scheduleJob.setCreateTime(new Date());
+		scheduleJob.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 		scheduleJob.setStatus(Constant.ScheduleStatus.NORMAL.getValue());
         this.save(scheduleJob);
         

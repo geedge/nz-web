@@ -147,7 +147,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
         BeanUtils.copyProperties(chartConfig, target);
         target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? project.getId() + " Chart" : target.getTitle());
         target.setPanelId(panel.getId());
-        target.setCreateAt(new Date());
+        target.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
         target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
         chartService.saveChart(target);
 	}

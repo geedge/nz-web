@@ -133,7 +133,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public void saveChart(Chart chart) {
 
         // 保存chart信息
-        chart.setCreateAt(new Date());
+        chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
         chart.setNext(-1);
 
         // 判断当前panel下是否存在chart
@@ -884,7 +884,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Map<Integer, List<ChartElement>> chartIdAndElementsMap = chartElements.stream().collect(Collectors.groupingBy(ChartElement::getChartId));
 
 
-        Date now = new Date();
+        Date now = DateUtil.getUTCTimeByConfigTimeZone();
         Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
         List<ChartElement> elementList;
 

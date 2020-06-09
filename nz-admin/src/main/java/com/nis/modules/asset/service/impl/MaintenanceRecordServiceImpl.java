@@ -3,6 +3,7 @@ package com.nis.modules.asset.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -57,7 +58,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
             throw new NZException(RCode.ASSET_NOT_EXIST);
         }
 
-        Date now = new Date();
+        Date now = DateUtil.getUTCTimeByConfigTimeZone();
         Long userId = ShiroUtils.getUserId();
 
         // 2. 添加的时候维护创建人

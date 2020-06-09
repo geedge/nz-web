@@ -22,26 +22,13 @@
 package com.nis.modules.terminal.config;
 
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
-
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -52,14 +39,21 @@ import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.service.AccountService;
 import com.nis.modules.terminal.service.TerminalLogService;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
@@ -174,7 +168,7 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalLog.setCmd("Login");
                 terminalLog.setUser(terminal.getUser());
                 terminalLog.setStatus(1);
-                terminalLog.setTime(new Date());
+                terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
                 terminalClient.openTerminal(cols, rows, width, height);
                 terminalLogService.save(terminalLog);
@@ -189,7 +183,7 @@ public class TerminalHandler extends TextWebSocketHandler {
                     session.sendMessage(new TextMessage("Sorry! Operation error, please try again. \r\n"));
                 }
             	terminalLog.setStatus(0);
-                terminalLog.setTime(new Date());
+                terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 terminalLog.setUser(StringUtils.isNotBlank(terminal.getUser())?terminal.getUser():"");
                 terminalLogService.save(terminalLog);
                 terminalClient.disconnect();
@@ -475,7 +469,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         	terminalLog.setUuid(uuid);
         	terminalLog.setUserId((Long)TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
         	terminalLog.setStatus(0);
-        	terminalLog.setTime(new Date());
+        	terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
         	terminalLog.setCmd("Terminal due to abnormal disconnection");
         	terminalLogService.save(terminalLog);
         	TerminalSession.removeTerminalAttributeInfo(uuid);
@@ -567,12 +561,12 @@ public class TerminalHandler extends TextWebSocketHandler {
 				int height = toInt(session.getAttributes().get("height").toString());
 				terminalClient.openTerminal(cols, rows, width, height);
 				terminalLog.setStatus(1);
-				terminalLog.setTime(new Date());
+				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 				TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 			} catch (Exception e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 				terminalLog.setStatus(0);
-				terminalLog.setTime(new Date());
+				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 				sshLogin=false;
 				TerminalSession.remove(session);
 				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"ip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
@@ -784,7 +778,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 		} catch (Exception e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
 			terminalLog.setStatus(0);
-			terminalLog.setTime(new Date());
+			terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 			terminalLogService.save(terminalLog);
 			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"telip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"telport")+"): Connection failed."+"\r\n$: "));
 			TerminalSession.remove(session);

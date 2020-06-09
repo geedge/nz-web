@@ -106,7 +106,7 @@
 	</select>
 
 	<update id="updateBatch">
-		 UPDATE alert_message am SET am.state = 2, am.end_at = NOW()
+		 UPDATE alert_message am SET am.state = 2, am.end_at = #{nowDate}
 		 WHERE am.hash_key IN
 		<foreach collection="hashKeys" item="hashKey" index="no" open="(" separator="," close=")">
 			#{hashKey}

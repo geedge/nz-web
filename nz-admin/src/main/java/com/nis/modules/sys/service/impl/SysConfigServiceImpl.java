@@ -431,6 +431,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         }
 
         this.saveOrUpdateBatch(configs);
+
+        // 更新配置市区值
+        SysConfigEntity timezone = configs.stream().filter(config -> config.getParamKey().equals("timezone") ? true : false).findAny().orElse(null);
+        if (timezone != null && !timezone.getParamValue().equals(DateUtil.configTimeZone + "")) {
+            DateUtil.configTimeZone = Integer.valueOf(timezone.getParamValue());
+        }
     }
 
 
@@ -458,9 +464,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(assetPingSwitch);
 
         // 校验数值类型参数是否正确
-        if (ToolUtil.isNotEmpty(assetPingInterval) && CommonUtils.toInt(assetPingInterval) == null) {
+        /*if (ToolUtil.isNotEmpty(assetPingInterval) && CommonUtils.toInt(assetPingInterval) == null) {
             throw new NZException(RCode.SYS_CONFIG_ASSETPINGINTERVAL_INVALIDE);
-        }
+        }*/
 
         if (CommonUtils.toInt(scrapeInterval) == null) {
             throw new NZException(RCode.SYS_CONFIG_SCRAPEINTERVAL_INVALIDE);

@@ -1,10 +1,13 @@
 package com.nis.modules.promserver.job;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.alibaba.fastjson.JSON;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.utils.HttpClientUtils;
+import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
@@ -12,16 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.RCode;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.utils.HttpClientUtils;
-import com.nis.modules.sys.service.SysConfigService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class PromserverJob extends QuartzJobBean {
@@ -60,11 +56,11 @@ public class PromserverJob extends QuartzJobBean {
 				logger.info("confagent healthy response :{}",JSON.toJSON(confagentResult));
 				if(result!=null&&result.equals(200)&&confagentResult!=null&&confagentResult.equals(200)) {
 					promserver.setStatus(1);
-					promserver.setCheckTime(new Date());
+					promserver.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
 				}else if(result!=null&&result.equals(200)){
 					//confagent 不可用但是promserver可用
 					promserver.setStatus(-1);
-					promserver.setCheckTime(new Date());
+					promserver.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
 				}else if(confagentResult!=null&&confagentResult.equals(200)) {
 					//promserver不可用 但是confagent可用
 					promserver.setStatus(0);
