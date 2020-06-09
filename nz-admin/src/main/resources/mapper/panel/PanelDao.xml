@@ -17,11 +17,14 @@
         </association>
     </resultMap>
     
-    <select id="queryList" resultType="com.nis.modules.panel.entity.Panel">
+    <select id="queryList" resultMap="panelResult">
         SELECT
-        pan.*
+        pan.*,
+        su.user_id AS su_userId,
+        su.username AS su_username
         FROM
         panel pan
+        LEFT JOIN sys_user su ON pan.create_by = su.user_id
         <where>
             <if test="params.id != null and params.id != ''">
                 pan.id = #{params.id}

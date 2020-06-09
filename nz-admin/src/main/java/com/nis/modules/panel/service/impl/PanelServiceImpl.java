@@ -39,24 +39,29 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             type = "dashboard";
             params.put("type", type);
         }
-
-        List<Panel> panels = this.baseMapper.queryList(params);
-        if (CollectionUtils.isEmpty(panels)) {
-            return panels;
-        }
-        List<Integer> ids = panels.stream().map(Panel::getId).collect(Collectors.toList());
-
-        // 该type下所有的panel
-        List<Panel> panelList = this.baseMapper.queryListByType(type);
-        // 排序
-        panelList = this.getSequentialPanelList(panelList);
-
-        Iterator<Panel> iterator = panelList.iterator();
-        while (iterator.hasNext()) {
-            Panel next = iterator.next();
-            if (!ids.contains(next.getId())) {
-                iterator.remove();
+        List<Panel> panelList = new ArrayList<>();
+        if ("dashboard".equals(type)) {
+            List<Panel> panels = this.baseMapper.queryList(params);
+            if (CollectionUtils.isEmpty(panels)) {
+                return panels;
             }
+            List<Integer> ids = panels.stream().map(Panel::getId).collect(Collectors.toList());
+
+            // 该type下所有的panel
+            panelList = this.baseMapper.queryListByType(type);
+            // 排序
+            panelList = this.getSequentialPanelList(panelList);
+
+            Iterator<Panel> iterator = panelList.iterator();
+            while (iterator.hasNext()) {
+                Panel next = iterator.next();
+                if (!ids.contains(next.getId())) {
+                    iterator.remove();
+                }
+            }
+        } else {
+            // 其他类型不进行排序
+            panelList = this.baseMapper.queryList(params);
         }
         return panelList;
     }
@@ -72,13 +77,11 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         List<Integer> idList = Arrays.asList(ids);
         this.validateBuildInPanels(idList);
 
-        // 所有 panel
-        List<Panel> panelList = this.list();
-        Map<String, List<Panel>> panelsGroupByType = panelList.stream().collect(Collectors.groupingBy(Panel::getType));
+        // dashboard panel
+        List<Panel> panelList = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "dashboard"));
 
-        List<Panel> deletePanel = this.list(new QueryWrapper<Panel>().lambda().in(Panel::getId, idList));
-        Map<String, List<Panel>> deletePanelsGroupByTypes = deletePanel.stream().collect(Collectors.groupingBy(Panel::getType));
-
+        List<Panel> deletePanel = panelList.stream().filter(panel -> idList.contains(panel.getId()) ? true : false).collect(Collectors.toList());
+        List<Integer> delIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
 
         // 删除panel
         this.removeByIds(idList);
@@ -86,12 +89,8 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         // 删除关联chart信息
         chartService.delChartsByPanelId(ids);
 
-        // 处理删除之后的位置 因为每个id可能type不一致 所以要依次删除并处理顺序
-        List<Integer> delIdsByType = new ArrayList<>();
-        for (Map.Entry<String, List<Panel>> entry : panelsGroupByType.entrySet()) {
-            delIdsByType = deletePanelsGroupByTypes.get(entry.getKey()).stream().map(Panel::getId).collect(Collectors.toList());
-            this.handlePositionAfterDelete(this.getSequentialPanelList(entry.getValue()), delIdsByType);
-        }
+        // 由于其他类型panel取消排序 所以只处理dashboard类型panel顺序
+        this.handlePositionAfterDelete(panelList, delIds);
     }
 
     private void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds) {
