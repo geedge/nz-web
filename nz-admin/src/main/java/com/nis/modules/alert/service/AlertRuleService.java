@@ -27,5 +27,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	void saveOrUpdateAlertRule(AlertRuleEntity alertRule);
 
 	void delete(Integer[] ids);
+
+	Map getAlertStatById(Integer id);
 }
 

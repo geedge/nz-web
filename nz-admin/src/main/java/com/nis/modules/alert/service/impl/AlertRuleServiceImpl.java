@@ -9,7 +9,14 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleStat;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.module.dao.ModuleDao;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.project.dao.ProjectDao;
+import com.nis.modules.project.entity.Project;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +38,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private YamlUtil yamlUtil;
+
+    @Autowired
+    private ProjectDao projectDao;
+
+    @Autowired
+    private ModuleDao moduleDao;
+
+    @Autowired
+    private AssetDao assetDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -165,6 +181,50 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.validateBulitinRule(Arrays.asList(ids));
         // 删除
         this.removeByIds(Arrays.asList(ids));
+    }
+
+    @Override
+    public Map getAlertStatById(Integer id) {
+        Map resultData = new HashMap();
+
+        // 1. project 统计
+        List<Project> projects = projectDao.selectList(null);
+        Map<Integer, String> projectIdAndNameMap = projects.stream().collect(Collectors.toMap(Project::getId, Project::getName));
+
+        List<AlertRuleStat> ruleStatGooupByProject = alertRuleDao.getRuleStatGooupByProject(id);
+        this.handleRuleStatName(ruleStatGooupByProject, projectIdAndNameMap);
+
+        resultData.put("project", ruleStatGooupByProject);
+
+        // 2. module 统计
+        List<Module> modules = moduleDao.selectList(null);
+        Map<Integer, String> moduleIdAndNameMap = modules.stream().collect(Collectors.toMap(Module::getId, Module::getName));
+
+        List<AlertRuleStat> ruleStatGooupByModule = alertRuleDao.getRuleStatGooupByModule(id);
+        this.handleRuleStatName(ruleStatGooupByModule, moduleIdAndNameMap);
+
+        resultData.put("module", ruleStatGooupByModule);
+
+        // 3. asset 统计
+        List<Asset> assets = assetDao.selectList(null);
+        Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+
+        List<AlertRuleStat> ruleStatGooupByAsset = alertRuleDao.getRuleStatGooupByAsset(id);
+        this.handleRuleStatName(ruleStatGooupByAsset, assetIdAndHostMap);
+
+        resultData.put("asset", ruleStatGooupByAsset);
+
+        // 4. endpoint 统计
+        List<AlertRuleStat> ruleStatGooupByEndpoint = alertRuleDao.getRuleStatGooupByEndpoint(id);
+        resultData.put("endpoint", ruleStatGooupByEndpoint);
+
+        return resultData;
+    }
+
+    private void handleRuleStatName(List<AlertRuleStat> ruleStats, Map<Integer, String> pojoIdAndNameMap) {
+        ruleStats.stream().forEach(stat -> {
+            stat.setName(pojoIdAndNameMap.get(stat.getId()));
+        });
     }
 
     private void validateParam(AlertRuleEntity alertRule) {

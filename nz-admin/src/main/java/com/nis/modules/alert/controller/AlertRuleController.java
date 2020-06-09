@@ -64,4 +64,18 @@ public class AlertRuleController {
         alertRuleService.delete(ids);
         return R.ok();
     }
+
+    /**
+     * 告警规则统计
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/stat")
+    public R ruleStat(Integer id){
+        ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
+
+        Map ruleStat = alertRuleService.getAlertStatById(id);
+        return R.ok(ruleStat);
+    }
 }
