@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertRuleStat;
@@ -22,6 +24,7 @@ import com.nis.modules.sys.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,6 +50,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private AssetDao assetDao;
+
+    @Autowired
+    private AlertMessageDao alertMessageDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -175,12 +181,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(Integer[] ids) {
         ValidateUtils.is(ids).notNull(RCode.ALERTMSG_IDS_ISNULL);
         // 校验内置
-        this.validateBulitinRule(Arrays.asList(ids));
+        List<Integer> idList = Arrays.asList(ids);
+        this.validateBulitinRule(idList);
         // 删除
-        this.removeByIds(Arrays.asList(ids));
+        this.removeByIds(idList);
+
+        // 删除关联的告警消息
+        alertMessageDao.delete(new QueryWrapper<AlertMessageEntity>().lambda().in(AlertMessageEntity::getRuleId, idList));
     }
 
     @Override

@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class MetricsDto {
+	private Integer id;
 	private double total;
 	private String severity;
 	private Integer type;

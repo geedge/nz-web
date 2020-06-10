@@ -435,7 +435,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		alertMessageDao.updateAlertStateByIds(idList, params);
 	}
 
-	/**
+    @Override
+    public List<MetricsDto> queryAlertMessageStatisticsInfoByRule() {
+        return alertMessageDao.queryAlertMessageStatisticsInfoByRule();
+    }
+
+    /**
 	 * 填充表格数据
 	 */
 	private static int fill(List<AlertMessageWithExport> list,int rowNum,Sheet sheet){

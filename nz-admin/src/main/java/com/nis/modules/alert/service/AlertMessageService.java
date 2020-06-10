@@ -36,5 +36,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
     void export(HttpServletResponse response, Map<String, Object> params);
 
     void updateAlertStateByIds(Map<String, Object> params);
+
+	List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
 }
 

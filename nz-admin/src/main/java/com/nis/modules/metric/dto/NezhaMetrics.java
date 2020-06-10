@@ -1,5 +1,8 @@
 package com.nis.modules.metric.dto;
 
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
@@ -8,12 +11,14 @@ import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.search.Search;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class NezhaMetrics implements MeterBinder {
@@ -24,6 +29,9 @@ public class NezhaMetrics implements MeterBinder {
     private AssetService assetService;
     @Autowired
     private EndpointService endpointService;
+
+    @Autowired
+    private AlertRuleDao alertRuleDao;
     
     NezhaMetrics() {
         map = new HashMap<>();
@@ -38,7 +46,38 @@ public class NezhaMetrics implements MeterBinder {
         /**
          *   alert_nums指标
          */
-        List<MetricsDto> alertNums = alertMessageService.queryAlertMessageStatisticsInfo();
+        List<MetricsDto> alertNums = alertMessageService.queryAlertMessageStatisticsInfoByRule();
+        Map<Integer, Double> ruleIdAndMessageTotalMap = alertNums.stream().collect(Collectors.toMap(MetricsDto::getId, MetricsDto::getTotal));
+
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_alert_nums");
+            Meter meter = find.meter();
+            if (meter != null) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
+
+        List<AlertRuleEntity> rules = alertRuleDao.selectList(null);
+
+        if (CollectionUtils.isNotEmpty(rules)) {
+            AlertRuleEntity ruleEntity;
+            Double total;
+            for (int i = 0; i < rules.size(); i++) {
+                ruleEntity = rules.get(i);
+                total = ruleIdAndMessageTotalMap.get(ruleEntity.getId());
+                map.put("alertNums" + i, ToolUtil.isEmpty(total) ? 0 : total);
+
+                String key = "alertNums" + i;
+                Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+                        .tags("id", ruleEntity.getId() + "", "name", ruleEntity.getAlertName(), "severity", ruleEntity.getSeverity())
+                        .description("Alert message statistics info")
+                        .register(meterRegistry);
+            }
+        }
+        /*List<MetricsDto> alertNums = alertMessageService.queryAlertMessageStatisticsInfo();
         // 先清空指标 再更新数据防止旧数据存在
         Search find = meterRegistry.find("nz_alert_nums");
         Meter meter = find.meter();
@@ -50,10 +89,11 @@ public class NezhaMetrics implements MeterBinder {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("alertNums"+i, alertNums.get(i).getTotal());
         		String key="alertNums"+i;
-        		/*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+        		*/
+        /*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
                 .tags("type",alertNums.get(i).getType().toString(),"severity",alertNums.get(i).getSeverity(),"name","alert_message")
                 .description("Alert message statistics info")
-                .register(meterRegistry);*/
+                .register(meterRegistry);*//*
                 Gauge.builder("nz_alert_nums", map, x -> x.get(key))
                         .tags("severity",alertNums.get(i).getSeverity(),"name","alert_message")
                         .description("Alert message statistics info")
@@ -62,15 +102,15 @@ public class NezhaMetrics implements MeterBinder {
         }else {
         	map.put("alertNums", 0.0);
     		String key="alertNums";
-    		/*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+    		*//*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
             .tags("type","null","severity","null","name","alert_message")
             .description("Alert message statistics info")
-            .register(meterRegistry);*/
+            .register(meterRegistry);*//*
             Gauge.builder("nz_alert_nums", map, x -> x.get(key))
                     .tags("severity","null","name","alert_message")
                     .description("Alert message statistics info")
                     .register(meterRegistry);
-        }
+        }*/
         /**
          * asset_nums指标
          */

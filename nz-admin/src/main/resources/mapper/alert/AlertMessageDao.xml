@@ -200,6 +200,18 @@
 		LIMIT #{params.pageNo},#{params.pageSize}
 	</select>
 
+	<select id="queryAlertMessageStatisticsInfoByRule" resultType="com.nis.modules.metric.dto.MetricsDto">
+		SELECT
+			count( am.id ) total,
+			rule_id id
+		FROM
+			alert_message am
+		WHERE
+			am.state = 1
+		GROUP BY
+			am.rule_id
+	</select>
+
 
 	<update id="updateAlertStateByIds">
 		update alert_message am set remark = #{params.remark} , state = #{params.state}

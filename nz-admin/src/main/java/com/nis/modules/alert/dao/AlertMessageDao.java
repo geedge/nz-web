@@ -36,4 +36,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     void deleteByProjectIds(@Param("ids")List ids);
 
     void updateAlertStateByIds(@Param("ids")List<String> idList, @Param("params") Map<String, Object> params);
+
+    List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
 }
