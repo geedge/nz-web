@@ -185,4 +185,10 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private Date pingLastUpdate;
+
+    /**
+     * 标签
+     */
+    @TableField(exist = false)
+    private List<AssetTag> tags;
 }

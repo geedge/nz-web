@@ -166,6 +166,7 @@ public enum RCode {
     ASSET_STATE_INVALIDE(313035,"Asset state must be an integer"),       // 资产状态必须为数字类型
     ASSET_IMPORTFILE_TYPE(319036,"Only support import XLS or XLSX file"),// 导入文件格式只能为xls xlsx
     ASSET_IMPORTFILE_FAILED(319037,"Import file resolution failed"),     // 导入文件解析失败
+    ASSET_TAGKEY_ISNULL(311038,"Asset tag name can no be empty"),
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空

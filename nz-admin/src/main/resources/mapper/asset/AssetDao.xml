@@ -89,6 +89,8 @@
             <result property="port" column="port"/>
             <result property="privateKey" column="privateKey"/>
         </collection>
+
+        <collection property="tags" column="id" ofType="com.nis.modules.asset.entity.AssetTag" select="getAssetTags"/>
     </resultMap>
 
     <sql id="asset_info_columns">
@@ -251,6 +253,13 @@
                 </foreach>
             </if>
 
+            <if test="params.innerTagRelationAssetIds != null and params.innerTagRelationAssetIds.size > 0">
+                AND ass.id IN
+                <foreach collection="params.innerTagRelationAssetIds" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
         </where>
     </select>
 
@@ -283,6 +292,15 @@
             acc.relogin_password_tip AS reloginPasswordTip
          FROM account acc WHERE acc.asset_id = #{id}
     </select>
+
+    <select id="getAssetTags" resultType="com.nis.modules.asset.entity.AssetTag">
+        SELECT
+            id,tag,value
+        FROM
+            asset_tag
+        WHERE
+            asset_id = #{id}
+	 </select>
 
 
     <select id="queryListByHosts" resultType="asset">

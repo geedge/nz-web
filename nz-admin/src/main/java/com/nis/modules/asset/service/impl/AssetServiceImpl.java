@@ -17,10 +17,7 @@ import com.nis.modules.asset.dao.AssetPingDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.*;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.CabinetService;
-import com.nis.modules.asset.service.IdcService;
-import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
@@ -125,6 +122,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private AssetPingDao assetPingDao;
 
+    @Autowired
+    private AssetTagService assetTagService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String[] vendorIds = {};
@@ -175,6 +175,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         } else {
             // 4. 解决参数为空字符串问题
             params.put("idcIds", null);
+        }
+
+        if(ToolUtil.isNotEmpty(params.get("tag"))){
+            String tag = String.valueOf(params.get("tag"));
+            List<AssetTag> list = assetTagService.list(new QueryWrapper<AssetTag>().lambda().like(AssetTag::getTag, tag).or().like(AssetTag::getValue, tag));
+            Set<Integer> ids = list.stream().map(AssetTag::getAssetId).collect(Collectors.toSet());
+            params.put("innerTagRelationAssetIds", ids);
         }
 
         IPage<Asset> page = new Query<Asset>().getPage(params);
@@ -321,6 +328,20 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
             // 新增时需要新增 panel chart
             chartService.saveAssetPanelAndChart(asset);
+
+            // 添加tags
+            List<AssetTag> tags = asset.getTags();
+            if(CollectionUtils.isNotEmpty(tags)){
+                // 校验key
+                for (AssetTag pojo : tags) {
+                    if(StringUtils.isEmpty(pojo.getTag())){
+                        throw new NZException(RCode.ASSET_TAGKEY_ISNULL);
+                    }
+                    pojo.setAssetId(asset.getId());
+                }
+
+                assetTagService.saveBatch(tags);
+            }
         } else {
             Asset oldAsset = this.getById(asset.getId());
             this.updateById(asset);
@@ -332,6 +353,39 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 如果修改了Model
             if (!oldAsset.getModelId().equals(asset.getModelId())) {
                 chartService.updateAssetChartsByNewModel(asset);
+            }
+
+            List<AssetTag> tags = asset.getTags();
+            if (CollectionUtils.isNotEmpty(tags)) {
+                List<AssetTag> list = assetTagService.list(new QueryWrapper<AssetTag>().lambda().eq(AssetTag::getAssetId, asset.getId()));
+                List<Integer> tagIds = list.stream().map(AssetTag::getId).collect(Collectors.toList());
+
+                List<AssetTag> saveList = new ArrayList<>();
+                List<AssetTag> updateList = new ArrayList<>();
+
+                for (AssetTag pojo : tags) {
+                    if (StringUtils.isEmpty(pojo.getTag())) {
+                        throw new NZException(RCode.ASSET_TAGKEY_ISNULL);
+                    }
+
+                    if (!tagIds.contains(pojo.getId())) {
+                        saveList.add(pojo);
+                    } else {
+                        updateList.add(pojo);
+                        tagIds.remove(pojo.getId());
+                    }
+
+                    pojo.setAssetId(asset.getId());
+                }
+                if (CollectionUtils.isNotEmpty(saveList)) {
+                    assetTagService.saveBatch(saveList);
+                }
+                if (CollectionUtils.isNotEmpty(updateList)) {
+                    assetTagService.updateBatchById(updateList);
+                }
+                if (CollectionUtils.isNotEmpty(tagIds)) {
+                    assetTagService.removeByIds(tagIds);
+                }
             }
         }
 
@@ -399,6 +453,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
             chartService.delChartsByPanelId(removePanelIds);
         }
+
+        // 5. 删除关联的tag 信息
+        assetTagService.remove(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getAssetId, idList));
     }
 
     @Override
