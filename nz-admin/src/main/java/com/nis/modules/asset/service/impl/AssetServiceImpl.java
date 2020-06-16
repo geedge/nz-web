@@ -376,12 +376,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     if(CollectionUtils.isNotEmpty(collect1)){
                         accountService.removeByIds(collect1);
                     }
-
-                    accounts.forEach(account -> {
-                        account.setAssetId(asset.getId());
-                        accountService.saveOrUpdateAccount(account);
-                    });
                 }
+
+                accounts.forEach(account -> {
+                    account.setAssetId(asset.getId());
+                    accountService.saveOrUpdateAccount(account);
+                });
             }
 
             // 如果修改了Model
