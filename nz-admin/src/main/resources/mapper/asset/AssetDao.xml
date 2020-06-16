@@ -80,15 +80,7 @@
 
         <!-- 一对多 关联account -->
         <collection property="accounts" column="id" ofType="com.nis.modules.terminal.entity.Account"
-                    select="getAccountsById">
-            <id property="id" column="id"/>
-            <result property="assetId" column="assetId"/>
-            <result property="authType" column="authType"/>
-            <result property="user" column="user"/>
-            <result property="pwd" column="pwd"/>
-            <result property="port" column="port"/>
-            <result property="privateKey" column="privateKey"/>
-        </collection>
+                    select="getAccountsById"/>
 
         <collection property="tags" column="id" ofType="com.nis.modules.asset.entity.AssetTag" select="getAssetTags"/>
     </resultMap>
@@ -279,18 +271,14 @@
     <!--查看 accounts-->
     <select id="getAccountsById" resultType="com.nis.modules.terminal.entity.Account">
         SELECT
-            acc.id AS id,
-            acc.asset_id AS assetId,
-            acc.protocol AS protocol,
-            acc.auth_type AS authType,
-            acc.user AS user,
-            acc.pwd AS pwd,
-            acc.port AS port,
-            acc.private_key AS privateKey,
-            acc.user_tip AS userTip,
-            acc.password_tip AS passwordTip,
-            acc.relogin_password_tip AS reloginPasswordTip
-         FROM account acc WHERE acc.asset_id = #{id}
+            acc.id,
+            acc.protocol,
+            acc.PORT,
+            acc.params
+        FROM
+            account acc
+        WHERE
+            acc.asset_id = #{id}
     </select>
 
     <select id="getAssetTags" resultType="com.nis.modules.asset.entity.AssetTag">

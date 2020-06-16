@@ -33,6 +33,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.terminal.config.Constants;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
@@ -189,6 +190,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Asset> assetEntities = assetDao.queryList(page, params);
         String ipmi = null;
         Integer cabinetEnd;
+        List<Account> accounts;
         for (Asset asset : assetEntities) {
             ipmi = (String) asset.getIpmi();
             if (StringUtils.isNotEmpty(ipmi)) {
@@ -197,6 +199,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             cabinetEnd = asset.getCabinetEnd();
             if (ToolUtil.isNotEmpty(cabinetEnd)) {
                 asset.setCabinetEnd(cabinetEnd - 1);
+            }
+            accounts = asset.getAccounts();
+            if(CollectionUtils.isNotEmpty(accounts)){
+                accounts.forEach(pojo -> {
+                    if(StringUtils.isNotEmpty((String) pojo.getParams())){
+                        pojo.setParams(JSONObject.parseObject((String) pojo.getParams(), Map.class));
+                    }
+                });
             }
         }
         page.setRecords(assetEntities);
@@ -342,12 +352,36 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
                 assetTagService.saveBatch(tags);
             }
+
+            List<Account> accounts = asset.getAccounts();
+            if (CollectionUtils.isNotEmpty(accounts)) {
+                accounts.forEach(account -> {
+                    account.setAssetId(asset.getId());
+                    accountService.saveOrUpdateAccount(account);
+                });
+            }
         } else {
             Asset oldAsset = this.getById(asset.getId());
             this.updateById(asset);
             // 修改的时候如果没有指定 account, 则视为删除asset关联account
-            if (CollectionUtils.isEmpty(asset.getAccounts())) {
+            List<Account> accounts = asset.getAccounts();
+            if (CollectionUtils.isEmpty(accounts)) {
                 accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, asset.getId()));
+            } else {
+                List<Account> list = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, asset.getId()));
+                if(CollectionUtils.isNotEmpty(list)){
+                    List<Integer> collect = accounts.stream().filter(account -> ToolUtil.isNotEmpty(account.getId()) ? true : false).map(Account::getId).collect(Collectors.toList());
+                    List<Integer> collect1 = list.stream().map(Account::getId).collect(Collectors.toList());
+                    collect1.removeAll(collect);
+                    if(CollectionUtils.isNotEmpty(collect1)){
+                        accountService.removeByIds(collect1);
+                    }
+
+                    accounts.forEach(account -> {
+                        account.setAssetId(asset.getId());
+                        accountService.saveOrUpdateAccount(account);
+                    });
+                }
             }
 
             // 如果修改了Model
@@ -389,15 +423,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
-        // 保存 accounts
-        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            for (int i = 0; i < asset.getAccounts().size(); i++) {
-                Account account = asset.getAccounts().get(i);
-                account.setAssetId(asset.getId());
-
-                accountService.saveOrUpdateAccount(account);
-            }
-        }
     }
 
     public boolean validateFieldExist(Integer id, String column, String columnValue) {
@@ -456,35 +481,88 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 5. 删除关联的tag 信息
         assetTagService.remove(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getAssetId, idList));
-    }
+
+        // 6. 删除关联的account信息
+        accountService.remove(new QueryWrapper<Account>().lambda().in(Account::getAssetId, idList));
+   }
 
     @Override
-    public void validateAccount(Account account) {
-        // 1.协议protocol不能为空
-        String protocol = account.getProtocol();
-        ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
-        if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
-            throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
-        }
-        // 2.认证类型必须合法
-        Integer authType = account.getAuthType();
-        ValidateUtils.is(authType).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
-        if (!Constant.AUTH_PASSWORD.equals(authType) && !Constant.AUTH_CERTIFICATE.equals(authType)) {
-            throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
-        }
-        if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
-            if (!Constant.AUTH_PASSWORD.equals(authType)) {
-                throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
+    public void validateAccount(Asset asset, List<Account> accounts) {
+        String protocol;
+        Integer port;
+        Object params;
+        for (Account account : accounts) {
+            // 协议校验
+            protocol = account.getProtocol();
+            ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
+            if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
+                throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
+            }
+
+            // 端口校验
+            port = account.getPort();
+            if(ToolUtil.isEmpty(port)){
+                switch (protocol){
+                    case Constant.ACCOUNT_SSH_PROTOCOL:{
+                        account.setPort(22);
+                        break;
+                    }
+                    case Constant.ACCOUNT_TELNET_PROTOCOL:{
+                        account.setPort(23);
+                        break;
+                    }
+                    case Constant.ACCOUNT_SNMP_PROTOCOL:{
+                        account.setPort(161);
+                        break;
+                    }
+                    default:
+                }
+            } else {
+                boolean portFlag = CommonUtils.checkPort(port.toString());
+                if (!portFlag) {
+                    throw new NZException(RCode.ACCOUNT_PORT_ERROR);
+                }
+            }
+
+            params = account.getParams();
+            if (ToolUtil.isEmpty(params)) {
+                throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_ISNULL);
+            }
+            try {
+                Map map = (Map) params;
+                account.setParams(JSONObject.toJSONString(map));
+            } catch (Exception e) {
+                throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_FORMATERROR);
             }
         }
-        // 3.用户名不能为空
-        ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
-        // 4.port 不能为空
-        ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
-        boolean portFlag = CommonUtils.checkPort(account.getPort().toString());
-        if (!portFlag) {
-            // 账号端口不正确
-            throw new NZException(RCode.ACCOUNT_PORT_ERROR);
+
+        // 修改
+        /*Integer assetId = asset.getId();
+        if (ToolUtil.isNotEmpty(assetId)) {
+            // 现有账号
+            List<Account> list = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
+            Map<Integer,Account> currentAccounts = new HashMap<>();
+            for (Account pojo:list) {
+                currentAccounts.put(pojo.getId(), pojo);
+            }
+
+            Iterator<Account> iterator = accounts.iterator();
+            while(iterator.hasNext()){
+                Account account = iterator.next();
+                if(account.getId() != null && currentAccounts.get(account.getId()) != null){
+                    currentAccounts.remove(account.getId());
+                }
+            }
+
+            accounts.addAll(currentAccounts.values());
+        }*/
+
+        // 一个协议只能有一个账号
+        Map<String, List<Account>> map = accounts.stream().collect(Collectors.groupingBy(Account::getProtocol));
+        for (Map.Entry<String, List<Account>> entry : map.entrySet()) {
+            if(entry.getValue().size() > 1){
+                throw new NZException(RCode.ACCOUNT_PROTOCOL_EXCEED_COUNT);
+            }
         }
     }
 
@@ -1237,7 +1315,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         try {
             // 登录
             try {
-                sftpUtils.loginIn(asset.getHost(), account.getPort(), account.getUser(), account.getAuthType(), account.getPwd(), account.getPrivateKey());
+                Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
+                if(ToolUtil.isEmpty(params)){
+                    params = new HashMap<>();
+                }
+                Integer authType = null;
+                String method = params.get("method");
+                if (Constants.SshType.ACCOUNT.getValue().equals(method)) {
+                    authType = 1;
+                } else if (Constants.SshType.SSHKEY.getValue().equals(method)) {
+                    authType = 2;
+                }
+                sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
             } catch (Exception e) {
                 logger.error("用户登录sftp服务器失败", e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);

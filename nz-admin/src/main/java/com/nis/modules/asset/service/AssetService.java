@@ -29,7 +29,7 @@ public interface AssetService extends IService<Asset> {
 
     void delete(Integer ... ids);
 
-    void validateAccount(Account account);
+    void validateAccount(Asset asset, List<Account> accounts);
     
     List<MetricsDto> queryAssetStatisticsByModel();
     

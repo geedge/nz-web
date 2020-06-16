@@ -1,12 +1,13 @@
 package com.nis.modules.terminal.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.terminal.dao.AccountDao;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
@@ -22,107 +23,94 @@ import java.util.Map;
 public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> implements AccountService {
 
     @Autowired
-    private AssetService assetService;
+    private AssetDao assetDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        String id = null, assetId = null, protocol = null, authType = null, user = null;
+        String id = null, assetId = null, protocol = null;
 
         if (params != null && params.size() > 0) {
             id = (String) params.get("id");
             assetId = (String) params.get("assetId");
             protocol = (String) params.get("protocol");
-            authType = (String) params.get("authType");
-            user = (String) params.get("user");
         }
 
         QueryWrapper<Account> accountQueryWrapper = new QueryWrapper<Account>();
         accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(id), Account::getId, id);
         accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(assetId), Account::getAssetId, assetId);
-        accountQueryWrapper.lambda().like(StringUtils.isNotEmpty(protocol), Account::getProtocol, protocol);
-        accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(authType), Account::getAuthType, authType);
-        accountQueryWrapper.lambda().like(StringUtils.isNotEmpty(user), Account::getUser, user);
+        accountQueryWrapper.lambda().eq(StringUtils.isNotEmpty(protocol), Account::getProtocol, protocol);
 
         IPage<Account> page = this.page(new Query<Account>().getPage(params), accountQueryWrapper);
+
+        page.getRecords().forEach(account -> {
+            Object param = account.getParams();
+            if(ToolUtil.isNotEmpty(param)){
+              account.setParams(JSONObject.parseObject((String) param, Map.class));
+            }
+        });
 
         return new PageUtils(page);
     }
 
     @Override
     public void validateAccount(Account account) {
-        // 1.校验资产
         Integer assetId = account.getAssetId();
-        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
-        ValidateUtils.is(assetService.getById(assetId)).notNull(RCode.ASSET_NOT_EXIST);
-        // 2.协议protocol不能为空
         String protocol = account.getProtocol();
-        ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
-        if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+        Integer port = account.getPort();
+        Object params = account.getParams();
+
+        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL)
+                    .and(assetDao.selectById(assetId)).notNull(RCode.ASSET_NOT_EXIST)
+                    .and(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL)
+                    .and(port).notNull(RCode.ACCOUNT_PORT_ISNULL)
+                    .and(params).notNull(RCode.ACCOUNT_PROTOCOL_PARAMS_ISNULL);
+
+        if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
             throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
         }
-        // 3.认证类型必须合法
-        Integer authType = account.getAuthType();
-        ValidateUtils.is(authType).notNull(RCode.ACCOUNT_AUTHTYPE_ISNULL);
-        if (!Constant.AUTH_PASSWORD.equals(authType) && !Constant.AUTH_CERTIFICATE.equals(authType)) {
-            throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
-        }
-        if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
-            if (!Constant.AUTH_PASSWORD.equals(authType)) {
-                throw new NZException(RCode.ACCOUNT_AUTHTYPE_INVALIDE);
-            }
-        }
-        // 4.用户名不能为空
-        ValidateUtils.is(account.getUser()).notNull(RCode.ACCOUNT_USER_ISNULL);
-        // 5.port 不能为空
-        ValidateUtils.is(account.getPort()).notNull(RCode.ACCOUNT_PORT_ISNULL);
-        boolean portFlag = CommonUtils.checkPort(account.getPort().toString());
+
+        boolean portFlag = CommonUtils.checkPort(port.toString());
         if (!portFlag) {
-            // 账号端口不正确
             throw new NZException(RCode.ACCOUNT_PORT_ERROR);
+        }
+
+        try {
+            Map map = (Map) params;
+            account.setParams(JSONObject.toJSONString(map));
+        } catch (Exception e) {
+            throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_FORMATERROR);
         }
     }
 
 
     @Override
     public void saveOrUpdateAccount(Account account) {
-        // 在SSH协议 telnet提示信息无效
-        if(Constant.ACCOUNT_SSH_PROTOCOL.equals(account.getProtocol())){
-            account.setUserTip(null);
-            account.setPasswordTip(null);
-            account.setReloginPasswordTip(null);
-        } else {
-            account.setPwd(null);
-            account.setPrivateKey(null);
-        }
         if (account.getId() == null) {
             // 密码
-            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
-                if (StringUtils.isNotEmpty(account.getPwd())) {
-                    String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                    account.setPwd(encodePwd);
-                }
-                account.setPrivateKey(null);
-            } else {
-                account.setPwd(null);
+            Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
+            if(ToolUtil.isNotEmpty(params.get("password"))){
+                String encodePwd = Base64.getEncoder().encodeToString(params.get("password").getBytes());
+                params.put("password", encodePwd);
             }
+            account.setParams(JSONObject.toJSONString(params));
 
             this.save(account);
         } else {
             // 修改
-            if (Constant.AUTH_PASSWORD.equals(account.getAuthType())) {
-                // 密码不为空
-                if (StringUtils.isNotEmpty(account.getPwd())) {
-                    Account accountEntity = this.getById(account.getId());
 
-                    // 前台传参密码和数据库存储密码不对应 证明修改了密码
-                    if (!account.getPwd().equals(accountEntity.getPwd())) {
-                        String encodePwd = Base64.getEncoder().encodeToString(account.getPwd().getBytes());
-                        account.setPwd(encodePwd);
-                    }
+            // 密码不为空
+            Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
+            if(ToolUtil.isNotEmpty(params.get("password"))){
+                Account accountEntity = this.getById(account.getId());
+
+                // 前台传参密码和数据库存储密码不对应 证明修改了密码
+                Map<String, String> oldAccount = JSONObject.parseObject((String) accountEntity.getParams(), Map.class);
+
+                if (!params.get("password").equals(oldAccount.get("password"))) {
+                    String encodePwd = Base64.getEncoder().encodeToString(params.get("password").getBytes());
+                    params.put("password", encodePwd);
                 }
-                account.setPrivateKey(null);
-            } else {
-                account.setPwd(null);
+                account.setParams(JSONObject.toJSONString(params));
             }
 
             this.updateById(account);

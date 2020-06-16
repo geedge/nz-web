@@ -23,7 +23,6 @@ package com.nis.modules.terminal.config;
 
 import com.nis.common.utils.DigestUtils;
 import com.nis.modules.terminal.entity.Account;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.ObjectUtils;
@@ -33,12 +32,7 @@ import org.springframework.web.socket.WebSocketSession;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
@@ -138,7 +132,7 @@ public class TerminalSession implements Serializable {
     
     public static void setTerminalMessage(String uuid,String message,Integer cursorIndex) {
     	String string = terminalMessageInfo.get(uuid);
-    	if(StringUtils.isNoneBlank(string)) {
+        if (string != null && string != "") {
     		// 根据光标位置来追加字符出现的位置
     		if(cursorIndex==null||cursorIndex==string.length()) {
     			string=string+message;

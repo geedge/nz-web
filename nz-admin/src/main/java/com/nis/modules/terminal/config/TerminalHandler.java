@@ -23,12 +23,14 @@ package com.nis.modules.terminal.config;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -152,9 +154,13 @@ public class TerminalHandler extends TextWebSocketHandler {
             	terminalContext.put(uuid,terminalInfo);
             }
             final Account terminal =terminalInfo;
-            TerminalLog terminalLog = new TerminalLog();
-            terminalLog.setAuthType(terminal.getAuthType());
-            terminalLog.setHost(terminal.getAsset().getHost());
+	        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+	        if (ToolUtil.isEmpty(params)) {
+		        params = new HashMap<>();
+	        }
+	        TerminalLog terminalLog = new TerminalLog();
+	        terminalLog.setAuthType(SshType.ACCOUNT.getValue().equals(params.get("method")) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
+	        terminalLog.setHost(terminal.getAsset().getHost());
             terminalLog.setPort(terminal.getPort());
             terminalLog.setProtocol(terminal.getProtocol());
             terminalLog.setUserId(userId);
@@ -166,11 +172,19 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int width = toInt(session.getAttributes().get("width").toString());
                 int height = toInt(session.getAttributes().get("height").toString());
                 terminalLog.setCmd("Login");
-                terminalLog.setUser(terminal.getUser());
+	            terminalLog.setUser(params.get("user"));
                 terminalLog.setStatus(1);
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
-                terminalClient.openTerminal(cols, rows, width, height);
+
+                // 根据协议选择打开窗口类型
+	            String protocol = terminal.getProtocol();
+	            if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
+		            terminalClient.openTerminal(cols, rows, width, height);
+	            } else if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+		            terminalClient.openTelnetTerminal(cols, rows, width, height);
+	            }
+
                 terminalLogService.save(terminalLog);
             } catch (Exception e) {
             	logger.error("error info :",e);
@@ -184,7 +198,7 @@ public class TerminalHandler extends TextWebSocketHandler {
                 }
             	terminalLog.setStatus(0);
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                terminalLog.setUser(StringUtils.isNotBlank(terminal.getUser())?terminal.getUser():"");
+	            terminalLog.setUser(StringUtils.isNotBlank(params.get("user")) ? params.get("user") : "");
                 terminalLogService.save(terminalLog);
                 terminalClient.disconnect();
                 TerminalSession.remove(session);
@@ -238,7 +252,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             			// 左方向操作
             			if(cursorIndex!=0) {
             				// 光标在初始位置不可移动
-            				cursorIndex-=message.getPayload().length();
+            				// cursorIndex-=message.getPayload().length();
+				            cursorIndex -= 1;
             				session.sendMessage(new TextMessage(message.getPayload()));
             				cursorFlag=true;
             			}else if(TerminalSession.getTerminalMessage(uuid)==null || cursorIndex==TerminalSession.getTerminalMessage(uuid).length()){
@@ -253,7 +268,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             				// 光标位置在初始位置 或者已经为当前输入内容最右处
             				cursorFlag=false;
             			}else {
-            				cursorIndex+=message.getPayload().length();
+            				// cursorIndex+=message.getPayload().length();
+				            cursorIndex += 1;
             				session.sendMessage(new TextMessage(message.getPayload()));
             				cursorFlag=true;
             			}
@@ -545,12 +561,20 @@ public class TerminalHandler extends TextWebSocketHandler {
     		//获取到用户ssh pwd
     		Asset asset=new Asset();
     		asset.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
-    		Account terminal=new Account();
-    		terminal.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
-    		terminal.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid+"port")));
-    		terminal.setAsset(asset);
-    		terminal.setAuthType(SshType.ACCOUNT.getType());
-    		terminal.setPwd(Base64.getEncoder().encodeToString(message.getBytes()));
+
+		    Account terminal = new Account();
+		    terminal.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid + "port")));
+		    terminal.setAsset(asset);
+
+		    Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+		    if (ToolUtil.isEmpty(params)) {
+			    params = new HashMap<>();
+		    }
+		    params.put("user", TerminalSession.getTerminalMessage(uuid + "user"));
+		    params.put("method", SshType.ACCOUNT.getValue());
+		    params.put("password", Base64.getEncoder().encodeToString(message.getBytes()));
+		    terminal.setParams(JSONObject.toJSONString(params));
+
     		terminalLog.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
     		//连接服务
     		try {
@@ -559,10 +583,10 @@ public class TerminalHandler extends TextWebSocketHandler {
 				int rows = toInt(session.getAttributes().get("rows").toString());
 				int width = toInt(session.getAttributes().get("width").toString());
 				int height = toInt(session.getAttributes().get("height").toString());
+			    TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 				terminalClient.openTerminal(cols, rows, width, height);
 				terminalLog.setStatus(1);
 				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-				TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 			} catch (Exception e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 				terminalLog.setStatus(0);
@@ -757,7 +781,14 @@ public class TerminalHandler extends TextWebSocketHandler {
 		Account terminal=new Account();
 		terminal.setPort(Integer.valueOf(port));
 		terminal.setAsset(asset);
-		terminal.setUser(user);
+
+	    Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+	    if (ToolUtil.isEmpty(params)) {
+		    params = new HashMap<>();
+	    }
+	    params.put("user", user);
+	    terminal.setParams(JSONObject.toJSONString(params));
+
 		//连接服务
 		TerminalLog terminalLog = new TerminalLog();
 		terminalLog.setUuid(uuid);

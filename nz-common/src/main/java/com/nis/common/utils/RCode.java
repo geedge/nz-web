@@ -167,6 +167,7 @@ public enum RCode {
     ASSET_IMPORTFILE_TYPE(319036,"Only support import XLS or XLSX file"),// 导入文件格式只能为xls xlsx
     ASSET_IMPORTFILE_FAILED(319037,"Import file resolution failed"),     // 导入文件解析失败
     ASSET_TAGKEY_ISNULL(311038,"Asset tag name can no be empty"),
+    ASSET_EXPORTER_UPLOADBYSSH(313039,"Must use SSH protocol account to upload exporter"),
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
@@ -192,7 +193,10 @@ public enum RCode {
     ACCOUNT_FILE_INSUFFICIENT(333008, "Account insufficient number of documents"), // 文件数量不足
     ACCOUNT_PORT_ERROR(335009, "Account port is incorrect"),                         // 账号端口不正确
     ACCOUNT_PROTOCOL_ISNULL(331010, "Account protocol cannot be empty"),            // 协议信息不能为空
-    ACCOUNT_PROTOCOL_INCORRECT(334011, "Account protocol is incorrect"),            // 协议信息不合法
+    ACCOUNT_PROTOCOL_INCORRECT(334011, "Account protocol must be SSH, TELNET or SNMP"),
+    ACCOUNT_PROTOCOL_PARAMS_ISNULL(331012, "Account protocol params can not be empty"),
+    ACCOUNT_PROTOCOL_PARAMS_FORMATERROR(333013, "Account protocol params must be JSON format"),
+    ACCOUNT_PROTOCOL_EXCEED_COUNT(337014, "An protocol can only have one account"),
 
 
     /**

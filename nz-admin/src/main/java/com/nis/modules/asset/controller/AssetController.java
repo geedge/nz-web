@@ -2,36 +2,23 @@ package com.nis.modules.asset.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysDictEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 /**
@@ -86,26 +73,23 @@ public class AssetController {
                 .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
-        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter()) && CollectionUtils.isEmpty(asset.getAccounts())) {
+        List<Account> accounts = asset.getAccounts();
+        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter()) && CollectionUtils.isEmpty(accounts)) {
             // 指名了需要安装 node exporter 账号信息不能为空
             throw new NZException(RCode.ASSET_ACCOUNT_ISNULL);
         }
 
 
         Account accountCli = null;
-        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            // 克隆登录服务器的账号信息
-            accountCli = JSONObject.parseObject(JSON.toJSONString(asset.getAccounts().get(0)), Account.class);
-
-            assetService.validateAccount(accountCli);
-
-            // 密码登录，密码不能为空，证书登录，证书不能为空
-            if (Constant.AUTH_PASSWORD.equals(accountCli.getAuthType())) {
-                ValidateUtils.is(accountCli.getPwd()).notNull(RCode.ACCOUNT_PWD_ISNULL);
-            } else {
-                ValidateUtils.is(accountCli.getPrivateKey()).notNull(RCode.ACCOUNT_KEYFILE_ISNULL);
+        if (CollectionUtils.isNotEmpty(accounts)) {
+            assetService.validateAccount(asset, accounts);
+            // 找到SSH协议的账号
+            accountCli = accounts.stream().filter(account -> Constant.ACCOUNT_SSH_PROTOCOL.equals(account.getProtocol()) ? true : false).findAny().orElse(null);
+            if(ToolUtil.isNotEmpty(accountCli)){
+                accountCli = JSONObject.parseObject(JSON.toJSONString(accountCli), Account.class);
             }
         }
+
         // 购买时间格式校验
         if (StringUtils.isNotEmpty(asset.getPurchaseDate())) {
             ValidateUtils.is(asset.getPurchaseDate()).date("yyyy-MM-dd", RCode.ASSET_PURCHASEDATE_FORMAT);
@@ -116,7 +100,12 @@ public class AssetController {
         assetService.saveOrUpdateAsset(asset);
 
         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
-            R result = assetService.uploadExporter(asset, accountCli);
+            R result;
+            if (accountCli == null) {
+                result = R.error(RCode.ASSET_EXPORTER_UPLOADBYSSH);
+            } else {
+                result = assetService.uploadExporter(asset, accountCli);
+            }
             return result;
         }
         return R.ok();
@@ -138,12 +127,9 @@ public class AssetController {
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
 
-        if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
-            // 目前按照一个asset 对应 一个account实现
-            Account account = asset.getAccounts().get(0);
-            // 此处取消对 account id 的校验 原因： asset 修改的时候 account 可以是新增 也可以是修改
-            // ValidateUtils.is(account.getId()).notNull(RCode.ACCOUNT_ID_ISNULL);
-            assetService.validateAccount(account);
+        List<Account> accounts = asset.getAccounts();
+        if (CollectionUtils.isNotEmpty(accounts)) {
+            assetService.validateAccount(asset, accounts);
         }
 
         // 购买时间格式校验

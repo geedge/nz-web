@@ -555,7 +555,10 @@ public class Constant {
 
     // account protocol telnet协议
     public static final String ACCOUNT_TELNET_PROTOCOL = "TELNET";
-    
+
+    // account protocol snmp协议
+    public static final String ACCOUNT_SNMP_PROTOCOL = "SNMP";
+
     //confagent程序 端口
     public static final String CONFAGENT_PORT="confagent_port";
     //confagent项目名称

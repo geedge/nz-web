@@ -21,6 +21,7 @@
 
 package com.nis.modules.terminal.config;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.google.common.primitives.Bytes;
 import com.jcraft.jsch.*;
@@ -38,10 +39,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
@@ -100,20 +98,27 @@ public class TerminalClient {
         this.jSch = new JSch();
     }
 
-    public void openTerminal(final int cols, int rows, int width, int height) throws Exception {	
-        this.session = jSch.getSession(terminal.getUser(), terminal.getAsset().getHost(), terminal.getPort());
-        Constants.SshType sshType = Constants.SshType.getByType(terminal.getAuthType());
+    public void openTerminal(final int cols, int rows, int width, int height) throws Exception {
+        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+        if (ToolUtil.isEmpty(params)) {
+            params = new HashMap<>();
+        }
+        this.session = jSch.getSession(params.get("user"), terminal.getAsset().getHost(), terminal.getPort());
+
+        String sshType = params.get("method");
         switch (sshType) {
-            case SSHKEY:
-                if (notEmpty(terminal.getPrivateKey())) {
+            case "key": {
+                String privateKey = params.get("key");
+                String keyPassword = params.get("keyPassword");
+                if (notEmpty(privateKey)) {
                     File keyFile = new File(terminal.getPrivateKeyPath());
                     if (!keyFile.exists()) {
                         //将数据库中的私钥写到用户的机器上
-                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(terminal.getPrivateKey().getBytes()));
+                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(privateKey.getBytes()));
                     }
-                    if (notEmpty(terminal.getPwd())) {
+                    if (notEmpty(keyPassword)) {
                         //设置带口令的密钥
-                        jSch.addIdentity(terminal.getPrivateKeyPath(), terminal.getPwd());
+                        jSch.addIdentity(terminal.getPrivateKeyPath(), keyPassword);
                     } else {
                         //设置不带口令的密钥
                         jSch.addIdentity(terminal.getPrivateKeyPath());
@@ -123,11 +128,15 @@ public class TerminalClient {
                 }
                 session.setConfig("StrictHostKeyChecking", "no");
                 break;
-            case ACCOUNT:
+            }
+            case "password": {
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(new String(Base64.getDecoder().decode(terminal.getPwd())));
+                session.setPassword(new String(Base64.getDecoder().decode(params.get("password"))));
                 break;
+            }
+            default: {
+            }
         }
         this.session.setServerAliveInterval(SERVER_ALIVE_INTERVAL);
         this.session.connect(SESSION_TIMEOUT);
@@ -139,9 +148,9 @@ public class TerminalClient {
         this.channelShell.connect();
 
         StringBuilder sb = new StringBuilder();
-    	sb.append("\r\nConnecting to "+terminal.getAsset().getHost()+":"+terminal.getPort()+"\r\n");
-    	sb.append("Connection established. \r\n");
-    	sb.append("Login success，use user "+terminal.getUser()+" \r\n");
+        sb.append("\r\nConnecting to " + terminal.getAsset().getHost() + ":" + terminal.getPort() + "\r\n");
+        sb.append("Connection established. \r\n");
+        sb.append("Login success，use user " + params.get("user") + " \r\n");
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
         
         new Thread(new Runnable() {
@@ -220,7 +229,12 @@ public class TerminalClient {
         this.writer = new BufferedWriter(new OutputStreamWriter(this.outputStream, "UTF-8"));
         //当前正在进行telnet连接  相关日志不记录
         this.telnetConnect=true;
-        
+
+        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+        if (ToolUtil.isEmpty(params)) {
+            params = new HashMap<>();
+        }
+        String password = params.get("password");
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -231,6 +245,12 @@ public class TerminalClient {
                 telnetUser=true;
                 try {
                     while (webSocketSession != null && webSocketSession.isOpen()) {
+                        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+                        if (ToolUtil.isEmpty(params)) {
+                            params = new HashMap<>();
+                        }
+                        String user = params.get("user");
+
                         builder.setLength(0);
                         int size = inputStream.read(buffer);
                         if (size == -1) {
@@ -265,7 +285,7 @@ public class TerminalClient {
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(1);
                             		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                            		terminalLog.setUser(terminal.getUser());
+                            		terminalLog.setUser(user);
                             		terminalLogService.save(terminalLog);
                             		telnetConnect=false;
                             		// 登录成功后清空 前端输入字符 防止日志保存空数据
@@ -277,38 +297,43 @@ public class TerminalClient {
                         			telnetConnectCount++;
                         			telnetUser=true;
                         		}
-                            	if(message.replace(" ","").matches(".*wwwlogin:")&&StringUtils.isNotEmpty(terminal.getUser())) {
-                            		webSocketSession.sendMessage(new TextMessage(message+terminal.getUser()+"\r\n"));
-                            		write(terminal.getUser()+"\r");
-                            	}else if(message.matches("Password:.*")&&StringUtils.isBlank(terminal.getUser())){
-                            		telnetUser=false;
-                            		webSocketSession.sendMessage(new TextMessage("\r\n"+message));
-                            	}else if(message.contains("timed out after 60 seconds")) {
+                                if (message.replace(" ", "").matches(".*wwwlogin:") && StringUtils.isNotEmpty(user)) {
+                                    webSocketSession.sendMessage(new TextMessage(message + user + "\r\n"));
+                                    write(user + "\r");
+                                } else if (message.matches("Password:.*") && StringUtils.isBlank(user)) {
+                                    telnetUser = false;
+                                    webSocketSession.sendMessage(new TextMessage("\r\n" + message));
+                                } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
+                                    String s = new String(Base64.getDecoder().decode(password));
+                                    telnetUser = false;
+                                    webSocketSession.sendMessage(new TextMessage("\r\n" + message));
+                                    write(s + "\r");
+                                } else if (message.contains("timed out after 60 seconds")) {
                             		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
                             		// 连接超时
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(0);
                             		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                            		terminalLog.setUser(terminal.getUser());
+                            		terminalLog.setUser(user);
                             		terminalLogService.save(terminalLog);
                             		TerminalSession.remove(webSocketSession);
                             		closed=true;
                             		telnetConnect=false;
                             		String unloginInfo = getUnloginInfo();
-                                	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
-                            	}else{
+                                	webSocketSession.sendMessage(new TextMessage(unloginInfo));
+                                } else {
                             		webSocketSession.sendMessage(new TextMessage(message));
                             		if(telnetConnectCount==3) {
                             			// 连接错误达到限制 关闭连接 连接失败
                             			terminalLog.setCmd("Login");
                                 		terminalLog.setStatus(0);
                                 		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                                		terminalLog.setUser(terminal.getUser());
+                                		terminalLog.setUser(user);
                                 		terminalLogService.save(terminalLog);
                             			TerminalSession.remove(webSocketSession);
                             			closed=true;
                             			String unloginInfo = getUnloginInfo();
-                                    	webSocketSession.sendMessage(new TextMessage(unloginInfo));	
+                                    	webSocketSession.sendMessage(new TextMessage(unloginInfo));
                             		}
                             	}
                             }
@@ -393,6 +418,10 @@ public class TerminalClient {
     			cursorIndex+=data.length();
     			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
     		}else if(message.getPayload().equals("\r")) {
+                Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+                if (ToolUtil.isEmpty(params)) {
+                    params = new HashMap<>();
+                }
     			// 服务器执行完命令 保存日志
     			if(!telnetConnect) {
     				String cmd = TerminalSession.getTerminalMessage(clientId);
@@ -400,7 +429,7 @@ public class TerminalClient {
     					terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
                 		terminalLog.setStatus(1);
                 		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                		terminalLog.setUser(terminal.getUser());
+                		terminalLog.setUser(params.get("user"));
                 		terminalLogService.save(terminalLog);
                 		TerminalSession.removeTerminalMessage(clientId);
                 		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
@@ -459,12 +488,19 @@ public class TerminalClient {
      * @throws IOException
      */
     public void write(String message) throws IOException {
-    	// 获取telnet登录用户名信息
-    	if(telnetUser&&telnetConnect&&StringUtils.isEmpty(terminal.getUser())) {
-    		sb.append(message);
-    	}else if(StringUtils.isNotEmpty(sb.toString())){
-    		terminal.setUser(sb.toString());
-    	}
+        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+        if (ToolUtil.isEmpty(params)) {
+            params = new HashMap<>();
+        }
+        // 获取telnet登录用户名信息
+        System.out.println(telnetUser + "----"+telnetConnect+"0---"+params.get("user"));
+        if (telnetUser && telnetConnect && StringUtils.isEmpty(params.get("user"))) {
+            sb.append(message);
+            webSocketSession.sendMessage(new TextMessage(message));
+        } else if (StringUtils.isNotEmpty(sb.toString())) {
+            params.put("user", sb.toString());
+            terminal.setParams(JSONObject.toJSONString(params));
+        }
         if (message.equals("\r")) {
             if (closed) {
                 disconnect();
