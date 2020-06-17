@@ -2,6 +2,8 @@ package com.nis.modules.alert.entity;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class AlertRuleStat {
     /**
@@ -18,4 +20,8 @@ public class AlertRuleStat {
      * 告警消息计数
      */
     private Integer nums;
+
+    private List<AlertRuleStat> module;
+
+    private List<AlertRuleStat> endpoint;
 }

@@ -141,8 +141,6 @@
             AND am.state = 1
         GROUP BY
             am.module_id
-        ORDER BY
-            nums DESC;
     </select>
 
     <select id="getRuleStatGooupByAsset" resultType="com.nis.modules.alert.entity.AlertRuleStat">
@@ -174,7 +172,5 @@
             AND am.state = 1
         GROUP BY
             am.endpoint_id
-        ORDER BY
-            nums DESC;
     </select>
 </mapper>

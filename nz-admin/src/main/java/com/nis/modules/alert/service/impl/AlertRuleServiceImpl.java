@@ -15,6 +15,8 @@ import com.nis.modules.alert.entity.AlertRuleStat;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.endpoint.dao.EndpointDao;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.dao.ProjectDao;
@@ -22,6 +24,7 @@ import com.nis.modules.project.entity.Project;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +56,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private AlertMessageDao alertMessageDao;
+
+    @Autowired
+    private EndpointDao endpointDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -199,24 +205,102 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Map resultData = new HashMap();
 
         // 1. project 统计
-        List<Project> projects = projectDao.selectList(null);
-        Map<Integer, String> projectIdAndNameMap = projects.stream().collect(Collectors.toMap(Project::getId, Project::getName));
-
         List<AlertRuleStat> ruleStatGooupByProject = alertRuleDao.getRuleStatGooupByProject(id);
-        this.handleRuleStatName(ruleStatGooupByProject, projectIdAndNameMap);
+        if (CollectionUtils.isNotEmpty(ruleStatGooupByProject)) {
 
-        resultData.put("project", ruleStatGooupByProject);
+            // 查询 module 统计信息
+            List<AlertRuleStat> ruleStatGooupByModule = alertRuleDao.getRuleStatGooupByModule(id);
 
-        // 2. module 统计
-        List<Module> modules = moduleDao.selectList(null);
-        Map<Integer, String> moduleIdAndNameMap = modules.stream().collect(Collectors.toMap(Module::getId, Module::getName));
+            // 处理 project 名称
+            List<Project> projects = projectDao.selectList(null);
+            Map<Integer, String> projectIdAndNameMap = projects.stream().collect(Collectors.toMap(Project::getId, Project::getName));
+            this.handleRuleStatName(ruleStatGooupByProject, projectIdAndNameMap);
 
-        List<AlertRuleStat> ruleStatGooupByModule = alertRuleDao.getRuleStatGooupByModule(id);
-        this.handleRuleStatName(ruleStatGooupByModule, moduleIdAndNameMap);
 
-        resultData.put("module", ruleStatGooupByModule);
+            // 如果 module 统计信息不为空
+            if (CollectionUtils.isNotEmpty(ruleStatGooupByModule)) {
 
-        // 3. asset 统计
+                // endpoint 统计
+                List<AlertRuleStat> ruleStatGooupByEndpoint = alertRuleDao.getRuleStatGooupByEndpoint(id);
+
+                // 处理 module 名称
+                List<Integer> projectIds = ruleStatGooupByProject.stream().map(AlertRuleStat::getId).collect(Collectors.toList());
+                List<Module> modules = moduleDao.selectList(new QueryWrapper<Module>().lambda().in(Module::getProjectId, projectIds));
+                Map<Integer, String> moduleIdAndNameMap = modules.stream().collect(Collectors.toMap(Module::getId, Module::getName));
+                this.handleRuleStatName(ruleStatGooupByModule, moduleIdAndNameMap);
+
+                // endpoint 统计不为空
+                if (CollectionUtils.isNotEmpty(ruleStatGooupByEndpoint)) {
+
+                    Map<Integer, AlertRuleStat> endpointStatMap = new HashMap<>();
+                    for (AlertRuleStat stat : ruleStatGooupByEndpoint) {
+                        endpointStatMap.put(stat.getId(), stat);
+                    }
+
+                    // 查询 endpoint 并根据 moduleId 分组
+                    List<Integer> moduleIds = ruleStatGooupByModule.stream().map(AlertRuleStat::getId).collect(Collectors.toList());
+                    List<Endpoint> endpoints = endpointDao.selectList(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getModuleId, moduleIds));
+                    Map<Integer, List<Endpoint>> moduleIdAndEndpoints = endpoints.stream().collect(Collectors.groupingBy(Endpoint::getModuleId));
+
+                    List<Endpoint> endpointsByModuleId;
+                    List<Integer> endPointIds;
+                    List<AlertRuleStat> list;
+                    AlertRuleStat endpointStat;
+                    for (AlertRuleStat moduleStat : ruleStatGooupByModule) {
+                        // 取出 moudle 对应的 endpoints
+                        endpointsByModuleId = moduleIdAndEndpoints.get(moduleStat.getId());
+                        if (CollectionUtils.isNotEmpty(endpointsByModuleId)) {
+                            endPointIds = endpointsByModuleId.stream().map(Endpoint::getId).collect(Collectors.toList());
+                            list = new ArrayList<>();
+                            for (Integer endpointId : endPointIds) {
+                                endpointStat = endpointStatMap.get(endpointId);
+                                if (ToolUtil.isNotEmpty(endpointStat)) {
+                                    list.add(endpointStat);
+                                }
+                            }
+                            if (CollectionUtils.isNotEmpty(list)) {
+                                moduleStat.setEndpoint(list.stream().sorted((a1, a2) -> a2.getNums().compareTo(a1.getNums())).collect(Collectors.toList()));
+                            }
+                        }
+                    }
+                }
+
+                // 处理 project 对应 module 信息
+                Map<Integer, AlertRuleStat> moduleStatMap = new HashMap<>();
+                for (AlertRuleStat stat : ruleStatGooupByModule) {
+                    moduleStatMap.put(stat.getId(), stat);
+                }
+
+                Map<Integer, List<Module>> projectIdAndModules = modules.stream().collect(Collectors.groupingBy(Module::getProjectId));
+
+                List<Module> modulesByProjectId;
+                List<Integer> moduleIds;
+                List<AlertRuleStat> list;
+                AlertRuleStat moduleStat;
+                for (AlertRuleStat projectStat : ruleStatGooupByProject) {
+                    modulesByProjectId = projectIdAndModules.get(projectStat.getId());
+                    if (CollectionUtils.isNotEmpty(modulesByProjectId)) {
+                        moduleIds = modulesByProjectId.stream().map(Module::getId).collect(Collectors.toList());
+                        list = new ArrayList<>();
+                        for (Integer moduleId : moduleIds) {
+                            moduleStat = moduleStatMap.get(moduleId);
+                            if (ToolUtil.isNotEmpty(moduleStat)) {
+                                list.add(moduleStat);
+                            }
+                        }
+                        if (CollectionUtils.isNotEmpty(list)) {
+                            projectStat.setModule(list.stream().sorted((a1, a2) -> a2.getNums().compareTo(a1.getNums())).collect(Collectors.toList()));
+                        }
+                    }
+                }
+            }
+
+            resultData.put("project", ruleStatGooupByProject);
+        } else {
+            resultData.put("project", Collections.EMPTY_LIST);
+        }
+
+        // asset 统计
         List<Asset> assets = assetDao.selectList(null);
         Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
 
@@ -224,11 +308,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.handleRuleStatName(ruleStatGooupByAsset, assetIdAndHostMap);
 
         resultData.put("asset", ruleStatGooupByAsset);
-
-        // 4. endpoint 统计
-        List<AlertRuleStat> ruleStatGooupByEndpoint = alertRuleDao.getRuleStatGooupByEndpoint(id);
-        resultData.put("endpoint", ruleStatGooupByEndpoint);
-
         return resultData;
     }
 

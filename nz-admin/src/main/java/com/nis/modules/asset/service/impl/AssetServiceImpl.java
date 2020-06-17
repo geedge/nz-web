@@ -103,9 +103,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private ModuleService moduleService;
 
     @Autowired
-    private SftpUtils sftpUtils;
-
-    @Autowired
     private ModelDao modelDao;
 
     @Autowired
@@ -1326,7 +1323,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 } else if (Constants.SshType.SSHKEY.getValue().equals(method)) {
                     authType = 2;
                 }
-                sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
+                SftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
             } catch (Exception e) {
                 logger.error("用户登录sftp服务器失败", e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);
@@ -1334,7 +1331,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
             // 上传压缩包和执行脚本
             try {
-                sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, tempShellName);
+                SftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, tempShellName);
             } catch (Exception e) {
                 logger.error("上传脚本失败", e);
                 return R.error(RCode.ASSET_UPLOADFILE_FAILED);
@@ -1343,14 +1340,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 执行脚本让exporter运行
             try {
                 String execCommand = "chmod +x " + targetExporterPath + "/" + tempShellName + " && " + targetExporterPath + "/" + tempShellName;
-                sftpUtils.exec(execCommand);
+                SftpUtils.exec(execCommand);
             } catch (Exception e) {
                 logger.error("执行脚本文件失败", e);
                 return R.error(RCode.ASSET_EXECCOMMAND_FAILED);
             }
         } finally {
             // 退出
-            sftpUtils.logout();
+            SftpUtils.logout();
             // 删除临时文件
             if (file != null) {
                 file.delete();

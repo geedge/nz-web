@@ -4,7 +4,6 @@ import com.jcraft.jsch.*;
 import com.nis.common.exception.NZException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.Properties;
@@ -13,7 +12,6 @@ import java.util.Properties;
  * 1. sftp传输文件
  * 2. 执行命令
  */
-@Component
 public class SftpUtils {
 
     private static Logger logger = LoggerFactory.getLogger(SftpUtils.class);
@@ -21,10 +19,10 @@ public class SftpUtils {
     private static ChannelSftp sftp;
 
     // session 信息
-    private Session session;
+    private static Session session;
 
     // 连接超时时间
-    private Integer connectTimeOut = 5000;
+    private static Integer connectTimeOut = 5000;
 
 
     /**
@@ -38,7 +36,7 @@ public class SftpUtils {
      * @param privateKey 密钥文件
      * @throws Exception
      */
-    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws Exception {
+    public static void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws Exception {
         OutputStream out = null;
         File file = null;
         try {
@@ -92,7 +90,7 @@ public class SftpUtils {
      * @param shellName  脚本名称
      * @throws Exception
      */
-    public void upload(String targetPath, String path, String fileName, String shellName) throws Exception {
+    public static void upload(String targetPath, String path, String fileName, String shellName) throws Exception {
         // sftp通道
         Channel channel = session.openChannel("sftp");
         channel.connect(connectTimeOut);
@@ -110,7 +108,7 @@ public class SftpUtils {
             } catch (SftpException e) {
                 logger.warn("directory is not exist");
                 // 创建文件夹 并进入
-                this.createDir(targetPath);
+                createDir(targetPath);
                 sftp.cd(targetPath);
             }
             // 放进sftp中进行传输
@@ -143,7 +141,7 @@ public class SftpUtils {
      *
      * @param cmd
      */
-    public void exec(String cmd) {
+    public static void exec(String cmd) {
         try {
             // 执行命令通道
             Channel channel = session.openChannel("exec");
@@ -158,7 +156,7 @@ public class SftpUtils {
     /**
      * 退出登陆
      */
-    public void logout() {
+    public static void logout() {
         if (sftp != null) {
             if (sftp.isConnected()) {
                 sftp.disconnect();
@@ -174,7 +172,7 @@ public class SftpUtils {
     /**
      * 创建文件目录
      */
-    private void createDir(String createpath) {
+    private static void createDir(String createpath) {
         try {
             if (isDirExist(createpath)) {
                 sftp.cd(createpath);
@@ -205,7 +203,7 @@ public class SftpUtils {
     /**
      * 判断目录是否存在
      */
-    public boolean isDirExist(String directory) {
+    public static boolean isDirExist(String directory) {
         boolean isDirExistFlag = false;
         try {
             SftpATTRS sftpATTRS = sftp.lstat(directory);
