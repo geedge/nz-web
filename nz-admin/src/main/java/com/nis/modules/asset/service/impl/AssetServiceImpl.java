@@ -1415,6 +1415,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             basicInfo.put("pingLastReply", assetPing.getLastUpdate());
         }
 
+        // asset  tags
+        List<AssetTag> tags = assetTagService.list(new QueryWrapper<AssetTag>().lambda().eq(AssetTag::getAssetId, asset.getId()));
+        basicInfo.put("tags", tags);
+
         resultMap.put("Basic", basicInfo);
 
         // 暂未完成
