@@ -6,6 +6,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelShell;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.UserInfo;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.DateUtil;
@@ -13,6 +19,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.dao.AssetFeatureDao;
 import com.nis.modules.asset.dao.AssetPingDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.ModelDao;
@@ -30,10 +37,12 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SnmpMibService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants;
+import com.nis.modules.terminal.config.SshUserInfo;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
@@ -42,6 +51,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snmp4j.smi.TimeTicks;
+import org.snmp4j.smi.VariableBinding;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -51,6 +62,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+
+import static com.nis.common.utils.CommonUtils.notEmpty;
+
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
@@ -123,6 +137,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private AssetTagService assetTagService;
 
+    @Autowired
+    private AssetFeatureService assetFeatureService;
+    
+    @Autowired
+    private SnmpMibService snmpMibService;
+    
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String[] vendorIds = {};
@@ -1814,4 +1834,259 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
     }
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void collectData(Integer assetId){
+		//根据assetId获取当前资产的ssh或snmp信息
+		Asset asset = this.getById(assetId);
+		List<Account> accounts = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
+		if(ToolUtil.isEmpty(accounts)) {
+			// 该资产无ssh或snmp信息 采集失败 
+			throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
+		}
+		
+		// 获取当前所有的mib tree
+        Map<String, String> oidWithNameMap = snmpMibService.getAllTreeNodeOidAndNameMap();
+		for(Account account : accounts) {
+			String protocol = account.getProtocol();
+			
+			if(accounts.size()==1 && Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+				// 该资产无ssh或snmp信息 采集失败 
+				throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
+			}
+			
+			List<AssetFeature> results = new ArrayList<AssetFeature>();
+						
+			// ssh采集相关逻辑
+			if(Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
+				String s="";
+				Session session =null;
+				try {
+					Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
+					JSch jSch =new JSch();
+					session = jSch.getSession(params.get("user"), asset.getHost(), account.getPort());
+					String sshType = params.get("method");
+			        switch (sshType) {
+			            case "key": {
+			                String privateKey = params.get("key");
+			                String keyPassword = params.get("keyPassword");
+			                if (notEmpty(privateKey)) {
+			                    File keyFile = new File(account.getPrivateKeyPath());
+			                    if (!keyFile.exists()) {
+			                        //将数据库中的私钥写到用户的机器上
+			                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(privateKey.getBytes()));
+			                    }
+			                    if (notEmpty(keyPassword)) {
+			                        //设置带口令的密钥
+			                        jSch.addIdentity(account.getPrivateKeyPath(), keyPassword);
+			                    } else {
+			                        //设置不带口令的密钥
+			                        jSch.addIdentity(account.getPrivateKeyPath());
+			                    }
+			                    UserInfo userInfo = new SshUserInfo();
+			                    session.setUserInfo(userInfo);
+			                }
+			                session.setConfig("StrictHostKeyChecking", "no");
+			                break;
+			            }
+			            case "password": {
+			                session.setConfig("StrictHostKeyChecking", "no");
+			                session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
+			                session.setPassword(new String(Base64.getDecoder().decode(params.get("password"))));
+			                break;
+			            }
+			            default: {
+			            }
+			        }
+//			        session.setServerAliveInterval(SERVER_ALIVE_INTERVAL);
+			        session.connect(5000);
+			        Set<String> sshKeySet = Constant.SSH_SHELL_MAP.keySet();
+			       
+			        // 采集cpu os disk memory core uptime信息
+			        for(String key : sshKeySet) {
+			        	String value = RuntimeUtil.sshCommondResult(session, Constant.SSH_SHELL_MAP.get(key));
+			        	if(key.equals("cpu")) {
+			        		String[] split = value.split("\r\n");
+			        		String cpuCount = split[0];
+			        		String cpuInfo = split[1];
+			        		String[] ss = new String[Integer.valueOf(cpuCount)];
+			        		for(int i=0;i<Integer.valueOf(cpuCount);i++) {
+			        			ss[i]=cpuInfo;
+			        		}
+			        		value=JSON.toJSONString(ss);
+			        	}
+			        	if(key.equals("disk")) {
+			        		String[] split = value.split("\r\n");
+			            	int diskCount = split.length/2;
+			            	List list =new ArrayList();
+			            	for(int i=0;i<diskCount;i++) {
+			            		Map map =new HashMap();
+			            		String[] split2 = split[i].split(" ");
+			            		String[] split3 = split[diskCount+i].split(" ");
+			            		map.put("vendor", split3[0]);
+			            		map.put("model", split3[1]);
+			            		map.put("size",split2[1]);
+			            		list.add(map);
+			            	}
+			            	value=JSON.toJSONString(list);
+			        	}
+			        	
+			        	//查询数据库是否已经存在数据
+			        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
+			        	if(ToolUtil.isEmpty(result)) {
+			        		result = new AssetFeature();
+			        	}
+						result.setAssetId(assetId);
+						result.setItem(key);
+						if(key.equals("memory")) {
+							result.setValue(value+"G");
+						}else {
+							result.setValue(value);
+						}
+						result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
+						result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+						results.add(result);
+			        }
+			        
+			        // 采集网卡信息
+			        // 获取所有网卡名称信息
+			        String interfaceNames = RuntimeUtil.sshCommondResult(session, "ifconfig |grep mtu|awk -F ':' '{print $1}'|grep -v lo");
+			        String[] names = interfaceNames.split("\r\n");
+			        List interfaceInfos =new ArrayList();
+			        for(String name : names) {
+			        	Map map =new HashMap();
+			        	map.put("name", name);
+			        	map.put("inet", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" | grep -w inet | awk -F' ' '{print $2}'").replace("\r\n", ""));
+			        	map.put("netmask", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" | grep netmask|awk '{print $4}'").replace("\r\n", ""));
+			        	map.put("mtu", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" |grep mtu|awk '{print $4}'").replace("\r\n", ""));
+			        	map.put("inet6", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" | grep -w inet6 | awk -F' ' '{print $2}'").replace("\r\n", ""));
+			        	map.put("mac", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" |grep ether|awk '{print $2}'").replace("\r\n", ""));
+			        	map.put("state", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" |grep mtu|awk -F ',' '{print $1}'|awk -F '<' '{print $2}'").replace("\r\n", ""));
+			        	interfaceInfos.add(map);
+			        }
+			        AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,"interface").eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
+		        	if(ToolUtil.isEmpty(result)) {
+		        		result = new AssetFeature();
+		        	}
+		        	result.setAssetId(assetId);
+					result.setItem("interface");
+					result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
+					result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+			        result.setValue(JSON.toJSONString(interfaceInfos));
+			        results.add(result);
+			        session.disconnect();
+				} catch (Exception e) {
+					e.printStackTrace();
+					logger.error("asset feature get data error,assetId : {}",assetId,e);
+					throw new RuntimeException(e.getMessage());
+				} finally {
+					if(session!=null) {
+						session.disconnect();
+					}
+				}
+			}
+			
+			// snmp采集相关逻辑
+			if(Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
+				Map snmpInfos = JSONObject.parseObject((String) account.getParams(), Map.class);
+				try {
+					Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
+					for(String key:keySet) {
+						List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getHost(), account.getPort(), (Integer)snmpInfos.get("version"), (String)snmpInfos.get("community"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
+						if(key.equals("ifEntry")) {
+							List l =new ArrayList();
+							if (CollectionUtils.isNotEmpty(snmpResults)) {
+								Map<String,Map> handleMap =new LinkedHashMap<String,Map>();
+					            String resultOid;
+					            String name, str;
+					            for (Map map : snmpResults) {
+					                resultOid = map.get("oid").toString();
+						   		    
+					                String substring = resultOid.substring(0, resultOid.lastIndexOf("."));
+					                str = resultOid;
+					                // 处理对应关系
+					                name = oidWithNameMap.get(resultOid);
+
+					                // name 为null 截取之后再次获取
+					                if (StringUtils.isEmpty(name)) {
+					                    // 从最后开始截取 目前暂定截取最后一个 .
+					                    for (int i = 0; i < Constant.OIDNAME_TRUNCATION_INDEX; i++) {
+					                        resultOid = resultOid.substring(0, resultOid.lastIndexOf("."));
+					                    }
+
+					                    name = oidWithNameMap.get(resultOid);
+					                    if (StringUtils.isNotEmpty(name)) {
+					                        str = str.replaceAll(resultOid, "");
+					                        name += str;
+					                    }
+					                }
+					                map.put("name", name);
+					                
+					                //截取最后一位oid数
+					                String[] split = map.get("oid").toString().split("\\.");
+						   		    String string = split[split.length-1];
+					                Map map2 = handleMap.get(string);
+					                if(ToolUtil.isEmpty(map2)) {
+					                	Map map3 =new HashMap();
+					                	handleMap.put(string, map3);
+					                	map3.put(name,map.get("value"));
+					                }else {
+					                	map2.put(name,map.get("value"));
+					                }
+					            }
+					            
+					            for(String k:handleMap.keySet()) {
+					            	l.add(handleMap.get(k));
+					            }
+					        }
+							//查询数据库是否已经存在数据
+				        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
+				        	if(ToolUtil.isEmpty(result)) {
+				        		result = new AssetFeature();
+				        	}
+							result.setAssetId(assetId);
+							result.setItem(key);
+							result.setValue(JSON.toJSONString(l));
+							result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+							result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+							results.add(result);
+						}else {
+							for(Map snmpResult : snmpResults) {
+								String value = (String) snmpResult.get("value");
+								//查询数据库是否已经存在数据
+					        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
+					        	if(ToolUtil.isEmpty(result)) {
+					        		result = new AssetFeature();
+					        	}
+								result.setAssetId(assetId);
+								result.setItem(key);
+								if(key.equals("sysUpTime")) {
+									TimeTicks t =new TimeTicks();
+									t.setValue(value);
+									long milliseconds = t.toMilliseconds();
+									result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime()-milliseconds))));
+								}else {
+									result.setValue(value);
+								}
+								result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+								result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+								results.add(result);
+							}
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					logger.error("asset feature get data error,assetId : {}",assetId,e);
+					throw new RuntimeException(e.getMessage());
+				}
+			}
+			
+			// 存入db 无则新增 有则修改
+			if(ToolUtil.isNotEmpty(results)) {
+				assetFeatureService.saveOrUpdateBatch(results);
+			}
+			
+		}
+	}
 }

@@ -198,4 +198,19 @@ public class AssetController {
         assetService.cancelImport(seq);
         return R.ok();
     }
+    
+    
+    /**
+     * asset更新采集项信息
+     */
+    @GetMapping("updateFeature")
+    public R updateFeature(Integer assetId) {
+    	// 采集信息方法
+    	try {
+			assetService.collectData(assetId);
+			return R.ok();
+		} catch (Exception e) {
+			return R.error(400,e.getMessage());
+		}
+    }
 }

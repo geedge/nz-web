@@ -623,4 +623,30 @@ public class Constant {
  
     // 图表类型为alertList
     public static final String CHART_ALERTLIST_TYPE = "alertList";
+    
+    // snmp采集指标相关oid信息系
+    public static final Map<String,String> SNMP_OID_MAP = new HashMap<String,String>(){
+        {
+            put("sysName", "1.3.6.1.2.1.1.5");  
+            put("sysLocation", "1.3.6.1.2.1.1.6");
+            put("sysContact","1.3.6.1.2.1.1.4");
+            put("sysServices","1.3.6.1.2.1.1.7");
+            put("sysUpTime","1.3.6.1.2.1.1.3");
+            put("ifNumber","1.3.6.1.2.1.2.1");
+            put("ifEntry","1.3.6.1.2.1.2.2.1");
+        }
+    };
+    
+    // ssg采集相关服务器信息指令
+    public static final Map<String,String> SSH_SHELL_MAP =new HashMap<String,String>(){
+    	{
+    		put("cpu","cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"cpu cores\"| uniq |awk -F: '{print $2}'`");
+    		put("memory","cat /proc/meminfo |grep MemTotal|awk '{printf (\"%.3f\\n\",$2/1024/1024)}'");
+    		put("core","cat /proc/version");
+    		put("os","cat /etc/redhat-release");
+    		put("uptime","uptime -s");
+    		put("disk","lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
+    	}
+    };
+    
 }

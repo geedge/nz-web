@@ -14,6 +14,9 @@ import java.util.UUID;
  
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.Session;
  
 /**
  * Runtime工具类，用于本机执行某些命令
@@ -309,6 +312,28 @@ public class RuntimeUtil {
 		public void onExit(StringReader result, String[] envp, File dir, String[] startCommand, String[]... commands);
 	}
  
+	/**
+	 * 使用ssh登录执行command命令 获取服务器响应结果
+	 * @param session
+	 * @param command
+	 * @return
+	 * @throws Exception
+	 */
+	public static String sshCommondResult(Session session,String command) throws Exception {
+		String s="";
+		ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
+		channelExec.setCommand(command);
+		channelExec.connect();
+        InputStream in = channelExec.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        String buf = null;
+        while ((buf = reader.readLine()) != null) {
+            s += new String(buf.getBytes("gbk"), "UTF-8")+"\r\n";
+        }
+        channelExec.disconnect();
+		return s;
+	}
+	
 	public static void main(String[] args) {
 		
 		System.out.println(readStringReader(run(null, null, new String[] { "c:/promtool", "check", "rules", "d:/test.yml" }), false));

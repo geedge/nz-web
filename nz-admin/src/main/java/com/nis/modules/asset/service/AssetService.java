@@ -48,4 +48,6 @@ public interface AssetService extends IService<Asset> {
     void export(HttpServletResponse response, Map<String, Object> params);
 
     R uploadExporter(Asset asset, Account accountCli);
+    
+    void collectData(Integer assetId);
 }
