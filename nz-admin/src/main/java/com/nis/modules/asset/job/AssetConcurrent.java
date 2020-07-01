@@ -25,7 +25,7 @@ public class AssetConcurrent {
 		try {
 			assetService.collectData(assetId);
 		} catch (Exception e) {
-			logger.error("AssetConcurrent fail : ",e);
+			logger.error("AssetConcurrent fail assetId : {} info : {} ",assetId,e);
 		}
 		
 	}

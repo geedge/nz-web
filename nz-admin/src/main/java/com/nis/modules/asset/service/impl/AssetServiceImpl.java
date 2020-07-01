@@ -1843,6 +1843,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		List<Account> accounts = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
 		if(ToolUtil.isEmpty(accounts)) {
 			// 该资产无ssh或snmp信息 采集失败 
+			logger.error("asset feature get data error,assetId : {} has no SSH or SNMP information",assetId);
 			throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
 		}
 		
@@ -1853,6 +1854,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			
 			if(accounts.size()==1 && Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
 				// 该资产无ssh或snmp信息 采集失败 
+				logger.error("asset feature get data error,assetId : {} has no SSH or SNMP information",assetId);
 				throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
 			}
 			
@@ -1978,7 +1980,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        session.disconnect();
 				} catch (Exception e) {
 					e.printStackTrace();
-					logger.error("asset feature get data error,assetId : {}",assetId,e);
+					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new RuntimeException(e.getMessage());
 				} finally {
 					if(session!=null) {
@@ -2077,7 +2079,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
-					logger.error("asset feature get data error,assetId : {}",assetId,e);
+					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new RuntimeException(e.getMessage());
 				}
 			}
