@@ -21,8 +21,6 @@ public class SnmpUtil {
 
     private static Logger logger = LoggerFactory.getLogger(SnmpUtil.class);
 
-    private static Snmp snmp = null;
-
     // 默认版本 v2
     public static final int DEFAULT_VERSION = SnmpConstants.version2c;
     public static final String DEFAULT_PROTOCOL = "udp";
@@ -42,7 +40,7 @@ public class SnmpUtil {
      * @param port
      * @return
      */
-    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port) {
+    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port,Snmp snmp) {
         Target target = null;
         if (version == SnmpConstants.version3) {
             // 添加用户
@@ -136,9 +134,10 @@ public class SnmpUtil {
      */
     public static List snmpGetOrGetNext(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String operation) throws IOException {
         List<Map> list = new ArrayList<>();
+        Snmp snmp = null;
         try {
             DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
-            snmp = new Snmp(transport);
+            snmp=new Snmp(transport);
             // 如果是v3版本
             if (version == SnmpConstants.version3) {
                 // 设置安全模式
@@ -146,7 +145,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port);
+            Target target = getTatget(version, community, auth, ip, port,snmp);
             snmp.listen();
 
             // 根据版本不同获取不同的pdu对象
@@ -219,6 +218,7 @@ public class SnmpUtil {
      */
     public static List<Map> snmpWalk(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth) throws IOException {
         List<Map> resultData = new ArrayList<>();
+        Snmp snmp = null;
         try {
             TransportMapping transport = new DefaultUdpTransportMapping();
             snmp = new Snmp(transport);
@@ -230,7 +230,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port);
+            Target target = getTatget(version, community, auth, ip, port,snmp);
             snmp.listen();
 
             PDU pdu = getPdu(version);
@@ -327,7 +327,8 @@ public class SnmpUtil {
      * @throws IOException
      */
     public static R setPDU(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String value) throws IOException {
-        try {
+        Snmp snmp=null;
+    	try {
             PDU pdu = getPdu(version);
             pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
             pdu.setType(PDU.SET);
@@ -342,7 +343,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port);
+            Target target = getTatget(version, community, auth, ip, port,snmp);
             snmp.listen();
             ResponseEvent responseEvent = snmp.send(pdu, target);
             PDU response = responseEvent.getResponse();
