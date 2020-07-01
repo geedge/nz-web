@@ -24,6 +24,7 @@ public class AssetConcurrent {
 		
 		try {
 			assetService.collectData(assetId);
+			logger.info("AssetConcurrent task finished time ："+DateUtil.getTime());
 		} catch (Exception e) {
 			logger.error("AssetConcurrent fail assetId : {} info : {} ",assetId,e);
 		}

@@ -77,11 +77,11 @@ nezha:
   alertMessageJobCron: 0 0/1 * * * ? *   # 告警同步程序采集频率 1分钟执行一次  0/10 * * * * ?
   promserverJobCron: 0/15 * * * * ?
   assetPingJobCron: 0 0/3 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为3分钟
-  assetFeatureJobCron: 0/45 * * * * ?    # asset采集信息 默认5分钟执行一次
+  assetFeatureJobCron: 0 0 1 * * ?   # asset采集信息 默认5分钟执行一次
   loginExpiration: 120 #登录token 过期时间，单位 分钟 ，不设置默认为30分钟
-  corePoolSize: 10
-  maxPoolSize: 20
-  queueCapacity: 100
+  corePoolSize: 20
+  maxPoolSize: 100
+  queueCapacity: 500
 
 #mybatis
 mybatis-plus:

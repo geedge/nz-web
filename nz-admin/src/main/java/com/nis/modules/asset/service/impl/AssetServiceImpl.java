@@ -1441,9 +1441,28 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         resultMap.put("Basic", basicInfo);
 
-        // 暂未完成
-        Map feature = new HashMap();
 
+        Map feature = new LinkedHashMap();
+        Map assetFeatureHandle = new HashMap();
+        List<AssetFeature> assetFeatures = assetFeatureService.list(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, asset.getId()));
+        for(AssetFeature assetFeature : assetFeatures) {
+        	assetFeatureHandle.put(assetFeature.getItem(),assetFeature.getValue());
+        }
+        feature.put("hostname", assetFeatureHandle.get("hostname"));
+        feature.put("cpu", JSON.parse((String)(assetFeatureHandle.get("cpu"))));
+        feature.put("memory", assetFeatureHandle.get("memory"));
+        feature.put("disk", JSON.parse((String)(assetFeatureHandle.get("disk"))));
+        feature.put("interface", JSON.parse((String)(assetFeatureHandle.get("interface"))));
+        feature.put("core", assetFeatureHandle.get("core"));
+        feature.put("os", assetFeatureHandle.get("os"));
+        feature.put("uptime", assetFeatureHandle.get("uptime"));
+        feature.put("sysName", assetFeatureHandle.get("sysName"));
+        feature.put("sysLocation", assetFeatureHandle.get("sysLocation"));
+        feature.put("sysContact", assetFeatureHandle.get("sysContact"));
+        feature.put("sysServices", assetFeatureHandle.get("sysServices"));
+        feature.put("sysUpTime", assetFeatureHandle.get("sysUpTime"));
+        feature.put("ifNumber", assetFeatureHandle.get("ifNumber"));
+        feature.put("ifEntry", JSON.parse((String)(assetFeatureHandle.get("ifEntry"))));
         resultMap.put("Feature",feature);
         return resultMap;
     }
@@ -1859,7 +1878,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			}
 			
 			List<AssetFeature> results = new ArrayList<AssetFeature>();
-						
+					
+			// 查询该资产下是否有之前收集的信息  防止频繁查询数据库
+			List<AssetFeature> assetFeatures = assetFeatureService.list(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId));
+			HashMap<String,AssetFeature> assetFeatureMap = new HashMap<String,AssetFeature>();
+			if(ToolUtil.isNotEmpty(assetFeatures)) {
+				for(AssetFeature data : assetFeatures) {
+					// 将数据以key为资产id 查询的信息名称 以及查询方式组合
+					assetFeatureMap.put(data.getAssetId()+data.getItem()+data.getSource(), data);
+				}
+			}
+			
 			// ssh采集相关逻辑
 			if(Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
 				String s="";
@@ -1914,7 +1943,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        		String cpuInfo = split[1];
 			        		String[] ss = new String[Integer.valueOf(cpuCount)];
 			        		for(int i=0;i<Integer.valueOf(cpuCount);i++) {
-			        			ss[i]=cpuInfo;
+			        			ss[i]=cpuInfo.replace("\r\n", "");
 			        		}
 			        		value=JSON.toJSONString(ss);
 			        	}
@@ -1923,7 +1952,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			            	int diskCount = split.length/2;
 			            	List list =new ArrayList();
 			            	for(int i=0;i<diskCount;i++) {
-			            		Map map =new HashMap();
+			            		Map map =new LinkedHashMap();
 			            		String[] split2 = split[i].split(" ");
 			            		String[] split3 = split[diskCount+i].split(" ");
 			            		map.put("vendor", split3[0]);
@@ -1933,9 +1962,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			            	}
 			            	value=JSON.toJSONString(list);
 			        	}
-			        	
+			        	value=value.replace("\r\n", "");
 			        	//查询数据库是否已经存在数据
-			        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
+//			        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
+			        	AssetFeature result = assetFeatureMap.get(assetId+key+Constant.ACCOUNT_SSH_PROTOCOL);;
 			        	if(ToolUtil.isEmpty(result)) {
 			        		result = new AssetFeature();
 			        	}
@@ -1957,7 +1987,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        String[] names = interfaceNames.split("\r\n");
 			        List interfaceInfos =new ArrayList();
 			        for(String name : names) {
-			        	Map map =new HashMap();
+			        	Map map =new LinkedHashMap();
 			        	map.put("name", name);
 			        	map.put("inet", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" | grep -w inet | awk -F' ' '{print $2}'").replace("\r\n", ""));
 			        	map.put("netmask", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" | grep netmask|awk '{print $4}'").replace("\r\n", ""));
@@ -1967,8 +1997,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        	map.put("state", RuntimeUtil.sshCommondResult(session, "ifconfig "+name+" |grep mtu|awk -F ',' '{print $1}'|awk -F '<' '{print $2}'").replace("\r\n", ""));
 			        	interfaceInfos.add(map);
 			        }
-			        AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,"interface").eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
-		        	if(ToolUtil.isEmpty(result)) {
+//			        AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,"interface").eq(AssetFeature::getSource,Constant.ACCOUNT_SSH_PROTOCOL));
+			        AssetFeature result=assetFeatureMap.get(assetId+"interface"+Constant.ACCOUNT_SSH_PROTOCOL);
+			        if(ToolUtil.isEmpty(result)) {
 		        		result = new AssetFeature();
 		        	}
 		        	result.setAssetId(assetId);
@@ -1992,14 +2023,26 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			// snmp采集相关逻辑
 			if(Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
 				Map snmpInfos = JSONObject.parseObject((String) account.getParams(), Map.class);
+				// 保留以下key的值
+				List keepValues =new ArrayList() {
+				   {add("ifIndex");
+					add("ifDescr");
+					add("ifType");
+					add("ifMtu");
+					add("ifSpeed");
+					add("ifPhysAddress");
+					add("ifAdminStatus");
+					add("ifOperStatus");
+					add("ifLastChange");}
+				};
 				try {
 					Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
 					for(String key:keySet) {
 						List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getHost(), account.getPort(), (Integer)snmpInfos.get("version"), (String)snmpInfos.get("community"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
 						if(key.equals("ifEntry")) {
-							List l =new ArrayList();
+							List l =new LinkedList();
 							if (CollectionUtils.isNotEmpty(snmpResults)) {
-								Map<String,Map> handleMap =new LinkedHashMap<String,Map>();
+								Map<String,LinkedHashMap> handleMap =new LinkedHashMap<String,LinkedHashMap>();
 					            String resultOid;
 					            String name, str;
 					            for (Map map : snmpResults) {
@@ -2018,20 +2061,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 					                    }
 
 					                    name = oidWithNameMap.get(resultOid);
-					                    if (StringUtils.isNotEmpty(name)) {
-					                        str = str.replaceAll(resultOid, "");
-					                        name += str;
-					                    }
 					                }
 					                map.put("name", name);
-					                
+					                if(!keepValues.contains(name)) {
+					                	continue;
+					                }
 					                //截取最后一位oid数
 					                String[] split = map.get("oid").toString().split("\\.");
 						   		    String string = split[split.length-1];
 					                Map map2 = handleMap.get(string);
 					                if(ToolUtil.isEmpty(map2)) {
-					                	Map map3 =new HashMap();
-					                	handleMap.put(string, map3);
+					                	Map map3 =new LinkedHashMap();
+					                	handleMap.put(string, (LinkedHashMap) map3);
 					                	map3.put(name,map.get("value"));
 					                }else {
 					                	map2.put(name,map.get("value"));
@@ -2043,8 +2084,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 					            }
 					        }
 							//查询数据库是否已经存在数据
-				        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
-				        	if(ToolUtil.isEmpty(result)) {
+//				        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
+							AssetFeature result = assetFeatureMap.get(assetId+key+Constant.ACCOUNT_SNMP_PROTOCOL);
+							if(ToolUtil.isEmpty(result)) {
 				        		result = new AssetFeature();
 				        	}
 							result.setAssetId(assetId);
@@ -2057,8 +2099,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 							for(Map snmpResult : snmpResults) {
 								String value = (String) snmpResult.get("value");
 								//查询数据库是否已经存在数据
-					        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
-					        	if(ToolUtil.isEmpty(result)) {
+//					        	AssetFeature result = assetFeatureService.getOne(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId).eq(AssetFeature::getItem,key).eq(AssetFeature::getSource,Constant.ACCOUNT_SNMP_PROTOCOL));
+								AssetFeature result = assetFeatureMap.get(assetId+key+Constant.ACCOUNT_SNMP_PROTOCOL);
+								if(ToolUtil.isEmpty(result)) {
 					        		result = new AssetFeature();
 					        	}
 								result.setAssetId(assetId);

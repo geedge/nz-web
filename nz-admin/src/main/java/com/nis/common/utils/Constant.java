@@ -640,12 +640,13 @@ public class Constant {
     // ssg采集相关服务器信息指令
     public static final Map<String,String> SSH_SHELL_MAP =new HashMap<String,String>(){
     	{
+    		put("hostname","hostname");
     		put("cpu","cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"cpu cores\"| uniq |awk -F: '{print $2}'`");
     		put("memory","cat /proc/meminfo |grep MemTotal|awk '{printf (\"%.3f\\n\",$2/1024/1024)}'");
+    		put("disk","lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
     		put("core","cat /proc/version");
     		put("os","cat /etc/redhat-release");
     		put("uptime","uptime -s");
-    		put("disk","lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
     	}
     };
     
