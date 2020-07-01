@@ -1844,7 +1844,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		if(ToolUtil.isEmpty(accounts)) {
 			// 该资产无ssh或snmp信息 采集失败 
 			logger.error("asset feature get data error,assetId : {} has no SSH or SNMP information",assetId);
-			throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
+			throw new NZException("This asset has no SSH or SNMP information acquisition failure");
 		}
 		
 		// 获取当前所有的mib tree
@@ -1855,7 +1855,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			if(accounts.size()==1 && Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
 				// 该资产无ssh或snmp信息 采集失败 
 				logger.error("asset feature get data error,assetId : {} has no SSH or SNMP information",assetId);
-				throw new RuntimeException("This asset has no SSH or SNMP information acquisition failure");
+				throw new NZException("This asset has no SSH or SNMP information acquisition failure");
 			}
 			
 			List<AssetFeature> results = new ArrayList<AssetFeature>();
@@ -1981,7 +1981,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 				} catch (Exception e) {
 					e.printStackTrace();
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
-					throw new RuntimeException(e.getMessage());
+					throw new NZException(e.getMessage());
 				} finally {
 					if(session!=null) {
 						session.disconnect();
@@ -2080,7 +2080,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 				} catch (Exception e) {
 					e.printStackTrace();
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
-					throw new RuntimeException(e.getMessage());
+					throw new NZException(e.getMessage());
 				}
 			}
 			

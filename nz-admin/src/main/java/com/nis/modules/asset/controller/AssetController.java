@@ -210,7 +210,7 @@ public class AssetController {
 			assetService.collectData(assetId);
 			return R.ok();
 		} catch (Exception e) {
-			return R.error(400,e.getMessage());
+			return R.error(500,e.getMessage());
 		}
     }
 }
