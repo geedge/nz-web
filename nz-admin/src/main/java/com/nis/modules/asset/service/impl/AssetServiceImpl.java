@@ -2,6 +2,7 @@ package com.nis.modules.asset.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -1449,10 +1450,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         	assetFeatureHandle.put(assetFeature.getItem(),assetFeature.getValue());
         }
         feature.put("hostname", assetFeatureHandle.get("hostname"));
-        feature.put("cpu", JSON.parse((String)(assetFeatureHandle.get("cpu"))));
+        feature.put("cpu", JSON.parse((String)(assetFeatureHandle.get("cpu")),Feature.OrderedField));
         feature.put("memory", assetFeatureHandle.get("memory"));
-        feature.put("disk", JSON.parse((String)(assetFeatureHandle.get("disk"))));
-        feature.put("interface", JSON.parse((String)(assetFeatureHandle.get("interface"))));
+        feature.put("disk", JSON.parse((String)(assetFeatureHandle.get("disk")),Feature.OrderedField));
+        feature.put("interface", JSON.parse((String)(assetFeatureHandle.get("interface")),Feature.OrderedField));
         feature.put("core", assetFeatureHandle.get("core"));
         feature.put("os", assetFeatureHandle.get("os"));
         feature.put("uptime", assetFeatureHandle.get("uptime"));
@@ -1462,7 +1463,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         feature.put("sysServices", assetFeatureHandle.get("sysServices"));
         feature.put("sysUpTime", assetFeatureHandle.get("sysUpTime"));
         feature.put("ifNumber", assetFeatureHandle.get("ifNumber"));
-        feature.put("ifEntry", JSON.parse((String)(assetFeatureHandle.get("ifEntry"))));
+        feature.put("ifEntry", JSON.parse((String)(assetFeatureHandle.get("ifEntry")),Feature.OrderedField));
         resultMap.put("Feature",feature);
         return resultMap;
     }
