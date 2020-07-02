@@ -413,6 +413,13 @@ public enum RCode {
     SYS_CONFIG_RESET_FAIL(573057,"System reset fail, check config and try again later"),
     SYS_CONFIG_MODELCHARTTPL_NOTFOUND(576058,"System config model chart tpl not found"),
     SYS_CONFIG_PROJECTCHARTTPL_NOTFOUND(576059,"System config project chart tpl not found"),
+    
+    LINK_ID_ISNULL(581001,"link id can not be null"),
+    LINK_NAME_ISNULL(581002,"link name can not be null"),
+    LINK_URL_ISNULL(581003,"link url can not be null"),
+    LINK_PREV_ISNULL(581004,"link prev can not be null"),
+	LINK_NEXT_ISNULL(581005,"link next can not be null"),
+	LINK_BUILDIN_CAN_NOT_REMOVE(587006,"This link is built-in and cannot be deleted"),
     /**
      * webshell相关
      */
