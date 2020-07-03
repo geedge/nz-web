@@ -1,5 +1,23 @@
 package com.nis.modules.promserver.controller;
 
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import net.sf.json.util.JSONUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,29 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.RCode;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-
-import net.sf.json.util.JSONUtils;
-
 @Controller
 @SuppressWarnings("all")
 public class PromProxyController {
@@ -43,10 +38,16 @@ public class PromProxyController {
 	 * global prometheus type
 	 */
 	private static final Integer PROMSERVER_GLOBAL = 1;
+
 	/**
-	 * global prometheus type
+	 * per_datacenter type
 	 */
 	private static final Integer PROMSERVER_PER_DATACENTER = 2;
+
+	/**
+	 * thanos_query type
+	 */
+	private static final Integer PROMSERVER_THANOS_QUERY = 3;
 
 	@Autowired
 	private PromserverService promserverService;
@@ -80,9 +81,18 @@ public class PromProxyController {
 		default:
 			break;
 		}
-		// type 默认为 global
-		type = (type == null) ? PROMSERVER_GLOBAL : type;
+		// type 优先使用 thanos_query
+		type = (type == null) ? PROMSERVER_THANOS_QUERY : type;
 		Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
+		if (ToolUtil.isEmpty(server)) {
+			// type 其次使用 global
+			type = PROMSERVER_GLOBAL;
+			server = promserverService.getOneAvaPromServer(promId, idcId, type);
+			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
+		}
+		// type 默认为 global
+		// type = (type == null) ? PROMSERVER_GLOBAL : type;
+		// Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 		logger.debug("path:{},prometheus server:{}", promPath, JSONUtils.valueToString(server));
 		// 请求 prometheus server
 		requestProm(server.getHost(), server.getPort(), promPath, request, response);

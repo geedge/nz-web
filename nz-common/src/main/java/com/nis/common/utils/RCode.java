@@ -273,6 +273,8 @@ public enum RCode {
     PROMSERVER_HOST_ERROR(523013, "PromServer host is incorrect"),
     PROMSERVER_NOTEXSITS(526014, "PromServer is not exsits"),    // PromServer 不存在
     PROMSERVER_EXIST_ERROR(526015, "PromServer is exists : host,type,port repeat"),
+    PROMSERVER_TYPE_INVALIDE(523016,"PromServer type is incorrect"),
+    PROMSERVER_UNAVAILABLE(526017,"No PromServer available"),
 
 
     IDC_IDCNAME_ISNULL(531000, "Idc name can not be empty"),              // 数据中心name不能为空

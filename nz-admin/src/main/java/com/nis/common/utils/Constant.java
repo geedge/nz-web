@@ -386,6 +386,50 @@ public class Constant {
         }
     }
 
+
+    public enum PromserverType{
+        GLOBAL("global",1),
+        PER_DATACENTER("per_datacenter",2),
+        THANOS_QUERY("thanos_query",3),
+        THANOS_RULE("thanos_rule",4),
+        THANOS_SIDECAR("thanos_sidecar",5),
+        THANOS_STORE("thanos_store",6),
+        THANOS_COMPACTOR("thanos_compactor",7);
+
+        private String name;
+        private Integer value;
+
+        PromserverType(String name,Integer value){
+            this.value=value;
+            this.name=name;
+        }
+
+        public Integer getValue() {
+            return value;
+        }
+
+        public void setValue(Integer value) {
+            this.value = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public static PromserverType getPromserverType(Integer value){
+            for (PromserverType  server:PromserverType.values()){
+                if (server.getValue().equals(value)){
+                    return server;
+                }
+            }
+            return null;
+        }
+    }
+
     //permission type
     public static final String PM_TYPE_DETESET = "2";
     public static final String PM_TYPE_DETEWARN = "3";
