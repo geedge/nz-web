@@ -20,8 +20,9 @@ public enum TypeEnum {
     PROMSERVER("promServer"),
     ACCOUNT("account"),
     MIB("mib"),
-    SYSTEM("system");
-
+    SYSTEM("system"),
+	LINK("link");
+	
     private String value;
 
     public String getValue(){
