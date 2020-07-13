@@ -22,10 +22,6 @@ public class LockUtils {
     @Autowired
     private DefaultRedisScript<Long> redisScript;
 
-    // 超时时间  暂时 5 分钟
-    @Value("${nezha.redis.metricLockTimeOut}")
-    private Long TIME_OUT;
-
     private final Long RELEASE_SUCCESS = 1L;
 
 
@@ -35,9 +31,9 @@ public class LockUtils {
      * @param key
      * @return
      */
-    public boolean lock(String key, String value) {
+    public boolean lock(String key, String value, Long timeout) {
         // 加锁并设置过期时间
-        return stringRedisTemplate.opsForValue().setIfAbsent(key, value, TIME_OUT, TimeUnit.MINUTES);
+        return stringRedisTemplate.opsForValue().setIfAbsent(key, value, timeout, TimeUnit.MINUTES);
     }
 
     /**

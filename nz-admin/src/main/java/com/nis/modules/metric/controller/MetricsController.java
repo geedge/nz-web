@@ -1,7 +1,10 @@
 package com.nis.modules.metric.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.Asset;
@@ -76,6 +79,7 @@ public class MetricsController extends AbstractController {
      * @return
      */
     @RequestMapping(value = "/system/info", method = RequestMethod.GET)
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R systemInfo() {
         Map resultMap = new HashMap();
         // 1. project总数

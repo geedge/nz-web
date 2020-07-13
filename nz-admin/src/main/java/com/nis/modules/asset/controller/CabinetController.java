@@ -144,6 +144,7 @@ public class CabinetController {
      * @return
      */
     @GetMapping("/u")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.CABINET)
     public R getUInfo(Integer id) {
         ValidateUtils.is(id).notNull(RCode.IDC_CABINETID_ISNULL);
 

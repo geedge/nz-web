@@ -1,21 +1,23 @@
 package com.nis.modules.endpoint.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.TypeEnum;
+import com.nis.modules.endpoint.entity.MetadataMetric;
+import com.nis.modules.endpoint.service.MetadataMetricService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.modules.endpoint.entity.MetadataMetric;
-import com.nis.modules.endpoint.service.MetadataMetricService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/metric")
@@ -33,6 +35,7 @@ public class MetricController {
      */
     @GetMapping("/metadata")
     @ResponseBody
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROMSERVER)
     public R queryMetadata(Integer endpointId) throws Exception {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
         List<MetadataMetric> metadata;

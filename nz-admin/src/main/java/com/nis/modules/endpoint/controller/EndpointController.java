@@ -169,7 +169,7 @@ public class EndpointController extends AbstractController {
 	 * @return
 	 */
 	@DeleteMapping("/cancelImport")
-	@SysLog()
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ENDPOINT)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ENDPOINT_CANCELIMPORTSEQ_ISNULL);
         endpointService.cancelImport(seq);

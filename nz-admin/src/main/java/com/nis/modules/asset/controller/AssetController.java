@@ -192,6 +192,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping("/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ASSET_CANCELIMPORTSEQ_ISNULL);
 
@@ -204,6 +205,7 @@ public class AssetController {
      * asset更新采集项信息
      */
     @GetMapping("updateFeature")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
     public R updateFeature(Integer assetId) {
     	// 采集信息方法
     	try {

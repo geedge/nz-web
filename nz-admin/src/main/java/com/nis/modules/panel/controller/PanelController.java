@@ -2,7 +2,10 @@ package com.nis.modules.panel.controller;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
@@ -72,6 +75,7 @@ public class PanelController {
      * @return
      */
     @PutMapping("/modify")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
     public R modify(@RequestBody Panel panel){
         ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL)
                 .and(panel.getType()).notNull(RCode.PANEL_TYPE_ISNULL)
@@ -83,6 +87,7 @@ public class PanelController {
     }
 
     @GetMapping(value={"/{id}/charts"})
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CHART)
     public R chartList(@PathVariable("id") Integer panelId, @RequestParam(value="id",required = false) Integer id,@RequestParam(value="title",required = false)String title){
         List<Chart> charts=chartService.queryCharts(panelId,id,title);
         Map<String,List<Chart>> map=new HashMap<String,List<Chart>>();
@@ -91,6 +96,7 @@ public class PanelController {
     }
 
     @PostMapping("/{id}/charts")
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
     public R chartSave(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
 
         chart.setPanelId(panelId);
@@ -103,6 +109,7 @@ public class PanelController {
     }
 
     @PutMapping("/{id}/charts")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
     public R chartUpdate(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
 
         chart.setPanelId(panelId);
@@ -115,6 +122,7 @@ public class PanelController {
     }
 
     @DeleteMapping("/{id}/charts")
+    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CHART)
     public R chartDelete(@PathVariable("id") Integer panelId,@RequestParam Integer[] ids, Integer sync){
         chartService.validatePanel(panelId);
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
@@ -131,6 +139,7 @@ public class PanelController {
      * @return
      */
     @PutMapping(value = {"/{id}/charts/modify"})
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
     public R modify(@PathVariable("id") Integer panelId, @RequestBody Chart chart) {
         // 校验参数
         chartService.validatePanel(panelId);
@@ -147,10 +156,11 @@ public class PanelController {
     /**
      * chart复制
      * @param panelId
-     * @param id
+     * @param chart
      * @return
      */
     @PostMapping(value={"/{id}/charts/duplicate"})
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
     public R duplicate(@PathVariable("id") Integer panelId, @RequestBody Chart chart){
     	// 校验参数
         chartService.validatePanel(panelId);

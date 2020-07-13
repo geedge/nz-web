@@ -591,9 +591,6 @@ public class Constant {
     // 告警级别 低
     public static final String ALERT_SEVERITY_LOW = "low";
 
-    // 系统登陆用户集合
-    public static Set<String> loginUsers = new HashSet<>();
-
     // account protocol ssh协议
     public static final String ACCOUNT_SSH_PROTOCOL = "SSH";
 

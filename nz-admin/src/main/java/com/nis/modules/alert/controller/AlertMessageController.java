@@ -81,6 +81,7 @@ public class AlertMessageController {
 	 * alert message导出
 	 */
 	@GetMapping(value = "/export")
+	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
 		alertMessageService.export(response,params);
 	}

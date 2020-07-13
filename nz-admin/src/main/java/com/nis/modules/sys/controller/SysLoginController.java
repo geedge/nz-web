@@ -110,7 +110,6 @@ public class SysLoginController extends AbstractController {
 			// 查询系统配置信息
 			String [] paramkeys = {"system_name","timezone","default_cabinet_uszie","max_terminal_num","asset_ping_switch"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
-			Constant.loginUsers.add(username);
             configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
 			return R.ok(obj);
 		}catch (UnknownAccountException e) {
@@ -132,10 +131,6 @@ public class SysLoginController extends AbstractController {
 	@ResponseBody
 	@SysLog(operation = OperationEnum.LOGOUT,type = TypeEnum.SYSTEM)
 	public R logout(HttpServletRequest request) {
-
-		SysUserEntity userEntity = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
-		Constant.loginUsers.remove(userEntity.getUsername());
-
 		ShiroUtils.logout();
 		String requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
 		if(StringUtils.isBlank(requestToken)){

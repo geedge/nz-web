@@ -1,7 +1,10 @@
 package com.nis.modules.overview.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.overview.service.OverviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +35,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/assetStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R assetStat() {
         Map assetStat = overviewService.getAssetStat();
         return R.ok(assetStat);
@@ -43,6 +47,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/projectStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R projectStat() {
         Map projectStat = overviewService.getProjectStat();
         return R.ok(projectStat);
@@ -54,6 +59,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/endpointStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R endpointStat() {
         Map endpointStat = overviewService.getEndpointStat();
         return R.ok(endpointStat);
@@ -66,6 +72,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/datacenterStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R datacenterStat() {
         Map datacenterStat = overviewService.getDatacenterStat();
         return R.ok(datacenterStat);
@@ -77,6 +84,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/alertRuleStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R alertRuleStat() {
         Map alertRuleStat = overviewService.getAlertRuleStat();
         return R.ok(alertRuleStat);
@@ -89,6 +97,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/alertStatByRule")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R alertStatByRule(Integer top) {
         if (top == null) {
             top = (int) Constant.PAGESIZE;
@@ -108,6 +117,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/alertStatByAsset")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R alertStatByAsset(Integer top) {
         if (top == null) {
             top = (int) Constant.PAGESIZE;
@@ -126,6 +136,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/moduleStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R moduleStat() {
         Map moduleStat = overviewService.getModuleStat();
         return R.ok(moduleStat);
@@ -137,6 +148,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/alertMessageStat")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R alertMessageStat() {
         Map data = overviewService.alertMessageStat();
         return R.ok(data);
@@ -149,6 +161,7 @@ public class OverviewController {
      * @return
      */
     @GetMapping("/alertStatByModule")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     public R alertStatByModule(Integer top) {
         if (top == null) {
             top = (int) Constant.PAGESIZE;

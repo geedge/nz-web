@@ -72,6 +72,7 @@ public class AlertRuleController {
      * @return
      */
     @GetMapping("/stat")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
     public R ruleStat(Integer id){
         ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
 
