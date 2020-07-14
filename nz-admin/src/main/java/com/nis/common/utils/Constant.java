@@ -678,17 +678,34 @@ public class Constant {
         }
     };
     
+    public static final Map<String,String> SNMP_IFENTRY_MAP = new HashMap<String,String>() {
+    	{
+    		put("1.3.6.1.2.1.2.2.1.1","ifIndex");
+    		put("1.3.6.1.2.1.2.2.1.2","ifDescr");
+    		put("1.3.6.1.2.1.2.2.1.3","ifType");
+    		put("1.3.6.1.2.1.2.2.1.4","ifMtu");
+    		put("1.3.6.1.2.1.2.2.1.5","ifSpeed");
+    		put("1.3.6.1.2.1.2.2.1.6","ifPhysAddress");
+    		put("1.3.6.1.2.1.2.2.1.7","ifAdminStatus");
+    		put("1.3.6.1.2.1.2.2.1.8","ifOperStatus");
+    		put("1.3.6.1.2.1.2.2.1.9","ifLastChange");
+    		
+    	}
+    };
+    
+    
     // ssg采集相关服务器信息指令
     public static final Map<String,String> SSH_SHELL_MAP =new HashMap<String,String>(){
     	{
     		put("hostname","hostname");
-    		put("cpu","cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"cpu cores\"| uniq |awk -F: '{print $2}'`");
-    		put("memory","cat /proc/meminfo |grep MemTotal|awk '{printf (\"%.3f\\n\",$2/1024/1024)}'");
+    		put("cpu","cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"processor\"| wc -l`");
+    		put("memory","free -m  | grep Mem | awk -F ' ' '{printf (\"%.3f\\n\",$2/1000)}'");
     		put("disk","lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
     		put("core","cat /proc/version");
-    		put("os","cat /etc/redhat-release");
+ //   		put("os","cat /etc/redhat-release");
     		put("uptime","uptime -s");
     	}
     };
+    
     
 }

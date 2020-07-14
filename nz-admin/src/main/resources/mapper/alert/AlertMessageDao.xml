@@ -197,6 +197,9 @@
 				#{ruleId}
 			</foreach>
 		</if>
+		<if test="params.sidx == null or params.sidx == ''">
+			ORDER BY am.state , am.start_at DESC
+		</if>
 		LIMIT #{params.pageNo},#{params.pageSize}
 	</select>
 
