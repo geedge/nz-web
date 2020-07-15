@@ -123,9 +123,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		Integer searchRuleId=resolveParamToInteger(params,"ruleId");
 		params.put("ruleId",searchRuleId);
 
-		IPage<AlertMessageEntity> page=this.page(new Query<AlertMessageEntity>().getPage(params));
+	    IPage<AlertMessageEntity> page = new Query<AlertMessageEntity>().getPage(params);
 
-		List<AlertMessageEntity> alertMessages=this.baseMapper.list(page,params);
+	    List<AlertMessageEntity> alertMessages=this.baseMapper.list(page,params);
 
 		// 处理返回结果
 		this.handleResultData(alertMessages);
