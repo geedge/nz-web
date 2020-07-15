@@ -2,5 +2,30 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.nis.modules.sys.dao.SysLogDao">
+        <select id="queryList" resultType="com.nis.modules.sys.entity.SysLogEntity">
+                SELECT
+                    sl.*,
+                    su.username AS username
+                FROM
+                    sys_log sl
+                    LEFT JOIN sys_user su ON sl.user_id = su.user_id
+                    <where>
+                        <if test="params.operation != null and params.operation != ''">
+                                AND sl.operation like CONCAT('%', #{params.operation}, '%')
+                        </if>
+                        <if test="params.type != null and params.type != ''">
+                                AND sl.type like CONCAT('%', #{params.type}, '%')
+                        </if>
+                        <if test="params.userIds != null and params.userIds.size > 0">
+                                AND sl.user_id IN
+                                <foreach collection="params.userIds" item="id" index="no" open="(" separator="," close=")">
+                                        #{id}
+                                </foreach>
+                        </if>
+                    </where>
 
+            <if test="params.orderBy == null or params.orderBy == ''">
+                ORDER BY sl.create_date DESC
+            </if>
+        </select>
 </mapper>
