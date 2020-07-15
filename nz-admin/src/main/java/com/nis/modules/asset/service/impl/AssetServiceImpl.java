@@ -2020,14 +2020,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 	
 	public void getSystemOsInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
 		String value="";
-		String osInfo = RuntimeUtil.sshCommondResult(session, "cat /etc/redhat-release");
+		String osInfo = RuntimeUtil.sshCommondResult(session, "echo `cat /etc/system-release` `uname -p`");
 		if(osInfo.toLowerCase().contains("centos")) {
-        	value=JSON.toJSONString(osInfo);
+        	value=JSON.toJSONString(osInfo.replaceAll("\r\n", ""));
         }else {
-        	osInfo = RuntimeUtil.sshCommondResult(session, "cat /etc/issue");
+        	osInfo = RuntimeUtil.sshCommondResult(session, "echo `cat /etc/os-release | grep -w NAME | awk -F '=' '{print $2}' |sed 's/\\\"//g'` `cat /etc/os-release | grep -w VERSION | awk -F '=' '{print $2}' |sed 's/\\\"//g'` `uname -p`");
         	value=JSON.toJSONString(osInfo.replaceAll("\r\n", ""));
         }
-        AssetFeature result=assetFeatureMap.get(assetId+"interface"+Constant.ACCOUNT_SSH_PROTOCOL);
+        AssetFeature result=assetFeatureMap.get(assetId+"os"+Constant.ACCOUNT_SSH_PROTOCOL);
         if(ToolUtil.isEmpty(result)) {
     		result = new AssetFeature();
     	}

@@ -22,6 +22,7 @@
 package com.nis.modules.terminal.config;
 
 import com.nis.common.utils.DigestUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
@@ -68,6 +69,38 @@ public class TerminalSession implements Serializable {
      */
     public static Map<String,Map> terminalAttributeInfo = new HashMap<String,Map>();
     
+    /**
+     * 管理前端窗口数量
+     */
+    public static Map<String,Integer> windowSize =new HashMap<String,Integer>();
+    
+    public static Integer getWindowSize(String token) {
+    	Integer result = windowSize.get(token);
+    	if(ToolUtil.isEmpty(result)) {
+    		result=1;
+    	}
+    	return result;
+    }
+    
+    public static void setWindowSize(String token) {
+    	Integer result = windowSize.get(token);
+    	if(ToolUtil.isEmpty(result)) {
+    		result=1;
+    	}else {
+    		result+=1;
+    	}
+    	windowSize.put(token, result);
+    }
+    
+    public static void removeWindowSize(String token) {
+    	Integer result = windowSize.get(token);
+    	if(ToolUtil.isEmpty(result)||result==0) {
+    		windowSize.remove(token);
+    	}else {
+    		result-=1;
+    	}
+    	windowSize.put(token, result);
+    }
     
     
     public static void setTerminalAttributeInfo(String uuid,String key,Object value) {

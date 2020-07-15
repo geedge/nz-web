@@ -10,6 +10,7 @@ package com.nis.common.utils;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nis.common.exception.NZException;
 import com.nis.common.xss.SQLFilter;
 import org.apache.commons.lang.StringUtils;
 
@@ -44,19 +45,34 @@ public class Query<T> {
         //分页参数
         params.put(Constant.PAGE, page);
 
-        //排序字段
+        //排序字段  orderBy=id
         //防止SQL注入（因为sidx、order是通过拼接SQL实现排序的，会有SQL注入风险）
-        String orderField = SQLFilter.sqlInject((String)params.get(Constant.ORDER_FIELD));
-        String order = (String)params.get(Constant.ORDER);
-
+        String orderField = SQLFilter.sqlInject((String)params.get(Constant.ORDER));
+//        String order = (String)params.get(Constant.ORDER);
+        
+        if(StringUtils.isNotEmpty(orderField)) {
+        	boolean matcheFlag = orderField.trim().matches("-?[a-zA-Z_.-]+");
+        	if(!matcheFlag) {
+            	throw new NZException(RCode.ERROR);
+            }
+            
+            if(orderField.startsWith("-")) {
+            	orderField=orderField.substring(1,orderField.length());
+            	return page.setDesc(orderField);
+            }else {
+            	return page.setAsc(orderField);
+            }
+            
+        }
+        
         //前端字段排序
-        if(StringUtils.isNotEmpty(orderField) && StringUtils.isNotEmpty(order)){
+       /* if(StringUtils.isNotEmpty(orderField) && StringUtils.isNotEmpty(order)){
             if(Constant.ASC.equalsIgnoreCase(order)) {
                 return page.setAsc(orderField);
             }else {
                 return page.setDesc(orderField);
             }
-        }
+        }*/
 
         //默认排序
         if(isAsc) {

@@ -134,12 +134,16 @@ public class TerminalHandler extends TextWebSocketHandler {
         if(StringUtils.isNotEmpty(maxNum)) {
         	num=Integer.valueOf(maxNum);
         }
-        List<TerminalClient> allTerminalClient = TerminalSession.getAllTerminalClient(token);
-        if(allTerminalClient.size()>=num) {
+        
+        Integer windowSize = TerminalSession.getWindowSize(token);
+        if(windowSize>=num) {
         	session.sendMessage(new TextMessage("Unable to connect at the maximum number of connections"));
+        	TerminalSession.setWindowSize(token);
         	session.close();
         	return;
         }
+        TerminalSession.setWindowSize(token);
+        
         if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
         	
         	// 从缓存中取出之前保存的客户端实例
@@ -507,6 +511,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    	TerminalSession.removeWindowSize(token);
         super.afterConnectionClosed(session, status);
         this.closeTerminal(session);
         TerminalSession.removeTerminalAttributeInfo(uuid);
