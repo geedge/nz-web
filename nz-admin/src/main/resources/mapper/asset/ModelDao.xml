@@ -61,10 +61,10 @@
           dict.type AS vendorType,
 
           /*资产类型*/
-          dict1.id AS assetId,
-          dict1.value AS assetValue,
-          dict1.code AS assetCode,
-          dict1.type AS assetType,
+          dictt.id AS assetId,
+          dictt.value AS assetValue,
+          dictt.code AS assetCode,
+          dictt.type AS assetType,
 
           /*资产统计*/
           COUNT(ass.id) as as_total,
@@ -78,7 +78,7 @@
         FROM model mo
 
          JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor' AND dict.del_flag = 0
-         JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType' AND dict1.del_flag = 0
+         JOIN sys_dict dictt ON dictt.code = mo.type AND dictt.type = 'assetType' AND dictt.del_flag = 0
         LEFT JOIN asset ass ON mo.id = ass.model_id
 
         <where>
@@ -144,8 +144,8 @@
 
 
     <select id="getModelDetailById" resultMap="modelDetail">
-        select model.name,dict1.value as typeName,dict2.value as vendorName from model
-        left join sys_dict dict1 on model.type = dict1.code and dict1.type = "assetType"
+        select model.name,dictt.value as typeName,dict2.value as vendorName from model
+        left join sys_dict dictt on model.type = dictt.code and dictt.type = "assetType"
         left join sys_dict dict2 on model.vendor = dict2.code and dict2.type = "vendor"
         where model.id = #{id}
     </select>

@@ -2,6 +2,7 @@ package com.nis.modules.terminal.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.ToolUtil;
@@ -38,8 +39,10 @@ public class TerminalLogServiceImpl extends ServiceImpl<TerminalLogDao, Terminal
                 .eq(ToolUtil.isNotEmpty(params.get("host")), TerminalLog::getHost, params.get("host"))
                 .like(ToolUtil.isNotEmpty(params.get("cmd")), TerminalLog::getCmd, params.get("cmd"))
                 .ge(ToolUtil.isNotEmpty( params.get("startTime")), TerminalLog::getTime, params.get("startTime"))
-                .lt(ToolUtil.isNotEmpty( params.get("endTime")), TerminalLog::getTime, params.get("endTime"))
-                .orderByDesc(TerminalLog::getTime);
+                .lt(ToolUtil.isNotEmpty( params.get("endTime")), TerminalLog::getTime, params.get("endTime"));
+        if(ToolUtil.isEmpty(params.get(Constant.ORDER))) {
+        	params.put(Constant.ORDER, "-time");
+        }
         IPage<TerminalLog> terminalLogIPage = this.page(new Query<TerminalLog>().getPage(params),queryWrapper);
         List<TerminalLog> records = terminalLogIPage.getRecords();
         records.forEach(terminalLog -> {

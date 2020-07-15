@@ -39,10 +39,7 @@ public class Constant {
      * 每页显示条数
      */
     public static final long PAGESIZE = 10;
-    /**
-     * 排序字段
-     */
-    public static final String ORDER_FIELD = "sidx";
+    
     /**
      * 排序方式
      */
