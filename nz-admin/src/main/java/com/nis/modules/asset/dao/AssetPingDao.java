@@ -5,6 +5,9 @@ import com.nis.modules.asset.entity.AssetPing;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * AssetPing
  *
@@ -17,4 +20,5 @@ public interface AssetPingDao extends BaseMapper<AssetPing> {
 
     void deleteAll();
 
+    List<Map> getAssetStatGroupByStatus();
 }

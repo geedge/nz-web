@@ -37,4 +37,8 @@ public interface AssetDao extends BaseMapper<Asset> {
     MetricsDto selectAssetStatisticsByModelOffLine();
 
     List<Chart> getAssetsByChartIds(@Param("ids") List<Integer> idList);
+
+    List<Map> getStatByDc();
+
+    List<Map> getStatByModel();
 }

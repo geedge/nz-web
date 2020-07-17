@@ -9,7 +9,6 @@ import com.nis.modules.terminal.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +21,6 @@ import java.util.Map;
 public interface AssetService extends IService<Asset> {
 
     PageUtils queryPage(Map<String, Object> params);
-    
-    List<Asset> queryListByHosts(Collection<String> hosts);
 
     void saveOrUpdateAsset(Asset asset);
 
@@ -47,7 +44,7 @@ public interface AssetService extends IService<Asset> {
 
     void export(HttpServletResponse response, Map<String, Object> params);
 
-    R uploadExporter(Asset asset, Account accountCli);
-    
     void collectData(Integer assetId);
+
+    Map filterStat();
 }

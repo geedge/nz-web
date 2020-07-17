@@ -104,7 +104,7 @@ public class AssetController {
             if (accountCli == null) {
                 result = R.error(RCode.ASSET_EXPORTER_UPLOADBYSSH);
             } else {
-                result = assetService.uploadExporter(asset, accountCli);
+                result = assetService.uploadBuildExporter(null, asset, accountCli);
             }
             return result;
         }
@@ -214,5 +214,16 @@ public class AssetController {
 		} catch (Exception e) {
 			return R.error(500,e.getMessage());
 		}
+    }
+
+    /**
+     * asset筛选条件接口, 按照dc assetType vendor pingStatus 组织统计与筛选条件
+     *
+     * @return
+     */
+    @GetMapping("/filter")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    public R updateFeature() {
+        return R.ok(assetService.filterStat());
     }
 }

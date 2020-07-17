@@ -7,12 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelShell;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UserInfo;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.DateUtil;
@@ -20,7 +15,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.dao.AssetFeatureDao;
 import com.nis.modules.asset.dao.AssetPingDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.ModelDao;
@@ -38,12 +32,10 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SnmpMibService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants;
-import com.nis.modules.terminal.config.SshUserInfo;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
@@ -53,7 +45,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.smi.TimeTicks;
-import org.snmp4j.smi.VariableBinding;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -63,9 +54,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-
-import static com.nis.common.utils.CommonUtils.notEmpty;
-
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
@@ -141,9 +129,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private AssetFeatureService assetFeatureService;
     
-    @Autowired
-    private SnmpMibService snmpMibService;
-    
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String[] vendorIds = {};
@@ -157,9 +142,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Integer> innerModelIds = new ArrayList<>();
         if (vendorIds.length > 0 || typeIds.length > 0) {
             innerModelIds = modelDao.selectIdByDictIds(vendorIds, typeIds);
-            if (innerModelIds.size() == 0) {
-                innerModelIds.add(-99999);
-            }
         }
         params.put("innerModelIds", innerModelIds);
         if (ToolUtil.isNotEmpty(params.get("states"))) {
@@ -232,87 +214,83 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return new PageUtils(page);
     }
 
-    @Override
-    public List<Asset> queryListByHosts(Collection<String> hosts) {
-        List<Asset> assetList = assetDao.queryListByHosts(hosts);
-        return assetList;
-    }
+    /**
+     * 校验 asset 相关的信息
+     * 1. sn 唯一校验
+     * 2. host 地址唯一校验
+     * 3. 型号有效性校验
+     * 4. ipmi 信息校验
+     * 5. 数据中心校验
+     * 6. 机柜及资产起始位置校验
+     * 7. 资产状态有效性校验
+     *
+     * @param asset
+     */
+    private void validateAssetInfo(Asset asset) {
+        List<Asset> list = this.list();
+        Integer assetId = asset.getId();
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void saveOrUpdateAsset(Asset asset) {
         // 1. sn 唯一校验
-        if (!this.validateFieldExist(asset.getId(), "sn", asset.getSn())) {
+        Map<String, Integer> map = list.stream().collect(Collectors.toMap(Asset::getSn, Asset::getId));
+        Integer id = map.get(asset.getSn());
+        if (id != null && !id.equals(assetId)) {
             throw new NZException(RCode.ASSET_SN_DUPLICATE);
         }
 
-        // 2. host地址唯一校验
-        if (!this.validateFieldExist(asset.getId(), "host", asset.getHost())) {
+        // 2. host 地址唯一校验
+        map = list.stream().collect(Collectors.toMap(Asset::getHost, Asset::getId));
+        id = map.get(asset.getHost());
+        if (id != null && !id.equals(assetId)) {
             throw new NZException(RCode.ASSET_HOST_DUPLICATE);
         }
 
         // 3. 型号有效性校验
         Model model = modelService.getById(asset.getModelId());
-        if (model == null) {
-            // 所选资产型号不存在
-            throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
-        } else {
-            // 校验 ipmi 信息 只有在assetType 为 server 时才进行入库操作
-            SysDictEntity type = sysDictService.getOne(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE).eq(SysDictEntity::getCode, model.getTypeCode()).eq(SysDictEntity::getDelFlag, 0));
-            if (Constant.ASSET_SERVER_TYPE.equals(type.getValue().toLowerCase())) {
-                // 校验 ipmi信息
-                Map<String, Object> ipmi = (Map<String, Object>) asset.getIpmi();
-                if (ipmi != null) {
-                    String host = (String) ipmi.get("host");
-                    if (StringUtils.isNotEmpty(host)) {
-                        ValidateUtils.is(host).ip(RCode.ASSET_SERVERHOST_ERROR);
-                    }
-                    Integer port = (Integer) ipmi.get("port");
-                    if (port != null) {
-                        boolean flag = CommonUtils.checkPort(port.toString());
-                        if (!flag) {
-                            throw new NZException(RCode.ASSET_SERVERPORT_ERROR);
-                        }
-                    }
-                    asset.setIpmi(JSONObject.toJSONString(ipmi));
-                }
+        ValidateUtils.is(model).notNull(RCode.ASSET_MODEL_NOTFOUND);
+
+        // 4. ipmi 信息校验 只有在 assetType 为 server 时才可填写 ipmi 信息
+        if (asset.getIpmi() != null) {
+            SysDictEntity assetType = sysDictService.getOne(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE).eq(SysDictEntity::getCode, model.getTypeCode()).eq(SysDictEntity::getDelFlag, 0));
+            if (!Constant.ASSET_SERVER_TYPE.equals(assetType.getValue().toLowerCase())) {
+                throw new NZException(RCode.ASSET_IPMITYPE_ERROR);
             } else {
-                asset.setIpmi(null);
+                // 校验 ipmi 内容格式
+                Map<String, Object> ipmiMap = (Map<String, Object>) asset.getIpmi();
+                String host = (String) ipmiMap.get("host");
+                if (StringUtils.isNotEmpty(host)) {
+                    ValidateUtils.is(host).ip(RCode.ASSET_SERVERHOST_ERROR);
+                }
+                Integer port = (Integer) ipmiMap.get("port");
+                if (port != null) {
+                    ValidateUtils.is(port).port(RCode.ASSET_SERVERPORT_ERROR);
+                }
             }
         }
 
-        // 4.数据中心有效性校验
+        // 5. 数据中心校验
         Idc idc = idcService.getById(asset.getIdcId());
-        if (idc == null) {
-            // 数据中心不存在
-            throw new NZException(RCode.ASSET_IDC_NOTFOUND);
-        }
+        ValidateUtils.is(idc).notNull(RCode.ASSET_IDC_NOTFOUND);
 
+        // 6. 机柜及资产起始位置校验
+        Integer cabinetId = asset.getCabinetId();
         Integer start = asset.getCabinetStart();
         Integer end = asset.getCabinetEnd();
-        // 5.机柜有效性校验
-        if (asset.getCabinetId() != null) {
-            Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
-            if (cabinet == null) {
-                // 机柜未找到
-                throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
-            }
+        if (cabinetId != null) {
+            Cabinet cabinet = cabinetService.getById(cabinetId);
+            ValidateUtils.is(cabinet).notNull(RCode.ASSET_CABINET_NOTFOUND);
             if (!idc.getId().equals(cabinet.getIdcId())) {
                 // 数据中心与机柜不符  当前数据中心没有含有所选机柜
                 throw new NZException(RCode.IDC_NOTHAS_CABINET);
             }
-
-            // 选择了机柜再进行处理usize 相关数据
+            // 选择了机柜再进行处理 usize 相关数据
             if (start != null && end != null) {
-                end = end + 1;
-                asset.setCabinetEnd(end);
+                asset.setCabinetEnd(++end);
                 Integer cabuSize = cabinet.getuSize();
                 if (start < 0 || end < 0 || start >= end || start > cabuSize || end > cabuSize + 1) {
                     throw new NZException(RCode.ASSET_POSITION_INVALID);
                 }
-
                 // 校验所选位置在该机柜中是否被占用
-                boolean flag = this.validateUSize(asset);
+                boolean flag = this.validateUSize(asset, model);
                 if (!flag) {
                     throw new NZException(RCode.ASSET_POSITION_OCCUPY);
                 }
@@ -324,135 +302,112 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
-        // 6. 状态有效性校验
+        // 7. 资产状态有效性校验
         if (asset.getState() != null) {
-            Map<String, Object> map = new HashMap<>(2);
-
-            map.put("type", Constant.DICT_ASSET_STATE_TYPE); // 字典表中资产状态 type 值 assetState
-            List<SysDictEntity> assetTypes = sysDictService.queryList(map);
+            List<SysDictEntity> assetTypes = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_STATE_TYPE).eq(SysDictEntity::getDelFlag, 0));
             List<Integer> stateList = assetTypes.stream().map(SysDictEntity::getCode).collect(Collectors.toList());
             if (!stateList.contains(asset.getState())) {
                 // 未找到资产状态
                 throw new NZException(RCode.ASSET_STATE_NOTFOUND);
             }
-        } else {
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveOrUpdateAsset(Asset asset) {
+        // 校验 asset 信息是否正确
+        this.validateAssetInfo(asset);
+
+        // 字段入库格式处理
+        Object ipmi = asset.getIpmi();
+        if (ipmi != null) {
+            asset.setIpmi(JSONObject.toJSONString(ipmi));
+        }
+
+        // 设置状态默认值
+        if (asset.getState() == null) {
             asset.setState(1);
         }
 
         Date now = DateUtil.getUTCTimeByConfigTimeZone();
         Long userId = ShiroUtils.getUserId();
-        if (asset.getId() == null) {
-            asset.setCreateAt(now);
-            asset.setCreateBy(userId);
-        }
         asset.setUpdateAt(now);
         asset.setUpdateBy(userId);
 
         if (asset.getId() == null) {
+            asset.setCreateAt(now);
+            asset.setCreateBy(userId);
+
+            // 1.新增 asset
             assetDao.saveAsset(asset);
-            // 如果指名了安装node exporter 则需要保存endpoint信息
+
+            // 2.如果指名了安装 node exporter 则需要保存 内置 endpoint 信息
             if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
                 this.saveInitEndpoint(asset);
             }
-            // 新增时需要新增 panel chart
+
+            // 3.新增时需要新增 panel chart
             chartService.saveAssetPanelAndChart(asset);
 
-            // 添加tags
-            List<AssetTag> tags = asset.getTags();
-            if(CollectionUtils.isNotEmpty(tags)){
-                // 校验key
-                for (AssetTag pojo : tags) {
-                    if(StringUtils.isEmpty(pojo.getTag())){
-                        throw new NZException(RCode.ASSET_TAGKEY_ISNULL);
-                    }
-                    pojo.setAssetId(asset.getId());
-                }
-
-                assetTagService.saveBatch(tags);
-            }
-
-            List<Account> accounts = asset.getAccounts();
-            if (CollectionUtils.isNotEmpty(accounts)) {
-                accounts.forEach(account -> {
-                    account.setAssetId(asset.getId());
+            // 4. 新增 accounts
+            if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
+                Integer id = asset.getId();
+                asset.getAccounts().forEach(account -> {
+                    account.setAssetId(id);
                     accountService.saveOrUpdateAccount(account);
                 });
             }
         } else {
+            // 留作对比是否更改 model
             Asset oldAsset = this.getById(asset.getId());
+            // 1.更新
             this.updateById(asset);
-            // 修改的时候如果没有指定 account, 则视为删除asset关联account
-            List<Account> accounts = asset.getAccounts();
-            if (CollectionUtils.isEmpty(accounts)) {
-                accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, asset.getId()));
-            } else {
-                List<Account> list = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, asset.getId()));
-                if(CollectionUtils.isNotEmpty(list)){
-                    List<Integer> collect = accounts.stream().filter(account -> ToolUtil.isNotEmpty(account.getId()) ? true : false).map(Account::getId).collect(Collectors.toList());
-                    List<Integer> collect1 = list.stream().map(Account::getId).collect(Collectors.toList());
-                    collect1.removeAll(collect);
-                    if(CollectionUtils.isNotEmpty(collect1)){
-                        accountService.removeByIds(collect1);
-                    }
-                }
 
-                accounts.forEach(account -> {
-                    account.setAssetId(asset.getId());
-                    accountService.saveOrUpdateAccount(account);
-                });
-            }
+            // 2.更新时处理关联 account 信息
+            this.updateAccountByAsset(asset.getAccounts(), asset.getId());
 
-            // 如果修改了Model
+            // 3.如果修改了Model, 处理关联 charts 变化
             if (!oldAsset.getModelId().equals(asset.getModelId())) {
                 chartService.updateAssetChartsByNewModel(asset);
             }
-
-            List<AssetTag> tags = asset.getTags();
-            if (CollectionUtils.isNotEmpty(tags)) {
-                List<AssetTag> list = assetTagService.list(new QueryWrapper<AssetTag>().lambda().eq(AssetTag::getAssetId, asset.getId()));
-                List<Integer> tagIds = list.stream().map(AssetTag::getId).collect(Collectors.toList());
-
-                List<AssetTag> saveList = new ArrayList<>();
-                List<AssetTag> updateList = new ArrayList<>();
-
-                for (AssetTag pojo : tags) {
-                    if (StringUtils.isEmpty(pojo.getTag())) {
-                        throw new NZException(RCode.ASSET_TAGKEY_ISNULL);
-                    }
-
-                    if (!tagIds.contains(pojo.getId())) {
-                        saveList.add(pojo);
-                    } else {
-                        updateList.add(pojo);
-                        tagIds.remove(pojo.getId());
-                    }
-
-                    pojo.setAssetId(asset.getId());
-                }
-                if (CollectionUtils.isNotEmpty(saveList)) {
-                    assetTagService.saveBatch(saveList);
-                }
-                if (CollectionUtils.isNotEmpty(updateList)) {
-                    assetTagService.updateBatchById(updateList);
-                }
-                if (CollectionUtils.isNotEmpty(tagIds)) {
-                    assetTagService.removeByIds(tagIds);
-                }
-            }
         }
 
+        // 保存/修改 asset tag
+        List<AssetTag> tags = asset.getTags();
+        if (CollectionUtils.isNotEmpty(tags)) {
+            assetTagService.saveTagByAssetId(asset.getId(), tags);
+        }
     }
 
-    public boolean validateFieldExist(Integer id, String column, String columnValue) {
-        List<Asset> list = this.list(new QueryWrapper<Asset>().eq(column, columnValue));
-        boolean flag = false;
 
-        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-        if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
-            flag = true;
+    /**
+     * 修改 asset 时 处理关联 account 信息
+     * 如果没有指定 account, 则视为删除 asset之前关联的 account 信息
+     *
+     * @param accounts
+     * @param assetId
+     */
+    private void updateAccountByAsset(List<Account> accounts, Integer assetId) {
+        if (CollectionUtils.isEmpty(accounts)) {
+            accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
+        } else {
+            // 获取 asset 之前关联的 account 信息
+            List<Account> list = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
+            if (CollectionUtils.isNotEmpty(list)) {
+                List<Integer> collect = accounts.stream().filter(account -> ToolUtil.isNotEmpty(account.getId()) ? true : false).map(Account::getId).collect(Collectors.toList());
+                List<Integer> collect1 = list.stream().map(Account::getId).collect(Collectors.toList());
+                collect1.removeAll(collect);
+                if (CollectionUtils.isNotEmpty(collect1)) {
+                    accountService.removeByIds(collect1);
+                }
+            }
+
+            accounts.forEach(account -> {
+                account.setAssetId(assetId);
+                accountService.saveOrUpdateAccount(account);
+            });
         }
-        return flag;
     }
 
     /**
@@ -510,16 +465,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Integer port;
         Object params;
         for (Account account : accounts) {
-            // 协议校验
+            // 1.协议校验
             protocol = account.getProtocol();
             ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
             if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
                 throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
             }
 
-            // 端口校验
+            // 2.端口校验
             port = account.getPort();
             if(ToolUtil.isEmpty(port)){
+                // 为空则设置默认值
                 switch (protocol){
                     case Constant.ACCOUNT_SSH_PROTOCOL:{
                         account.setPort(22);
@@ -542,11 +498,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
             }
 
+            // 3.params认证信息校验
             params = account.getParams();
             if (ToolUtil.isEmpty(params)) {
                 throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_ISNULL);
             }
             try {
+                // 格式校验
                 Map map = (Map) params;
                 account.setParams(JSONObject.toJSONString(map));
             } catch (Exception e) {
@@ -554,28 +512,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
-        // 修改
-        /*Integer assetId = asset.getId();
-        if (ToolUtil.isNotEmpty(assetId)) {
-            // 现有账号
-            List<Account> list = accountService.list(new QueryWrapper<Account>().lambda().eq(Account::getAssetId, assetId));
-            Map<Integer,Account> currentAccounts = new HashMap<>();
-            for (Account pojo:list) {
-                currentAccounts.put(pojo.getId(), pojo);
-            }
-
-            Iterator<Account> iterator = accounts.iterator();
-            while(iterator.hasNext()){
-                Account account = iterator.next();
-                if(account.getId() != null && currentAccounts.get(account.getId()) != null){
-                    currentAccounts.remove(account.getId());
-                }
-            }
-
-            accounts.addAll(currentAccounts.values());
-        }*/
-
-        // 一个协议只能有一个账号
+        // 4.一个协议只能有一个账号
         Map<String, List<Account>> map = accounts.stream().collect(Collectors.groupingBy(Account::getProtocol));
         for (Map.Entry<String, List<Account>> entry : map.entrySet()) {
             if(entry.getValue().size() > 1){
@@ -1297,6 +1234,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public R uploadBuildExporter(Map<String, String> configs, Asset asset, Account account) {
+        if (ToolUtil.isEmpty(configs)) {
+            List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getStatus, 1));
+            configs = sysConfigs.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        }
         // 内置 node_exporter 默认安装服务器路径
         String targetExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH);
         // 内置 node_exporter 初始执行脚本名称
@@ -1330,6 +1271,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
+        SftpUtils sftpUtils = new SftpUtils();
         try {
             // 登录
             try {
@@ -1344,31 +1286,31 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 } else if (Constants.SshType.SSHKEY.getValue().equals(method)) {
                     authType = 2;
                 }
-                SftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
+                sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
             } catch (Exception e) {
-                logger.error("用户登录sftp服务器失败", e);
+                logger.error(String.format("用户登录sftp服务器失败,地址是：%s:%s,认证信息是：%s", asset.getHost(), account.getPort(), (String) account.getParams()), e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);
             }
 
             // 上传压缩包和执行脚本
             try {
-                SftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, tempShellName);
+                sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, tempShellName);
             } catch (Exception e) {
-                logger.error("上传脚本失败", e);
+                logger.error(String.format("上传脚本失败，错误信息：%s，目标路径：%s,内置文件路径：%s,文件名称：%s", e.getMessage(), targetExporterPath, buildNodeExporterPath, buildNodeExporterName), e);
                 return R.error(RCode.ASSET_UPLOADFILE_FAILED);
             }
 
             // 执行脚本让exporter运行
+            String execCommand = "chmod +x " + targetExporterPath + "/" + tempShellName + " && " + targetExporterPath + "/" + tempShellName;
             try {
-                String execCommand = "chmod +x " + targetExporterPath + "/" + tempShellName + " && " + targetExporterPath + "/" + tempShellName;
-                SftpUtils.exec(execCommand);
+                sftpUtils.exec(execCommand);
             } catch (Exception e) {
-                logger.error("执行脚本文件失败", e);
+                logger.error(String.format("执行脚本文件失败,错误信息：%s,执行命令：%s", e.getMessage(), execCommand), e);
                 return R.error(RCode.ASSET_EXECCOMMAND_FAILED);
             }
         } finally {
             // 退出
-            SftpUtils.logout();
+            sftpUtils.logout();
             // 删除临时文件
             if (file != null) {
                 file.delete();
@@ -1619,16 +1561,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    @Override
-    public R uploadExporter(Asset asset, Account accountCli) {
-        List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getStatus, 1));
-        Map<String, String> configs = sysConfigs.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-
-        // 上传
-        R r = this.uploadBuildExporter(configs, asset, accountCli);
-        return r;
-    }
-
     private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {
         Cabinet cabinet = new Cabinet();
         boolean flag = false;
@@ -1751,70 +1683,54 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
      * @param asset
      * @return
      */
-    public boolean validateUSize(Asset asset) {
-        // 修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
+    public boolean validateUSize(Asset asset, Model model) {
         Integer assetId = asset.getId();
         Integer cabinetId = asset.getCabinetId();
         Integer start = asset.getCabinetStart();
         Integer end = asset.getCabinetEnd();
 
-        Model model = modelService.getById(asset.getModelId());
-        // 校验 开始和结束位置占用的机柜是否符合 关联 model 的 usize值
+        // 1.校验 开始和结束位置占用的机柜是否符合 关联 model 的 usize值
         Integer modelUsize = model.getUsize();
         if (modelUsize != null && (end - start) < modelUsize) {
             throw new NZException(RCode.ASSET_POSITION_MISMATCH);
         }
 
+        // 2.得到机柜下包含的节点信息
+        List<Asset> assets = this.list(new QueryWrapper<Asset>().lambda().eq(Asset::getCabinetId, cabinetId));
+
+        // 3.获取当前机柜的全部位置 所有位置 从1开始到 uSize
+        Cabinet cab = cabinetService.getById(cabinetId);
+        Integer[] allPosition = new Integer[cab.getuSize()];
+        for (int i = 0; i < allPosition.length; i++) {
+            allPosition[i] = i + 1;
+        }
+
+        // 4.获取已经占用的位置
+        List<Integer> occList = new ArrayList<>();
+
+        // 同机柜修改的情况  需要将自身节点补充到所属机柜的位置中去  再次重新计算可用位置
         Integer oldCabinetId = null;
         if (assetId != null) {
             Asset assetEntity = this.getById(assetId);
             oldCabinetId = assetEntity.getCabinetId();
         }
 
-        // 得到机柜下包含的节点信息
-        List<Asset> assets = this.list(new QueryWrapper<Asset>().lambda().eq(Asset::getCabinetId, cabinetId));
+        // 修改标识
+        boolean updateFlag = oldCabinetId != null && oldCabinetId.equals(cabinetId);
 
-        // 获取当前机柜的全部位置
-        Cabinet cab = cabinetService.getById(cabinetId);
-
-        // 所有位置 从1开始到uSize
-        Integer[] allPosition = new Integer[cab.getuSize()];
-        for (int i = 0; i < allPosition.length; i++) {
-            allPosition[i] = i + 1;
-        }
-
-        // 已经占用的位置
-        List<Integer> occList = new ArrayList<>();
-
-        // 修改时节点的所属的机柜  应还回节点 再做校验
-        if (oldCabinetId != null && oldCabinetId.equals(cabinetId)) {
-
-            // 根据得到的节点信息 得到占用的位置
-            for (Asset nodeInfo : assets) {
-                if (nodeInfo.getId().equals(assetId)) {
-                    // 修改的情况下 不记录当前占用位置
-                    continue;
-                }
-                if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
-                    for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
-                        occList.add(i);
-                    }
+        for (Asset nodeInfo : assets) {
+            // 修改的情况下 不记录当前占用位置
+            if (updateFlag && nodeInfo.getId().equals(assetId)) {
+                continue;
+            }
+            if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+                for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
+                    occList.add(i);
                 }
             }
-
-        } else {
-            for (Asset nodeInfo : assets) {
-                if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
-                    for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
-                        occList.add(i);
-                    }
-                }
-            }
-
         }
 
-        boolean b = this.handleFreePosition(allPosition, occList, start, end);
-        return b;
+        return this.validateFreePosition(allPosition, occList, start, end);
     }
 
     public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {
@@ -1836,14 +1752,23 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
-        boolean b = this.handleFreePosition(allPosition, occList, start, end);
-        return b;
+        return this.validateFreePosition(allPosition, occList, start, end);
     }
 
-    private boolean handleFreePosition(Integer[] allPosition, List<Integer> occList, Integer start, Integer end) {
+    /**
+     * 校验是否有可用位置
+     *
+     * @param allPosition
+     * @param occList
+     * @param start
+     * @param end
+     * @return
+     */
+    private boolean validateFreePosition(Integer[] allPosition, List<Integer> occList, Integer start, Integer end) {
         // 空闲的位置
         List<Integer> freePosition = new ArrayList<>(Arrays.asList(allPosition));
-        freePosition.removeAll(occList); // 例如 (1),2,3,4,(5,) 6,7,8,(9),10
+        // 例如 (1),2,3,4,(5,) 6,7,8,(9),10
+        freePosition.removeAll(occList);
 
         if (!freePosition.contains(start)) {
             // 空闲位置中没有符合条件的位置
@@ -1942,8 +1867,81 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			
 		}
 	}
-	
-	public void getSystemInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
+
+    @Override
+    public Map filterStat() {
+        Map resultMap = new LinkedHashMap();
+        // 1.获取所有 dc 信息
+        List<Idc> idcList = idcService.list();
+        Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+
+        // 以 dc分组统计asset 信息
+        List<Map> statByDc = assetDao.getStatByDc();
+        for (Map map : statByDc) {
+            Integer idcId = (Integer) map.get("id");
+            map.put("name", idcIdAndNameMap.get(idcId));
+        }
+
+        resultMap.put("dc", statByDc);
+
+        // 2.查询 asset 表 以 modelId 分组
+        List<Map> statByModel = assetDao.getStatByModel();
+        // model 和 关联asset的数量
+        Map<String, Long> modelIdAndAssetTotalMap = new HashMap<>();
+        for (Map map : statByModel) {
+            modelIdAndAssetTotalMap.put(map.get("id").toString(), (Long) map.get("total"));
+        }
+
+        // 3. assetType名称 和 关联的 modelids
+        List<Map> assetTypeNameAndModelIds = modelDao.getModelIdsGroupByType();
+        this.handleAssetTotalByModelids(assetTypeNameAndModelIds, modelIdAndAssetTotalMap);
+        resultMap.put("assetType", assetTypeNameAndModelIds);
+
+        // 4. vendor名称 和 关联的 modelids
+        List<Map> vendorNameAndModelIds = modelDao.getModelIdsGroupByVendor();
+        this.handleAssetTotalByModelids(vendorNameAndModelIds, modelIdAndAssetTotalMap);
+        resultMap.put("vendor", vendorNameAndModelIds);
+
+        // 5. asset ping 统计
+        List<Map> assetStatGroupByStatus = assetPingDao.getAssetStatGroupByStatus();
+        for (Map map : assetStatGroupByStatus) {
+            map.put("name", "0".equals(map.get("status").toString()) ? "down" : "up");
+        }
+        resultMap.put("ping", assetStatGroupByStatus);
+        return resultMap;
+    }
+
+    /**
+     * 通过 assetType/vendor关联的 modelId 统计关联asset 数量
+     *
+     * @param nameAndModelIds               assetType/vendor 和 关联的 modelIds
+     * @param modelIdAndAssetTotalMap       modelId 和 关联的 asset 数量
+     */
+    private void handleAssetTotalByModelids(List<Map> nameAndModelIds, Map<String, Long> modelIdAndAssetTotalMap) {
+        String modelIds;
+        long total;
+        Iterator<Map> iterator = nameAndModelIds.iterator();
+        while (iterator.hasNext()) {
+            Map map = iterator.next();
+            total = 0;
+            modelIds = (String) map.get("modelIds");
+            if (StringUtils.isNotEmpty(modelIds)) {
+                for (String modelId : Arrays.asList(modelIds.split(","))) {
+                    if (modelIdAndAssetTotalMap.get(modelId) != null) {
+                        total += modelIdAndAssetTotalMap.get(modelId);
+                    }
+                }
+                if (total == 0) {
+                    iterator.remove();
+                    continue;
+                }
+            }
+            map.put("total", total);
+            map.remove("modelIds");
+        }
+    }
+
+    public void getSystemInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
 		Set<String> sshKeySet = Constant.SSH_SHELL_MAP.keySet();
         for(String key : sshKeySet) {
         	String value = RuntimeUtil.sshCommondResult(session, Constant.SSH_SHELL_MAP.get(key));

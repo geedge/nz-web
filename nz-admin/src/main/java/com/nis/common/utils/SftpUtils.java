@@ -16,10 +16,10 @@ public class SftpUtils {
 
     private static Logger logger = LoggerFactory.getLogger(SftpUtils.class);
 
-    private static ChannelSftp sftp;
+    private ChannelSftp sftp;
 
     // session 信息
-    private static Session session;
+    private Session session;
 
     // 连接超时时间
     private static Integer connectTimeOut = 5000;
@@ -36,7 +36,7 @@ public class SftpUtils {
      * @param privateKey 密钥文件
      * @throws Exception
      */
-    public static void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws Exception {
+    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws Exception {
         OutputStream out = null;
         File file = null;
         try {
@@ -90,7 +90,7 @@ public class SftpUtils {
      * @param shellName  脚本名称
      * @throws Exception
      */
-    public static void upload(String targetPath, String path, String fileName, String shellName) throws Exception {
+    public void upload(String targetPath, String path, String fileName, String shellName) throws Exception {
         // sftp通道
         Channel channel = session.openChannel("sftp");
         channel.connect(connectTimeOut);
@@ -141,7 +141,7 @@ public class SftpUtils {
      *
      * @param cmd
      */
-    public static void exec(String cmd) {
+    public void exec(String cmd) {
         try {
             // 执行命令通道
             Channel channel = session.openChannel("exec");
@@ -156,7 +156,7 @@ public class SftpUtils {
     /**
      * 退出登陆
      */
-    public static void logout() {
+    public void logout() {
         if (sftp != null) {
             if (sftp.isConnected()) {
                 sftp.disconnect();
@@ -172,7 +172,7 @@ public class SftpUtils {
     /**
      * 创建文件目录
      */
-    private static void createDir(String createpath) {
+    private void createDir(String createpath) {
         try {
             if (isDirExist(createpath)) {
                 sftp.cd(createpath);
@@ -203,7 +203,7 @@ public class SftpUtils {
     /**
      * 判断目录是否存在
      */
-    public static boolean isDirExist(String directory) {
+    public boolean isDirExist(String directory) {
         boolean isDirExistFlag = false;
         try {
             SftpATTRS sftpATTRS = sftp.lstat(directory);

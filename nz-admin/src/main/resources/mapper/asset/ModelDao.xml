@@ -150,4 +150,32 @@
         where model.id = #{id}
     </select>
 
+    <select id="getModelIdsGroupByType" resultType="map">
+        SELECT
+            sd.value AS name,
+            sd.code AS id,
+            GROUP_CONCAT( mo.id ) AS modelIds
+        FROM
+            model mo
+            LEFT JOIN sys_dict sd ON mo.type = sd.code
+            AND sd.type = 'assetType'
+            AND sd.del_flag = 0
+        GROUP BY
+            sd.code
+    </select>
+
+    <select id="getModelIdsGroupByVendor" resultType="map">
+        SELECT
+            sd.value AS name,
+            sd.code AS id,
+            GROUP_CONCAT( mo.id ) AS modelIds
+        FROM
+            model mo
+            LEFT JOIN sys_dict sd ON mo.vendor = sd.code
+            AND sd.type = 'vendor'
+            AND sd.del_flag = 0
+        GROUP BY
+            sd.code
+    </select>
+
 </mapper>

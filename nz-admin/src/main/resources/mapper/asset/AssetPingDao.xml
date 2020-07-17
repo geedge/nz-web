@@ -6,4 +6,14 @@
     <delete id="deleteAll">
         truncate asset_ping
     </delete>
+
+    <select id="getAssetStatGroupByStatus" resultType="map">
+        SELECT
+            count( 1 ) AS total,
+        status
+        FROM
+            asset_ping
+        GROUP BY
+        status
+    </select>
 </mapper>

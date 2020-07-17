@@ -29,4 +29,8 @@ public interface ModelDao extends BaseMapper<Model> {
     List<Integer> selectIdByDictIds(@Param("vendorIds") String[] vendorIds,@Param("typeIds") String[] typeIds);
 
     Model getModelDetailById(@Param("id")Integer id);
+
+    List<Map> getModelIdsGroupByType();
+
+    List<Map> getModelIdsGroupByVendor();
 }

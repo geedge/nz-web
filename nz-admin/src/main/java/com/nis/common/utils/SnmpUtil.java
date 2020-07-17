@@ -38,9 +38,10 @@ public class SnmpUtil {
      * @param auth
      * @param ip
      * @param port
+     * @param snmp
      * @return
      */
-    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port,Snmp snmp) {
+    public static Target getTatget(Integer version, String community, Map<String, String> auth, String ip, Integer port, Snmp snmp) {
         Target target = null;
         if (version == SnmpConstants.version3) {
             // 添加用户
@@ -135,9 +136,10 @@ public class SnmpUtil {
     public static List snmpGetOrGetNext(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String operation) throws IOException {
         List<Map> list = new ArrayList<>();
         Snmp snmp = null;
+        DefaultUdpTransportMapping transport = null;
         try {
-            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
-            snmp=new Snmp(transport);
+            transport = new DefaultUdpTransportMapping();
+            snmp = new Snmp(transport);
             // 如果是v3版本
             if (version == SnmpConstants.version3) {
                 // 设置安全模式
@@ -145,7 +147,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port,snmp);
+            Target target = getTatget(version, community, auth, ip, port, snmp);
             snmp.listen();
 
             // 根据版本不同获取不同的pdu对象
@@ -186,6 +188,13 @@ public class SnmpUtil {
                     logger.error("关闭snmp失败", e);
                 }
             }
+            if (transport != null) {
+                try {
+                    transport.close();
+                } catch (IOException e) {
+                    logger.error("关闭transport失败", e);
+                }
+            }
             return list;
         }
     }
@@ -219,8 +228,9 @@ public class SnmpUtil {
     public static List<Map> snmpWalk(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth) throws IOException {
         List<Map> resultData = new ArrayList<>();
         Snmp snmp = null;
+        TransportMapping transport = null;
         try {
-            TransportMapping transport = new DefaultUdpTransportMapping();
+            transport = new DefaultUdpTransportMapping();
             snmp = new Snmp(transport);
 
             // 如果是v3版本
@@ -230,7 +240,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port,snmp);
+            Target target = getTatget(version, community, auth, ip, port, snmp);
             snmp.listen();
 
             PDU pdu = getPdu(version);
@@ -282,6 +292,13 @@ public class SnmpUtil {
                     logger.error("关闭snmp失败", e);
                 }
             }
+            if (transport != null) {
+                try {
+                    transport.close();
+                } catch (IOException e) {
+                    logger.error("关闭transport失败", e);
+                }
+            }
         }
         return resultData;
     }
@@ -327,13 +344,14 @@ public class SnmpUtil {
      * @throws IOException
      */
     public static R setPDU(String ip, Integer port, Integer version, String community, String oid, Map<String, String> auth, String value) throws IOException {
-        Snmp snmp=null;
-    	try {
+        Snmp snmp = null;
+        DefaultUdpTransportMapping transport = null;
+        try {
             PDU pdu = getPdu(version);
             pdu.add(new VariableBinding(new OID(oid), new OctetString(value)));
             pdu.setType(PDU.SET);
 
-            DefaultUdpTransportMapping transport = new DefaultUdpTransportMapping();
+            transport = new DefaultUdpTransportMapping();
             snmp = new Snmp(transport);
 
             // 如果是v3版本
@@ -343,7 +361,7 @@ public class SnmpUtil {
                 SecurityModels.getInstance().addSecurityModel(usm);
             }
 
-            Target target = getTatget(version, community, auth, ip, port,snmp);
+            Target target = getTatget(version, community, auth, ip, port, snmp);
             snmp.listen();
             ResponseEvent responseEvent = snmp.send(pdu, target);
             PDU response = responseEvent.getResponse();
@@ -383,6 +401,13 @@ public class SnmpUtil {
                     snmp.close();
                 } catch (Exception e) {
                     logger.error("关闭snmp失败", e);
+                }
+            }
+            if (transport != null) {
+                try {
+                    transport.close();
+                } catch (IOException e) {
+                    logger.error("关闭transport失败", e);
                 }
             }
         }

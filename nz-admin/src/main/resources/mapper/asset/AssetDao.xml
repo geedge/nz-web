@@ -360,4 +360,18 @@
             </foreach>
     </select>
 
+    <select id="getStatByDc" resultType="map">
+        select idc_id as id,count(id) as total from asset group by idc_id
+    </select>
+
+    <select id="getStatByModel" resultType="map">
+        SELECT
+            ass.model_id AS id,
+            count( ass.id ) AS total
+        FROM
+            asset ass
+            LEFT JOIN model mo ON ass.model_id = mo.id
+        GROUP BY
+            ass.model_id
+    </select>
 </mapper>

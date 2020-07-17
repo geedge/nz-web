@@ -181,6 +181,7 @@ public enum RCode {
     ASSET_MODEL_EXISTS(322008,"Model already exists"),                     // 型号已经存在
     ASSET_MODEL_PARAM_ISNULL(321009,"The model Id and asset Id cannot both be empty, when the model chart is updated."),
     ASSET_MODELID_INCONSISTENT(323010,"Asset model is inconsistent with model Id"),
+    ASSET_IPMITYPE_ERROR(323011,"Asset type must be a server can save ipmi information"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
