@@ -374,10 +374,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         // 保存/修改 asset tag
-        List<AssetTag> tags = asset.getTags();
-        if (CollectionUtils.isNotEmpty(tags)) {
-            assetTagService.saveTagByAssetId(asset.getId(), tags);
-        }
+        assetTagService.saveTagByAssetId(asset.getId(), asset.getTags());
     }
 
 
