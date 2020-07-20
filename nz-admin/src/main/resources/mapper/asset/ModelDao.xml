@@ -153,7 +153,7 @@
     <select id="getModelIdsGroupByType" resultType="map">
         SELECT
             sd.value AS name,
-            sd.code AS id,
+            sd.id,
             GROUP_CONCAT( mo.id ) AS modelIds
         FROM
             model mo
@@ -167,7 +167,7 @@
     <select id="getModelIdsGroupByVendor" resultType="map">
         SELECT
             sd.value AS name,
-            sd.code AS id,
+            sd.id,
             GROUP_CONCAT( mo.id ) AS modelIds
         FROM
             model mo

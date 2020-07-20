@@ -128,89 +128,81 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private AssetFeatureService assetFeatureService;
-    
-    @Override
-    public PageUtils queryPage(Map<String, Object> params) {
-        String[] vendorIds = {};
-        String[] typeIds = {};
+
+    /**
+     * 处理查询 asset 请求参数
+     * @param params
+     */
+    private void handleQueryParam(Map<String, Object> params){
+        String[] vendorIds = {}, typeIds = {};
         if (ToolUtil.isNotEmpty(params.get("vendorIds"))) {
             vendorIds = String.valueOf(params.get("vendorIds")).split(StringPool.COMMA);
         }
         if (ToolUtil.isNotEmpty(params.get("typeIds"))) {
             typeIds = String.valueOf(params.get("typeIds")).split(StringPool.COMMA);
         }
-        List<Integer> innerModelIds = new ArrayList<>();
+        // assetType/vendor 间接关联 asset 采用关联的 model 方式 查询 asset
         if (vendorIds.length > 0 || typeIds.length > 0) {
-            innerModelIds = modelDao.selectIdByDictIds(vendorIds, typeIds);
+            List<Integer> innerModelIds = modelDao.selectIdByDictIds(vendorIds, typeIds);
+            params.put("innerModelIds", innerModelIds);
         }
-        params.put("innerModelIds", innerModelIds);
         if (ToolUtil.isNotEmpty(params.get("states"))) {
             params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
         }
         if (ToolUtil.isNotEmpty(params.get("pingStates"))) {
             params.put("pingStates", String.valueOf(params.get("pingStates")).split(StringPool.COMMA));
         }
-        String idcIds = null;
-        if (params != null && params.size() > 0) {
-            idcIds = (String) params.get("idcIds");
-        }
 
-        if (StringUtils.isNotEmpty(idcIds)) {
-            // 1. 清空idcid
+        // idcids不为空时忽略 idcId 查询参数
+        String idcIds = String.valueOf(params.get("idcIds"));
+        if (ToolUtil.isNotEmpty(idcIds)) {
             params.put("idcId", null);
-            // 2. 校验idcids
-            String[] idcIdsArr = idcIds.split(",");
-            List<Integer> idcidList = new ArrayList<>();
-            for (String id : idcIdsArr) {
-                try {
-                    if (id.length() > 0) {
-                        idcidList.add(Integer.parseInt(id));
-                    }
-                } catch (NumberFormatException e) {
-                    // ID转换异常
-                    throw new NZException(RCode.IDC_ID_FORMAT);
-                }
-            }
-            // 3. 放回参数集合中
-            params.put("idcIds", idcidList);
-        } else {
-            // 4. 解决参数为空字符串问题
-            params.put("idcIds", null);
+            params.put("idcIds", String.valueOf(params.get("idcIds")).split(StringPool.COMMA));
         }
 
-        if(ToolUtil.isNotEmpty(params.get("tag"))){
+        if (ToolUtil.isNotEmpty(params.get("tag"))) {
             String tag = String.valueOf(params.get("tag"));
-            List<AssetTag> list = assetTagService.list(new QueryWrapper<AssetTag>().lambda().like(AssetTag::getTag, tag).or().like(AssetTag::getValue, tag));
-            Set<Integer> ids = list.stream().map(AssetTag::getAssetId).collect(Collectors.toSet());
-            params.put("innerTagRelationAssetIds", ids);
+            List<AssetTag> tagList = assetTagService.list(new QueryWrapper<AssetTag>().lambda().like(AssetTag::getTag, tag).or().like(AssetTag::getValue, tag));
+            Set<Integer> queryTagIds = tagList.stream().map(AssetTag::getAssetId).collect(Collectors.toSet());
+            params.put("innerTagRelationAssetIds", queryTagIds);
         }
+    }
+    
+    @Override
+    public PageUtils queryPage(Map<String, Object> params) {
+        // 处理请求参数
+        this.handleQueryParam(params);
 
         IPage<Asset> page = new Query<Asset>().getPage(params);
-
         List<Asset> assetEntities = assetDao.queryList(page, params);
+
+        // 处理返回格式
         String ipmi = null;
         Integer cabinetEnd;
         List<Account> accounts;
         for (Asset asset : assetEntities) {
+            // ipmi 格式转换   字符串 -> JSON
             ipmi = (String) asset.getIpmi();
             if (StringUtils.isNotEmpty(ipmi)) {
                 asset.setIpmi(JSONObject.parseObject(ipmi, Map.class));
             }
+            // cabinetEnd 存值的时候会+1 在此减一返回前台
             cabinetEnd = asset.getCabinetEnd();
             if (ToolUtil.isNotEmpty(cabinetEnd)) {
                 asset.setCabinetEnd(cabinetEnd - 1);
             }
+            // account param 格式转换 字符串 -> JSON
             accounts = asset.getAccounts();
-            if(CollectionUtils.isNotEmpty(accounts)){
+            if (CollectionUtils.isNotEmpty(accounts)) {
                 accounts.forEach(pojo -> {
-                    if(StringUtils.isNotEmpty((String) pojo.getParams())){
+                    if (StringUtils.isNotEmpty((String) pojo.getParams())) {
                         pojo.setParams(JSONObject.parseObject((String) pojo.getParams(), Map.class));
                     }
                 });
             }
         }
-        page.setRecords(assetEntities);
 
+        page.setRecords(assetEntities);
         return new PageUtils(page);
     }
 

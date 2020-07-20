@@ -25,8 +25,6 @@ public interface AssetDao extends BaseMapper<Asset> {
 
     List<Asset> queryList(IPage<Asset> page, @Param("params")Map<String, Object> params);
 
-	List<Asset> queryListByHosts(Collection<String> hosts);
-
 	// 注: 此添加会通过selectkey返回添加之后的ID
     void saveAsset(@Param("asset") Asset asset);
     

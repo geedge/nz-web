@@ -23,13 +23,6 @@
         <result property="endpointNum" column="endpointNum"/>
         <result property="alertNum" column="alertNum"/>
 
-        <!--数据中心-->
-        <!--<result property="idc.id" column="idc_id"/>
-        <result property="idc.name" column="idc_name"/>
-        <result property="idc.location" column="idc_location"/>
-        <result property="idc.tel" column="idc_tel"/>
-        <result property="idc.principal" column="idc_principal"/>-->
-
         <!-- 机柜-->
         <result property="cabinet.id" column="cab_id"/>
         <result property="cabinet.name" column="cab_name"/>
@@ -203,7 +196,7 @@
                 AND ass.idc_id = #{params.idcId}
             </if>
 
-            <if test="params.idcIds != null and params.idcIds.size > 0">
+            <if test="params.idcIds != null and params.idcIds.length > 0">
                 AND ass.idc_id IN
                 <foreach collection="params.idcIds" item="idcId" index="no" open="(" separator="," close=")">
                     #{idcId}
@@ -289,18 +282,6 @@
         WHERE
             asset_id = #{id}
 	 </select>
-
-
-    <select id="queryListByHosts" resultType="asset">
-        SELECT id, sn, host, state
-        FROM asset
-        <where>
-            host in
-            <foreach item="item" collection="collection" separator="," open="(" close=")" index="">
-                #{item}
-            </foreach>
-        </where>
-    </select>
 
     <insert id="saveAsset">
         INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, cabinet_start, cabinet_end, host, state, purchase_date, create_at, update_at,
