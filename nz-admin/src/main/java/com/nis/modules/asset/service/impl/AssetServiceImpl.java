@@ -154,8 +154,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         // idcids不为空时忽略 idcId 查询参数
-        String idcIds = String.valueOf(params.get("idcIds"));
-        if (ToolUtil.isNotEmpty(idcIds)) {
+        if(ToolUtil.isNotEmpty(params.get("idcIds"))){
             params.put("idcId", null);
             params.put("idcIds", String.valueOf(params.get("idcIds")).split(StringPool.COMMA));
         }
@@ -1399,8 +1398,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 清空值为null的键值对信息
         while(it.hasNext()){
             Map.Entry<String, String> entry = it.next();
-            if(entry.getValue() == null)
-                it.remove();//使用迭代器的remove()方法删除元素  
+            if(entry.getValue() == null){
+                // 使用迭代器的remove()方法删除元素
+                it.remove();
+            }
         }
         // 如果都为空 则不响应 Attribute 信息
         if(ToolUtil.isNotEmpty(feature)) {

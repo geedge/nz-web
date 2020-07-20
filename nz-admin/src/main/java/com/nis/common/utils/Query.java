@@ -37,6 +37,9 @@ public class Query<T> {
         }
         if(params.get(Constant.LIMIT) != null){
             limit = Long.parseLong((String)params.get(Constant.LIMIT));
+            if(limit == -1){
+                limit = Long.MAX_VALUE;
+            }
         }
 
         //分页对象
@@ -48,8 +51,7 @@ public class Query<T> {
         //排序字段  orderBy=id
         //防止SQL注入（因为sidx、order是通过拼接SQL实现排序的，会有SQL注入风险）
         String orderField = SQLFilter.sqlInject((String)params.get(Constant.ORDER));
-//        String order = (String)params.get(Constant.ORDER);
-        
+
         if(StringUtils.isNotEmpty(orderField)) {
         	boolean matcheFlag = orderField.trim().matches("-?[a-zA-Z_.-]+");
         	if(!matcheFlag) {
@@ -65,16 +67,9 @@ public class Query<T> {
             
         }
         
-        //前端字段排序
-       /* if(StringUtils.isNotEmpty(orderField) && StringUtils.isNotEmpty(order)){
-            if(Constant.ASC.equalsIgnoreCase(order)) {
-                return page.setAsc(orderField);
-            }else {
-                return page.setDesc(orderField);
-            }
-        }*/
 
-        //默认排序
+
+        // 默认排序
         if(isAsc) {
             page.setAsc(defaultOrderField);
         }else {
