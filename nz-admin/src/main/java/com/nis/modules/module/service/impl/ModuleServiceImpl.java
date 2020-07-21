@@ -1,6 +1,5 @@
 package com.nis.modules.module.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -8,10 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.common.utils.Constant.AlertType;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
@@ -26,12 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service("moduleService")
@@ -41,8 +32,6 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
 	@Autowired
 	private ModuleDao moduleDao;
-	@Autowired
-	private AlertRuleService alertRuleService;
 	@Autowired
 	private AlertMessageService alertMessageService;
 	@Autowired
