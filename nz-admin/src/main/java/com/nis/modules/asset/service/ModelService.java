@@ -20,8 +20,6 @@ public interface ModelService extends IService<Model> {
 
     void delete(Integer ... ids);
 
-    boolean checkName(Integer id, String name);
-
     void checkUsize(Model usize);
 
     void syncChart(Map<String, Object> params);

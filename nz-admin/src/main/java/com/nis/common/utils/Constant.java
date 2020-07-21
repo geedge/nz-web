@@ -104,21 +104,6 @@ public class Constant {
     public static final String REDIS_KEY_ALERTMESSAGE = "ALERT_MESSAGE";
 
     /**
-     * redis metric集合的key
-     */
-    public static final String REDIS_KEY_METRICS = "cacheMetricList";
-
-    /**
-     *redis metric labels的key
-     */
-    public static final String REDIS_KEY_METRICLABELS = "cacheMetricLabels";
-
-    /**
-     * metricjob 分布式锁
-     */
-    public static final String REDIS_KEY_METRIClOCK = "metricLock";
-
-    /**
      * 记录endpoint和proserver 对应关系
      */
     public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
@@ -163,9 +148,6 @@ public class Constant {
     // 图表 singleStat statistics可选值列表
     public static final List<String> CHART_SINGLESTAT_STATISTICS;
 
-    // panel type可选值集合
-    public static final List<String> PANEL_TYPES;
-
     // alert rule 比较符号
     public static final List<String> RULE_OPERATORS;
 
@@ -184,11 +166,6 @@ public class Constant {
 		if (!tempPath.isDirectory()) {
 			tempPath.mkdir();
 		}
-		
-//		ALERT_LEVEL = new ArrayList<String>();
-//		ALERT_LEVEL.add("warning");
-//		ALERT_LEVEL.add("critical");
-//		ALERT_LEVEL.add("emergency");
 		
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();
 		ALERTMESSAGE_STATE.add(1);
@@ -231,8 +208,6 @@ public class Constant {
         CHART_SINGLESTAT_STATISTICS.add("range");
         CHART_SINGLESTAT_STATISTICS.add("different");
 
-        PANEL_TYPES = Arrays.asList(new String[]{"dashboard", "asset", "project", "module", "endpoint", "model"});
-
         RULE_OPERATORS = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
     }
     
@@ -270,35 +245,7 @@ public class Constant {
         }
     }
 
-    /**
-     * 云服务商
-     */
-    public enum CloudService {
-        /**
-         * 七牛云
-         */
-        QINIU(1),
-        /**
-         * 阿里云
-         */
-        ALIYUN(2),
-        /**
-         * 腾讯云
-         */
-        QCLOUD(3);
-
-        private int value;
-
-        CloudService(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-    }
-
-    public static final Long GLOBAL_ID = 1l;
+    public static final Long GLOBAL_ID = 1L;
     
     //delFlag
     public static final String DELFLAG_TRUE = "1"; //删除
@@ -308,46 +255,6 @@ public class Constant {
     public static final Integer AUTH_CERTIFICATE=2;//私钥证书认证
 
     public static final String AUTH_TOKEN_CODE="Authorization";
-
-    public enum AlertType{
-        ALERT_TYPE_ASSET(3,"asset"),
-        ALERT_TYPE_MODULE(2,"module"),
-        ALERT_TYPE_PROJECT(1,"project");
-
-        private Integer code;
-        private String type;
-        AlertType(Integer code,String type){
-            this.code=code;
-            this.type=type;
-        }
-
-        public static AlertType getAlertType(Integer code){
-            for (AlertType  type:AlertType.values()){
-                if (type.getCode()==code){
-                    return type;
-                }
-            }
-            return null;
-        }
-
-
-        public Integer getCode() {
-            return code;
-        }
-
-        public void setCode(Integer code) {
-            this.code = code;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getType() {
-            return type;
-        }
-    }
-
 
     public static final Integer SNMPV2 = 2;
     public static final Integer SNMPV3 = 3;
@@ -372,6 +279,29 @@ public class Constant {
                 }
             }
             return null;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public enum PanelType{
+        DASHBOARD("dashboard"),
+        ASSET("asset"),
+        PROJECT("project"),
+        MODULE("module"),
+        ENDPOINT("endpoint"),
+        MODEL("model");
+
+        private String value;
+
+        PanelType(String value) {
+            this.value = value;
         }
 
         public String getValue() {
@@ -427,73 +357,9 @@ public class Constant {
         }
     }
 
-    //permission type
-    public static final String PM_TYPE_DETESET = "2";
-    public static final String PM_TYPE_DETEWARN = "3";
-    public static final String PM_TYPE_MISSION = "4";
-    
-    //view level
-    public static final String VIEWLEVEL_UG = "1"; //usergroup
-    public static final String VIEWLEVEL_SYS = "2";
-    public static final String VIEWLEVEL_ALL = "3";
-    
-    public static final Long DETESET_NODE_RELTYPE_NODE = 1L;
-    public static final Long DETESET_NODE_RELTYPE_NODEGROUP = 2L;
-
-    //mission result state
-    public static final String MISSION_RESULT_SUCCESS = "1";  //成功
-    public static final String MISSION_RESULT_FAIL = "2";  //失败
-    public static final String MISSION_RESULT_TIMEOUT = "3";  //超时
-
-    //mission loop state
-    public static final String MISSION_LOOP_RUN = "1";  //运行
-    public static final String MISSION_LOOP_SUSPEND = "2"; //暂停
-    public static final String MISSION_LOOP_STOP = "3";  // 终止
-    // mission loop
-    public static final String MISSION_LOOP_TRUE = "1";   //周期任务
-    public static final String MISSION_LOOP_FALSE = "0";   //周期任务
-
-    public static final String STR_PARAM_SEPRATOR=";";
-
-    // mission node rel
-    public static final String MISSION_NODE_REL_TYPE_GROUP="1";
-    public static final String MISSION_NODE_REL_TYPE_NODE="2";
-
-    //topo图默认宽高
-    public static final Integer TOPO_DEFAULT_HEIGHT = 1600;
-    public static final Integer TOPO_DEFAULT_WIDTH = 1600;
-
-    public static final String WARN_REL_TYPE="1";
-    public static final String WARN_REL_SET="2";
-
-    // 节点类型
-    public static final String NODE_TYPE_SERVER = "1";  // server
-    public static final String NODE_TYPE_NET = "2";     // net
-
-    // 数据字典定义nodeTag type 类型为nodeTag + server(1) / net (2)
-    public static final String DICT_NODE_TAG_TYPE = "nodeTag";
-
-    // 节点组 分配节点/添加子节点组
-    public static final String NODEGROUP_REFUSE= "0"; // 不可以
-    public static final String NODEGROUP_ALLOW = "1"; // 可以
-    
     // system built_in 2非内置，1内置
     public static final String SYSTEM_BUILDIN_YES = "1"; // 内置
     public static final String SYSTEM_BUILDIN_NO = "2"; // 非内置
-
-    //监测类别 监测方式
-    public static final String DETE_DETEMETHOD_SCRIPT="1"; //脚本
-    public static final String DETE_DETEMETHOD_SNMP="2"; //snmp
-    public static final String DETE_DETEMETHOD_INNER="3"; //内置
-
-    //监测告警 回调方式
-    public static final String DETE_WARN_CALLBACK_SCRIPT="1";
-    public static final String DETE_WARN_CALLBACK_HTTP="2";
-    public static final String DETE_WARN_CALLBACK_NONE="0";
-
-    // 顶级节点组PID
-    public static final Long NODEGROUP_TOP_PID = 0L;
-
 
     // nz-web 新增常量
 
@@ -644,7 +510,7 @@ public class Constant {
     // 图表singleStat 类型 paramkey名称
     public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
 
-    // IDC traffic中tags key正则校验表达式
+    // IDC traffic中tags key正则校验表达式     注：同 prometheus 标签正则
     public static final Pattern TRAFFIC_TAGSKEY_PATTERN = Pattern.compile("^[a-zA-Z_:][a-zA-Z0-9_:]*$");
 
     // node_exporter shell 脚本中 替换路径的名称

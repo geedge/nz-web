@@ -70,23 +70,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     private static Logger logger = LoggerFactory.getLogger(AssetServiceImpl.class);
 
-    // 数据中心  service
     @Autowired
     private IdcService idcService;
 
-    // 机柜  service
     @Autowired
     private CabinetService cabinetService;
 
-    // 资产型号  service
     @Autowired
     private ModelService modelService;
 
-    // 字典   service
     @Autowired
     private SysDictService sysDictService;
 
-    // 资产  dao
     @Autowired
     private AssetDao assetDao;
 
@@ -430,7 +425,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         alertMessageService.removeByAssetIds(idList);
 
         // 4. 删除关联的 panel chart  chartElement信息
-        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "asset").in(Panel::getLink, ids));
+        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, ids));
 
         Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
 
@@ -1935,7 +1930,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		Set<String> sshKeySet = Constant.SSH_SHELL_MAP.keySet();
         for(String key : sshKeySet) {
         	String value = RuntimeUtil.sshCommondResult(session, Constant.SSH_SHELL_MAP.get(key));
-        	if(key.equals("cpu")) {
+        	if("cpu".equals(key)) {
         		String[] split = value.split("\r\n");
         		String cpuCount = split[0];
         		String cpuInfo = split[1];
@@ -1945,7 +1940,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         		}
         		value=JSON.toJSONString(ss);
         	}
-        	if(key.equals("disk")) {
+        	if("disk".equals(key)) {
         		String[] split = value.split("\r\n");
             	int diskCount = split.length/2;
             	List list =new ArrayList();
@@ -1968,7 +1963,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         	}
 			result.setAssetId(assetId);
 			result.setItem(key);
-			if(key.equals("memory")) {
+			if("memory".equals(key)) {
 				result.setValue(value+"G");
 			}else {
 				result.setValue(value);
@@ -2033,7 +2028,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
 		for(String key:keySet) {
 			List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getHost(), account.getPort(), (Integer)snmpInfos.get("version"), (String)snmpInfos.get("community"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
-			if(key.equals("ifEntry")) {
+			if("ifEntry".equals(key)) {
 				List l =new LinkedList();
 				if (CollectionUtils.isNotEmpty(snmpResults)) {
 					Map<String,LinkedHashMap> handleMap =new LinkedHashMap<String,LinkedHashMap>();
@@ -2085,7 +2080,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		        	}
 					result.setAssetId(asset.getId());
 					result.setItem(key);
-					if(key.equals("sysUpTime")) {
+					if("sysUpTime".equals(key)) {
 						TimeTicks t =new TimeTicks();
 						t.setValue(value);
 						long milliseconds = t.toMilliseconds();

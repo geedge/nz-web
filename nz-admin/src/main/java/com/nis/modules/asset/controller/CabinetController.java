@@ -1,16 +1,10 @@
 package com.nis.modules.asset.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.service.CabinetService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,13 +21,8 @@ import java.util.Map;
 @RequestMapping("/cabinet")
 public class CabinetController {
 
-    private static Logger logger = LoggerFactory.getLogger(CabinetController.class);
-
     @Autowired
     private CabinetService cabinetService;
-
-    @Autowired
-    private SysConfigService sysConfigService;
 
     /**
      * 机柜请求列表
@@ -62,33 +51,6 @@ public class CabinetController {
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
 
-        if (cabinet.getuSize() == null) {
-            // 从配置表中获取到机柜默认大小
-            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq("status", 1));
-            if (configEntity != null) {
-                Integer defaultSize = null;
-                try {
-                    defaultSize = Integer.parseInt(configEntity.getParamValue());
-                } catch (NumberFormatException e) {
-                    logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
-                }
-
-                if (defaultSize == null) {
-                    throw new NZException(RCode.SYS_CONFIG_DEFALUTCABINETU_INTERVAL);
-                }
-                cabinet.setuSize(defaultSize);
-            }
-        } else {
-            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM)
-                    .max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
-        }
-
-        // 校验名称重复
-        if (!cabinetService.cabinetNameCheck(cabinet.getId(), cabinet.getName(), cabinet.getIdcId())) {
-            // 名称重复
-            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
-        }
-
         cabinetService.saveOrUpdateCabinet(cabinet);
         return R.ok();
     }
@@ -107,17 +69,6 @@ public class CabinetController {
                 .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
-
-        if (cabinet.getuSize() != null) {
-            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM)
-                    .max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
-        }
-
-        // 校验名称重复
-        if (!cabinetService.cabinetNameCheck(cabinet.getId(), cabinet.getName(), cabinet.getIdcId())) {
-            // 名称重复
-            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
-        }
 
         cabinetService.saveOrUpdateCabinet(cabinet);
         return R.ok();

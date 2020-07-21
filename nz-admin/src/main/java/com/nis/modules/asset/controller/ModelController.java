@@ -73,8 +73,6 @@ public class ModelController {
             ValidateUtils.is(usize).min(1, RCode.ASSET_MODEL_USIZEMINIMUM);
         }
 
-        modelService.checkUsize(model);
-
         modelService.saveOrUpdateModel(model);
         return R.ok();
     }

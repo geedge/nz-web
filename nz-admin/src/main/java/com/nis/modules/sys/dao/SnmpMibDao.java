@@ -15,4 +15,6 @@ public interface SnmpMibDao extends BaseMapper<SnmpMib> {
     List<SnmpMib> queryList(IPage<SnmpMib> page, @Param("params") Map<String, Object> params);
 
     List<SnmpMib> getMibTreesByIdsAndModels(@Param("ids")String[] ids, @Param("models")String[] models);
+
+    List<SnmpMib> queryByModelIds(@Param("ids") List<Integer> asList);
 }

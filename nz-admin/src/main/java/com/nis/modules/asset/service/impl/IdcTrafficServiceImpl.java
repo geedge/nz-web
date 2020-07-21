@@ -10,7 +10,6 @@ import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.IdcTrafficDao;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.entity.IdcTraffic;
-import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.IdcTrafficService;
 import org.apache.commons.lang.StringUtils;
@@ -30,9 +29,6 @@ import java.util.Map;
  */
 @Service("idcTrafficService")
 public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic> implements IdcTrafficService {
-
-    @Autowired
-    private AssetService assetService;
 
     @Autowired
     private IdcService idcService;

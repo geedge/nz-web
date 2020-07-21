@@ -16,7 +16,9 @@ import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.sys.dao.SnmpMibDao;
 import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -41,15 +43,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements ModelService {
 
-    // 资产  service
     @Autowired
     private AssetService assetService;
 
-    // 字典  service
     @Autowired
     private SysDictService sysDictService;
 
-    // 资产型号 dao
     @Autowired
     private ModelDao modelDao;
 
@@ -61,6 +60,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private SnmpMibDao snmpMibDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -91,7 +93,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         // 1.校验资产型号 厂商 类型 有效性
         this.checkAssetVendorAndTypeExist(model);
 
-        // 2. 校验是否存在该型号
+        // 2. 校验是否存在该型号 （名称 - 厂商 - 类型） 一致 视为型号重复
         Model entity = this.getOne(new QueryWrapper<Model>().lambda().eq(Model::getName, model.getName()).eq(Model::getTypeCode, model.getTypeCode()).eq(Model::getVendorCode, model.getVendorCode()));
         if (entity != null && !entity.getId().equals(model.getId())) {
             throw new NZException(RCode.ASSET_MODEL_EXISTS);
@@ -104,6 +106,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
             // 新增时需要新增 panel chart
             this.saveModelPanelAndChart(model);
         } else {
+            // 修改时需要校验 大小是否可更改
+            this.checkUsize(model);
+
             this.updateById(model);
         }
     }
@@ -112,26 +117,38 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
     public void delete(Integer... ids) {
         // 1. 校验已存在资产是否关联型号
         List<Asset> assets = assetService.list();
-        Set<Integer> set = assets.stream().map(Asset::getModelId).collect(Collectors.toSet());
+        Set<Integer> assetUsedModelIds = assets.stream().map(Asset::getModelId).collect(Collectors.toSet());
 
-        Map<Integer, String> modelIdAndNameMap = this.list().stream().collect(Collectors.toMap(Model::getId, Model::getName));
-
-        for (Integer id : ids) {
-            if (id == null) {
-                continue;
-            }
-
-            if (set.contains(id)) {
-                // 当前资产类型中关联着资产 不可删除
-                throw new NZException(modelIdAndNameMap.get(id) + " related assets , not deletable", RCode.ASSET_MODELRELATED_ASSET.getCode());
-            }
+        List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
+        idList.retainAll(assetUsedModelIds);
+        if (CollectionUtils.isNotEmpty(idList)) {
+            List<String> modelNames = this.listByIds(idList).stream().map(Model::getName).collect(Collectors.toList());
+            throw new NZException("These mdoels contain assets and cannot be deleted, models info: " + modelNames.toString(), RCode.ASSET_MODELRELATED_ASSET.getCode());
         }
 
-        // 2. 删除
+        // 2. 校验是否关联 mib 文件
+        idList = Arrays.stream(ids).collect(Collectors.toList());
+        List<SnmpMib> snmpMibs = snmpMibDao.queryByModelIds(idList);
+        if (CollectionUtils.isNotEmpty(snmpMibs)) {
+            List<String> modelIdsStr = snmpMibs.stream().map(SnmpMib::getModels).collect(Collectors.toList());
+            Set<Integer> modelIds = new HashSet<>();
+            for (String s : modelIdsStr) {
+                if (s.contains(",")) {
+                    Arrays.stream(s.split(",")).collect(Collectors.toList()).forEach(str -> modelIds.add(Integer.parseInt(str)));
+                } else {
+                    modelIds.add(Integer.parseInt(s));
+                }
+            }
+            idList.retainAll(modelIds);
+            List<String> modelNames = this.listByIds(idList).stream().map(Model::getName).collect(Collectors.toList());
+            throw new NZException("These mdoels contain mibs and cannot be deleted, models info: " + modelNames.toString(), RCode.ASSET_MODELRELATED_MIBS.getCode());
+        }
+
+        // 3. 删除
         this.removeByIds(Arrays.asList(ids));
 
-        // 3. 删除关联 panel charts chartElement
-        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").in(Panel::getLink, ids));
+        // 4. 删除关联 panel charts chartElement
+        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).in(Panel::getLink, ids));
         Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
 
         if (CollectionUtils.isNotEmpty(panelIds)) {
@@ -141,31 +158,11 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         }
     }
 
-    /**
-     * 名称唯一校验
-     *
-     * @param id
-     * @param name
-     * @return
-     */
-    @Override
-    public boolean checkName(Integer id, String name) {
-        List<Model> list = this.list(new QueryWrapper<Model>().lambda().eq(Model::getName, name));
-        boolean flag = false;
-
-        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-        if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
-            flag = true;
-        }
-        return flag;
-    }
-
     @Override
     public void checkUsize(Model model) {
         Model oldModel = this.getById(model.getId());
         // 如果之前 model usize为空 则不进行后续验证
-        if(ToolUtil.isEmpty(oldModel.getUsize())){
+        if (ToolUtil.isEmpty(oldModel.getUsize())) {
             return;
         }
 
@@ -190,7 +187,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
                 }
             }
 
-            if(model.getUsize() > minUsize){
+            if (model.getUsize() > minUsize) {
                 throw new NZException(RCode.ASSET_MODEL_USIZEERROR);
             }
         }
@@ -203,6 +200,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
         Integer modelId = (Integer) params.get("modelId");
         Integer assetId = (Integer) params.get("assetId");
+        // 规则： 1. modelId 与 assetId 不能同时为空   2. assetId 存在 ， 只更新关联 asset  3. assetId 不存在 ， 更新 model 下所有关联 asset
         if (modelId != null && assetId != null) {
             Asset asset = assetService.getById(assetId);
             if (ToolUtil.isEmpty(asset)) {
@@ -229,13 +227,21 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         }
     }
 
-    // 全量更新此 asset 的 chart，与对应型号的chart 保持一致
+    /**
+     * 全量更新此 asset 的 chart，与对应型号的chart 保持一致
+     *
+     * @param assetId
+     */
     private void updateAssetChartsThroughRelatedModel(Integer assetId) {
         Asset asset = assetService.getById(assetId);
         chartService.updateAssetChartsThroughRelatedModel(asset);
     }
 
-    // 更新所有型号为 modelId 的asset chart
+    /**
+     * 更新所有型号为 modelId 的asset chart
+     *
+     * @param modelId
+     */
     private void updateuAllAssetChartsUnderCurrentModel(Integer modelId) {
         List<Asset> assetList = assetService.list(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, modelId));
         if (CollectionUtils.isEmpty(assetList)) {
@@ -247,41 +253,32 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     /**
      * 资产类型有效性校验
+     *
+     * @param model
      */
     public void checkAssetVendorAndTypeExist(Model model) {
-        List<SysDictEntity> dictEntities = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getDelFlag, 0));
+        // 1. 查询当前 assetType vendor 信息
+        List<SysDictEntity> dictEntities = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().in(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE, Constant.DICT_ASSET_MODEL_VENDOR).eq(SysDictEntity::getDelFlag, 0));
 
-        List<SysDictEntity> assetTypes = new ArrayList<>();
-        List<SysDictEntity> vendors = new ArrayList<>();
-
-        dictEntities.stream().forEach(dict -> {
-            switch (dict.getType()) {
-                case Constant.DICT_ASSET_MODEL_TYPE: {
-                    assetTypes.add(dict);
-                    break;
-                }
-                case Constant.DICT_ASSET_MODEL_VENDOR: {
-                    vendors.add(dict);
-                    break;
-                }
-                default:
-            }
-        });
-
-        List<Integer> typeCodeList = assetTypes.stream().map(SysDictEntity::getCode).collect(Collectors.toList());
+        // 2. 校验 assetType 是否存在
+        List<Integer> typeCodeList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_TYPE.equals(dictEntity.getType())).map(SysDictEntity::getCode).collect(Collectors.toList());
         if (!typeCodeList.contains(model.getTypeCode())) {
-            // 资产类型未找到
             throw new NZException(RCode.ASSET_MODELTYPE_NOTFOUND);
         }
 
-        List<Integer> vendorCodeList = vendors.stream().map(SysDictEntity::getCode).collect(Collectors.toList());
+        // 3. 校验 vendor 是否存在
+        List<Integer> vendorCodeList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_VENDOR.equals(dictEntity.getType())).map(SysDictEntity::getCode).collect(Collectors.toList());
         if (!vendorCodeList.contains(model.getVendorCode())) {
-            // 厂商未找到
             throw new NZException(RCode.ASSET_VENDOR_NOTFOUND);
         }
     }
 
 
+    /**
+     * 保存 model 时间需要保存关联 panel chart
+     *
+     * @param model
+     */
     public void saveModelPanelAndChart(Model model) {
         // 配置信息获取
         SysConfigEntity modelConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_CHART_TPL));
@@ -294,7 +291,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
 
         Panel panel = new Panel();
-        panel.setType("model");
+        panel.setType(Constant.PanelType.MODEL.getValue());
         panel.setLink(model.getId());
         panel.setCreateBy(ShiroUtils.getUserId().intValue());
 

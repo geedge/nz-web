@@ -174,7 +174,7 @@ public enum RCode {
     ASSET_MODELID_ISNULL(321001, "Asset model id can not be null"),      // 资产型号ID不能为空
     ASSET_MODELNAME_DUPLICATE(322002, "Asset model name duplicate"),     // 资产型号名称重复
     ASSET_MODELTYPE_NOTFOUND(326003, "Asset model type not found"),      // 资产型号类型未找到
-    ASSET_MODELRELATED_ASSET(323004, "There are assets in the model"),   // 资产型号关联资产
+    ASSET_MODELRELATED_ASSET(323004, "These mdoels contain assets and cannot be deleted"),   // 资产型号关联资产
     ASSET_MODEL_NOTFOUND(326005, "Asset model not found"),               // 资产型号未找到
     ASSET_MODEL_USIZEMINIMUM(325006, "The minimum value of model usize is 1"), // 资产型号u位最小值为1
     ASSET_MODEL_USIZEERROR(323007,"Model usize cannot be larger than associated asset size"),// 修改的时候model uSize 不能大于关联 asset 的大小
@@ -182,6 +182,7 @@ public enum RCode {
     ASSET_MODEL_PARAM_ISNULL(321009,"The model Id and asset Id cannot both be empty, when the model chart is updated."),
     ASSET_MODELID_INCONSISTENT(323010,"Asset model is inconsistent with model Id"),
     ASSET_IPMITYPE_ERROR(323011,"Asset type must be a server can save ipmi information"),
+    ASSET_MODELRELATED_MIBS(323012, "These mdoels contain mibs and cannot be deleted"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
@@ -283,8 +284,8 @@ public enum RCode {
     IDC_IDCPHONE_FORMAT(533002, "Idc phone format error , format such as 18201436079"), // 数据中心电话格式错误
     IDC_PRINCIPAL_NOT_EXISTS(536003, "Idc principal does not exist"),     // 数据中心负责人不存在
     IDC_NAME_DUPLICATE(532004, "Idc name duplicate"),                      // 数据中心名称重复
-    IDC_CABINETS_EXISTS(533005, "There are cabinets in the idc"),         // 数据中心内含有机柜
-    IDC_ASSETS_EXISTS(533006, "There are assets in the idc"),             // 数据中心内含有资产
+    IDC_CABINETS_EXISTS(533005, "These idc contain cabinets and cannot be deleted"),         // 数据中心内含有机柜
+    IDC_ASSETS_EXISTS(533006, "These idc contain assets and cannot be deleted"),             // 数据中心内含有资产
     IDC_NOT_EXISTS(536007, "Idc does not exist"),                          // 数据中心不存在
     IDC_NOTHAS_CABINET(536008, "There is no this cabinet in the idc"),   // 数据中心中没有该机柜
     IDC_ID_FORMAT(533009, "Id format error , type should be integer"),  // ID类型错误
@@ -292,7 +293,7 @@ public enum RCode {
     IDC_CABINETID_ISNULL(531011, "Cabinet id can not be empty"),         // 机柜id不能为空
     IDC_CABINETNAME_DUPLICATE(532012, "Cabinet name duplicate"),         // 机柜名称重复
     IDC_CABINETUSIZE_MINIMUM(535013, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
-    IDC_CABINET_ASSETS_EXISTS(533014, "There are assets in the cabinet"),// 机柜中有资产
+    IDC_CABINET_ASSETS_EXISTS(533014, "These cabinets contain assets and cannot be deleted"),// 机柜中有资产
     IDC_CABINET_MAXU(535015, "The maximum U of current cabinet is 47"),  // 当前机柜最大U为47
     IDC_Y_MINIMUM(535016,"Idc y is a minimum of 1"),                       // 数据中心行数最少为1
     IDC_X_MINIMUM(535017,"Idc x is a minimum of 1"),                       // 数据中心列数最少为1
@@ -316,6 +317,7 @@ public enum RCode {
     IDC_TRAFFIC_VERSION_ISNULL(531035,"Idc traffic version can not be empty"),
     IDC_TRAFFIC_PORT_INVALIDE(535036,"Idc traffic port is invalide"),
     IDC_TRAFFIC_TAGSKEY_FORMAT(533037,"Idc traffic tags key format is incorrect"),
+    IDC_PROMSERVERS_EXISTS(533038, "These idc contain prometheus servers and cannot be deleted"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang

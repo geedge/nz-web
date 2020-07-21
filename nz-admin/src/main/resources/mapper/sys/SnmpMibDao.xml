@@ -60,4 +60,20 @@
             </if>
         </where>
     </select>
+
+    <select id="queryByModelIds" resultType="com.nis.modules.sys.entity.SnmpMib">
+        SELECT
+            sm.id,
+            sm.name,
+            sm.models
+        FROM
+            snmp_mib sm
+        <where>
+            <if test="ids != null and ids.size > 0">
+                <foreach collection="ids" item="id" index="no">
+                    OR FIND_IN_SET(#{id}, sm.models)
+                </foreach>
+            </if>
+        </where>
+    </select>
 </mapper>

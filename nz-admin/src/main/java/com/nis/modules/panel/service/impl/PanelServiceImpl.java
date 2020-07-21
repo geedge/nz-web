@@ -36,11 +36,11 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
     public List<Panel> queryList(Map<String, Object> params) {
         String type = (String) params.get("type");
         if (StringUtils.isEmpty(type)) {
-            type = "dashboard";
+            type = Constant.PanelType.DASHBOARD.getValue();
             params.put("type", type);
         }
         List<Panel> panelList = new ArrayList<>();
-        if ("dashboard".equals(type)) {
+        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
             List<Panel> panels = this.baseMapper.queryList(params);
             if (CollectionUtils.isEmpty(panels)) {
                 return panels;
@@ -78,7 +78,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         this.validateBuildInPanels(idList);
 
         // dashboard panel
-        List<Panel> panelList = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "dashboard"));
+        List<Panel> panelList = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
 
         List<Panel> deletePanel = panelList.stream().filter(panel -> idList.contains(panel.getId()) ? true : false).collect(Collectors.toList());
         List<Integer> delIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
@@ -180,11 +180,13 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             // 校验 type
             String type = panel.getType();
             ValidateUtils.is(type).notNull(RCode.PANEL_TYPE_ISNULL);
-            if (!Constant.PANEL_TYPES.contains(type)) {
+            List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
+            List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).collect(Collectors.toList());
+            if (!types.contains(type)) {
                 throw new NZException(RCode.PANEL_TYPE_INVALIDE);
             }
         } else {
-            panel.setType("dashboard");
+            panel.setType(Constant.PanelType.DASHBOARD.getValue());
         }
 
         Long userId = ShiroUtils.getUserId();
@@ -217,7 +219,9 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
     @Transactional(rollbackFor = Exception.class)
     public void modify(Panel panel) {
         String type = panel.getType();
-        if (!Constant.PANEL_TYPES.contains(type)) {
+        List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
+        List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).collect(Collectors.toList());
+        if (!types.contains(type)) {
             throw new NZException(RCode.PANEL_TYPE_INVALIDE);
         }
 

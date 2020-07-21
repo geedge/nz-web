@@ -165,7 +165,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Integer sync = chart.getSync();
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
-            if ("model".equals(panel.getType()) && sync.equals(1)) {
+            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
                 List<Asset> assets = assetDao.selectList(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, panel.getLink()));
                 // 当前没有需要同步的asset
                 if(CollectionUtils.isEmpty(assets)){
@@ -177,7 +177,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 }
                 List<Integer> assetsIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
                 // 得到 asset panel
-                List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "asset").in(Panel::getLink, assetsIds));
+                List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, assetsIds));
 
                 Map<Integer, Asset> panelIdAndAsset = new HashMap<>();
                 for (Panel entity : panels) {
@@ -266,7 +266,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Integer sync = chart.getSync();
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
-            if ("model".equals(panel.getType()) && sync.equals(1)) {
+            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
                 this.updateAssetChartsSimultaneously(chart);
             }
         }
@@ -349,7 +349,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String urlStr = url.toString();
                 // 如果是model panel添加charts url类型支持{{}}替换
                 Panel panel = panelService.getById(panelId);
-                if ("model".equals(panel.getType())) {
+                if (Constant.PanelType.MODEL.getValue().equals(panel.getType())) {
                     // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
                     urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 
@@ -462,7 +462,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if (sync != null) {
                 // 同步删除
                 Panel panel = panelService.getById(panelId);
-                if ("model".equals(panel.getType()) && sync.equals(1)) {
+                if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
                     this.syncDeleteAssetsCharts(deleteIds);
                 }
             }
@@ -801,10 +801,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     @Override
     public void saveAssetPanelAndChart(Asset asset) {
         // 当前型号关联的panel对象
-        Panel modelPanel = panelService.getOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "model").eq(Panel::getLink, asset.getModelId()));
+        Panel modelPanel = panelService.getOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).eq(Panel::getLink, asset.getModelId()));
 
         Panel panel = new Panel();
-        panel.setType("asset");
+        panel.setType(Constant.PanelType.ASSET.getValue());
         panel.setLink(asset.getId());
         panel.setCreateBy(ShiroUtils.getUserId().intValue());
         panel.setBuildIn(modelPanel.getBuildIn());
@@ -823,8 +823,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         List<Panel> panels = panelService.list();
 
         // 修改的Model 关联的panel
-        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
-        Panel assetPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+        Panel modelPanel = panels.stream().filter(panel -> Constant.PanelType.MODEL.getValue().equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
+        Panel assetPanel = panels.stream().filter(panel -> Constant.PanelType.ASSET.getValue().equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
 
         List<Chart> list = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, assetPanel.getId()));
         List<Integer> delIds = list.stream().filter(chart -> chart.getPid() != null ? true : false).map(Chart::getId).collect(Collectors.toList());
@@ -842,8 +842,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public void updateAssetChartsThroughRelatedModel(Asset asset) {
         List<Panel> panels = panelService.list();
 
-        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
-        Panel assetPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+        Panel modelPanel = panels.stream().filter(panel -> Constant.PanelType.MODEL.getValue().equals(panel.getType()) && panel.getLink().equals(asset.getModelId()) ? true : false).findAny().orElse(null);
+        Panel assetPanel = panels.stream().filter(panel -> Constant.PanelType.ASSET.getValue().equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
 
         // 删除 assetPanel 下的 charts信息
         this.delChartsByPanelId(assetPanel.getId());
@@ -856,12 +856,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public void updateuAllAssetChartsUnderCurrentModel(Integer modelId, List<Asset> assets) {
         List<Panel> panels = panelService.list();
 
-        Panel modelPanel = panels.stream().filter(panel -> "model".equals(panel.getType()) && panel.getLink().equals(modelId) ? true : false).findAny().orElse(null);
+        Panel modelPanel = panels.stream().filter(panel -> Constant.PanelType.MODEL.getValue().equals(panel.getType()) && panel.getLink().equals(modelId) ? true : false).findAny().orElse(null);
 
         Map<Asset, Panel> assetAndPanelMap = new HashMap<>();
         Panel tempPanel;
         for (Asset asset : assets) {
-            tempPanel = panels.stream().filter(panel -> "asset".equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
+            tempPanel = panels.stream().filter(panel -> Constant.PanelType.ASSET.getValue().equals(panel.getType()) && panel.getLink().equals(asset.getId()) ? true : false).findAny().orElse(null);
             assetAndPanelMap.put(asset, tempPanel);
         }
 

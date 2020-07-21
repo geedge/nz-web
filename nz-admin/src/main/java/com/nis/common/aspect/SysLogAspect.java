@@ -228,6 +228,9 @@ public class SysLogAspect {
         List<Object> list;
         Map<String, Object> map;
         for (Object arg : args) {
+            if (arg == null) {
+                continue;
+            }
             // endpoint 保存方法参数为 集合形式  List<Endpoint>
             if (arg instanceof List) {
                 list = (List<Object>) arg;
@@ -252,7 +255,10 @@ public class SysLogAspect {
                 }
             } else {
                 // 单个实体对象方式
-                oepraId = getEntityId(arg);
+                oepraId += getEntityId(arg) + ",";;
+                if (ToolUtil.isNotEmpty(oepraId)) {
+                    oepraId = oepraId.substring(0, oepraId.length() - 1);
+                }
             }
         }
         return oepraId;
