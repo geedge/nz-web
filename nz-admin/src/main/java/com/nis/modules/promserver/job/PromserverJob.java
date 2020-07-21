@@ -69,7 +69,7 @@ public class PromserverJob extends QuartzJobBean {
 					promserver.setStatus(-2);
 				}
 			}
-			promserverService.updateBatchById(promservers);
+			promserverService.updateStatus(promservers);
 		}
 	}
 

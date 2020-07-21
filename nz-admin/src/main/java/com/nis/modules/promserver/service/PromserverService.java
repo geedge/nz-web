@@ -1,5 +1,6 @@
 package com.nis.modules.promserver.service;
 
+import java.util.List;
 import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -20,4 +21,6 @@ public interface PromserverService extends IService<Promserver> {
 	Promserver getOneAvaPromServer(Integer promId,Integer idcId,Integer type);
 
 	void saveOrUpdatePromserver(Promserver promserverEntity,boolean modify);
+	
+	void updateStatus(List<Promserver> promservers);
 }

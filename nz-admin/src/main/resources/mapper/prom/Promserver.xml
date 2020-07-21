@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.promserver.dao.PromserverDao">
+
+	<update id="updateStatus">
+		<foreach item="promserver" collection="promservers" separator=";">
+			update prom_server set status=#{promserver.status}
+			where id=#{promserver.id}
+		</foreach>
+	</update>
+</mapper>

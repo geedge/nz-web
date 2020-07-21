@@ -106,4 +106,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		// 保存/修改
 		this.saveOrUpdate(promserverEntity);
 	}
+
+	@Override
+	public void updateStatus(List<Promserver> promservers) {
+		this.baseMapper.updateStatus(promservers);
+	}
 }
