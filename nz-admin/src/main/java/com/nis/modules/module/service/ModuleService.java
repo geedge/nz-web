@@ -14,9 +14,7 @@ public interface ModuleService extends IService<Module> {
 	void validateParam(Module moduleEntity);
 	
 	void removeHandle(List ids);
-	
-	List queryModuleIdsByProjectIds(List projectIds);
-	
+		
 	void validateBulitinRule(List<Integer> ids);
 
 	// 通过snmpParam生成snmp.yml

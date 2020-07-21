@@ -86,7 +86,7 @@ public enum RCode {
     PROJECT_NAME_TOO_LONG(213003, "Project name too long"),
     PROJECT_REMARK_TOO_LONG(213004, "Project remark too long"),
     PROJECT_NAME_DUPLICATE(212005, "Project name is duplicate"),
-
+    PROJECT_REMOVE_ERROR(213006,"These projects contains module can't remove projects"),
 
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),
@@ -108,7 +108,7 @@ public enum RCode {
     MODULE_AUTHPROTOCOL_INVALID(224017,"Auth protocol must be SHA or MD5"),
     MODULE_PASSWORD_INVALID(221018,"Auth password is missing, required for SNMPv3 with auth"),
     MODULE_USERNAME_INVALID(221019,"Auth username is missing, required for SNMPv3"),
-
+    MODULE_REMOVE_ERROR(223020,"These modules contains endpoint can't remove modules"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),

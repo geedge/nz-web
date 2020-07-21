@@ -19,5 +19,5 @@ public interface PromserverService extends IService<Promserver> {
 	 */
 	Promserver getOneAvaPromServer(Integer promId,Integer idcId,Integer type);
 
-	void saveOrUpdatePromserver(Promserver promserverEntity);
+	void saveOrUpdatePromserver(Promserver promserverEntity,boolean modify);
 }

@@ -1,5 +1,6 @@
 package com.nis.modules.project.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -19,6 +20,7 @@ import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("projectService")
 @Slf4j
@@ -62,6 +65,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
     @Autowired
     private ChartService chartService;
 	
+    @Autowired
+    private PanelService panelService;
+    
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String id = (String)params.get("id");
@@ -81,16 +87,22 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void removeHandle(List ids) {
-		projectDao.deleteBatchIds(ids);
-		//同时删除相关联的module信息 先查询出要删除的module信息
-		List moduleIds =  moduleService.queryModuleIdsByProjectIds(ids);
-		if (CollectionUtils.isNotEmpty(moduleIds)) {
-			moduleService.removeHandle(moduleIds);
+		//如果project下有module则不允许删除
+		List<Module> modules = moduleService.list(new QueryWrapper<Module>().lambda().in(Module::getProjectId, ids));
+		if (CollectionUtils.isNotEmpty(modules)) {
+			List<Project> projects = this.list(new QueryWrapper<Project>().lambda().in(Project::getId, ids));
+			Set<String> projectNames = projects.stream().map(Project::getName).collect(Collectors.toSet());
+    		throw new NZException("These projects contains module can't remove, projects info : "+projectNames.toString(),RCode.PROJECT_REMOVE_ERROR.getCode());
 		}
+		projectDao.deleteBatchIds(ids);
 		//删除alert表相关数据信息
 		alertMessageService.removeByProjectIds(ids);
 		// 删除关联 panel
-		panelDao.delete(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "project").in(Panel::getLink, ids));
+		List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, "project").in(Panel::getLink, ids));
+		if(ToolUtil.isNotEmpty(panels)) {
+			List<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toList());
+			panelService.delPanels(panelIds.toArray(new Integer[0]));
+		}
 	}
 
 	@Override

@@ -43,12 +43,12 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		return new PageUtils(page);
 	}
 
-	public void validateParam(Promserver promserverEntity) {
+	public void validateParam(Promserver promserverEntity,boolean modify) {
 		Promserver promserver = this.getOne(new QueryWrapper<Promserver>().lambda()
 				.eq(Promserver::getHost, promserverEntity.getHost())
 				.eq(Promserver::getPort, promserverEntity.getPort())
 				.eq(Promserver::getType, promserverEntity.getType()));
-		if (promserver != null) {
+		if (promserver != null && !modify) {
 			throw new NZException(RCode.PROMSERVER_EXIST_ERROR);
 		}
 
@@ -99,9 +99,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public void saveOrUpdatePromserver(Promserver promserverEntity) {
+	public void saveOrUpdatePromserver(Promserver promserverEntity,boolean modify) {
         // 校验
-		this.validateParam(promserverEntity);
+		this.validateParam(promserverEntity,modify);
 
 		// 保存/修改
 		this.saveOrUpdate(promserverEntity);

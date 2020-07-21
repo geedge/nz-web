@@ -77,8 +77,8 @@
         </if>
     </select>
 	
-	<select id="selectModuleIdsByProjectIds" resultType="java.lang.Integer">
-		select id from module where project_id in 
+	<select id="selectModuleIdsByProjectIds" resultType="com.nis.modules.module.entity.Module">
+		select * from module where project_id in 
 		<foreach item="projectId" collection="projectIds" separator="," open="(" close=")" index="">
 			#{projectId}
 		</foreach>

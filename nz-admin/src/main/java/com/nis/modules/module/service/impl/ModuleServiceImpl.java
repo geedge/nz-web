@@ -1,5 +1,6 @@
 package com.nis.modules.module.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,6 +11,8 @@ import com.nis.common.utils.*;
 import com.nis.common.utils.Constant.AlertType;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.endpoint.dao.EndpointDao;
+import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
@@ -23,9 +26,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
@@ -40,7 +47,6 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 	private AlertMessageService alertMessageService;
 	@Autowired
 	private EndpointService endpointService;
-
     @Autowired
     private YamlUtil yamlUtil;
 
@@ -251,21 +257,28 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         return snmpYml;
     }
 
-    @Override
+	@Override
     @Transactional(rollbackFor = Exception.class)
     public void removeHandle(List ids) {
-        moduleDao.deleteBatchIds(ids);
-        //同时删除endpoint信息
-        endpointService.removeByModuleIds(ids);
-        //删除alert相关信息
-        //alertRuleService.removeByTypeIds(AlertType.ALERT_TYPE_MODULE.getCode(), ids);
-        alertMessageService.removeByModuleIds(ids);
+    	//查询是否有endpoint信息 有的话不允许删除
+    	List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getModuleId, ids));    	
+    	if(ToolUtil.isEmpty(endpoints)) {
+    		moduleDao.deleteBatchIds(ids);
+            //删除alert相关信息
+            alertMessageService.removeByModuleIds(ids);
+    	}else {
+    		Set<Integer> moduleIds = endpoints.stream().map(Endpoint::getModuleId).collect(Collectors.toSet());
+    		List errorIds = new ArrayList();
+        	for(Object id : ids) {
+        		if(moduleIds.contains(id)) {
+        			errorIds.add(id);
+        		};
+        	}
+        	List<Module> modules = this.list(new QueryWrapper<Module>().lambda().in(Module::getId, errorIds));
+        	Set<String> moduleNames = modules.stream().map(Module::getName).collect(Collectors.toSet());
+    		throw new NZException("These modules contains endpoint can't remove, modules info : "+moduleNames.toString(),RCode.MODULE_REMOVE_ERROR.getCode());
+    	}
     }
-
-	@Override
-	public List queryModuleIdsByProjectIds(List projectIds) {
-		return moduleDao.selectModuleIdsByProjectIds(projectIds);
-	}
 
 	@Override
 	public void validateBulitinRule(List<Integer> ids) {

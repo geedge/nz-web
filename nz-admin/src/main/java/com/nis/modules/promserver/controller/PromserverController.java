@@ -38,7 +38,7 @@ public class PromserverController extends AbstractController {
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.PROMSERVER)
 	public R save(@RequestBody Promserver promserverEntity) {
 
-		promserverService.saveOrUpdatePromserver(promserverEntity);
+		promserverService.saveOrUpdatePromserver(promserverEntity,false);
 		return R.ok();
 	}
 	
@@ -47,7 +47,7 @@ public class PromserverController extends AbstractController {
 	public R modify(@RequestBody Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 
-		promserverService.saveOrUpdatePromserver(promserverEntity);
+		promserverService.saveOrUpdatePromserver(promserverEntity,true);
 		return R.ok();
 	}
 	
