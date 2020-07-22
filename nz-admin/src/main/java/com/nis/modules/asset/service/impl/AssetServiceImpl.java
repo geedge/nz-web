@@ -1815,7 +1815,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 					// 进行ssh连接
 					session=SshUtil.getSshConnection(asset, account);
 			        
-					// 采集cpu os disk memory core uptime信息
+					// 采集cpu disk memory core uptime信息
 					getSystemInfo(session,assetFeatureMap,results,assetId);
 					
 					// 采集网卡信息
@@ -2019,7 +2019,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
 		result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
 		
-		result.setValue(value);
+		result.setValue(value.replace("\"", ""));
         results.add(result);
 	}
 	
