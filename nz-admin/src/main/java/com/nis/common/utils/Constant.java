@@ -374,11 +374,11 @@ public class Constant {
 
     // 字典表中 account 认证类型的 type 值
     public static final String DICT_ACCOUNT_AUTH_TYPE = "authType";
-    // 字典表中 account 认证类型的 type 值
 
+    // 字典表中 chart 类型的 type 值
     public static final String DICT_CHART_TYPE = "chartType";
 
-    // 字典表中 account 认证类型的 type 值
+    // 字典表中 chart element 表达式类型的 type 值
     public static final String DICT_EXPRESSION_TYPE = "exprType";
 
     // 字典表中 告警周期 类型的 type 值
@@ -479,6 +479,12 @@ public class Constant {
 
     // 资产服务器类型
     public static final String ASSET_SERVER_TYPE = "server";
+
+    // panel chart link 链表结构 首位 prev 值
+    public static final Integer START_PREV_VALUE = 0;
+
+    // panel chart link 链表结构 末尾 next 值
+    public static final Integer END_NEXT_VALUE = -1;
 
     // 资产excel表头
     public static final String[] ASSET_EXCEL_IMPORT_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "UserTip", "PasswordTip", "ReloginPasswordTip", "Exporter","IpmiHost","IpmiPort"};

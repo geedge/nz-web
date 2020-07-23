@@ -9,7 +9,11 @@ import java.util.List;
 
 @Mapper
 public interface ChartDao extends BaseMapper<Chart> {
-    List<Chart> queryCharts(@Param("panelId") Integer panelId);
+    List<Chart> queryCharts(@Param("panelId") Integer panelId, @Param("chartId")Integer id, @Param("title")String title);
 
     void deleteByIds(@Param("panelId") Integer panelId, @Param("ids") List<Integer> deleteIds);
+
+    void updatePrevNextById(@Param("chart") Chart firstChart);
+
+    void updatePrevNextBatch(@Param("charts") List<Chart> updateCharts);
 }

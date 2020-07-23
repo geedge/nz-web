@@ -9,15 +9,32 @@
         <result property="height" column="height"></result>
         <result property="createAt" column="create_at"></result>
         <result property="type" column="type"></result>
-        <collection property="elements" column="id" select="queryChartElements" ></collection>
+        <collection property="elements" ofType="com.nis.modules.panel.entity.ChartElement" columnPrefix="ce_">
+            <id property="id" column="id"/>
+            <result property="expression" column="expression"></result>
+            <result property="type" column="type"></result>
+            <result property="legend" column="legend"></result>
+        </collection>
     </resultMap>
 
     <select id="queryCharts" resultMap="chartResult">
-        SELECT * FROM chart WHERE panel_id = #{panelId} ORDER BY prev
-    </select>
+        SELECT
+            ch.*,
+            ce.id AS ce_id,
+            ce.expression AS ce_expression,
+            ce.type AS ce_type,
+            ce.legend AS ce_legend
+        FROM chart ch
+        LEFT JOIN chart_element ce ON ch.id = ce.chart_id
+        WHERE ch.panel_id = #{panelId}
 
-    <select id="queryChartElements" resultType="com.nis.modules.panel.entity.ChartElement">
-        select * from chart_element where chart_id=#{id}
+        <if test="chartId != null">
+            AND ch.id = #{chartId}
+        </if>
+
+        <if test="title != null and title != ''">
+            AND ch.title LIKE CONCAT('%', #{title}, '%')
+        </if>
     </select>
 
     <delete id="deleteByIds">
@@ -26,4 +43,38 @@
             #{id}
         </foreach>
     </delete>
+
+    <update id="updatePrevNextById">
+        UPDATE chart
+            <set>
+                prev = #{chart.prev},
+                next = #{chart.next},
+                <if test="chart.span != null">
+                    span = #{chart.span},
+                </if>
+                <if test="chart.height != null">
+                    height = #{chart.height},
+                </if>
+            </set>
+        WHERE
+                id = #{chart.id}
+    </update>
+
+    <update id="updatePrevNextBatch">
+        <foreach item="chart" collection="charts"  separator=";">
+            UPDATE chart
+                <set>
+                    prev = #{chart.prev},
+                    next = #{chart.next},
+                    <if test="chart.span != null">
+                        span = #{chart.span},
+                    </if>
+                    <if test="chart.height != null">
+                        height = #{chart.height},
+                    </if>
+                </set>
+            WHERE
+                id = #{chart.id}
+        </foreach>
+    </update>
 </mapper>

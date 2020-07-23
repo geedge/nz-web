@@ -34,11 +34,13 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     @Override
     public List<Panel> queryList(Map<String, Object> params) {
+        // 1. 查询时 type 为空则默认 dashboard 类型
         String type = (String) params.get("type");
         if (StringUtils.isEmpty(type)) {
             type = Constant.PanelType.DASHBOARD.getValue();
             params.put("type", type);
         }
+        // 2. dashboard 类型 需要进行排序返回
         List<Panel> panelList = new ArrayList<>();
         if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
             List<Panel> panels = this.baseMapper.queryList(params);
@@ -60,7 +62,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
                 }
             }
         } else {
-            // 其他类型不进行排序
+            // 3. 其他类型不进行排序
             panelList = this.baseMapper.queryList(params);
         }
         return panelList;
@@ -73,33 +75,38 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             return;
         }
 
-        // 校验内置panel不能被删除
+        // 1. 校验内置panel不能被删除
         List<Integer> idList = Arrays.asList(ids);
         this.validateBuildInPanels(idList);
 
-        // dashboard panel
+        // 2. dashboard panel 是有序的 获取当前所有 panel 留作稍后处理删除后的位置
         List<Panel> panelList = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
 
         List<Panel> deletePanel = panelList.stream().filter(panel -> idList.contains(panel.getId()) ? true : false).collect(Collectors.toList());
         List<Integer> delIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
 
-        // 删除panel
+        // 3. 删除 panel
         this.removeByIds(idList);
 
-        // 删除关联chart信息
+        // 4. 删除关联 chart 信息
         chartService.delChartsByPanelId(ids);
 
-        // 由于其他类型panel取消排序 所以只处理dashboard类型panel顺序
+        // 5. 处理删除后的位置
         this.handlePositionAfterDelete(panelList, delIds);
     }
 
+    /**
+     * 处理删除后的位置
+     * @param sequentialPanelList      删除之前有序的链表
+     * @param deleteIds                删除的 IDS
+     */
     private void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds) {
-        // 全删除了
+        // 1. 全删除了
         if (sequentialPanelList.size() == deleteIds.size()) {
             return;
         }
 
-        // 保证原先次序 并且 删除之后剩余的集合
+        // 2. 删除之后的剩余元素  有序
         List<Panel> deletedPanelList = new ArrayList<>();
         for (Panel obj : sequentialPanelList) {
             if (!deleteIds.contains(obj.getId())) {
@@ -107,17 +114,19 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             }
         }
 
+        // 开头 panel
         Panel firstPanel = deletedPanelList.get(0);
-        firstPanel.setPrev(0);
+        firstPanel.setPrev(Constant.START_PREV_VALUE);
 
         // 剩余一个
         if (deletedPanelList.size() == 1) {
-            firstPanel.setNext(-1);
+            firstPanel.setNext(Constant.END_NEXT_VALUE);
             this.updateById(firstPanel);
         } else {
             // 剩余数量大于 1
             List<Panel> updatePanels = new ArrayList<>();
 
+            // 批量更新 需要更新 prev next panel
             Panel tempPanel = null;
             int size = deletedPanelList.size();
             for (int i = 0; i < size; i++) {
@@ -133,11 +142,16 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
                     updatePanels.add(tempPanel);
                 }
             }
-            updatePanels.get(updatePanels.size() - 1).setNext(-1);
+            // 末尾 设置 next 为 -1
+            updatePanels.get(updatePanels.size() - 1).setNext(Constant.END_NEXT_VALUE);
             this.saveOrUpdateBatch(updatePanels);
         }
     }
 
+    /**
+     * 校验内置 panel 不可删除
+     * @param idList
+     */
     private void validateBuildInPanels(List<Integer> idList) {
         // 内置panel不能删除
         List<Panel> buildInPanels = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getBuildIn, 1));
@@ -156,8 +170,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         boolean flag = false;
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-        if ((list == null || list.size() == 0) ||
-                (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
+        if ((list == null || list.size() == 0) || (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
             flag = true;
         }
         return flag;
@@ -201,7 +214,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
                 this.save(panel);
             } else {
                 // 已存在chart 再次新增时自动排到末尾
-                Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(-1)).findAny().orElse(null);
+                Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(Constant.END_NEXT_VALUE)).findAny().orElse(null);
                 panel.setPrev(endPanel.getId());
                 this.save(panel);
 
@@ -245,8 +258,8 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
         // 就只有一个图表 不让其调整位置
         if (panelList.size() == 1) {
-            oldPanel.setPrev(0);
-            oldPanel.setNext(-1);
+            oldPanel.setPrev(Constant.START_PREV_VALUE);
+            oldPanel.setNext(Constant.END_NEXT_VALUE);
             this.updateById((Panel) oldPanel);
             return;
         }

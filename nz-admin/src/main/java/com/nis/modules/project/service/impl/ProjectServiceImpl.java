@@ -158,10 +158,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
         Chart target = new Chart();
         BeanUtils.copyProperties(chartConfig, target);
         target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? project.getId() + " Chart" : target.getTitle());
-        target.setPanelId(panel.getId());
         target.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
         target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
-        chartService.saveChart(target);
+        chartService.saveChart(panel.getId(), target);
 	}
 
 	public boolean validateProjectName(Integer id, String name) {

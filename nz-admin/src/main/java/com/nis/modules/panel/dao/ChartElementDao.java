@@ -9,5 +9,5 @@ import java.util.List;
 
 @Mapper
 public interface ChartElementDao extends BaseMapper<ChartElement> {
-    List<Integer> queryElementIds(@Param("chartId")Integer chartId);
+
 }

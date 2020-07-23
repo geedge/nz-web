@@ -1,6 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.service.NodeService;
@@ -14,9 +15,6 @@ import java.util.Map;
 @Service
 public class NodeServiceImpl implements NodeService {
 
-    private Integer firstIndex = 0;
-    private Integer lastIndex = -1;
-
     @Override
     public boolean validatePrevAndNext(Map<Integer, Node> idAndNodeMap, Node node) {
         // 如果没有改变位置
@@ -29,16 +27,16 @@ public class NodeServiceImpl implements NodeService {
         Integer next = node.getNext();
 
         // 移动至开头的
-        if (firstIndex.equals(prev)) {
+        if (Constant.START_PREV_VALUE.equals(prev)) {
             // 校验 next 参数值是否正确
             Node oldFirstPanel = idAndNodeMap.get(next);
-            if (oldFirstPanel == null || !firstIndex.equals(oldFirstPanel.getPrev())) {
+            if (oldFirstPanel == null || !Constant.START_PREV_VALUE.equals(oldFirstPanel.getPrev())) {
                 throw new NZException(RCode.CHART_PREVNEXT_INCORRECT);
             }
-        } else if (lastIndex.equals(next)) { // 移动至末尾的
+        } else if (Constant.END_NEXT_VALUE.equals(next)) {
             // 校验 prev 参数是否正确
             Node oldLastPanel = idAndNodeMap.get(prev);
-            if (oldLastPanel == null || !lastIndex.equals(oldLastPanel.getNext())) {
+            if (oldLastPanel == null || !Constant.END_NEXT_VALUE.equals(oldLastPanel.getNext())) {
                 throw new NZException(RCode.CHART_PREVNEXT_INCORRECT);
             }
         } else {
@@ -61,28 +59,27 @@ public class NodeServiceImpl implements NodeService {
     public List<Node> modify(Map<Integer, Node> idAndNodeMap, Node node, Node oldNode) {
         // 最后需要更改的实体集合
         List<Node> updateNodes = new ArrayList<>();
-
         Integer id = node.getId();
 
-        // 判断旧位置是否为第一位 并且移动了位置
-        if (firstIndex.equals(oldNode.getPrev()) && !firstIndex.equals(node.getPrev())) {
-            // 新的第一位
+        // 开头往后挪
+        if (Constant.START_PREV_VALUE.equals(oldNode.getPrev()) && !Constant.START_PREV_VALUE.equals(node.getPrev())) {
+            // 新的开头
             Node newFirstIndex = idAndNodeMap.get(oldNode.getNext());
-            newFirstIndex.setPrev(firstIndex);
+            newFirstIndex.setPrev(Constant.START_PREV_VALUE);
 
             // 第一种 移动到末尾
-            if (lastIndex.equals(node.getNext())) {
+            if (Constant.END_NEXT_VALUE.equals(node.getNext())) {
                 // 新的倒数第二位
                 Node newCountdownSecond = idAndNodeMap.get(node.getPrev());
                 newCountdownSecond.setNext(id);
 
                 updateNodes.add(newCountdownSecond);
             } else {
-                // 移动后 前面的
+                // 新位置的前一个 重新设置 后
                 Node newPrev = idAndNodeMap.get(node.getPrev());
-                // 移动后 后面的
-                Node newNext = idAndNodeMap.get(node.getNext());
                 newPrev.setNext(id);
+                // 新位置的后一个 重新设置 前
+                Node newNext = idAndNodeMap.get(node.getNext());
                 newNext.setPrev(id);
                 updateNodes.add(newPrev);
                 updateNodes.add(newNext);
@@ -91,26 +88,24 @@ public class NodeServiceImpl implements NodeService {
             updateNodes.add(newFirstIndex);
         }
 
-        // 原来是末尾 并且移动了位置
-        if (lastIndex.equals(oldNode.getNext()) && !lastIndex.equals(node.getNext())) {
+        // 末尾往前挪
+        if (Constant.END_NEXT_VALUE.equals(oldNode.getNext()) && !Constant.END_NEXT_VALUE.equals(node.getNext())) {
 
             // 新的最后一位
             Node newLastIndex = idAndNodeMap.get(oldNode.getPrev());
-            newLastIndex.setNext(lastIndex);
-            // 第一种 末尾移动到了首位
-            if (firstIndex.equals(node.getPrev())) {
+            newLastIndex.setNext(Constant.END_NEXT_VALUE);
+            // 第一种 末尾移动到了开头
+            if (Constant.START_PREV_VALUE.equals(node.getPrev())) {
                 // 新的第二位
                 Node newSecond = idAndNodeMap.get(node.getNext());
                 newSecond.setPrev(id);
 
                 updateNodes.add(newSecond);
             } else {
-                // 第二种 不是移动到开始 而是移动到中间位置 即 有前有后
-                // 移动后 前面的
+                // 第二种 不是移动到开始 而是移动到中间位置 即 有前有后 重新设置 前后值
                 Node newPrev = idAndNodeMap.get(node.getPrev());
-                // 移动后 后面的
-                Node newNext = idAndNodeMap.get(node.getNext());
                 newPrev.setNext(id);
+                Node newNext = idAndNodeMap.get(node.getNext());
                 newNext.setPrev(id);
                 updateNodes.add(newPrev);
                 updateNodes.add(newNext);
@@ -121,15 +116,15 @@ public class NodeServiceImpl implements NodeService {
         }
 
 
-        // 原来是中间的情况
-        if (!firstIndex.equals(oldNode.getPrev()) && !lastIndex.equals(oldNode.getNext())) {
+        // 中间 挪位置
+        if (!Constant.START_PREV_VALUE.equals(oldNode.getPrev()) && !Constant.END_NEXT_VALUE.equals(oldNode.getNext())) {
             boolean flag = false;
 
             // 原来位置的前后
             Node oldPrevChart = idAndNodeMap.get(oldNode.getPrev());
             Node oldNextChart = idAndNodeMap.get(oldNode.getNext());
             // 第一种 移动到了开头
-            if (firstIndex.equals(node.getPrev())) {
+            if (Constant.START_PREV_VALUE.equals(node.getPrev())) {
                 // 新的第二位
                 Node newSecondIndex = idAndNodeMap.get(node.getNext());
                 newSecondIndex.setPrev(id);
@@ -149,7 +144,7 @@ public class NodeServiceImpl implements NodeService {
                 if (!flag) {
                     updateNodes.add(oldPrevChart);
                 }
-            } else if (lastIndex.equals(node.getNext())) {
+            } else if (Constant.END_NEXT_VALUE.equals(node.getNext())) {
                 // 第二种移动到末尾
                 // 新的倒数第二位
                 Node newCountdownSecond = idAndNodeMap.get(node.getPrev());

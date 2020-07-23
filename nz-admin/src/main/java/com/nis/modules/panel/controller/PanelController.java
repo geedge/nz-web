@@ -20,8 +20,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/panel")
 public class PanelController {
+
     @Autowired
     private PanelService panelService;
+
     @Autowired
     private ChartService chartService;
 
@@ -65,7 +67,6 @@ public class PanelController {
         ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
 
         panelService.delPanels(ids);
-
         return R.ok();
     }
 
@@ -99,33 +100,26 @@ public class PanelController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
     public R chartSave(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
 
-        chart.setPanelId(panelId);
-
-        chartService.validateChart(panelId,chart);
-
-        chartService.saveChart(chart);
-
+        chartService.validateChart(panelId, chart);
+        chartService.saveChart(panelId, chart);
         return R.ok();
     }
 
     @PutMapping("/{id}/charts")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
     public R chartUpdate(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
+        ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
 
-        chart.setPanelId(panelId);
-
-        chartService.validateChart(panelId,chart);
-
-        chartService.updateChart(chart);
-
+        chartService.validateChart(panelId, chart);
+        chartService.updateChart(panelId, chart);
         return R.ok();
     }
 
     @DeleteMapping("/{id}/charts")
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CHART)
     public R chartDelete(@PathVariable("id") Integer panelId,@RequestParam Integer[] ids, Integer sync){
-        chartService.validatePanel(panelId);
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
+
         chartService.delCharts(panelId, ids, sync);
         return R.ok();
     }
@@ -141,8 +135,6 @@ public class PanelController {
     @PutMapping(value = {"/{id}/charts/modify"})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
     public R modify(@PathVariable("id") Integer panelId, @RequestBody Chart chart) {
-        // 校验参数
-        chartService.validatePanel(panelId);
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
                 .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
                 .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
@@ -162,8 +154,6 @@ public class PanelController {
     @PostMapping(value={"/{id}/charts/duplicate"})
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
     public R duplicate(@PathVariable("id") Integer panelId, @RequestBody Chart chart){
-    	// 校验参数
-        chartService.validatePanel(panelId);
     	ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
     	Chart result = null;
     	try {

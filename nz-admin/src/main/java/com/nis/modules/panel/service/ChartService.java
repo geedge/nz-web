@@ -9,13 +9,11 @@ import java.util.List;
 public interface ChartService extends IService<Chart> {
     List<Chart> queryCharts(Integer panelId, Integer id, String title);
 
-    void saveChart(Chart chart);
-
     void validateChart(Integer panelId, Chart chart);
 
-    void updateChart(Chart chart);
+    void saveChart(Integer panelId,Chart chart);
 
-    void validatePanel(Integer panelId);
+    void updateChart(Integer panelId, Chart chart);
 
     void delCharts(Integer panelId, Integer[] ids, Integer sync);
 
