@@ -22,5 +22,6 @@ import org.springframework.stereotype.Repository;
 public interface IdcDao extends BaseMapper<Idc> {
 	
 	List<Idc> queryPage(IPage<Idc> page,@Param("params") Map<String, Object> params);
-	
+
+	List<Idc> queryListByIds(@Param("idcIds") List<Integer> idcIds);
 }

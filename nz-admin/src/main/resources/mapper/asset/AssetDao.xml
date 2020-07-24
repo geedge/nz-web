@@ -8,6 +8,8 @@
         <result property="sn" column="sn"/>
         <result property="host" column="host"/>
         <result property="ipmi" column="ipmi"/>
+        <result property="idcId" column="idc_id"/>
+        <result property="cabinetId" column="cabinet_id"/>
         <result property="cabinetStart" column="cabinet_start"/>
         <result property="cabinetEnd" column="cabinet_end"/>
         <result property="state" column="state"/>
@@ -19,63 +21,15 @@
         <result property="pingState" column="pingState"/>
         <result property="pingRtt" column="pingRtt"/>
         <result property="pingLastUpdate" column="pingLastUpdate"/>
-        <result property="moduleNum" column="moduleNum"/>
-        <result property="endpointNum" column="endpointNum"/>
-        <result property="alertNum" column="alertNum"/>
 
-        <!-- 机柜-->
-        <result property="cabinet.id" column="cab_id"/>
-        <result property="cabinet.name" column="cab_name"/>
-        <result property="cabinet.idcId" column="cab_idcId"/>
-        <result property="cabinet.uSize" column="cab_uSize"/>
-        <result property="cabinet.remark" column="cab_remark"/>
-
-
-        <!--用户-->
-        <result property="createByUser.userId" column="su_user_id"/>
-        <result property="createByUser.username" column="su_username"/>
-        <result property="createByUser.password" column="su_password"/>
-        <result property="createByUser.salt" column="su_salt"/>
-        <result property="createByUser.email" column="su_email"/>
-        <result property="createByUser.status" column="su_status"/>
-        <result property="createByUser.createTime" column="su_createTime"/>
-
-
-        <result property="updateByUser.userId" column="su1_user_id"/>
-        <result property="updateByUser.username" column="su1_username"/>
-        <result property="updateByUser.password" column="su1_password"/>
-        <result property="updateByUser.salt" column="su1_salt"/>
-        <result property="updateByUser.email" column="su1_email"/>
-        <result property="updateByUser.status" column="su1_status"/>
-        <result property="updateByUser.createTime" column="su1_createTime"/>
-
-        <!--资产型号 select 调用下方查询sql -->
-        <association property="model" column="model_id" javaType="com.nis.modules.asset.entity.Model"
-                     select="getModelById"/>
-
-        <association property="idc" javaType="com.nis.modules.asset.entity.Idc">
-            <id property="id" column="idc_id"/>
-            <result property="name" column="idc_name"/>
-            <result property="location" column="idc_location"/>
-            <result property="tel" column="idc_tel"/>
-            <result property="principal" column="idc_principal"/>
-
-            <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
-                <id column="id" property="id"/>
-                <result column="name" property="name"/>
-                <result column="pid" property="pid"/>
-                <result column="pids" property="pids"/>
-                <result column="longitude" property="longitude"/>
-                <result column="latitude" property="latitude"/>
-                <result column="i18n" property="i18n"/>
-            </association>
+        <association property="model" column="model_id" columnPrefix="mo_" javaType="com.nis.modules.asset.entity.Model">
+            <id property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="usize" column="usize"/>
+            <result property="remark" column="remark"/>
+            <result property="typeCode" column="typeCode"/>
+            <result property="vendorCode" column="vendorCode"/>
         </association>
-
-        <!-- 一对多 关联account -->
-        <collection property="accounts" column="id" ofType="com.nis.modules.terminal.entity.Account"
-                    select="getAccountsById"/>
-
-        <collection property="tags" column="id" ofType="com.nis.modules.asset.entity.AssetTag" select="getAssetTags"/>
     </resultMap>
 
     <sql id="asset_info_columns">
@@ -84,97 +38,36 @@
        ass.model_id,
        ass.host,
        ass.ipmi,
+       ass.idc_id,
+       ass.cabinet_id,
        ass.cabinet_start,
        ass.cabinet_end,
        ass.state,
        ass.purchase_date,
        ass.create_at,
        ass.update_at,
-
-       /*数据中心*/
-       idc.id AS idc_id,
-       idc.name AS idc_name,
-       idc.location AS idc_location,
-       idc.tel AS idc_tel,
-       idc.principal AS idc_principal,
-
-       sa.id AS sa_id,
-       sa.name AS sa_name,
-       sa.pid AS sa_pid,
-       sa.pids AS sa_pids,
-       sa.longitude AS sa_longitude,
-       sa.latitude AS sa_latitude,
-       sa.i18n AS sa_i18n,
-
-       /*机柜*/
-       cab.id AS cab_id,
-       cab.name AS cab_name,
-       cab.idc_id AS cab_idcId,
-       cab.u_size AS cab_uSize,
-       cab.remark AS cab_remark,
-
-       /*用户*/
-       su.user_id AS su_user_id,
-       su.username AS su_username,
-       su.password AS su_password,
-       su.salt AS su_salt,
-       su.email AS su_email,
-       su.status AS su_status,
-       su.create_time AS su_createTime,
-
-       su1.user_id AS su1_user_id,
-       su1.username AS su1_username,
-       su1.password AS su1_password,
-       su1.salt AS su1_salt,
-       su1.email AS su1_email,
-       su1.status AS su1_status,
-       su1.create_time AS su1_createTime,
+       ass.create_by,
+       ass.update_by,
 
        assp.status AS pingState,
        assp.rtt AS pingRtt,
        assp.last_update AS pingLastUpdate,
 
-        /*module统计 关联endPoint表  统计 module 数量 */
-        (SELECT COUNT(DISTINCT ep.module_id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS moduleNum,
-        /*module统计 关联endPoint表  统计 endPoint 数量 */
-         (SELECT COUNT(ep.id) FROM endpoint ep WHERE ep.asset_id = ass.id) AS endpointNum,
-        /*alert统计 关联alert_rule表*//*
-        (SELECT COUNT(ar.id) FROM alert_rule ar WHERE ass.id = ar.link_id AND ar.type = 3) AS alertNum*/
-        (SELECT COUNT(am.id) FROM alert_message am WHERE ass.id = am.asset_id AND am.state = 1) AS alertNum
+       mo.id AS mo_id,
+       mo.name AS mo_name,
+       mo.usize AS mo_usize,
+       mo.remark AS mo_remark,
+       mo.type AS mo_typeCode,
+       mo.vendor AS mo_vendorCode
     </sql>
-
-    <sql id="model_info_columns">
-        mo.id,
-        mo.name,
-        mo.remark,
-        mo.usize,
-
-        /*厂商*/
-        dict.id AS vendorId,
-        dict.value AS vendorValue,
-        dict.code AS vendorCode,
-        dict.type AS vendorType,
-
-        /*资产类型*/
-        dict1.id AS assetId,
-        dict1.value AS assetValue,
-        dict1.code AS assetCode,
-        dict1.type AS assetType
-    </sql>
-
 
     <select id="queryList" resultMap="assetWithModelIdcCab">
         SELECT
         <include refid="asset_info_columns"/>
         FROM asset ass
 
-        LEFT JOIN idc idc ON ass.idc_id = idc.id
-        LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
-        LEFT JOIN sys_user su ON ass.create_by = su.user_id
-        LEFT JOIN sys_user su1 ON ass.update_by = su1.user_id
         LEFT JOIN asset_ping assp ON ass.host = assp.host
-        LEFT JOIN sys_area sa ON idc.area_id = sa.id
-
+        LEFT JOIN model mo ON ass.model_id = mo.id
         <where>
 
             <if test="params.id != null and params.id != ''">
@@ -244,44 +137,8 @@
                     #{id}
                 </foreach>
             </if>
-
         </where>
     </select>
-
-
-    <!--查询 model -->
-    <select id="getModelById" resultMap="com.nis.modules.asset.dao.ModelDao.modelWithVendorAndType">
-        SELECT
-        <include refid="model_info_columns"/>
-        FROM model mo
-
-        LEFT JOIN sys_dict dict ON dict.code = mo.vendor AND dict.type = 'vendor'
-        LEFT JOIN sys_dict dict1 ON dict1.code = mo.type AND dict1.type = 'assetType'
-
-        WHERE mo.id = #{id}
-    </select>
-
-    <!--查看 accounts-->
-    <select id="getAccountsById" resultType="com.nis.modules.terminal.entity.Account">
-        SELECT
-            acc.id,
-            acc.protocol,
-            acc.PORT,
-            acc.params
-        FROM
-            account acc
-        WHERE
-            acc.asset_id = #{id}
-    </select>
-
-    <select id="getAssetTags" resultType="com.nis.modules.asset.entity.AssetTag">
-        SELECT
-            id,tag,value
-        FROM
-            asset_tag
-        WHERE
-            asset_id = #{id}
-	 </select>
 
     <insert id="saveAsset">
         INSERT INTO asset (id, sn, model_id, idc_id, cabinet_id, cabinet_start, cabinet_end, host, state, purchase_date, create_at, update_at,
@@ -354,5 +211,18 @@
             LEFT JOIN model mo ON ass.model_id = mo.id
         GROUP BY
             ass.model_id
+    </select>
+
+    <select id="getAlertNumsMap" resultType="com.nis.modules.asset.entity.AssetStat">
+        SELECT
+            ass.id,
+            count( am.id ) AS total
+        FROM
+            asset ass
+            LEFT JOIN alert_message am ON ass.id = am.asset_id
+        WHERE
+            am.state = 1
+        GROUP BY
+            ass.id
     </select>
 </mapper>

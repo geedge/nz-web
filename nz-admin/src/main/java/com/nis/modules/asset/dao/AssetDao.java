@@ -3,13 +3,13 @@ package com.nis.modules.asset.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetStat;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.panel.entity.Chart;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -39,4 +39,6 @@ public interface AssetDao extends BaseMapper<Asset> {
     List<Map> getStatByDc();
 
     List<Map> getStatByModel();
+
+    List<AssetStat> getAlertNumsMap();
 }

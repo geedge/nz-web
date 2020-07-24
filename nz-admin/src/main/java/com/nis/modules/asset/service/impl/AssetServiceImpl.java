@@ -14,10 +14,7 @@ import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.dao.AssetPingDao;
-import com.nis.modules.asset.dao.CabinetDao;
-import com.nis.modules.asset.dao.ModelDao;
+import com.nis.modules.asset.dao.*;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.Endpoint;
@@ -124,6 +121,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private AssetFeatureService assetFeatureService;
 
+    @Autowired
+    private IdcDao idcDao;
+
+
     /**
      * 处理查询 asset 请求参数
      * @param params
@@ -170,11 +171,80 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         IPage<Asset> page = new Query<Asset>().getPage(params);
         List<Asset> assetEntities = assetDao.queryList(page, params);
 
+        // 查询结果不为空时处理返回结果
+        if(CollectionUtils.isNotEmpty(assetEntities)){
+            this.handleResuleList(assetEntities);
+        }
+
+        page.setRecords(assetEntities);
+        return new PageUtils(page);
+    }
+
+    /**
+     * 处理 asset 结果集
+     * @param assetEntities
+     */
+    private void handleResuleList(List<Asset> assetEntities) {
+        // user
+        List<SysUserEntity> users = sysUserDao.selectList(null);
+        Map<Long, SysUserEntity> userIdAndEntityMap = new HashMap();
+        for (SysUserEntity user : users) {
+            userIdAndEntityMap.put(user.getUserId(), user);
+        }
+        // 查询当前 assetType vendor 信息
+        List<SysDictEntity> dictEntities = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().in(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE, Constant.DICT_ASSET_MODEL_VENDOR).eq(SysDictEntity::getDelFlag, 0));
+        List<SysDictEntity> assetTypeList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_TYPE.equals(dictEntity.getType())).collect(Collectors.toList());
+        Map<Integer, SysDictEntity> assetTypeCodeAndEntityMap = new HashMap<>();
+        for (SysDictEntity entity : assetTypeList) {
+            assetTypeCodeAndEntityMap.put(entity.getCode(), entity);
+        }
+        Map<Integer, SysDictEntity> vendorCodeAndEntityMap = new HashMap<>();
+        List<SysDictEntity> vendorList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_VENDOR.equals(dictEntity.getType())).collect(Collectors.toList());
+        for (SysDictEntity entity : vendorList) {
+            vendorCodeAndEntityMap.put(entity.getCode(), entity);
+        }
+        // idc and area infos
+        Set<Integer> idcIds = assetEntities.stream().map(Asset::getIdcId).collect(Collectors.toSet());
+        List<Idc> idcs = idcDao.queryListByIds(new ArrayList<>(idcIds));
+        Map<Integer, Idc> idcIdAndEntityMap = new HashMap<>();
+        for (Idc idc : idcs) {
+            idcIdAndEntityMap.put(idc.getId(), idc);
+        }
+        // cabinet
+        List<Cabinet> cabinets = cabinetService.list();
+        Map<Integer, Cabinet> cabinetIdAndEntityMap = new HashMap<>();
+        for (Cabinet cabinet : cabinets) {
+            cabinetIdAndEntityMap.put(cabinet.getId(), cabinet);
+        }
+        // account
+        List<Account> accountList = accountService.list();
+        Map<Integer, List<Account>> assetIdAndAccountsMap = accountList.stream().collect(Collectors.groupingBy(Account::getAssetId));
+        // asset Tag
+        List<AssetTag> assetTags = assetTagService.list();
+        Map<Integer, List<AssetTag>> assetIdAndTagsMap = assetTags.stream().collect(Collectors.groupingBy(AssetTag::getAssetId));
+        // alertNum 统计信息
+        List<AssetStat> assetIdAndAlertNumsMap = assetDao.getAlertNumsMap();
+        Map<Integer, Integer> assetIdAndAlertNumMap = assetIdAndAlertNumsMap.stream().collect(Collectors.toMap(AssetStat::getId, AssetStat::getTotal));
+        // module endpoint 统计
+        List<Endpoint> endpoints = endpointService.list();
+        Map<Integer, List<Endpoint>> assetIdAndEndpointsMap = endpoints.stream().collect(Collectors.groupingBy(Endpoint::getAssetId));
+        Map<Integer, Integer> assetIdAndEndpointNumMap = new HashMap<>();
+        Map<Integer, Integer> assetIdAndMoudleNumMap = new HashMap<>();
+        Integer id;
+        List<Endpoint> epList;
+        for (Map.Entry<Integer, List<Endpoint>> entry : assetIdAndEndpointsMap.entrySet()) {
+            id = entry.getKey();
+            epList = entry.getValue();
+            assetIdAndEndpointNumMap.put(id, CollectionUtils.isEmpty(epList) ? 0 : epList.size());
+            assetIdAndMoudleNumMap.put(id, CollectionUtils.isEmpty(epList) ? 0 : Integer.valueOf((int) epList.stream().map(Endpoint::getModuleId).distinct().count()));
+        }
         // 处理返回格式
         String ipmi = null;
-        Integer cabinetEnd;
+        Integer cabinetEnd, alertNum, moduleNum, endpointNum, assetId;
+        Model model;
         List<Account> accounts;
         for (Asset asset : assetEntities) {
+            assetId = asset.getId();
             // ipmi 格式转换   字符串 -> JSON
             ipmi = (String) asset.getIpmi();
             if (StringUtils.isNotEmpty(ipmi)) {
@@ -186,18 +256,40 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 asset.setCabinetEnd(cabinetEnd - 1);
             }
             // account param 格式转换 字符串 -> JSON
-            accounts = asset.getAccounts();
-            if (CollectionUtils.isNotEmpty(accounts)) {
+            accounts = assetIdAndAccountsMap.get(assetId);
+            if (ToolUtil.isNotEmpty(accounts)) {
                 accounts.forEach(pojo -> {
                     if (StringUtils.isNotEmpty((String) pojo.getParams())) {
                         pojo.setParams(JSONObject.parseObject((String) pojo.getParams(), Map.class));
                     }
                 });
             }
+            asset.setAccounts(accounts);
+            // 用户
+            asset.setCreateByUser(userIdAndEntityMap.get(asset.getCreateBy()));
+            asset.setUpdateByUser(userIdAndEntityMap.get(asset.getUpdateBy()));
+            // 型号
+            model = asset.getModel();
+            model.setType(assetTypeCodeAndEntityMap.get(model.getTypeCode()));
+            model.setVendor(vendorCodeAndEntityMap.get(model.getVendorCode()));
+            // tag
+            asset.setTags(assetIdAndTagsMap.get(assetId));
+            // idc
+            asset.setIdc(idcIdAndEntityMap.get(asset.getIdcId()));
+            // cabinet
+            if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
+                asset.setCabinet(cabinetIdAndEntityMap.get(asset.getCabinetId()));
+            }
+            // alertNum
+            alertNum = assetIdAndAlertNumMap.get(assetId);
+            asset.setAlertNum(ToolUtil.isEmpty(alertNum) ? 0 : alertNum);
+            // moduleNum
+            moduleNum = assetIdAndMoudleNumMap.get(assetId);
+            asset.setModuleNum(ToolUtil.isEmpty(moduleNum) ? 0 : moduleNum);
+            // endpointNum
+            endpointNum = assetIdAndEndpointNumMap.get(assetId);
+            asset.setEndpointNum(ToolUtil.isEmpty(endpointNum) ? 0 : endpointNum);
         }
-
-        page.setRecords(assetEntities);
-        return new PageUtils(page);
     }
 
     /**

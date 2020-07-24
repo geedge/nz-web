@@ -73,4 +73,29 @@
 		
 	   group by i.id
     </select>
+
+    <select id="queryListByIds" resultMap="idc">
+        SELECT
+            idc.id,
+            idc.name,
+            idc.location,
+            idc.tel,
+            idc.principal,
+            sa.id AS sa_id,
+            sa.name AS sa_name,
+            sa.pid AS sa_pid,
+            sa.pids AS sa_pids,
+            sa.longitude AS sa_longitude,
+            sa.latitude AS sa_latitude,
+            sa.i18n AS sa_i18n
+        FROM
+            idc idc
+            LEFT JOIN sys_area sa ON idc.area_id = sa.id
+        <if test="idcIds != null and idcIds.size > 0">
+            AND idc.id IN
+            <foreach collection="idcIds" item="id" index="no" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </if>
+    </select>
 </mapper>

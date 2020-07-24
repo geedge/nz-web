@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class AssetStat {
+	private Integer id;
 	private Integer total;
 	private Integer inStock;
 	private Integer outStock;
