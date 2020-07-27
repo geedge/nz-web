@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetTagDao;
 import com.nis.modules.asset.entity.AssetTag;
 import com.nis.modules.asset.service.AssetTagService;
@@ -31,6 +32,10 @@ public class AssetTagServiceImpl extends ServiceImpl<AssetTagDao, AssetTag> impl
 
         List<AssetTag> saveList = new ArrayList<>();
         List<AssetTag> updateList = new ArrayList<>();
+
+        if (ToolUtil.isEmpty(tags)) {
+            tags = new ArrayList<>();
+        }
 
         for (AssetTag pojo : tags) {
             if (StringUtils.isEmpty(pojo.getTag())) {
