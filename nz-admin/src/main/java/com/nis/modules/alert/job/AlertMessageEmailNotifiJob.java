@@ -16,6 +16,7 @@ import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,8 @@ import java.util.stream.Collectors;
 
 
 @Slf4j
-public class AlertMessageJob extends QuartzJobBean {
+@DisallowConcurrentExecution
+public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     @Autowired
     RedisTemplate redisTemplate;
     @Autowired
@@ -125,6 +127,4 @@ public class AlertMessageJob extends QuartzJobBean {
         //静态化内容;
         return content;
     }
-
-
 }

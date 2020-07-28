@@ -21,7 +21,7 @@ import com.nis.modules.job.entity.ScheduleJobEntity;
 
  */
 public class ScheduleUtils {
-    private final static String JOB_NAME = "TASK_";
+    public final static String JOB_NAME = "TASK_";
     
     /**
      * 获取触发器key
@@ -154,5 +154,56 @@ public class ScheduleUtils {
         } catch (SchedulerException e) {
             throw new NZException("删除定时任务失败", e);
         }
+    }
+
+    /**
+     * 根据 jobName jobDetail jobCronExpression  创建任务，如果存在则删除再创建
+     * @param jobName
+     * @param jobDetail
+     * @param jobCronExpression
+     * @param scheduler
+     * @throws Exception
+     */
+    public static void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression, Scheduler scheduler) throws Exception {
+        CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
+
+        CronTrigger cronTrigger = TriggerBuilder.newTrigger()
+                .forJob(jobDetail)
+                .withSchedule(cronScheduleBuilder)
+                .build();
+
+        // job如果存在则删除
+        JobKey jobKey = new JobKey(JOB_NAME + jobName);
+        boolean b = scheduler.checkExists(jobKey);
+        if (b) {
+            scheduler.deleteJob(jobKey);
+        }
+        // 创建任务
+        scheduler.scheduleJob(jobDetail, cronTrigger);
+    }
+
+    /**
+     * 根据 jobName jobDetail 间隔时间（秒）  创建任务，如果存在则删除再创建
+     * @param jobName
+     * @param jobDetail
+     * @param intervalInSeconds
+     * @param scheduler
+     * @throws Exception
+     */
+    public static void createSimpleScheduleJob(String jobName, JobDetail jobDetail, Integer intervalInSeconds, Scheduler scheduler) throws Exception {
+        SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
+        SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
+                .forJob(jobDetail)
+                .withSchedule(
+                        simpleScheduleBuilder.repeatForever().withIntervalInSeconds(intervalInSeconds))
+                .build();
+
+
+        JobKey jobKey = new JobKey(JOB_NAME + jobName);
+        boolean b = scheduler.checkExists(jobKey);
+        if (b) {
+            scheduler.deleteJob(jobKey);
+        }
+        scheduler.scheduleJob(jobDetail, simpleTrigger);
     }
 }

@@ -1,39 +1,59 @@
 package com.nis.modules.alert.job;
 
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.job.utils.ScheduleUtils;
 import com.nis.modules.sys.service.SysConfigService;
-import org.quartz.*;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+
+import javax.annotation.PostConstruct;
 
 @Configuration
 public class AlertMessageJobConfig {
 
+    @Value("${nezha.alertMessageJobCron}")
+    private String alertMessageJobCron;
+
     @Autowired
-    SysConfigService configService;
-    //SysConfigService configService = (SysConfigService) SpringContextUtils.getBean("SysConfigService");
+    private SchedulerFactoryBean schedulerFactoryBean;
+
+    @Autowired
+    private SysConfigService configService;
+
+    private String alertMessageEmailNotificationJobName = "ALERTMESSAGEEMAILNOTIFICATION_JOB";
+    private String alertMessageExpirStatusJobName = "ALERTMESSAGEEXPIRSTATUS_JOB";
 
     @Bean
-    public JobDetail alertMessageJobDetail() {
-        return JobBuilder.newJob(AlertMessageJob.class).withIdentity("alertMessageJob").storeDurably().build();
+    public JobDetail alertMessageEmailNotifiJobDetail() {
+        return JobBuilder.newJob(AlertMessageEmailNotifiJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageEmailNotificationJobName).storeDurably().build();
     }
 
     @Bean
-    public Trigger alertMessageJobTrigger() {
-        String alertMessageInterval= configService.getValue("alert_notify_interval");
+    public JobDetail alertMessageExpirStatusJobDetail() {
+        return JobBuilder.newJob(AlertMessageExpirStatusJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageExpirStatusJobName).storeDurably().build();
+    }
 
+    @PostConstruct
+    public void init() throws Exception {
+        Scheduler scheduler = schedulerFactoryBean.getScheduler();
+
+        // alertemailJob 配置
+        String alertMessageInterval = configService.getValue("alert_notify_interval");
+
+        // 如果配置文件没有配置定时周期  默认为3分钟执行一次
         if (ToolUtil.isEmpty(alertMessageInterval)) {
-            //如果配置文件没有配置定时周期  默认为3分钟执行一次
             alertMessageInterval = "300";
         }
-        //CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(alertMessageJobCron);
-        SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
-        return TriggerBuilder.newTrigger()
-                .forJob(alertMessageJobDetail())
-                .withSchedule(simpleScheduleBuilder
-                        .repeatForever()
-                        .withIntervalInSeconds(Integer.parseInt(alertMessageInterval)))
-                .build();
+
+        ScheduleUtils.createSimpleScheduleJob(alertMessageEmailNotificationJobName, alertMessageEmailNotifiJobDetail(), Integer.parseInt(alertMessageInterval), scheduler);
+
+        // alertmessageJob 配置
+        ScheduleUtils.createCronScheduleJob(alertMessageExpirStatusJobName, alertMessageExpirStatusJobDetail(), alertMessageJobCron, scheduler);
     }
 }

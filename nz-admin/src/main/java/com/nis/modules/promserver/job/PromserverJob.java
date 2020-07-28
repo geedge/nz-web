@@ -8,6 +8,7 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.service.SysConfigService;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
@@ -19,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+@DisallowConcurrentExecution
 public class PromserverJob extends QuartzJobBean {
 	private Logger logger= LoggerFactory.getLogger(PromserverJob.class);
 	private final static String HTTP_HEADER_PATH="http://";

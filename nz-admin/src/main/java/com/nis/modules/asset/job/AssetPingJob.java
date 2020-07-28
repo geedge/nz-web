@@ -12,6 +12,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
@@ -25,6 +26,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@DisallowConcurrentExecution
 public class AssetPingJob extends QuartzJobBean {
 
     private static Logger logger = LoggerFactory.getLogger(AssetPingJob.class);
@@ -223,5 +225,4 @@ public class AssetPingJob extends QuartzJobBean {
         }
         return returnRrt;
     }
-
 }
