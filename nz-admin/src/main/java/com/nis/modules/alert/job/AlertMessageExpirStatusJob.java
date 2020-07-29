@@ -72,7 +72,10 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
         // 循环比对
         List<String> updateCacheKeys = new ArrayList<>();
 
-        // 当前时间
+        // rule 删除后遗留下来的 key,需要删除
+        List<String> removeKeys = new ArrayList<>();
+
+       // 当前时间
         long currentTimeMillis = 0;
         for (Map.Entry<String, String> entry : cacheAlertEntries) {
             hashKey = entry.getKey();
@@ -95,7 +98,8 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
                     updateCacheKeys.add(hashKey);
                 }
             } else {
-                continue;
+                // 通过 ruleId 获取为 null 整明该 rule 已经删除
+                removeKeys.add(hashKey);
             }
         }
 
@@ -103,8 +107,9 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
         if (CollectionUtils.isNotEmpty(updateCacheKeys)) {
             alertMessageDao.updateBatch(updateCacheKeys, DateUtil.getUTCTimeByConfigTimeZone());
 
-            String[] delKeys = new String[updateCacheKeys.size()];
-            updateCacheKeys.toArray(delKeys);
+            removeKeys.addAll(updateCacheKeys);
+            String[] delKeys = new String[removeKeys.size()];
+            removeKeys.toArray(delKeys);
             // 删除失效的key
             opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, delKeys);
         }
