@@ -1311,7 +1311,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     public R uploadBuildExporter(Map<String, String> configs, Asset asset, Account account) {
         if (ToolUtil.isEmpty(configs)) {
             List<SysConfigEntity> sysConfigs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getStatus, 1));
-            configs = sysConfigs.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+            configs = sysConfigs.stream().filter(entity -> ToolUtil.isNotEmpty(entity.getParamValue())).collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
         }
         // 内置 node_exporter 默认安装服务器路径
         String targetExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH);

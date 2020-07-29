@@ -77,11 +77,11 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         }
         // 规则及通知人信息
         List<AlertRuleEntity> ruleList = alertRuleService.list();
-        Map<Integer, String> ruleIdAndReceiver = ruleList.stream().collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getReceiver));
+        Map<Integer, String> ruleIdAndReceiver = ruleList.stream().filter(entity -> ToolUtil.isNotEmpty(entity.getReceiver())).collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getReceiver));
 
         // 用户及邮箱信息
         List<SysUserEntity> userList = sysUserService.list();
-        Map<Long, String> userIdAndEmail = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
+        Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
 
         for (AlertMessageEntity messageEntity : entities) {
             String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
