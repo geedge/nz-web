@@ -367,7 +367,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         // 获取正常的监控服务列表
         List<Promserver> promserverList = promserverService.list(
                 new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus,1));
-        if(promserverList.size()>0){
+        if(ToolUtil.isNotEmpty(promserverList)){
         	final String key=URLEncoder.encode("{__name__=~'.+'}","UTF-8");
             promserverList.forEach(promserver -> {
                 HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+seriesUri,"match[]="+key);

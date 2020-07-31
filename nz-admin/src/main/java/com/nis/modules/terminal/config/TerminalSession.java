@@ -234,7 +234,7 @@ public class TerminalSession implements Serializable {
             TerminalClient client = entry.getValue();
             map.put(client.getClientId(), client);
         }
-    	if(terminalInfos!=null&&terminalInfos.size()>0) {
+    	if(ToolUtil.isNotEmpty(terminalInfos)) {
     		for(String terminalInfo : terminalInfos) {
     			TerminalClient terminalClient = map.get(terminalInfo);
     			if(terminalClient!=null) {

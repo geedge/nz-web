@@ -28,6 +28,7 @@ import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.ToolUtil;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,6 @@ import javax.servlet.http.HttpServletResponse;
 public class TerminalOneProcessor {
     private Logger logger= LoggerFactory.getLogger(TerminalOneProcessor.class);
 
-//    @MethodMark
     public R sendAll(String token, String cmd) throws Exception {
 
         cmd = URLDecoder.decode(cmd, Constants.CHARSET_UTF8);
@@ -57,7 +57,7 @@ public class TerminalOneProcessor {
                 terminalClients= TerminalSession.findClient(terminalClient.getHttpSessionId());
             }
         }
-        if(terminalClients!=null&&terminalClients.size()>0){
+        if(ToolUtil.isNotEmpty(terminalClients)){
             for (TerminalClient client : terminalClients) {
                 client.write(cmd);
             }
@@ -66,16 +66,14 @@ public class TerminalOneProcessor {
         return R.ok();
     }
 
-//    @MethodMark
     public R theme(String token, String theme) throws Exception {
         TerminalClient terminalClient = TerminalSession.get(token);
         return R.ok();
     }
 
-//    @MethodMark
     public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws Exception {
         List<TerminalClient> terminalClients = TerminalSession.getAllTerminalClient(token);
-        if (terminalClients != null && terminalClients.size()>0) {
+        if (ToolUtil.isNotEmpty(terminalClients)) {
         	for(TerminalClient terminalClient : terminalClients) {
         		terminalClient.resize(cols, rows, width, height);
         	}
@@ -83,7 +81,6 @@ public class TerminalOneProcessor {
         return R.ok();
     }
 
-//    @MethodMark
     public R upload(String token, File file, String name, long size) {
         TerminalClient terminalClient = TerminalSession.get(token);
         logger.info("terminalClient-->",terminalClient==null?null:terminalClient.getClientId());

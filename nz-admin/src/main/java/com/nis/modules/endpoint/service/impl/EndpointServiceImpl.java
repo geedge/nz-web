@@ -40,6 +40,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.dao.EndpointDao;
@@ -89,14 +90,14 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		//获取相关lastUpdate以及state数据信息
 		String api = promApi.getPromApis().get("query");
 		try {
-			if(datas!=null&&datas.size()>0) {
+			if(ToolUtil.isNotEmpty(datas)) {
 				Map resultMap=new HashMap();
 				Map map =new HashMap();
 				map.put("query", "up");
 				JSONObject promeResult = promserverProxyService.query(map);
 				JSONObject promeObject = (JSONObject) promeResult.get("data");
 				JSONArray str = (JSONArray) promeObject.get("result");
-				if(str!=null&&str.size()>0) {
+				if(ToolUtil.isNotEmpty(str)) {
 					for(int i=0;i<str.size();i++) {
 						Map resultPromeMap = (Map) str.get(i);
 						JSONObject metric = (JSONObject) resultPromeMap.get("metric");
@@ -194,14 +195,14 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		List<Asset> assets = assetService.list();
 		
 		Map projectMap = new HashMap();
-		if(projects!=null&&projects.size()>0) {
+		if(ToolUtil.isNotEmpty(projects)) {
 			for(Project project : projects) {
 				projectMap.put(project.getName(), project);
 			}
 		}
 		
 		Map assetMap = new HashMap();
-		if(assets!=null&&assets.size()>0) {
+		if(ToolUtil.isNotEmpty(assets)) {
 			for(Asset asset : assets) {
 				assetMap.put(asset.getSn(),asset);
 			}

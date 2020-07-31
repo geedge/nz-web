@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
@@ -43,7 +44,7 @@ public class PromserverJob extends QuartzJobBean {
 		PageUtils datas = promserverService.queryPage(params);
 		List<Promserver> promservers = (List<Promserver>) datas.getList();
 		logger.info("all promserver info {}",JSON.toJSON(promservers));
-		if(promservers!=null&&promservers.size()>0) {
+		if(ToolUtil.isNotEmpty(promservers)) {
 			for(Promserver promserver:promservers) {
 				String host = promserver.getHost();
 				Integer port = promserver.getPort();

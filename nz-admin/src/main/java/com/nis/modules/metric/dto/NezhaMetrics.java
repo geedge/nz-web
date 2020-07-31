@@ -77,45 +77,12 @@ public class NezhaMetrics implements MeterBinder {
                         .register(meterRegistry);
             }
         }
-        /*List<MetricsDto> alertNums = alertMessageService.queryAlertMessageStatisticsInfo();
-        // 先清空指标 再更新数据防止旧数据存在
-        Search find = meterRegistry.find("nz_alert_nums");
-        Meter meter = find.meter();
-        if(meter!=null) {
-        	meterRegistry.remove(meter);
-        }
-        if(alertNums!=null&&alertNums.size()>0) {
-        	for(int i=0;i<alertNums.size();i++) {
-        		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("alertNums"+i, alertNums.get(i).getTotal());
-        		String key="alertNums"+i;
-        		*/
-        /*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
-                .tags("type",alertNums.get(i).getType().toString(),"severity",alertNums.get(i).getSeverity(),"name","alert_message")
-                .description("Alert message statistics info")
-                .register(meterRegistry);*//*
-                Gauge.builder("nz_alert_nums", map, x -> x.get(key))
-                        .tags("severity",alertNums.get(i).getSeverity(),"name","alert_message")
-                        .description("Alert message statistics info")
-                        .register(meterRegistry);
-        	}
-        }else {
-        	map.put("alertNums", 0.0);
-    		String key="alertNums";
-    		*//*Gauge.builder("nz_alert_nums", map, x -> x.get(key))
-            .tags("type","null","severity","null","name","alert_message")
-            .description("Alert message statistics info")
-            .register(meterRegistry);*//*
-            Gauge.builder("nz_alert_nums", map, x -> x.get(key))
-                    .tags("severity","null","name","alert_message")
-                    .description("Alert message statistics info")
-                    .register(meterRegistry);
-        }*/
+       
         /**
          * asset_nums指标
          */
         List<MetricsDto> assetNums = assetService.queryAssetStatisticsByModel();
-        if(assetNums!=null && assetNums.size()>0) {
+        if(ToolUtil.isNotEmpty(assetNums)) {
         	for(int i=0;i<assetNums.size();i++) {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("assetNums"+i, assetNums.get(i).getTotal());
@@ -153,7 +120,7 @@ public class NezhaMetrics implements MeterBinder {
          * asset_online_nums指标
          */
         List<MetricsDto> assetOnlineNums = assetService.queryAssetStatisticsByModelOnLine();
-        if(assetOnlineNums!=null && assetOnlineNums.size()>0) {
+        if(ToolUtil.isNotEmpty(assetOnlineNums)) {
         	for(int i=0;i<assetOnlineNums.size();i++) {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("assetOnlineNums"+i, assetOnlineNums.get(i).getTotal());
@@ -175,7 +142,7 @@ public class NezhaMetrics implements MeterBinder {
          * endpoint_nums指标
          */
         List<MetricsDto> endpointNums = endpointService.queryEndpointStatisticsInfoByModel();
-        if(endpointNums!=null&&endpointNums.size()>0) {
+        if(ToolUtil.isNotEmpty(endpointNums)) {
         	for(int i=0;i<endpointNums.size();i++) {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("endpointNums"+i, endpointNums.get(i).getTotal());
