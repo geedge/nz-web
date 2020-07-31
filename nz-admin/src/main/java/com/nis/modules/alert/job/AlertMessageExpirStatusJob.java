@@ -85,7 +85,7 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
             cacheAlert = JSONObject.parseObject(value, Map.class);
 
             cacheAlertId = Integer.parseInt(String.valueOf(cacheAlert.get("id")));
-            cacheEndTime = Long.valueOf(String.valueOf(cacheAlert.get("time"))).longValue();
+            cacheEndTime = Long.valueOf(String.valueOf(cacheAlert.get("time")));
 
             // 数据库存储持续时间为 秒
             Integer last = alertRuleIdAndLast.get(cacheAlertId);

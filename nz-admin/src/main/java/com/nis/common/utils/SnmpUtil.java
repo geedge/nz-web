@@ -180,6 +180,7 @@ public class SnmpUtil {
                 }
             }
             logger.info("SNMP GET one OID value finished !");
+            return list;
         } finally {
             if (snmp != null) {
                 try {
@@ -195,7 +196,6 @@ public class SnmpUtil {
                     logger.error("关闭transport失败", e);
                 }
             }
-            return list;
         }
     }
 

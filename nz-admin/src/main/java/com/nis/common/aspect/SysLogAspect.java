@@ -199,7 +199,7 @@ public class SysLogAspect {
         if (ToolUtil.isEmpty(currentLoginUser)) {
             userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
         } else {
-            userId = currentLoginUser.getUserId().longValue();
+            userId = currentLoginUser.getUserId();
         }
         sysLog.setUserId(userId == null ? null : userId.intValue());
 

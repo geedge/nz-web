@@ -345,59 +345,60 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		//Excel2003版最大行数是65536，Excel2007最大行数是1048576
 		//Excel2003版最大列数是256，Excel2007最大列数是16384
 		//使用SXSSFWorkbook避免Excel数据超出65536行时报错
-		SXSSFWorkbook  workbook = new SXSSFWorkbook();
-		Sheet sheet = workbook.createSheet("AlertMessages");
-		// 创建样式对象
-		CellStyle style = workbook.createCellStyle();
-		style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
-		style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
-
-		int rowNum = 0;
-		Row row = sheet.createRow(rowNum);
-		Cell cell;
-		// 添加标题行
-		// 获取导出的语言选择
-		String language = ToolUtil.isEmpty(params.get("language"))?"en":params.get("language").toString();
-		// 从sys_config获取表头和查询数量限制
-		String [] keys  =  {"alert_export_header","export_pagesize"};
-		List<SysConfigEntity> paramValues = this.configService.list(
-				new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,keys));
-		// 得到表头
-		Map map = (Map)(JSON.parseObject(paramValues.get(0).getParamValue(), Feature.OrderedField).get(language));
-		Collection values =  map.values();
-		List<String> valueList = new ArrayList<>(values.size());
-		values.stream().forEach(value-> valueList.add(value.toString()));
-		// 筛选表头并添加表头至excel
-		for (int i = 0; i < valueList.size(); i++) {
-			// 创建列、单元格
-			cell = row.createCell(i);
-			cell.setCellValue(valueList.get(i));
-			cell.setCellStyle(style);
-		}
-
-		// 添加数据
-		if("-1".equals(params.get("pageSize").toString())){
-			total = this.count();
-			int exportPagesize = Integer.parseInt(paramValues.get(1).getParamValue());
-			pageNo = (total % exportPagesize == 0) ? (total / exportPagesize) : (total / exportPagesize + 1);
-			for(int i =1;i<=pageNo;i++){
-				int start = (i-1)*exportPagesize;
-				int end = exportPagesize;
+		SXSSFWorkbook  workbook = null;
+		try {
+			workbook = new SXSSFWorkbook();
+			Sheet sheet = workbook.createSheet("AlertMessages");
+			// 创建样式对象
+			CellStyle style = workbook.createCellStyle();
+			style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
+			style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
+	
+			int rowNum = 0;
+			Row row = sheet.createRow(rowNum);
+			Cell cell;
+			// 添加标题行
+			// 获取导出的语言选择
+			String language = ToolUtil.isEmpty(params.get("language"))?"en":params.get("language").toString();
+			// 从sys_config获取表头和查询数量限制
+			String [] keys  =  {"alert_export_header","export_pagesize"};
+			List<SysConfigEntity> paramValues = this.configService.list(
+					new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,keys));
+			// 得到表头
+			Map map = (Map)(JSON.parseObject(paramValues.get(0).getParamValue(), Feature.OrderedField).get(language));
+			Collection values =  map.values();
+			List<String> valueList = new ArrayList<>(values.size());
+			values.stream().forEach(value-> valueList.add(value.toString()));
+			// 筛选表头并添加表头至excel
+			for (int i = 0; i < valueList.size(); i++) {
+				// 创建列、单元格
+				cell = row.createCell(i);
+				cell.setCellValue(valueList.get(i));
+				cell.setCellStyle(style);
+			}
+	
+			// 添加数据
+			if("-1".equals(params.get("pageSize").toString())){
+				total = this.count();
+				int exportPagesize = Integer.parseInt(paramValues.get(1).getParamValue());
+				pageNo = (total % exportPagesize == 0) ? (total / exportPagesize) : (total / exportPagesize + 1);
+				for(int i =1;i<=pageNo;i++){
+					int start = (i-1)*exportPagesize;
+					int end = exportPagesize;
+					params.put("pageNo",start);
+					params.put("pageSize",end);
+					List<AlertMessageWithExport> list =this.baseMapper.selectWithExport(params);
+					rowNum = fill(list,rowNum,sheet);
+				}
+			}else {  //部分导出
+				int start = (pageNo-1)*pageSize;
+				int end = pageSize;
 				params.put("pageNo",start);
 				params.put("pageSize",end);
-				List<AlertMessageWithExport> list =this.baseMapper.selectWithExport(params);
-				rowNum = fill(list,rowNum,sheet);
+				List<AlertMessageWithExport> list = this.baseMapper.selectWithExport(params);
+				fill(list,rowNum,sheet);
 			}
-		}else {  //部分导出
-			int start = (pageNo-1)*pageSize;
-			int end = pageSize;
-			params.put("pageNo",start);
-			params.put("pageSize",end);
-			List<AlertMessageWithExport> list = this.baseMapper.selectWithExport(params);
-			fill(list,rowNum,sheet);
-		}
 
-		try {
 			// 响应为流
 			String fileName = "AlertMessagesExport.xlsx"; // 默认名称
 			response.setContentType("application/excel");
@@ -407,6 +408,14 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				if(workbook!=null) {
+					workbook.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
