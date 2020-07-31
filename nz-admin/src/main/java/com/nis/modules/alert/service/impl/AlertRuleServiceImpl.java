@@ -159,11 +159,11 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         try {
             checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
         } catch (Exception e) {
-            log.error("expr校验失败", e);
-        } finally {
-            if (!checkRule) {
-                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
-            }
+            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e.getMessage()), e);
+        }
+
+        if (!checkRule) {
+            throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
         }
 
         // 校验关联用户

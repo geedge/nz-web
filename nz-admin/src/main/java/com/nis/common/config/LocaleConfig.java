@@ -53,8 +53,8 @@ public class LocaleConfig implements WebMvcConfigurer {
 }
 
 class MyI18nInterceptor extends LocaleChangeInterceptor {
-	
-	private boolean checkHttpMethod(String currentMethod) {
+
+	private boolean validateHttpMethod(String currentMethod) {
 		String[] configuredMethods = getHttpMethods();
 		if (ObjectUtils.isEmpty(configuredMethods)) {
 			return true;
@@ -71,7 +71,7 @@ class MyI18nInterceptor extends LocaleChangeInterceptor {
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
 		String newLocale = request.getParameter(getParamName());
 		if (newLocale != null) {
-			if (checkHttpMethod(request.getMethod())) {
+			if (validateHttpMethod(request.getMethod())) {
 				LocaleResolver localeResolver = RequestContextUtils.getLocaleResolver(request);
 				if (localeResolver == null) {
 					throw new IllegalStateException("找不到LocaleResolver");

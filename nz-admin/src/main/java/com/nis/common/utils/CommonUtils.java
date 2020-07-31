@@ -271,14 +271,21 @@ public class CommonUtils {
                 this.enumeration = enumeration;
             }
 
+            @Override
             public boolean hasNext() {
                 return this.enumeration.hasMoreElements();
             }
 
+            @Override
             public E next() {
-                return this.enumeration.nextElement();
+                if (!this.hasNext()) {
+                    throw new NoSuchElementException();
+                } else {
+                    return this.enumeration.nextElement();
+                }
             }
 
+            @Override
             public void remove() throws UnsupportedOperationException {
                 throw new UnsupportedOperationException("Not supported");
             }
@@ -462,6 +469,7 @@ public class CommonUtils {
     public static <K, V extends Comparable<? super V>> Map<K, V> sortMapByValue(Map<K, V> map) {
         List<Map.Entry<K, V>> list = new LinkedList<Map.Entry<K, V>>(map.entrySet());
         Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
+            @Override
             public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
                 return (o1.getValue()).compareTo(o2.getValue());
             }

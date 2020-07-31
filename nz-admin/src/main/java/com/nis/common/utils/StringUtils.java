@@ -899,7 +899,7 @@ public abstract class StringUtils {
         return buf == null ? camelName : buf.toString();
     }
 
-    public static Long[] splitToLongArray(String agentIds, String s) {
+    public static Long[] splitToLongArray(String agentIds) {
         if (CommonUtils.isEmpty(agentIds)) {
             return new Long[0];
         }

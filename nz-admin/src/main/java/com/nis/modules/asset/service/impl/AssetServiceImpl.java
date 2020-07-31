@@ -1218,12 +1218,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 型号
         Model model = (Model) saveEntitys.get("model");
         if (model != null) {
-            if (model.getTypeCode() == null) {
-                model.setTypeCode(type.getCode());
-            }
-            if (model.getVendorCode() == null) {
-                model.setVendorCode(vendor.getCode());
-            }
             modelService.save(model);
             updateMap.put("model", model);
         }
@@ -1246,10 +1240,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
         // asset
         Asset asset = (Asset) saveEntitys.get("asset");
-        if (asset.getModelId() == null) {
+        if (asset.getModelId() == null && model != null) {
             asset.setModelId(model.getId());
         }
-        if (asset.getIdcId() == null) {
+        if (asset.getIdcId() == null && idc != null) {
             asset.setIdcId(idc.getId());
         }
         if (asset.getCabinetId() == null && cabinet != null) {
@@ -1810,7 +1804,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             if (updateFlag && nodeInfo.getId().equals(assetId)) {
                 continue;
             }
-            if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+            if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
                 for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
                     occList.add(i);
                 }
@@ -1832,7 +1826,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Integer> occList = new ArrayList<>();
 
         for (Asset nodeInfo : cab.getAssetList()) {
-            if (nodeInfo.getCabinetEnd() != null && nodeInfo.getCabinetEnd() != null) {
+            if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
                 for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
                     occList.add(i);
                 }

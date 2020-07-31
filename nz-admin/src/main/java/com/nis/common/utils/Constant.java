@@ -151,6 +151,14 @@ public class Constant {
     // alert rule 比较符号
     public static final List<String> RULE_OPERATORS;
 
+    // snmp 采集指标相关 oid 信息
+    public static final Map<String,String> SNMP_OID_MAP ;
+
+    public static final Map<String,String> SNMP_IFENTRY_MAP;
+
+    // ssh 采集相关服务器信息指令
+    public static final Map<String,String> SSH_SHELL_MAP;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -209,6 +217,37 @@ public class Constant {
         CHART_SINGLESTAT_STATISTICS.add("different");
 
         RULE_OPERATORS = Arrays.asList(new String[]{"==", "!=", ">", "<", ">=", "<="});
+
+
+        SNMP_OID_MAP = new HashMap<>();
+        SNMP_OID_MAP.put("sysName", "1.3.6.1.2.1.1.5");
+        SNMP_OID_MAP.put("sysLocation", "1.3.6.1.2.1.1.6");
+        SNMP_OID_MAP.put("sysContact", "1.3.6.1.2.1.1.4");
+        SNMP_OID_MAP.put("sysServices", "1.3.6.1.2.1.1.7");
+        SNMP_OID_MAP.put("sysUpTime", "1.3.6.1.2.1.1.3");
+        SNMP_OID_MAP.put("ifNumber", "1.3.6.1.2.1.2.1");
+        SNMP_OID_MAP.put("ifEntry", "1.3.6.1.2.1.2.2.1");
+
+
+        SNMP_IFENTRY_MAP = new HashMap<>();
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.1", "ifIndex");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.2", "ifDescr");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.3", "ifType");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.4", "ifMtu");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.5", "ifSpeed");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.6", "ifPhysAddress");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.7", "ifAdminStatus");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.8", "ifOperStatus");
+        SNMP_IFENTRY_MAP.put("1.3.6.1.2.1.2.2.1.9", "ifLastChange");
+
+        SSH_SHELL_MAP = new HashMap<>();
+        SSH_SHELL_MAP.put("hostname", "hostname");
+        SSH_SHELL_MAP.put("cpu", "cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"processor\"| wc -l`");
+        SSH_SHELL_MAP.put("memory", "free -m  | grep Mem | awk -F ' ' '{printf (\"%.3f\\n\",$2/1000)}'");
+        SSH_SHELL_MAP.put("disk", "lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
+        SSH_SHELL_MAP.put("core", "cat /proc/version");
+        //   		put("os","cat /etc/redhat-release");
+        SSH_SHELL_MAP.put("uptime", "uptime -s");
     }
     
     /**
@@ -533,48 +572,4 @@ public class Constant {
  
     // 图表类型为alertList
     public static final String CHART_ALERTLIST_TYPE = "alertList";
-    
-    // snmp采集指标相关oid信息系
-    public static final Map<String,String> SNMP_OID_MAP = new HashMap<String,String>(){
-        {
-            put("sysName", "1.3.6.1.2.1.1.5");  
-            put("sysLocation", "1.3.6.1.2.1.1.6");
-            put("sysContact","1.3.6.1.2.1.1.4");
-            put("sysServices","1.3.6.1.2.1.1.7");
-            put("sysUpTime","1.3.6.1.2.1.1.3");
-            put("ifNumber","1.3.6.1.2.1.2.1");
-            put("ifEntry","1.3.6.1.2.1.2.2.1");
-        }
-    };
-    
-    public static final Map<String,String> SNMP_IFENTRY_MAP = new HashMap<String,String>() {
-    	{
-    		put("1.3.6.1.2.1.2.2.1.1","ifIndex");
-    		put("1.3.6.1.2.1.2.2.1.2","ifDescr");
-    		put("1.3.6.1.2.1.2.2.1.3","ifType");
-    		put("1.3.6.1.2.1.2.2.1.4","ifMtu");
-    		put("1.3.6.1.2.1.2.2.1.5","ifSpeed");
-    		put("1.3.6.1.2.1.2.2.1.6","ifPhysAddress");
-    		put("1.3.6.1.2.1.2.2.1.7","ifAdminStatus");
-    		put("1.3.6.1.2.1.2.2.1.8","ifOperStatus");
-    		put("1.3.6.1.2.1.2.2.1.9","ifLastChange");
-    		
-    	}
-    };
-    
-    
-    // ssg采集相关服务器信息指令
-    public static final Map<String,String> SSH_SHELL_MAP =new HashMap<String,String>(){
-    	{
-    		put("hostname","hostname");
-    		put("cpu","cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"processor\"| wc -l`");
-    		put("memory","free -m  | grep Mem | awk -F ' ' '{printf (\"%.3f\\n\",$2/1000)}'");
-    		put("disk","lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
-    		put("core","cat /proc/version");
- //   		put("os","cat /etc/redhat-release");
-    		put("uptime","uptime -s");
-    	}
-    };
-    
-    
 }

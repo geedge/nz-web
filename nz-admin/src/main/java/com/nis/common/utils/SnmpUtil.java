@@ -156,7 +156,7 @@ public class SnmpUtil {
 
             if (Constant.SnmpOperationType.GET.getValue().equals(operation.toLowerCase())) {
                 pdu.setType(PDU.GET);
-            } else if (Constant.SnmpOperationType.GETNEXT.equals(operation.toLowerCase())) {
+            } else if (Constant.SnmpOperationType.GETNEXT.getValue().equals(operation.toLowerCase())) {
                 pdu.setType(PDU.GETNEXT);
             }
 

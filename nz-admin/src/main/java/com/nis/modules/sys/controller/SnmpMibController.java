@@ -4,7 +4,6 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
@@ -15,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.util.Arrays;
@@ -112,7 +110,6 @@ public class SnmpMibController extends AbstractController {
         if (snmpMib != null) {
             String fileName = snmpMib.getFileName();
 
-            InputStream is = null;
             OutputStream os = null;
             try {
                 os = new BufferedOutputStream(response.getOutputStream());
@@ -130,13 +127,6 @@ public class SnmpMibController extends AbstractController {
                 if (os != null) {
                     try {
                         os.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                if (is != null) {
-                    try {
-                        is.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

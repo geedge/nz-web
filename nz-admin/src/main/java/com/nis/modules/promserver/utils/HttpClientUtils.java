@@ -195,18 +195,4 @@ public class HttpClientUtils {
         }
         return statusCode;
     }
-    
-    public static void main(String[] args) throws IOException {
-//        JSONObject jsonObject = HttpClientUtils.httpGet("http://192.168.40.247:9090/api/v1/query");
-//
-//        String s = jsonObject.toJSONString();
-//        System.out.println(s);
-
-        CloseableHttpClient client= HttpClients.createDefault();
-
-        HttpGet httpGet=new HttpGet("http://192.168.40.247:9090/api/v1/query");
-        CloseableHttpResponse response = client.execute(httpGet);
-        HttpEntity entity = response.getEntity();
-        System.out.println(EntityUtils.toString(entity, "utf-8"));
-    }
 }

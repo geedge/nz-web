@@ -107,14 +107,18 @@ public abstract class IOUtils implements Serializable {
     }
 
     public static boolean writeText(File file, Serializable text, String charset) {
+        PrintWriter out = null;
         try {
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), charset));
+            out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), charset));
             out.write(text.toString());
             out.flush();
-            out.close();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (out != null) {
+                out.close();
+            }
         }
         return false;
     }
@@ -125,18 +129,19 @@ public abstract class IOUtils implements Serializable {
             file.getParentFile().mkdirs();
         }
 
-        BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(file));
+        BufferedOutputStream output = null;
         try {
+            output = new BufferedOutputStream(new FileOutputStream(file));
             int r;
             while ((r = inputStream.read()) != -1) {
                 output.write((byte) r);
             }
-
+        } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             if (output != null) {
                 output.flush();
                 output.close();
-                output = null;
             }
         }
     }
@@ -401,12 +406,6 @@ public abstract class IOUtils implements Serializable {
     public static String getCurrentPath(Class type) {
         AssertUtils.notNull(type);
         return type.getProtectionDomain().getCodeSource().getLocation().getFile();
-    }
-
-    public static long getFileSize(File file) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        FileChannel fileChannel = fis.getChannel();
-        return fileChannel.size();
     }
 
     public static String getFileMD5(File file) throws IOException {

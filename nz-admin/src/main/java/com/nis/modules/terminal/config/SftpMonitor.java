@@ -34,7 +34,7 @@ public class SftpMonitor extends TimerTask implements SftpProgressMonitor {
 
     private static Logger logger = LoggerFactory.getLogger(SftpMonitor.class);
 
-    private long progressInterval = 2 * 1000; // 默认间隔时间为5秒
+    private long progressInterval = 2000; // 间隔时间
 
     private boolean isEnd = false; // 记录传输是否结束
 

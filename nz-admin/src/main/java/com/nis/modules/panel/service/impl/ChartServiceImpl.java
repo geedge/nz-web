@@ -707,6 +707,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateAssetChartsByNewModel(Asset asset) {
         List<Panel> panels = panelService.list();
 
@@ -727,6 +728,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateAssetChartsThroughRelatedModel(Asset asset) {
         List<Panel> panels = panelService.list();
 
@@ -741,6 +743,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateuAllAssetChartsUnderCurrentModel(Integer modelId, List<Asset> assets) {
         List<Panel> panels = panelService.list();
 

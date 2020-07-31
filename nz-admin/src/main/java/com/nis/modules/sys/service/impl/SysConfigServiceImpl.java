@@ -221,7 +221,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         for (String type : keySet) {
             saveMap = (Map) param.get(type);
 
-            if (saveMap != null && saveMap.size() > 0) {
+            if (ToolUtil.isNotEmpty(saveMap)) {
                 saveType = type;
                 List<String> keys = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.get(type);
 
@@ -233,78 +233,84 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 break;
             }
         }
-        // 去掉不在 定义范围内的数据
-        for (String str : removeKeys) {
-            saveMap.remove(str);
-        }
 
-        // 根据类别校验具体的参数
-        switch (saveType) {
-            case "basic":
-                this.validateBasicParams(saveMap);
-                this.updateEntity(saveMap);
-                break;
-            case "email":
-                // 开启 email 开关
-                boolean emailEnableFlag = this.validateEmailParams(saveMap);
-                // 判断 test字段是否为 true
-                String emailTest = saveMap.get("test");
-                if (StringUtils.isEmpty(emailTest)) {
-                    throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
-                } else if ("true".equals(emailTest)) {
-                    // 只做测试连接  不进行入库操作
-                    this.testConnectionSmtpServer(saveMap);
-                    return R.ok("Test connection to SMTP server succeeded");
-                } else {
-                    if (emailEnableFlag) {
-                        this.updateEntity(saveMap);
-                    } else {
-                        // email 开关关闭 只更新此开关
-                        SysConfigEntity emailEnable = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "email_enable"));
-                        // 数据库目前没有此项
-                        if (emailEnable == null) {
-                            emailEnable = new SysConfigEntity();
-                            emailEnable.setParamKey("email_enable");
-                            emailEnable.setParamValue(Constant.SWITCH_CLOSE);
-                        } else {
-                            emailEnable.setParamValue(Constant.SWITCH_CLOSE);
-                        }
-                        this.saveOrUpdate(emailEnable);
-                    }
+        if (ToolUtil.isNotEmpty(saveMap)) {
+
+            if (CollectionUtils.isNotEmpty(removeKeys)) {
+                // 去掉不在 定义范围内的数据
+                for (String str : removeKeys) {
+                    saveMap.remove(str);
                 }
-                break;
-            case "terminal":
-                this.validateTerminalParams(saveMap);
-                this.updateEntity(saveMap);
-                break;
-            case "ldap":
-                // 开启 ldap 开关
-                boolean ldapEnableFlag = this.validateLdapParams(saveMap);
-                // 判断 test字段是否为 true
-                String ldapTest = saveMap.get("test");
-                if (StringUtils.isEmpty(ldapTest)) {
-                    throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
-                } else if ("true".equals(ldapTest)) {
-                    // 只做测试连接  不进行入库操作
-                    R r = this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"),saveMap.get("ldap_ou"));
-                    return r;
-                } else {
-                    if (ldapEnableFlag) {
-                        this.updateEntity(saveMap);
+            }
+
+            // 根据类别校验具体的参数
+            switch (saveType) {
+                case "basic":
+                    this.validateBasicParams(saveMap);
+                    this.updateEntity(saveMap);
+                    break;
+                case "email":
+                    // 开启 email 开关
+                    boolean emailEnableFlag = this.validateEmailParams(saveMap);
+                    // 判断 test字段是否为 true
+                    String emailTest = saveMap.get("test");
+                    if (StringUtils.isEmpty(emailTest)) {
+                        throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
+                    } else if ("true".equals(emailTest)) {
+                        // 只做测试连接  不进行入库操作
+                        this.testConnectionSmtpServer(saveMap);
+                        return R.ok("Test connection to SMTP server succeeded");
                     } else {
-                        SysConfigEntity ldapEnable = this.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", "ldap_enable"));
-                        // 数据库目前没有此项
-                        if (ldapEnable == null) {
-                            ldapEnable = new SysConfigEntity();
-                            ldapEnable.setParamKey("ldap_enable");
-                            ldapEnable.setParamValue(Constant.SWITCH_CLOSE);
+                        if (emailEnableFlag) {
+                            this.updateEntity(saveMap);
                         } else {
-                            ldapEnable.setParamValue(Constant.SWITCH_CLOSE);
+                            // email 开关关闭 只更新此开关
+                            SysConfigEntity emailEnable = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "email_enable"));
+                            // 数据库目前没有此项
+                            if (emailEnable == null) {
+                                emailEnable = new SysConfigEntity();
+                                emailEnable.setParamKey("email_enable");
+                                emailEnable.setParamValue(Constant.SWITCH_CLOSE);
+                            } else {
+                                emailEnable.setParamValue(Constant.SWITCH_CLOSE);
+                            }
+                            this.saveOrUpdate(emailEnable);
                         }
-                        this.saveOrUpdate(ldapEnable);
                     }
-                }
-                break;
+                    break;
+                case "terminal":
+                    this.validateTerminalParams(saveMap);
+                    this.updateEntity(saveMap);
+                    break;
+                case "ldap":
+                    // 开启 ldap 开关
+                    boolean ldapEnableFlag = this.validateLdapParams(saveMap);
+                    // 判断 test字段是否为 true
+                    String ldapTest = saveMap.get("test");
+                    if (StringUtils.isEmpty(ldapTest)) {
+                        throw new NZException(RCode.SYS_CONFIG_TEST_ISNULL);
+                    } else if ("true".equals(ldapTest)) {
+                        // 只做测试连接  不进行入库操作
+                        R r = this.testConnectionLdapConfig(saveMap.get("ldap_dn"), saveMap.get("ldap_password"), saveMap.get("ldap_address"), saveMap.get("ldap_ou"));
+                        return r;
+                    } else {
+                        if (ldapEnableFlag) {
+                            this.updateEntity(saveMap);
+                        } else {
+                            SysConfigEntity ldapEnable = this.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", "ldap_enable"));
+                            // 数据库目前没有此项
+                            if (ldapEnable == null) {
+                                ldapEnable = new SysConfigEntity();
+                                ldapEnable.setParamKey("ldap_enable");
+                                ldapEnable.setParamValue(Constant.SWITCH_CLOSE);
+                            } else {
+                                ldapEnable.setParamValue(Constant.SWITCH_CLOSE);
+                            }
+                            this.saveOrUpdate(ldapEnable);
+                        }
+                    }
+                    break;
+            }
         }
         return R.ok();
     }
@@ -381,7 +387,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * 清除用户输入数据
      */
     @Transactional(rollbackFor = Exception.class)
-    private void resetEnterData() throws Exception{
+    public void resetEnterData() throws Exception{
         try {
 			// redis写入当前用户id
 			Long userId = ShiroUtils.getUserId();

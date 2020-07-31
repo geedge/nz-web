@@ -1,19 +1,20 @@
 package com.nis.common.config;
 
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
+import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
+import com.baomidou.mybatisplus.core.injector.ISqlInjector;
+import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
+import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
-import com.baomidou.mybatisplus.core.injector.ISqlInjector;
-import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
-import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import com.nis.common.utils.Constant;
+import javax.sql.DataSource;
+import java.sql.SQLException;
 
 /**
  * mybatis-plus配置
@@ -59,6 +60,10 @@ public class MybatisPlusConfig {
 				databaseId = databaseIdProvider.getDatabaseId(dataSource);
 			} catch (SQLException e) {
 				e.printStackTrace();
+			}
+
+			if(ToolUtil.isEmpty(databaseId)){
+				throw new NZException(RCode.ERROR);
 			}
 			
 			switch (databaseId){
