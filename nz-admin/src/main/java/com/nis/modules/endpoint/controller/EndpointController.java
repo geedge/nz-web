@@ -104,54 +104,56 @@ public class EndpointController extends AbstractController {
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
 		PageUtils page = endpointService.queryPage(params);
         List<Endpoint> list = (List<Endpoint>) page.getList();
-
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Endpoints");
-
-        int rowNum = 0;
-        // 添加标题行
-        String[] columnNames = {"Project", "Module", "Sn", "Port", "Param", "Path", "Host"};
-        Row row = sheet.createRow(rowNum);
-        Cell cell;
-
-        // 创建样式对象
-        CellStyle style = workbook.createCellStyle();
-        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
-        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
-
-        for (int i = 0; i < columnNames.length; i++) {
-            // 创建列、单元格
-            cell = row.createCell(i);
-            cell.setCellValue(columnNames[i]);
-            cell.setCellStyle(style);
-        }
-
-        // 添加数据
-        Row row1;        
-        for (Endpoint endpoint : list) {
-            row1 = sheet.createRow(++rowNum);
-
-            Project project = endpoint.getProject();
-            Module module = endpoint.getModule();
-            Asset asset = endpoint.getAsset();
-            
-            // project name 
-            row1.createCell(0).setCellValue(project.getName());
-            // module name 
-            row1.createCell(1).setCellValue(module.getName());
-            // sn
-            row1.createCell(2).setCellValue(asset.getSn());
-            // port
-            row1.createCell(3).setCellValue(endpoint.getPort());
-            // param
-            row1.createCell(4).setCellValue(endpoint.getParam());
-            // path
-            row1.createCell(5).setCellValue(endpoint.getPath());
-            // host
-            row1.createCell(6).setCellValue(asset.getHost());
-        }
-
+        
+        Workbook workbook = null;
         try {
+	        workbook = new XSSFWorkbook();
+	        Sheet sheet = workbook.createSheet("Endpoints");
+	
+	        int rowNum = 0;
+	        // 添加标题行
+	        String[] columnNames = {"Project", "Module", "Sn", "Port", "Param", "Path", "Host"};
+	        Row row = sheet.createRow(rowNum);
+	        Cell cell;
+	
+	        // 创建样式对象
+	        CellStyle style = workbook.createCellStyle();
+	        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
+	        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
+	
+	        for (int i = 0; i < columnNames.length; i++) {
+	            // 创建列、单元格
+	            cell = row.createCell(i);
+	            cell.setCellValue(columnNames[i]);
+	            cell.setCellStyle(style);
+	        }
+	
+	        // 添加数据
+	        Row row1;        
+	        for (Endpoint endpoint : list) {
+	            row1 = sheet.createRow(++rowNum);
+	
+	            Project project = endpoint.getProject();
+	            Module module = endpoint.getModule();
+	            Asset asset = endpoint.getAsset();
+	            
+	            // project name 
+	            row1.createCell(0).setCellValue(project.getName());
+	            // module name 
+	            row1.createCell(1).setCellValue(module.getName());
+	            // sn
+	            row1.createCell(2).setCellValue(asset.getSn());
+	            // port
+	            row1.createCell(3).setCellValue(endpoint.getPort());
+	            // param
+	            row1.createCell(4).setCellValue(endpoint.getParam());
+	            // path
+	            row1.createCell(5).setCellValue(endpoint.getPath());
+	            // host
+	            row1.createCell(6).setCellValue(asset.getHost());
+	        }
+
+        
             // 响应为流
             String fileName = "EndpointsExport.xlsx"; // 默认名称
             response.setContentType("application/excel");
@@ -161,6 +163,14 @@ public class EndpointController extends AbstractController {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+        	if(workbook!=null) {
+        		try {
+					workbook.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
         }
 	}
 	/**

@@ -53,7 +53,7 @@ public class NezhaMetrics implements MeterBinder {
         while (true) {
             Search find = meterRegistry.find("nz_alert_nums");
             Meter meter = find.meter();
-            if (meter != null) {
+            if (ToolUtil.isNotEmpty(meter)) {
                 meterRegistry.remove(meter);
             } else {
                 break;

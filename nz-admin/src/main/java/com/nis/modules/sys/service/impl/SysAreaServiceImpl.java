@@ -43,12 +43,6 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 		String name = (String) params.get("name");
 		String includeLeaf = (String)params.get("includeLeaf");
 		
-		/*IPage<SysArea> page = this.page(
-				new Query<SysArea>().getPage(params),
-				new QueryWrapper<SysArea>().eq(StringUtils.isNotBlank(id),"id",id)
-				.like(StringUtils.isNotBlank(name),"name",name)
-				.eq(StringUtils.isNotBlank(pid), "pid",pid)
-			    );*/
 		List<SysArea> datas = this.list(new QueryWrapper<SysArea>().eq(StringUtils.isNotBlank(id),"id",id)
 				.like(StringUtils.isNotBlank(name),"name",name)
 				.eq(StringUtils.isNotBlank(pid), "pid",pid));
@@ -58,16 +52,10 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 		}
 		if(!includeLeaf.equals("0")) {
 			Map<Long,SysArea> map =new HashMap<Long,SysArea>(); 
-//			List<SysArea> datas = page.getRecords();
-//			List<SysArea> allDatas = this.list();
-//			List<SysArea> allDatas = redisTemplate.opsForList().range("area", 0, -1);
 			Object areaCache = redisTemplate.opsForValue().get(Constant.REDIS_KEY_AREA);
-			logger.debug("-----------------------------");
-			logger.debug(JSON.toJSONString(areaCache));
-			logger.debug("--------------------------");
 			List<SysArea> allDatas = JSONObject.parseArray(String.valueOf(areaCache), SysArea.class);
 			for(SysArea data: allDatas) {
-				map.put(data.getId().longValue(), data);
+				map.put(data.getId(), data);
 			}
 			// 父子类关系
 			for(SysArea data: allDatas) {

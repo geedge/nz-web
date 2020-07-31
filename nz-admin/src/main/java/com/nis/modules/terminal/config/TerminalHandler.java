@@ -496,7 +496,9 @@ public class TerminalHandler extends TextWebSocketHandler {
         	TerminalSession.removeTerminalMessage(uuid+"telnetFlag");
         	session.sendMessage(new TextMessage(e.getMessage()+"\r\n"));
             session.sendMessage(new TextMessage("Sorry! Nezha Terminal was closed, please try again. \r\n"));
-            terminalClient.disconnect();
+            if(ToolUtil.isNotEmpty(terminalClient)) {
+            	terminalClient.disconnect();
+            }
             TerminalSession.remove(session);
  //           session.close();
             unloginUserHandle(session);

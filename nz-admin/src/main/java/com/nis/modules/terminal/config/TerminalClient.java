@@ -550,6 +550,9 @@ public class TerminalClient {
         if (channelSftp != null) {
             channelSftp.disconnect();
         }
+        if(file!=null) {
+        	file.close();
+        }
     }
 
     public void download(String path,HttpServletResponse res) throws Exception {

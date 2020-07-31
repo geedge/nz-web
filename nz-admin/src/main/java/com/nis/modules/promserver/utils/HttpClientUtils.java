@@ -73,6 +73,11 @@ public class HttpClientUtils {
             logger.error("submit post request faild:" + url, e);
         } finally {
             httpPost.releaseConnection();
+            try {
+				httpClient.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
         }
         return jsonResult;
     }
@@ -117,6 +122,11 @@ public class HttpClientUtils {
             logger.error("submit post request faild:" + url, e);
         } finally {
             httpPost.releaseConnection();
+            try {
+				httpClient.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
         }
         return jsonResult;
     }
@@ -146,6 +156,11 @@ public class HttpClientUtils {
             logger.error("submit get request faild:" + url, e);
         } finally {
             request.releaseConnection();
+            try {
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
         }
         return jsonResult;
     }
@@ -172,6 +187,11 @@ public class HttpClientUtils {
             logger.error("submit get request faild:" + url, e);
         } finally {
             request.releaseConnection();
+            try {
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
         }
         return statusCode;
     }
