@@ -25,7 +25,9 @@ import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.sys.dao.SysAreaDao;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysArea;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -122,7 +124,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private AssetFeatureService assetFeatureService;
 
     @Autowired
-    private IdcDao idcDao;
+    private SysAreaDao sysAreaDao;
 
 
     /**
@@ -191,30 +193,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         for (SysUserEntity user : users) {
             userIdAndEntityMap.put(user.getUserId(), user);
         }
-        // 查询当前 assetType vendor 信息
-        List<SysDictEntity> dictEntities = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().in(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE, Constant.DICT_ASSET_MODEL_VENDOR).eq(SysDictEntity::getDelFlag, 0));
-        List<SysDictEntity> assetTypeList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_TYPE.equals(dictEntity.getType())).collect(Collectors.toList());
-        Map<Integer, SysDictEntity> assetTypeCodeAndEntityMap = new HashMap<>();
-        for (SysDictEntity entity : assetTypeList) {
-            assetTypeCodeAndEntityMap.put(entity.getCode(), entity);
-        }
-        Map<Integer, SysDictEntity> vendorCodeAndEntityMap = new HashMap<>();
-        List<SysDictEntity> vendorList = dictEntities.stream().filter(dictEntity -> Constant.DICT_ASSET_MODEL_VENDOR.equals(dictEntity.getType())).collect(Collectors.toList());
-        for (SysDictEntity entity : vendorList) {
-            vendorCodeAndEntityMap.put(entity.getCode(), entity);
-        }
-        // idc and area infos
-        Set<Integer> idcIds = assetEntities.stream().map(Asset::getIdcId).collect(Collectors.toSet());
-        List<Idc> idcs = idcDao.queryListByIds(new ArrayList<>(idcIds));
-        Map<Integer, Idc> idcIdAndEntityMap = new HashMap<>();
-        for (Idc idc : idcs) {
-            idcIdAndEntityMap.put(idc.getId(), idc);
-        }
-        // cabinet
-        List<Cabinet> cabinets = cabinetService.list();
-        Map<Integer, Cabinet> cabinetIdAndEntityMap = new HashMap<>();
-        for (Cabinet cabinet : cabinets) {
-            cabinetIdAndEntityMap.put(cabinet.getId(), cabinet);
+        // idc area info
+        List<SysArea> sysAreas = sysAreaDao.selectList(null);
+        Map<Long, SysArea> areaIdAndAreaInfo = new HashMap();
+        for (SysArea sysArea : sysAreas) {
+            areaIdAndAreaInfo.put(sysArea.getId(), sysArea);
         }
         // account
         List<Account> accountList = accountService.list();
@@ -241,7 +224,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 处理返回格式
         String ipmi = null;
         Integer cabinetEnd, alertNum, moduleNum, endpointNum, assetId;
-        Model model;
+        Idc idc;
         List<Account> accounts;
         for (Asset asset : assetEntities) {
             assetId = asset.getId();
@@ -268,17 +251,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 用户
             asset.setCreateByUser(userIdAndEntityMap.get(asset.getCreateBy()));
             asset.setUpdateByUser(userIdAndEntityMap.get(asset.getUpdateBy()));
-            // 型号
-            model = asset.getModel();
-            model.setType(assetTypeCodeAndEntityMap.get(model.getTypeCode()));
-            model.setVendor(vendorCodeAndEntityMap.get(model.getVendorCode()));
             // tag
             asset.setTags(assetIdAndTagsMap.get(assetId));
-            // idc
-            asset.setIdc(idcIdAndEntityMap.get(asset.getIdcId()));
-            // cabinet
-            if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
-                asset.setCabinet(cabinetIdAndEntityMap.get(asset.getCabinetId()));
+            // idc area info
+            idc = asset.getIdc();
+            if (ToolUtil.isNotEmpty(idc.getAreaId())) {
+                idc.setArea(areaIdAndAreaInfo.get(idc.getAreaId().longValue()));
             }
             // alertNum
             alertNum = assetIdAndAlertNumMap.get(assetId);

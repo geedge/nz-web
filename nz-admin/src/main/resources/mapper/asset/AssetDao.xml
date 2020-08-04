@@ -8,8 +8,6 @@
         <result property="sn" column="sn"/>
         <result property="host" column="host"/>
         <result property="ipmi" column="ipmi"/>
-        <result property="idcId" column="idc_id"/>
-        <result property="cabinetId" column="cabinet_id"/>
         <result property="cabinetStart" column="cabinet_start"/>
         <result property="cabinetEnd" column="cabinet_end"/>
         <result property="state" column="state"/>
@@ -22,13 +20,38 @@
         <result property="pingRtt" column="pingRtt"/>
         <result property="pingLastUpdate" column="pingLastUpdate"/>
 
-        <association property="model" column="model_id" columnPrefix="mo_" javaType="com.nis.modules.asset.entity.Model">
+        <association property="idc" columnPrefix="idc_" javaType="com.nis.modules.asset.entity.Idc">
+            <id property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="location" column="location"/>
+            <result property="tel" column="tel"/>
+            <result property="principal" column="principal"/>
+            <result property="areaId" column="areaId"/>
+        </association>
+
+        <association property="cabinet" columnPrefix="cab_" javaType="com.nis.modules.asset.entity.Cabinet">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="idcId" column="idcId"/>
+            <result property="uSize" column="uSize"/>
+            <result property="remark" column="remark"/>
+        </association>
+
+        <association property="model" columnPrefix="mo_" javaType="com.nis.modules.asset.entity.Model">
             <id property="id" column="id"/>
             <result property="name" column="name"/>
             <result property="usize" column="usize"/>
             <result property="remark" column="remark"/>
-            <result property="typeCode" column="typeCode"/>
-            <result property="vendorCode" column="vendorCode"/>
+            <!--厂商-->
+            <result property="vendor.id" column="vendorDictId"/>
+            <result property="vendor.value" column="vendorDictValue"/>
+            <result property="vendor.code" column="vendorDictCode"/>
+            <result property="vendor.type" column="vendorDictType"/>
+            <!--类型-->
+            <result property="type.id" column="assetTypeDictId"/>
+            <result property="type.value" column="assetTypeDictValue"/>
+            <result property="type.code" column="assetTypeDictCode"/>
+            <result property="type.type" column="assetTypeDictType"/>
         </association>
     </resultMap>
 
@@ -49,6 +72,21 @@
        ass.create_by,
        ass.update_by,
 
+       /*DC*/
+       idc.id AS idc_id,
+       idc.name AS idc_name,
+       idc.location AS idc_location,
+       idc.tel AS idc_tel,
+       idc.principal AS idc_principal,
+       idc.area_id AS idc_areaId,
+
+       /*机柜*/
+       cab.id AS cab_id,
+       cab.name AS cab_name,
+       cab.idc_id AS cab_idcId,
+       cab.u_size AS cab_uSize,
+       cab.remark AS cab_remark,
+
        assp.status AS pingState,
        assp.rtt AS pingRtt,
        assp.last_update AS pingLastUpdate,
@@ -57,8 +95,18 @@
        mo.name AS mo_name,
        mo.usize AS mo_usize,
        mo.remark AS mo_remark,
-       mo.type AS mo_typeCode,
-       mo.vendor AS mo_vendorCode
+
+       /*厂商*/
+       sdt.id AS mo_vendorDictId,
+       sdt.value AS mo_vendorDictValue,
+       sdt.code AS mo_vendorDictCode,
+       sdt.type AS mo_vendorDictType,
+
+        /*资产类型*/
+       sdtt.id AS mo_assetTypeDictId,
+       sdtt.value AS mo_assetTypeDictValue,
+       sdtt.code AS mo_assetTypeDictCode,
+       sdtt.type AS mo_assetTypeDictType
     </sql>
 
     <select id="queryList" resultMap="assetWithModelIdcCab">
@@ -66,8 +114,13 @@
         <include refid="asset_info_columns"/>
         FROM asset ass
 
+        LEFT JOIN idc idc ON ass.idc_id = idc.id
+        LEFT JOIN cabinet cab ON ass.cabinet_id = cab.id
         LEFT JOIN asset_ping assp ON ass.host = assp.host
         LEFT JOIN model mo ON ass.model_id = mo.id
+        LEFT JOIN sys_dict sdt ON sdt.code = mo.vendor AND sdt.type = 'vendor'
+        LEFT JOIN sys_dict sdtt ON sdtt.code = mo.type AND sdtt.type = 'assetType'
+        LEFT JOIN sys_user su ON idc.principal = su.user_id
         <where>
 
             <if test="params.id != null and params.id != ''">
