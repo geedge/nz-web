@@ -15,6 +15,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.entity.Model;
+import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -28,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Service("sysDictService")
@@ -35,6 +39,8 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 
 	@Autowired
 	private SysI18nService i18nService;
+	@Autowired
+	private ModelService modelService;
 	
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -62,8 +68,10 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 	}
 	
 	@Override
-	public boolean delete(String ids) {
-
+	public void delete(String ids) {
+		if(ToolUtil.isEmpty(ids)) {
+			return;
+		}
     	String[] idArr=ids.split(",");
     	ArrayList<Integer> delIds=new ArrayList<Integer>();
     	for(String idStr:idArr){
@@ -75,13 +83,31 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 			}
 		}
 
-		UpdateWrapper<SysDictEntity> wrapper = new UpdateWrapper<>();
-		wrapper.in("id", delIds);
-		wrapper.eq("del_flag", Constant.DELFLAG_FALSE);
-		wrapper.set("del_flag", Constant.DELFLAG_TRUE);
-		wrapper.set("operator", ShiroUtils.getUserId());
-		wrapper.set("op_time", DateUtil.getUTCTimeByConfigTimeZone());
-		return update(wrapper);
+    	//当字典表中数据为assetType或vendor类型时  有关联model不允许删除
+    	validateModel(delIds);
+    	
+    	this.removeByIds(delIds);
+    	
+	}
+	
+	// 校验参数逻辑 model相关
+	public void validateModel(List<Integer> ids) {
+		List<SysDictEntity> result = this.list(new QueryWrapper<SysDictEntity>().in("id", ids));
+    	SysDictEntity sysDictEntity = result.get(0);
+    	String param="";
+    	if(sysDictEntity.getType().equals(Constant.DICT_ASSET_MODEL_TYPE)) {
+    		param="type";
+    	}else if(sysDictEntity.getType().equals(Constant.DICT_ASSET_MODEL_VENDOR)) {
+    		param=Constant.DICT_ASSET_MODEL_VENDOR;
+    	}
+    	if(ToolUtil.isNotEmpty(param)) {
+    		Set<Integer> modelParamIds = result.stream().map(SysDictEntity::getCode).collect(Collectors.toSet());
+    		List<Model> list = modelService.list(new QueryWrapper<Model>().in(param, modelParamIds));
+    		if(ToolUtil.isNotEmpty(list)) {
+    			throw new NZException(RCode.SYS_DICT_REMOVE_ERROR);
+    		}
+    	}
+    	
 	}
 	
 	@Override

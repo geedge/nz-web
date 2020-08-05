@@ -28,7 +28,7 @@ public interface SysDictService extends IService<SysDictEntity> {
     
     List<SysDictEntity> queryList(Map<String, Object> params);
 
-	boolean delete(String ids);
+	void delete(String ids);
 	
 	boolean update(SysDictEntity dict);
 	

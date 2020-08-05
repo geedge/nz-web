@@ -182,7 +182,7 @@ public enum RCode {
     ASSET_MODEL_PARAM_ISNULL(321009,"The model Id and asset Id cannot both be empty, when the model chart is updated."),
     ASSET_MODELID_INCONSISTENT(323010,"Asset model is inconsistent with model Id"),
     ASSET_IPMITYPE_ERROR(323011,"Asset type must be a server can save ipmi information"),
-    ASSET_MODELRELATED_MIBS(323012, "These mdoels contain mibs and cannot be deleted"),
+    ASSET_MODELRELATED_MIBS(323012, "These models contain mibs and cannot be deleted"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
@@ -330,7 +330,7 @@ public enum RCode {
     SYS_DICT_VALUE_DUPLICATE(552004, "Field 'type' is duplicate"),  //  字典值重复
     SYS_DICT_ID_INVALIDE(553005, "Invalid system dictionary ID"),
     SYS_DICT_ID_ISNULL(551006, "System dictionary ID is null"),
-
+    SYS_DICT_REMOVE_ERROR(553007,"Those dict params contain model can not remove"),
 
     SNMP_MIB_FILE_ISNULL(561000,"Snmp mib file can not be empty"), // snmp mib文件不能为空
     SNMP_MIB_ID_ISNULL(561001,"Snmp mib id can not be empty"),     // snmp mib id 不能为空
