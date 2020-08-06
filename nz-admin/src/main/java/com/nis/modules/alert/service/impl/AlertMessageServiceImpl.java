@@ -286,14 +286,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     	return dto;
 	}
 
-	@Override
-	public boolean updateByIds(AlertMessageEntity alertMessage) {
-		String ids = alertMessage.getIds();
-		Object[] splitedIds = ids.split(",");
-		baseMapper.update(null, new UpdateWrapper<AlertMessageEntity>().in("id", splitedIds).set("state", alertMessage.getState()));
-		return true;
-	}
-
 	private Integer resolveParamToInteger(Map<String,Object> params,String paramName){
 		Integer param=null;
 		try {
@@ -303,12 +295,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}catch (NumberFormatException e){}
 
 		return param;
-	}
-
-	@Override
-	public List<MetricsDto> queryAlertMessageStatisticsInfo() {
-		// TODO Auto-generated method stub
-		return alertMessageDao.selectAlertMessageStatisticsInfo();
 	}
 
 	@Override

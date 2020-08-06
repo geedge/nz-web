@@ -75,6 +75,7 @@ public enum RCode {
     PANEL_NEXT_ISNULL(121036,"Panel next can not be empty"),
     PANEL_NOT_EXIST(126037,"Panel does not exist"),
     PANEL_NOTFOUND_BYTYPE(126038,"There is no panel under this type"),
+    PANEL_CHARTS_EXISTS(123039, "These panel contain charts and cannot be deleted"),
 
 
     /**

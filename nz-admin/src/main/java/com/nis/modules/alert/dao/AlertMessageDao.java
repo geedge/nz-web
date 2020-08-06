@@ -23,9 +23,8 @@ import java.util.Map;
 public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     void updateBatch(@Param("hashKeys") List<String> updateCacheKeys, @Param("nowDate") Date utcTimeByConfigTimeZone);
-    List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 
-    List<MetricsDto> selectAlertMessageStatisticsInfo();
+    List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 
     List<AlertMessageWithExport> selectWithExport(@Param("params") Map<String, Object> params);
 

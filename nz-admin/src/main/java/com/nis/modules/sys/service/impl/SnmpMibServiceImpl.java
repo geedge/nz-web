@@ -39,6 +39,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
     @Autowired
     private SnmpMibDao snmpMibDao;
+
     @Autowired
     private ModelDao modelDao;
 
@@ -48,14 +49,24 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
         List<SnmpMib> mibs = snmpMibDao.queryList(page, params);
 
+        // 获取所有 model
+        Map<Integer, ModelWithMib> modelsDetailIdAndEntity = new HashMap<>();
+        List<ModelWithMib> modelList = modelDao.selectByModels(null);
+        for (ModelWithMib entity : modelList) {
+            modelsDetailIdAndEntity.put(entity.getId(), entity);
+        }
+
+        // 处理 modelDetail 信息
+        List<ModelWithMib> modelsDetail;
         for (SnmpMib snmpMib : mibs) {
             snmpMib.setContent(null);
-            if (null != snmpMib.getModels() && !"".equals(snmpMib.getModels())) {
-                List<ModelWithMib> modelList = modelDao.selectByModels(
-                        Arrays.asList(snmpMib.getModels().split(",")).stream().mapToInt(Integer::parseInt).toArray());
-                if (modelList.size() > 0) {
-                    snmpMib.setModelsDetail(modelList);
+            if (ToolUtil.isNotEmpty(snmpMib.getModels())) {
+                modelsDetail = new ArrayList<>();
+                int[] ints = Arrays.asList(snmpMib.getModels().split(",")).stream().mapToInt(Integer::parseInt).toArray();
+                for (int i = 0; i < ints.length; i++) {
+                    modelsDetail.add(modelsDetailIdAndEntity.get(ints[i]));
                 }
+                snmpMib.setModelsDetail(modelsDetail);
             }
         }
 
@@ -115,14 +126,6 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         return null;
     }
 
-    /*public String mibTree(List<SnmpMib> mibList) {
-        JSONObject jsonObject = new JSONObject();
-        for (SnmpMib snmpMib: mibList) {
-            jsonObject.putAll(JSONObject.parseObject(snmpMib.getTree(), Map.class));
-        }
-        return jsonObject.toJSONString();
-    }*/
-
     public String mibTree(List<SnmpMib> mibList) {
         Map resultData = new HashMap();
         for (SnmpMib snmpMib : mibList) {
@@ -178,9 +181,9 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 mibFile.delete();
             }
         }
-        // 经过解析后mib为空
+
+        // 经过解析后 mib 为空  解析失败
         if(mib == null){
-            // 解析失败
             throw new NZException(RCode.SNMP_MIB_PARSING_FAILED);
         }
         // 设置mib文件名称
@@ -188,19 +191,17 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         snmpMib.setName(mibName);
 
         // 最终解析的数据集合
-        List<MmMib> list = new ArrayList<>();
+        List<MmMib> resultList = new ArrayList<>();
 
         // 获取 mib 文件中所有的对象
         Collection c = mib.getAllSymbols();
 
-        SnmpObjectType snmpObjectType = null;
         MmMib mo = null;
-        MibValueSymbol parent = null;
-
-        String syntax = null, access = null, status = null, description = null, type = null, parentValue = null;
-        boolean isTable;
-        ArrayList<SnmpIndex> snmpIndices = new ArrayList();
         List<String> index;
+        MibValueSymbol parent = null;
+        SnmpObjectType snmpObjectType = null;
+        ArrayList<SnmpIndex> snmpIndices = new ArrayList();
+        String syntax = null, access = null, status = null, description = null, type = null, parentValue = null;
 
         // 遍历解析 获取所需数据
         Iterator it = c.iterator();
@@ -233,16 +234,14 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                     parentValue = parent.getValue().toString();
                 }
 
-                isTable = mvs.isTable();
-
-                if (isTable) {
+                if (mvs.isTable()) {
                     mo.setType(Constant.MIB_TABLE_TYPE);
-                } else if (com.nis.common.utils.StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
+                } else if (StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
                     mo.setType(Constant.MIB_ENTRY_TYPE);
                 }
 
                 type = mvs.getType().getName();
-                if (com.nis.common.utils.StringUtils.isNotEmpty(type) && com.nis.common.utils.StringUtils.isEmpty(mo.getType())) {
+                if (StringUtils.isNotEmpty(type) && StringUtils.isEmpty(mo.getType())) {
                     if (type.toUpperCase().contains(Constant.MIB_IDENTIFIER_TYPE)) {
                         mo.setType(Constant.MIB_IDENTIFIER_TYPE);
                     } else {
@@ -259,14 +258,12 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 mo.setDescription(description);
                 mo.setIndex(index);
 
-                list.add(mo);
+                resultList.add(mo);
             }
         }
 
         // tree
-        System.out.println(list.size());
-        String treeFormat = this.getTreeFormat(list, mibName);
-        snmpMib.setTree(treeFormat);
+        snmpMib.setTree(this.getTreeFormat(resultList, mibName));
     }
 
     public String getTreeFormat(List<MmMib> mibs, String mibName) {
@@ -279,8 +276,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
         List<MmMib> superMibs = new ArrayList<>();
         for (MmMib mmMib : mibs) {
-            Object o = map.get(mmMib.getPid());
-            if (o == null) {
+            if (ToolUtil.isEmpty(map.get(mmMib.getPid()))) {
                 superMibs.add(mmMib);
             }
         }
@@ -288,8 +284,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         Map mibMap = new HashMap();
         for (MmMib mmMib : superMibs) {
             // 递归实现树结构
-            List<MmMib> mmMibs = handleDataFormat(mibs, mmMib.getObjectID());
-            mmMib.setSubTree(mmMibs);
+            mmMib.setSubTree(this.handleDataFormat(mibs, mmMib.getObjectID()));
         }
         mibMap.put(mibName, superMibs);
 
@@ -298,12 +293,13 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
     public List<MmMib> handleDataFormat(List<MmMib> mibs, String parentId) {
         List<MmMib> resultList = new ArrayList<>();
+        String oid;
+        String pid;
         for (MmMib object : mibs) {
-            String oid = object.getObjectID();
-            String pid = object.getPid();
+            oid = object.getObjectID();
+            pid = object.getPid();
             if (parentId.equals(pid)) {
-                List<MmMib> c_node = handleDataFormat(mibs, oid);
-                object.setSubTree(c_node);
+                object.setSubTree(this.handleDataFormat(mibs, oid));
                 resultList.add(object);
             }
         }
@@ -332,7 +328,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
             oidWithNameMap.put(mmMib.getObjectID(), mmMib.getName());
             // 如果存在子树 则继续
             if (CollectionUtils.isNotEmpty(mmMib.getSubTree())) {
-                subTree = getSubTree(mmMib.getSubTree());
+                subTree = this.getSubTree(mmMib.getSubTree());
                 collectMap = subTree.stream().collect(Collectors.toMap(MmMib::getObjectID, MmMib::getName));
                 oidWithNameMap.putAll(collectMap);
             }
@@ -347,8 +343,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         for (MmMib mmMib : list) {
             resultList.add(mmMib);
             if (CollectionUtils.isNotEmpty(mmMib.getSubTree())) {
-                List<MmMib> subTree = getSubTree(mmMib.getSubTree());
-                resultList.addAll(subTree);
+                resultList.addAll(this.getSubTree(mmMib.getSubTree()));
             }
         }
         return resultList;

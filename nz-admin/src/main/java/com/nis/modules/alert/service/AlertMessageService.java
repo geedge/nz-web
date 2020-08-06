@@ -21,12 +21,8 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
     PageUtils queryPage(Map<String, Object> params) throws Exception;
 
-	boolean updateByIds(AlertMessageEntity alertMessage);
-
 	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
 	
-	List<MetricsDto> queryAlertMessageStatisticsInfo();
-
 	void removeByAssetIds(List<Integer> idList);
 
 	void removeByModuleIds(List ids);

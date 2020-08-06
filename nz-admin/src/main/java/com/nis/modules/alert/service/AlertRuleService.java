@@ -20,8 +20,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
 
-	List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds);
-
 	void validateBulitinRule(List<Integer> id);
 
 	void saveOrUpdateAlertRule(AlertRuleEntity alertRule);

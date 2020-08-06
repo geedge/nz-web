@@ -100,8 +100,8 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		// 删除关联 panel
 		List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.PROJECT.getValue()).in(Panel::getLink, ids));
 		if(ToolUtil.isNotEmpty(panels)) {
-			List<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toList());
-			panelService.delPanels(panelIds.toArray(new Integer[0]));
+			Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
+			panelService.delPanelsAndChartInfoByPanelIds(panelIds);
 		}
 	}
 

@@ -335,8 +335,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 chartElementService.validateElements(elements);
                 break;
             }
+            // alertList 类型不需要校验 elements
+            case Constant.CHART_ALERTLIST_TYPE:{
+                break;
+            }
             default: {
-                // 除 url 类型外，其他类型都需校验 elements
+                // 除 url alertList 类型外，其他类型都需校验 elements
                 ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
                 chartElementService.validateElements(elements);
             }

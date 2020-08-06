@@ -14,7 +14,10 @@ import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.dao.*;
+import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.asset.dao.AssetPingDao;
+import com.nis.modules.asset.dao.CabinetDao;
+import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.Endpoint;
@@ -22,9 +25,9 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
-import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.dao.SysAreaDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysArea;
@@ -106,7 +109,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private CabinetDao cabinetDao;
 
     @Autowired
-    private PanelDao panelDao;
+    private PanelService panelService;
 
     @Autowired
     private ChartService chartService;
@@ -495,14 +498,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         alertMessageService.removeByAssetIds(idList);
 
         // 4. 删除关联的 panel chart  chartElement信息
-        List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, ids));
-
-        Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
-
-        if (CollectionUtils.isNotEmpty(panelIds)) {
-            panelDao.deleteBatchIds(panelIds);
-            Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
-            chartService.delChartsByPanelId(removePanelIds);
+        List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, ids));
+        if (CollectionUtils.isNotEmpty(panels)) {
+            Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
+            panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
 
         // 5. 删除关联的tag 信息

@@ -105,12 +105,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         return false;
     }
 
-    @Override
-    public List<AlertNameMapUserDTO> queryUserByRuleId(Set<Integer> ruleIds) {
-        List<AlertNameMapUserDTO> results = this.baseMapper.queryUserByRuleIds(ruleIds);
-        return results;
-    }
-
     /**
      * 查询当前规则是否为内置规则
      */

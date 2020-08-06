@@ -16,6 +16,7 @@ import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
+import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.dao.SnmpMibDao;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SnmpMib;
@@ -63,6 +64,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Autowired
     private SnmpMibDao snmpMibDao;
+
+    @Autowired
+    private PanelService panelService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -149,12 +153,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
         // 4. 删除关联 panel charts chartElement
         List<Panel> panels = panelDao.selectList(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).in(Panel::getLink, ids));
-        Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
-
-        if (CollectionUtils.isNotEmpty(panelIds)) {
-            panelDao.deleteBatchIds(panelIds);
-            Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
-            chartService.delChartsByPanelId(removePanelIds);
+        if (CollectionUtils.isNotEmpty(panels)) {
+            Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
+            panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
     }
 

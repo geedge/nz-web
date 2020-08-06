@@ -15,29 +15,6 @@
         <result property="receiver" column="receiver"/>
     </resultMap>
 
-    <resultMap type="com.nis.modules.alert.entity.AlertNameMapUserDTO" id="alertRuleMapUser">
-        <result property="ruleId" column="ruleId"/>
-        <result property="receiver" column="receiver"/>
-        <collection property="users" ofType="com.nis.modules.sys.entity.SysUserEntity">
-            <result property="email" column="email"/>
-        </collection>
-    </resultMap>
-
-    <select id="queryUserByRuleIds" resultMap="alertRuleMapUser">
-        SELECT
-        a.id ruleId,
-        a.receiver,
-        u.email
-        FROM alert_rule a
-        LEFT JOIN user_group_rel ugr ON ugr.group_id=a.receiver
-        LEFT JOIN sys_user u ON ugr.user_id=u.user_id
-        WHERE
-        a.id in
-        <foreach item="ruleId" collection="ruleIds" separator="," open="(" close=")" index="">
-            #{ruleId}
-        </foreach>
-    </select>
-
     <select id="queryIdsByAlertName" resultType="integer">
         select id from alert_rule where alert_name like concat('%',#{alertName},'%')
     </select>

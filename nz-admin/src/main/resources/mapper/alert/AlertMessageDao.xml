@@ -114,12 +114,6 @@
 		AND state = 1
 	</update>
 
-    <select id="selectAlertMessageStatisticsInfo" resultType="com.nis.modules.metric.dto.MetricsDto">
-    	select count(*) total,severity
-    	from alert_message
-    	where state=1 group by severity
-    </select>
-
 	<delete id="deleteByAssetIds">
 		delete from alert_message where asset_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">

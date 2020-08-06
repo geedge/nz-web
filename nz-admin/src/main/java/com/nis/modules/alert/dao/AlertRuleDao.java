@@ -22,8 +22,6 @@ import java.util.Set;
 @Mapper
 public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
 
-	List<AlertNameMapUserDTO> queryUserByRuleIds(@Param("ruleIds")Set<Integer> ruleIds);
-
     List<Integer> queryIdsByAlertName(@Param("alertName")String alertName);
     
     List<AlertRuleEntity> queryList(IPage<AlertRuleEntity> page, @Param("params") Map<String, Object> params, @Param("receivers")List<String> receivers);

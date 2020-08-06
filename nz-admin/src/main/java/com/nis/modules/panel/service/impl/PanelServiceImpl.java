@@ -9,6 +9,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.panel.dao.PanelDao;
+import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
@@ -70,29 +71,50 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void delPanelsAndChartInfoByPanelIds(Set<Integer> panelIds) {
+        if (CollectionUtils.isNotEmpty(panelIds)) {
+            // 删除 panel
+            this.removeByIds(panelIds);
+
+            // 删除 chart info
+            Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
+            chartService.delChartsByPanelId(removePanelIds);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delPanels(Integer... ids) {
         if (ToolUtil.isEmpty(ids)) {
             return;
         }
 
+        List<Panel> panels = this.list();
+
         // 1. 校验内置panel不能被删除
-        List<Integer> idList = Arrays.asList(ids);
-        this.validateBuildInPanels(idList);
+        this.validateBuildInPanels(panels, ids);
 
-        // 2. dashboard panel 是有序的 获取当前所有 panel 留作稍后处理删除后的位置
-        List<Panel> panelList = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+        // 2. 若关联 chart 则不允许删除
+        List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
+        List<Chart> charts = chartService.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, idList));
+        Set<Integer> chartUsedPanelIds = charts.stream().map(Chart::getPanelId).collect(Collectors.toSet());
+        idList.retainAll(chartUsedPanelIds);
+        if (CollectionUtils.isNotEmpty(idList)) {
+            List<String> panelNames = this.listByIds(idList).stream().map(Panel::getName).collect(Collectors.toList());
+            throw new NZException("These panel contain charts and cannot be deleted, panels info: " + panelNames.toString(), RCode.PANEL_CHARTS_EXISTS.getCode());
+        }
 
-        List<Panel> deletePanel = panelList.stream().filter(panel -> idList.contains(panel.getId()) ? true : false).collect(Collectors.toList());
-        List<Integer> delIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
+        // 3. dashboard panel 是有序的 获取当前所有 panel 留作稍后处理删除后的位置
+        List<Panel> dashboardPanels = panels.stream().filter(panel -> Constant.PanelType.DASHBOARD.getValue().equals(panel.getType())).collect(Collectors.toList());
 
-        // 3. 删除 panel
-        this.removeByIds(idList);
+        List<Panel> deletePanel = dashboardPanels.stream().filter(panel -> Arrays.asList(ids).contains(panel.getId()) ? true : false).collect(Collectors.toList());
+        List<Integer> delDeletePanelIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
 
-        // 4. 删除关联 chart 信息
-        chartService.delChartsByPanelId(ids);
+        // 4. 删除 panel
+        this.removeByIds(Arrays.asList(ids));
 
         // 5. 处理删除后的位置
-        this.handlePositionAfterDelete(panelList, delIds);
+        this.handlePositionAfterDelete(this.getSequentialPanelList(dashboardPanels), delDeletePanelIds);
     }
 
     /**
@@ -150,18 +172,18 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     /**
      * 校验内置 panel 不可删除
-     * @param idList
+     * @param panels
+     * @param removeIds
      */
-    private void validateBuildInPanels(List<Integer> idList) {
-        // 内置panel不能删除
-        List<Panel> buildInPanels = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getBuildIn, 1));
-        Map<Integer, String> buildInPanelIdAndNameMap = buildInPanels.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
-
-        idList.stream().forEach(id -> {
-            if (ToolUtil.isNotEmpty(buildInPanelIdAndNameMap.get(id))) {
-                throw new NZException(buildInPanelIdAndNameMap.get(id) + " panel is built-in and cannot be deleted", RCode.PANEL_BUILDIN_CAN_NOT_REMOVE.getCode());
-            }
-        });
+    private void validateBuildInPanels(List<Panel> panels, Integer... removeIds) {
+        // 内置 panel 不能删除
+        List<Integer> buildInPanels = panels.stream().filter(panel -> panel.getBuildIn() == 1).map(Panel::getId).collect(Collectors.toList());
+        List<Integer> removeIdList = Arrays.stream(removeIds).collect(Collectors.toList());
+        removeIdList.retainAll(buildInPanels);
+        if (CollectionUtils.isNotEmpty(removeIdList)) {
+            List<String> panelNames = this.listByIds(removeIdList).stream().map(Panel::getName).collect(Collectors.toList());
+            throw new NZException("These panel is built-in and cannot be deleted, panels info: " + panelNames.toString(), RCode.PANEL_BUILDIN_CAN_NOT_REMOVE.getCode());
+        }
     }
 
     @Override

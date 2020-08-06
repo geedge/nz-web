@@ -5,6 +5,7 @@ import com.nis.modules.panel.entity.Panel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface PanelService extends IService<Panel> {
     void delPanels(Integer... ids);
@@ -16,4 +17,6 @@ public interface PanelService extends IService<Panel> {
     void modify(Panel panel);
 
     List<Panel> queryList(Map<String, Object> params);
+
+    void delPanelsAndChartInfoByPanelIds(Set<Integer> panelIds);
 }
