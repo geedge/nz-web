@@ -1,6 +1,6 @@
 package com.nis.modules.alert.controller;
 
-import com.google.gson.Gson;
+import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -40,8 +40,7 @@ public class AlertMessageReceiveController {
     	try {
     		alertMessageService.saveBatch(receiveData);
     	} catch (Exception e) {
-    		Gson gson = new Gson();
-			logger.error("接收的告警信息转化entity失败:" + gson.toJson(receiveData), e);
+		    logger.error("接收的告警信息转化entity失败:" + JSONObject.toJSONString(receiveData), e);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
 		}
 

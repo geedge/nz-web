@@ -1,10 +1,10 @@
 package com.nis.modules.alert.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -224,6 +224,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 						// 存在更新时间，不存在set
 						redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(),entity.getHashKey().getBytes(),JSON.toJSONString(map).getBytes());
 					}catch (Exception e){
+						logger.error("解析告警信息失败，参数是：+" + dto.toString() + " 错误信息：" + e.getMessage(), e);
 						// 告警信息解析失败
 						throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 					}
@@ -237,8 +238,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    	String emailEnable = configService.getValue("email_enable");
 	    	//邮件通知
 	    	if (Constant.SWITCH_OPEN.equals(emailEnable)) {
-	    		redisTemplate.opsForList().leftPush("alert_message_list",entities);
-	    	}
+			    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
+		    }
     	}
     }
 

@@ -1,6 +1,8 @@
 package com.nis.modules.alert.job;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.MailUtil;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
@@ -65,13 +67,14 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     }
     private void execAlertMessage() throws IOException, TemplateException, MessagingException {
         ListOperations<String, Object> ops = redisTemplate.opsForList();
-        Object obj = ops.rightPop("alert_message_list");
-        if(ToolUtil.isEmpty(obj)){
+        Object obj = ops.rightPop(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE);
+        if (ToolUtil.isEmpty(obj)) {
             return;
         }
 
         // 告警消息集合
-        List<AlertMessageEntity> entities  = (List<AlertMessageEntity>) obj;
+        List<AlertMessageEntity> entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
+        log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
         if(CollectionUtils.isEmpty(entities)){
             return;
         }
@@ -87,7 +90,7 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
             // 通知人不为空 发件
             if(StringUtils.isNotEmpty(receiver)){
-
+                log.info("邮件关联用户，进行邮件通知");
                 List<String> toSendEmails = new ArrayList<>();
 
                 Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
@@ -101,6 +104,8 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
                 if(ToolUtil.isNotEmpty(toSendEmails)){
                     mailUtil.sendHTML(toSendEmails, messageEntity.getSummary(), this.sendMail(messageEntity.getDescription()));
                 }
+            }else{
+                log.info("邮件没有关联用户，不进行邮件通知");
             }
         }
     }
