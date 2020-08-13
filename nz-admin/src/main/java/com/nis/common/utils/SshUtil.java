@@ -26,7 +26,7 @@ public class SshUtil {
 	public static Session getSshConnection(Asset asset,Account account) throws Exception {
 		Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
 		JSch jSch =new JSch();
-		Session session = jSch.getSession(params.get("user"), asset.getHost(), account.getPort());
+		Session session = jSch.getSession(params.get("username"), asset.getHost(), account.getPort());
 		String sshType = params.get("method");
         switch (sshType) {
             case "key": {

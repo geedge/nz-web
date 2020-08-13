@@ -176,7 +176,7 @@ public class TerminalHandler extends TextWebSocketHandler {
                 int width = toInt(session.getAttributes().get("width").toString());
                 int height = toInt(session.getAttributes().get("height").toString());
                 terminalLog.setCmd("Login");
-	            terminalLog.setUser(params.get("user"));
+	            terminalLog.setUser(params.get("username"));
                 terminalLog.setStatus(1);
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
@@ -202,7 +202,7 @@ public class TerminalHandler extends TextWebSocketHandler {
                 }
             	terminalLog.setStatus(0);
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-	            terminalLog.setUser(StringUtils.isNotBlank(params.get("user")) ? params.get("user") : "");
+	            terminalLog.setUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
                 terminalLogService.save(terminalLog);
                 terminalClient.disconnect();
                 TerminalSession.remove(session);

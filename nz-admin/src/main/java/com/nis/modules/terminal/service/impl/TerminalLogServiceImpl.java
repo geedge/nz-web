@@ -35,7 +35,7 @@ public class TerminalLogServiceImpl extends ServiceImpl<TerminalLogDao, Terminal
         queryWrapper
                 .eq(ToolUtil.isNotEmpty(params.get("protocol")), TerminalLog::getProtocol, params.get("protocol"))
                 .eq(ToolUtil.isNotEmpty(params.get("userId")), TerminalLog::getUserId, params.get("userId"))
-                .eq(ToolUtil.isNotEmpty(params.get("user")), TerminalLog::getUser, params.get("user"))
+                .eq(ToolUtil.isNotEmpty(params.get("username")), TerminalLog::getUser, params.get("username"))
                 .eq(ToolUtil.isNotEmpty(params.get("host")), TerminalLog::getHost, params.get("host"))
                 .like(ToolUtil.isNotEmpty(params.get("cmd")), TerminalLog::getCmd, params.get("cmd"))
                 .ge(ToolUtil.isNotEmpty( params.get("startTime")), TerminalLog::getTime, params.get("startTime"))

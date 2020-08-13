@@ -103,7 +103,7 @@ public class TerminalClient {
         if (ToolUtil.isEmpty(params)) {
             params = new HashMap<>();
         }
-        this.session = jSch.getSession(params.get("user"), terminal.getAsset().getHost(), terminal.getPort());
+        this.session = jSch.getSession(params.get("username"), terminal.getAsset().getHost(), terminal.getPort());
 
         String sshType = params.get("method");
         switch (sshType) {
@@ -150,7 +150,7 @@ public class TerminalClient {
         StringBuilder sb = new StringBuilder();
         sb.append("\r\nConnecting to " + terminal.getAsset().getHost() + ":" + terminal.getPort() + "\r\n");
         sb.append("Connection established. \r\n");
-        sb.append("Login success，use user " + params.get("user") + " \r\n");
+        sb.append("Login success，use user " + params.get("username") + " \r\n");
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
         
         new Thread(new Runnable() {
@@ -249,7 +249,7 @@ public class TerminalClient {
                         if (ToolUtil.isEmpty(params)) {
                             params = new HashMap<>();
                         }
-                        String user = params.get("user");
+                        String user = params.get("username");
 
                         builder.setLength(0);
                         int size = inputStream.read(buffer);
@@ -429,7 +429,7 @@ public class TerminalClient {
     					terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
                 		terminalLog.setStatus(1);
                 		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-                		terminalLog.setUser(params.get("user"));
+                		terminalLog.setUser(params.get("username"));
                 		terminalLogService.save(terminalLog);
                 		TerminalSession.removeTerminalMessage(clientId);
                 		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
@@ -493,8 +493,7 @@ public class TerminalClient {
             params = new HashMap<>();
         }
         // 获取telnet登录用户名信息
-        System.out.println(telnetUser + "----"+telnetConnect+"0---"+params.get("user"));
-        if (telnetUser && telnetConnect && StringUtils.isEmpty(params.get("user"))) {
+        if (telnetUser && telnetConnect && StringUtils.isEmpty(params.get("username"))) {
             sb.append(message);
             webSocketSession.sendMessage(new TextMessage(message));
         } else if (StringUtils.isNotEmpty(sb.toString())) {

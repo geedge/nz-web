@@ -1332,7 +1332,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 } else if (Constants.SshType.SSHKEY.getValue().equals(method)) {
                     authType = 2;
                 }
-                sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("user"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
+                sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("username"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
             } catch (Exception e) {
                 logger.error(String.format("用户登录sftp服务器失败,地址是：%s:%s,认证信息是：%s", asset.getHost(), account.getPort(), (String) account.getParams()), e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);

@@ -31,7 +31,7 @@ public class Account {
     public String getPrivateKeyPath() {
         if(this.getAsset()!=null){
             Map<String, String> params = (Map) this.getParams();
-            String user = params.get("user");
+            String user = params.get("username");
             return Constants.NZ_USER_HOME.concat("/").concat(this.getAsset().getHost()).concat("@").concat(user).concat("_id_rsa");
         }
         return null;
