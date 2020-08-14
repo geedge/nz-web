@@ -280,6 +280,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      *
      * @param model
      */
+    @Override
     public void saveModelPanelAndChart(Model model) {
         // 配置信息获取
         SysConfigEntity modelConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_CHART_TPL));

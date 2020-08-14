@@ -47,4 +47,6 @@ public interface AssetService extends IService<Asset> {
     void collectData(Integer assetId);
 
     Map filterStat();
+
+    void getExportTemplateByLanguage(HttpServletResponse response, String language);
 }

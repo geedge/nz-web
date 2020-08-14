@@ -169,6 +169,11 @@ public enum RCode {
     ASSET_IMPORTFILE_FAILED(319037,"Import file resolution failed"),     // 导入文件解析失败
     ASSET_TAGKEY_ISNULL(311038,"Asset tag name can no be empty"),
     ASSET_EXPORTER_UPLOADBYSSH(313039,"Must use SSH protocol account to upload exporter"),
+    ASSET_EXPORT_HEADER_LANGUAGE_ISNULL(311040,"Export header language can not be empty"),
+    ASSET_EXPORT_HEADER_LANGUAGE_ERROR(314041,"Export header language must be en, cn and ru"),
+    ASSET_EXPORT_HEADER_TEMPLATE_ERROR(314042,"The header row of the excel import template is inconsistent with the system template"),
+    ASSET_TYPE_VALUE_DUPLICATE(312043,"Asset type vlaue is duplicate"),
+    ASSET_VENDOR_VALUE_DUPLICATE(312044,"Asset vendor vlaue is duplicate"),
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
@@ -200,6 +205,12 @@ public enum RCode {
     ACCOUNT_PROTOCOL_PARAMS_ISNULL(331012, "Account protocol params can not be empty"),
     ACCOUNT_PROTOCOL_PARAMS_FORMATERROR(333013, "Account protocol params must be JSON format"),
     ACCOUNT_PROTOCOL_EXCEED_COUNT(337014, "An protocol can only have one account"),
+    ACCOUNT_SSH_METHOD_INCORRECT(334015,"SSH account login method must be key or password"),
+    ACCOUNT_SNMP_USERNAME_ISNULL(331016,"SNMP account username is required for SNMPv3"),
+    ACCOUNT_SNMP_SECURITYLEVEL_INVALID(334017,"SNMP account security level must be one of authPriv, authNoPriv or noAuthNoPriv"),
+    ACCOUNT_SNMP_VERSION_INVALIDE(333018,"Snmp version must be 2 or 3"),
+    ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE(334019,"Auth protocol must be MD5 or SHA"),
+    ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE(334020,"Priv protocol must be DES or AES"),
 
 
     /**

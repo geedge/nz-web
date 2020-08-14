@@ -23,5 +23,7 @@ public interface ModelService extends IService<Model> {
     void checkUsize(Model usize);
 
     void syncChart(Map<String, Object> params);
+
+    void saveModelPanelAndChart(Model model);
 }
 

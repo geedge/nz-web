@@ -9,7 +9,6 @@
 package com.nis.modules.sys.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -26,11 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -230,9 +225,58 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		}else{
 			throw new NZException(RCode.SYS_DICT_CODE_ISNULL);
 		}
+
+		// 如果是assetType 或者 vendor 类型校验名称重复
+		if(Constant.DICT_ASSET_MODEL_TYPE.equals(dict.getType()) || Constant.DICT_ASSET_MODEL_VENDOR.equals(dict.getType())){
+			this.validateAssetTypeVendorValue(dict);
+		}
+
 		Long userId = ShiroUtils.getUserId();
 		dict.setOperator(userId);
 		dict.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
 		this.save(dict);
+	}
+
+	/**
+	 * assetType vendor 类型校验 value值是否重复
+	 * @param dict
+	 */
+	private void validateAssetTypeVendorValue(SysDictEntity dict) {
+		List<SysDictEntity> list = this.list(new QueryWrapper<SysDictEntity>().lambda().in(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE, Constant.DICT_ASSET_MODEL_VENDOR).eq(SysDictEntity::getDelFlag,0));
+
+		List<SysDictEntity> assetTypeDictList = new ArrayList<>();
+		List<SysDictEntity> vendorDictList = new ArrayList<>();
+
+		for (SysDictEntity entity : list) {
+			switch (entity.getType()) {
+				case Constant.DICT_ASSET_MODEL_TYPE: {
+					assetTypeDictList.add(entity);
+					break;
+				}
+				case Constant.DICT_ASSET_MODEL_VENDOR: {
+					vendorDictList.add(entity);
+					break;
+				}
+				default:
+			}
+		}
+
+		switch (dict.getType()) {
+			case Constant.DICT_ASSET_MODEL_TYPE: {
+				List<String> assetTypes = assetTypeDictList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+				if (assetTypes.contains(dict.getValue())) {
+					throw new NZException(RCode.ASSET_TYPE_VALUE_DUPLICATE);
+				}
+				break;
+			}
+			case Constant.DICT_ASSET_MODEL_VENDOR: {
+				List<String> vendors = vendorDictList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+				if (vendors.contains(dict.getValue())) {
+					throw new NZException(RCode.ASSET_VENDOR_VALUE_DUPLICATE);
+				}
+				break;
+			}
+			default:
+		}
 	}
 }

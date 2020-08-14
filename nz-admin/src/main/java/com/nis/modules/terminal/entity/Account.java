@@ -36,27 +36,4 @@ public class Account {
         }
         return null;
     }
-
-    @TableField(exist = false)
-    private Integer authType;
-
-    @TableField(exist = false)
-    private String user;
-
-    @TableField(exist = false)
-    private String pwd;
-
-    @TableField(exist = false)
-    private String privateKey;
-
-    @TableField(exist = false)
-    private String userTip;
-
-    @TableField(exist = false)
-    private String passwordTip;
-
-    @TableField(exist = false)
-    private String reloginPasswordTip;
-
-
 }

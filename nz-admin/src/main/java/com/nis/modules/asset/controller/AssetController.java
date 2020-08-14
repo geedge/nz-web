@@ -226,4 +226,16 @@ public class AssetController {
     public R updateFeature() {
         return R.ok(assetService.filterStat());
     }
+
+    /**
+     * 获取导入模板
+     * @param response
+     * @param language
+     */
+    @GetMapping("/template")
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
+
+        assetService.getExportTemplateByLanguage(response, language);
+    }
 }

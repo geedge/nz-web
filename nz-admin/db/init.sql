@@ -669,7 +669,7 @@ DROP TABLE IF EXISTS `sys_config`;
 CREATE TABLE `sys_config`  (
   `id` bigint(19) NOT NULL AUTO_INCREMENT,
   `param_key` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT 'key',
-  `param_value` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT 'value',
+  `param_value` longtext CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT 'value',
   `status` tinyint(4) NULL DEFAULT 1 COMMENT '状态   0：隐藏   1：显示',
   `remark` varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '备注',
   PRIMARY KEY (`id`) USING BTREE,
@@ -751,16 +751,10 @@ CREATE TABLE `sys_dict`  (
 -- ----------------------------
 -- Records of sys_dict
 -- ----------------------------
-INSERT INTO `sys_dict` VALUES (1, '资产类型', 'assetType', 1, 'server', '', 0, '服务器', 0, 1, '2020-02-14 17:28:00', NULL);
-INSERT INTO `sys_dict` VALUES (2, '资产类型', 'assetType', 2, 'net', '', 0, '网元', 0, 1, '2020-03-17 11:18:05', NULL);
 INSERT INTO `sys_dict` VALUES (3, '资产状态', 'assetState', 1, '在线', '', 0, '在线', 0, 0, '2019-11-25 14:54:43', NULL);
 INSERT INTO `sys_dict` VALUES (4, '资产状态', 'assetState', 2, '下线', '', 0, '下线', 0, 0, '2019-11-25 14:54:46', NULL);
 INSERT INTO `sys_dict` VALUES (5, '认证类型', 'authType', 1, 'Password', '', 0, '密码认证', 0, 0, '2019-11-28 10:45:46', NULL);
 INSERT INTO `sys_dict` VALUES (6, '认证类型', 'authType', 2, 'Certificate', '', 0, '证书认证', 0, 0, '2019-11-28 10:46:59', NULL);
-INSERT INTO `sys_dict` VALUES (7, '厂商', 'vendor', 1, 'huawei', '', 0, '华为', 0, 0, '2019-12-10 16:04:57', NULL);
-INSERT INTO `sys_dict` VALUES (8, '厂商', 'vendor', 2, 'cisco', '', 0, '思科', 0, 0, '2019-12-13 17:53:19', NULL);
-INSERT INTO `sys_dict` VALUES (110, '厂商', 'vendor', 3, 'sanxing', '', 0, NULL, 0, 0, '2019-12-13 17:55:30', NULL);
-INSERT INTO `sys_dict` VALUES (111, '资产类型', 'assetType', 3, 'switch', '', 0, NULL, 1, 1, '2020-01-13 17:20:55', NULL);
 INSERT INTO `sys_dict` VALUES (112, '图表类型', 'chartType', 1, 'line', '', 1, '折线图', 0, 1, '2019-12-13 17:53:19', NULL);
 INSERT INTO `sys_dict` VALUES (113, '图表类型', 'chartType', 2, 'bar', '', 2, '条形图', 0, 1, '2019-12-13 17:53:19', NULL);
 INSERT INTO `sys_dict` VALUES (114, '图表类型', 'chartType', 3, 'table', '', 3, '表格', 0, 1, '2019-12-13 17:53:19', NULL);

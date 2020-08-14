@@ -1,16 +1,19 @@
 package com.nis.common.utils;
 
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -109,5 +112,82 @@ public class ExcelUtils {
             }
         }
         return result.toString();
+    }
+
+    public static SXSSFWorkbook createExcel07(List<String> headerColumns, String sheetName) throws IOException {
+        SXSSFWorkbook wb = new SXSSFWorkbook();
+        // 标题样式
+        CellStyle colStyle = createHeaderStyle(wb);
+        Sheet sheet = wb.createSheet(sheetName);
+        // 设置默认列宽
+        sheet.setDefaultColumnWidth(25);
+        Row headerRow = sheet.createRow(0);
+        Cell headerCell;
+        for (int i = 0; i < headerColumns.size(); i++) {
+            // 创建列、单元格
+            headerCell = headerRow.createCell(i);
+            headerCell.setCellValue(headerColumns.get(i));
+            headerCell.setCellStyle(colStyle);
+        }
+        return wb;
+    }
+
+    /**
+     * 返回表头样式
+     *
+     * @param workbook excel
+     * @return
+     */
+    private static CellStyle createHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        // 上下左右边框
+        style.setBorderBottom(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderLeft(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderRight(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderTop(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        // 水平居中
+        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+        //垂直居中
+        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+        //设置单元格背景颜色
+        style.setFillForegroundColor(IndexedColors.BLUE_GREY.index);
+        style.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+        //设置表头属性
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 16);
+        font.setColor(IndexedColors.WHITE.index);
+        style.setFont(font);
+        return style;
+    }
+
+    /**
+     * 返回单元格样式
+     *
+     * @param workbook excel
+     * @param fontsize 字体大小
+     * @param isBold   字体是否加粗
+     * @return
+     */
+    private static CellStyle createCellStyle(Workbook workbook, short fontsize, boolean isBold) {
+        CellStyle style = workbook.createCellStyle();
+        // 上下左右边框
+        style.setBorderBottom(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderLeft(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderRight(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderTop(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        // 水平居中
+        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+        //垂直居中
+        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+        //创建字体
+        Font font = workbook.createFont();
+        if (isBold) {
+            font.setBold(true);
+        }
+        font.setFontHeightInPoints(fontsize);
+        //加载字体
+        style.setFont(font);
+        return style;
     }
 }

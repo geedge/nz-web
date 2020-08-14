@@ -41,9 +41,9 @@ import com.nis.modules.terminal.config.Constants;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snmp4j.smi.TimeTicks;
@@ -598,8 +598,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Override
     public Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID) {
-        logger.info("importAssets param assetsExcelFileName is {}", assetsExcelFile.getOriginalFilename());
-        logger.info("importAssets param uuid is {}", seqUUID);
+        logger.info("asset 导入文件名是:" + assetsExcelFile.getOriginalFilename() + ",本次随机UUD:" + seqUUID);
         String originalFilename = assetsExcelFile.getOriginalFilename();
 
         // 校验文件格式
@@ -608,6 +607,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             throw new NZException(RCode.ASSET_IMPORTFILE_TYPE);
         }
 
+        Workbook work = null;
+        try {
+            work = ExcelUtils.getWork(originalFilename, assetsExcelFile.getInputStream());
+        } catch (Exception e) {
+            logger.error("解析文件格式有误", e);
+            throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
+        }
+
+        // 查询 asset 相关数据 用作导入时间校验 减少循环查表
         Map<String, SysDictEntity> assetTypesMap = new HashMap();
         Map<String, SysDictEntity> vendorsMap = new HashMap();
         List<Integer> assetStateList = new ArrayList<>();
@@ -653,50 +661,24 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             configs.put(config.getParamKey(), config.getParamValue());
         }
 
-        String configDefaultCabUsize = configs.get(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU);
         Integer defaultCabinetUsize = null;
         try {
-            defaultCabinetUsize = Integer.parseInt(configDefaultCabUsize);
+            defaultCabinetUsize = Integer.parseInt(configs.get(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU));
         } catch (NumberFormatException e) {
             logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
-        }
-
-        if (defaultCabinetUsize == null) {
             throw new NZException(RCode.SYS_CONFIG_DEFALUTCABINETU_INTERVAL);
         }
 
-        Map info = new HashMap();
-        Workbook work = null;
+        Map resultInfo = new HashMap();
+
+        // 默认得到第一个 sheet
+        Sheet sheet = work.getSheetAt(0);
+        // 获得当前sheet的开始行
+        int firstRowNum = sheet.getFirstRowNum();
+        // 校验表头是否与模板一致
+        this.validateExcelHeader(sheet, firstRowNum);
 
         try {
-            work = ExcelUtils.getWork(originalFilename, assetsExcelFile.getInputStream());
-        } catch (Exception e) {
-            logger.error("解析文件格式有误", e);
-            throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
-        }
-
-        try {
-            // 默认得到第一个 sheet
-            Sheet sheet = work.getSheetAt(0);
-            // 获得当前sheet的开始行
-            int firstRowNum = sheet.getFirstRowNum();
-
-            // 校验表头是否与模板一致
-            List<Map> mapList = this.validateExcelHeader(sheet, firstRowNum);
-            if (CollectionUtils.isNotEmpty(mapList)) {
-                info.put("seq", seqUUID);
-                info.put("totalNum", 0);
-                info.put("successNum", 0);
-                info.put("failNum", 0);
-                info.put("failDetail", mapList);
-                return info;
-            }
-            // 获得当前sheet的结束行
-            int maxRowNum = sheet.getLastRowNum();
-            Asset asset;
-            Account account, accountCli;
-            Row row;
-
             // 返回导出错误信息
             List<Map> failDetails = new ArrayList<>();
             // 成功条数
@@ -704,26 +686,26 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 数据在excel表格中的行数
             int dataFromExcelRowNum;
 
-            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, protocol, authType, user, pwd, privateKey, port, userTip, passwordTip, reloginPasswordTip, exporter, ipmiHost, ipmiPort;
-            Integer accountAuthType, start, end, stateInt;
-            Map ipmiMap;
+            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, exporter, ipmiHost, ipmiPort;
+            Integer start, end, stateInt;
 
-            Map saveEntitys;
+            Map saveEntitys, ipmiMap;
             Long userId = ShiroUtils.getUserId();
             Model modelEntity = null;
+            Asset asset;
+            Account accountForUploadExporter;
+            Row row;
+            List<Account> accountList;
 
-            // 没有关联关系的资产数据,采取批量入库的方式
-            List<Asset> noRelationAssets = new ArrayList<>();
-            // 第一行是表头 所以从第二行开始
+            // 获得当前sheet的结束行
+            int maxRowNum = sheet.getLastRowNum();
             for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
                 dataFromExcelRowNum = i + 1;
                 // 保证一行数据在同一事务内，将所有入库数据统一入库
                 saveEntitys = new HashMap();
-
-                account = accountCli = null;
                 start = end = stateInt = null;
+                accountList = new ArrayList<>();
                 boolean saveFlag = true;
-                boolean relaFlag = true;
                 boolean modelFlag = true;
                 asset = new Asset();
                 row = sheet.getRow(i);
@@ -764,22 +746,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_MODELNAME_ISNULL.getMsg());
                 }
-
                 // 处理类型 厂商 型号
                 if (StringUtils.isNotEmpty(type) && StringUtils.isNotEmpty(vendor) && StringUtils.isNotEmpty(model)) {
                     modelEntity = this.checkAssetTypeVendorModel(type, assetTypesMap, vendor, vendorsMap, model, modelList, seqUUID, saveEntitys);
                     // modelid 可能为null,入库之后返回
                     Integer modelId = modelEntity.getId();
                     asset.setModelId(modelId);
-                    // 当前库中不存在改型号
-                    if (modelId == null) {
-                        relaFlag = false;
-                    }
                     // 如果 type 为 server 的情况下 处理 ipmi 信息
                     if (Constant.ASSET_SERVER_TYPE.equals(type.toLowerCase())) {
                         ipmiMap = new HashMap();
-                        ipmiHost = ExcelUtils.getCellValue(row.getCell(21));
-                        ipmiPort = ExcelUtils.getCellValue(row.getCell(22));
+                        ipmiHost = ExcelUtils.getCellValue(row.getCell(34));
+                        ipmiPort = ExcelUtils.getCellValue(row.getCell(35));
                         // 校验 ipmi信息
                         if (StringUtils.isNotEmpty(ipmiHost)) {
                             if (ipmiHost.matches(Constant.REGEX_IP)) {
@@ -803,7 +780,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         }
                     }
                 }
-
                 // DC
                 Integer idcId = null;
                 dcName = ExcelUtils.getCellValue(row.getCell(4));
@@ -814,15 +790,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     idcId = this.checkIdc(dcName, idcMap, seqUUID, saveEntitys);
                     // idcId 可能为null,入库之后返回
                     asset.setIdcId(idcId);
-                    // 当前库中不存在该机房
-                    if (idcId == null) {
-                        relaFlag = false;
-                    }
                 }
-
                 // cabinet
                 cabinetName = ExcelUtils.getCellValue(row.getCell(5));
-
                 cabinetStart = ExcelUtils.getCellValue(row.getCell(6));
                 cabinetEnd = ExcelUtils.getCellValue(row.getCell(7));
                 if (StringUtils.isNotEmpty(cabinetName) && StringUtils.isNotEmpty(dcName)) {
@@ -840,14 +810,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_CABINETEND_INVALIDE.getMsg());
                         }
                     }
-
                     if (idcId != null) { // idc已存在，不需要添加
                         Cabinet cabinet = this.checkCabinet(cabinetName, idcId, cabinetList, seqUUID, saveEntitys, defaultCabinetUsize);
                         // cabinetId 可能为null,入库之后返回
                         Integer cabinetId = cabinet.getId();
                         asset.setCabinetId(cabinetId);
                         if (cabinetId == null) {
-                            relaFlag = false;
                             // 因为这里是新增加的机柜 默认usize为 40 ,所以只简单校验一下start end值就可以
                             if (start != null && end != null) {
                                 end = end + 1;
@@ -917,12 +885,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             }
                         }
                     }
-                } else {
-                    // 指定了起始位置 但未选择机柜情况
-                    if (StringUtils.isNotEmpty(cabinetStart) || StringUtils.isNotEmpty(cabinetEnd)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_CABINET_ISNULL.getMsg());
-                    }
                 }
 
                 // host
@@ -978,182 +940,125 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     }
                 }
 
-                // 账号相关
-                protocol = ExcelUtils.getCellValue(row.getCell(11));       // 协议信息
-                authType = ExcelUtils.getCellValue(row.getCell(12));      // 认证类型
-                user = ExcelUtils.getCellValue(row.getCell(13));          // 用户名
-                pwd = ExcelUtils.getCellValue(row.getCell(14));           // 密码
-                privateKey = ExcelUtils.getCellValue(row.getCell(15));    // 密钥文件
-                port = ExcelUtils.getCellValue(row.getCell(16));          // 端口
-                userTip = ExcelUtils.getCellValue(row.getCell(17));       // telnet协议有效 用户名提示
-                passwordTip = ExcelUtils.getCellValue(row.getCell(18));   // telnet协议有效 密码提示
-                reloginPasswordTip = ExcelUtils.getCellValue(row.getCell(19));// telnet协议有效 重复登陆提示
-
-                // 是否内置exporter
-                exporter = ExcelUtils.getCellValue(row.getCell(20));
-
-                // 满足添加Account所需
-                if (StringUtils.isNotEmpty(protocol) && StringUtils.isNotEmpty(authType) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(port)) {
-                    relaFlag = false;
-                    account = new Account();
-                    // 验证协议
-                    if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+                String sshPort = ExcelUtils.getCellValue(row.getCell(11));
+                String sshUserName = ExcelUtils.getCellValue(row.getCell(12));
+                String sshMethod = ExcelUtils.getCellValue(row.getCell(13));
+                // ssh account 必备选项 如果三者则认为填写ssh账号
+                accountForUploadExporter = null;
+                if (StringUtils.isNotEmpty(sshPort) && StringUtils.isNotEmpty(sshMethod) && StringUtils.isNotEmpty(sshUserName)) {
+                    if (!"key".equals(sshMethod.toLowerCase()) && !"password".equals(sshMethod.toLowerCase())) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PROTOCOL_INCORRECT.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SSH_METHOD_INCORRECT.getMsg());
                     }
-                    // 验证认证类型
-                    accountAuthType = Integer.parseInt(authType);
-                    if (!Constant.AUTH_PASSWORD.equals(accountAuthType) && !Constant.AUTH_CERTIFICATE.equals(accountAuthType)) {
+                    if (!CommonUtils.checkPort(sshPort)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
-                    }
-                    if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
-                        if (!Constant.AUTH_PASSWORD.equals(accountAuthType)) {
-                            saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
-                        }
-                    }
-                    account.setProtocol(protocol);
-                    account.setAuthType(accountAuthType);
-                    account.setUser(user);
-                    account.setPort(Integer.parseInt(port));
-                    if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
-                        if (Constant.AUTH_PASSWORD.equals(accountAuthType) && StringUtils.isNotEmpty(pwd)) {
-                            account.setPwd(pwd);
-                        }
-                        if (Constant.AUTH_CERTIFICATE.equals(accountAuthType) && StringUtils.isNotEmpty(privateKey)) {
-                            account.setPrivateKey(privateKey);
-                        }
-                    } else if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
-                        account.setUserTip(userTip);
-                        account.setPasswordTip(passwordTip);
-                        account.setReloginPasswordTip(reloginPasswordTip);
-                    }
-
-                    // 深克隆 预备登陆服务器上传node exporter
-                    accountCli = JSONObject.parseObject(JSON.toJSONString(account), Account.class);
-
-                    // 校验端口
-                    if (!CommonUtils.checkPort(account.getPort().toString())) {
-                        saveFlag = false;
-                        account = accountCli = null;
                         this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+                    } else {
+                        String sshPassword = ExcelUtils.getCellValue(row.getCell(14));
+                        String sshKey = ExcelUtils.getCellValue(row.getCell(15));
+                        String sshKeyPassword = ExcelUtils.getCellValue(row.getCell(16));
+                        Account exporterSshAccount = this.getImportSshAccount(sshPort, sshUserName, sshMethod, sshPassword, sshKey, sshKeyPassword, seqUUID);
+                        accountList.add(exporterSshAccount);
+                        // 深克隆 预备登陆服务器上传 node exporter
+                        accountForUploadExporter = JSONObject.parseObject(JSON.toJSONString(exporterSshAccount), Account.class);
                     }
-
                 }
-
-
+                // telnet account 必备选项 都不为空则认为填写 telnet账号
+                String telnetPort = ExcelUtils.getCellValue(row.getCell(17));
+                String telnetUserName = ExcelUtils.getCellValue(row.getCell(18));
+                if (StringUtils.isNotEmpty(telnetPort) && StringUtils.isNotEmpty(telnetUserName)) {
+                    if (!CommonUtils.checkPort(telnetPort)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+                    } else {
+                        String telnetUserTip = ExcelUtils.getCellValue(row.getCell(19));
+                        String telnetPassword = ExcelUtils.getCellValue(row.getCell(20));
+                        String telnetPasswordTip = ExcelUtils.getCellValue(row.getCell(21));
+                        String telnetReloginTip = ExcelUtils.getCellValue(row.getCell(22));
+                        Account exporterTelnetAccount = this.getImportTelnetAccount(telnetPort, telnetUserName, telnetUserTip, telnetPassword, telnetPasswordTip, telnetReloginTip, seqUUID);
+                        accountList.add(exporterTelnetAccount);
+                    }
+                }
+                // SNMP 必填项
+                String snmpPort = ExcelUtils.getCellValue(row.getCell(23));
+                String snmpVersion = ExcelUtils.getCellValue(row.getCell(26));
+                if (StringUtils.isNotEmpty(snmpPort) && StringUtils.isNotEmpty(snmpVersion)) {
+                    String snmpCommunity = ExcelUtils.getCellValue(row.getCell(24));
+                    String snmpContextName = ExcelUtils.getCellValue(row.getCell(25));
+                    String snmpUserName = ExcelUtils.getCellValue(row.getCell(27));
+                    String snmpSecurityLevel = ExcelUtils.getCellValue(row.getCell(28));
+                    String snmpPassword = ExcelUtils.getCellValue(row.getCell(29));
+                    String snmpAuthProtocol = ExcelUtils.getCellValue(row.getCell(30));
+                    String snmpPrivProtocol = ExcelUtils.getCellValue(row.getCell(31));
+                    String snmpPrivPassword = ExcelUtils.getCellValue(row.getCell(32));
+                    // 校验snmp account 相关参数
+                    if (!this.validateExporterSnmpAccount(snmpPort, snmpVersion, snmpUserName, snmpSecurityLevel, snmpAuthProtocol, snmpPrivProtocol, dataFromExcelRowNum, failDetails)) {
+                        saveFlag = false;
+                    } else {
+                        Account exporterAccount = this.getImportSnmpAccount(snmpPort, snmpCommunity, snmpContextName, snmpVersion, snmpUserName, snmpPassword, snmpSecurityLevel, snmpAuthProtocol, snmpPrivProtocol, snmpPrivPassword, seqUUID);
+                        accountList.add(exporterAccount);
+                    }
+                }
+                // tag
+                String tagsStr = ExcelUtils.getCellValue(row.getCell(33));
+                if (StringUtils.isNotEmpty(tagsStr)) {
+                    saveEntitys.put("tags", this.getTagsByTagStr(tagsStr, seqUUID));
+                }
+                // 是否内置exporter
+                exporter = ExcelUtils.getCellValue(row.getCell(36));
+                if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
+                    asset.setExporter(1);
+                }
                 // 前面没有报错
                 if (saveFlag) {
                     asset.setSeq(seqUUID);
                     asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
                     asset.setCreateBy(userId);
                     asset.setUpdateBy(userId);
-
-                    // 当前数据没有任何关联关系 ，采取批量入库的方式
-                    if (relaFlag) {
-                        noRelationAssets.add(asset);
-                        // 更新sn host map
-                        assetSnList.add(asset.getSn());
-                        assetHostList.add(asset.getHost());
-
-                        if (asset.getCabinetStart() != null && asset.getCabinetEnd() != null) {
-                            // 更新cabinetList中对应的关系
-                            for (Cabinet cabinet : cabinetList) {
-                                if (cabinet.getId().equals(asset.getCabinetId())) {
-                                    cabinet.getAssetList().add(asset);
-                                    break;
-                                }
+                    saveEntitys.put("asset", asset);
+                    // 账号信息
+                    if (CollectionUtils.isNotEmpty(accountList)) {
+                        saveEntitys.put("accounts", accountList);
+                        // 上传 exporter
+                        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter) && accountForUploadExporter != null) {
+                            Map accountParam = JSONObject.parseObject(accountForUploadExporter.getParams().toString(), Map.class);
+                            accountParam.put("password", new String(Base64.getDecoder().decode(accountParam.get("password").toString())));
+                            accountForUploadExporter.setParams(JSONObject.toJSONString(accountParam));
+                            R r = this.uploadBuildExporter(configs, asset, accountForUploadExporter);
+                            Integer code = (Integer) r.get("code");
+                            if (!RCode.SUCCESS.getCode().equals(code)) {
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, (String) r.get("msg"));
                             }
                         }
+                    }
+                    // 整体保存这行数据，保证单行数据在同一事务内
+                    TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
+                    try {
+                        // 调用入库方法
+                        Map updateMap = this.saveRowData(saveEntitys);
+                        // 手动提交事务
+                        dataSourceTransactionManager.commit(transactionStatus);
+                        // 更新 asset 关联的信息 用作后续导入数据对比校验
+                        this.updateImportAssetRelatedInfo(updateMap, assetTypesMap, vendorsMap, modelList, idcMap, cabinetList, assetSnList, assetHostList);
                         successNum++;
-                    } else {
-                        saveEntitys.put("asset", asset);
-                        // 账号信息正常
-                        if (account != null) {
-                            // 密码加密
-                            if (StringUtils.isNotEmpty(account.getPwd())) {
-                                account.setPwd(Base64.getEncoder().encodeToString(account.getPwd().getBytes()));
-                            }
-                            account.setSeq(seqUUID);
-                            saveEntitys.put("account", account);
-                            // 内置exporter
-                            if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
-                                // 上传文件
-                                R r = this.uploadBuildExporter(configs, asset, accountCli);
-                                Integer code = (Integer) r.get("code");
-                                if (!RCode.SUCCESS.getCode().equals(code)) {
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, (String) r.get("msg"));
-                                }
-                            }
-                        }
-                        // 整体保存这行数据，保证单行数据在同一事务内
-                        // 手动开启事务
-                        TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
-                        try {
-                            // 调用入库方法
-                            Map updateMap = this.saveRowData(saveEntitys);
-                            // 手动提交事务
-                            dataSourceTransactionManager.commit(transactionStatus);
-                            // 更新map值
-                            SysDictEntity updateType = (SysDictEntity) updateMap.get("type");
-                            if (updateType != null) {
-                                assetTypesMap.put(updateType.getValue(), updateType);
-                            }
-                            SysDictEntity updateVendor = (SysDictEntity) updateMap.get("vendor");
-                            if (updateVendor != null) {
-                                vendorsMap.put(updateVendor.getValue(), updateVendor);
-                            }
-                            Model updateModel = (Model) updateMap.get("model");
-                            if (updateModel != null) {
-                                modelList.add(updateModel);
-                            }
-                            Idc updateIdc = (Idc) updateMap.get("idc");
-                            if (updateIdc != null) {
-                                idcMap.put(updateIdc.getName(), updateIdc);
-                            }
-                            Cabinet updateCabinet = (Cabinet) updateMap.get("cabinet");
-                            if (updateCabinet != null) {
-                                cabinetList.add(updateCabinet);
-                            }
-                            Asset updateAsset = (Asset) updateMap.get("asset");
-                            if (updateAsset != null) {
-                                assetSnList.add(updateAsset.getSn());
-                                assetHostList.add(updateAsset.getHost());
-                                if (updateAsset.getCabinetStart() != null && updateAsset.getCabinetEnd() != null) {
-                                    // 更新cabinetList中对应的关系
-                                    for (Cabinet cabinet : cabinetList) {
-                                        if (cabinet.getId().equals(updateAsset.getCabinetId())) {
-                                            if (CollectionUtils.isEmpty(cabinet.getAssetList())) {
-                                                cabinet.setAssetList(new ArrayList<>());
-                                            }
-                                            cabinet.getAssetList().add(updateAsset);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            successNum++;
-                        } catch (Exception e) {
-                            // 手动回滚事务
-                            dataSourceTransactionManager.rollback(transactionStatus);
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage());
-                        }
+                    } catch (Exception e) {
+                        // 手动回滚事务
+                        dataSourceTransactionManager.rollback(transactionStatus);
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage());
+                        logger.error("回滚事务失败,错误信息:" + e.getMessage(), e);
                     }
                 }
             }
 
-            // 批量入库没有关联的资产数据
-            this.saveBatch(noRelationAssets);
-
             int totalNum = maxRowNum - firstRowNum;
-            info.put("seq", seqUUID);
-            info.put("totalNum", totalNum);
-            info.put("successNum", successNum);
-            info.put("failNum", totalNum - successNum);
-            info.put("failDetail", failDetails);
-            logger.info("importAssets info {}", info);
+            resultInfo.put("seq", seqUUID);
+            resultInfo.put("totalNum", totalNum);
+            resultInfo.put("successNum", successNum);
+            resultInfo.put("failNum", totalNum - successNum);
+            resultInfo.put("failDetail", failDetails);
+            logger.info("asset导入成功,信息是 {}", resultInfo);
+        } catch (Exception e) {
+            logger.error("asset导入失败,错误信息:" + e.getMessage(), e);
         } finally {
             try {
                 work.close();
@@ -1161,7 +1066,182 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 e.printStackTrace();
             }
         }
-        return info;
+        return resultInfo;
+    }
+
+    private void updateImportAssetRelatedInfo(Map updateMap, Map<String, SysDictEntity> assetTypesMap, Map<String, SysDictEntity> vendorsMap, List<Model> modelList, Map<String, Idc> idcMap, List<Cabinet> cabinetList, List<String> assetSnList, List<String> assetHostList) {
+        SysDictEntity updateType = (SysDictEntity) updateMap.get("type");
+        if (updateType != null) {
+            assetTypesMap.put(updateType.getValue(), updateType);
+        }
+        SysDictEntity updateVendor = (SysDictEntity) updateMap.get("vendor");
+        if (updateVendor != null) {
+            vendorsMap.put(updateVendor.getValue(), updateVendor);
+        }
+        Model updateModel = (Model) updateMap.get("model");
+        if (updateModel != null) {
+            modelList.add(updateModel);
+        }
+        Idc updateIdc = (Idc) updateMap.get("idc");
+        if (updateIdc != null) {
+            idcMap.put(updateIdc.getName(), updateIdc);
+        }
+        Cabinet updateCabinet = (Cabinet) updateMap.get("cabinet");
+        if (updateCabinet != null) {
+            cabinetList.add(updateCabinet);
+        }
+        Asset updateAsset = (Asset) updateMap.get("asset");
+        if (updateAsset != null) {
+            assetSnList.add(updateAsset.getSn());
+            assetHostList.add(updateAsset.getHost());
+            if (updateAsset.getCabinetStart() != null && updateAsset.getCabinetEnd() != null) {
+                // 更新cabinetList中对应的关系
+                for (Cabinet cabinet : cabinetList) {
+                    if (cabinet.getId().equals(updateAsset.getCabinetId())) {
+                        if (CollectionUtils.isEmpty(cabinet.getAssetList())) {
+                            cabinet.setAssetList(new ArrayList<>());
+                        }
+                        cabinet.getAssetList().add(updateAsset);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private Account getImportSshAccount(String sshPort, String sshUserName, String sshMethod, String sshPassword, String sshKey, String sshKeyPassword, String seqUUID) {
+        Account account = new Account();
+        account.setProtocol("SSH");
+        account.setPort(Integer.parseInt(sshPort));
+        Map<String, String> sshParam = new HashMap<>();
+        sshParam.put("username", sshUserName);
+        if (StringUtils.isNotEmpty(sshPassword)) {
+            sshParam.put("password", Base64.getEncoder().encodeToString(sshPassword.getBytes()));
+        } else {
+            sshParam.put("password", "");
+        }
+        sshParam.put("method", sshMethod);
+        sshParam.put("key", sshKey);
+        sshParam.put("passwordKey", sshKeyPassword);
+
+        account.setParams(JSONObject.toJSONString(sshParam));
+        account.setSeq(seqUUID);
+        return account;
+    }
+
+    private Account getImportTelnetAccount(String telnetPort, String telnetUserName, String telnetUserTip, String telnetPassword, String telnetPasswordTip, String telnetReloginTip, String seqUUID) {
+        Account account = new Account();
+        account.setProtocol("TELNET");
+        account.setPort(Integer.parseInt(telnetPort));
+        Map<String, String> telnetParam = new HashMap<>();
+        telnetParam.put("username", telnetUserName);
+        if (StringUtils.isNotEmpty(telnetPassword)) {
+            telnetParam.put("password", Base64.getEncoder().encodeToString(telnetPassword.getBytes()));
+        } else {
+            telnetParam.put("password", "");
+        }
+        telnetParam.put("userTip", telnetUserTip);
+        telnetParam.put("passwordTip", telnetPasswordTip);
+        telnetParam.put("reloginTip", telnetReloginTip);
+
+        account.setParams(JSONObject.toJSONString(telnetParam));
+        account.setSeq(seqUUID);
+        return account;
+    }
+
+    private Account getImportSnmpAccount(String snmpPort, String snmpCommunity, String snmpContextName, String snmpVersion, String snmpUserName, String snmpPassword, String snmpSecurityLevel, String snmpAuthProtocol, String snmpPrivProtocol, String snmpPrivPassword, String seqUUID) {
+        Account account = new Account();
+        Map<String, Object> snmpParam = new HashMap<>();
+        snmpParam.put("community", snmpCommunity);
+        snmpParam.put("contextName", snmpContextName);
+        snmpParam.put("version", Integer.parseInt(snmpVersion));
+        if (StringUtils.isNotEmpty(snmpPassword)) {
+            snmpParam.put("password", Base64.getEncoder().encodeToString(snmpPassword.getBytes()));
+        } else {
+            snmpParam.put("password", "");
+        }
+        snmpParam.put("securityLevel", snmpSecurityLevel);
+        snmpParam.put("username", snmpUserName);
+        snmpParam.put("authProtocol", snmpAuthProtocol);
+        snmpParam.put("privProtocol", snmpPrivProtocol);
+        snmpParam.put("privPassword", snmpPrivPassword);
+
+        account.setProtocol("SNMP");
+        account.setPort(Integer.parseInt(snmpPort));
+        account.setParams(JSONObject.toJSONString(snmpParam));
+        account.setSeq(seqUUID);
+        return account;
+    }
+
+    private boolean validateExporterSnmpAccount(String snmpPort, String snmpVersion, String snmpUserName, String snmpSecurityLevel, String snmpAuthProtocol, String snmpPrivProtocol, int dataFromExcelRowNum, List<Map> failDetails) {
+        boolean saveFlag = true;
+        if (!CommonUtils.checkPort(snmpPort)) {
+            saveFlag = false;
+            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+        }
+        switch (snmpVersion) {
+            case "2": {
+                break;
+            }
+            case "3": {
+                if (StringUtils.isEmpty(snmpUserName)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_USERNAME_ISNULL.getMsg());
+                }
+                // 验证级别不为空验证相关参数
+                if (StringUtils.isNotEmpty(snmpSecurityLevel)) {
+                    if (!"noAuthNoPriv".equals(snmpSecurityLevel) && !"authNoPriv".equals(snmpSecurityLevel) && !"authPriv".equals(snmpSecurityLevel)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_SECURITYLEVEL_INVALID.getMsg());
+                    }
+                    if ("authNoPriv".equals(snmpSecurityLevel)) {
+                        if (!"MD5".equals(snmpAuthProtocol) && !"SHA".equals(snmpAuthProtocol)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
+                        }
+                    }
+                    if ("authPriv".equals(snmpSecurityLevel)) {
+                        if (!"MD5".equals(snmpAuthProtocol) && !"SHA".equals(snmpAuthProtocol)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
+                        }
+                        if (!"DES".equals(snmpPrivProtocol) && !"AES".equals(snmpPrivProtocol)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE.getMsg());
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_VERSION_INVALIDE.getMsg());
+            }
+        }
+        return saveFlag;
+    }
+
+    /**
+     * 根据 tag 字符串获取tag实体
+     *
+     * @param tagsStr
+     * @return
+     */
+    private List<AssetTag> getTagsByTagStr(String tagsStr, String seqUUID) {
+        List<AssetTag> resultTags = new ArrayList<>();
+        AssetTag assetTag;
+        List<String> list = Arrays.asList(tagsStr.split("\n"));
+        for (String str : list) {
+            if (str.contains("=")) {
+                assetTag = new AssetTag();
+                String[] split = str.split("=");
+                assetTag.setTag(split[0]);
+                assetTag.setValue(split[1]);
+                assetTag.setSeq(seqUUID);
+                resultTags.add(assetTag);
+            }
+        }
+        return resultTags;
     }
 
     /**
@@ -1195,8 +1275,16 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 型号
         Model model = (Model) saveEntitys.get("model");
         if (model != null) {
+            if (type != null) {
+                model.setTypeCode(type.getCode());
+            }
+            if (vendor != null) {
+                model.setVendorCode(vendor.getCode());
+            }
             modelService.save(model);
             updateMap.put("model", model);
+            // model 添加的同时添加 panel chart
+            modelService.saveModelPanelAndChart(model);
         }
         // DC
         Idc idc = (Idc) saveEntitys.get("idc");
@@ -1227,55 +1315,108 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             asset.setCabinetId(cabinet.getId());
         }
         this.save(asset);
-        updateMap.put("asset", asset);
-        // account
-        Account account = (Account) saveEntitys.get("account");
-        if (account != null) {
-            account.setAssetId(asset.getId());
-            accountService.save(account);
+        // 如果指明上传 exporter 需要添加关联 exporter
+        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
+            this.saveInitEndpoint(asset);
         }
-
+        updateMap.put("asset", asset);
+        // accounts
+        List<Account> accounts = (List<Account>) saveEntitys.get("accounts");
+        if (CollectionUtils.isNotEmpty(accounts)) {
+            accounts.forEach(account -> account.setAssetId(asset.getId()));
+            accountService.saveBatch(accounts);
+        }
+        // tags
+        List<AssetTag> tags = (List<AssetTag>) saveEntitys.get("tags");
+        if (CollectionUtils.isNotEmpty(tags)) {
+            tags.forEach(assetTag -> assetTag.setAssetId(asset.getId()));
+            assetTagService.saveBatch(tags);
+        }
+        // asset 添加的同时添加 panel chart
+        chartService.saveAssetPanelAndChart(asset);
         return updateMap;
     }
 
-    private List<Map> validateExcelHeader(Sheet sheet, int firstRowNum) {
+    /**
+     * 校验 excel 标题行
+     * @param sheet
+     * @param firstRowNum
+     * @return
+     */
+    private void validateExcelHeader(Sheet sheet, int firstRowNum) {
         Row row = sheet.getRow(firstRowNum);
+        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
+        Map<String, Object> map = JSONObject.parseObject(config.getParamValue(), Map.class);
 
-        List<Map> mapList = new ArrayList<>();
-        Map map;
+        List<Boolean> flags = new ArrayList<>();
+        Collection columns;
+        Map colsMap;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            colsMap = JSONObject.parseObject(entry.getValue().toString(), Map.class);
+            columns = colsMap.values();
+            if (CollectionUtils.isNotEmpty(columns)) {
+                List<String> colList = new ArrayList<>();
+                columns.stream().forEach(value -> colList.add(value.toString().toLowerCase()));
 
-        String[] str = Constant.ASSET_EXCEL_IMPORT_HEADER;
-        List<String> titles = Arrays.asList(str);
-
-        String titleValue, title;
-        for (int i = 0; i < titles.size(); i++) {
-            titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
-            title = titles.get(i).toLowerCase();
-            if (!titleValue.contains(title)) {
-                map = new HashMap();
-                map.put("lineNo", firstRowNum);
-                map.put("errorMsg", "The " + (i + 1) + " column title is the " + titleValue + ". It doesn't match the template. Please check. Thank you!");
-                mapList.add(map);
+                boolean flag = true;
+                for (int i = 0; i < colList.size(); i++) {
+                    String titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
+                    if (!colList.contains(titleValue)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                flags.add(flag);
             }
         }
 
-        return mapList;
+        boolean isTrue = false;
+        for (Boolean flag : flags) {
+            isTrue = (isTrue || flag);
+        }
+
+        if(!isTrue){
+            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
+        }
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void cancelImport(String seq) {
-        // asset
-        this.remove(new QueryWrapper<Asset>().lambda().eq(Asset::getSeq, seq));
-        // idc
-        idcService.remove(new QueryWrapper<Idc>().lambda().eq(Idc::getSeq, seq));
-        // cabinet
-        cabinetService.remove(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getSeq, seq));
-        // model
-        modelService.remove(new QueryWrapper<Model>().lambda().eq(Model::getSeq, seq));
-        // sys dict （asset type ,vendor）
-        sysDictService.remove(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getSeq, seq));
-        // account
-        accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getSeq, seq));
+        List<Asset> assets = this.list(new QueryWrapper<Asset>().lambda().eq(Asset::getSeq, seq));
+        List<Integer> assetIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(assetIds)) {
+            // asset
+            this.remove(new QueryWrapper<Asset>().lambda().eq(Asset::getSeq, seq));
+            // idc
+            idcService.remove(new QueryWrapper<Idc>().lambda().eq(Idc::getSeq, seq));
+            // cabinet
+            cabinetService.remove(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getSeq, seq));
+            List<Model> models = modelService.list(new QueryWrapper<Model>().lambda().eq(Model::getSeq, seq));
+            List<Integer> modelIds = models.stream().map(Model::getId).collect(Collectors.toList());
+            // model
+            modelService.remove(new QueryWrapper<Model>().lambda().eq(Model::getSeq, seq));
+            // sys dict （asset type ,vendor）
+            sysDictService.remove(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getSeq, seq));
+            // account
+            accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getSeq, seq));
+            // tag
+            assetTagService.remove(new QueryWrapper<AssetTag>().lambda().eq(AssetTag::getSeq, seq));
+            // endpoint
+            endpointService.remove(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, assetIds));
+            // 导入 asset 关联的 panel chart 信息
+            List<Panel> assetPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, assetIds));
+            if (CollectionUtils.isNotEmpty(assetPanels)) {
+                Set<Integer> panelIds = assetPanels.stream().map(Panel::getId).collect(Collectors.toSet());
+                panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            }
+            // 导入 model 关联的 panel chart 信息
+            List<Panel> modelPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).in(Panel::getLink, modelIds));
+            if (CollectionUtils.isNotEmpty(modelPanels)) {
+                Set<Integer> panelIds = modelPanels.stream().map(Panel::getId).collect(Collectors.toSet());
+                panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            }
+        }
     }
 
     @Override
@@ -1463,7 +1604,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
         // 如果都为空 则不响应 Attribute 信息
         if(ToolUtil.isNotEmpty(feature)) {
-        	resultMap.put("Attribute",feature);
+            resultMap.put("Attribute",feature);
         }
         return resultMap;
     }
@@ -1476,146 +1617,191 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
      */
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
-        Map<String, Object> queryParam = new HashMap<>(2);
-        queryParam.put("type", Constant.DICT_ASSET_STATE_TYPE);
-        List<SysDictEntity> assetStates = sysDictService.queryList(queryParam);
-        Map<Integer, String> statesMap = new HashMap<>(4);
-        for (SysDictEntity dict : assetStates) {
-            statesMap.put(dict.getCode(), dict.getValue());
-        }
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
 
         PageUtils page = this.queryPage(params);
         List<Asset> list = (List<Asset>) page.getList();
-        
-        Workbook workbook = null;
-        try {
-        	workbook=new XSSFWorkbook();
-	        Sheet sheet = workbook.createSheet("Assets");
-	
-	        int rowNum = 0;
-	        // 添加标题行
-	        String[] columnNames = Constant.ASSET_EXCEL_EXPORT_HEADER;
-	        Row row = sheet.createRow(rowNum);
-	        Cell cell;
-	
-	        // 创建样式对象
-	        CellStyle style = workbook.createCellStyle();
-	        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
-	        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
-	
-	        for (int i = 0; i < columnNames.length; i++) {
-	            // 创建列、单元格
-	            cell = row.createCell(i);
-	            cell.setCellValue(columnNames[i]);
-	            cell.setCellStyle(style);
-	        }
-	
-	        // 添加数据
-	        Row row1;
-	        List<Account> accountList;
-	        Model model;
-	        Account account;
-	        Integer start, end, ipmiPort;
-	        Map ipmiMap;
-	        String ipmiHost;
-	        for (Asset asset : list) {
-	            account = null;
-	            row1 = sheet.createRow(++rowNum);
-	
-	            model = asset.getModel();
-	            // sn
-	            row1.createCell(0).setCellValue(asset.getSn());
-	            // assettype
-	            row1.createCell(1).setCellValue(model.getType().getValue());
-	            // vendor
-	            row1.createCell(2).setCellValue(model.getVendor().getValue());
-	            // model
-	            row1.createCell(3).setCellValue(model.getName());
-	            // idc
-	            row1.createCell(4).setCellValue(asset.getIdc().getName());
-	            // cabinet
-	            row1.createCell(5).setCellValue(asset.getCabinet() == null ? null : asset.getCabinet().getName());
-	            // cabinetstart
-	            start = asset.getCabinetStart();
-	            row1.createCell(6).setCellValue(start == null ? "" : start + "");
-	            // cabinetend
-	            end = asset.getCabinetEnd();
-	            row1.createCell(7).setCellValue(end == null ? "" : end + "");
-	            // host
-	            row1.createCell(8).setCellValue(asset.getHost());
-	            // state
-	            row1.createCell(9).setCellValue(statesMap.get(asset.getState()));
-	            // PurchaseDate
-	            row1.createCell(10).setCellValue(asset.getPurchaseDate());
-	
-	            accountList = asset.getAccounts();
-	            if (CollectionUtils.isNotEmpty(accountList)) {
-	                // 当前账号信息和资产是一对一
-	                account = accountList.get(0);
-	            }
-	            if (account != null) {
-	                // protocol
-	                row1.createCell(11).setCellValue(account.getProtocol());
-	                // authtype
-	                row1.createCell(12).setCellValue(account.getAuthType());
-	                // user
-	                row1.createCell(13).setCellValue(account.getUser());
-	                if (org.apache.commons.lang.StringUtils.isNotEmpty(account.getPwd())) {
-	                    // pwd
-	                    row1.createCell(14).setCellValue(account.getPwd());
-	                }
-	                if (org.apache.commons.lang.StringUtils.isNotEmpty(account.getPrivateKey())) {
-	                    // sshKeys
-	                    row1.createCell(15).setCellValue(account.getPrivateKey());
-	                }
-	                // port
-	                row1.createCell(16).setCellValue(account.getPort());
-	                if (org.apache.commons.lang.StringUtils.isNotEmpty(account.getUserTip())) {
-	                    // userTip
-	                    row1.createCell(17).setCellValue(account.getUserTip());
-	                }
-	                if (org.apache.commons.lang.StringUtils.isNotEmpty(account.getPasswordTip())) {
-	                    // passwordTip
-	                    row1.createCell(18).setCellValue(account.getPasswordTip());
-	                }
-	                if (org.apache.commons.lang.StringUtils.isNotEmpty(account.getReloginPasswordTip())) {
-	                    // reloginPasswordTip
-	                    row1.createCell(19).setCellValue(account.getReloginPasswordTip());
-	                }
-	            }
-	
-	            // ipmi
-	            ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
-	            if (ToolUtil.isNotEmpty(ipmiMap)) {
-	                ipmiHost = (String) ipmiMap.get("host");
-	                if (ToolUtil.isNotEmpty(ipmiHost)) {
-	                    row1.createCell(20).setCellValue(ipmiHost);
-	                }
-	                ipmiPort = (Integer) ipmiMap.get("port");
-	                if(ToolUtil.isNotEmpty(ipmiPort)){
-	                    row1.createCell(21).setCellValue(ipmiPort);
-	                }
-	            }
-	        }
 
-        
+        try {
+            // 添加标题行 默认语言 en
+            String language = (String) params.get("language");
+            language = ToolUtil.isEmpty(language) ? "en" : language;
+            Map exportHeader = (Map) map.get(language);
+            Collection headers = exportHeader.values();
+            List<String> headerList = new ArrayList<>(headers.size());
+            headers.stream().forEach(value -> headerList.add(value.toString()));
+            headerList.remove(headerList.size() - 1);
+
+            String sheetName = "Assets";
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07(headerList, sheetName);
+            SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+            // 填充数据
+            this.fillData(list, 1, sheet, workbook);
+
             // 响应为流
             String fileName = "AssetsExport.xlsx"; // 默认名称
             response.setContentType("application/excel");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("asset导出文件生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-        	if(workbook!=null) {
-        		try {
-					workbook.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-        	}
+            logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        }
+    }
+
+    private void fillData(List<Asset> list, int rowNum, Sheet sheet, Workbook workbook) {
+        // 自动换行 水平靠左 垂直靠右 tags 单元格风格
+        CellStyle tagsCellStyle = workbook.createCellStyle();
+        tagsCellStyle.setWrapText(true);
+
+        List<SysDictEntity> assetStates = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_STATE_TYPE).eq(SysDictEntity::getDelFlag, 0));
+        Map<Integer, String> statesMap = assetStates.stream().collect(Collectors.toMap(SysDictEntity::getCode, SysDictEntity::getValue));
+
+        Row row;
+        Cell tagCell;
+        Model model;
+        Integer start, end, ipmiPort;
+        String ipmiHost, tagStr;
+        Map ipmiMap;
+        for (Asset asset : list) {
+            row = sheet.createRow(rowNum++);
+
+            model = asset.getModel();
+            row.createCell(0).setCellValue(asset.getSn());
+            row.createCell(1).setCellValue(model.getType().getValue());
+            row.createCell(2).setCellValue(model.getVendor().getValue());
+            row.createCell(3).setCellValue(model.getName());
+            row.createCell(4).setCellValue(asset.getIdc().getName());
+            row.createCell(5).setCellValue(asset.getCabinet() == null ? null : asset.getCabinet().getName());
+            start = asset.getCabinetStart();
+            row.createCell(6).setCellValue(start == null ? "" : start + "");
+            end = asset.getCabinetEnd();
+            row.createCell(7).setCellValue(end == null ? "" : end + "");
+            row.createCell(8).setCellValue(asset.getHost());
+            row.createCell(9).setCellValue(statesMap.get(asset.getState()));
+            row.createCell(10).setCellValue(asset.getPurchaseDate());
+
+            if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
+                this.exportFillAccountData(row, asset.getAccounts());
+            }
+
+            if (CollectionUtils.isNotEmpty(asset.getTags())) {
+                tagStr = "";
+                for (AssetTag tag : asset.getTags()) {
+                    tagStr += tag.getTag() + "=" + tag.getValue() + "\n";
+                }
+                tagCell = row.createCell(33);
+                tagCell.setCellValue(tagStr);
+                tagCell.setCellStyle(tagsCellStyle);
+            }
+            ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
+            if (ToolUtil.isNotEmpty(ipmiMap)) {
+                ipmiHost = (String) ipmiMap.get("host");
+                if (ToolUtil.isNotEmpty(ipmiHost)) {
+                    row.createCell(34).setCellValue(ipmiHost);
+                }
+                ipmiPort = (Integer) ipmiMap.get("port");
+                if (ToolUtil.isNotEmpty(ipmiPort)) {
+                    row.createCell(35).setCellValue(ipmiPort);
+                }
+            }
+        }
+    }
+
+    private void exportFillAccountData(Row row, List<Account> accountList) {
+        List<Account> tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_SSH_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
+        Account account = CollectionUtils.isNotEmpty(tempAccounts) ? tempAccounts.get(0) : null;
+        Map<String, Object> accountParam;
+        Base64.Decoder decoder = Base64.getDecoder();
+        if (account != null) {
+            row.createCell(11).setCellValue(account.getPort());
+            accountParam = (Map<String, Object>) account.getParams();
+            row.createCell(12).setCellValue(accountParam.get("username").toString());
+            row.createCell(13).setCellValue(accountParam.get("method").toString());
+            String method = accountParam.get("method").toString();
+            if ("password".equals(method)) {
+                row.createCell(14).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+            } else if ("key".equals(method)) {
+                row.createCell(15).setCellValue(accountParam.get("key").toString());
+                row.createCell(16).setCellValue(accountParam.get("passwordKey").toString());
+            }
+        }
+        tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_TELNET_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
+        account = CollectionUtils.isNotEmpty(tempAccounts) ? tempAccounts.get(0) : null;
+        if (account != null) {
+            row.createCell(17).setCellValue(account.getPort());
+            accountParam = (Map<String, Object>) account.getParams();
+            row.createCell(18).setCellValue(accountParam.get("username").toString());
+            row.createCell(19).setCellValue(accountParam.get("userTip").toString());
+            row.createCell(20).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+            row.createCell(21).setCellValue(accountParam.get("passwordTip").toString());
+            row.createCell(22).setCellValue(accountParam.get("reloginTip").toString());
+        }
+        tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_SNMP_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
+        account = CollectionUtils.isNotEmpty(tempAccounts) ? tempAccounts.get(0) : null;
+        if (account != null) {
+            row.createCell(23).setCellValue(account.getPort());
+            accountParam = (Map<String, Object>) account.getParams();
+            row.createCell(24).setCellValue(accountParam.get("community").toString());
+            row.createCell(25).setCellValue(accountParam.get("contextName").toString());
+            row.createCell(26).setCellValue(accountParam.get("version").toString());
+            if ("3".equals(accountParam.get("version").toString())) {
+                row.createCell(27).setCellValue(accountParam.get("username").toString());
+                row.createCell(28).setCellValue(accountParam.get("securityLevel").toString());
+
+                if ("authNoPriv".equals(accountParam.get("securityLevel").toString())) {
+                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                    row.createCell(30).setCellValue(accountParam.get("authProtocol").toString());
+                } else if ("authPriv".equals(accountParam.get("securityLevel").toString())) {
+                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                    row.createCell(30).setCellValue(accountParam.get("authProtocol").toString());
+                    row.createCell(31).setCellValue(accountParam.get("privProtocol").toString());
+                    row.createCell(32).setCellValue(accountParam.get("privPassword").toString());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        Map exportHeaderMap;
+        switch (language) {
+            case "en": {
+                exportHeaderMap = (Map) map.get("en");
+                break;
+            }
+            case "cn": {
+                exportHeaderMap = (Map) map.get("cn");
+                break;
+            }
+            case "ru": {
+                exportHeaderMap = (Map) map.get("ru");
+                break;
+            }
+            default: {
+                throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
+            }
+        }
+        Collection headers = exportHeaderMap.values();
+        List<String> headerList = new ArrayList<>(headers.size());
+        headers.stream().forEach(value -> headerList.add(value.toString()));
+
+        try {
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07(headerList, "Assets");
+            // 响应为流
+            String fileName = "AssetExportTemplate.xlsx"; // 默认文件名称
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            logger.error("asset模板生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
         }
     }
 
@@ -1792,7 +1978,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {
-
         // 所有位置 从1开始到uSize
         Integer[] allPosition = new Integer[cab.getuSize()];
         for (int i = 0; i < allPosition.length; i++) {
@@ -1802,15 +1987,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 已经占用的位置
         List<Integer> occList = new ArrayList<>();
 
-        for (Asset nodeInfo : cab.getAssetList()) {
-            if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
-                for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
-                    occList.add(i);
+        if (CollectionUtils.isEmpty(cab.getAssetList())) {
+            return true;
+        } else {
+            for (Asset nodeInfo : cab.getAssetList()) {
+                if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
+                    for (int i = nodeInfo.getCabinetStart(); i < nodeInfo.getCabinetEnd(); i++) {
+                        occList.add(i);
+                    }
                 }
             }
+            return this.validateFreePosition(allPosition, occList, start, end);
         }
-
-        return this.validateFreePosition(allPosition, occList, start, end);
     }
 
     /**

@@ -486,6 +486,9 @@ public class Constant {
     // 新增project 添加chart配置
     public static final String SYSCONFIG_KEY_PROJECT_CHART_TPL = "project_chart_tpl";
 
+    // asset 导入表头
+    public static final String SYSCONFIG_KEY_ASSET_EXPORT_HEADER = "asset_export_header";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
