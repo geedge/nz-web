@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -88,7 +89,9 @@ public class SysDictController extends AbstractController {
         ValidateUtils.is(dict.getValue()).notNull(RCode.SYS_DICT_VALUE_ISNULL);
 
         sysDictService.saveSysDict(dict);
-        return R.ok();
+        Map<String, SysDictEntity> resultEntity = new HashMap<>(2);
+        resultEntity.put("dictEntity", dict);
+        return R.ok(resultEntity);
     }
 
     /**
