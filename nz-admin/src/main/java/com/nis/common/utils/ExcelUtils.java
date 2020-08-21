@@ -172,14 +172,14 @@ public class ExcelUtils {
     private static CellStyle createCellStyle(Workbook workbook, short fontsize, boolean isBold) {
         CellStyle style = workbook.createCellStyle();
         // 上下左右边框
-        style.setBorderBottom(HSSFCellStyle.THIN_BACKWARD_DIAG);
-        style.setBorderLeft(HSSFCellStyle.THIN_BACKWARD_DIAG);
-        style.setBorderRight(HSSFCellStyle.THIN_BACKWARD_DIAG);
-        style.setBorderTop(HSSFCellStyle.THIN_BACKWARD_DIAG);
+        style.setBorderBottom(CellStyle.BORDER_THIN);
+        style.setBorderLeft(CellStyle.BORDER_THIN);
+        style.setBorderRight(CellStyle.BORDER_THIN);
+        style.setBorderTop(CellStyle.BORDER_THIN);
         // 水平居中
-        style.setAlignment(HSSFCellStyle.ALIGN_CENTER);
+        style.setAlignment(CellStyle.ALIGN_CENTER);
         //垂直居中
-        style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+        style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
         //创建字体
         Font font = workbook.createFont();
         if (isBold) {
@@ -188,6 +188,30 @@ public class ExcelUtils {
         font.setFontHeightInPoints(fontsize);
         //加载字体
         style.setFont(font);
+        // 自动换行
+        style.setWrapText(true);
         return style;
+    }
+
+    /**
+     * 设置单元格样式
+     * @param workbook
+     * @param sheet
+     * @param colNum    列
+     */
+    public static void setDataCellStyle(Workbook workbook, Sheet sheet, int colNum) {
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+        int firstRowNum = sheet.getFirstRowNum();
+        // 获得当前sheet的结束行
+        int maxRowNum = sheet.getLastRowNum();
+        Cell cell;
+        for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
+            Row row = sheet.getRow(i);
+            for (int j = 0; j <= colNum; j++) {
+                cell = row.getCell(j);
+                cell = cell == null ? row.createCell(j) : cell;
+                cell.setCellStyle(dataStyle);
+            }
+        }
     }
 }

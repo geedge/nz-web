@@ -1638,8 +1638,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
-            this.fillData(list, 1, sheet, workbook);
+            this.fillData(list, 1, sheet);
 
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(workbook, sheet, 35);
             // 响应为流
             String fileName = "AssetsExport.xlsx"; // 默认名称
             response.setContentType("application/excel");
@@ -1652,16 +1654,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    private void fillData(List<Asset> list, int rowNum, Sheet sheet, Workbook workbook) {
-        // 自动换行 水平靠左 垂直靠右 tags 单元格风格
-        CellStyle tagsCellStyle = workbook.createCellStyle();
-        tagsCellStyle.setWrapText(true);
-
+    private void fillData(List<Asset> list, int rowNum, Sheet sheet) {
         List<SysDictEntity> assetStates = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_STATE_TYPE).eq(SysDictEntity::getDelFlag, 0));
         Map<Integer, String> statesMap = assetStates.stream().collect(Collectors.toMap(SysDictEntity::getCode, SysDictEntity::getValue));
 
         Row row;
-        Cell tagCell;
         Model model;
         Integer start, end, ipmiPort;
         String ipmiHost, tagStr;
@@ -1693,9 +1690,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 for (AssetTag tag : asset.getTags()) {
                     tagStr += tag.getTag() + "=" + tag.getValue() + "\n";
                 }
-                tagCell = row.createCell(33);
-                tagCell.setCellValue(tagStr);
-                tagCell.setCellStyle(tagsCellStyle);
+                row.createCell(33).setCellValue(tagStr);
             }
             ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
             if (ToolUtil.isNotEmpty(ipmiMap)) {

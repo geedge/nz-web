@@ -172,6 +172,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
             if (CollectionUtils.isNotEmpty(targetChart.getElements())) {
                 for (ChartElement element : targetChart.getElements()) {
+                    element.setId(null);
                     element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? this.replacAssetInfos(element.getExpression(), asset) : null);
                 }
             }
