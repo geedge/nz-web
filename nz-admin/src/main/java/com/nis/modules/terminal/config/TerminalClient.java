@@ -39,6 +39,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
@@ -521,84 +522,109 @@ public class TerminalClient {
     }
 
     public void upload(String src, String dst, long fileSize) throws Exception {
-        FileInputStream file = new FileInputStream(src);
-        ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-        channelSftp.connect(CHANNEL_TIMEOUT);
-        //当前路径下,获取用户终端的当前位置
-        if (dst.startsWith("./")) {
-            //不出绝招不行啊....很神奇
-            sendTempCmd = true;
-            write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
-            //等待获取返回的路径...
-            Thread.sleep(100);
-            sendTempCmd = false;
-            if (pwd == null) {
-                throw new RuntimeException("Sftp upload file target path error!");
-            }
-            dst = dst.replaceFirst("\\./", pwd);
-            pwd = null;
-        } else if (dst.startsWith("~")) {
-            dst = dst.replaceAll("~/|~", "");
-        }
-        channelSftp.put(file, dst, new SftpMonitor(fileSize));
-        //exit
-        if (channelSftp != null) {
-            channelSftp.exit();
-        }
-        //disconnect
-        if (channelSftp != null) {
-            channelSftp.disconnect();
-        }
-        if(file!=null) {
-        	file.close();
-        }
+    	FileInputStream file =null;
+    	ChannelSftp channelSftp = null;
+        try {
+			file = new FileInputStream(src);
+			channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+			channelSftp.connect(CHANNEL_TIMEOUT);
+			//当前路径下,获取用户终端的当前位置
+			if (dst.startsWith("./")) {
+			    //不出绝招不行啊....很神奇
+			    sendTempCmd = true;
+			    write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
+			    //等待获取返回的路径...
+			    Thread.sleep(100);
+			    sendTempCmd = false;
+			    if (pwd == null) {
+			        throw new RuntimeException("Sftp upload file target path error!");
+			    }
+			    dst = dst.replaceFirst("\\./", pwd);
+			    pwd = null;
+			} else if (dst.startsWith("~")) {
+			    dst = dst.replaceAll("~/|~", "");
+			}
+			channelSftp.put(file, dst, new SftpMonitor(fileSize));
+			
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			//exit
+			if (channelSftp != null) {
+			    channelSftp.exit();
+			}
+			//disconnect
+			if (channelSftp != null) {
+			    channelSftp.disconnect();
+			}
+			if(file!=null) {
+				file.close();
+			}
+		}
     }
 
     public void download(String path,HttpServletResponse res) throws Exception {
-    	logger.info("TerminalClient download param is {}",path);
-        ChannelSftp channelSftp = (ChannelSftp) this.session.openChannel("sftp");
-        channelSftp.connect(CHANNEL_TIMEOUT);
-        //当前路径下,获取用户终端的当前位置
-        if (path.startsWith("./")) {
-            //不出绝招不行啊....很神奇
-            sendTempCmd = true;
-            write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
-            //等待获取返回的路径...
-            Thread.sleep(100);
-            sendTempCmd = false;
-            if (pwd == null) {
-                throw new RuntimeException("Sftp upload file target path error!");
-            }
-            path = path.replaceFirst("\\./", pwd);
-            pwd = null;
-        } else if (path.startsWith("~")) {
-            path = path.replaceAll("~/|~", "");
-        }
-        //截取路径中的文件名称
-        String fileName = path.substring(path.lastIndexOf("/")+1);
-		String pathExceptFileName = path.substring(0,path.lastIndexOf("/"));
-		logger.info("TerminalClient download fileName is {}",fileName);
-		logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
-        channelSftp.cd(pathExceptFileName);
-        InputStream is = channelSftp.get(fileName);
-        res.setHeader("Content-Disposition","attachment; filename="+fileName);
-        // 发送给客户端的数据
-        OutputStream outputStream = res.getOutputStream();
-        byte[] buff = new byte[1024];
-        int i = is.read(buff);
-        while (i != -1) {
-            outputStream.write(buff, 0, i);
-            outputStream.flush();
-            i = is.read(buff);
-        }
-        //exit
-        if (channelSftp != null) {
-            channelSftp.exit();
-        }
-        //disconnect
-        if (channelSftp != null) {
-            channelSftp.disconnect();
-        }
+    	ChannelSftp channelSftp=null;
+    	InputStream is =null;
+    	OutputStream outputStream =null;
+    	try {
+			logger.info("TerminalClient download param is {}",path);
+			channelSftp = (ChannelSftp) this.session.openChannel("sftp");
+			channelSftp.connect(CHANNEL_TIMEOUT);
+			//当前路径下,获取用户终端的当前位置
+			if (path.startsWith("./")) {
+			    //不出绝招不行啊....很神奇
+			    sendTempCmd = true;
+			    write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
+			    //等待获取返回的路径...
+			    Thread.sleep(100);
+			    sendTempCmd = false;
+			    if (pwd == null) {
+			        throw new RuntimeException("Sftp upload file target path error!");
+			    }
+			    path = path.replaceFirst("\\./", pwd);
+			    pwd = null;
+			} else if (path.startsWith("~")) {
+			    path = path.replaceAll("~/|~", "");
+			}
+			//截取路径中的文件名称
+			String fileName = path.substring(path.lastIndexOf("/")+1);
+			String pathExceptFileName = path.substring(0,path.lastIndexOf("/"));
+			logger.info("TerminalClient download fileName is {}",fileName);
+			logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
+			channelSftp.cd(pathExceptFileName);
+			is = channelSftp.get(fileName);
+			res.setCharacterEncoding("utf-8");
+			res.setContentType("multipart/form-data");
+			res.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+			res.setHeader("Access-Control-Expose-Headers","Content-Disposition");
+			// 发送给客户端的数据
+			outputStream = res.getOutputStream();
+			byte[] buff = new byte[1024];
+			int i = is.read(buff);
+			while (i != -1) {
+			    outputStream.write(buff, 0, i);
+			    outputStream.flush();
+			    i = is.read(buff);
+			}
+		} catch (Exception e) {
+			throw e;
+		}  finally {
+			if(outputStream!=null) {
+				outputStream.close();
+			}
+			if(is!=null) {
+				is.close();
+			}
+			//exit
+			if (channelSftp != null) {
+			    channelSftp.exit();
+			}
+			//disconnect
+			if (channelSftp != null) {
+			    channelSftp.disconnect();
+			}
+		}
     }
 
     

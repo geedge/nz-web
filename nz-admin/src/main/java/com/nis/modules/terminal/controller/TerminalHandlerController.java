@@ -79,7 +79,7 @@ public class TerminalHandlerController {
             rootPath = temp.getAbsolutePath();
             logger.info("项目根目录["+rootPath+"]");
         }catch (Exception e){
-            e.printStackTrace();
+        	logger.error("error info :",e);
         }
 
         String tmpPath=rootPath+configUploadPath;
@@ -108,7 +108,7 @@ public class TerminalHandlerController {
  //           tempFile.delete();
             return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
         } catch (Exception e) {
-            e.printStackTrace();
+        	logger.error("error info :",e);
             throw new NZException(RCode.SYS_ERROR);
         }
     }
@@ -131,7 +131,7 @@ public class TerminalHandlerController {
 			}
             terminalOneProcessor.download(uuid,path,res);
         } catch (Exception e) {
-            e.printStackTrace();
+        	logger.error("error info :",e);
             throw new NZException(RCode.SYS_ERROR);
         }
     }
