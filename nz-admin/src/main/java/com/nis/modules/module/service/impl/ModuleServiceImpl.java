@@ -13,8 +13,10 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
     @Autowired
     private SysConfigService sysConfigService;
+
+    @Autowired
+    private TopoService topoService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -252,6 +257,13 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     	//查询是否有endpoint信息 有的话不允许删除
     	List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getModuleId, ids));    	
     	if(ToolUtil.isEmpty(endpoints)) {
+            // 删除 module 时 删除topo图中 节点和连线
+            List<Module> modules = this.list(new QueryWrapper<Module>().lambda().in(Module::getId, ids));
+            if (CollectionUtils.isEmpty(modules)) {
+                return;
+            }
+            topoService.removeNodeAndLineByModules(modules);
+
     		moduleDao.deleteBatchIds(ids);
             //删除alert相关信息
             alertMessageService.removeByModuleIds(ids);
