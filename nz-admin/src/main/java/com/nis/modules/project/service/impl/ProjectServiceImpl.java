@@ -1,6 +1,5 @@
 package com.nis.modules.project.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -20,10 +19,11 @@ import com.nis.modules.panel.dao.PanelDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
-import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.entity.Topo;
 import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -66,7 +66,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
     private ChartService chartService;
 	
     @Autowired
-    private PanelService panelService;
+    private TopoService topoService;
     
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -98,11 +98,13 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		//删除alert表相关数据信息
 		alertMessageService.removeByProjectIds(ids);
 		// 删除关联 panel
-		List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.PROJECT.getValue()).in(Panel::getLink, ids));
+		/*List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.PROJECT.getValue()).in(Panel::getLink, ids));
 		if(ToolUtil.isNotEmpty(panels)) {
 			Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
 			panelService.delPanelsAndChartInfoByPanelIds(panelIds);
-		}
+		}*/
+		// 删除关联的 topo
+		topoService.remove(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, ids));
 	}
 
 	@Override
@@ -127,8 +129,8 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		if (ToolUtil.isEmpty(project.getId())) {
 			this.save(project);
 
-			// 新增时需要新增 panel chart
-			this.saveProjectPanel(project);
+			// 新增时需要新增 panel chart   remark : project 取消增加 panel chart 页面由拓扑图替换图表
+			// this.saveProjectPanel(project);
 		} else {
 			this.updateById(project);
 		}

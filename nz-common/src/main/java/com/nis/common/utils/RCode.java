@@ -88,6 +88,13 @@ public enum RCode {
     PROJECT_REMARK_TOO_LONG(213004, "Project remark too long"),
     PROJECT_NAME_DUPLICATE(212005, "Project name is duplicate"),
     PROJECT_REMOVE_ERROR(213006,"These projects contains module can't remove projects"),
+    PROJECT_TOPOICON_FILE_ISNULL(211007,"Topo icon file is null"),
+    PROJECT_TOPOICON_NAME_ISNULL(211008,"Topo icon name is null"),
+    PROJECT_TOPOICON_FILETYPE_ERROR(219009,"Topo icon file type must be jpg, jpeg, png and gif"),
+    PROJECT_ICONID_ISNULL(211010, "Topo icon id can not be empty"),
+    PROJECT_ICON_NOTFOUND(216011, "Topo icon not found"),
+    PROJECT_TOPOCONFIG_ISNULL(211012, "Project topo is null"),
+    PROJECT_NOTFOUND(216013, "Project not found"),
 
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),

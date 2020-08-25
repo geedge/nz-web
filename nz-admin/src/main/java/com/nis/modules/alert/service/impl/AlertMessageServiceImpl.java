@@ -238,6 +238,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    	String emailEnable = configService.getValue("email_enable");
 	    	//邮件通知
 	    	if (Constant.SWITCH_OPEN.equals(emailEnable)) {
+			    logger.debug("向redi放入邮件消息数据：" + JSONObject.toJSONString(entities));
 			    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
 		    }
     	}

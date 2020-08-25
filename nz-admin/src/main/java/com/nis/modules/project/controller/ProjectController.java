@@ -4,12 +4,20 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.project.service.TopoIconService;
+import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.controller.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,6 +26,12 @@ public class ProjectController extends AbstractController {
 	
 	@Autowired
 	private ProjectService projectService;
+
+	@Autowired
+	private TopoService topoService;
+
+	@Autowired
+	private TopoIconService topoIconService;
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROJECT)
@@ -66,5 +80,98 @@ public class ProjectController extends AbstractController {
 		Map<String, Object> result = projectService.queryProjectInfo(id);
 		return R.ok(result);
 	}
-}
 
+	/**
+	 * topo icon查询
+	 *
+	 * @param params
+	 * @return
+	 */
+	@GetMapping(value = "/topo/icon")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	public R queryIconList(@RequestParam Map<String, Object> params) {
+		Map result = new HashMap(2);
+		List<TopoIcon> topoIcons = topoIconService.queryIconList(params);
+		result.put("list", topoIcons);
+		return R.ok(result);
+	}
+
+	/**
+	 * topo icon新增
+	 *
+	 * @param name
+	 * @param file
+	 * @return
+	 */
+	@PostMapping("/topo/icon")
+	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
+	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file) {
+		ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
+				.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
+
+		try {
+			topoIconService.saveTopoIcon(name, file);
+		} catch (IOException e) {
+			logger.error("拓朴图图标保存失败，错误信息是：" + e.getMessage(), e);
+			return R.error(RCode.ERROR);
+		}
+		return R.ok();
+	}
+
+	/**
+	 * topo icon删除
+	 *
+	 * @param ids
+	 * @return
+	 */
+	@DeleteMapping("/topo/icon")
+	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT)
+	public R removeIcons(@RequestParam Integer... ids) {
+		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
+
+		topoIconService.removeIcons(ids);
+		return R.ok();
+	}
+
+
+	/**
+	 * icon图标预览
+	 *
+	 * @param id
+	 * @param response
+	 */
+	@GetMapping(value = "/topo/icon/{id}")
+	public void downloadIconFile(@PathVariable("id") Integer id, HttpServletResponse response) {
+		ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
+
+		topoIconService.downloadIconFileById(id, response);
+	}
+
+	/**
+	 * 系统topo查询
+	 *
+	 * @param projectId
+	 */
+	@GetMapping(value = "/topo")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	public R queryTopo(Integer projectId) {
+		ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+		Map result = new HashMap(2);
+		result.put("topo", topoService.queryTopoByProjectId(projectId));
+		return R.ok(result);
+	}
+
+	@PutMapping("/topo")
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT)
+	public R updateProjectTopo(@RequestBody Map<String, Object> params) {
+		Integer projectId = (Integer) params.get("projectId");
+		String topoConfig = (String) params.get("topo");
+
+		ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL)
+				.and(topoConfig).notNull(RCode.PROJECT_TOPOCONFIG_ISNULL);
+
+		topoService.updateProjectTopo(projectId, topoConfig);
+		return R.ok();
+	}
+}
