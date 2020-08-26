@@ -36,7 +36,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
-    public void saveTopoIcon(String name, MultipartFile file) throws IOException {
+    public Integer saveTopoIcon(String name, MultipartFile file) throws IOException {
         // 校验文件类型
         this.validateIconFileType(file);
         String filename = file.getOriginalFilename();
@@ -47,6 +47,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         topoIcon.setType(fileType);
         topoIcon.setBytes(Base64.getEncoder().encodeToString(file.getBytes()));
         this.save(topoIcon);
+        return topoIcon.getId();
     }
 
     @Override

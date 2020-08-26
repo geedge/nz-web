@@ -110,12 +110,14 @@ public class ProjectController extends AbstractController {
 				.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
 		try {
-			topoIconService.saveTopoIcon(name, file);
+			Integer iconId = topoIconService.saveTopoIcon(name, file);
+			Map result = new HashMap(2);
+			result.put("id", iconId);
+			return R.ok(result);
 		} catch (IOException e) {
 			logger.error("拓朴图图标保存失败，错误信息是：" + e.getMessage(), e);
 			return R.error(RCode.ERROR);
 		}
-		return R.ok();
 	}
 
 	/**
