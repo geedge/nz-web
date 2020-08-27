@@ -5,15 +5,16 @@ import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.util.Units;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -92,8 +93,11 @@ public class ExcelUtils {
                         Date date = cell.getDateCellValue();
                         result = sdf.format(date);
                     } else {
-                        DecimalFormat df = new DecimalFormat("#");
-                        result = df.format(cell.getNumericCellValue());
+                        // 数字也按照字符串类型获取值
+                        /*DecimalFormat df = new DecimalFormat("#");
+                        result = df.format(cell.getNumericCellValue());*/
+                        cell.setCellType(Cell.CELL_TYPE_STRING);
+                        result = cell.getStringCellValue();
                     }
                     break;
                 case Cell.CELL_TYPE_BOOLEAN:// 布尔
@@ -114,20 +118,39 @@ public class ExcelUtils {
         return result.toString();
     }
 
-    public static SXSSFWorkbook createExcel07(List<String> headerColumns, String sheetName) throws IOException {
+    /**
+     * 创建 excel
+     *
+     * @param headerInfo 表头信息 结构为 Map  key=cellName,value=cellComment
+     * @param sheetName
+     * @param isComment  是否需要批注信息
+     * @return
+     * @throws IOException
+     */
+    public static SXSSFWorkbook createExcel07(Map<String, String> headerInfo, String sheetName, boolean isComment) throws IOException {
         SXSSFWorkbook wb = new SXSSFWorkbook();
         // 标题样式
         CellStyle colStyle = createHeaderStyle(wb);
         Sheet sheet = wb.createSheet(sheetName);
+        Drawing dp = sheet.createDrawingPatriarch();
         // 设置默认列宽
         sheet.setDefaultColumnWidth(25);
         Row headerRow = sheet.createRow(0);
-        Cell headerCell;
-        for (int i = 0; i < headerColumns.size(); i++) {
+        Comment cellComment;
+        int i = 0;
+        for (Map.Entry<String, String> entry : headerInfo.entrySet()) {
             // 创建列、单元格
-            headerCell = headerRow.createCell(i);
-            headerCell.setCellValue(headerColumns.get(i));
+            Cell headerCell = headerRow.createCell(i);
+            headerCell.setCellValue(entry.getKey());
             headerCell.setCellStyle(colStyle);
+
+            if (isComment) {
+                cellComment = dp.createCellComment(dp.createAnchor(Units.EMU_PER_POINT * 9, Units.EMU_PER_PIXEL, Units.EMU_PER_CENTIMETER * 4, Units.EMU_PER_POINT * 9, i, 0, i, 4));
+                cellComment.setString(new XSSFRichTextString(entry.getValue()));
+                cellComment.setAuthor("nezha");
+                headerCell.setCellComment(cellComment);
+            }
+            i++;
         }
         return wb;
     }

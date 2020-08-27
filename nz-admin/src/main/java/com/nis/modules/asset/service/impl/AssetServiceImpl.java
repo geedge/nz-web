@@ -10,7 +10,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -41,7 +40,9 @@ import com.nis.modules.terminal.config.Constants;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
@@ -1346,22 +1347,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private void validateExcelHeader(Sheet sheet, int firstRowNum) {
         Row row = sheet.getRow(firstRowNum);
         SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
-        Map<String, Object> map = JSONObject.parseObject(config.getParamValue(), Map.class);
+        LinkedHashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), LinkedHashMap.class, Feature.OrderedField);
 
         List<Boolean> flags = new ArrayList<>();
-        Collection columns;
-        Map colsMap;
+        List<String> columns;
+        LinkedHashMap colsMap;
         for (Map.Entry<String, Object> entry : map.entrySet()) {
-            colsMap = JSONObject.parseObject(entry.getValue().toString(), Map.class);
-            columns = colsMap.values();
+            colsMap = JSONObject.parseObject(entry.getValue().toString(), LinkedHashMap.class, Feature.OrderedField);
+            columns = new ArrayList<>(colsMap.keySet());
             if (CollectionUtils.isNotEmpty(columns)) {
-                List<String> colList = new ArrayList<>();
-                columns.stream().forEach(value -> colList.add(value.toString().toLowerCase()));
-
                 boolean flag = true;
-                for (int i = 0; i < colList.size(); i++) {
-                    String titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
-                    if (!colList.contains(titleValue)) {
+                for (int i = 0; i < columns.size(); i++) {
+                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
                         flag = false;
                         break;
                     }
@@ -1627,14 +1624,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 添加标题行 默认语言 en
             String language = (String) params.get("language");
             language = ToolUtil.isEmpty(language) ? "en" : language;
-            Map exportHeader = (Map) map.get(language);
-            Collection headers = exportHeader.values();
-            List<String> headerList = new ArrayList<>(headers.size());
-            headers.stream().forEach(value -> headerList.add(value.toString()));
-            headerList.remove(headerList.size() - 1);
+
+            // 去掉最后一列 Exporter 作为导出模板
+            Map<String, String> exportHeader = (Map) map.get(language);
+            List<String> keys = new ArrayList<>(exportHeader.keySet());
+            String exporter = keys.get(keys.size() - 1);
+            exportHeader.remove(exporter);
 
             String sheetName = "Assets";
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(headerList, sheetName);
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -1764,7 +1762,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map exportHeaderMap;
+        Map<String, String> exportHeaderMap;
         switch (language) {
             case "en": {
                 exportHeaderMap = (Map) map.get("en");
@@ -1782,12 +1780,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
             }
         }
-        Collection headers = exportHeaderMap.values();
+       /* Collection headers = exportHeaderMap.keySet();
         List<String> headerList = new ArrayList<>(headers.size());
-        headers.stream().forEach(value -> headerList.add(value.toString()));
-
+        headers.stream().forEach(value -> headerList.add(value.toString()));*/
         try {
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(headerList, "Assets");
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, "Assets", true);
             // 响应为流
             String fileName = "AssetExportTemplate.xlsx"; // 默认文件名称
             response.setContentType("application/excel");
