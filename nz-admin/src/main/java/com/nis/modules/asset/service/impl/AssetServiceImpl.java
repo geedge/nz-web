@@ -488,6 +488,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Transactional(rollbackFor = Exception.class)
     public void delete(Integer... ids) {
         List<Integer> idList = Arrays.asList(ids);
+        List<Asset> delAssets = this.list(new QueryWrapper<Asset>().lambda().in(Asset::getId, idList));
+        Set<String> delAssetHosts = delAssets.stream().map(Asset::getHost).collect(Collectors.toSet());
 
         // 1. 删除
         this.removeByIds(idList);
@@ -510,6 +512,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 6. 删除关联的account信息
         accountService.remove(new QueryWrapper<Account>().lambda().in(Account::getAssetId, idList));
+
+        // 7. 删除残留 assetPing 数据
+        if (CollectionUtils.isNotEmpty(delAssetHosts)) {
+            assetPingDao.delete(new QueryWrapper<AssetPing>().lambda().in(AssetPing::getHost, delAssetHosts));
+        }
    }
 
     @Override
