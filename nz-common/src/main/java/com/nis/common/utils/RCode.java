@@ -117,6 +117,7 @@ public enum RCode {
     MODULE_PASSWORD_INVALID(221018,"Auth password is missing, required for SNMPv3 with auth"),
     MODULE_USERNAME_INVALID(221019,"Auth username is missing, required for SNMPv3"),
     MODULE_REMOVE_ERROR(223020,"These modules contains endpoint can't remove modules"),
+    MODULE_NOTFOUND(226021, "Module not found"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),

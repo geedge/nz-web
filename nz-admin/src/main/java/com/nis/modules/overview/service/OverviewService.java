@@ -26,5 +26,5 @@ public interface OverviewService {
 
     List<Map> alertStatByModuleTopN(Integer top);
     
-    Set<Integer> getEndpointStatus();
+    Set<Integer> getUpStatusEndpointIds();
 }

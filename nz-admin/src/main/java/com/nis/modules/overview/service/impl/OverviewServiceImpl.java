@@ -189,7 +189,7 @@ public class OverviewServiceImpl implements OverviewService {
         }
 
         // 服务健康的endpoint id列表
-        Set<Integer> endpointUpIds = this.getEndpointStatus();
+        Set<Integer> endpointUpIds = this.getUpStatusEndpointIds();
 
         for (EndpointStat stat : endpointInfoByDc) {
             List<Integer> list = idcNameWithEndpointIdsMap.get(stat.getName());
@@ -325,7 +325,8 @@ public class OverviewServiceImpl implements OverviewService {
     }
 
     // 请求prometheus 然后返回状态可用的endpoint ids
-    public Set<Integer> getEndpointStatus() {
+    @Override
+    public Set<Integer> getUpStatusEndpointIds() {
         Set<Integer> endPointIds = new HashSet<>();
 
         // 1. 查询 global  prometheus 信息 global 会汇总up时序数据

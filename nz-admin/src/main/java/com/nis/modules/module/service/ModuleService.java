@@ -21,4 +21,6 @@ public interface ModuleService extends IService<Module> {
 	String generateYmlFromSnmpParam(Map snmpParam, Module moduleEntity);
 
 	void ValidateAuthForSnmpV3(String auth);
+
+	Map getModuleStatById(Integer moduleId);
 }

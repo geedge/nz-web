@@ -7,12 +7,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
@@ -46,6 +49,12 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
     @Autowired
     private TopoService topoService;
+
+    @Autowired
+    private AssetDao assetDao;
+
+    @Autowired
+    private OverviewService overviewService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -175,6 +184,74 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                 throw new NZException(RCode.MODULE_AUTHSECURITYLEVEL_INVALID);
             }
         }
+    }
+
+    @Override
+    public Map getModuleStatById(Integer moduleId) {
+        if (this.getById(moduleId) == null) {
+            throw new NZException(RCode.MODULE_NOTFOUND);
+        }
+        Map resultMap = new HashMap(4);
+
+        List<Endpoint> endpointList = endpointService.list(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getModuleId, moduleId));
+        Set<Integer> assetIds = endpointList.stream().map(Endpoint::getAssetId).collect(Collectors.toSet());
+        resultMap.put("assetStat", this.getAssetUpStatByAssetIds(assetIds));
+
+        Set<Integer> endpointIds = endpointList.stream().map(Endpoint::getId).collect(Collectors.toSet());
+        resultMap.put("endpointStat", this.getEndpointUpStatByEndpointIds(endpointIds));
+
+        resultMap.put("alertStat", this.getAlertStatByModuleId(moduleId));
+        return resultMap;
+    }
+
+    private Map getAlertStatByModuleId(Integer moduleId) {
+        Map alertStatMap = new HashMap(4);
+        List<AlertMessageEntity> alertsByModuleId = alertMessageService.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1).eq(AlertMessageEntity::getModuleId, moduleId));
+        if (CollectionUtils.isEmpty(alertsByModuleId)) {
+            alertStatMap.put("high", 0);
+            alertStatMap.put("medium", 0);
+            alertStatMap.put("low", 0);
+            return alertStatMap;
+        }
+        long high = alertsByModuleId.stream().filter(alert -> "high".equals(alert.getSeverity())).count();
+        long medium = alertsByModuleId.stream().filter(alert -> "medium".equals(alert.getSeverity())).count();
+        long low = alertsByModuleId.stream().filter(alert -> "low".equals(alert.getSeverity())).count();
+        alertStatMap.put("high", high);
+        alertStatMap.put("medium", medium);
+        alertStatMap.put("low", low);
+        return alertStatMap;
+    }
+
+    private Map getEndpointUpStatByEndpointIds(Set<Integer> endpointIds) {
+        Map endpointStatMap = new HashMap<>(4);
+        if (CollectionUtils.isEmpty(endpointIds)) {
+            endpointStatMap.put("up", 0);
+            endpointStatMap.put("down", 0);
+            return endpointStatMap;
+        }
+        // 健康的 endpoint ids
+        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds();
+        int totalEndpointNum = endpointIds.size();
+        endpointIds.retainAll(upStatusEndpointIds);
+        endpointStatMap.put("up", endpointIds.size());
+        endpointStatMap.put("down", totalEndpointNum - endpointIds.size());
+        return endpointStatMap;
+    }
+
+    private Map getAssetUpStatByAssetIds(Set<Integer> assetIds) {
+        Map assetStatMap = new HashMap<>(4);
+        if (CollectionUtils.isEmpty(assetIds)) {
+            assetStatMap.put("up", 0);
+            assetStatMap.put("down", 0);
+            return assetStatMap;
+        }
+
+        List<Integer> pingStatusByAssetIds = assetDao.getPingStatusByAssetIds(assetIds);
+        long up = pingStatusByAssetIds.stream().filter(status -> status == 1).count();
+        long down = pingStatusByAssetIds.stream().filter(status -> status == 0).count();
+        assetStatMap.put("up", up);
+        assetStatMap.put("down", down);
+        return assetStatMap;
     }
 
     // 根据snmp param生成

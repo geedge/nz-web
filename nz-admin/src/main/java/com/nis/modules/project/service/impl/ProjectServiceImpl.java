@@ -201,7 +201,7 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		    	modules=new ArrayList<Module>();
 		    }
 		    
-		    Set<Integer> endpointStatus = overviewService.getEndpointStatus();
+		    Set<Integer> endpointStatus = overviewService.getUpStatusEndpointIds();
 		    
 		    for(Module module : modules) {
 		    	//module高中低alert message数据

@@ -278,4 +278,17 @@
         GROUP BY
             ass.id
     </select>
+
+    <select id="getPingStatusByAssetIds" resultType="java.lang.Integer">
+        SELECT
+            assp.status
+        FROM
+            asset ass
+        LEFT JOIN asset_ping assp ON ass.host = assp.host
+        WHERE
+            ass.id IN
+            <foreach collection="ids" item="id" index="no" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </select>
 </mapper>

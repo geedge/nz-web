@@ -68,4 +68,17 @@ public class ModuleController extends AbstractController {
 		moduleService.removeHandle(Arrays.asList(ids));
 		return R.ok();
 	}
+
+	/**
+	 * 根据 moduleId 查询 asset endpoint alert 统计信息
+	 *
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/stat")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
+	public R getModuleStatById(Integer id) {
+		ValidateUtils.is(id).notNull(RCode.MODULE_ID_ISNULL);
+		return R.ok(moduleService.getModuleStatById(id));
+	}
 }

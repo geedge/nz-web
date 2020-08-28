@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 资产    dao
@@ -41,4 +42,6 @@ public interface AssetDao extends BaseMapper<Asset> {
     List<Map> getStatByModel();
 
     List<AssetStat> getAlertNumsMap();
+
+    List<Integer> getPingStatusByAssetIds(@Param("ids") Set<Integer> assetIds);
 }
