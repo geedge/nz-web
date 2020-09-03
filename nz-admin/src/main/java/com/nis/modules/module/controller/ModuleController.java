@@ -1,6 +1,5 @@
 package com.nis.modules.module.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -30,15 +29,7 @@ public class ModuleController extends AbstractController {
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.MODULE)
 	public R save(@RequestBody Module moduleEntity) {
-		moduleService.validateParam(moduleEntity);
-
-		// 处理snmYml字段
-		String snmpParam = moduleEntity.getSnmpParam();
-		if(StringUtils.isNotEmpty(snmpParam)){
-			String snmpYml = moduleService.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
-			moduleEntity.setSnmpYml(snmpYml);
-		}
-		moduleService.save(moduleEntity);
+		moduleService.saveModule(moduleEntity);
 		return R.ok();
 	}
 	
@@ -46,17 +37,8 @@ public class ModuleController extends AbstractController {
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODULE)
 	public R modify(@RequestBody Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getId()).notNull(RCode.MODULE_ID_ISNULL);
-		moduleService.validateBulitinRule(Arrays.asList(moduleEntity.getId()));
-		moduleService.validateParam(moduleEntity);
 
-		// 处理snmYml字段 , 如果module名称发生改动 并且 snmpParam不为空则重新生成snmpYml字段
-		Module module = moduleService.getById(moduleEntity.getId());
-		String snmpParam = moduleEntity.getSnmpParam();
-		if(StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())){
-			String snmpYml = moduleService.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
-			moduleEntity.setSnmpYml(snmpYml);
-		}
-		moduleService.updateById(moduleEntity);
+		moduleService.updateModule(moduleEntity);
 		return R.ok();
 	}
 	

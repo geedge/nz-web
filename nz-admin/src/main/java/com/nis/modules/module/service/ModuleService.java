@@ -23,4 +23,8 @@ public interface ModuleService extends IService<Module> {
 	void ValidateAuthForSnmpV3(String auth);
 
 	Map getModuleStatById(Integer moduleId);
+
+	void updateModule(Module moduleEntity);
+
+	void saveModule(Module moduleEntity);
 }

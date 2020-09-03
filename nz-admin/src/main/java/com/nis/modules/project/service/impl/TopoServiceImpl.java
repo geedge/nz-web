@@ -16,6 +16,7 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -60,6 +61,9 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
     public void removeNodeAndLineByModules(List<Module> modules) {
         Set<Integer> projectIds = modules.stream().map(Module::getProjectId).collect(Collectors.toSet());
         List<Topo> topos = this.list(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, projectIds));
+        if (CollectionUtils.isEmpty(topos)) {
+            return;
+        }
         Map<Integer, Object> topoProjectIdAndConfigMap = topos.stream().collect(Collectors.toMap(Topo::getProjectId, Topo::getTopo));
 
         // module 是批量删除，删除的或许不属于同一个 project

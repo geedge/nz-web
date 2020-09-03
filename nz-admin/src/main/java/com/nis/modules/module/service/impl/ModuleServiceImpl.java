@@ -132,6 +132,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     }
 
     // 当snmp版本为V3时，需要校验用户信息
+    @Override
     public void ValidateAuthForSnmpV3(String auth) {
         Map authInfo = JSONObject.parseObject(auth, Map.class);
 
@@ -202,6 +203,43 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
         resultMap.put("alertStat", this.getAlertStatByModuleId(moduleId));
         return resultMap;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateModule(Module moduleEntity) {
+        // 校验
+        this.validateBulitinRule(Arrays.asList(moduleEntity.getId()));
+        this.validateParam(moduleEntity);
+
+        // 处理snmYml字段 , 如果module名称发生改动 并且 snmpParam不为空则重新生成snmpYml字段
+        Module module = this.getById(moduleEntity.getId());
+        String snmpParam = moduleEntity.getSnmpParam();
+        if (StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())) {
+            String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
+            moduleEntity.setSnmpYml(snmpYml);
+        }
+        this.updateById(moduleEntity);
+
+        // 修改了 project ， 修改 topo config
+        if (!module.getProjectId().equals(moduleEntity.getProjectId())) {
+            List modules = new ArrayList();
+            modules.add(module);
+            topoService.removeNodeAndLineByModules(modules);
+        }
+    }
+
+    @Override
+    public void saveModule(Module moduleEntity) {
+        this.validateParam(moduleEntity);
+
+        // 处理snmYml字段
+        String snmpParam = moduleEntity.getSnmpParam();
+        if (StringUtils.isNotEmpty(snmpParam)) {
+            String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
+            moduleEntity.setSnmpYml(snmpYml);
+        }
+        this.save(moduleEntity);
     }
 
     private Map getAlertStatByModuleId(Integer moduleId) {
