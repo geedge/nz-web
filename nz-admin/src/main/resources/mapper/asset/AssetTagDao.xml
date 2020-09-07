@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.AssetTagDao">
+
+    <select id="getTagsBykeyOrderCounts" resultType="com.nis.modules.asset.entity.AssetTag">
+        SELECT
+            t.*,
+            count(1) AS count
+        FROM
+            asset_tag t
+        WHERE
+            t.tag LIKE CONCAT('%', #{key}, '%')
+        GROUP BY
+            t.tag
+        ORDER BY
+            count DESC
+    </select>
+
+    <select id="getTagValsByKeyOrderCounts" resultType="com.nis.modules.asset.entity.AssetTag">
+        SELECT
+            t.*,
+            count(1) AS count
+        FROM
+            asset_tag t
+        WHERE
+            t.tag = #{key} AND  t.value LIKE CONCAT('%', #{value}, '%')
+        GROUP BY
+            t.value
+        ORDER BY
+            count DESC
+    </select>
+
+    <select id="getAssetIdsByTagParams" resultType="java.lang.Integer">
+        SELECT
+            DISTINCT t.asset_id
+        FROM
+            asset_tag t
+        WHERE
+        <foreach collection="params.entrySet()" index="key" item="values" separator="or">
+            (
+                t.tag = #{key}
+                <if test="values != null and values.size > 0">
+                    AND
+                    <foreach collection="values" item="val" open="(" separator="or" close=")">
+                            t.value = #{val}
+                    </foreach>
+                </if>
+            )
+        </foreach>
+    </select>
+
+    <select id="getTagStat" resultType="java.util.Map">
+        SELECT
+            tag AS 'key',
+            value,
+            count(DISTINCT asset_id) AS total
+        FROM
+            asset_tag
+        GROUP BY
+            tag,value
+    </select>
+
+</mapper>

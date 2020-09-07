@@ -184,9 +184,9 @@
                 </foreach>
             </if>
 
-            <if test="params.innerTagRelationAssetIds != null and params.innerTagRelationAssetIds.size > 0">
+            <if test="params.innerAssetIdsByTagParams != null and params.innerAssetIdsByTagParams.size > 0">
                 AND ass.id IN
-                <foreach collection="params.innerTagRelationAssetIds" item="id" index="no" open="(" separator="," close=")">
+                <foreach collection="params.innerAssetIdsByTagParams" item="id" index="no" open="(" separator="," close=")">
                     #{id}
                 </foreach>
             </if>

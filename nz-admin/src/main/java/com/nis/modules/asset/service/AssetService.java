@@ -49,4 +49,9 @@ public interface AssetService extends IService<Asset> {
     Map filterStat();
 
     void getExportTemplateByLanguage(HttpServletResponse response, String language);
+
+    List<String> getTagsBykeyOrderCounts(String key);
+
+    List<String> getTagValsByKeyOrderCounts(String key, String value);
+
 }

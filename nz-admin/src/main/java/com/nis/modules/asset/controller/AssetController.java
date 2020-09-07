@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -237,5 +238,25 @@ public class AssetController {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
 
         assetService.getExportTemplateByLanguage(response, language);
+    }
+
+    @GetMapping("/tagKey")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    public R tagKey(String key) {
+        List<String> keys = assetService.getTagsBykeyOrderCounts(key);
+        Map result = new HashMap(2);
+        result.put("list", keys);
+        return R.ok(result);
+    }
+
+    @GetMapping("/tagValue")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    public R tagValue(String key, String value) {
+        ValidateUtils.is(key).notNull(RCode.ASSET_TAGKEY_ISNULL);
+
+        List<String> values = assetService.getTagValsByKeyOrderCounts(key, value);
+        Map result = new HashMap(2);
+        result.put("list", values);
+        return R.ok(result);
     }
 }

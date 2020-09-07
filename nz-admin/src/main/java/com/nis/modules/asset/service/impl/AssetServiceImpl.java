@@ -13,10 +13,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.dao.AssetPingDao;
-import com.nis.modules.asset.dao.CabinetDao;
-import com.nis.modules.asset.dao.ModelDao;
+import com.nis.modules.asset.dao.*;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.Endpoint;
@@ -130,6 +127,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private SysAreaDao sysAreaDao;
 
+    @Autowired
+    private AssetTagDao assetTagDao;
+
 
     /**
      * 处理查询 asset 请求参数
@@ -146,6 +146,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // assetType/vendor 间接关联 asset 采用关联的 model 方式 查询 asset
         if (vendorIds.length > 0 || typeIds.length > 0) {
             List<Integer> innerModelIds = modelDao.selectIdByDictIds(vendorIds, typeIds);
+            if (CollectionUtils.isEmpty(innerModelIds)) {
+                innerModelIds.add(-99999);
+            }
             params.put("innerModelIds", innerModelIds);
         }
         if (ToolUtil.isNotEmpty(params.get("states"))) {
@@ -161,11 +164,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             params.put("idcIds", String.valueOf(params.get("idcIds")).split(StringPool.COMMA));
         }
 
-        if (ToolUtil.isNotEmpty(params.get("tag"))) {
-            String tag = String.valueOf(params.get("tag"));
-            List<AssetTag> tagList = assetTagService.list(new QueryWrapper<AssetTag>().lambda().like(AssetTag::getTag, tag).or().like(AssetTag::getValue, tag));
-            Set<Integer> queryTagIds = tagList.stream().map(AssetTag::getAssetId).collect(Collectors.toSet());
-            params.put("innerTagRelationAssetIds", queryTagIds);
+        if (ToolUtil.isNotEmpty(params.get("tags"))) {
+            String tags = String.valueOf(params.get("tags"));
+            Map<String, List<String>> tagParams = JSONObject.parseObject(tags, Map.class);
+            List<Integer> assetIds = assetTagDao.getAssetIdsByTagParams(tagParams);
+            if (CollectionUtils.isEmpty(assetIds)) {
+                assetIds.add(-99999);
+            }
+            params.put("innerAssetIdsByTagParams", assetIds);
         }
     }
     
@@ -1804,6 +1810,22 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
+    @Override
+    public List<String> getTagsBykeyOrderCounts(String key) {
+        key = key == null ? "" : key;
+        List<AssetTag> tags = assetTagDao.getTagsBykeyOrderCounts(key);
+        List<String> keys = tags.stream().map(AssetTag::getTag).collect(Collectors.toList());
+        return keys;
+    }
+
+    @Override
+    public List<String> getTagValsByKeyOrderCounts(String key, String value) {
+        value = value == null ? "" : value;
+        List<AssetTag> tags = assetTagDao.getTagValsByKeyOrderCounts(key, value);
+        List<String> values = tags.stream().map(AssetTag::getValue).collect(Collectors.toList());
+        return values;
+    }
+
     private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {
         Cabinet cabinet = new Cabinet();
         boolean flag = false;
@@ -2153,6 +2175,21 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             map.put("name", "0".equals(map.get("status").toString()) ? "down" : "up");
         }
         resultMap.put("ping", assetStatGroupByStatus);
+        // 6. tag 统计
+        List<Map> tagStats = assetTagDao.getTagStat();
+        Map<Object, List<Map>> tagStatMap = tagStats.stream().collect(Collectors.groupingBy(map -> map.get("key")));
+        List<Map> tagStatList = new ArrayList<>();
+        Map<String, Object> tempMap;
+        for (Map.Entry<Object, List<Map>> entry : tagStatMap.entrySet()) {
+            for (Map map : entry.getValue()) {
+                map.remove("key");
+            }
+            tempMap = new HashMap();
+            tempMap.put("key", entry.getKey());
+            tempMap.put("values", entry.getValue());
+            tagStatList.add(tempMap);
+        }
+        resultMap.put("tag", tagStatList);
         return resultMap;
     }
 
