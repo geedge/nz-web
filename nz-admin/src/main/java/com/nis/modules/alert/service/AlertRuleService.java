@@ -2,12 +2,12 @@ package com.nis.modules.alert.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.alert.entity.AlertNameMapUserDTO;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 
@@ -27,5 +27,13 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	void delete(Integer[] ids);
 
 	Map getAlertStatById(Integer id);
+
+	void getExportTemplateByLanguage(HttpServletResponse response, String language);
+
+	Map importAlertFromExcelFile(MultipartFile excelFile);
+
+	void export(HttpServletResponse response, Map<String, Object> params);
+
+	void cancelImport(String seq);
 }
 

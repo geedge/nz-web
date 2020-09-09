@@ -241,7 +241,7 @@ public enum RCode {
     ALERTRULE_LAST_ISNULL(421005, "Last is required"), //告警持续时间不能为空
     ALERTRULE_LAST_ISNOTPOSITIVE(425006, "Last must be a positive number"), //告警持续时间必须是正数
     ALERTRULE_SEVERITY_ISNULL(421007, "Severity is required"),               //告警级别不能为空
-    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity is incorrect"),          //告警级别不合法
+    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity must be high, medium and low"),
     ALERTRULE_LINK_OBJECT_ISNULL(426009, "Association object does not exist"),
     ALERTRULE_TYPE_ISNULL(421010, "Alarm type is empty"),
     ALERTRULE_TYPE_INVALIDE(424011, "Alarm type is invalide"),
@@ -255,6 +255,16 @@ public enum RCode {
     ALERTRULE_UNIT_ISNULL(421019, "Alert unit can not be empty"),
     ALERTRULE_OPERATOR_INVALIDE(423020, "Alert operator is invalide"),
     ALERTRULE_UNIT_INVALIDE(423021, "Alert unit is invalide"),
+    ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL(421022,"Export header language can not be empty"),
+    ALERTRULE_EXPORT_HEADER_LANGUAGE_ERROR(424023,"Export header language must be en, cn and ru"),
+    ALERTRULE_IMPORT_FILE_ISNULL(421024, "Alert import file can not be null"),
+    ALERTRULE_IMPORTFILE_TYPE(429025,"Only support import XLS or XLSX file"),
+    ALERTRULE_CANCELIMPORTSEQ_ISNULL(421026, "Alert rule cancel import seq can not be null"),
+    ALERTRULE_THRESHOLD_FORMAT(423027, "Alert threshold format should be a long integer"),
+    ALERTRULE_UNIT_FORMAT(423028, "Alert unit format should be a integer"),
+    ALERTRULE_DESCRIPTION_ISNULL(4210629, "Alert description can not be empty"),
+    ALERTRULE_RECEIVER_NOTFOUND(421030, "Alert receiver user not found"),
+    ALERTRULE_IMPORT_ERROR(423031, "Alert import error"),
 
 
     /**

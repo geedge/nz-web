@@ -1,13 +1,16 @@
 package com.nis.modules.alert.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -78,5 +81,35 @@ public class AlertRuleController {
 
         Map ruleStat = alertRuleService.getAlertStatById(id);
         return R.ok(ruleStat);
+    }
+
+    @GetMapping("/template")
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
+
+        alertRuleService.getExportTemplateByLanguage(response, language);
+    }
+
+    @PostMapping("/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
+    public R importAlertFromExcelFile(MultipartFile excelFile) {
+        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL);
+
+        return R.ok(alertRuleService.importAlertFromExcelFile(excelFile));
+    }
+
+    @GetMapping("/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
+    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        alertRuleService.export(response, params);
+    }
+
+    @DeleteMapping("/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ALERTRULE)
+    public R cancelImport(String seq) {
+        ValidateUtils.is(seq).notNull(RCode.ALERTRULE_CANCELIMPORTSEQ_ISNULL);
+
+        alertRuleService.cancelImport(seq);
+        return R.ok();
     }
 }

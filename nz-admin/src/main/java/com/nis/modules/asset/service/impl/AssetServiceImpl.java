@@ -690,7 +690,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 获得当前sheet的开始行
         int firstRowNum = sheet.getFirstRowNum();
         // 校验表头是否与模板一致
-        this.validateExcelHeader(sheet, firstRowNum);
+        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
+        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, firstRowNum, map.values());
+        if(!headerFlag){
+            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
+        }
 
         try {
             // 返回导出错误信息
@@ -1349,45 +1354,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // asset 添加的同时添加 panel chart
         chartService.saveAssetPanelAndChart(asset);
         return updateMap;
-    }
-
-    /**
-     * 校验 excel 标题行
-     * @param sheet
-     * @param firstRowNum
-     * @return
-     */
-    private void validateExcelHeader(Sheet sheet, int firstRowNum) {
-        Row row = sheet.getRow(firstRowNum);
-        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
-        LinkedHashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), LinkedHashMap.class, Feature.OrderedField);
-
-        List<Boolean> flags = new ArrayList<>();
-        List<String> columns;
-        LinkedHashMap colsMap;
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            colsMap = JSONObject.parseObject(entry.getValue().toString(), LinkedHashMap.class, Feature.OrderedField);
-            columns = new ArrayList<>(colsMap.keySet());
-            if (CollectionUtils.isNotEmpty(columns)) {
-                boolean flag = true;
-                for (int i = 0; i < columns.size(); i++) {
-                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
-                        flag = false;
-                        break;
-                    }
-                }
-                flags.add(flag);
-            }
-        }
-
-        boolean isTrue = false;
-        for (Boolean flag : flags) {
-            isTrue = (isTrue || flag);
-        }
-
-        if(!isTrue){
-            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
-        }
     }
 
     @Override

@@ -79,6 +79,11 @@ public class AlertRuleEntity implements Serializable {
 	private Integer buildIn;
 
 	/**
+	 * 导入唯一标识
+	 */
+	private String seq;
+
+	/**
 	 * 告警消息统计
 	 */
 	@TableField(exist = false)

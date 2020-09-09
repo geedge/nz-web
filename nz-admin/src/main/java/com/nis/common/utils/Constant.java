@@ -164,6 +164,9 @@ public class Constant {
     // ssh 采集相关服务器信息指令
     public static final Map<String,String> SSH_SHELL_MAP;
 
+    // alert rule unit
+    public static final Map<String,Integer> ALERT_RULE_UNIT_MAP;
+
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -253,6 +256,56 @@ public class Constant {
         SSH_SHELL_MAP.put("core", "cat /proc/version");
         //   		put("os","cat /etc/redhat-release");
         SSH_SHELL_MAP.put("uptime", "uptime -s");
+
+
+        ALERT_RULE_UNIT_MAP = new HashMap<>();
+        ALERT_RULE_UNIT_MAP.put("none", 1);
+        ALERT_RULE_UNIT_MAP.put("short", 2);
+        ALERT_RULE_UNIT_MAP.put("percent(0-100)", 3);
+        ALERT_RULE_UNIT_MAP.put("percent(0.0-1.0)", 4);
+        ALERT_RULE_UNIT_MAP.put("local format", 5);
+        ALERT_RULE_UNIT_MAP.put("bits", 6);
+        ALERT_RULE_UNIT_MAP.put("bytes", 7);
+        ALERT_RULE_UNIT_MAP.put("kilobytes", 8);
+        ALERT_RULE_UNIT_MAP.put("megabytes", 9);
+        ALERT_RULE_UNIT_MAP.put("gigabytes", 10);
+        ALERT_RULE_UNIT_MAP.put("terabytes", 11);
+        ALERT_RULE_UNIT_MAP.put("petabytes", 12);
+        ALERT_RULE_UNIT_MAP.put("packets/sec", 13);
+        ALERT_RULE_UNIT_MAP.put("bits/sec", 14);
+        ALERT_RULE_UNIT_MAP.put("bytes/sec", 15);
+        ALERT_RULE_UNIT_MAP.put("kilobytes/sec", 16);
+        ALERT_RULE_UNIT_MAP.put("kilobits/sec", 17);
+        ALERT_RULE_UNIT_MAP.put("megabytes/sec", 18);
+        ALERT_RULE_UNIT_MAP.put("megabits/sec", 19);
+        ALERT_RULE_UNIT_MAP.put("gigabytes/sec", 20);
+        ALERT_RULE_UNIT_MAP.put("gigabits/sec", 21);
+        ALERT_RULE_UNIT_MAP.put("terabytes/sec", 22);
+        ALERT_RULE_UNIT_MAP.put("terabits/sec", 23);
+        ALERT_RULE_UNIT_MAP.put("petabytes/sec", 24);
+        ALERT_RULE_UNIT_MAP.put("petabits/sec", 25);
+        ALERT_RULE_UNIT_MAP.put("Hertz(1/s)", 26);
+        ALERT_RULE_UNIT_MAP.put("nanoseconds(ns)", 27);
+        ALERT_RULE_UNIT_MAP.put("nanoseconds", 27);
+        ALERT_RULE_UNIT_MAP.put("ns", 27);
+        ALERT_RULE_UNIT_MAP.put("microseconds(us)", 28);
+        ALERT_RULE_UNIT_MAP.put("microseconds", 28);
+        ALERT_RULE_UNIT_MAP.put("us", 28);
+        ALERT_RULE_UNIT_MAP.put("milliseconds(ms)", 29);
+        ALERT_RULE_UNIT_MAP.put("milliseconds", 29);
+        ALERT_RULE_UNIT_MAP.put("ms", 29);
+        ALERT_RULE_UNIT_MAP.put("seconds(s)", 30);
+        ALERT_RULE_UNIT_MAP.put("seconds", 30);
+        ALERT_RULE_UNIT_MAP.put("s", 30);
+        ALERT_RULE_UNIT_MAP.put("minutes(m)", 31);
+        ALERT_RULE_UNIT_MAP.put("minutes", 31);
+        ALERT_RULE_UNIT_MAP.put("m", 31);
+        ALERT_RULE_UNIT_MAP.put("hours(h)", 32);
+        ALERT_RULE_UNIT_MAP.put("hours", 32);
+        ALERT_RULE_UNIT_MAP.put("h", 32);
+        ALERT_RULE_UNIT_MAP.put("days(d)", 33);
+        ALERT_RULE_UNIT_MAP.put("days", 33);
+        ALERT_RULE_UNIT_MAP.put("d", 33);
     }
     
     /**
@@ -488,6 +541,9 @@ public class Constant {
 
     // asset 导入表头
     public static final String SYSCONFIG_KEY_ASSET_EXPORT_HEADER = "asset_export_header";
+
+    // alert rule 导入表头
+    public static final String SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER = "rule_export_header";
 
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";

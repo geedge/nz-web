@@ -1,6 +1,9 @@
 package com.nis.common.utils;
 
 
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -13,8 +16,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -236,5 +238,32 @@ public class ExcelUtils {
                 cell.setCellStyle(dataStyle);
             }
         }
+    }
+
+    public static boolean validateExcelHeader(Sheet sheet, int firstRowNum, Collection<Object> columnInfoList) {
+        Row row = sheet.getRow(firstRowNum);
+        List<Boolean> flags = new ArrayList<>();
+        List<String> columns;
+        LinkedHashMap colsMap;
+        for (Object obj : columnInfoList) {
+            colsMap = JSONObject.parseObject(obj.toString(), LinkedHashMap.class, Feature.OrderedField);
+            columns = new ArrayList<>(colsMap.keySet());
+            if (CollectionUtils.isNotEmpty(columns)) {
+                boolean flag = true;
+                for (int i = 0; i < columns.size(); i++) {
+                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
+                        flag = false;
+                        break;
+                    }
+                }
+                flags.add(flag);
+            }
+        }
+
+        boolean headerFlag = false;
+        for (Boolean flag : flags) {
+            headerFlag = (headerFlag || flag);
+        }
+        return headerFlag;
     }
 }
