@@ -165,9 +165,36 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         if (ToolUtil.isNotEmpty(params.get("tags"))) {
-            String tags = String.valueOf(params.get("tags"));
-            Map<String, List<String>> tagParams = JSONObject.parseObject(tags, Map.class);
-            List<Integer> assetIds = assetTagDao.getAssetIdsByTagParams(tagParams);
+            String tagStr = String.valueOf(params.get("tags"));
+            Map<String, List<String>> tagParams = JSONObject.parseObject(tagStr, Map.class);
+
+            List<AssetTag> tagList = assetTagService.list(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getTag, new ArrayList<>(tagParams.keySet())));
+            Map<String, List<AssetTag>> tagKeyAndTagsMap = tagList.stream().collect(Collectors.groupingBy(AssetTag::getTag));
+
+            List<List<Integer>> lists = new ArrayList<>();
+            List<String> paramValues;
+            List<AssetTag> tagListByKey, tagListByValue;
+            for (Map.Entry<String, List<String>> entry : tagParams.entrySet()) {
+                // 查询 values
+                paramValues = entry.getValue();
+                // 当前key 包含的 tag 集合
+                tagListByKey = tagKeyAndTagsMap.get(entry.getKey());
+                tagListByValue = new ArrayList<>();
+                for (String val : paramValues) {
+                    tagListByValue.addAll(tagListByKey.stream().filter(assetTag -> assetTag.getValue().equals(val)).collect(Collectors.toList()));
+                }
+                lists.add(tagListByValue.stream().map(AssetTag::getAssetId).distinct().collect(Collectors.toList()));
+            }
+
+            List<Integer> assetIds = lists.stream().flatMap(Collection::stream).collect(Collectors.toList());
+            if (lists.size() == 1) {
+                assetIds = assetIds.stream().distinct().collect(Collectors.toList());
+            } else {
+                assetIds = lists.stream().reduce((tempList1, tempList2) -> {
+                    tempList1.retainAll(tempList2);
+                    return tempList1;
+                }).get();
+            }
             if (CollectionUtils.isEmpty(assetIds)) {
                 assetIds.add(-99999);
             }

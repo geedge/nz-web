@@ -31,25 +31,6 @@
             count DESC
     </select>
 
-    <select id="getAssetIdsByTagParams" resultType="java.lang.Integer">
-        SELECT
-            DISTINCT t.asset_id
-        FROM
-            asset_tag t
-        WHERE
-        <foreach collection="params.entrySet()" index="key" item="values" separator="or">
-            (
-                t.tag = #{key}
-                <if test="values != null and values.size > 0">
-                    AND
-                    <foreach collection="values" item="val" open="(" separator="or" close=")">
-                            t.value = #{val}
-                    </foreach>
-                </if>
-            )
-        </foreach>
-    </select>
-
     <select id="getTagStat" resultType="java.util.Map">
         SELECT
             tag AS 'key',

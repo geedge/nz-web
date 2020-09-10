@@ -23,7 +23,5 @@ public interface AssetTagDao extends BaseMapper<AssetTag> {
 
     List<AssetTag> getTagValsByKeyOrderCounts(@Param("key") String key, @Param("value") String value);
 
-    List<Integer> getAssetIdsByTagParams(@Param("params") Map<String, List<String>> tagParams);
-
     List<Map> getTagStat();
 }
