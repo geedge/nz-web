@@ -3,6 +3,7 @@ package com.nis.modules.sys.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -10,8 +11,10 @@ import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.ModelWithMib;
 import com.nis.modules.sys.dao.SnmpMibDao;
+import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.MmMib;
 import com.nis.modules.sys.entity.SnmpMib;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SnmpMibService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import net.percederberg.mibble.Mib;
@@ -21,6 +24,7 @@ import net.percederberg.mibble.MibValueSymbol;
 import net.percederberg.mibble.snmp.SnmpIndex;
 import net.percederberg.mibble.snmp.SnmpObjectType;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,9 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
     @Autowired
     private ModelDao modelDao;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -89,6 +96,22 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 this.parserMibFile(multipartFile, snmpMib);
             }
             this.updateById(snmpMib);
+        }
+        // 将 保存成功的 mib 上传到 generator 上，以提供生成 snmp.yml 使用
+        this.copyMibFileForGenerator(multipartFile);
+    }
+
+    private void copyMibFileForGenerator(MultipartFile mibFile) {
+        if (mibFile != null) {
+            // 取出generator路径
+            SysConfigEntity entity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_GENERATOR_PATH));
+            String mibsPath = entity.getParamValue() + File.separator + "mibs";
+            try {
+                File dest = new File(mibsPath + File.separator + mibFile.getOriginalFilename());
+                FileUtils.copyInputStreamToFile(mibFile.getInputStream(), dest);
+            } catch (IOException e) {
+                logger.error(String.format("拷贝mib文件到%s下失败，失败信息是:%s", mibsPath, e.getMessage()), e);
+            }
         }
     }
 
@@ -170,7 +193,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
         try {
             mibFile = new File(Constant.TEMP_PATH + File.separator + "tempMibFile" + UUID.randomUUID());
-            multipartFile.transferTo(mibFile.getAbsoluteFile());
+            // multipartFile.transferTo(mibFile.getAbsoluteFile());
+            FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), mibFile);
             mib = ml.load(mibFile);
         } catch (IOException e) {
             logger.error("mib文件获取失败", e);
