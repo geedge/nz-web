@@ -438,7 +438,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
             } else {
                 try {
-                    Double.valueOf(threshold).longValue();
+                    Double.valueOf(threshold);
                 } catch (NumberFormatException e) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
@@ -502,7 +502,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setAlertName(alertName);
                 ruleEntity.setExpr(expr);
                 ruleEntity.setOperator(operator);
-                ruleEntity.setThreshold(Double.valueOf(threshold).longValue());
+                ruleEntity.setThreshold(Double.valueOf(threshold));
                 ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                 ruleEntity.setLast(Double.valueOf(last).intValue());
                 ruleEntity.setSeverity(severity);

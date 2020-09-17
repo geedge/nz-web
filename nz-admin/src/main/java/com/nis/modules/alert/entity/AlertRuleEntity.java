@@ -45,7 +45,7 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 阈值
 	 */
-	private Long threshold;
+	private Double threshold;
 
 	/**
 	 * 单位
