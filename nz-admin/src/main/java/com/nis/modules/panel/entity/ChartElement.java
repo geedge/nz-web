@@ -38,6 +38,11 @@ public class ChartElement {
      */
     private Integer buildIn;
 
+    /**
+     * 导入唯一标识
+     */
+    private String seq;
+
     @Override
     public boolean equals(Object compareObj){
         if(this ==  compareObj){

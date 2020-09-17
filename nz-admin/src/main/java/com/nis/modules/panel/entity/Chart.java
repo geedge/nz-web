@@ -54,6 +54,11 @@ public class Chart extends Node{
     private Integer buildIn;
 
     /**
+     * 导入唯一标识
+     */
+    private String seq;
+
+    /**
      * 参数
      */
     @TableField(strategy = FieldStrategy.IGNORED)

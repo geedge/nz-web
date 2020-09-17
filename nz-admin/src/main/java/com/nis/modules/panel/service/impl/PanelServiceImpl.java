@@ -303,7 +303,11 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         }
     }
 
-    private List<Panel> getSequentialPanelList(List<Panel> panels) {
+    @Override
+    public List<Panel> getSequentialPanelList(List<Panel> panels) {
+        if (CollectionUtils.isEmpty(panels)) {
+            return new ArrayList<>();
+        }
         List<Panel> resultList = new ArrayList<>();
 
         // 按照prev升序排序

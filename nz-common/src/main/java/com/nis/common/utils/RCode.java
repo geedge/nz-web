@@ -76,6 +76,18 @@ public enum RCode {
     PANEL_NOT_EXIST(126037,"Panel does not exist"),
     PANEL_NOTFOUND_BYTYPE(126038,"There is no panel under this type"),
     PANEL_CHARTS_EXISTS(123039, "These panel contain charts and cannot be deleted"),
+    PANEL_EXPORT_HEADER_LANGUAGE_ISNULL(121040,"Export header language can not be empty"),
+    PANEL_EXPORT_HEADER_LANGUAGE_ERROR(124041,"Export header language must be en, cn and ru"),
+    PANEL_IMPORT_FILE_ISNULL(121042, "Panel chart import file can not be null"),
+    PANEL_IMPORTFILE_TYPE(129043,"Only support import XLS or XLSX file"),
+    PANEL_CANCELIMPORTSEQ_ISNULL(121044, "Panel chart cancel import seq can not be null"),
+    PANEL_IMPORTFILE_FAILED(119045,"Import file resolution failed"),     // 导入文件解析失败
+    PANEL_EXPORT_HEADER_TEMPLATE_ERROR(114046,"The header row of the excel import template is inconsistent with the system template"),
+    CHART_WIDTH_FORMAT(123047, "Chart width format should be a integer"),
+    CHART_WIDTH_INVALIDE(123048, "Chart width should be between 1 and 12"),
+    CHART_HEIGHT_FORMAT(123049, "Chart height format should be a integer"),
+    CHART_UNIT_NOTFOUND(126050, "Chart unit not found"),
+    CHART_ELEMENTS_FORMAT(123051,"Chart elements must be JSON format"),
 
 
     /**

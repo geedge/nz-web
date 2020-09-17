@@ -1,18 +1,18 @@
 package com.nis.modules.panel.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,5 +162,35 @@ public class PanelController {
 			return R.error(500, e.getMessage());
 		}
         return R.ok(result);
+    }
+
+    @GetMapping("/template")
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
+
+        chartService.getExportTemplateByLanguage(response, language);
+    }
+
+    @PostMapping("/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
+    public R importAlertFromExcelFile(MultipartFile excelFile) {
+        ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL);
+
+        return R.ok(chartService.importChartFromExcelFile(excelFile));
+    }
+
+    @GetMapping("/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
+    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        chartService.export(response, params);
+    }
+
+    @DeleteMapping("/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
+    public R cancelImport(String seq) {
+        ValidateUtils.is(seq).notNull(RCode.PANEL_CANCELIMPORTSEQ_ISNULL);
+
+        chartService.cancelImport(seq);
+        return R.ok();
     }
 }

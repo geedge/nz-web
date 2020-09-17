@@ -545,6 +545,9 @@ public class Constant {
     // alert rule 导入表头
     public static final String SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER = "rule_export_header";
 
+    // chart 导入表头
+    public static final String SYSCONFIG_KEY_CHART_EXPORT_HEADER = "chart_export_header";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
@@ -589,10 +592,6 @@ public class Constant {
     // panel chart link 链表结构 末尾 next 值
     public static final Integer END_NEXT_VALUE = -1;
 
-    // 资产excel表头
-    public static final String[] ASSET_EXCEL_IMPORT_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "UserTip", "PasswordTip", "ReloginPasswordTip", "Exporter","IpmiHost","IpmiPort"};
-    public static final String[] ASSET_EXCEL_EXPORT_HEADER = {"Sn", "Type", "Vendor", "Model", "Idc", "Cabinet", "CabinetStart", "CabinetEnd", "Host", "State", "PurchaseDate", "Protocol", "AuthType", "User", "Pwd", "Cert", "Port", "UserTip", "PasswordTip", "ReloginPasswordTip","IpmiHost","IpmiPort"};
-
     // 连接smtp邮箱服务器超时时间 10秒
     public static final String CONNECTION_SMTP_TIMEOUT = "10000";
 
@@ -636,4 +635,6 @@ public class Constant {
  
     // 图表类型为alertList
     public static final String CHART_ALERTLIST_TYPE = "alertList";
+
+    public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
 }

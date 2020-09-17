@@ -1,7 +1,9 @@
 package com.nis.modules.panel.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -18,18 +20,35 @@ import com.nis.modules.panel.service.ChartElementService;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.NodeService;
 import com.nis.modules.panel.service.PanelService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements ChartService {
     @Autowired
     private ChartElementService chartElementService;
@@ -48,6 +67,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     @Autowired
     private ChartDao chartDao;
+
+    @Autowired
+    private SysConfigService sysConfigService;
+
+    @Autowired
+    private DataSourceTransactionManager dataSourceTransactionManager;
+
+    @Autowired
+    private TransactionDefinition transactionDefinition;
 
     @Override
     public List<Chart> queryCharts(Integer panelId, Integer id, String title) {
@@ -768,6 +796,460 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             this.delChartsByPanelId(assetPanel.getId());
             this.copyChartsToAssetChartsByModelPanel(modelPanel, assetPanel, entry.getKey());
         }
+    }
+
+    @Override
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        Map<String, String> exportHeaderMap;
+        switch (language) {
+            case "en": {
+                exportHeaderMap = (Map) map.get("en");
+                break;
+            }
+            case "cn": {
+                exportHeaderMap = (Map) map.get("cn");
+                break;
+            }
+            case "ru": {
+                exportHeaderMap = (Map) map.get("ru");
+                break;
+            }
+            default: {
+                throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
+            }
+        }
+        try {
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, "Chart", true);
+            String fileName = "PanelChartExportTemplate.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("图表模板生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void cancelImport(String seq) {
+        panelService.remove(new QueryWrapper<Panel>().lambda().eq(Panel::getSeq, seq));
+        this.remove(new QueryWrapper<Chart>().lambda().eq(Chart::getSeq, seq));
+        chartElementService.remove(new QueryWrapper<ChartElement>().lambda().eq(ChartElement::getSeq, seq));
+    }
+
+    @Override
+    public void export(HttpServletResponse response, Map<String, Object> params) {
+        // 导出查询与列表查询一致
+        List<Chart> charts = this.exportDataByParams(params);
+        try {
+            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER));
+            Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+            // 添加标题行 默认语言 en
+            String language = (String) params.get("language");
+            language = ToolUtil.isEmpty(language) ? "en" : language;
+
+            String sheetName = "Chart";
+            SXSSFWorkbook workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+            // 填充数据
+            this.fillData(charts, 1, sheet, workbook);
+
+            String fileName = "PanelChartExport.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        }
+
+    }
+
+    @Override
+    public Map importChartFromExcelFile(MultipartFile excelFile) {
+        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
+            throw new NZException(RCode.PANEL_IMPORTFILE_TYPE);
+        }
+
+        Workbook work = null;
+        try {
+            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
+        } catch (Exception e) {
+            log.error("解析导入图表文件格式有误", e);
+            throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
+        }
+
+        Sheet sheet = work.getSheetAt(0);
+        // 表头校验
+        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER));
+        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
+        if(!headerFlag){
+            throw new NZException(RCode.PANEL_EXPORT_HEADER_TEMPLATE_ERROR);
+        }
+
+
+        List<Map> failDetails = new ArrayList<>();
+        String seqUUID = UUID.randomUUID().toString();
+
+        // 保存并返回成功条数
+        int successNum = this.saveChartDataFromSheet(sheet, failDetails,seqUUID);
+        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+        Map resultMap = new HashMap(8);
+        resultMap.put("seq", seqUUID);
+        resultMap.put("totalNum", totalNum);
+        resultMap.put("successNum", successNum);
+        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("failDetail", failDetails);
+
+        return resultMap;
+    }
+
+    private int saveChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID) {
+        List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+        Map<String, Integer> panelNameAndIdMap = panelList.stream().collect(Collectors.toMap(Panel::getName, Panel::getId));
+        List<SysDictEntity> chartTypeList = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE).eq(SysDictEntity::getDelFlag, 0));
+        List<String> chartTypeValues = chartTypeList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+        Row row;
+        int successNum = 0;
+        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+            row = sheet.getRow(i);
+            if (row == null) continue;
+            int dataFromExcelRowNum = i + 1;
+            boolean saveFlag = true;
+            boolean typeFlag = true;
+            String panelName = ExcelUtils.getCellValue(row.getCell(0));
+            if (StringUtils.isEmpty(panelName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.PANEL_NAME_ISNULL.getMsg());
+            }
+            String title = ExcelUtils.getCellValue(row.getCell(1));
+            if (StringUtils.isEmpty(title)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TITLE_ISNULL.getMsg());
+            }
+            String type = ExcelUtils.getCellValue(row.getCell(2));
+            if (StringUtils.isEmpty(type)) {
+                saveFlag = typeFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_ISNULL.getMsg());
+            } else {
+                if (!chartTypeValues.contains(type)) {
+                    saveFlag = typeFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_INVALIDE.getMsg());
+                }
+            }
+            String span = ExcelUtils.getCellValue(row.getCell(3));
+            if (StringUtils.isEmpty(span)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_SPAN_ISNULL.getMsg());
+            }else{
+                Integer width = null;
+                try {
+                    width = Double.valueOf(span).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_FORMAT.getMsg());
+                }
+                if(width != null && (width < 1 || width > 12)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_INVALIDE.getMsg());
+                }
+            }
+            String height = ExcelUtils.getCellValue(row.getCell(4));
+            if (StringUtils.isEmpty(height)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_ISNULL.getMsg());
+            }else{
+                try {
+                    Double.valueOf(height).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_FORMAT.getMsg());
+                }
+            }
+            String unit = ExcelUtils.getCellValue(row.getCell(5));
+            if (StringUtils.isEmpty(unit)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_ISNULL.getMsg());
+            } else {
+                if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_NOTFOUND.getMsg());
+                }
+            }
+            String param = ExcelUtils.getCellValue(row.getCell(6));
+            if(typeFlag){
+                String msg = this.validateChartParamForImport(type, param);
+                if(StringUtils.isNotEmpty(msg)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                }
+            }
+            String elements = ExcelUtils.getCellValue(row.getCell(7));
+            if(typeFlag){
+                String msg = this.validateChartElementForImport(type, elements);
+                if(StringUtils.isNotEmpty(msg)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                }
+            }
+            if(saveFlag){
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
+                try {
+                    Integer panelId = panelNameAndIdMap.get(panelName);
+                    if(panelId == null){
+                        Panel panel = new Panel();
+                        panel.setName(panelName);
+                        panel.setType(Constant.PanelType.DASHBOARD.getValue());
+                        panel.setCreateBy(ShiroUtils.getUserId().intValue());
+                        panel.setSeq(seqUUID);
+                        panel.setNext(Constant.END_NEXT_VALUE);
+                        if(panelNameAndIdMap.size() == 0){
+                            panel.setPrev(Constant.START_PREV_VALUE);
+                            panelService.save(panel);
+                        } else {
+                            // 已存在chart 再次新增时自动排到末尾
+                            List<Panel> list = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+                            Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(Constant.END_NEXT_VALUE)).findAny().orElse(null);
+                            panel.setPrev(endPanel.getId());
+                            panelService.save(panel);
+                            // 更新原来最后图表顺序
+                            endPanel.setNext(panel.getId());
+                            panelService.updateById(endPanel);
+                        }
+                        panelId = panel.getId();
+                    }
+                    Chart chart = new Chart();
+                    chart.setSeq(seqUUID);
+                    chart.setPanelId(panelId);
+                    chart.setTitle(title);
+                    chart.setType(type);
+                    chart.setSpan(Double.valueOf(span).intValue());
+                    chart.setHeight(Double.valueOf(height).intValue());
+                    chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
+                    chart.setParam(param.toString());
+                    chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    chart.setNext(Constant.END_NEXT_VALUE);
+                    // 查询当前 panel 下的 charts
+                    List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, chart.getPanelId()));
+                    if (CollectionUtils.isEmpty(chartList)) {
+                        chart.setPrev(Constant.START_PREV_VALUE);
+                        this.save(chart);
+                    } else {
+                        Chart endChart = chartList.stream().filter(chart1 -> chart1.getNext().equals(Constant.END_NEXT_VALUE)).findAny().orElse(null);
+                        chart.setPrev(endChart.getId());
+                        this.save(chart);
+                        // 更新原来最后图表顺序
+                        endChart.setNext(chart.getId());
+                        this.updateById(endChart);
+                    }
+                    List<ChartElement> chartElements = JSONArray.parseArray(elements, ChartElement.class);
+                    if (CollectionUtils.isNotEmpty(chartElements)) {
+                        chartElements.forEach(chartElement -> {
+                            chartElement.setChartId(chart.getId());
+                            chartElement.setSeq(seqUUID);
+                            chartElement.setType(Constant.CHART_ELEMENT_EXPERT_TYPE);
+                        });
+                        chartElementService.saveBatch(chartElements);
+                    }
+                    dataSourceTransactionManager.commit(transactionStatus);
+                    panelNameAndIdMap.put(panelName, panelId);
+                    successNum++;
+                } catch (Exception e) {
+                    dataSourceTransactionManager.rollback(transactionStatus);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage());
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage(), e));
+                }
+            }
+        }
+        return successNum;
+    }
+
+    private String validateChartElementForImport(String type, String elements) {
+        // elemrnt 只有 alert  和 url 可以没有，其他必须有
+        if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type)){
+            if(StringUtils.isEmpty(elements)){
+                return RCode.CHART_ELEMENT_ISNULL.getMsg();
+            }
+            List<ChartElement> elementsList = null;
+            try {
+                elementsList = JSONArray.parseArray(elements, ChartElement.class);
+            } catch (Exception e) {
+                return RCode.CHART_ELEMENTS_FORMAT.getMsg();
+            }
+
+            if(CollectionUtils.isEmpty(elementsList)){
+                return RCode.CHART_ELEMENT_ISNULL.getMsg();
+            }
+
+            for (ChartElement element : elementsList) {
+                if(ToolUtil.isEmpty(element.getExpression())){
+                    return RCode.CHARTELEMENT_EXPRESSION_ISNULL.getMsg();
+                }
+            }
+        }
+        return "";
+    }
+
+    private String validateChartParamForImport(String type, String param) {
+       switch (type){
+           // url
+           case Constant.CHART_URL_TYPE: {
+               if (StringUtils.isEmpty(param)) {
+                   return RCode.CHART_URLPARAM_ISNULL.getMsg();
+               }
+               Map map = null;
+               try {
+                   map = JSONObject.parseObject(param, Map.class);
+               } catch (Exception e) {
+                   return RCode.CHART_PARAM_FORMAT.getMsg();
+               }
+               Object url = map.get(Constant.CHART_URL_TYPE);
+               if (ToolUtil.isEmpty(url)) {
+                   return RCode.CHART_PARAMURL_ISNULL.getMsg();
+               }
+               if (!CommonUtils.checkUrl(url.toString())) {
+                   return RCode.CHART_PARAMURL_FORMAT.getMsg();
+               }
+               break;
+           }
+           // singleStat
+           case Constant.CHART_SINGLESTAT_TYPE: {
+               if (StringUtils.isEmpty(param)) {
+                   return RCode.CHART_SINGLESTATPARAM_ISNULL.getMsg();
+               }
+               Map map = null;
+               try {
+                   map = JSONObject.parseObject(param, Map.class);
+               } catch (Exception e) {
+                   return RCode.CHART_PARAM_FORMAT.getMsg();
+               }
+               Object statistics = map.get(Constant.CHART_SINGLESTAT_PARAMkEY);
+               if (ToolUtil.isEmpty(statistics)) {
+                   return RCode.CHART_PARAMSINGLESTAT_ISNULL.getMsg();
+               }
+               if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
+                   return RCode.CHART_PARAMSINGLESTAT_INVALIDE.getMsg();
+               }
+               break;
+           }
+           default:{
+               if(StringUtils.isNotEmpty(param)){
+                   try {
+                       JSONObject.parseObject(param, Map.class);
+                   } catch (Exception e) {
+                       return RCode.CHART_PARAM_FORMAT.getMsg();
+                   }
+               }
+           }
+       }
+       return "";
+    }
+
+    private void addFailDetail(int i, List<Map> failDetails, String msg) {
+        Map failDetail = new HashMap(4);
+        failDetail.put("lineNo", i);
+        failDetail.put("errorMsg", msg);
+        failDetails.add(failDetail);
+    }
+
+    private void fillData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+        List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+        Map<Integer, String> panelIdAndNameMap = panelList.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
+        Row row;
+        for (Chart chart : charts) {
+            if(chart == null) continue;
+            row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(panelIdAndNameMap.get(chart.getPanelId()));
+            row.createCell(1).setCellValue(chart.getTitle());
+            row.createCell(2).setCellValue(chart.getType());
+            row.createCell(3).setCellValue(chart.getSpan());
+            row.createCell(4).setCellValue(chart.getHeight());
+            row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+            row.createCell(6).setCellValue(this.handleChartParam(chart.getParam()));
+            row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(workbook, row, 7);
+        }
+    }
+
+    private String handleChartParam(Object param) {
+        if (ToolUtil.isEmpty(param)) {
+            return "";
+        }
+        Map<String, Object> map = JSONObject.parseObject(param.toString(), Map.class);
+        map.entrySet().removeIf(entry -> ToolUtil.isEmpty(entry.getValue()));
+        return ToolUtil.isEmpty(map) ? "" : JSONObject.toJSONString(map);
+    }
+
+    private String handleChartElementForExport(List<ChartElement> chartElements) {
+        if (CollectionUtils.isEmpty(chartElements)) {
+            return "";
+        }
+        List<Map> handleMaps = new ArrayList<>();
+        Map tempMap;
+        for (ChartElement element : chartElements) {
+            tempMap = new LinkedHashMap(4);
+            tempMap.put("expression", element.getExpression());
+            if(ToolUtil.isNotEmpty(element.getLegend())){
+                tempMap.put("legend", element.getLegend());
+            }
+            handleMaps.add(tempMap);
+        }
+        return JSONArray.toJSONString(handleMaps);
+    }
+
+    private String getUnitDescrByVal(Integer unitVal) {
+        String unitDescr = null;
+        for (Map.Entry<String, Integer> entry : Constant.ALERT_RULE_UNIT_MAP.entrySet()) {
+            if (entry.getValue().equals(unitVal)) {
+                unitDescr = entry.getKey();
+                break;
+            }
+        }
+        return unitDescr;
+    }
+
+    private List<Chart> exportDataByParams(Map<String, Object> params) {
+        Integer panelId = null;
+        if (ToolUtil.isNotEmpty(params.get("panelId"))) {
+            panelId = Integer.valueOf(params.get("panelId").toString());
+        }
+        Integer chartId = null;
+        if (ToolUtil.isNotEmpty(params.get("chartId"))) {
+            chartId = Integer.valueOf(params.get("chartId").toString());
+        }
+        List<Chart> chartList = new ArrayList<>();
+        if (panelId == null) {
+            // 导出所有 dashboard panel
+            List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+            panelList = panelService.getSequentialPanelList(panelList);
+            for (Panel panel : panelList) {
+                chartList.addAll(this.queryChartsByPanelId(panel.getId(),null));
+            }
+        } else {
+            if (chartId != null) {
+                // 只导出当前 chart
+                chartList.addAll(this.queryChartsByPanelId(panelId, chartId));
+            } else {
+                // 导出 panel 下所有chart
+                chartList.addAll(this.queryChartsByPanelId(panelId, null));
+            }
+        }
+        return chartList;
+    }
+
+    public List<Chart> queryChartsByPanelId(Integer panelId,Integer chartId) {
+        List<Chart> allCharts = chartDao.queryCharts(panelId, chartId, null);
+        allCharts = this.getSequentialChartList(allCharts);
+        return allCharts;
     }
 
     private void copyChartsToAssetChartsByModelPanel(Panel modelPanel, Panel targetPanel, Asset asset) {

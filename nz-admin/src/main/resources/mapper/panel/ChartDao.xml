@@ -9,6 +9,11 @@
         <result property="height" column="height"></result>
         <result property="createAt" column="create_at"></result>
         <result property="type" column="type"></result>
+        <result property="prev" column="prev"></result>
+        <result property="next" column="next"></result>
+        <result property="panelId" column="panel_id"></result>
+        <result property="param" column="param"></result>
+        <result property="unit" column="unit"></result>
         <collection property="elements" ofType="com.nis.modules.panel.entity.ChartElement" columnPrefix="ce_">
             <id property="id" column="id"/>
             <result property="expression" column="expression"></result>

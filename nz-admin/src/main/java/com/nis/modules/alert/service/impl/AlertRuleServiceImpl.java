@@ -598,10 +598,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
-            this.fillData(list, 1, sheet);
-
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, sheet, 9);
+            this.fillData(list, 1, sheet, workbook);
 
             String fileName = "AlterRuleExport.xlsx";
             response.setContentType("application/excel");
@@ -619,7 +616,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.remove(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getSeq, seq));
     }
 
-    private void fillData(List<AlertRuleEntity> list, int rowNum, SXSSFSheet sheet) {
+    private void fillData(List<AlertRuleEntity> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
         List<SysUserEntity> sysUserList = sysUserService.list();
         Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
         Row row;
@@ -646,6 +643,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
                 row.createCell(9).setCellValue(receiveNames);
             }
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(workbook, row, 9);
         }
     }
 

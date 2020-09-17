@@ -33,6 +33,11 @@ public class Panel extends Node {
      */
     private Integer buildIn;
 
+    /**
+     * 导入唯一标识
+     */
+    private String seq;
+
     @TableField(exist = false)
     private SysUserEntity creator;
 

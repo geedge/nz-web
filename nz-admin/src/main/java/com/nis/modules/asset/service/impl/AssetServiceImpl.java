@@ -1642,10 +1642,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
-            this.fillData(list, 1, sheet);
+            this.fillData(list, 1, sheet, workbook);
 
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, sheet, 35);
             // 响应为流
             String fileName = "AssetsExport.xlsx"; // 默认名称
             response.setContentType("application/excel");
@@ -1658,7 +1656,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    private void fillData(List<Asset> list, int rowNum, Sheet sheet) {
+    private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook) {
         List<SysDictEntity> assetStates = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_STATE_TYPE).eq(SysDictEntity::getDelFlag, 0));
         Map<Integer, String> statesMap = assetStates.stream().collect(Collectors.toMap(SysDictEntity::getCode, SysDictEntity::getValue));
 
@@ -1707,6 +1705,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     row.createCell(35).setCellValue(ipmiPort);
                 }
             }
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(workbook, row, 35);
         }
     }
 

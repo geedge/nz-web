@@ -221,22 +221,16 @@ public class ExcelUtils {
     /**
      * 设置单元格样式
      * @param workbook
-     * @param sheet
-     * @param colNum    列
+     * @param row
+     * @param cellNum
      */
-    public static void setDataCellStyle(Workbook workbook, Sheet sheet, int colNum) {
+    public static void setDataCellStyle(Workbook workbook, Row row, int cellNum) {
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
-        int firstRowNum = sheet.getFirstRowNum();
-        // 获得当前sheet的结束行
-        int maxRowNum = sheet.getLastRowNum();
         Cell cell;
-        for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
-            Row row = sheet.getRow(i);
-            for (int j = 0; j <= colNum; j++) {
-                cell = row.getCell(j);
-                cell = cell == null ? row.createCell(j) : cell;
-                cell.setCellStyle(dataStyle);
-            }
+        for (int i = 0; i <= cellNum; i++) {
+            cell = row.getCell(i);
+            cell = cell == null ? row.createCell(i) : cell;
+            cell.setCellStyle(dataStyle);
         }
     }
 

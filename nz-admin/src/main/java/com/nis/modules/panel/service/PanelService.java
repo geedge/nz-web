@@ -19,4 +19,6 @@ public interface PanelService extends IService<Panel> {
     List<Panel> queryList(Map<String, Object> params);
 
     void delPanelsAndChartInfoByPanelIds(Set<Integer> panelIds);
+
+    List<Panel> getSequentialPanelList(List<Panel> panels);
 }
