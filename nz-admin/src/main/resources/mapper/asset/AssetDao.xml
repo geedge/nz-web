@@ -55,6 +55,20 @@
         </association>
     </resultMap>
 
+    <resultMap type="com.nis.modules.asset.entity.Asset" id="assetWithTags">
+        <result property="id" column="id"/>
+        <result property="sn" column="sn"/>
+        <result property="host" column="host"/>
+        <result property="modelId" column="model_id"/>
+
+        <collection property="tags" ofType="com.nis.modules.asset.entity.AssetTag" columnPrefix="asst_">
+            <result column="id" property="id"/>
+            <result column="tag" property="tag"/>
+            <result column="value" property="value"/>
+        </collection>
+
+    </resultMap>
+
     <sql id="asset_info_columns">
        ass.id,
        ass.sn,
@@ -238,6 +252,7 @@
     <select id="getAssetsByChartIds" resultMap="chartIdWithAssetEntity">
             SELECT
                 cha.id as chartId,
+                ass.id,
                 ass.sn,
                 ass.host
             FROM
@@ -290,5 +305,29 @@
             <foreach collection="ids" item="id" index="no" open="(" separator="," close=")">
                 #{id}
             </foreach>
+    </select>
+
+    <select id="getAssetWithTagsByAssetId" resultMap="assetWithTags">
+        SELECT
+            ass.*,
+            asst.tag AS asst_tag,
+            asst.value AS asst_value
+        FROM
+            asset ass
+            LEFT JOIN asset_tag asst ON ass.id = asst.asset_id
+        WHERE
+            ass.id = #{assetId}
+    </select>
+
+    <select id="getAssetsWithTagsByModelId" resultMap="assetWithTags">
+        SELECT
+            ass.*,
+            asst.tag AS asst_tag,
+            asst.value AS asst_value
+        FROM
+            asset ass
+            LEFT JOIN asset_tag asst ON ass.id = asst.asset_id
+        WHERE
+            ass.model_id = #{modelId}
     </select>
 </mapper>

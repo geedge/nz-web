@@ -5,6 +5,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.metric.dto.MetricsDto;
+import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.terminal.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,4 +55,7 @@ public interface AssetService extends IService<Asset> {
 
     List<String> getTagValsByKeyOrderCounts(String key, String value);
 
+    List<Asset> getAssetsWithTagsByModelId(Integer modelId);
+
+    List<Chart> getAssetsWithTagByChartIds(List<Integer> chartIds);
 }

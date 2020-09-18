@@ -44,4 +44,8 @@ public interface AssetDao extends BaseMapper<Asset> {
     List<AssetStat> getAlertNumsMap();
 
     List<Integer> getPingStatusByAssetIds(@Param("ids") Set<Integer> assetIds);
+
+    Asset getAssetWithTagsByAssetId(@Param("assetId") Integer assetId);
+
+    List<Asset> getAssetsWithTagsByModelId(@Param("modelId") Integer modelId);
 }

@@ -9,8 +9,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetTag;
+import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.panel.dao.ChartDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.ChartElement;
@@ -45,6 +46,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,7 +62,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     private PanelService panelService;
 
     @Autowired
-    private AssetDao assetDao;
+    private AssetService assetService;
 
     @Autowired
     private NodeService nodeService;
@@ -159,12 +161,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     /**
      * 新增 model 时对已通过对应 model panel 创建的 asset panel 追加新增的 chart
      *
-     * @param panel
+     * @param modelPanel
      * @param chart
      */
-    private void saveAssetChartsSimultaneously(Panel panel, Chart chart) {
+    private void saveAssetChartsSimultaneously(Panel modelPanel, Chart chart) {
         // 1. 通过 panel  linke 的 modelId 查找该 model 下是否关联 asset
-        List<Asset> assets = assetDao.selectList(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, panel.getLink()));
+        List<Asset> assets = assetService.getAssetsWithTagsByModelId(modelPanel.getLink());
         if (CollectionUtils.isEmpty(assets)) {
             return;
         }
@@ -262,7 +264,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         chartElementService.delElementByChartIds(idList);
 
         // 3. 返回引用 chartId 和 对应的 asset 信息 ，准备做 变量替换所需
-        List<Chart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(idList);
+        List<Chart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
         Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(Chart::getId, Chart::getAsset));
 
         // 4. 处理更新
@@ -1293,6 +1295,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         chartElementService.saveBatch(elements);
     }
 
+    private static Pattern PATTERN = Pattern.compile(".*\\{\\{asset.tag.\\[.*\\]\\}\\}.*");
+
     /**
      * model 同步更新时 标签替换
      *
@@ -1303,6 +1307,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     private String replacAssetInfos(String str, Asset asset) {
         str = str.replaceAll("\\{\\{asset.host\\}\\}", asset.getHost());
         str = str.replaceAll("\\{\\{asset.sn\\}\\}", asset.getSn());
+        List<AssetTag> tags = asset.getTags();
+        if(CollectionUtils.isNotEmpty(tags)){
+            for (AssetTag tag : tags) {
+                if(PATTERN.matcher(str).matches()){
+                    str = str.replaceAll("\\{\\{asset.tag.\\[" + StringUtils.escapeString(tag.getTag()) + "\\]\\}\\}", tag.getValue());
+                }
+                str = str.replaceAll("\\{\\{asset.tag." + tag.getTag() + "\\}\\}", tag.getValue());
+            }
+        }
         return str;
     }
 }

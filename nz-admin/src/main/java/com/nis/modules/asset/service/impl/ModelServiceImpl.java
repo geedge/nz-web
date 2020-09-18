@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.dao.ModelDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Model;
@@ -67,6 +68,9 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
 
     @Autowired
     private PanelService panelService;
+
+    @Autowired
+    private AssetDao assetDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -234,7 +238,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      * @param assetId
      */
     private void updateAssetChartsThroughRelatedModel(Integer assetId) {
-        Asset asset = assetService.getById(assetId);
+        Asset asset = assetDao.getAssetWithTagsByAssetId(assetId);
         chartService.updateAssetChartsThroughRelatedModel(asset);
     }
 
@@ -244,7 +248,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
      * @param modelId
      */
     private void updateuAllAssetChartsUnderCurrentModel(Integer modelId) {
-        List<Asset> assetList = assetService.list(new QueryWrapper<Asset>().lambda().eq(Asset::getModelId, modelId));
+        List<Asset> assetList = assetDao.getAssetsWithTagsByModelId(modelId);
         if (CollectionUtils.isEmpty(assetList)) {
             return;
         }

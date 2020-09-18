@@ -961,6 +961,34 @@ public abstract class StringUtils {
         return str;
     }
 
+    /**
+     * 转换特殊字符
+     *
+     * @param s 需要转义的字符串
+     * @return 返回转义后的字符串
+     */
+    public static String escapeString(String s) {
+        if (StringUtils.isEmpty(s)) {
+            return s;
+        }
+        StringBuilder sb = new StringBuilder();
+
+        char c;
+        for (int i = 0; i < s.length(); i++) {
+            c = s.charAt(i);
+            // These characters are part of the query syntax and must be escaped
+            if (c == '\\' || c == '+' || c == '-' || c == '!' || c == '(' || c == ')'
+                    || c == ':' || c == '^' || c == '[' || c == ']' || c == '\"'
+                    || c == '{' || c == '}' || c == '~' || c == '*' || c == '?'
+                    || c == '|' || c == '&' || c == ';' || c == '/' || c == '.'
+                    || c == '$' || Character.isWhitespace(c)) {
+                sb.append("\\");
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
     public static void main(String[] args) {
         System.out.println(camelToSplitName("getName","_"));
     }

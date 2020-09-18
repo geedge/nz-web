@@ -21,6 +21,7 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
@@ -1818,6 +1819,27 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<AssetTag> tags = assetTagDao.getTagValsByKeyOrderCounts(key, value);
         List<String> values = tags.stream().map(AssetTag::getValue).collect(Collectors.toList());
         return values;
+    }
+
+    @Override
+    public List<Asset> getAssetsWithTagsByModelId(Integer modelId) {
+        return assetDao.getAssetsWithTagsByModelId(modelId);
+    }
+
+    @Override
+    public List<Chart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
+        List<Chart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
+        if(CollectionUtils.isEmpty(chartIdWithAssetEntity)){
+            return Collections.emptyList();
+        }
+        List<AssetTag> tags = assetTagService.list();
+        Map<Integer, List<AssetTag>> assetIdAndTagsMap = tags.stream().collect(Collectors.groupingBy(AssetTag::getAssetId));
+        Asset asset;
+        for (Chart chart : chartIdWithAssetEntity) {
+            asset = chart.getAsset();
+            asset.setTags(assetIdAndTagsMap.get(asset.getId()));
+        }
+        return chartIdWithAssetEntity;
     }
 
     private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {
