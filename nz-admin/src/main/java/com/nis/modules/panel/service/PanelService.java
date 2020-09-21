@@ -21,4 +21,6 @@ public interface PanelService extends IService<Panel> {
     void delPanelsAndChartInfoByPanelIds(Set<Integer> panelIds);
 
     List<Panel> getSequentialPanelList(List<Panel> panels);
+
+    void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds);
 }

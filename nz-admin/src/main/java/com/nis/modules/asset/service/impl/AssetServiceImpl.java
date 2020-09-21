@@ -207,6 +207,16 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
             params.put("innerAssetIdsByTagParams", assetIds);
         }
+
+        if (ToolUtil.isNotEmpty(params.get("moduleId"))) {
+            List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getModuleId, params.get("moduleId")));
+            if (CollectionUtils.isEmpty(endpoints)) {
+                params.put("innerAssetIdsByModuleId", -99999);
+            } else {
+                List<Integer> assetIds = endpoints.stream().map(Endpoint::getAssetId).distinct().collect(Collectors.toList());
+                params.put("innerAssetIdsByModuleId", assetIds);
+            }
+        }
     }
     
     @Override

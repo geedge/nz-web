@@ -836,9 +836,37 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void cancelImport(String seq) {
-        panelService.remove(new QueryWrapper<Panel>().lambda().eq(Panel::getSeq, seq));
-        this.remove(new QueryWrapper<Chart>().lambda().eq(Chart::getSeq, seq));
+        List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+        List<Integer> delPanelIds = panelList.stream().filter(panel -> seq.equals(panel.getSeq())).map(Panel::getId).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(delPanelIds)) {
+            // 删除 panel
+            panelService.remove(new QueryWrapper<Panel>().lambda().eq(Panel::getSeq, seq));
+            // 处理删除之后其余 panel 的位置
+            panelService.handlePositionAfterDelete(panelService.getSequentialPanelList(panelList), delPanelIds);
+        }
+
+        List<Chart> delCharts = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getSeq, seq));
+        if (CollectionUtils.isNotEmpty(delCharts)) {
+            // 得到要删除的图表完整顺序
+            List<Integer> delChartsPanelIds = delCharts.stream().map(Chart::getPanelId).distinct().collect(Collectors.toList());
+            List<Chart> charts = this.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, delChartsPanelIds));
+            // 按照 panel 分组 获取对象panel 下完整的 chart 顺序
+            Map<Integer, List<Chart>> panelIdAndChartsMap = charts.stream().collect(Collectors.groupingBy(Chart::getPanelId));
+            Map<Integer, List<Chart>> panelIdAnddelChartsMap = delCharts.stream().collect(Collectors.groupingBy(Chart::getPanelId));
+            List<Chart> sequentialChartList;
+            List<Chart> delChartsByPanelId;
+            for (Map.Entry<Integer, List<Chart>> entry : panelIdAndChartsMap.entrySet()) {
+                sequentialChartList = this.getSequentialChartList(entry.getValue());
+                delChartsByPanelId = panelIdAnddelChartsMap.get(entry.getKey());
+                if (CollectionUtils.isNotEmpty(sequentialChartList) && CollectionUtils.isNotEmpty(delChartsByPanelId)) {
+                    this.handlePositionAfterDelete(sequentialChartList, delChartsByPanelId.stream().map(Chart::getId).collect(Collectors.toList()));
+                }
+            }
+            // 删除 charts
+            this.remove(new QueryWrapper<Chart>().lambda().eq(Chart::getSeq, seq));
+        }
         chartElementService.remove(new QueryWrapper<ChartElement>().lambda().eq(ChartElement::getSeq, seq));
     }
 
@@ -1065,8 +1093,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     successNum++;
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage());
-                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage(), e));
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage() + "");
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
                 }
             }
         }

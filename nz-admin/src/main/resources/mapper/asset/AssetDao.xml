@@ -204,6 +204,13 @@
                     #{id}
                 </foreach>
             </if>
+
+            <if test="params.innerAssetIdsByModuleId != null and params.innerAssetIdsByModuleId.size > 0">
+                AND ass.id IN
+                <foreach collection="params.innerAssetIdsByModuleId" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
         </where>
     </select>
 

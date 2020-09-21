@@ -122,7 +122,8 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
      * @param sequentialPanelList      删除之前有序的链表
      * @param deleteIds                删除的 IDS
      */
-    private void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds) {
+    @Override
+    public void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds) {
         // 1. 全删除了
         if (sequentialPanelList.size() == deleteIds.size()) {
             return;
