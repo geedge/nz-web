@@ -56,6 +56,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -166,7 +167,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         if (ToolUtil.isNotEmpty(params.get("tags"))) {
-            String tagStr = String.valueOf(params.get("tags"));
+            String tagStr = "";
+            try {
+                tagStr = URLDecoder.decode(String.valueOf(params.get("tags")), "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                logger.error(String.format("tag url转码失败，转码字符串：%s,错误信息是：%s", params.get("tags"), e.getMessage()), e);
+            }
             Map<String, List<String>> tagParams = JSONObject.parseObject(tagStr, Map.class);
 
             List<AssetTag> tagList = assetTagService.list(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getTag, new ArrayList<>(tagParams.keySet())));
