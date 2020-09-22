@@ -1832,6 +1832,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Override
     public List<String> getTagValsByKeyOrderCounts(String key, String value) {
         value = value == null ? "" : value;
+        try {
+            key = URLDecoder.decode(String.valueOf(key), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            logger.error(String.format("tag key url转码失败，转码字符串：%s,错误信息是：%s", key, e.getMessage()), e);
+        }
         List<AssetTag> tags = assetTagDao.getTagValsByKeyOrderCounts(key, value);
         List<String> values = tags.stream().map(AssetTag::getValue).collect(Collectors.toList());
         return values;
