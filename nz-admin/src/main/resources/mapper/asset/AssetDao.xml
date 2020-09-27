@@ -337,4 +337,16 @@
         WHERE
             ass.model_id = #{modelId}
     </select>
+
+    <select id="getAssetsStatColumn" resultType="com.nis.modules.asset.entity.Asset">
+        SELECT
+            id,
+            host,
+            state,
+            idc_id,
+            cabinet_id,
+            model_id
+        FROM
+            asset
+    </select>
 </mapper>

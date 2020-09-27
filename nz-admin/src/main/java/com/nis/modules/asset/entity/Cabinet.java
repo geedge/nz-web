@@ -67,7 +67,7 @@ public class Cabinet implements Serializable {
      * 资产统计
      */
     @TableField(exist = false)
-    private AssetStat assetStat;
+    private Map assetStat;
 
     /**
      * 告警统计

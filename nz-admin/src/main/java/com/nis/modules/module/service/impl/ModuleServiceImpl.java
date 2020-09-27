@@ -98,8 +98,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         if(!flag){
             throw new NZException(RCode.MODULE_NAME_DUPLICATE);
         }
-		//ValidateUtils.is(moduleEntity.getPort()).notNull(RCode.MODULE_PORT_ISNULL);
-		//ValidateUtils.is(moduleEntity.getPath()).notNull(RCode.MODULE_PATH_ISNULL);
+
 		ValidateUtils.is(moduleEntity.getName()).maxLength(64,RCode.MODULE_NAME_TOO_LONG);
 		ValidateUtils.is(moduleEntity.getRemark()).maxLength(1024,RCode.MODULE_REMARK_TOO_LONG);
 		if (moduleEntity.getPort() != null) {
@@ -233,6 +232,11 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     public void saveModule(Module moduleEntity) {
         this.validateParam(moduleEntity);
 
+        // 设置默认路径
+        if (Constant.MODULE_TYPE_HTTP.equals(moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
+            moduleEntity.setParam(Constant.MODULE_HTTP_DEFAULT_PATH);
+        }
+
         // 处理snmYml字段
         String snmpParam = moduleEntity.getSnmpParam();
         if (StringUtils.isNotEmpty(snmpParam)) {
@@ -278,15 +282,16 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
     private Map getAssetUpStatByAssetIds(Set<Integer> assetIds) {
         Map assetStatMap = new HashMap<>(4);
-        if (CollectionUtils.isEmpty(assetIds)) {
+        SysConfigEntity pingSwitchConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
+        if (CollectionUtils.isEmpty(assetIds) || !Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
             assetStatMap.put("up", 0);
             assetStatMap.put("down", 0);
             return assetStatMap;
         }
 
         List<Integer> pingStatusByAssetIds = assetDao.getPingStatusByAssetIds(assetIds);
-        long up = pingStatusByAssetIds.stream().filter(status -> status == 1).count();
-        long down = pingStatusByAssetIds.stream().filter(status -> status == 0).count();
+        long up = pingStatusByAssetIds.stream().filter(status -> status != null && status == 1).count();
+        long down = pingStatusByAssetIds.stream().filter(status -> status != null && status == 0).count();
         assetStatMap.put("up", up);
         assetStatMap.put("down", down);
         return assetStatMap;

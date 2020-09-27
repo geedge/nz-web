@@ -61,4 +61,7 @@ public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
      * @return
      */
     List<AlertRuleStat> getRuleStatGooupByEndpoint(@Param("ruleId") Integer id);
+
+    // 获取用于统计的列 id alert_name severity
+    List<AlertRuleEntity> getAlertRulesStatColumn();
 }

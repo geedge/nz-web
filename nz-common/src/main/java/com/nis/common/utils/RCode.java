@@ -142,7 +142,7 @@ public enum RCode {
     ENDPOINT_HOST_ERROR(233008, "Endpoint host is incorrect"),
     ENDPOINT_PROMETHEUS_UNAVAILABLE(230009,"Prometheus server unavailable"),
     ENDPOINT_PROMETHEUS_ON_USE(230010,"Prometheus can be used"),
-    ENDPOINT_PROMETHEUS_UNUSE(230011,"Prometheus can not be used"),
+    ENDPOINT_PROMETHEUS_UNUSE(230011,"Endpoint connection refused"),
     ENDPOINT_PARAM_FORMAT_ERROR(233012,"Endpoint param incorrect format"),
     ENDPOINT_IMPORTFILE_TYPE(239013,"Only support import XLS or XLSX file"),
     ENDPOINT_IMPORTFILE_FAILED(239014,"Import file resolution failed"),

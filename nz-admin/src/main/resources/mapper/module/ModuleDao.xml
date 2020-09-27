@@ -83,4 +83,13 @@
 			#{projectId}
 		</foreach>
 	</select>
+
+    <select id="getModulesStatColumn" resultType="com.nis.modules.module.entity.Module">
+        SELECT
+            id,
+            name,
+            project_id
+        FROM
+            module
+    </select>
 </mapper>

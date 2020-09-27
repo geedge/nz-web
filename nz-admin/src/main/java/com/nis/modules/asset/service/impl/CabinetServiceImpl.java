@@ -13,7 +13,8 @@ import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.IdcService;
-import com.nis.modules.overview.dao.OverviewDao;
+import com.nis.modules.overview.entity.AssetStat;
+import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     private CabinetDao cabinetDao;
 
     @Autowired
-    private OverviewDao overviewDao;
+    private OverviewService overviewService;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -54,46 +55,36 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         IPage<Cabinet> page = new Query<Cabinet>().getPage(params);
         // 机柜列表 并且含有asset统计信息
         List<Cabinet> cabinets = cabinetDao.queryPage(page, params);
-        Map<Integer, Cabinet> cabinetMap = new HashMap<>();
-        for (Cabinet cabinet : cabinets) {
-            cabinetMap.put(cabinet.getId(), cabinet);
+
+        Map<Integer, AssetStat> cabinetIdAndStatMap = new HashMap<>();
+        List<AssetStat> statByCabinet = overviewService.getAssetStatByCabinet();
+        for (AssetStat stat : statByCabinet) {
+            cabinetIdAndStatMap.put(stat.getId(), stat);
         }
 
-        // 按照DC维度统计alert数量 在库的资产
-        List<Map> mapList = overviewDao.assetCabAndAlertSeveritysNums(1);
-        Integer cabinetId, highNum, mediumNum, lowNum;
-        Cabinet cabinet;
+        AssetStat stat;
+        Map assetStat;
         Map alertStat;
-        for (Map map : mapList) {
-            if (map.get("cabinetId") == null) {
-                continue;
-            }
-            cabinetId = Integer.parseInt(map.get("cabinetId").toString());
-            cabinet = cabinetMap.get(cabinetId);
-            if (cabinet != null) {
-                alertStat = new HashMap();
-                highNum = Integer.parseInt(map.get("alertHigh").toString());
-                mediumNum = Integer.parseInt(map.get("alertMedium").toString());
-                lowNum = Integer.parseInt(map.get("alertLow").toString());
-                alertStat.put("high", highNum);
-                alertStat.put("medium", mediumNum);
-                alertStat.put("low", lowNum);
-                alertStat.put("total", highNum + mediumNum + lowNum);
-                cabinet.setAlertStat(alertStat);
-            }
+        for (Cabinet cabinet : cabinets) {
+            stat = cabinetIdAndStatMap.get(cabinet.getId());
+            stat = stat == null ? new AssetStat() : stat;
+            assetStat = new HashMap();
+            alertStat = new HashMap();
+
+            assetStat.put("total", stat.getTotal());
+            assetStat.put("inStock", stat.getInStock());
+            assetStat.put("outStock", stat.getOutStock());
+
+            alertStat.put("total", stat.getAlertTotal());
+            alertStat.put("high", stat.getAlertHigh());
+            alertStat.put("medium", stat.getAlertMedium());
+            alertStat.put("low", stat.getAlertLow());
+
+            cabinet.setAssetStat(assetStat);
+            cabinet.setAlertStat(alertStat);
         }
 
-        alertStat = new HashMap();
-        alertStat.put("high", 0);
-        alertStat.put("medium", 0);
-        alertStat.put("low", 0);
-        alertStat.put("total", 0);
-        for (Cabinet entity : cabinetMap.values()) {
-            if (entity.getAlertStat() == null) {
-                entity.setAlertStat(alertStat);
-            }
-        }
-        page.setRecords(new ArrayList<>(cabinetMap.values()));
+        page.setRecords(new ArrayList<>(cabinets));
         return new PageUtils(page);
     }
 

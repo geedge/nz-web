@@ -8,15 +8,17 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.IdcDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Idc;
-import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.IdcService;
-import com.nis.modules.overview.dao.OverviewDao;
 import com.nis.modules.overview.entity.AssetStat;
+import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -41,13 +43,13 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     private SysUserService sysUserService;
 
     @Autowired
-    private AssetService assetService;
+    private AssetDao assetDao;
 
     @Autowired
     private IdcDao idcDao;
 
     @Autowired
-    private OverviewDao overviewDao;
+    private AlertMessageDao alertMessageDao;
 
     @Autowired
     private CabinetDao cabinetDao;
@@ -55,32 +57,43 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     @Autowired
     private PromserverDao promserverDao;
 
+    @Autowired
+    private OverviewService overviewService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<Idc> page = new Query<Idc>().getPage(params);
         // dc列表数据
         List<Idc> datas = idcDao.queryPage(page, params);
 
-        // 获取idc 中 asset alert 统计信息
-        List<AssetStat> assetStatInfoByIdc = overviewDao.getAssetStatInfoByIdc();
-        Map<String, AssetStat> idcNameAndStatMap = new HashMap<>();
-        for (AssetStat stat : assetStatInfoByIdc) {
-            idcNameAndStatMap.put(stat.getName(), stat);
+        List<Asset> assetList = assetDao.getAssetsStatColumn();
+        List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+        Map<Integer, AssetStat> idcIdAndStatInfoMap = new HashMap<>();
+        List<AssetStat> assetStatByDc = overviewService.getAssetStatByDc(assetList, Collections.emptyList(), alertList);
+        for (AssetStat stat : assetStatByDc) {
+            idcIdAndStatInfoMap.put(stat.getId(), stat);
         }
 
-        AssetStat assetStat;
+        AssetStat stat;
+        Map assetStat;
         Map alertStat;
-        for (Idc idc : datas) {
-            assetStat = idcNameAndStatMap.get(idc.getName());
+        for (Idc data : datas) {
+            stat = idcIdAndStatInfoMap.get(data.getId());
+            stat = stat == null ? new AssetStat() : stat;
+
+            assetStat = new HashMap();
+            assetStat.put("total", stat.getTotal());
+            assetStat.put("inStock", stat.getInStock());
+            assetStat.put("outStock", stat.getOutStock());
 
             alertStat = new HashMap();
-            alertStat.put("total", assetStat.getAlertTotal());
-            alertStat.put("high", assetStat.getAlertHigh());
-            alertStat.put("medium", assetStat.getAlertMedium());
-            alertStat.put("low", assetStat.getAlertLow());
+            alertStat.put("total", stat.getAlertTotal());
+            alertStat.put("high", stat.getAlertHigh());
+            alertStat.put("medium", stat.getAlertMedium());
+            alertStat.put("low", stat.getAlertLow());
 
-            idc.setAssetStat(assetStat);
-            idc.setAlertStat(alertStat);
+            data.setAssetStat(assetStat);
+            data.setAlertStat(alertStat);
         }
 
         page.setRecords(datas);
@@ -177,7 +190,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         }
 
         // 2. 校验是否包含 asset
-        List<Asset> assets = assetService.list();
+        List<Asset> assets = assetDao.selectList(null);
         Set<Integer> assetUsedIdcIds = assets.stream().map(Asset::getIdcId).collect(Collectors.toSet());
 
         idList = Arrays.stream(ids).collect(Collectors.toList());

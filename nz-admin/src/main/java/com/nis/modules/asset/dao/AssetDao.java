@@ -48,4 +48,7 @@ public interface AssetDao extends BaseMapper<Asset> {
     Asset getAssetWithTagsByAssetId(@Param("assetId") Integer assetId);
 
     List<Asset> getAssetsWithTagsByModelId(@Param("modelId") Integer modelId);
+
+    // 只返回统计的列  id  host  state idc_id model_id
+    List<Asset> getAssetsStatColumn();
 }

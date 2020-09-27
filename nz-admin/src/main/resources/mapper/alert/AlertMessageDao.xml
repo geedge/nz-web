@@ -221,4 +221,19 @@
 		</foreach>
 	</update>
 
+	<select id="getAlertsStatColumn" resultType="com.nis.modules.alert.entity.AlertMessageEntity">
+		SELECT
+			severity,
+			rule_id,
+			project_id,
+			module_id,
+			asset_id,
+			endpoint_id,
+			dc_id
+		FROM
+			alert_message
+		WHERE
+			state = 1
+	</select>
+
 </mapper>

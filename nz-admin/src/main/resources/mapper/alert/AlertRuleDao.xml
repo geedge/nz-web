@@ -150,4 +150,13 @@
         GROUP BY
             am.endpoint_id
     </select>
+
+    <select id="getAlertRulesStatColumn" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
+        SELECT
+            id,
+            alert_name,
+            severity
+        FROM
+            alert_rule
+    </select>
 </mapper>

@@ -10,52 +10,52 @@ public class DcStat extends EndpointStat {
     /**
      * 资产 总数
      */
-    private int assetTotal;
+    private long assetTotal;
 
     /**
      * 在库资产数量
      */
-    private int assetInStock;
+    private long assetInStock;
 
     /***
      * 出库资产数量
      */
-    private int assetOutStock;
+    private long assetOutStock;
 
     /**
      * 可达资产数量
      */
-    private int assetPingUp;
+    private long assetPingUp;
 
     /**
      * 不可达资产数量
      */
-    private int assetPingDown;
+    private long assetPingDown;
 
     /**
      * 告警消息总数
      */
-    private int alertTotal;
+    private long alertTotal;
 
     /**
      * 告警级别为 高 的数量
      */
-    private int alertHigh;
+    private long alertHigh;
 
     /**
      * 告警级别为 中 的数量
      */
-    private int alertMedium;
+    private long alertMedium;
 
     /**
      * 告警级别为 低 的数量
      */
-    private int alertLow;
+    private long alertLow;
 
     public DcStat() {
     }
 
-    public DcStat(int assetTotal, int assetInStock, int assetOutStock, int assetPingUp, int assetPingDown, int alertTotal, int alertHigh, int alertMedium, int alertLow) {
+    public DcStat(long assetTotal, long assetInStock, long assetOutStock, long assetPingUp, long assetPingDown, long alertTotal, long alertHigh, long alertMedium, long alertLow) {
         this.assetTotal = assetTotal;
         this.assetInStock = assetInStock;
         this.assetOutStock = assetOutStock;

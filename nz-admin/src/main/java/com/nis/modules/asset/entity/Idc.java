@@ -80,7 +80,7 @@ public class Idc implements Serializable {
      * 资产统计
      */
     @TableField(exist = false)
-    private AssetStat assetStat;
+    private Map assetStat;
 
     /**
      * 机柜计数

@@ -37,4 +37,7 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     void updateAlertStateByIds(@Param("ids")List<String> idList, @Param("params") Map<String, Object> params);
 
     List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
+
+    // 只返回用于统计的列  severity rule_id  project_id module_id asset_id dc_id
+    List<AlertMessageEntity> getAlertsStatColumn();
 }

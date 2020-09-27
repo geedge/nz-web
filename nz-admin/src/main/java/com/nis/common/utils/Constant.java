@@ -142,6 +142,9 @@ public class Constant {
     public static final String MODULE_TYPE_HTTP = "http";
     public static final String MODULE_TYPE_SNMP = "snmp";
 
+    // module http 类型默认 path
+    public static final String MODULE_HTTP_DEFAULT_PATH = "/metrics";
+
     public static final Integer SNMP_DEFAULT_PORT = 161;
 
     // snmp set value 可选类型集合

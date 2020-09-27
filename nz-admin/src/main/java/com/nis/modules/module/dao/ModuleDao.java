@@ -16,4 +16,7 @@ public interface ModuleDao extends BaseMapper<Module> {
 	List<Module> queryPage(IPage<Module> page,@Param("params") Map<String, Object> params);
 	
 	List<Module> selectModuleIdsByProjectIds(@Param("projectIds") List projectIds);
+
+	// 只返回用于统计的列 id name project_id
+	List<Module> getModulesStatColumn();
 }

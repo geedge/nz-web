@@ -33,44 +33,44 @@ public class AssetStat {
     /**
      * 资产总数
      */
-    private int total;
+    private long total;
 
     /**
      * 在库资产数量
      */
-    private int inStock;
+    private long inStock;
 
     /**
      * 出库资产数量
      */
-    private int outStock;
+    private long outStock;
 
     /**
      * 可达资产数量
      */
-    private int pingUp;
+    private long pingUp;
 
     /**
      * 不可达资产数量
      */
-    private int pingDown;
+    private long pingDown;
 
     /**
      * 告警消息总数
      */
-    private int alertTotal;
+    private long alertTotal;
 
     /**
      * 告警级别为 高 的数量
      */
-    private int alertHigh;
+    private long alertHigh;
     /**
      * 告警级别为 中 的数量
      */
-    private int alertMedium;
+    private long alertMedium;
     /**
      * 告警级别为 低 的数量
      */
-    private int alertLow;
+    private long alertLow;
 
 }
