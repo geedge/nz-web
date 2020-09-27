@@ -34,10 +34,10 @@ import java.util.Properties;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Override
+    /*@Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/statics/**").addResourceLocations("classpath:/statics/");
-    }
+    }*/
     @Bean
     public DatabaseIdProvider getDatabaseIdProvider(){
         DatabaseIdProvider databaseIdProvider = new VendorDatabaseIdProvider();

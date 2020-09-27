@@ -29,7 +29,7 @@ public class FreemarkerConfig {
     @Bean
     public FreeMarkerConfigurer freeMarkerConfigurer(ShiroTag shiroTag){
         FreeMarkerConfigurer configurer = new FreeMarkerConfigurer();
-        configurer.setTemplateLoaderPath("classpath:/templates");
+        configurer.setTemplateLoaderPath("classpath:/static");
         Map<String, Object> variables = new HashMap<>(1);
         variables.put("shiro", shiroTag);
         configurer.setFreemarkerVariables(variables);
