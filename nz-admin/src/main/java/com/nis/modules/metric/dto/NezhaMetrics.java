@@ -1,11 +1,20 @@
 package com.nis.modules.metric.dto;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.asset.dao.AssetPingDao;
+import com.nis.modules.asset.dao.IdcDao;
+import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetPing;
+import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -32,6 +41,15 @@ public class NezhaMetrics implements MeterBinder {
 
     @Autowired
     private AlertRuleDao alertRuleDao;
+
+    @Autowired
+    private IdcDao idcDao;
+
+    @Autowired
+    private AssetPingDao assetPingDao;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
     
     NezhaMetrics() {
         map = new HashMap<>();
@@ -159,6 +177,54 @@ public class NezhaMetrics implements MeterBinder {
             .tags("model","null")
             .description("Endpoint statistics info")
             .register(meterRegistry);
+        }
+
+
+        /**
+         * nz_asset_ping 指标
+         */
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_asset_ping");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
+
+        SysConfigEntity pingSwitchConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
+        // ping 开关为开启状态统计 nz_asset_ping 指标
+        if (pingSwitchConfig != null && Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+            List<AssetPing> assetPings = assetPingDao.selectList(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getStatus, 1));
+            Map<String, Double> assetHostAndRttMap = assetPings.stream().collect(Collectors.toMap(AssetPing::getHost, AssetPing::getRtt));
+            if (ToolUtil.isNotEmpty(assetHostAndRttMap)) {
+
+                List<Idc> idcList = idcDao.selectList(null);
+                Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+                List<Asset> assetList = assetService.list();
+                Map<String, Asset> assetHostAndAssetMap = new HashMap<>();
+                for (Asset asset : assetList) {
+                    assetHostAndAssetMap.put(asset.getHost(), asset);
+                }
+
+                String assetHost;
+                Asset asset;
+                int i = 0;
+                for (Map.Entry<String, Double> entry : assetHostAndRttMap.entrySet()) {
+                    assetHost = entry.getKey();
+                    asset = assetHostAndAssetMap.get(assetHost);
+                    if (ToolUtil.isEmpty(asset)) continue;
+                    String key = "nz_asset_ping" + i++;
+
+                    map.put(key, entry.getValue());
+                    Gauge.builder("nz_asset_ping", map, x -> x.get(key))
+                            .tags("sn", asset.getSn(), "host", assetHost, "datacenter", idcIdAndNameMap.get(asset.getIdcId()))
+                            .description("Asset ping statistics info")
+                            .register(meterRegistry);
+                }
+            }
         }
     }
 }
