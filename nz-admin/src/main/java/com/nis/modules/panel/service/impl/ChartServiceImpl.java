@@ -822,8 +822,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
             }
         }
+        SXSSFWorkbook workbook = null;
         try {
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, "Chart", true);
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Chart", true);
             String fileName = "PanelChartExportTemplate.xlsx";
             response.setContentType("application/excel");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
@@ -832,6 +833,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             log.error("图表模板生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -874,15 +883,17 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     public void export(HttpServletResponse response, Map<String, Object> params) {
         // 导出查询与列表查询一致
         List<Chart> charts = this.exportDataByParams(params);
-        try {
-            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER));
-            Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
 
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        // 添加标题行 默认语言 en
+        String language = (String) params.get("language");
+        language = ToolUtil.isEmpty(language) ? "en" : language;
+
+        SXSSFWorkbook workbook = null;
+        try {
             String sheetName = "Chart";
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -896,6 +907,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
     }
@@ -912,6 +931,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         } catch (Exception e) {
             log.error("解析导入图表文件格式有误", e);
             throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
+        } finally {
+            if (work != null) {
+                try {
+                    work.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         Sheet sheet = work.getSheetAt(0);

@@ -671,6 +671,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         } catch (Exception e) {
             logger.error("解析文件格式有误", e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
+        } finally {
+            if (work != null) {
+                try {
+                    work.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         // 查询 asset 相关数据 用作导入时间校验 减少循环查表
@@ -1643,6 +1651,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         PageUtils page = this.queryPage(params);
         List<Asset> list = (List<Asset>) page.getList();
 
+        SXSSFWorkbook workbook = null;
         try {
             // 添加标题行 默认语言 en
             String language = (String) params.get("language");
@@ -1655,7 +1664,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             exportHeader.remove(exporter);
 
             String sheetName = "Assets";
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
+            workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -1670,6 +1679,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             logger.error("asset导出文件生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -1807,8 +1824,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
        /* Collection headers = exportHeaderMap.keySet();
         List<String> headerList = new ArrayList<>(headers.size());
         headers.stream().forEach(value -> headerList.add(value.toString()));*/
+        SXSSFWorkbook workbook = null;
         try {
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, "Assets", true);
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Assets", true);
             // 响应为流
             String fileName = "AssetExportTemplate.xlsx"; // 默认文件名称
             response.setContentType("application/excel");
@@ -1818,6 +1836,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             logger.error("asset模板生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

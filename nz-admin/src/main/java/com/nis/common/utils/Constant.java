@@ -551,6 +551,9 @@ public class Constant {
     // chart 导入表头
     public static final String SYSCONFIG_KEY_CHART_EXPORT_HEADER = "chart_export_header";
 
+    // endpoint 导入表头
+    public static final String SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER = "endpoint_export_header";
+
     // asset ping 命令中文件名称 会替换成文件的路径
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 

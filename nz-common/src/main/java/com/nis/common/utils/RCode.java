@@ -130,6 +130,9 @@ public enum RCode {
     MODULE_USERNAME_INVALID(221019,"Auth username is missing, required for SNMPv3"),
     MODULE_REMOVE_ERROR(223020,"These modules contains endpoint can't remove modules"),
     MODULE_NOTFOUND(226021, "Module not found"),
+    MODULE_NOTEXIS_PROJECT(226022, "Module does not exist in the current project"),
+    MODULE_TYPE_INCONSISTENT(223023, "Module type is inconsistent with the filling type"),
+    MODULE_SNMP_NOTEXIST(226024, "SNMP type module must exist"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),
@@ -146,6 +149,11 @@ public enum RCode {
     ENDPOINT_PARAM_FORMAT_ERROR(233012,"Endpoint param incorrect format"),
     ENDPOINT_IMPORTFILE_TYPE(239013,"Only support import XLS or XLSX file"),
     ENDPOINT_IMPORTFILE_FAILED(239014,"Import file resolution failed"),
+    ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL(231015, "Export header language can not be empty"),
+    ENDPOINT_EXPORT_HEADER_LANGUAGE_ERROR(234016, "Export header language must be en, cn and ru"),
+    ENDPOINT_EXPORT_HEADER_TEMPLATE_ERROR(234017, "The header row of the excel import template is inconsistent with the system template"),
+    ENDPOINT_SN_HOST_ISNULL(231018, "Sn and host cannot be empty at the same time"),
+    ENDPOINT_SN_HOST_MISMATCH(235019, "Asset sn and host address do not correspond"),
     /**
      * assets菜单项相关
      */

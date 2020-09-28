@@ -1,46 +1,17 @@
 package com.nis.modules.endpoint.service.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.dao.EndpointDao;
@@ -56,6 +27,31 @@ import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("endpointService")
 public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> implements EndpointService {
@@ -81,6 +77,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	private RedisTemplate redisTemplate;
 	@Autowired
 	private PromserverService promserverService;
+
+	@Autowired
+	private AlertMessageDao alertMessageDao;
+
+	@Autowired
+	private SysConfigDao sysConfigDao;
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -124,7 +126,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 								Integer state = Integer.valueOf(stateValue);
 								data.setState(state);
 								if(state.equals(0)) {
-									// promtheus 不可用
+									// endpoint 连接失败
 									stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
 									stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
 								}else {
@@ -155,8 +157,30 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				data.setStateInfo(stateInfo);
 			}
 		}
+
+		// endpoint 告警数量
+		this.handleEndpointsAlertNum(datas);
+
         page.setRecords(datas);
         return new PageUtils(page);
+	}
+
+	private void handleEndpointsAlertNum(List<Endpoint> endpointList) {
+		if (CollectionUtils.isEmpty(endpointList)) return;
+
+		List<AlertMessageEntity> alerts = alertMessageDao.getAlertsStatColumn();
+		alerts = alerts.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getEndpointId())).collect(Collectors.toList());
+		Map<Integer, List<AlertMessageEntity>> endpointIdAndAlersMap = alerts.stream().collect(Collectors.groupingBy(AlertMessageEntity::getEndpointId));
+
+		List<AlertMessageEntity> tempAlert;
+		for (Endpoint endpoint : endpointList) {
+			tempAlert = endpointIdAndAlersMap.get(endpoint.getId());
+			if (CollectionUtils.isEmpty(tempAlert)) {
+				endpoint.setAlertNum(0);
+			} else {
+				endpoint.setAlertNum(tempAlert.size());
+			}
+		}
 	}
 
 	@Override
@@ -178,358 +202,254 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
 	@Override
-	public Map importEndpoint(MultipartFile excelFile, String uuid) {
-		logger.info("importEndpoint param endpointExcelFileName is {}",excelFile.getOriginalFilename());
-		logger.info("importEndpoint param uuid is {}",uuid);
+	public Map importEndpoint(MultipartFile excelFile) {
+		String seqUUID = UUID.randomUUID().toString();
+		logger.info(String.format("导入的文件是： %s, 本次导入的 uuid是：%s", excelFile.getOriginalFilename(), seqUUID));
+
 		String originalFilename = excelFile.getOriginalFilename();
-		
-		//防止导入数据过多 查询关联数据是否存在 提前将需要的数据查询放置到集合中 减少数据库交互
+		if (!ExcelUtils.validateFileType(originalFilename)) {
+			throw new NZException(RCode.ENDPOINT_IMPORTFILE_TYPE);
+		}
+
+		Workbook work = null;
+		try {
+			work = ExcelUtils.getWork(originalFilename, excelFile.getInputStream());
+		} catch (Exception e) {
+			logger.error("解析endpoint导入文件格式有误", e);
+			throw new NZException(RCode.ENDPOINT_IMPORTFILE_FAILED);
+		} finally {
+			if (work != null) {
+				try {
+					work.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		Sheet sheet = work.getSheetAt(0);
+		// 表头校验
+		SysConfigEntity config = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER));
+		HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+		boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
+		if (!headerFlag) {
+			throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_TEMPLATE_ERROR);
+		}
+
+		List<Map> failDetails = new ArrayList<>();
+		// 保存并返回成功条数
+		int successNum = this.saveEndpointDataFromSheet(sheet, failDetails, seqUUID);
+		int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+		Map resultMap = new HashMap(8);
+
+		resultMap.put("seq", seqUUID);
+		resultMap.put("totalNum", totalNum);
+		resultMap.put("successNum", successNum);
+		resultMap.put("failNum", totalNum - successNum);
+		resultMap.put("failDetail", failDetails);
+
+		return resultMap;
+	}
+
+	private int saveEndpointDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID) {
 		List<Project> projects = projectService.list();
 		List<Module> modules = moduleService.list();
 		List<Asset> assets = assetService.list();
-		
-		Map projectMap = new HashMap();
-		if(ToolUtil.isNotEmpty(projects)) {
-			for(Project project : projects) {
-				projectMap.put(project.getName(), project);
-			}
+		Map<String, Integer> projectNameAndIdMap = projects.stream().collect(Collectors.toMap(Project::getName, Project::getId));
+		Map<String, Integer> assetSnAndIdMap = assets.stream().collect(Collectors.toMap(Asset::getSn, Asset::getId));
+		Map<String, Integer> assetHostAndIdMap = assets.stream().collect(Collectors.toMap(Asset::getHost, Asset::getId));
+		Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+		Map<String, Module> moduleNameAndModuleMap = new HashMap<>();
+		for (Module module : modules) {
+			moduleNameAndModuleMap.put(module.getName(), module);
 		}
-		
-		Map assetMap = new HashMap();
-		if(ToolUtil.isNotEmpty(assets)) {
-			for(Asset asset : assets) {
-				assetMap.put(asset.getSn(),asset);
+		Row row;
+		int successNum = 0;
+		for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+			row = sheet.getRow(i);
+			if (row == null) continue;
+
+			boolean saveFlag = true;
+			int dataFromExcelRowNum = i + 1;
+			String projectName = ExcelUtils.getCellValue(row.getCell(0));
+			if (StringUtils.isEmpty(projectName)) {
+				saveFlag = false;
+				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.PROJECT_NAME_ISNULL.getMsg());
 			}
-		}
-		
-		 // 校验文件格式
-        boolean b = ExcelUtils.validateFileType(originalFilename);
-        if (!b) {
-            throw new NZException(RCode.ENDPOINT_IMPORTFILE_TYPE);
-        }
-        
-		
-        // 最终入库集合
-        List<Endpoint> endpoints = new ArrayList<>();
-        
-        Map info = new HashMap();
-        
-        Workbook work = null;
-        try {
-            work = ExcelUtils.getWork(originalFilename, excelFile.getInputStream());
-        } catch (Exception e) {
-            logger.error("解析文件格式有误", e);
-            throw new NZException(RCode.ENDPOINT_IMPORTFILE_FAILED);
-        }
-        
-        try {
-            // 默认得到第一个 sheet
-            Sheet sheet = work.getSheetAt(0);
-//            Sheet sheet = work.getSheet("assets");
-            // 获得当前sheet的开始行
-            int firstRowNum = sheet.getFirstRowNum();
-            // 获得当前sheet的结束行
-            int maxRowNum = sheet.getLastRowNum();
-
-            // 校验表头是否与模板一致
-            List<Map> mapList = this.validateExcelHeader(sheet, firstRowNum);
-            if (CollectionUtils.isNotEmpty(mapList)) {
-                info.put("seq", uuid);
-                info.put("totalNum", 0);
-                info.put("successNum", 0);
-                info.put("failNum", 0);
-                info.put("failDetail", mapList);
-                return info;
-            }
-            
-            Row row;
-
-            // 返回导出错误信息
-            List<Map> failDetails = new ArrayList<>();
-            Map failDetail;
-            // 成功条数
-            int successNum = 0;
-
-            String project,module,sn,port,param,path,host;
-            Integer accountAuthType;
-
-            File sshKey;
-            InputStream sshKeyInput;
-            // 第一行是表头 所以从第二行开始
-            for (int i = firstRowNum + 1; i <= maxRowNum; i++) {
-                boolean saveFlag = true;
-                Endpoint endpoint = new Endpoint();
-                row = sheet.getRow(i);
-
-                if (row == null) {
-                    continue;
-                }
-
-                // 获取实际值为projectName
-                project = ExcelUtils.getCellValue(row.getCell(0));
-                Project projectObject = null;
-                // Project projectObject = (Project) projectMap.get(project);
-                if (StringUtils.isEmpty(project)) {
-                    saveFlag = false;
-                    failDetail = new HashMap();
-                    failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.PROJECT_NAME_ISNULL);
-                    failDetails.add(failDetail);
-                } else {
-                    projectObject = (Project) projectMap.get(project);
-                }
-                // 获取实际值为moduleName
-                module = ExcelUtils.getCellValue(row.getCell(1));
-                // Module moduleObject = (Module) moduleMap.get(module);
-                Module moduleObject = null;
-                if (StringUtils.isEmpty(module)) {
-                    saveFlag = false;
-                    failDetail = new HashMap();
-                    failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.MODULE_NAME_ISNULL);
-                    failDetails.add(failDetail);
-                } else {
-                    // 当前库中已有 project 不需要添加project 校验 module 是否存在于当前 project下
-                    if (projectObject != null) {
-                        moduleObject = this.checkModule(module, projectObject, modules);
-                    }
-                }
-                // 资产sn信息
-                sn = ExcelUtils.getCellValue(row.getCell(2));
-                if (StringUtils.isEmpty(sn)) {
-                    saveFlag = false;
-                    failDetail = new HashMap();
-                    failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.ASSET_SN_ISNULL);
-                    failDetails.add(failDetail);
-                }else {
-                	Asset assetObject = (Asset) assetMap.get(sn);
-                	if(assetObject==null) {
-                		saveFlag = false;
-                        failDetail = new HashMap();
-                        failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ASSET_NOT_EXIST);
-                        failDetails.add(failDetail);
-                	}else {
-                		endpoint.setAsset(assetObject);
-                		endpoint.setAssetId(assetObject.getId());
-                	}
-                }
-                
-                // 端口号
-                port = ExcelUtils.getCellValue(row.getCell(3));
-                // 判断如果参数port以及module内port均为空则导入失败
-                if (StringUtils.isEmpty(port)&&StringUtils.isEmpty(module)) {
-                    saveFlag = false;
-                    failDetail = new HashMap();
-                    failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.MODULE_PORT_ISNULL);
-                    failDetails.add(failDetail);
-                }else if(StringUtils.isEmpty(port)&&(moduleObject!=null)&&(moduleObject.getPort()==null)) {
-                	 saveFlag = false;
-                     failDetail = new HashMap();
-                     failDetail.put("lineNo", i);
-                     failDetail.put("errorMsg", RCode.MODULE_PORT_ISNULL);
-                     failDetails.add(failDetail);
-                }else if(StringUtils.isNotEmpty(port)) {
-                	// 检查端口是否格式正确
-                	boolean flag = CommonUtils.checkPort(port);
-                	if(!flag) {
-                		 saveFlag = false;
-                         failDetail = new HashMap();
-                         failDetail.put("lineNo", i);
-                         failDetail.put("errorMsg", RCode.MODULE_PORT_ERROR);
-                         failDetails.add(failDetail);
-                	}
-                }
-               
-                param = ExcelUtils.getCellValue(row.getCell(4));
-                if (StringUtils.isNotEmpty(param)) {
-                	// 如果不为空 校验是否为正确json格式
-                	try {
-                		JSONObject.parseObject(param);
-						endpoint.setParam(param);
-					} catch (Exception e) {
+			String moduleName = ExcelUtils.getCellValue(row.getCell(1));
+			if (StringUtils.isEmpty(moduleName)) {
+				saveFlag = false;
+				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_ISNULL.getMsg());
+			}
+			String type = ExcelUtils.getCellValue(row.getCell(2));
+			if (StringUtils.isEmpty(type)) {
+				saveFlag = false;
+				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_ISNULL.getMsg());
+			} else {
+				type = type.toLowerCase();
+				if (!Constant.MODULE_TYPE_HTTP.equals(type) && !Constant.MODULE_TYPE_SNMP.equals(type)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_INVALID.getMsg());
+				}
+				// type 类型下必须存在 module
+				if (Constant.MODULE_TYPE_SNMP.equals(type) && ToolUtil.isEmpty(moduleNameAndModuleMap.get(moduleName))) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_SNMP_NOTEXIST.getMsg());
+				}
+			}
+			// module 存在 校验相关内容
+			if (ToolUtil.isNotEmpty(moduleNameAndModuleMap.get(moduleName)) && saveFlag) {
+				Integer projectId = projectNameAndIdMap.get(projectName);
+				Module module = moduleNameAndModuleMap.get(moduleName);
+				// moduel 存在 project 不存在 ， module 名称重复
+				if (projectId == null) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_DUPLICATE.getMsg());
+				} else {
+					// project 存在 校验 module 是否存在 这个 project 中
+					if (!module.getProjectId().equals(projectId)) {
 						saveFlag = false;
-						failDetail = new HashMap();
-	                    failDetail.put("lineNo", i);
-	                    failDetail.put("errorMsg", RCode.ENDPOINT_PARAM_FORMAT_ERROR);
-	                    failDetails.add(failDetail);
+						this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NOTEXIS_PROJECT.getMsg());
 					}
-                    
-                } 
+				}
+				// 校验 module type 与输入得是否匹配
+				if (!module.getType ().equals(type.toLowerCase())) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_INCONSISTENT.getMsg());
+				}
+			}
+			String sn = ExcelUtils.getCellValue(row.getCell(3));
+			String host = ExcelUtils.getCellValue(row.getCell(7));
+			// sn host 不可同时为空
+			if (StringUtils.isEmpty(sn) && StringUtils.isEmpty(host)) {
+				saveFlag = false;
+				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_SN_HOST_ISNULL.getMsg());
+			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isNotEmpty(host)) {
+				// 都不为空 校验格式和对应关系
+				if (!CommonUtils.checkIp(host)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
+				}
+				Integer a1 = assetSnAndIdMap.get(sn);
+				Integer a2 = assetHostAndIdMap.get(host);
+				if (a1 == null || a2 == null || !a1.equals(a2)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_SN_HOST_MISMATCH.getMsg());
+				}
+			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isEmpty(host)) {
+				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
+				}
+			} else if (StringUtils.isEmpty(sn) && StringUtils.isNotEmpty(host)) {
+				if (!CommonUtils.checkIp(host)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
+				}
+				if (ToolUtil.isEmpty(assetHostAndIdMap.get(host))) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
+				}
+			}
 
-                // path
-                path = ExcelUtils.getCellValue(row.getCell(5));
-                if (StringUtils.isEmpty(path)&&StringUtils.isEmpty(module)) {
-                    saveFlag = false;
-                    failDetail = new HashMap();
-                    failDetail.put("lineNo", i);
-                    failDetail.put("errorMsg", RCode.MODULE_PATH_ISNULL);
-                    failDetails.add(failDetail);
-                }else if(StringUtils.isEmpty(path)&&(moduleObject!=null)&&(StringUtils.isEmpty(moduleObject.getPath()))) {
-                	 saveFlag = false;
-                     failDetail = new HashMap();
-                     failDetail.put("lineNo", i);
-                     failDetail.put("errorMsg", RCode.MODULE_PATH_ISNULL);
-                     failDetails.add(failDetail);
-                }
+			String port = ExcelUtils.getCellValue(row.getCell(4));
+			if (StringUtils.isNotEmpty(port)) {
+				try {
+					Double aDouble = Double.valueOf(port);
+					if (!CommonUtils.checkPort(String.valueOf(aDouble.intValue()))) {
+						saveFlag = false;
+						this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_PORT_ERROR.getMsg());
+					}
+				} catch (NumberFormatException e) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_PORT_ERROR.getMsg());
+				}
+			}
 
-                // host
-                host = ExcelUtils.getCellValue(row.getCell(6));
-                if (StringUtils.isNotEmpty(host)) {
-                	// 不为空的情况下 校验ip正确性
-                	if(CommonUtils.checkIp(host)) {
-                		endpoint.setHost(host);
-                	}else {
-                		saveFlag = false;
-                        failDetail = new HashMap();
-                        failDetail.put("lineNo", i);
-                        failDetail.put("errorMsg", RCode.ENDPOINT_HOST_ERROR);
-                        failDetails.add(failDetail);
-                	}
-                    
-                }
+			String param = ExcelUtils.getCellValue(row.getCell(5));
+			if (StringUtils.isNotEmpty(param)) {
+				try {
+					JSONObject.parseObject(param);
+				} catch (Exception e) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_PARAM_FORMAT_ERROR.getMsg());
+				}
+			}
+			String path = ExcelUtils.getCellValue(row.getCell(6));
+			// 前面没有报错
+			if (saveFlag) {
+				TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
+				Integer projectId = projectNameAndIdMap.get(projectName);
+				Module module = moduleNameAndModuleMap.get(moduleName);
+				Integer moduleId = ToolUtil.isEmpty(module) ? null : module.getId();
+				// project 为空 module 一定为空
+				try {
+					if (projectId == null) {
+						Project project = new Project();
+						project.setName(projectName);
+						project.setBuildIn(0);
+						project.setSeq(seqUUID);
+						projectService.save(project);
+						projectId = project.getId();
+						// 先校验 module name 是否重复
+						if (ToolUtil.isNotEmpty(module)) {
+							this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_DUPLICATE.getMsg());
+							continue;
+						}
+						// 由于 type 为 snmp 类型时 module必须存在 所以此处保存的为 http 类型 module
+						module = new Module();
+						module.setProjectId(projectId);
+						module.setName(moduleName);
+						module.setType(Constant.MODULE_TYPE_HTTP);
+						module.setPort(9100);
+						module.setPath(Constant.MODULE_HTTP_DEFAULT_PATH);
+						module.setBuildIn(0);
+						module.setSeq(seqUUID);
+						moduleService.save(module);
+						moduleId = module.getId();
+					} else if (module == null) {
+						module = new Module();
+						module.setProjectId(projectId);
+						module.setName(moduleName);
+						module.setType(Constant.MODULE_TYPE_HTTP);
+						module.setPort(9100);
+						module.setPath(Constant.MODULE_HTTP_DEFAULT_PATH);
+						module.setBuildIn(0);
+						module.setSeq(seqUUID);
+						moduleService.save(module);
+						moduleId = module.getId();
+					}
+					Integer a1 = assetSnAndIdMap.get(sn);
+					Integer a2 = assetHostAndIdMap.get(host);
+					Endpoint endpoint = new Endpoint();
+					endpoint.setModuleId(moduleId);
+					endpoint.setAssetId(a1 != null ? a1 : a2);
+					endpoint.setPort(ToolUtil.isEmpty(port) ? module.getPort() : Double.valueOf(port).intValue());
+					endpoint.setParam(ToolUtil.isEmpty(param) ? module.getParam() : param);
+					endpoint.setPath(ToolUtil.isEmpty(path) ? module.getPath() : path);
+					endpoint.setHost(assetIdAndHostMap.get(endpoint.getAssetId()));
+					endpoint.setSeq(seqUUID);
+					this.save(endpoint);
+					dataSourceTransactionManager.commit(transactionStatus);
+					projectNameAndIdMap.put(projectName, projectId);
+					moduleNameAndModuleMap.put(moduleName, module);
+					successNum++;
+				} catch (Exception e) {
+					dataSourceTransactionManager.rollback(transactionStatus);
+					this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage() + "");
+					logger.error(String.format("保存 project module endpoint 失败,回滚事务,错误信息:%s", e.getMessage()), e);
+				}
+			}
+		}
+		return successNum;
+	}
 
-                // 前面没有报错
-                if (saveFlag) {
-                	boolean projectFlag=false;
-                	boolean moduleFlag=false;
-                	endpoint.setSeq(uuid);
-                	// 前述操作均正常的情况下 判断是否需要新增关联project 以及 module信息
-                	if(projectObject==null) {
-                		projectObject=new Project();
-                		projectObject.setName(project);
-                		projectObject.setSeq(uuid);
-                		projectObject.setBuildIn(0);
-                		projectFlag=true;
-                		
-                	}
-                	if(moduleObject==null) {
-                		moduleObject=new Module();
-                		moduleObject.setBuildIn(0);
-                		moduleObject.setName(module);
-                		moduleObject.setParam(param);
-                		moduleObject.setPort(Integer.valueOf(port));
-                		moduleObject.setPath(path);
-                		moduleObject.setSeq(uuid);
-                		moduleFlag=true;
-                		
-                	}
-                	if(projectFlag||moduleFlag) {
-                		// 关联关系事务处理
-                		// 手动开启事务
-                        TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
-                		try {
-                			this.importTransactionHandle(projectFlag,moduleFlag,projectObject, moduleObject, endpoint);
-                			if(projectFlag) {
-                				projectMap.put(project, projectObject);
-                			}
-                			if(moduleFlag){
-                				// moduleMap.put(module,moduleObject);
-                                modules.add(moduleObject);
-                			}
-                			// 手动提交事务
-                            dataSourceTransactionManager.commit(transactionStatus);
-                			successNum++;
-                		}catch(Exception e) {
-                			 logger.error(e.getMessage());
-                			 // 手动回滚事务
-                             dataSourceTransactionManager.rollback(transactionStatus);
-                			 failDetail = new HashMap();
-                             failDetail.put("lineNo", i);
-                             failDetail.put("errorMsg", e.getMessage());
-                             failDetails.add(failDetail);
-                		}
-                	}else {
-                		endpoint.setProject(projectObject);
-                    	endpoint.setPort(moduleObject.getPort());
-                    	endpoint.setPath(moduleObject.getPath());
-                    	endpoint.setModule(moduleObject);
-                		endpoint.setModuleId(moduleObject.getId());
-                    	endpoints.add(endpoint);
-                    	successNum++;
-                	}      
-                	
-                }
-                    
-            }
-
-            // 批量入库 asset
-            this.saveBatch(endpoints);
-
-            int totalNum = maxRowNum - firstRowNum;
-            info.put("seq", uuid);
-            info.put("totalNum", totalNum);
-            info.put("successNum", successNum);
-            info.put("failNum", totalNum - successNum);
-            info.put("failDetail", failDetails);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                work.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return info;
-    }
-
-    private Module checkModule(String moduleName, Project project, List<Module> modulesList) {
-        Module module1 = new Module();
-        boolean flag = false;
-        for (Module entity : modulesList) {
-            // 如果该 project 下有该 module
-            if (moduleName.equals(entity.getName()) && project.getId().equals(entity.getProjectId())) {
-                module1 = entity;
-                flag = true;
-                break;
-            }
-        }
-        // 找不到 module
-        if (!flag) {
-            return null;
-        }
-        return module1;
-    }
-
-	private List<Map> validateExcelHeader(Sheet sheet, int firstRowNum) {
-        Row row = sheet.getRow(firstRowNum);
-
-        List<Map> mapList = new ArrayList<>();
-        Map map;
-
-        String[] str = {"Project", "Module", "Sn", "Port", "Param", "Path", "Host"};
-        List<String> titles = Arrays.asList(str);
-
-        String titleValue, title;
-        for (int i = 0; i < titles.size(); i++) {
-            titleValue = ExcelUtils.getCellValue(row.getCell(i)).toLowerCase();
-            title = titles.get(i);
-            if (!titleValue.equalsIgnoreCase(title)) {
-                map = new HashMap();
-                map.put("lineNo", firstRowNum);
-                map.put("errorMsg", "第" + (i + 1) + "列表头为 " + titleValue + " ,与模板不符，请您核实。谢谢！");
-                mapList.add(map);
-            }
-        }
-
-        return mapList;
-    }
-	
-	
-	public void importTransactionHandle(boolean projectFlag, boolean moduleFlag, Project project, Module module, Endpoint endpoint) {
-        if(projectFlag){
-            projectService.save(project);
-        }
-        if(moduleFlag){
-            module.setProjectId(project.getId());
-            moduleService.save(module);
-        }
-        endpoint.setModuleId(module.getId());
-		this.save(endpoint);
+	private void addFailDetail(int i, List<Map> failDetails, String msg) {
+		Map failDetail = new HashMap(4);
+		failDetail.put("lineNo", i);
+		failDetail.put("errorMsg", msg);
+		failDetails.add(failDetail);
 	}
 	
 	@Override
@@ -545,4 +465,117 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
         logger.info("endpoint cancelImport success seq info is {}",seq);
 	}
 
+	@Override
+	public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+		SysConfigEntity configEntity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER));
+		Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+		Map<String, String> exportHeaderMap;
+		switch (language) {
+			case "en": {
+				exportHeaderMap = (Map) map.get("en");
+				break;
+			}
+			case "cn": {
+				exportHeaderMap = (Map) map.get("cn");
+				break;
+			}
+			case "ru": {
+				exportHeaderMap = (Map) map.get("ru");
+				break;
+			}
+			default: {
+				throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ERROR);
+			}
+		}
+		SXSSFWorkbook workbook = null;
+		try {
+			workbook = ExcelUtils.createExcel07(exportHeaderMap, "Endpoint", true);
+			String fileName = "EndpointExportTemplate.xlsx";
+			response.setContentType("application/excel");
+			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+			workbook.write(response.getOutputStream());
+		} catch (IOException e) {
+			logger.error("endpoint 模板生成失败，错误信息是：" + e.getMessage(), e);
+		} catch (Exception e) {
+			logger.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+		} finally {
+			if (workbook != null) {
+				try {
+					workbook.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	@Override
+	public void export(HttpServletResponse response, Map<String, Object> params) {
+		IPage<Endpoint> page = new Query<Endpoint>().getPage(params);
+		List<Endpoint> list = endpointDao.queryPage(page, params);
+
+		SXSSFWorkbook workbook = null;
+		try {
+			int rowNum = 0;
+			SysConfigEntity configEntity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER));
+			Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+
+			// 添加标题行 默认语言 en
+			String language = (String) params.get("language");
+			language = ToolUtil.isEmpty(language) ? "en" : language;
+			Map<String, String> exportHeader = (Map) map.get(language);
+
+			String sheetName = "Endpoints";
+			workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
+			SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+			// 添加数据
+			Row row1;
+			for (Endpoint endpoint : list) {
+				row1 = sheet.createRow(++rowNum);
+
+				Project project = endpoint.getProject();
+				Module module = endpoint.getModule();
+				Asset asset = endpoint.getAsset();
+
+				// project name
+				row1.createCell(0).setCellValue(project.getName());
+				// module name
+				row1.createCell(1).setCellValue(module.getName());
+				// type
+				row1.createCell(2).setCellValue(module.getType().toUpperCase());
+				// sn
+				row1.createCell(3).setCellValue(asset.getSn());
+				// port
+				row1.createCell(4).setCellValue(endpoint.getPort());
+				// param
+				row1.createCell(5).setCellValue(endpoint.getParam());
+				// path
+				row1.createCell(6).setCellValue(endpoint.getPath());
+				// host
+				row1.createCell(7).setCellValue(asset.getHost());
+
+				// 设置单元格样式
+				ExcelUtils.setDataCellStyle(workbook, row1, 7);
+			}
+
+			// 响应为流
+			String fileName = "EndpointsExport.xlsx"; // 默认名称
+			response.setContentType("application/excel");
+			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+			workbook.write(response.getOutputStream());
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (workbook != null) {
+				try {
+					workbook.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 }

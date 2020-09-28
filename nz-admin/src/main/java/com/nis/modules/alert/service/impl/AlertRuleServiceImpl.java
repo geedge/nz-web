@@ -342,8 +342,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ERROR);
             }
         }
+        SXSSFWorkbook workbook = null;
         try {
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07(exportHeaderMap, "AlertRule", true);
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "AlertRule", true);
             String fileName = "AlertRuleExportTemplate.xlsx";
             response.setContentType("application/excel");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
@@ -352,6 +353,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             log.error("告警规则模板生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             log.error("获取告警规则导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -367,6 +376,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         } catch (Exception e) {
             log.error("解析导入告警规则文件格式有误", e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
+        } finally {
+            if (work != null) {
+                try {
+                    work.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
         Sheet sheet = work.getSheetAt(0);
@@ -586,15 +603,16 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         PageUtils page = this.queryPage(params);
         List<AlertRuleEntity> list = (List<AlertRuleEntity>) page.getList();
 
-        try {
-            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
-            Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        // 添加标题行 默认语言 en
+        String language = (String) params.get("language");
+        language = ToolUtil.isEmpty(language) ? "en" : language;
 
+        SXSSFWorkbook workbook = null;
+        try {
             String sheetName = "AlterRule";
-            SXSSFWorkbook workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -608,6 +626,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             log.error("告警规则导出文件生成失败，错误信息是：" + e.getMessage(), e);
         } catch (Exception e) {
             log.error("告警规则导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

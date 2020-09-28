@@ -36,6 +36,10 @@ public class Endpoint {
 	private StateInfo stateInfo;
 	@TableField(exist = false)
 	private Promserver promserver;
+
+	@TableField(exist = false)
+	private Integer alertNum;
+
 	public Endpoint() {
 	}
 
