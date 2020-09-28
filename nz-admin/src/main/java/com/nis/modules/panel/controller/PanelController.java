@@ -165,18 +165,19 @@ public class PanelController {
     }
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language, String type) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
 
-        chartService.getExportTemplateByLanguage(response, language);
+        chartService.getExportTemplateByLanguage(response, language, type);
     }
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-    public R importAlertFromExcelFile(MultipartFile excelFile) {
-        ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL);
+    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId) {
+        ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
+                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
 
-        return R.ok(chartService.importChartFromExcelFile(excelFile));
+        return R.ok(chartService.importChartFromExcelFile(excelFile, type, linkId));
     }
 
     @GetMapping("/export")

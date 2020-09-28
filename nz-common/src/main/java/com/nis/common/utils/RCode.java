@@ -88,6 +88,9 @@ public enum RCode {
     CHART_HEIGHT_FORMAT(123049, "Chart height format should be a integer"),
     CHART_UNIT_NOTFOUND(126050, "Chart unit not found"),
     CHART_ELEMENTS_FORMAT(123051,"Chart elements must be JSON format"),
+    PANEL_CHART_TEMPLATE_TYPE_INCORRECT(123052, "Panel charts template type must be dashboard, model and asset"),
+    PANEL_CHART_IMPORT_LINKID_ISNULL(121053, "When the type is model or asset, link Id cannot be empty"),
+    PANEL_CHART_TEMPLATE_TYPE_ISNULL(121054, "Panel charts template type is null"),
 
 
     /**

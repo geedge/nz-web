@@ -34,11 +34,11 @@ public interface ChartService extends IService<Chart> {
 
     void updateuAllAssetChartsUnderCurrentModel(Integer modelId, List<Asset> assets);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getExportTemplateByLanguage(HttpServletResponse response, String language, String type);
 
     void cancelImport(String seq);
 
     void export(HttpServletResponse response, Map<String, Object> params);
 
-    Map importChartFromExcelFile(MultipartFile excelFile);
+    Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId);
 }
