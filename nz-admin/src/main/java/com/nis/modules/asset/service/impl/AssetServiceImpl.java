@@ -545,7 +545,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         this.removeByIds(idList);
 
         // 2. 删除关联的endponiet
-        endpointService.remove(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, idList));
+        List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, idList));
+        if (CollectionUtils.isNotEmpty(endpoints)) {
+            List<Integer> endpointIds = endpoints.stream().map(Endpoint::getId).collect(Collectors.toList());
+            endpointService.deleteEndpointByIds(endpointIds);
+        }
 
         // 3. 删除关联的alert信息
         alertMessageService.removeByAssetIds(idList);

@@ -8,7 +8,6 @@ import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.sys.controller.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,9 +22,6 @@ public class EndpointController extends AbstractController {
 	
 	@Autowired
 	private EndpointService endpointService;
-
-	@Autowired
-	private RedisTemplate redisTemplate;
 
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ENDPOINT)
@@ -57,17 +53,10 @@ public class EndpointController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ENDPOINT)
-	public R remove(String ids) {
+	public R remove(@RequestParam Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.ENDPOINT_ID_ISNULL);
-		String[] split = ids.split(",");
-		endpointService.removeByIds(Arrays.asList(split));
 
-        try {
-            // 同时删除 redis  endpoint_prom 中 endpointId 对应的内容
-            redisTemplate.opsForHash().delete(Constant.REDIS_KEY_ENDPOINT_PROM, split);
-        } catch (Exception e) {
-            logger.debug("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：{}", split);
-        }
+        endpointService.deleteEndpointByIds(Arrays.asList(ids));
 		return R.ok();
 	}
 	

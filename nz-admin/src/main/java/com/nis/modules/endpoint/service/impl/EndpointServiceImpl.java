@@ -43,7 +43,6 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -188,12 +187,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		ValidateUtils.is(endpointEntity.getModuleId()).notNull(RCode.ENDPOINT_MODULEID_ISNULL);
 		ValidateUtils.is(endpointEntity.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
 		ValidateUtils.is(endpointEntity.getPort()).notNull(RCode.ENDPOINT_PORT_ISNULL);
-	}
-
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public void removeByModuleIds(List moduleIds) {
-		endpointDao.deleteByModuleIds(moduleIds);
 	}
 
 	@Override
@@ -456,7 +449,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	public void cancelImport(String seq) {
 		logger.info("endpoint cancelImport start seq info is {}",seq);
 		// endpoint
-        this.remove(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getSeq, seq));
+        List<Endpoint> endpoints = this.list(new QueryWrapper<Endpoint>().lambda().eq(Endpoint::getSeq, seq));
+        if (CollectionUtils.isNotEmpty(endpoints)) {
+            List<Integer> endpointIds = endpoints.stream().map(Endpoint::getId).collect(Collectors.toList());
+            this.deleteEndpointByIds(endpointIds);
+        }
         // module
         moduleService.remove(new QueryWrapper<Module>().lambda().eq(Module::getSeq, seq));
         // project
@@ -578,4 +575,16 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 		}
 	}
+
+    @Override
+    public void deleteEndpointByIds(List<Integer> endpointIdList) {
+        this.removeByIds(endpointIdList);
+        try {
+            // 同时删除 redis  endpoint_prom 中 endpointId 对应的内容
+            String[] strArray = endpointIdList.stream().map(s -> String.valueOf(s)).toArray(String[]::new);
+            redisTemplate.opsForHash().delete(Constant.REDIS_KEY_ENDPOINT_PROM, strArray);
+        } catch (Exception e) {
+            logger.error(String.format("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：%s,错误信息是:%s", endpointIdList, e.getMessage()), e);
+        }
+    }
 }

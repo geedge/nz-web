@@ -126,13 +126,6 @@
        </if>
     </select>
 
-	<delete id="deleteByModuleIds">
-		delete from endpoint where module_id in 
-		<foreach item="moduleId" collection="moduleIds" separator="," open="(" close=")" index="">
-			#{moduleId}
-		</foreach>
-	</delete>
-	
 	<select id="selectEndpointStatisticsInfoByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
 		select count(*) total,m.name 
 		from endpoint e left join asset a on  e.asset_id=a.id 

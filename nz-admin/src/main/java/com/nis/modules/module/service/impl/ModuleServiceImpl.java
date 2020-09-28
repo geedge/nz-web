@@ -234,7 +234,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
         // 设置默认路径
         if (Constant.MODULE_TYPE_HTTP.equals(moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
-            moduleEntity.setParam(Constant.MODULE_HTTP_DEFAULT_PATH);
+            moduleEntity.setPath(Constant.MODULE_HTTP_DEFAULT_PATH);
         }
 
         // 处理snmYml字段
