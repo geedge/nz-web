@@ -1,6 +1,7 @@
 package com.nis.common.aspect;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.google.gson.Gson;
 import com.nis.common.annotation.SysLog;
@@ -164,7 +165,13 @@ public class SysLogAspect {
         sysLog.setType(syslog.type().getValue());
         // 当 operation = query 时，只记录 code != 200 的内容
         if (!"query".equals(operationType)) {
-            sysLog.setResponse(JSON.toJSONString(r));
+            if("login".equals(operationType)){
+                Map map = JSONObject.parseObject(JSONObject.toJSONString(r), Map.class);
+                map.remove("data");
+                sysLog.setResponse(JSON.toJSONString(map));
+            }else{
+                sysLog.setResponse(JSON.toJSONString(r));
+            }
         }
 
         // 由于 导出功能没有返回值 记录为 success , 原因为导出中若有异常会经过 saveExceptionLog（） 方法
