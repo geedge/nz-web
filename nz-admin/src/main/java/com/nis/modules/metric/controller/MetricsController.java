@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
+import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -19,22 +20,52 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.controller.AbstractController;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
+import redis.clients.jedis.Jedis;
 
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 public class MetricsController extends AbstractController {
+
+    @Value("${spring.datasource.druid.driver-class-name}")
+    private String driverClassName;
+
+    @Value("${spring.datasource.druid.url}")
+    private String dbUrl;
+
+    @Value("${spring.datasource.druid.username}")
+    private String dbUsername;
+
+    @Value("${spring.datasource.druid.password}")
+    private String dbPassword;
+
+    @Value("${spring.redis.host}")
+    private String redisHost;
+
+    @Value("${spring.redis.port}")
+    private Integer redisPort;
+
+    @Value("${spring.redis.timeout}")
+    private String redisTimeout;
+
+    @Value("${spring.redis.password}")
+    private String redisPassword;
+
     @Autowired
     private NezhaMetrics nezhaMetrics;
     
@@ -126,4 +157,114 @@ public class MetricsController extends AbstractController {
         return R.ok(resultMap);
     }
 
+    @GetMapping("/healthy")
+    public R healthy() {
+        Map healthyMap = new HashMap(4);
+
+        healthyMap.put("web", "UP");
+        healthyMap.put("mysql", mysqlHealthy());
+        healthyMap.put("redis", redisHealthy());
+
+        return R.ok(healthyMap);
+    }
+
+    private String redisHealthy() {
+        logger.info(String.format("检查 redis 健康状态，地址是：%s,端口是：%s,密码是:%s,登录超时为：%s", redisHost, redisPort, redisPassword, redisTimeout));
+        String state = "";
+        Jedis jedis = null;
+        try {
+            Integer timeout;
+            if (StringUtils.isEmpty(redisTimeout)) {
+                timeout = 6000;
+            } else {
+                Matcher matcher = Pattern.compile("[^0-9]").matcher(redisTimeout);
+                timeout = Integer.valueOf(matcher.replaceAll("").trim());
+            }
+
+            jedis = new Jedis(redisHost, redisPort, timeout);
+            if (StringUtils.isNotEmpty(redisPassword)) {
+                jedis.auth(redisPassword);
+            }
+
+            String ping = jedis.ping();
+            if (ping.equalsIgnoreCase("PONG")) {
+                state = "UP";
+            } else {
+                state = "DOWN";
+            }
+        } catch (Exception e) {
+            logger.error(String.format("检查 redis 状态出现问题，地址是：%s,端口是：%s,密码是:%s,登录超时为：%s,错误信息是:%s", redisHost, redisPort, redisPassword, redisTimeout, e.getMessage()), e);
+            state = "DOWN";
+        } finally {
+            if (jedis != null) jedis.close();
+            return state;
+        }
+    }
+
+    private String mysqlHealthy() {
+        logger.info(String.format("检查 mysql 健康状态，加载类是：%s，地址是：%s,用户名是：%s,密码是:%s", driverClassName, dbUrl, dbUsername, dbPassword));
+        String state = "";
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet rs = null;
+        try {
+            connection = getConnection(driverClassName, dbUrl, dbUsername, dbPassword);
+            if (connection == null && !connection.isClosed()) {
+                state = "DOWN";
+            } else {
+                statement = connection.createStatement();
+                String sql = "SELECT 1;";
+                rs = statement.executeQuery(sql);
+                String result = "";
+                while (rs.next()) {
+                    result += rs.getString("1");
+                }
+                if ("1".equals(result)) {
+                    state = "UP";
+                } else {
+                    state = "DOWN";
+                }
+            }
+        } catch (Exception e) {
+            logger.error(String.format("检查 mysql 状态出现问题，加载类是：%s，地址是：%s,用户名是：%s,密码是:%s,错误信息是：%s", driverClassName, dbUrl, dbUsername, dbPassword, e.getMessage()), e);
+            state = "DOWN";
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return state;
+        }
+    }
+
+    private static Connection getConnection(String driverClassName, String url, String username, String pwd) {
+        try {
+            Class.forName(driverClassName);
+            Connection conn = DriverManager.getConnection(url, username, pwd);
+            return conn;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
