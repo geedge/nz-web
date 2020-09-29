@@ -224,7 +224,7 @@ public class PromProxyController {
 		Map<String, Object> nullTypeAndValueMap = new HashMap(2);
 		switch (nullType) {
 			case "null": {
-				nullTypeAndValueMap.put(nullType, "null");
+				nullTypeAndValueMap.put(nullType, null);
 				break;
 			}
 			case "zero": {
@@ -244,6 +244,8 @@ public class PromProxyController {
 		List<JSONArray> values = null;
 		Map<Integer, Object> valuesMap;
 		JSONArray tempArray;
+		Integer time;
+		int timeListSize = timeList.size();
 		for (int i = 0; i < resultArray.size(); i++) {
 			metric = (JSONObject) resultArray.get(i);
 			values = (List<JSONArray>) metric.get("values");
@@ -253,12 +255,13 @@ public class PromProxyController {
 				for (JSONArray objects : values) {
 					valuesMap.put(Integer.valueOf(objects.get(0).toString()), 1);
 				}
-				for (Integer time : timeList) {
+				for (int j = 0; j < timeListSize; j++) {
+					time = timeList.get(j);
 					if (valuesMap.get(time) == null) {
 						tempArray = new JSONArray();
 						tempArray.add(time);
 						tempArray.add(nullTypeAndValueMap.get(nullType));
-						values.add(tempArray);
+						values.add(j, tempArray);
 					}
 				}
 			}
