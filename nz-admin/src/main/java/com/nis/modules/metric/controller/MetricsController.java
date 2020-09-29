@@ -163,6 +163,9 @@ public class MetricsController extends AbstractController {
         String mysqlState = mysqlHealthy();
         String redisState = redisHealthy();
 
+        healthyMap.put("mysql", mysqlState);
+        healthyMap.put("redis", redisState);
+
         if (("DOWN".equals(mysqlState) || "DOWN".equals(redisState))) {
             R r = new R();
             r.put("code", RCode.ERROR.getCode());
@@ -170,9 +173,6 @@ public class MetricsController extends AbstractController {
             r.put("data", healthyMap);
             return r;
         }
-
-        healthyMap.put("mysql", mysqlState);
-        healthyMap.put("redis", redisState);
 
         return R.ok(healthyMap);
     }
