@@ -2,10 +2,7 @@ package com.nis.modules.metric.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.R;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.Asset;
@@ -162,8 +159,20 @@ public class MetricsController extends AbstractController {
         Map healthyMap = new HashMap(4);
 
         healthyMap.put("web", "UP");
-        healthyMap.put("mysql", mysqlHealthy());
-        healthyMap.put("redis", redisHealthy());
+
+        String mysqlState = mysqlHealthy();
+        String redisState = redisHealthy();
+
+        if (("DOWN".equals(mysqlState) || "DOWN".equals(redisState))) {
+            R r = new R();
+            r.put("code", RCode.ERROR.getCode());
+            r.put("msg", RCode.ERROR.getMsg());
+            r.put("data", healthyMap);
+            return r;
+        }
+
+        healthyMap.put("mysql", mysqlState);
+        healthyMap.put("redis", redisState);
 
         return R.ok(healthyMap);
     }
