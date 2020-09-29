@@ -456,6 +456,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         String scrapeInterval = saveMap.get("scrape_interval");
         String storageLocalRetention = saveMap.get("storage_local_retention");
         String timezone = saveMap.get("timezone");
+        String defaultCabU = saveMap.get("default_cabinet_usize");
 
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
                 .and(saveMap.get("node_exporter_target_path")).notNull(RCode.SYS_CONFIG_NODETARGETPATH_ISNULL)
@@ -490,6 +491,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         if (timezoneIntValue < -12 || timezoneIntValue > 12) {
             throw new NZException(RCode.SYS_CONFIG_TIMEZONE_INTERVAL);
         }
+
+        Integer defaultCabUIntValue = CommonUtils.toInt(defaultCabU);
+        if (CommonUtils.toInt(defaultCabUIntValue) == null) {
+            throw new NZException(RCode.SYS_CONFIG_DEFAULTCABINETUSIZE_INVALIDE);
+        }
+        ValidateUtils.is(defaultCabUIntValue).min(1, RCode.IDC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
     }
 
     private boolean validateEmailParams(Map<String, String> saveMap) {

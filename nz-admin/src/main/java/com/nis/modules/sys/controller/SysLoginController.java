@@ -108,7 +108,7 @@ public class SysLoginController extends AbstractController {
 			String value = Base64.getEncoder().encodeToString(json.getBytes());
 			ops.set(loginToken,value ,this.loginExpiration, TimeUnit.MINUTES);
 			// 查询系统配置信息
-			String [] paramkeys = {"system_name","timezone","default_cabinet_uszie","max_terminal_num","asset_ping_switch"};
+			String [] paramkeys = {"system_name","timezone","default_cabinet_usize","max_terminal_num","asset_ping_switch"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
             configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
 			return R.ok(obj);

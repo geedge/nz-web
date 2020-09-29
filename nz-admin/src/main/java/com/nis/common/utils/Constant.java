@@ -196,7 +196,7 @@ public class Constant {
 
         SYSCONFIG_TYPEWITHKEYS_MAP = new HashMap<>();
 
-        SYSCONFIG_TYPEWITHKEYS_MAP.put("basic", Arrays.asList(new String[]{"alert_api", "asset_ping_switch", "asset_ping_interval", "node_exporter_target_path", "scrape_interval", "storage_local_retention","system_name", "timezone"}));
+        SYSCONFIG_TYPEWITHKEYS_MAP.put("basic", Arrays.asList(new String[]{"alert_api", "asset_ping_switch", "asset_ping_interval", "node_exporter_target_path", "scrape_interval", "storage_local_retention","system_name", "timezone", "default_cabinet_usize"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("email", Arrays.asList(new String[]{"email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account", "email_smtp_password", "email_send_account", "email_test_reciver", "email_ssl_flag", "email_tls_flag", "test"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("terminal", Arrays.asList(new String[]{"max_terminal_num"}));
         SYSCONFIG_TYPEWITHKEYS_MAP.put("ldap", Arrays.asList(new String[]{"ldap_address", "ldap_dn", "ldap_password", "ldap_ou", "ldap_user_filter", "ldap_mapping", "ldap_enable", "test"}));
@@ -531,7 +531,7 @@ public class Constant {
     public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
 
     // 机柜默认大小
-    public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_uszie";
+    public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_usize";
 
     // 测试邮件发送模板
     public static final String SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE = "test_email_send_template";
