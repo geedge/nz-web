@@ -252,7 +252,9 @@ public class SnmpUtil {
             boolean finished = false;
 
             Map map;
+            int i = 0;
             while (!finished) {
+                i++;
                 VariableBinding vb = null;
                 ResponseEvent respEvent = snmp.getNext(pdu, target);
 
@@ -268,20 +270,35 @@ public class SnmpUtil {
 
                 // 判断是否结束
                 finished = checkWalkFinished(targetOID, pdu, vb);
-                if (!finished) {
-                    pdu.setRequestID(new Integer32(0));
-                    pdu.set(0, vb);
-
+                // 获取 table 类型某一个 标量时 ， 使用 getnext 会获取平行节点数据
+                if (i == 1 && finished) {
+                    ResponseEvent responseEvent = snmp.get(pdu, target);
+                    VariableBinding variableBinding = responseEvent.getResponse().get(0);
                     map = new HashMap();
-                    map.put("oid", vb.getOid().toString());
-                    map.put("value", vb.getVariable().toString());
-                    map.put("type", vb.getVariable().getSyntaxString());
+                    map.put("oid", variableBinding.getOid().toString());
+                    map.put("value", variableBinding.getVariable().toString());
+                    map.put("type", variableBinding.getVariable().getSyntaxString());
                     map.put("ip", ip);
                     map.put("port", port);
                     resultData.add(map);
-                } else {
-                    // 获取结束
                     snmp.close();
+                    break;
+                } else {
+                    if (!finished) {
+                        pdu.setRequestID(new Integer32(0));
+                        pdu.set(0, vb);
+
+                        map = new HashMap();
+                        map.put("oid", vb.getOid().toString());
+                        map.put("value", vb.getVariable().toString());
+                        map.put("type", vb.getVariable().getSyntaxString());
+                        map.put("ip", ip);
+                        map.put("port", port);
+                        resultData.add(map);
+                    } else {
+                        // 获取结束
+                        snmp.close();
+                    }
                 }
             }
         } finally {
