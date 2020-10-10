@@ -32,10 +32,8 @@
         ar.summary,
         ar.description,
         ar.receiver,
-        ar.build_in AS buildIn,
-        COUNT(am.id) AS alertNum
+        ar.build_in AS buildIn
         FROM alert_rule ar
-        LEFT JOIN alert_message am ON ar.id = am.rule_id AND am.state = 1
 
         <where>
 
@@ -84,10 +82,7 @@
                     </otherwise>
                 </choose>
             </if>
-
         </where>
-
-        GROUP BY ar.id
     </select>
 
     <select id="getRuleStatGooupByProject" resultType="com.nis.modules.alert.entity.AlertRuleStat">
