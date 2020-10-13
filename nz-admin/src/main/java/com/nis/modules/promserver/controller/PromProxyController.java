@@ -156,7 +156,7 @@ public class PromProxyController {
 
 			String promPath = request.getServletPath().substring(5);
 			String nullType = request.getParameter("nullType");
-			if ("/api/v1/query_range".equals(promPath) && responseCode < 400 && ("null".equals(nullType) || "zero".equals(nullType))) {
+			if ("/api/v1/query_range".equals(promPath) && responseCode < 400) {
 				// 处理缺失时间数据
 				Map map = handleResultData(request, connInputStream);
 
@@ -206,6 +206,7 @@ public class PromProxyController {
 
 		if (result != null && result.get("data") != null) {
 			String nullType = request.getParameter("nullType");
+			nullType = StringUtils.isEmpty(nullType) ? "connected" : nullType;
 			String regEx = "[^0-9]";
 			Integer start = Integer.valueOf(request.getParameter("start"));
 			Integer end = Integer.valueOf(request.getParameter("end"));
@@ -236,7 +237,7 @@ public class PromProxyController {
 		}
 
 		List<Integer> timeList = new ArrayList<>();
-		for (int j = start; j < end; j = j + step) {
+		for (int j = start; j <= end; j = j + step) {
 			timeList.add(j);
 		}
 
@@ -245,12 +246,13 @@ public class PromProxyController {
 		Map<Integer, Object> valuesMap;
 		JSONArray tempArray;
 		Integer time;
+		Iterator<JSONArray> valuesIterator;
 		int timeListSize = timeList.size();
 		for (int i = 0; i < resultArray.size(); i++) {
 			metric = (JSONObject) resultArray.get(i);
 			values = (List<JSONArray>) metric.get("values");
 			// 如果缺失数据 进行补全
-			if (values.size() != timeList.size()) {
+			if (values.size() < timeList.size()) {
 				valuesMap = new HashMap<>();
 				for (JSONArray objects : values) {
 					valuesMap.put(Integer.valueOf(objects.get(0).toString()), 1);
@@ -262,6 +264,20 @@ public class PromProxyController {
 						tempArray.add(time);
 						tempArray.add(nullTypeAndValueMap.get(nullType));
 						values.add(j, tempArray);
+					}
+				}
+			} else {
+				// 数据不缺失 处理 NAN 数据
+				valuesIterator = values.iterator();
+				while (valuesIterator.hasNext()) {
+					tempArray = valuesIterator.next();
+					if (tempArray.get(1) != null && "nan".equals(tempArray.get(1).toString().toLowerCase())) {
+						switch (nullType) {
+							case "connected": { valuesIterator.remove(); break; }
+							case "null": { tempArray.set(1, null); break; }
+							case "zero": { tempArray.set(1, "0"); break; }
+							default: break;
+						}
 					}
 				}
 			}

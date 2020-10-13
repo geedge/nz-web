@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -430,6 +431,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 
 		alertMessageDao.updateAlertStateByIds(idList, params);
+
+		List<AlertMessageEntity> list = this.list(new QueryWrapper<AlertMessageEntity>().lambda().in(AlertMessageEntity::getId, idList));
+		List<String> hashKeys = list.stream().map(AlertMessageEntity::getHashKey).distinct().collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(hashKeys)) {
+			HashOperations<String, Object, Object> opsForHash = redisTemplate.opsForHash();
+			opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, hashKeys.toArray());
+		}
 	}
 
     @Override

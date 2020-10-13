@@ -87,9 +87,6 @@ public class OverviewServiceImpl implements OverviewService {
     @Autowired
     private SysConfigDao sysConfigDao;
 
-    @Value("${nezha.promApis.query}")
-    private String query;
-
     @Override
     public List<Map> alertRuleTopN(Integer top) {
         List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();

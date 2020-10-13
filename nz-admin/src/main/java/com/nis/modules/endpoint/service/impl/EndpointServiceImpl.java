@@ -23,7 +23,6 @@ import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
-import com.nis.modules.promserver.entity.PromApi;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
@@ -61,8 +60,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	@Autowired
 	private PromserverProxyService promserverProxyService;
 	@Autowired
-    private PromApi promApi;
-	@Autowired
 	private ProjectService projectService;
 	@Autowired
 	private ModuleService moduleService;
@@ -89,7 +86,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		IPage<Endpoint> page = new Query<Endpoint>().getPage(params);
 		List<Endpoint> datas = endpointDao.queryPage(page, params);
 		//获取相关lastUpdate以及state数据信息
-		String api = promApi.getPromApis().get("query");
 		try {
 			if(ToolUtil.isNotEmpty(datas)) {
 				Map resultMap=new HashMap();

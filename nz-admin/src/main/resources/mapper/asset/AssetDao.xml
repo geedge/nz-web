@@ -212,6 +212,10 @@
                 </foreach>
             </if>
         </where>
+
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY ass.id
+        </if>
     </select>
 
     <insert id="saveAsset">

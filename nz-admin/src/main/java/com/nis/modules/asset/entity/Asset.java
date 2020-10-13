@@ -156,6 +156,12 @@ public class Asset implements Serializable {
     private Integer endpointNum;
 
     /**
+     * endpoint 异常数量
+     */
+    @TableField(exist = false)
+    private Integer endpointDownNum;
+
+    /**
      * account 集合
      */
     @TableField(exist = false)

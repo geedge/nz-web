@@ -21,6 +21,7 @@ import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
@@ -55,7 +56,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.*;
@@ -132,6 +134,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     @Autowired
     private AssetTagDao assetTagDao;
 
+    @Autowired
+    private OverviewService overviewService;
 
     /**
      * 处理查询 asset 请求参数
@@ -265,21 +269,24 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // module endpoint 统计
         List<Endpoint> endpoints = endpointService.list();
         Map<Integer, List<Endpoint>> assetIdAndEndpointsMap = endpoints.stream().collect(Collectors.groupingBy(Endpoint::getAssetId));
-        Map<Integer, Integer> assetIdAndEndpointNumMap = new HashMap<>();
+        Map<Integer, List<Endpoint>> assetIdAndEndpointNumMap = new HashMap<>();
         Map<Integer, Integer> assetIdAndMoudleNumMap = new HashMap<>();
         Integer id;
         List<Endpoint> epList;
         for (Map.Entry<Integer, List<Endpoint>> entry : assetIdAndEndpointsMap.entrySet()) {
             id = entry.getKey();
             epList = entry.getValue();
-            assetIdAndEndpointNumMap.put(id, CollectionUtils.isEmpty(epList) ? 0 : epList.size());
+            assetIdAndEndpointNumMap.put(id, epList);
             assetIdAndMoudleNumMap.put(id, CollectionUtils.isEmpty(epList) ? 0 : Integer.valueOf((int) epList.stream().map(Endpoint::getModuleId).distinct().count()));
         }
+        // 添加 endpointdownNum
+        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds();
         // 处理返回格式
         String ipmi = null;
         Integer cabinetEnd, alertNum, moduleNum, endpointNum, assetId;
         Idc idc;
         List<Account> accounts;
+        List<Endpoint> endpointList;
         for (Asset asset : assetEntities) {
             assetId = asset.getId();
             // ipmi 格式转换   字符串 -> JSON
@@ -319,9 +326,24 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             moduleNum = assetIdAndMoudleNumMap.get(assetId);
             asset.setModuleNum(ToolUtil.isEmpty(moduleNum) ? 0 : moduleNum);
             // endpointNum
-            endpointNum = assetIdAndEndpointNumMap.get(assetId);
+            endpointList = assetIdAndEndpointNumMap.get(assetId);
+            endpointNum = CollectionUtils.isEmpty(endpointList) ? 0 : endpointList.size();
             asset.setEndpointNum(ToolUtil.isEmpty(endpointNum) ? 0 : endpointNum);
+            asset.setEndpointDownNum(this.getEndpointDownNum(endpointList, upStatusEndpointIds));
         }
+    }
+
+    private Integer getEndpointDownNum(List<Endpoint> endpointList, Set<Integer> upStatusEndpointIds) {
+        if (CollectionUtils.isEmpty(endpointList)) {
+            return 0;
+        }
+        int downNum = 0;
+        for (Endpoint endpoint : endpointList) {
+            if (!upStatusEndpointIds.contains(endpoint.getId())) {
+                downNum++;
+            }
+        }
+        return downNum;
     }
 
     /**
@@ -761,7 +783,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 数据在excel表格中的行数
             int dataFromExcelRowNum;
 
-            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, exporter, ipmiHost, ipmiPort;
+            String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, exporter; //, ipmiHost, ipmiPort;
             Integer start, end, stateInt;
 
             Map saveEntitys, ipmiMap;
@@ -828,7 +850,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     Integer modelId = modelEntity.getId();
                     asset.setModelId(modelId);
                     // 如果 type 为 server 的情况下 处理 ipmi 信息
-                    if (Constant.ASSET_SERVER_TYPE.equals(type.toLowerCase())) {
+                    /*if (Constant.ASSET_SERVER_TYPE.equals(type.toLowerCase())) {
                         ipmiMap = new HashMap();
                         ipmiHost = ExcelUtils.getCellValue(row.getCell(34));
                         ipmiPort = ExcelUtils.getCellValue(row.getCell(35));
@@ -853,7 +875,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         if (ToolUtil.isNotEmpty(ipmiMap)) {
                             asset.setIpmi(JSONObject.toJSONString(ipmiMap));
                         }
-                    }
+                    }*/
                 }
                 // DC
                 Integer idcId = null;
@@ -1080,7 +1102,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     saveEntitys.put("tags", this.getTagsByTagStr(tagsStr, seqUUID));
                 }
                 // 是否内置exporter
-                exporter = ExcelUtils.getCellValue(row.getCell(36));
+                exporter = ExcelUtils.getCellValue(row.getCell(34));
                 if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
                     asset.setExporter(1);
                 }
@@ -1460,35 +1482,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 内置 node_exporter 默认安装服务器路径
         String targetExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH);
         // 内置 node_exporter 初始执行脚本名称
-        String templateShellName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME);
+        String shellName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME);
         // 内置 node_exporter 项目路径
         String buildNodeExporterPath = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_PATH);
         // 内置 node_exporter 压缩包名称
         String buildNodeExporterName = configs.get(Constant.SYSCONFIG_KEY_NODEEXPORTER_NAME);
-
-        // 临时脚本文件
-        File file = null;
-
-        // 临时脚本 用于替换上传路径
-        String tempShellName = "tempShell_" + UUID.randomUUID() + ".sh";
-        File shellFile = new File(buildNodeExporterPath + File.separator + templateShellName);
-        if (!shellFile.exists()) {
-            logger.error("内置exporter脚本文件不存在");
-        } else {
-            try (BufferedReader br = new BufferedReader(new FileReader(shellFile));
-                 BufferedWriter bw = new BufferedWriter(new FileWriter(file = new File(buildNodeExporterPath + File.separator + tempShellName)))) {
-                String str = null;
-                while ((str = br.readLine()) != null) {
-                    str = str.replaceAll(Constant.NODEEXPORTER_SHELLREPLACE_PATH, targetExporterPath);
-
-                    bw.write(str + "\n");
-                    bw.flush();
-                }
-            } catch (IOException e) {
-                logger.error("替换脚本文件中上传目标路径失败", e);
-                return R.error(RCode.ASSET_UPLOADFILE_FAILED);
-            }
-        }
 
         SftpUtils sftpUtils = new SftpUtils();
         try {
@@ -1513,14 +1511,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
             // 上传压缩包和执行脚本
             try {
-                sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, tempShellName);
+                sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);
             } catch (Exception e) {
                 logger.error(String.format("上传脚本失败，错误信息：%s，目标路径：%s,内置文件路径：%s,文件名称：%s", e.getMessage(), targetExporterPath, buildNodeExporterPath, buildNodeExporterName), e);
                 return R.error(RCode.ASSET_UPLOADFILE_FAILED);
             }
 
             // 执行脚本让exporter运行
-            String execCommand = "chmod +x " + targetExporterPath + "/" + tempShellName + " && " + targetExporterPath + "/" + tempShellName;
+            String execCommand = "chmod +x " + targetExporterPath + "/" + shellName + " && " + targetExporterPath + "/" + shellName;
             try {
                 sftpUtils.exec(execCommand);
             } catch (Exception e) {
@@ -1530,10 +1528,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         } finally {
             // 退出
             sftpUtils.logout();
-            // 删除临时文件
-            if (file != null) {
-                file.delete();
-            }
         }
         return R.ok();
     }
@@ -1672,7 +1666,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
-            this.fillData(list, 1, sheet, workbook);
+            this.fillData(list, 1, sheet, workbook, language);
 
             // 响应为流
             String fileName = "AssetsExport.xlsx"; // 默认名称
@@ -1694,15 +1688,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook) {
-        List<SysDictEntity> assetStates = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_STATE_TYPE).eq(SysDictEntity::getDelFlag, 0));
-        Map<Integer, String> statesMap = assetStates.stream().collect(Collectors.toMap(SysDictEntity::getCode, SysDictEntity::getValue));
-
+    private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook, String language) {
+        SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
+        Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
+        Map assetStateMap = (Map) i18nConfigMap.get(Constant.DICT_ASSET_STATE_TYPE);
         Row row;
         Model model;
         Integer start, end, ipmiPort;
         String ipmiHost, tagStr;
-        Map ipmiMap;
+        //Map ipmiMap;
         for (Asset asset : list) {
             row = sheet.createRow(rowNum++);
 
@@ -1718,7 +1712,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             end = asset.getCabinetEnd();
             row.createCell(7).setCellValue(end == null ? "" : end + "");
             row.createCell(8).setCellValue(asset.getHost());
-            row.createCell(9).setCellValue(statesMap.get(asset.getState()));
+            row.createCell(9).setCellValue(this.getI18nAssetStateValue(assetStateMap, language, asset.getState()));
             row.createCell(10).setCellValue(asset.getPurchaseDate());
 
             if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
@@ -1732,7 +1726,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
                 row.createCell(33).setCellValue(tagStr);
             }
-            ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
+            /*ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
             if (ToolUtil.isNotEmpty(ipmiMap)) {
                 ipmiHost = (String) ipmiMap.get("host");
                 if (ToolUtil.isNotEmpty(ipmiHost)) {
@@ -1742,11 +1736,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 if (ToolUtil.isNotEmpty(ipmiPort)) {
                     row.createCell(35).setCellValue(ipmiPort);
                 }
-            }
+            }*/
 
             // 设置单元格样式
             ExcelUtils.setDataCellStyle(workbook, row, 35);
         }
+    }
+
+    private String getI18nAssetStateValue(Map assetStateMap, String language, Integer state) {
+        Map map = (Map) assetStateMap.get(state);
+        Object value = map.get(language);
+        return value == null ? "" : value.toString();
     }
 
     private void exportFillAccountData(Row row, List<Account> accountList) {
