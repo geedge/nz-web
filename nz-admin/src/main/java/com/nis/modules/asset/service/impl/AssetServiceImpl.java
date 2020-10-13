@@ -1739,7 +1739,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }*/
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, row, 35);
+            ExcelUtils.setDataCellStyle(workbook, row, 33);
         }
     }
 
