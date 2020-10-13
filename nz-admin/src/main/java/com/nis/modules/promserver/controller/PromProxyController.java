@@ -206,12 +206,10 @@ public class PromProxyController {
 
 		if (result != null && result.get("data") != null) {
 			String nullType = request.getParameter("nullType");
-			nullType = StringUtils.isEmpty(nullType) ? "connected" : nullType;
-			String regEx = "[^0-9]";
+			nullType = StringUtils.isEmpty(nullType) ? "null" : nullType;
 			Integer start = Integer.valueOf(request.getParameter("start"));
 			Integer end = Integer.valueOf(request.getParameter("end"));
-			Matcher matcher = Pattern.compile(regEx).matcher(request.getParameter("step"));
-			Integer step = Integer.valueOf(matcher.replaceAll("").trim());
+			String step = request.getParameter("step");
 
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
@@ -221,7 +219,7 @@ public class PromProxyController {
 		return result;
 	}
 
-	private static JSONArray addMissingData(String nullType, Integer start, Integer end, Integer step, JSONArray resultArray) {
+	private static JSONArray addMissingData(String nullType, Integer start, Integer end, String step, JSONArray resultArray) {
 		Map<String, Object> nullTypeAndValueMap = new HashMap(2);
 		switch (nullType) {
 			case "null": {
@@ -236,10 +234,8 @@ public class PromProxyController {
 				break;
 		}
 
-		List<Integer> timeList = new ArrayList<>();
-		for (int j = start; j <= end; j = j + step) {
-			timeList.add(j);
-		}
+		// 获取完整时间序列
+		List<Integer> timeList = getTheCompleteTimeList(start, end, step);
 
 		JSONObject metric = null;
 		List<JSONArray> values = null;
@@ -251,8 +247,8 @@ public class PromProxyController {
 		for (int i = 0; i < resultArray.size(); i++) {
 			metric = (JSONObject) resultArray.get(i);
 			values = (List<JSONArray>) metric.get("values");
-			// 如果缺失数据 进行补全
-			if (values.size() < timeList.size()) {
+			// 如果缺失数据 进行补全 只有 nullType 为 null zero 进行补充值
+			if (values.size() < timeList.size() && !"connected".equals(nullType)) {
 				valuesMap = new HashMap<>();
 				for (JSONArray objects : values) {
 					valuesMap.put(Integer.valueOf(objects.get(0).toString()), 1);
@@ -266,8 +262,8 @@ public class PromProxyController {
 						values.add(j, tempArray);
 					}
 				}
-			} else {
-				// 数据不缺失 处理 NAN 数据
+			} else if(values.size() == timeList.size() && "connected".equals(nullType)){
+				// 数据不缺失  , 并且  nullType = connected ,   处理 NAN 数据
 				valuesIterator = values.iterator();
 				while (valuesIterator.hasNext()) {
 					tempArray = valuesIterator.next();
@@ -283,6 +279,40 @@ public class PromProxyController {
 			}
 		}
 		return resultArray;
+	}
+
+	public static List<Integer> getTheCompleteTimeList(Integer start, Integer end, String stepStr) {
+		// 最后以为不是字母 默认单位为  s
+		stepStr = Character.isDigit(stepStr.charAt(stepStr.length() - 1)) ? stepStr += "s" : stepStr;
+		String endChart = stepStr.substring(stepStr.length() - 1, stepStr.length());
+
+		Integer step = Integer.parseInt(stepStr.substring(0, stepStr.length() - 1));
+		switch (endChart) {
+			case "s": {
+				break;
+			}
+			case "m": {
+				step *= 60;
+				break;
+			}
+			case "h": {
+				step *= 3600;
+				break;
+			}
+			case "d": {
+				step *= 86400;
+				break;
+			}
+			default:
+				break;
+		}
+
+		List<Integer> timeList = new ArrayList<>();
+		for (int j = start; j <= end; j = j + step) {
+			timeList.add(j);
+		}
+
+		return timeList;
 	}
 
 	public static byte[] compressedIntoGzipBytes(String str, String encoding) {
