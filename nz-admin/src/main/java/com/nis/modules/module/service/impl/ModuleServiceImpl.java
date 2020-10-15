@@ -250,17 +250,17 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         Map alertStatMap = new HashMap(4);
         List<AlertMessageEntity> alertsByModuleId = alertMessageService.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1).eq(AlertMessageEntity::getModuleId, moduleId));
         if (CollectionUtils.isEmpty(alertsByModuleId)) {
-            alertStatMap.put("high", 0);
-            alertStatMap.put("medium", 0);
-            alertStatMap.put("low", 0);
+            alertStatMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
+            alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
+            alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
             return alertStatMap;
         }
-        long high = alertsByModuleId.stream().filter(alert -> "high".equals(alert.getSeverity())).count();
-        long medium = alertsByModuleId.stream().filter(alert -> "medium".equals(alert.getSeverity())).count();
-        long low = alertsByModuleId.stream().filter(alert -> "low".equals(alert.getSeverity())).count();
-        alertStatMap.put("high", high);
-        alertStatMap.put("medium", medium);
-        alertStatMap.put("low", low);
+        long high = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
+        long medium = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
+        long low = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
+        alertStatMap.put(Constant.ALERT_SEVERITY_HIGH, high);
+        alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, medium);
+        alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, low);
         return alertStatMap;
     }
 

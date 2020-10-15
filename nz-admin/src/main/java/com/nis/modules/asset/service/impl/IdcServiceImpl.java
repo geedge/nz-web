@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.asset.dao.AssetDao;
@@ -88,9 +85,9 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
 
             alertStat = new HashMap();
             alertStat.put("total", stat.getAlertTotal());
-            alertStat.put("high", stat.getAlertHigh());
-            alertStat.put("medium", stat.getAlertMedium());
-            alertStat.put("low", stat.getAlertLow());
+            alertStat.put(Constant.ALERT_SEVERITY_HIGH, stat.getAlertP1());
+            alertStat.put(Constant.ALERT_SEVERITY_MEDIUM, stat.getAlertP2());
+            alertStat.put(Constant.ALERT_SEVERITY_LOW, stat.getAlertP3());
 
             data.setAssetStat(assetStat);
             data.setAlertStat(alertStat);

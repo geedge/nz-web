@@ -20,6 +20,7 @@
 		<result property="alertRule.operator" column="operator"/>
 		<result property="alertRule.threshold" column="threshold"/>
 		<result property="alertRule.unit" column="unit"/>
+		<result property="alertRule.buildIn" column="build_in"/>
 
 		<result property="projectId" column="project_id"/>
 		<result property="moduleId" column="module_id"/>
@@ -35,7 +36,8 @@
 			ar.expr,
 			ar.operator,
 			ar.threshold,
-			ar.unit
+			ar.unit,
+			ar.build_in
 		FROM
 			alert_message am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id

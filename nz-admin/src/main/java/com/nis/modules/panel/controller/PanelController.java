@@ -173,11 +173,12 @@ public class PanelController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId) {
+    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
         ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
-                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
+                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL)
+                .and(language).notNull(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
 
-        return R.ok(chartService.importChartFromExcelFile(excelFile, type, linkId));
+        return R.ok(chartService.importChartFromExcelFile(excelFile, type, linkId, language));
     }
 
     @GetMapping("/export")
