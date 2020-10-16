@@ -14,6 +14,7 @@ public class R extends HashMap<String, Object> {
 	public R() {
 		put("code", RCode.SUCCESS.getCode());
 		put("msg", RCode.SUCCESS.getMsg());
+		put("time", DateUtil.getUTCTimeByConfigTimeZone());
 	}
 	
 	public static R error() {
@@ -24,6 +25,7 @@ public class R extends HashMap<String, Object> {
 		R r = new R();
 		r.put("code", rCode.getCode());
 		r.put("msg", rCode.getMsg());
+		r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
 		return r;
 	}
 	
@@ -31,12 +33,14 @@ public class R extends HashMap<String, Object> {
 		R r = new R();
 		r.put("code", code);
 		r.put("msg", msg);
+		r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
 		return r;
 	}
 
 	public static R ok(String msg) {
 		R r = new R();
 		r.put("msg", msg);
+		r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
 		return r;
 	}
 	
@@ -47,6 +51,7 @@ public class R extends HashMap<String, Object> {
 	public static R ok(Object data) {
 		R r = new R();
 		r.put("data", data);
+		r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
 		return r;
 	}
 

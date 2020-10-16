@@ -437,11 +437,7 @@ public class DateUtil {
 	 *
 	 * @return
 	 */
-	public static TimeZone getConfigTimeZone() {
-		if (configTimeZone > 12 || configTimeZone < -12) {
-			configTimeZone = 0;
-		}
-
+	public static TimeZone getConfigTimeZone(int configTimeZone) {
 		int newTime = configTimeZone * 60 * 60 * 1000;
 		TimeZone timeZone;
 		String[] ids = TimeZone.getAvailableIDs(newTime);
@@ -460,7 +456,7 @@ public class DateUtil {
 	 */
 	public static Date getUTCTimeByConfigTimeZone() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		sdf.setTimeZone(DateUtil.getConfigTimeZone());
+		sdf.setTimeZone(DateUtil.getConfigTimeZone(0));
 		String format = sdf.format(new Date());
 		Date parse = null;
 		try {
@@ -470,24 +466,5 @@ public class DateUtil {
 			e.printStackTrace();
 		}
 		return parse;
-	}
-
-	/**
-	 * 将传过来的时间按照配置时区解析并返回
-	 *
-	 * @param date
-	 * @return
-	 */
-	public static Date getUTCTimeByConfigTimeZone(Date date) {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-		sdf.setTimeZone(DateUtil.getConfigTimeZone());
-		String format = sdf.format(date);
-		try {
-			sdf.setTimeZone(TimeZone.getDefault());
-			date = sdf.parse(format);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		return date;
 	}
 }

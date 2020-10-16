@@ -7,8 +7,8 @@ import com.nis.common.utils.DateUtil;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.sys.entity.SysDictEntity;
-import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.quartz.DisallowConcurrentExecution;
@@ -42,10 +42,22 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
     private AlertMessageDao alertMessageDao;
 
     @Autowired
-    private SysDictService sysDictService;
+    private SysConfigService sysConfigService;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        log.debug("告警消息过期状态任务开始");
+        long start, end;
+        start = System.currentTimeMillis();
+
+        this.handleAlertStatus();
+
+        end = System.currentTimeMillis();
+        log.debug("告警消息过期状态任务 start time:" + start + "; end time:" + end + "; Run Time:" + (end - start) + "(ms)");
+        log.debug("告警消息过期状态任务结束");
+    }
+
+    private void handleAlertStatus(){
         // 1. 从 redis 中获取缓存信息
         HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
         Map<String, String> cacheAlertMap = opsForHash.entries(Constant.REDIS_KEY_ALERTMESSAGE);
@@ -56,11 +68,11 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
         Map<Integer, Integer> alertRuleIdAndLast = alertRules.stream().collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getLast));
 
         // 3. 默认 alertInterval 为15s
-        Integer alertInterval = Constant.ALERT_INTERVAL;
-        SysDictEntity sysDictEntity = sysDictService.getOne(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ALERTINTERVAL_TYPE));
-        if (sysDictEntity != null) {
-            alertInterval = Integer.valueOf(sysDictEntity.getValue());
-        }
+        String[] keys = {Constant.SYSCONFIG_KEY_ALERTINTERVAL, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL};
+        List<SysConfigEntity> configs = sysConfigService.list(new QueryWrapper<SysConfigEntity>().lambda().in(SysConfigEntity::getParamKey, keys));
+
+        Integer alertInterval = Integer.valueOf(configs.get(0).getParamValue());
+        Integer scrapeInterval = Integer.valueOf(configs.get(1).getParamValue());
 
         Map<String, Object> cacheAlert = new HashMap<>();
         Integer cacheAlertId = null;
@@ -94,7 +106,7 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
                 currentTimeMillis = System.currentTimeMillis();
 
                 // 当前时间 - 结束时间 大于等于 持续时间 证明已经失效
-                if ((currentTimeMillis - cacheEndTime) / 1000 - last - alertInterval > 0) {
+                if ((currentTimeMillis - cacheEndTime) / 1000 - (last > scrapeInterval ? last : scrapeInterval) - alertInterval > 0) {
                     updateCacheKeys.add(hashKey);
                 }
             } else {
@@ -105,6 +117,7 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
 
         // 3. 处理变化  1. 修改数据库alert_message 中的state 2. 更新缓存
         if (CollectionUtils.isNotEmpty(updateCacheKeys)) {
+            log.debug("状态变化的hashkeys" + updateCacheKeys.toString());
             alertMessageDao.updateBatch(updateCacheKeys, DateUtil.getUTCTimeByConfigTimeZone());
 
             removeKeys.addAll(updateCacheKeys);

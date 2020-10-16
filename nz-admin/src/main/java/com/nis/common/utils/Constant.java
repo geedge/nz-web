@@ -481,9 +481,6 @@ public class Constant {
     // 字典表中 chart element 表达式类型的 type 值
     public static final String DICT_EXPRESSION_TYPE = "exprType";
 
-    // 字典表中 告警周期 类型的 type 值
-    public static final String DICT_ALERTINTERVAL_TYPE = "alertInterval";
-
     // 目前机柜最大值限制
     public static final Integer CURRENT_CABINET_MAXU= 47;
 
@@ -499,6 +496,12 @@ public class Constant {
 
     // 系统配置表中 内置 module 的 key名
     public static final String SYSCONFIG_KEY_INIT_MODULE = "init_module_node_exporter";
+
+    // 配置表中 告警间隔 key
+    public static final String SYSCONFIG_KEY_ALERTINTERVAL = "alert_interval";
+
+    // 配置表中 刮取周期 key
+    public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "scrape_interval";
 
     // 内置 node_exporter 默认安装服务器路径
     public static final String SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH = "node_exporter_target_path";

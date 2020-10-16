@@ -198,7 +198,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
     @Override
     public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
-    	logger.debug("receive promethues alert message {}",receiveData==null?null:Arrays.asList(receiveData).toString());
+    	logger.debug("接收 promethues 告警消息是 {}",receiveData==null?null:Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
 
 	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
@@ -329,6 +329,20 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		int total ;
 		int pageNo = Integer.parseInt(params.get("pageNo").toString());
 		int pageSize = Integer.parseInt(params.get("pageSize").toString());
+
+		try {
+			if (params.get("startAt") != null && !StringUtils.isBlank(params.get("startAt").toString())) {
+				Date searchStartAt = DateUtils.parseDate(params.get("startAt").toString(), "yyyy-MM-dd HH:mm:ss");
+				params.put("startAt", searchStartAt);
+			}
+			if (params.get("endAt") != null && !StringUtils.isBlank(params.get("endAt").toString())) {
+				Date searchEndAt = DateUtils.parseDate(params.get("endAt").toString(), "yyyy-MM-dd HH:mm:ss");
+				params.put("endAt", searchEndAt);
+			}
+
+		} catch (ParseException e) {
+			logger.error("时间转换异常,参数是 {}", params, e);
+		}
 
 		//Excel2003版最大行数是65536，Excel2007最大行数是1048576
 		//Excel2003版最大列数是256，Excel2007最大列数是16384

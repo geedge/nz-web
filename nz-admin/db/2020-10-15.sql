@@ -13,3 +13,39 @@ INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) V
 delete from sys_config where param_key = "model_chart_export_header";
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'model_chart_export_header', '{\"cn\":{\"*图表名称\":\"图表名称(必填)支持{{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}}取值替换 \\n示例: CPU使用率\",\"*图表类型\":\"图表类型(必填) 可选: 曲线图,柱状图,表格,堆叠区域图,SingleStat,URL,告警列表 \\n示例: 曲线图\",\"*宽度\":\"宽度(必填) 可选：1-12 \\n示例: 10\",\"*高度\":\"高度(必填),默认单位（px/像素） \\n示例:400\",\"单位\":\"单位(必填) 可选: \\nMisc: none,short,percent(0-100),percent(0.0-1.0),local format\\nData: bits,bytes,kilobytes,megabytes,gigabytes,terabytes,petabytes\\nDataRate: packets/sec,bits/sec,bytes/sec,kilobytes/sec,kilobits/sec,megabytes/sec,megabits/sec,gigabytes/sec,gigabits/sec,terabytes/sec,terabits/sec,petabytes/sec,petabits/sec\\nTime: Hertz(1/s),nanoseconds(ns),microseconds(us),milliseconds(ms),seconds(s),minutes(m),hours(h),days(d)\\n示例: short\",\"*参数\":\"单位 根据type不同，内容不同，格式为JSON格式 ,支持{{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}}取值替换  \\n示例: {\\\"statistics\\\":\\\"average\\\"}\",\"元素\":\"当type=line，bar，stackArea时，包含 elements key，值为对象数组，其中 expression 支持{{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}}取值替换 \\n 示例:[{\\\"expression\\\":\\\"sum(up)\\\",\\\"legend\\\":\\\"test\\\"}]\"},\"en\":{\"*Chart Title\":\"Chart title(Required) Support {{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}} value replacement \\nExample: CPU usage\",\"*Chart Type\":\"Chart type(Required) Optional: Line Chart,Histogram,Table,Stack Area,SingleStat,URL,Alert list \\nExample: Line Chart\",\"*Width\":\"width(Required) Optional：1-12 \\nExample: 10\",\"*Height\":\"height(Required),Default unit（px/Pixel） \\nExample:400\",\"Unit\":\"unit(Required) Optional: \\nMisc: none,short,percent(0-100),percent(0.0-1.0),local format\\nData: bits,bytes,kilobytes,megabytes,gigabytes,terabytes,petabytes\\nDataRate: packets/sec,bits/sec,bytes/sec,kilobytes/sec,kilobits/sec,megabytes/sec,megabits/sec,gigabytes/sec,gigabits/sec,terabytes/sec,terabits/sec,petabytes/sec,petabits/sec\\nTime: Hertz(1/s),nanoseconds(ns),microseconds(us),milliseconds(ms),seconds(s),minutes(m),hours(h),days(d)\\nExample: short\",\"*Parameter\":\"Parameters match type，The format is JSON format,Support {{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}} value replacement \\nExample: {\\\"statistics\\\":\\\"average\\\"}\",\"Elements\":\"When the type is line, table, stackArea, singleStat, histogram, it contains elements key and the value is an object array.The expression support {{asset.sn}},{{asset.host}},{{asset.tag.[key]}},{{asset.tag.key}} value replacement \\nExample:[{\\\"expression\\\":\\\"sum(up)\\\",\\\"legend\\\":\\\"test\\\"}]\"}}', 1, NULL);
 
+delete from sys_config where param_key = "i18n_mapping";
+INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'i18n_mapping', '{\"assetState\":{\"1\":{\"en\":\"In stock\",\"cn\":\"在库\",\"ru\":\"\"},\"2\":{\"en\":\"Not in stock\",\"cn\":\"出库\",\"ru\":\"\"}},\"chartType\":{\"en\":{\"line\":\"Line Chart\",\"bar\":\"Histogram\",\"table\":\"Table\",\"stackArea\":\"Stack Area\",\"singleStat\":\"SingleStat\",\"url\":\"URL\",\"alertList\":\"Alert list\"},\"cn\":{\"line\":\"曲线图\",\"bar\":\"柱状图\",\"table\":\"表格\",\"stackArea\":\"堆叠区域图\",\"singleStat\":\"SingleStat\",\"url\":\"URL\",\"alertList\":\"告警列表\"}}}', 1, NULL);
+
+delete from sys_config where param_key = "map_center_config";
+INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'map_center_config', '{\"longitude\":34.33,\"latitude\":45.44,\"zoom\":2}', 1, NULL);
+
+ALTER TABLE alert_rule MODIFY COLUMN `last` int(10) NOT NULL;
+ALTER TABLE alert_rule MODIFY COLUMN `severity` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '告警级别';
+ALTER TABLE alert_rule MODIFY COLUMN `operator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT '比较符号';
+ALTER TABLE alert_rule MODIFY COLUMN `threshold` Double(20,5) COMMENT '阈值';
+
+ALTER TABLE prom_server MODIFY COLUMN `status` INT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE sys_log MODIFY COLUMN `user_id` INT(10) NOT NULL DEFAULT -1;
+ALTER TABLE sys_log MODIFY COLUMN `opera_id` VARCHAR(512)	CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT "-1";
+
+ALTER TABLE sys_user MODIFY COLUMN `lang` VARCHAR(4)	CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'en';
+ALTER TABLE sys_user MODIFY COLUMN `source` VARCHAR(32)	CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'system';
+
+update alert_rule set severity = "P1" where severity = "high";
+update alert_rule set severity = "P2" where severity = "medium";
+update alert_rule set severity = "P3" where severity = "low";
+
+update alert_message set severity = "P1" where severity = "high";
+update alert_message set severity = "P2" where severity = "medium";
+update alert_message set severity = "P3" where severity = "low";
+
+delete from sys_dict where type = 'alertInterval';
+
+update alert_rule set severity = "P1" where severity = "high";
+update alert_rule set severity = "P2" where severity = "medium";
+update alert_rule set severity = "P3" where severity = "low";
+
+update alert_message set severity = "P1" where severity = "high";
+update alert_message set severity = "P2" where severity = "medium";
+update alert_message set severity = "P3" where severity = "low";

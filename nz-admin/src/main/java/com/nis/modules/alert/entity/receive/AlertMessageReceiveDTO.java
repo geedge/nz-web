@@ -57,12 +57,18 @@ public class AlertMessageReceiveDTO implements Serializable {
         entity.setDescription((String) receiveAnnotations.get("description"));
         entity.setSummary((String) receiveAnnotations.get("summary"));
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        Date sa = sdf.parse(dto.getStartsAt());
-
         // 时区转换 按照数据库配置时区入库
-        sa = DateUtil.getUTCTimeByConfigTimeZone(sa);
-
+        String startsAt = dto.getStartsAt();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        Date sa = sdf.parse(startsAt);
+        boolean b = startsAt.endsWith("Z");
+        if (!b) {
+            // 其他时区 格式统一 为  2020-10-15T23:32:30.841162867（+12:00/+08:00/-05:00）
+            int i = startsAt.lastIndexOf(":");
+            String timezoneStr = startsAt.substring(i - 3, i);
+            int timezone = Integer.parseInt(timezoneStr);
+            sa = getUTCDateByTimeZone(sa, timezone);
+        }
         entity.setStartAt(sa);
 
         entity.setState(1);
@@ -88,5 +94,18 @@ public class AlertMessageReceiveDTO implements Serializable {
         entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
         entity.setSeverity((String) receiveLabels.get("severity"));
         return entity;
+    }
+
+    public static Date getUTCDateByTimeZone(Date sa,int timezone) {
+        int tempTime = timezone * 3600000;
+        long time = sa.getTime();
+
+        if (timezone > 0) {
+            time -= (tempTime > 0 ? tempTime : (tempTime *= -1));
+        } else {
+            time += tempTime > 0 ? tempTime : (tempTime *= -1);
+        }
+        sa = new Date(time);
+        return sa;
     }
 }

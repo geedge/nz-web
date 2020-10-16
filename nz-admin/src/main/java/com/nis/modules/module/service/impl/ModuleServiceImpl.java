@@ -252,15 +252,15 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         if (CollectionUtils.isEmpty(alertsByModuleId)) {
             alertStatMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
             alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
-            alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
+            alertStatMap.put(Constant.ALERT_SEVERITY_LOW, 0);
             return alertStatMap;
         }
         long high = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
         long medium = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
-        long low = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
+        long low = alertsByModuleId.stream().filter(alert -> Constant.ALERT_SEVERITY_LOW.equals(alert.getSeverity())).count();
         alertStatMap.put(Constant.ALERT_SEVERITY_HIGH, high);
         alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, medium);
-        alertStatMap.put(Constant.ALERT_SEVERITY_MEDIUM, low);
+        alertStatMap.put(Constant.ALERT_SEVERITY_LOW, low);
         return alertStatMap;
     }
 

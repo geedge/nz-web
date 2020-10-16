@@ -181,12 +181,14 @@
 		<if test="params.state != null ">
 			AND am.state=#{params.state}
 		</if>
-		<if test="params.startAt != null and params.startAt != ''">
-			AND am.start_at = #{params.startAt}
+
+		<if test="params.startAt != null">
+			AND am.start_at &gt;= #{params.startAt}
 		</if>
-		<if test="params.endAt != null and params.endAt != ''">
-			AND am.end_at = #{params.endAt}
+		<if test="params.endAt != null">
+			AND am.start_at &lt;= #{params.endAt}
 		</if>
+
 		<if test="params.ruleIds!=null and params.ruleIds.size>0">
 			and ar.id in
 			<foreach collection="params.ruleIds" item="ruleId" open="(" separator="," close=")">

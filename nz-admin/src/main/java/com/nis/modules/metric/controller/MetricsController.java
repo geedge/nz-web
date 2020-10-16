@@ -170,6 +170,7 @@ public class MetricsController extends AbstractController {
             R r = new R();
             r.put("code", RCode.ERROR.getCode());
             r.put("msg", RCode.ERROR.getMsg());
+            r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
             r.put("data", healthyMap);
             return r;
         }

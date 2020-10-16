@@ -615,11 +615,10 @@ public class TerminalHandler extends TextWebSocketHandler {
     	}else if(message.equals("help")) {
     		session.sendMessage(new TextMessage("\r\n$: Internal Commands:\r\n" + 
     				"ssh: Connects to a host using the SSH protocol.\r\n" + 
-    				"telnet: Connects to a host using the TELNET protocol.\r\n" + 
-    				"set: Sets options.\r\n" + 
+    				"telnet: Connects to a host using the TELNET protocol.\r\n" +
     				"clear: Clears the screen/address/command history.\r\n" + 
-    				"help: Displays this help. 'help' does the same.\r\n" + 
-    				"quit: Quits Local Shell. 'quit' does the same.\r\n" +
+    				"help: Displays this help. \r\n" +
+    				"quit: Quits Local Shell. 'exit' does the same.\r\n" +
     				"$: "));
     	}else if(message.matches("help\\s+ssh")) {
     		session.sendMessage(new TextMessage("\r\n$: NAME \r\n" + 

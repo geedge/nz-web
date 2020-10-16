@@ -2448,7 +2448,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 						TimeTicks t =new TimeTicks();
 						t.setValue(value);
 						long milliseconds = t.toMilliseconds();
-						result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime()-milliseconds))));
+						//result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime()-milliseconds))));
+                        result.setValue(DateUtil.getTime(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime() - milliseconds)));
 					}else {
 						result.setValue(value);
 					}
