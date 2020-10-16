@@ -681,7 +681,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private TransactionDefinition transactionDefinition;
 
     @Override
-    public Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID) {
+    public Map importAssetsFromExcel(MultipartFile assetsExcelFile, String seqUUID, String language) {
         logger.info("asset 导入文件名是:" + assetsExcelFile.getOriginalFilename() + ",本次随机UUD:" + seqUUID);
         String originalFilename = assetsExcelFile.getOriginalFilename();
 
@@ -705,6 +705,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     e.printStackTrace();
                 }
             }
+        }
+
+        // asset state 语言对应表
+        SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
+        Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
+        Map assetStateMap = (Map) i18nConfigMap.get(Constant.DICT_ASSET_STATE_TYPE);
+        Map assetStateMapByLanguage = (Map) assetStateMap.get(language);
+        if (ToolUtil.isEmpty(assetStateMapByLanguage)) {
+            throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
         }
 
         // 查询 asset 相关数据 用作导入时间校验 减少循环查表
@@ -784,7 +793,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             int dataFromExcelRowNum;
 
             String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, exporter; //, ipmiHost, ipmiPort;
-            Integer start, end, stateInt;
+            Integer start, end;
 
             Map saveEntitys, ipmiMap;
             Long userId = ShiroUtils.getUserId();
@@ -800,7 +809,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 dataFromExcelRowNum = i + 1;
                 // 保证一行数据在同一事务内，将所有入库数据统一入库
                 saveEntitys = new HashMap();
-                start = end = stateInt = null;
+                start = end = null;
                 accountList = new ArrayList<>();
                 boolean saveFlag = true;
                 boolean modelFlag = true;
@@ -1009,20 +1018,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 state = ExcelUtils.getCellValue(row.getCell(9));
                 if (StringUtils.isEmpty(state)) {
                     state = "1";
-                }
-                try {
-                    stateInt = Integer.parseInt(state);
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_STATE_INVALIDE.getMsg());
-                }
-
-                // 校验asste state 是否存在
-                if (!assetStateList.contains(stateInt)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_STATE_NOTFOUND.getMsg());
                 } else {
-                    asset.setState(stateInt);
+                    state = this.validateAssetStateForImport(state, assetStateMapByLanguage);
+                    if (StringUtils.isEmpty(state)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_STATE_NOTFOUND.getMsg());
+                    }
                 }
 
                 // 购买日期
@@ -1108,6 +1109,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
                 // 前面没有报错
                 if (saveFlag) {
+                    asset.setState(Integer.parseInt(state));
                     asset.setSeq(seqUUID);
                     asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
                     asset.setCreateBy(userId);
@@ -1164,6 +1166,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
         return resultInfo;
+    }
+
+    private String validateAssetStateForImport(String type, Map<String,String> assetStateMapByLanguage) {
+        for (Map.Entry<String, String> entry : assetStateMapByLanguage.entrySet()) {
+            if(type.equals(entry.getValue())){
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private void updateImportAssetRelatedInfo(Map updateMap, Map<String, SysDictEntity> assetTypesMap, Map<String, SysDictEntity> vendorsMap, List<Model> modelList, Map<String, Idc> idcMap, List<Cabinet> cabinetList, List<String> assetSnList, List<String> assetHostList) {
@@ -1665,8 +1676,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
+            SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
+            Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
+            Map assetStateMap = (Map) i18nConfigMap.get(Constant.DICT_ASSET_STATE_TYPE);
+            Map assetStateMapByLanguage = (Map) assetStateMap.get(language);
+
             // 填充数据
-            this.fillData(list, 1, sheet, workbook, language);
+            this.fillData(list, 1, sheet, workbook, assetStateMapByLanguage);
 
             // 响应为流
             String fileName = "AssetsExport.xlsx"; // 默认名称
@@ -1688,10 +1704,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook, String language) {
-        SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
-        Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
-        Map assetStateMap = (Map) i18nConfigMap.get(Constant.DICT_ASSET_STATE_TYPE);
+    private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook, Map assetStateMapByLanguage) {
         Row row;
         Model model;
         Integer start, end, ipmiPort;
@@ -1712,7 +1725,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             end = asset.getCabinetEnd();
             row.createCell(7).setCellValue(end == null ? "" : end + "");
             row.createCell(8).setCellValue(asset.getHost());
-            row.createCell(9).setCellValue(this.getI18nAssetStateValue(assetStateMap, language, asset.getState()));
+            row.createCell(9).setCellValue(this.getI18nAssetStateValue(assetStateMapByLanguage, asset.getState()));
             row.createCell(10).setCellValue(asset.getPurchaseDate());
 
             if (CollectionUtils.isNotEmpty(asset.getAccounts())) {
@@ -1743,9 +1756,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    private String getI18nAssetStateValue(Map assetStateMap, String language, Integer state) {
-        Map map = (Map) assetStateMap.get(state);
-        Object value = map.get(language);
+    private String getI18nAssetStateValue(Map assetStateMapByLanguage, Integer state) {
+        Object value = assetStateMapByLanguage.get(state);
         return value == null ? "" : value.toString();
     }
 

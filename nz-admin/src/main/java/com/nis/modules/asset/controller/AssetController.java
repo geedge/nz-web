@@ -167,11 +167,12 @@ public class AssetController {
      */
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
-    public R importAssetsFromExcel(MultipartFile excelFile) {
-        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
+    public R importAssetsFromExcel(MultipartFile excelFile,String language) {
+        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL)
+                .and(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
         // 本次导入的 uuid
         String seqUUID = UUID.randomUUID().toString();
-        Map map = assetService.importAssetsFromExcel(excelFile, seqUUID);
+        Map map = assetService.importAssetsFromExcel(excelFile, seqUUID, language);
         return R.ok(map);
     }
 
