@@ -502,7 +502,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
             }else{
-                severity = severity.toLowerCase();
                 if(!Constant.ALERT_SEVERITY_HIGH.equals(severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());

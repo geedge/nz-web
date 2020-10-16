@@ -264,7 +264,7 @@ public enum RCode {
     ALERTRULE_LAST_ISNULL(421005, "Last is required"), //告警持续时间不能为空
     ALERTRULE_LAST_ISNOTPOSITIVE(425006, "Last must be a positive number"), //告警持续时间必须是正数
     ALERTRULE_SEVERITY_ISNULL(421007, "Severity is required"),               //告警级别不能为空
-    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity must be high, medium and low"),
+    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity must be P1, P2 and P3"),
     ALERTRULE_LINK_OBJECT_ISNULL(426009, "Association object does not exist"),
     ALERTRULE_TYPE_ISNULL(421010, "Alarm type is empty"),
     ALERTRULE_TYPE_INVALIDE(424011, "Alarm type is invalide"),

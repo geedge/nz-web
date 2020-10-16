@@ -76,9 +76,9 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
             assetStat.put("outStock", stat.getOutStock());
 
             alertStat.put("total", stat.getAlertTotal());
-            alertStat.put("high", stat.getAlertHigh());
-            alertStat.put("medium", stat.getAlertMedium());
-            alertStat.put("low", stat.getAlertLow());
+            alertStat.put(Constant.ALERT_SEVERITY_HIGH, stat.getAlertP1());
+            alertStat.put(Constant.ALERT_SEVERITY_MEDIUM, stat.getAlertP2());
+            alertStat.put(Constant.ALERT_SEVERITY_LOW, stat.getAlertP3());
 
             cabinet.setAssetStat(assetStat);
             cabinet.setAlertStat(alertStat);

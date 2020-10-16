@@ -163,7 +163,7 @@ public class ExcelUtils {
      * @param workbook excel
      * @return
      */
-    private static CellStyle createHeaderStyle(Workbook workbook) {
+    public static CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         // 上下左右边框
         style.setBorderBottom(HSSFCellStyle.THIN_BACKWARD_DIAG);

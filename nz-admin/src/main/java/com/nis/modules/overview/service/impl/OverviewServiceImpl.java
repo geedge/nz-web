@@ -32,7 +32,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -287,9 +286,9 @@ public class OverviewServiceImpl implements OverviewService {
         assetStat.setPingUp(pingUp);
         assetStat.setPingDown(pingDown);
         assetStat.setAlertTotal(alertList.size());
-        assetStat.setAlertHigh(alertHigh);
-        assetStat.setAlertMedium(alertMedium);
-        assetStat.setAlertLow(alertLow);
+        assetStat.setAlertP1(alertHigh);
+        assetStat.setAlertP2(alertMedium);
+        assetStat.setAlertP3(alertLow);
         return assetStat;
     }
 
@@ -427,7 +426,7 @@ public class OverviewServiceImpl implements OverviewService {
         DcStat dcStat;
         EndpointStat endpointStat;
         for (AssetStat assetStat : assetStatInfoByIdc) {
-            dcStat = new DcStat(assetStat.getTotal(), assetStat.getInStock(), assetStat.getOutStock(), assetStat.getPingUp(), assetStat.getPingDown(), assetStat.getAlertTotal(), assetStat.getAlertHigh(), assetStat.getAlertMedium(), assetStat.getAlertLow());
+            dcStat = new DcStat(assetStat.getTotal(), assetStat.getInStock(), assetStat.getOutStock(), assetStat.getPingUp(), assetStat.getPingDown(), assetStat.getAlertTotal(), assetStat.getAlertP1(), assetStat.getAlertP2(), assetStat.getAlertP3());
 
             endpointStat = dcNameWithEndpointStatMap.get(assetStat.getName());
             dcStat.setName(endpointStat.getName());

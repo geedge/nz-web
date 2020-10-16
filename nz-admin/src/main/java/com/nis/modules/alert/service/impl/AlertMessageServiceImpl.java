@@ -34,7 +34,6 @@ import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -338,14 +337,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		try {
 			workbook = new SXSSFWorkbook();
 			Sheet sheet = workbook.createSheet("AlertMessages");
-			// 创建样式对象
-			CellStyle style = workbook.createCellStyle();
-			style.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);// 垂直
-			style.setAlignment(HSSFCellStyle.ALIGN_CENTER);// 水平
-	
+			sheet.setDefaultColumnWidth(25);
 			int rowNum = 0;
 			Row row = sheet.createRow(rowNum);
-			Cell cell;
 			// 添加标题行
 			// 获取导出的语言选择
 			String language = ToolUtil.isEmpty(params.get("language"))?"en":params.get("language").toString();
@@ -359,11 +353,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			List<String> valueList = new ArrayList<>(values.size());
 			values.stream().forEach(value-> valueList.add(value.toString()));
 			// 筛选表头并添加表头至excel
+			CellStyle colStyle = ExcelUtils.createHeaderStyle(workbook);
 			for (int i = 0; i < valueList.size(); i++) {
 				// 创建列、单元格
-				cell = row.createCell(i);
+				Cell cell = row.createCell(i);
 				cell.setCellValue(valueList.get(i));
-				cell.setCellStyle(style);
+				cell.setCellStyle(colStyle);
 			}
 	
 			// 添加数据
@@ -377,7 +372,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 					params.put("pageNo",start);
 					params.put("pageSize",end);
 					List<AlertMessageWithExport> list =this.baseMapper.selectWithExport(params);
-					rowNum = fill(list,rowNum,sheet);
+					rowNum = fill(list,rowNum,sheet, workbook);
 				}
 			}else {  //部分导出
 				int start = (pageNo-1)*pageSize;
@@ -385,7 +380,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				params.put("pageNo",start);
 				params.put("pageSize",end);
 				List<AlertMessageWithExport> list = this.baseMapper.selectWithExport(params);
-				fill(list,rowNum,sheet);
+				fill(list,rowNum,sheet,workbook);
 			}
 
 			// 响应为流
@@ -448,7 +443,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     /**
 	 * 填充表格数据
 	 */
-	private static int fill(List<AlertMessageWithExport> list,int rowNum,Sheet sheet){
+	private static int fill(List<AlertMessageWithExport> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook){
 		for (AlertMessageWithExport alertMessageWithExport : list) {
 			Row r = sheet.createRow(++rowNum);
 			Integer id = alertMessageWithExport.getId();
@@ -480,6 +475,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			r.createCell(11).setCellValue(startAt);
 			r.createCell(12).setCellValue(endAt);
 			r.createCell(13).setCellValue(state);
+
+			ExcelUtils.setDataCellStyle(workbook, r, 13);
 		}
 		return rowNum;
 	}

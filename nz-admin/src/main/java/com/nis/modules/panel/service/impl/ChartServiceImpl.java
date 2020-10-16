@@ -22,7 +22,6 @@ import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.NodeService;
 import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -802,7 +801,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private String getChartTemplateConfigKeyByType(String type) {
         // 默认 dashboard 类型
-        type = StringUtils.isEmpty(type) ? "dashboard" : type;
+        type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
         String chartTemplateTyep;
         switch (type) {
             case "dashboard": {
@@ -931,11 +930,16 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
+            SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
+            Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
+            Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
+            Map chartTypeMapByLanguage = (Map)  chartTypeMap.get(language);
+
             // 填充数据
             if(!Constant.PanelType.DASHBOARD.getValue().equals(type)){
-                this.fillAssetModelChartData(charts, 1, sheet, workbook);
+                this.fillAssetModelChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }else{
-                this.fillDashboardChartData(charts, 1, sheet, workbook);
+                this.fillDashboardChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }
 
             String fileName = "PanelChartExport.xlsx";
@@ -958,13 +962,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     }
 
-    private void fillAssetModelChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+    private void fillAssetModelChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
         Row row;
         for (Chart chart : charts) {
             if (chart == null) continue;
             row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(chart.getTitle());
-            row.createCell(1).setCellValue(chart.getType());
+            row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, chart.getType()));
             row.createCell(2).setCellValue(chart.getSpan());
             row.createCell(3).setCellValue(chart.getHeight());
             row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
@@ -976,8 +980,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
     }
 
+    private String getI18nChartTypeValue(Map chartTypeMapByLanguage, String type) {
+        Object value = chartTypeMapByLanguage.get(type);
+        return value == null ? "" : value.toString();
+    }
+
     @Override
-    public Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId) {
+    public Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
         if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
             throw new NZException(RCode.PANEL_IMPORTFILE_TYPE);
         }
@@ -1013,12 +1022,21 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         String seqUUID = UUID.randomUUID().toString();
 
         // 保存并返回成功条数
-        type = StringUtils.isEmpty(type) ? "dashboard" : type;
+        type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
+
+        SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
+        Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
+        Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
+        Map chartTypeMapByLanguage = (Map) chartTypeMap.get(language);
+        if (ToolUtil.isEmpty(chartTypeMapByLanguage)) {
+            throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
+        }
+
         int successNum = 0;
-        if ("dashboard".equals(type)) {
-            successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID);
+        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
+            successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage);
         } else {
-            successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId);
+            successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage);
         }
         int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
@@ -1032,14 +1050,11 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         return resultMap;
     }
 
-    private int saveAssetChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, String panelType, Integer linkId) {
+    private int saveAssetChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage) {
         if (linkId == null) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
 
         Panel panel = panelService.getOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panelType).eq(Panel::getLink, linkId));
         if (panel == null) throw new NZException(RCode.PANEL_NOT_EXIST);
-
-        List<SysDictEntity> chartTypeList = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE).eq(SysDictEntity::getDelFlag, 0));
-        List<String> chartTypeValues = chartTypeList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
 
         Row row;
         int successNum = 0;
@@ -1059,7 +1074,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
-                if (!chartTypeValues.contains(type)) {
+                type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
+                if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
@@ -1167,11 +1183,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         return successNum;
     }
 
-    private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID) {
+    private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, Map<String,String> chartTypeMapByLanguage) {
         List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
         Map<String, Integer> panelNameAndIdMap = panelList.stream().collect(Collectors.toMap(Panel::getName, Panel::getId));
-        List<SysDictEntity> chartTypeList = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_TYPE).eq(SysDictEntity::getDelFlag, 0));
-        List<String> chartTypeValues = chartTypeList.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
         Row row;
         int successNum = 0;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
@@ -1195,7 +1209,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
-                if (!chartTypeValues.contains(type)) {
+                type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
+                if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
@@ -1326,6 +1341,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         return successNum;
     }
 
+    private String validateChartTypeForImport(String type, Map<String,String> chartTypeMapByLanguage) {
+        for (Map.Entry<String, String> entry : chartTypeMapByLanguage.entrySet()) {
+            if(type.equals(entry.getValue())){
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     private String validateChartElementForImport(String type, String elements) {
         // elemrnt 只有 alert  和 url 可以没有，其他必须有
         if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type)){
@@ -1428,7 +1452,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         failDetails.add(failDetail);
     }
 
-    private void fillDashboardChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+    private void fillDashboardChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
         List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
         Map<Integer, String> panelIdAndNameMap = panelList.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
         Row row;
@@ -1437,7 +1461,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(panelIdAndNameMap.get(chart.getPanelId()));
             row.createCell(1).setCellValue(chart.getTitle());
-            row.createCell(2).setCellValue(chart.getType());
+            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, chart.getType()));
             row.createCell(3).setCellValue(chart.getSpan());
             row.createCell(4).setCellValue(chart.getHeight());
             row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));

@@ -564,13 +564,13 @@ public class Constant {
     public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
     // 告警级别 高
-    public static final String ALERT_SEVERITY_HIGH = "high";
+    public static final String ALERT_SEVERITY_HIGH = "P1";
 
     // 告警级别 中
-    public static final String ALERT_SEVERITY_MEDIUM = "medium";
+    public static final String ALERT_SEVERITY_MEDIUM = "P2";
 
     // 告警级别 低
-    public static final String ALERT_SEVERITY_LOW = "low";
+    public static final String ALERT_SEVERITY_LOW = "P3";
 
     // account protocol ssh协议
     public static final String ACCOUNT_SSH_PROTOCOL = "SSH";

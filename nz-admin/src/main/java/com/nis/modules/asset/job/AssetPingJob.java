@@ -47,6 +47,7 @@ public class AssetPingJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        logger.info("asset ping 定时任务开始执行");
         long start, end;
         start = System.currentTimeMillis();
 
@@ -55,6 +56,7 @@ public class AssetPingJob extends QuartzJobBean {
         end = System.currentTimeMillis();
 
         logger.info("asset ping job start time:" + start + "; end time:" + end + "; Run Time:" + (end - start) + "(ms)");
+        logger.info("asset ping 定时任务执行结束");
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -68,7 +70,7 @@ public class AssetPingJob extends QuartzJobBean {
 
         // 开启主机连通性开关
         if (Constant.ASSET_PING_OPEN_SWITCH.equals(configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
-            logger.info("asset ping switch is open");
+            logger.info("asset ping 开关开启");
 
             // 获取 所有 asset
             List<Asset> assets = assetService.list();
@@ -105,7 +107,8 @@ public class AssetPingJob extends QuartzJobBean {
                     result = RuntimeUtil.run(null, null, commands);
                     end = System.currentTimeMillis();
 
-                    logger.info("Fping command execution start time:" + start + ";request end time:" + end + "; Run Time:" + (end - start) + "(ms)");
+                    logger.info("asset ping 执行命令是：" + Arrays.asList(commands).toString());
+                    logger.info("asset ping 执行命令开始时间:" + start + ";  结束时间:" + end + "; 执行时长:" + (end - start) + "(ms)");
 
                     reader = new BufferedReader(result);
                     String line;
@@ -113,7 +116,7 @@ public class AssetPingJob extends QuartzJobBean {
                         resultList.add(line);
                     }
 
-                    logger.debug("asset fping result list {}", resultList);
+                    logger.info("asset fping 执行结果集 {}", resultList);
 
                     // ip 和描述信息
                     Map<String, String> ipAndDesc = new HashMap<>();

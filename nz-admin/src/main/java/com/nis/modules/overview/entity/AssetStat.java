@@ -63,14 +63,14 @@ public class AssetStat {
     /**
      * 告警级别为 高 的数量
      */
-    private long alertHigh;
+    private long alertP1;
     /**
      * 告警级别为 中 的数量
      */
-    private long alertMedium;
+    private long alertP2;
     /**
      * 告警级别为 低 的数量
      */
-    private long alertLow;
+    private long alertP3;
 
 }
