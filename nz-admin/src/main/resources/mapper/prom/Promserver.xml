@@ -5,7 +5,7 @@
 
 	<update id="updateStatus">
 		<foreach item="promserver" collection="promservers" separator=";">
-			update prom_server set status=#{promserver.status}
+			update prom_server set status=#{promserver.status},check_time=#{promserver.checkTime}
 			where id=#{promserver.id}
 		</foreach>
 	</update>

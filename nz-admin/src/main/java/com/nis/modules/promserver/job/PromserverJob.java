@@ -3,7 +3,6 @@ package com.nis.modules.promserver.job;
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -17,9 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @DisallowConcurrentExecution
 public class PromserverJob extends QuartzJobBean {
@@ -36,13 +33,11 @@ public class PromserverJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-		Map params=new HashMap();
 		//查询内置confagent配置信息
 		String confagentPort=sysConfigService.getValue(Constant.CONFAGENT_PORT);
 		String confagentPath=sysConfigService.getValue(Constant.CONFAGENT_PATH);
 		//循环查询所有promserver信息
-		PageUtils datas = promserverService.queryPage(params);
-		List<Promserver> promservers = (List<Promserver>) datas.getList();
+		List<Promserver> promservers = promserverService.list();
 		logger.info("all promserver info {}",JSON.toJSON(promservers));
 		if(ToolUtil.isNotEmpty(promservers)) {
 			for(Promserver promserver:promservers) {
