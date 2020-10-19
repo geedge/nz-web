@@ -664,7 +664,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             row.createCell(0).setCellValue(rule.getAlertName());
             row.createCell(1).setCellValue(rule.getExpr());
             row.createCell(2).setCellValue(rule.getOperator());
-            row.createCell(3).setCellValue(rule.getThreshold());
+            row.createCell(3).setCellValue(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
             row.createCell(4).setCellValue(getUnitDescrByVal(rule.getUnit()));
             row.createCell(5).setCellValue(rule.getLast());
             row.createCell(6).setCellValue(rule.getSeverity());

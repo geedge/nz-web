@@ -1475,11 +1475,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 Set<Integer> panelIds = assetPanels.stream().map(Panel::getId).collect(Collectors.toSet());
                 panelService.delPanelsAndChartInfoByPanelIds(panelIds);
             }
-            // 导入 model 关联的 panel chart 信息
-            List<Panel> modelPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).in(Panel::getLink, modelIds));
-            if (CollectionUtils.isNotEmpty(modelPanels)) {
-                Set<Integer> panelIds = modelPanels.stream().map(Panel::getId).collect(Collectors.toSet());
-                panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            if (CollectionUtils.isNotEmpty(modelIds)) {
+                // 导入 model 关联的 panel chart 信息
+                List<Panel> modelPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.MODEL.getValue()).in(Panel::getLink, modelIds));
+                if (CollectionUtils.isNotEmpty(modelPanels)) {
+                    Set<Integer> panelIds = modelPanels.stream().map(Panel::getId).collect(Collectors.toSet());
+                    panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+                }
             }
         }
     }
