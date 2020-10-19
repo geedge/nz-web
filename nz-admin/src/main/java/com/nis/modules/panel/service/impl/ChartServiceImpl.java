@@ -277,6 +277,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             entity.setSpan(chart.getSpan());
             entity.setHeight(chart.getHeight());
             entity.setType(chart.getType());
+            entity.setUnit(chart.getUnit());
             entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? this.replacAssetInfos(chart.getParam().toString(), asset) : null);
             if (CollectionUtils.isNotEmpty(elements)) {
                 for (ChartElement chartElement : elements) {
