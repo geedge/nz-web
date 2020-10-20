@@ -95,6 +95,17 @@ public class NezhaMetrics implements MeterBinder {
                         .register(meterRegistry);
             }
         }
+
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_asset_nums");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
        
         /**
          * asset_nums指标
@@ -118,6 +129,18 @@ public class NezhaMetrics implements MeterBinder {
             .description("Asset statistics info")
             .register(meterRegistry);
         }
+
+
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_asset_offline_num");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
         /**
          * asset_offline指标
          */
@@ -133,7 +156,18 @@ public class NezhaMetrics implements MeterBinder {
             .description("Asset offline statistics info")
             .register(meterRegistry);
         }
-        
+
+
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_asset_online_nums");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
         /**
          * asset_online_nums指标
          */
@@ -155,6 +189,19 @@ public class NezhaMetrics implements MeterBinder {
             .tags("model","null")
             .description("Asset online statistics info")
             .register(meterRegistry);
+        }
+
+
+
+        // 先清空指标 再更新数据防止旧数据存在
+        while (true) {
+            Search find = meterRegistry.find("nz_endpoint_nums");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
         }
         /**
          * endpoint_nums指标
