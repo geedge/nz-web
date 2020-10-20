@@ -370,6 +370,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             case Constant.CHART_ALERTLIST_TYPE:{
                 break;
             }
+            case Constant.CHART_TEXT_TYPE: {
+                ValidateUtils.is(param).notNull(RCode.CHART_TEXTPARAM_ISNULL);
+                Object text = param.get(Constant.CHART_TEXT_TYPE);
+                if (ToolUtil.isEmpty(text)) throw new NZException(RCode.CHART_PARAMTEXT_ISNULL);
+                break;
+            }
             default: {
                 // 除 url alertList 类型外，其他类型都需校验 elements
                 ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
@@ -965,14 +971,20 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private void fillAssetModelChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
         Row row;
+        String type;
         for (Chart chart : charts) {
             if (chart == null) continue;
             row = sheet.createRow(rowNum++);
+            type = chart.getType();
             row.createCell(0).setCellValue(chart.getTitle());
-            row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, chart.getType()));
+            row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(2).setCellValue(chart.getSpan());
             row.createCell(3).setCellValue(chart.getHeight());
-            row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+                row.createCell(4).setCellValue("");
+            } else {
+                row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+            }
             row.createCell(5).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(6).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
@@ -1352,8 +1364,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     private String validateChartElementForImport(String type, String elements) {
-        // elemrnt 只有 alert  和 url 可以没有，其他必须有
-        if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type)){
+        // elemrnt 只有 alert  和 url , text 可以没有，其他必须有
+        if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type) && !Constant.CHART_TEXT_TYPE.equals(type)){
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
@@ -1433,6 +1445,22 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                }
                break;
            }
+           case Constant.CHART_TEXT_TYPE: {
+               if (StringUtils.isEmpty(param)) {
+                   return RCode.CHART_TEXTPARAM_ISNULL.getMsg();
+               }
+               Map map = null;
+               try {
+                   map = JSONObject.parseObject(param, Map.class);
+               } catch (Exception e) {
+                   return RCode.CHART_PARAM_FORMAT.getMsg();
+               }
+               Object text = map.get(Constant.CHART_TEXT_TYPE);
+               if (ToolUtil.isEmpty(text)) {
+                   return RCode.CHART_PARAMTEXT_ISNULL.getMsg();
+               }
+               break;
+           }
            default:{
                if(StringUtils.isNotEmpty(param)){
                    try {
@@ -1457,15 +1485,21 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
         Map<Integer, String> panelIdAndNameMap = panelList.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
         Row row;
+        String type;
         for (Chart chart : charts) {
             if(chart == null) continue;
             row = sheet.createRow(rowNum++);
+             type = chart.getType();
             row.createCell(0).setCellValue(panelIdAndNameMap.get(chart.getPanelId()));
             row.createCell(1).setCellValue(chart.getTitle());
-            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, chart.getType()));
+            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(3).setCellValue(chart.getSpan());
             row.createCell(4).setCellValue(chart.getHeight());
-            row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+                row.createCell(5).setCellValue("");
+            } else {
+                row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+            }
             row.createCell(6).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
 

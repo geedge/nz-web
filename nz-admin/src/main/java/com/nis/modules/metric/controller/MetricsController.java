@@ -179,7 +179,7 @@ public class MetricsController extends AbstractController {
     }
 
     private String redisHealthy() {
-        logger.info(String.format("检查 redis 健康状态，地址是：%s,端口是：%s,密码是:%s,登录超时为：%s", redisHost, redisPort, redisPassword, redisTimeout));
+        logger.info(String.format("检查 redis 健康状态，地址是：%s,端口是：%s,登录超时为：%s", redisHost, redisPort, redisTimeout));
         String state = "";
         Jedis jedis = null;
         try {
@@ -203,7 +203,7 @@ public class MetricsController extends AbstractController {
                 state = "DOWN";
             }
         } catch (Exception e) {
-            logger.error(String.format("检查 redis 状态出现问题，地址是：%s,端口是：%s,密码是:%s,登录超时为：%s,错误信息是:%s", redisHost, redisPort, redisPassword, redisTimeout, e.getMessage()), e);
+            logger.error(String.format("检查 redis 状态出现问题，地址是：%s,端口是：%s,登录超时为：%s,错误信息是:%s", redisHost, redisPort, redisTimeout, e.getMessage()), e);
             state = "DOWN";
         } finally {
             if (jedis != null) jedis.close();
@@ -212,7 +212,7 @@ public class MetricsController extends AbstractController {
     }
 
     private String mysqlHealthy() {
-        logger.info(String.format("检查 mysql 健康状态，加载类是：%s，地址是：%s,用户名是：%s,密码是:%s", driverClassName, dbUrl, dbUsername, dbPassword));
+        logger.info(String.format("检查 mysql 健康状态，加载类是：%s，地址是：%s,用户名是：%s", driverClassName, dbUrl, dbUsername));
         String state = "";
         Connection connection = null;
         Statement statement = null;
@@ -236,7 +236,7 @@ public class MetricsController extends AbstractController {
                 }
             }
         } catch (Exception e) {
-            logger.error(String.format("检查 mysql 状态出现问题，加载类是：%s，地址是：%s,用户名是：%s,密码是:%s,错误信息是：%s", driverClassName, dbUrl, dbUsername, dbPassword, e.getMessage()), e);
+            logger.error(String.format("检查 mysql 状态出现问题，加载类是：%s，地址是：%s,用户名是：%s,错误信息是：%s", driverClassName, dbUrl, dbUsername, e.getMessage()), e);
             state = "DOWN";
         } finally {
             if (rs != null) {

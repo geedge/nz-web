@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 
 
 /**
@@ -35,10 +36,10 @@ public class AlertMessageReceiveController {
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
-    public R alerts(@RequestBody AlertMessageReceiveDTO[] receiveData){
+    public R alerts(@RequestBody AlertMessageReceiveDTO[] receiveData, HttpServletRequest request){
     	//dto转化为entity，存库
     	try {
-    		alertMessageService.saveBatch(receiveData);
+		    alertMessageService.saveBatch(receiveData, request);
     	} catch (Exception e) {
 		    logger.error("接收的告警信息转化entity失败:" + JSONObject.toJSONString(receiveData), e);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);

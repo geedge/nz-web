@@ -51,6 +51,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -197,8 +198,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	}
 
     @Override
-    public void saveBatch(AlertMessageReceiveDTO[] receiveData)  {
-    	logger.debug("接收 promethues 告警消息是 {}",receiveData==null?null:Arrays.asList(receiveData).toString());
+    public void saveBatch(AlertMessageReceiveDTO[] receiveData, HttpServletRequest request) {
+	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveData == null ? null : Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
 
 	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();

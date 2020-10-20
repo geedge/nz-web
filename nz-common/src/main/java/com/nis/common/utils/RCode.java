@@ -91,6 +91,8 @@ public enum RCode {
     PANEL_CHART_TEMPLATE_TYPE_INCORRECT(123052, "Panel charts template type must be dashboard, model and asset"),
     PANEL_CHART_IMPORT_LINKID_ISNULL(121053, "When the type is model or asset, link Id cannot be empty"),
     PANEL_CHART_TEMPLATE_TYPE_ISNULL(121054, "Panel charts template type is null"),
+    CHART_TEXTPARAM_ISNULL(121055,"Chart param cannot be empty when type is text"),
+    CHART_PARAMTEXT_ISNULL(121056,"Chart param text not found when type is text"),
 
 
     /**

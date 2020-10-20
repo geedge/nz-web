@@ -6,6 +6,7 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.metric.dto.MetricsDto;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
     PageUtils queryPage(Map<String, Object> params) throws Exception;
 
-	void saveBatch(AlertMessageReceiveDTO[] receive) throws Exception;
+	void saveBatch(AlertMessageReceiveDTO[] receive, HttpServletRequest request) throws Exception;
 	
 	void removeByAssetIds(List<Integer> idList);
 
