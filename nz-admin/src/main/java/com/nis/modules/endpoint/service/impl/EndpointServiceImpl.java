@@ -186,8 +186,8 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
 	@Override
-	public List<MetricsDto> queryEndpointStatisticsInfoByModel() {
-		return endpointDao.selectEndpointStatisticsInfoByModel();
+	public List<MetricsDto> queryEndpointStatisticsInfoByModule() {
+		return endpointDao.selectEndpointStatisticsInfoByModule();
 	}
 
 	@Override

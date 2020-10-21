@@ -112,12 +112,14 @@ public class NezhaMetrics implements MeterBinder {
          */
         List<MetricsDto> assetNums = assetService.queryAssetStatisticsByModel();
         if(ToolUtil.isNotEmpty(assetNums)) {
+            MetricsDto metricsDto;
         	for(int i=0;i<assetNums.size();i++) {
-        		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("assetNums"+i, assetNums.get(i).getTotal());
+                metricsDto = assetNums.get(i);
+                // 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
+        		map.put("assetNums"+i, metricsDto.getTotal());
         		String key="assetNums"+i;
         		Gauge.builder("nz_asset_nums", map, x -> x.get(key))
-                .tags("model",assetNums.get(i).getName().toString())
+                .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor())
                 .description("Asset statistics info")
                 .register(meterRegistry);
         	}
@@ -125,7 +127,7 @@ public class NezhaMetrics implements MeterBinder {
         	map.put("assetNums", 0.0);
     		String key="assetNums";
     		Gauge.builder("nz_asset_nums", map, x -> x.get(key))
-            .tags("model","null")
+            .tags("model","null","type","null","vendor","null")
             .description("Asset statistics info")
             .register(meterRegistry);
         }
@@ -133,7 +135,7 @@ public class NezhaMetrics implements MeterBinder {
 
         // 先清空指标 再更新数据防止旧数据存在
         while (true) {
-            Search find = meterRegistry.find("nz_asset_offline_num");
+            Search find = meterRegistry.find("nz_asset_offline");
             Meter meter = find.meter();
             if (ToolUtil.isNotEmpty(meter)) {
                 meterRegistry.remove(meter);
@@ -147,12 +149,12 @@ public class NezhaMetrics implements MeterBinder {
         MetricsDto assetOffline = assetService.queryAssetStatisticsByModelOffLine();
         if(assetOffline!=null) {
         	map.put("assetOffline", assetOffline.getTotal());
-        	Gauge.builder("nz_asset_offline_num", map, x -> x.get("assetOffline"))
+        	Gauge.builder("nz_asset_offline", map, x -> x.get("assetOffline"))
             .description("Asset offline statistics info")
             .register(meterRegistry);
         }else {
         	map.put("assetOffline", 0.0);
-        	Gauge.builder("nz_asset_offline_num", map, x -> x.get("assetOffline"))
+        	Gauge.builder("nz_asset_offline", map, x -> x.get("assetOffline"))
             .description("Asset offline statistics info")
             .register(meterRegistry);
         }
@@ -173,12 +175,14 @@ public class NezhaMetrics implements MeterBinder {
          */
         List<MetricsDto> assetOnlineNums = assetService.queryAssetStatisticsByModelOnLine();
         if(ToolUtil.isNotEmpty(assetOnlineNums)) {
+            MetricsDto metricsDto;
         	for(int i=0;i<assetOnlineNums.size();i++) {
-        		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("assetOnlineNums"+i, assetOnlineNums.get(i).getTotal());
+                metricsDto = assetOnlineNums.get(i);
+                // 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
+        		map.put("assetOnlineNums"+i, metricsDto.getTotal());
         		String key="assetOnlineNums"+i;
         		Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
-                .tags("model",assetOnlineNums.get(i).getName().toString())
+                .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor())
                 .description("Asset online statistics info")
                 .register(meterRegistry);
         	}
@@ -186,7 +190,7 @@ public class NezhaMetrics implements MeterBinder {
         	map.put("assetOnlineNums", 0.0);
     		String key="assetOnlineNums";
     		Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
-            .tags("model","null")
+            .tags("model","null","type","null","vendor","null")
             .description("Asset online statistics info")
             .register(meterRegistry);
         }
@@ -206,14 +210,14 @@ public class NezhaMetrics implements MeterBinder {
         /**
          * endpoint_nums指标
          */
-        List<MetricsDto> endpointNums = endpointService.queryEndpointStatisticsInfoByModel();
+        List<MetricsDto> endpointNums = endpointService.queryEndpointStatisticsInfoByModule();
         if(ToolUtil.isNotEmpty(endpointNums)) {
         	for(int i=0;i<endpointNums.size();i++) {
         		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
         		map.put("endpointNums"+i, endpointNums.get(i).getTotal());
         		String key="endpointNums"+i;
         		Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
-                .tags("model",endpointNums.get(i).getName().toString())
+                .tags("module",endpointNums.get(i).getName().toString())
                 .description("Endpoint statistics info")
                 .register(meterRegistry);
         	}
@@ -221,7 +225,7 @@ public class NezhaMetrics implements MeterBinder {
         	map.put("endpointNums", 0.0);
     		String key="endpointNums";
     		Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
-            .tags("model","null")
+            .tags("module","null")
             .description("Endpoint statistics info")
             .register(meterRegistry);
         }

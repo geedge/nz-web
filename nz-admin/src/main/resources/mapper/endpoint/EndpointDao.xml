@@ -126,10 +126,14 @@
        </if>
     </select>
 
-	<select id="selectEndpointStatisticsInfoByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
-		select count(*) total,m.name 
-		from endpoint e left join asset a on  e.asset_id=a.id 
-		left join model m on a.model_id=m.id
-		group by m.id
+	<select id="selectEndpointStatisticsInfoByModule" resultType="com.nis.modules.metric.dto.MetricsDto">
+		SELECT
+            mo.name,
+            count( en.id ) as total
+        FROM
+            module mo
+            LEFT JOIN endpoint en ON mo.id = en.module_id
+        GROUP BY
+            mo.id
 	</select>
 </mapper>

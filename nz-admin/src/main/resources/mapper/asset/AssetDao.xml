@@ -231,16 +231,35 @@
     </insert>
 
     <select id="selectAssetStatisticsByModel" resultType="com.nis.modules.metric.dto.MetricsDto">
-		select count(*) total , m.name 
-		from asset a left join model m on a.model_id=m.id 
-		group by a.model_id
+		SELECT
+            COUNT( * ) total,
+            m.NAME,
+            sd1.value as vendor,
+            sd2.value as assetType
+        FROM
+            asset a
+            LEFT JOIN model m ON a.model_id = m.id
+            LEFT JOIN sys_dict sd1 ON sd1.CODE = m.vendor AND sd1.type = 'vendor'
+            LEFT JOIN sys_dict sd2 ON sd2.CODE = m.type AND sd2.type = 'assetType'
+        GROUP BY
+            a.model_id
 	</select>
 
     <select id="selectAssetStatisticsByModelOnLine" resultType="com.nis.modules.metric.dto.MetricsDto">
-		select count(*) total , m.name 
-		from asset a left join model m on a.model_id=m.id 
-		where a.state=1
-		group by a.model_id
+		SELECT
+            count( * ) total,
+            m.NAME ,
+            sd1.value as vendor,
+            sd2.value as assetType
+        FROM
+            asset a
+            LEFT JOIN model m ON a.model_id = m.id
+            LEFT JOIN sys_dict sd1 ON sd1.CODE = m.vendor AND sd1.type = 'vendor'
+            LEFT JOIN sys_dict sd2 ON sd2.CODE = m.type AND sd2.type = 'assetType'
+        WHERE
+            a.state = 1
+        GROUP BY
+            a.model_id;
 	</select>
 
     <select id="selectAssetStatisticsByModelOffLine" resultType="com.nis.modules.metric.dto.MetricsDto">

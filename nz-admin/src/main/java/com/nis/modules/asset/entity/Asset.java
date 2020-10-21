@@ -92,11 +92,13 @@ public class Asset implements Serializable {
     /**
      * 机柜开始位置
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer cabinetStart;
 
     /**
      * 机柜结束位置
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer cabinetEnd;
 
     /**

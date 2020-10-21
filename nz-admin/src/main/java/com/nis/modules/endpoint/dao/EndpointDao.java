@@ -15,5 +15,5 @@ public interface EndpointDao  extends BaseMapper<Endpoint> {
 	
 	List<Endpoint> queryPage(IPage<Endpoint> page,@Param("params") Map<String, Object> params);
 	
-	List<MetricsDto> selectEndpointStatisticsInfoByModel();
+	List<MetricsDto> selectEndpointStatisticsInfoByModule();
 }

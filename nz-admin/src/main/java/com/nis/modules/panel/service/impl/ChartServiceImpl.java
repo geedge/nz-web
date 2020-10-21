@@ -973,7 +973,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Row row;
         String type;
         for (Chart chart : charts) {
-            if (chart == null) continue;
+            if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
             row = sheet.createRow(rowNum++);
             type = chart.getType();
             row.createCell(0).setCellValue(chart.getTitle());

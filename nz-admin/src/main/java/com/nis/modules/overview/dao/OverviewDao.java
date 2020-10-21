@@ -2,6 +2,7 @@ package com.nis.modules.overview.dao;
 
 import com.nis.modules.overview.entity.EndpointStat;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,4 +15,7 @@ public interface OverviewDao {
     List<String> getIdcNameByPerPromeServer();
 
     List<EndpointStat> getEndpointInfoByDc();
+
+    @Select("SELECT 1;")
+    String healthy();
 }

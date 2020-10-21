@@ -654,6 +654,9 @@ public class Constant {
     // 图表类型为 text
     public static final String CHART_TEXT_TYPE = "text";
 
+    // 图表类型为 assetInfo
+    public static final String CHART_ASSETINFO_TYPE = "assetInfo";
+
     public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
 
     // 国际化对应

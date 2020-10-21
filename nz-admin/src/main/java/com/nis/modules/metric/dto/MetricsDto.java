@@ -9,4 +9,6 @@ public class MetricsDto {
 	private String severity;
 	private Integer type;
 	private String name;
+	private String vendor;
+	private String assetType;
 }
