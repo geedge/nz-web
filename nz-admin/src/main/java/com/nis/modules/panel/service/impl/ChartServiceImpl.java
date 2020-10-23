@@ -1123,10 +1123,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(4));
-            if (StringUtils.isEmpty(unit)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_ISNULL.getMsg());
-            } else {
+            if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_NOTFOUND.getMsg());
@@ -1158,6 +1155,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     chart.setType(type);
                     chart.setSpan(Double.valueOf(span).intValue());
                     chart.setHeight(Double.valueOf(height).intValue());
+                    // unit 为空 设置默认值为 short
+                    unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
                     chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
