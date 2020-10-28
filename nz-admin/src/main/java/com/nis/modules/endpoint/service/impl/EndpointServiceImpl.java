@@ -314,16 +314,14 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				saveFlag = false;
 				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_SN_HOST_ISNULL.getMsg());
 			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isNotEmpty(host)) {
-				// 都不为空 校验格式和对应关系
+				// 都不为空 校验 sn 是否可以找到 asset , host 格式是否正确
 				if (!CommonUtils.checkIp(host)) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
 				}
-				Integer a1 = assetSnAndIdMap.get(sn);
-				Integer a2 = assetHostAndIdMap.get(host);
-				if (a1 == null || a2 == null || !a1.equals(a2)) {
+				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_SN_HOST_MISMATCH.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
 				}
 			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isEmpty(host)) {
 				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
@@ -408,15 +406,26 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						moduleService.save(module);
 						moduleId = module.getId();
 					}
-					Integer a1 = assetSnAndIdMap.get(sn);
-					Integer a2 = assetHostAndIdMap.get(host);
+					Integer assetIdBySn = assetSnAndIdMap.get(sn);
+					Integer assetIdByHost = assetHostAndIdMap.get(host);
 					Endpoint endpoint = new Endpoint();
+
+					// endpoint asset_id endpoint_host
+					if (StringUtils.isNotEmpty(sn) && StringUtils.isNotEmpty(host)) {
+						endpoint.setAssetId(assetIdBySn);
+						endpoint.setHost(host);
+					} else if (StringUtils.isNotEmpty(sn) && StringUtils.isEmpty(host)) {
+						endpoint.setAssetId(assetIdBySn);
+						endpoint.setHost(assetIdAndHostMap.get(assetIdBySn));
+					} else if (StringUtils.isEmpty(sn) && StringUtils.isNotEmpty(host)) {
+						endpoint.setAssetId(assetIdByHost);
+						endpoint.setHost(assetIdAndHostMap.get(assetIdByHost));
+					}
+
 					endpoint.setModuleId(moduleId);
-					endpoint.setAssetId(a1 != null ? a1 : a2);
 					endpoint.setPort(ToolUtil.isEmpty(port) ? module.getPort() : Double.valueOf(port).intValue());
 					endpoint.setParam(ToolUtil.isEmpty(param) ? module.getParam() : param);
 					endpoint.setPath(ToolUtil.isEmpty(path) ? module.getPath() : path);
-					endpoint.setHost(assetIdAndHostMap.get(endpoint.getAssetId()));
 					endpoint.setSeq(seqUUID);
 					this.save(endpoint);
 					dataSourceTransactionManager.commit(transactionStatus);
