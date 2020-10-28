@@ -577,7 +577,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 		    if (ToolUtil.isEmpty(params)) {
 			    params = new HashMap<>();
 		    }
-		    params.put("user", TerminalSession.getTerminalMessage(uuid + "user"));
+		    params.put("username", TerminalSession.getTerminalMessage(uuid + "user"));
 		    params.put("method", SshType.ACCOUNT.getValue());
 		    params.put("password", Base64.getEncoder().encodeToString(message.getBytes()));
 		    terminal.setParams(JSONObject.toJSONString(params));
@@ -792,7 +792,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	    if (ToolUtil.isEmpty(params)) {
 		    params = new HashMap<>();
 	    }
-	    params.put("user", user);
+	    params.put("username", user);
 	    terminal.setParams(JSONObject.toJSONString(params));
 
 		//连接服务

@@ -206,7 +206,7 @@ public class PromProxyController {
 
 		if (result != null && result.get("data") != null) {
 			String nullType = request.getParameter("nullType");
-			nullType = StringUtils.isEmpty(nullType) ? "null" : nullType;
+			nullType = StringUtils.isEmpty(nullType) ? "connected" : nullType;
 			Integer start = Integer.valueOf(request.getParameter("start"));
 			Integer end = Integer.valueOf(request.getParameter("end"));
 			String step = request.getParameter("step");
@@ -260,20 +260,6 @@ public class PromProxyController {
 						tempArray.add(time);
 						tempArray.add(nullTypeAndValueMap.get(nullType));
 						values.add(j, tempArray);
-					}
-				}
-			} else if(values.size() == timeList.size() && "connected".equals(nullType)){
-				// 数据不缺失  , 并且  nullType = connected ,   处理 NAN 数据
-				valuesIterator = values.iterator();
-				while (valuesIterator.hasNext()) {
-					tempArray = valuesIterator.next();
-					if (tempArray.get(1) != null && "nan".equals(tempArray.get(1).toString().toLowerCase())) {
-						switch (nullType) {
-							case "connected": { valuesIterator.remove(); break; }
-							case "null": { tempArray.set(1, null); break; }
-							case "zero": { tempArray.set(1, "0"); break; }
-							default: break;
-						}
 					}
 				}
 			}

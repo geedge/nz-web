@@ -1,39 +1,19 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.sys.dao.SysAreaDao;
 import com.nis.modules.sys.entity.SysArea;
 import com.nis.modules.sys.service.SysAreaService;
-
 import io.micrometer.core.instrument.util.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
+
+import java.util.*;
 
 @Service("sysAreaService")
 public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> implements SysAreaService {
-	private static Logger logger = LoggerFactory.getLogger(SysAreaServiceImpl.class);
-	@Autowired
-	private RedisTemplate<String,String> redisTemplate;
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map queryPage(Map<String, Object> params) {
@@ -51,9 +31,8 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 			includeLeaf="1";
 		}
 		if(!includeLeaf.equals("0")) {
-			Map<Long,SysArea> map =new HashMap<Long,SysArea>(); 
-			Object areaCache = redisTemplate.opsForValue().get(Constant.REDIS_KEY_AREA);
-			List<SysArea> allDatas = JSONObject.parseArray(String.valueOf(areaCache), SysArea.class);
+			Map<Long,SysArea> map =new HashMap<Long,SysArea>();
+			List<SysArea> allDatas = this.list();
 			for(SysArea data: allDatas) {
 				map.put(data.getId(), data);
 			}
@@ -77,9 +56,7 @@ public class SysAreaServiceImpl extends ServiceImpl<SysAreaDao, SysArea> impleme
 				}
 			}
 		}
-		if(ObjectUtils.isEmpty(datas)) {
-			datas=new ArrayList();
-		}
+		datas = ObjectUtils.isEmpty(datas) ? Collections.emptyList() : datas;
 		result.put("list", datas);
 		return result;
 	}

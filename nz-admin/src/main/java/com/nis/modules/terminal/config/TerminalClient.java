@@ -498,7 +498,7 @@ public class TerminalClient {
             sb.append(message);
             webSocketSession.sendMessage(new TextMessage(message));
         } else if (StringUtils.isNotEmpty(sb.toString())) {
-            params.put("user", sb.toString());
+            params.put("username", sb.toString());
             terminal.setParams(JSONObject.toJSONString(params));
         }
         if (message.equals("\r")) {

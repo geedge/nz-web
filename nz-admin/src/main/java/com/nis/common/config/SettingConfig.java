@@ -14,7 +14,7 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysArea;
 import com.nis.modules.sys.service.SysAreaService;
 
-@Component
+//@Component
 public class SettingConfig implements CommandLineRunner{
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
