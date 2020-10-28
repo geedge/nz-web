@@ -33,16 +33,6 @@
 	    	<result column="idc_id" property="idcId"/>
 	    	<result column="model_id" property="modelId"/>
 	    </association>
-	    
-	    <!-- <association columnPrefix="prom_" property="promserver" javaType="com.nis.modules.promserver.entity.Promserver">
-	    	<id column="id" property="id"/>
-	    	<result column="host" property="host"/>
-	    	<result column="port" property="port"/>
-	    	<result column="type" property="type"/>
-	    	<result column="status" property="status"/>
-	    	<result column="idc_id" property="idcId"/>
-	    	<result column="check_time" property="checkTime"/>
-	    </association> -->
     </resultMap>
 	
 	<select id="queryPage" resultMap="endpoint">
@@ -61,17 +51,9 @@
        a.cabinet_id AS a_cabinet_id,
        p.id AS p_id,
        p.name AS p_name
-       <!-- prom.id AS prom_id,
-       prom.host AS prom_host,
-       prom.port AS prom_port,
-       prom.type AS prom_type,
-       prom.status AS prom_status,
-       prom.idc_id AS prom_idc_id,
-       prom.check_time AS prom_check_time -->
        FROM endpoint e left join module m on e.module_id=m.id 
        left join project p on m.project_id=p.id
        left join asset a on e.asset_id=a.id
-       <!-- left join prom_server prom on a.idc_id=prom.idc_id -->
        where 1=1 
        <if test="params.id != null and params.id != ''">
             AND e.id = #{params.id}
@@ -106,7 +88,10 @@
        </if>
        
        <if test="params.host != null and params.host != ''">
-           AND a.host = #{params.host}
+           AND (
+                   a.host LIKE CONCAT('%', #{params.host}, '%')
+                OR e.host LIKE CONCAT('%', #{params.host}, '%')
+           )
        </if>
        
        <if test="params.state != null and params.state != ''">

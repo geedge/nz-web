@@ -110,7 +110,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			        if (promeId != null) {
 			            promserver = promserverService.getById(promeId.toString());
 			            if(promserver!=null) {
-				            Integer promStatus = promserver.getStatus();
 							String jn=data.getId()+"";
 							JSONArray valueList = (JSONArray) resultMap.get(jn);
 							if(valueList!=null) {
