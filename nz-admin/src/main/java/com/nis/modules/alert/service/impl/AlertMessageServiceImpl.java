@@ -201,6 +201,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     public void saveBatch(AlertMessageReceiveDTO[] receiveData, HttpServletRequest request) {
 	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveData == null ? null : Arrays.asList(receiveData).toString());
     	List<AlertMessageEntity> entities = new ArrayList<>();
+	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
+	    Integer buildRuleId = buildRule.getId();
 
 	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
@@ -211,19 +213,24 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				for (AlertMessageReceiveDTO dto : receiveData) {
 					try{
 						getReceiveLabels(dto);
-                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto);
+                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
 
-						// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
-						Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
-						if(cacheAlert == null){
-                            entities.add(entity);
+                        // 如果是内置告警直接入库
+						if (buildRuleId.equals(entity.getRuleId())) {
+							entities.add(entity);
+						} else {
+							// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
+							Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
+							if (cacheAlert == null) {
+								entities.add(entity);
+							}
+
+							HashMap<String, Object> map = new HashMap<>();
+							map.put("id", entity.getRuleId());
+							map.put("time", System.currentTimeMillis());
+							// 存在更新时间，不存在set
+							redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(), entity.getHashKey().getBytes(), JSON.toJSONString(map).getBytes());
 						}
-
-						HashMap<String, Object> map = new HashMap<>();
-						map.put("id",entity.getRuleId());
-						map.put("time", System.currentTimeMillis());
-						// 存在更新时间，不存在set
-						redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(),entity.getHashKey().getBytes(),JSON.toJSONString(map).getBytes());
 					}catch (Exception e){
 						logger.error("解析告警信息失败，参数是：+" + dto.toString() + " 错误信息：" + e.getMessage(), e);
 						// 告警信息解析失败

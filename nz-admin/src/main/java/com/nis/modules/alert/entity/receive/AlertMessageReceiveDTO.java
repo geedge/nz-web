@@ -1,7 +1,6 @@
 package com.nis.modules.alert.entity.receive;
 
 import com.google.gson.Gson;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import lombok.Data;
@@ -10,9 +9,7 @@ import org.springframework.util.DigestUtils;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,15 +34,15 @@ public class AlertMessageReceiveDTO implements Serializable {
 
     private Boolean snmptrap;
 
-    public static List<AlertMessageEntity> toAlertMessageEntity(AlertMessageReceiveDTO[] entities) throws Exception {
+    /*public static List<AlertMessageEntity> toAlertMessageEntity(AlertMessageReceiveDTO[] entities) throws Exception {
         List<AlertMessageEntity> list = new ArrayList<>();
         for (AlertMessageReceiveDTO entity : entities) {
             list.add(toAlertMessageEntity(entity));
         }
         return list;
-    }
+    }*/
 
-    public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto) throws ParseException {
+    public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto, Integer buildRuleId) throws ParseException {
         AlertMessageEntity entity = new AlertMessageEntity();
         //取出labels，计算hash，查询redis看是否有重复
         Map receiveLabels = dto.getLabels();
@@ -61,13 +58,18 @@ public class AlertMessageReceiveDTO implements Serializable {
         String startsAt = dto.getStartsAt();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date sa = sdf.parse(startsAt);
-        boolean b = startsAt.endsWith("Z");
-        if (!b) {
-            // 其他时区 格式统一 为  2020-10-15T23:32:30.841162867（+12:00/+08:00/-05:00）
-            int i = startsAt.lastIndexOf(":");
-            String timezoneStr = startsAt.substring(i - 3, i);
-            int timezone = Integer.parseInt(timezoneStr);
-            sa = getUTCDateByTimeZone(sa, timezone);
+
+        // snmptrap 不需要做时间处理
+        String alertname = (String) receiveLabels.get("alertname");
+        if (!String.valueOf(buildRuleId).equals(alertname)) {
+            boolean b = startsAt.endsWith("Z");
+            if (!b) {
+                // 其他时区 格式统一 为  2020-10-15T23:32:30.841162867（+12:00/+08:00/-05:00）
+                int i = startsAt.lastIndexOf(":");
+                String timezoneStr = startsAt.substring(i - 3, i);
+                int timezone = Integer.parseInt(timezoneStr);
+                sa = getUTCDateByTimeZone(sa, timezone);
+            }
         }
         entity.setStartAt(sa);
 

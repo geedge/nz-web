@@ -13,6 +13,8 @@ import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import io.micrometer.core.instrument.Gauge;
@@ -50,6 +52,9 @@ public class NezhaMetrics implements MeterBinder {
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private PromserverService promserverService;
     
     NezhaMetrics() {
         map = new HashMap<>();
@@ -275,6 +280,35 @@ public class NezhaMetrics implements MeterBinder {
                             .description("Asset ping statistics info")
                             .register(meterRegistry);
                 }
+            }
+        }
+
+
+        // nz_prometheus_status 指标
+        while (true) {
+            Search find = meterRegistry.find("nz_prometheus_status");
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                meterRegistry.remove(meter);
+            } else {
+                break;
+            }
+        }
+
+        List<Promserver> promserverList = promserverService.list();
+        if (CollectionUtils.isNotEmpty(promserverList)) {
+            List<Idc> idcList = idcDao.selectList(null);
+            Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+
+            Promserver promserver;
+            for (int i = 0; i < promserverList.size(); i++) {
+                promserver = promserverList.get(i);
+                String key = "nz_prometheus_status" + i;
+                map.put(key, promserver.getStatus().doubleValue());
+                Gauge.builder("nz_prometheus_status", map, x -> x.get(key))
+                        .tags("datacenter", idcIdAndNameMap.get(promserver.getIdcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
+                        .description("Prometheus status")
+                        .register(meterRegistry);
             }
         }
     }
