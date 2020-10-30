@@ -428,7 +428,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		SysUserEntity user = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
 
 		String remark = (String) params.get("remark");
-		remark = formatDate + "  " + user.getUsername() + "  " + remark;
+		//remark = formatDate + "  " + user.getUsername() + "  " + remark;
+		remark = user.getUsername() + "  " + remark;
 		params.put("remark", remark);
 
 		String ids = (String) params.get("ids");
