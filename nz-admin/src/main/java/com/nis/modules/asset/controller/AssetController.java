@@ -83,7 +83,7 @@ public class AssetController {
 
         Account accountCli = null;
         if (CollectionUtils.isNotEmpty(accounts)) {
-            assetService.validateAccount(asset, accounts);
+            assetService.validateAccount(accounts);
             // 找到SSH协议的账号
             accountCli = accounts.stream().filter(account -> Constant.ACCOUNT_SSH_PROTOCOL.equals(account.getProtocol()) ? true : false).findAny().orElse(null);
             if(ToolUtil.isNotEmpty(accountCli)){
@@ -130,7 +130,7 @@ public class AssetController {
 
         List<Account> accounts = asset.getAccounts();
         if (CollectionUtils.isNotEmpty(accounts)) {
-            assetService.validateAccount(asset, accounts);
+            assetService.validateAccount(accounts);
         }
 
         // 购买时间格式校验
@@ -259,5 +259,13 @@ public class AssetController {
         Map result = new HashMap(2);
         result.put("list", values);
         return R.ok(result);
+    }
+
+    @PutMapping("/batch")
+    public R updateBatchAccountAndTagByAssetIds(@RequestBody Map<String, Object> param){
+        ValidateUtils.is(param.get("assetIds")).notNull(RCode.ASSET_ID_ISNULL);
+
+        assetService.updateBatchAccountAndTagByAssetIds(param);
+        return R.ok();
     }
 }

@@ -198,14 +198,17 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	}
 
     @Override
-    public void saveBatch(AlertMessageReceiveDTO[] receiveData, HttpServletRequest request) {
-	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveData == null ? null : Arrays.asList(receiveData).toString());
-    	List<AlertMessageEntity> entities = new ArrayList<>();
+    public void saveBatch(String receiveStr, HttpServletRequest request) {
+	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
+	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
+	    if (CollectionUtils.isEmpty(receiveData)) return;
+
 	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
 	    Integer buildRuleId = buildRule.getId();
 
 	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
 
+	    List<AlertMessageEntity> entities = new ArrayList<>();
 	    redisTemplate.executePipelined(new RedisCallback<Object>() {
 			@Override
 			public Object doInRedis(RedisConnection redis) throws DataAccessException {
@@ -240,7 +243,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				return null;
 			}
 		});
-		logger.debug("数据格式化完成 : {}",entities.toString());
+	    logger.debug("告警消息处理完成，入库消息为 : {}", CollectionUtils.isEmpty(entities) ? Collections.emptyList() : JSONObject.toJSONString(entities));
     	if (!CollectionUtils.isEmpty(entities)) {
 	    	this.saveBatch(entities);
 	    	String emailEnable = configService.getValue("email_enable");

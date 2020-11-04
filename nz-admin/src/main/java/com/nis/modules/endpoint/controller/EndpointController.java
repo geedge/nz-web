@@ -63,10 +63,11 @@ public class EndpointController extends AbstractController {
 
 	@PostMapping("/import")
 	@SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ENDPOINT)
-	public R importEndpoint(MultipartFile excelFile) {
-		ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
+	public R importEndpoint(MultipartFile excelFile, String language) {
+		ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL)
+				.and(language).notNull(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
 
-        Map map = endpointService.importEndpoint(excelFile);
+		Map map = endpointService.importEndpoint(excelFile, language);
         return R.ok(map);
 	}
 	

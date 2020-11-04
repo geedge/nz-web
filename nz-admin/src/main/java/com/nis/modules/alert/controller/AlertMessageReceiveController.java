@@ -1,17 +1,15 @@
 package com.nis.modules.alert.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,16 +30,19 @@ public class AlertMessageReceiveController {
 	
 	@Autowired
     private AlertMessageService alertMessageService;
-    /**
-     * 列表
-     */
-    @RequestMapping(value = "", method = RequestMethod.POST)
-    public R alerts(@RequestBody AlertMessageReceiveDTO[] receiveData, HttpServletRequest request){
-    	//dto转化为entity，存库
+
+	/**
+	 * 接收 prometheus 推送过来的告警消息
+	 * @param receiveStr
+	 * @param request
+	 * @return
+	 */
+    @PostMapping
+    public R alerts(@RequestBody String receiveStr, HttpServletRequest request){
     	try {
-		    alertMessageService.saveBatch(receiveData, request);
+		    alertMessageService.saveBatch(receiveStr, request);
     	} catch (Exception e) {
-		    logger.error("接收的告警信息转化entity失败:" + JSONObject.toJSONString(receiveData), e);
+		    logger.error(request.getRemoteAddr() + " 推送过来的 promethues 告警消息处理异常，消息是：" + receiveStr + " 异常信息是：" + e.getMessage(), e);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
 		}
 

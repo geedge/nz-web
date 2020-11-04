@@ -1,8 +1,11 @@
 package com.nis.common.utils;
 
+import org.apache.commons.collections.CollectionUtils;
+
 import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -544,6 +547,34 @@ public class CommonUtils {
 
     public static String getSystemCharset(){
         return System.getProperty("file.encoding");
+    }
+
+    /**
+     * 处理导入错误信息
+     * @param failDetails
+     * @return
+     */
+    public static List<Map> handleImportFailDetails(List<Map> failDetails) {
+        if (CollectionUtils.isEmpty(failDetails)) return Collections.emptyList();
+        Map<Object, List<Map>> listMap = failDetails.stream().collect(Collectors.groupingBy(map -> map.get("lineNo")));
+
+        List<Map> resultData = new ArrayList<>(listMap.size());
+        List<Map> tempList;
+        Map tempMap;
+        String msg, lineFailInfos;
+        for (Map.Entry<Object, List<Map>> entry : listMap.entrySet()) {
+            tempList = entry.getValue();
+            lineFailInfos = "";
+            for (Map map : tempList) {
+                msg = (String) map.get("errorMsg");
+                lineFailInfos += msg + (msg.endsWith(".") ? " " : ". ");
+            }
+            tempMap = new HashMap(4);
+            tempMap.put("lineNo", entry.getKey());
+            tempMap.put("errorMsg", lineFailInfos);
+            resultData.add(tempMap);
+        }
+        return resultData;
     }
 	
 	/**

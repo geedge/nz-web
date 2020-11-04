@@ -596,7 +596,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
    }
 
     @Override
-    public void validateAccount(Asset asset, List<Account> accounts) {
+    public void validateAccount(List<Account> accounts) {
         String protocol;
         Integer port;
         Object params;
@@ -784,6 +784,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
         }
 
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
         try {
             // 返回导出错误信息
             List<Map> failDetails = new ArrayList<>();
@@ -824,33 +826,33 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 sn = ExcelUtils.getCellValue(row.getCell(0));
                 if (StringUtils.isEmpty(sn)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_SN_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_SN_ISNULL.getMsg());
                 } else {
                     // 校验资产序列号是否唯一
                     if (this.checkImportSnOnly(sn, assetSnList)) {
                         asset.setSn(sn);
                     } else {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_SN_DUPLICATE.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_SN_DUPLICATE.getMsg());
                     }
                 }
                 // 资产类型
                 type = ExcelUtils.getCellValue(row.getCell(1));
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_TYPE_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_TYPE_ISNULL.getMsg());
                 }
                 // 资产类型
                 vendor = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(vendor)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_VENDOR_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_VENDOR_ISNULL.getMsg());
                 }
                 // 型号
                 model = ExcelUtils.getCellValue(row.getCell(3));
                 if (StringUtils.isEmpty(model)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_MODELNAME_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_MODELNAME_ISNULL.getMsg());
                 }
                 // 处理类型 厂商 型号
                 if (StringUtils.isNotEmpty(type) && StringUtils.isNotEmpty(vendor) && StringUtils.isNotEmpty(model)) {
@@ -858,40 +860,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     // modelid 可能为null,入库之后返回
                     Integer modelId = modelEntity.getId();
                     asset.setModelId(modelId);
-                    // 如果 type 为 server 的情况下 处理 ipmi 信息
-                    /*if (Constant.ASSET_SERVER_TYPE.equals(type.toLowerCase())) {
-                        ipmiMap = new HashMap();
-                        ipmiHost = ExcelUtils.getCellValue(row.getCell(34));
-                        ipmiPort = ExcelUtils.getCellValue(row.getCell(35));
-                        // 校验 ipmi信息
-                        if (StringUtils.isNotEmpty(ipmiHost)) {
-                            if (ipmiHost.matches(Constant.REGEX_IP)) {
-                                ipmiMap.put("host", ipmiHost);
-                            } else {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_SERVERHOST_ERROR.getMsg());
-                            }
-                        }
-                        if (StringUtils.isNotEmpty(ipmiPort)) {
-                            boolean flag = CommonUtils.checkPort(ipmiPort);
-                            if (!flag) {
-                                saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_SERVERPORT_ERROR.getMsg());
-                            } else {
-                                ipmiMap.put("port", Integer.parseInt(ipmiPort));
-                            }
-                        }
-                        if (ToolUtil.isNotEmpty(ipmiMap)) {
-                            asset.setIpmi(JSONObject.toJSONString(ipmiMap));
-                        }
-                    }*/
                 }
                 // DC
                 Integer idcId = null;
                 dcName = ExcelUtils.getCellValue(row.getCell(4));
                 if (StringUtils.isEmpty(dcName)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.IDC_IDCNAME_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IDC_IDCNAME_ISNULL.getMsg());
                 } else {
                     idcId = this.checkIdc(dcName, idcMap, seqUUID, saveEntitys);
                     // idcId 可能为null,入库之后返回
@@ -907,13 +882,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             start = Integer.parseInt(cabinetStart);
                         } catch (NumberFormatException e) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_CABINETSTART_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_CABINETSTART_INVALIDE.getMsg());
                         }
                         try {
                             end = Integer.parseInt(cabinetEnd);
                         } catch (NumberFormatException e) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_CABINETEND_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_CABINETEND_INVALIDE.getMsg());
                         }
                     }
                     if (idcId != null) { // idc已存在，不需要添加
@@ -927,7 +902,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 end = end + 1;
                                 if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
                                     saveFlag = false;
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_INVALID.getMsg());
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_POSITION_INVALID.getMsg());
                                 } else {
                                     asset.setCabinetStart(start);
                                     asset.setCabinetEnd(end);
@@ -939,13 +914,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                 end = end + 1;
                                 if (start < 0 || end < 0 || start >= end || start > cabinet.getuSize() || end > cabinet.getuSize() + 1) {
                                     saveFlag = false;
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_INVALID.getMsg());
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6),RCode.ASSET_POSITION_INVALID.getMsg());
                                 } else {
                                     if (modelEntity != null && modelEntity.getUsize() != null) {
                                         if ((end - start) < modelEntity.getUsize()) {
                                             saveFlag = false;
                                             modelFlag = false;
-                                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_MISMATCH.getMsg());
+                                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_POSITION_MISMATCH.getMsg());
                                         }
                                     }
                                     // 符合型号大小则继续校验位置是否被占用
@@ -954,7 +929,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                                         boolean flag = this.validateUSizeForImport(start, end, cabinet);
                                         if (!flag) {
                                             saveFlag = false;
-                                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_OCCUPY.getMsg());
+                                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_POSITION_OCCUPY.getMsg());
                                         } else {
                                             // 位置正确
                                             asset.setCabinetStart(start);
@@ -978,13 +953,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             if (modelEntity != null && modelEntity.getUsize() != null) {
                                 if ((end - start) < modelEntity.getUsize()) {
                                     saveFlag = false;
-                                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_MISMATCH.getMsg());
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_POSITION_MISMATCH.getMsg());
                                 }
                             }
 
                             if (start < 0 || end < 0 || start >= end || start > defaultCabinetUsize || end > defaultCabinetUsize + 1) {
                                 saveFlag = false;
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_POSITION_INVALID.getMsg());
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_POSITION_INVALID.getMsg());
                             } else {
                                 asset.setCabinetStart(start);
                                 asset.setCabinetEnd(end);
@@ -997,7 +972,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 host = ExcelUtils.getCellValue(row.getCell(8));
                 if (StringUtils.isEmpty(host)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_HOST_ISNULL.getMsg());
                 } else {
                     // host唯一校验
                     if (this.checkImportHostOnly(host, assetHostList)) {
@@ -1006,11 +981,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             asset.setHost(host);
                         } else {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_HOST_FORMAT.getMsg());
                         }
                     } else {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_DUPLICATE.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_HOST_DUPLICATE.getMsg());
                     }
                 }
 
@@ -1022,7 +997,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     state = this.validateAssetStateForImport(state, assetStateMapByLanguage);
                     if (StringUtils.isEmpty(state)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_STATE_NOTFOUND.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ASSET_STATE_NOTFOUND.getMsg());
                     }
                 }
 
@@ -1032,7 +1007,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     // 校验日期格式是否正确
                     if (!DateUtil.isValidDate(purchaseDate, "yyyy-MM-dd")) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_PURCHASEDATE_FORMAT.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ASSET_PURCHASEDATE_FORMAT.getMsg());
                     } else {
                         asset.setPurchaseDate(purchaseDate);
                     }
@@ -1046,11 +1021,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 if (StringUtils.isNotEmpty(sshPort) && StringUtils.isNotEmpty(sshMethod) && StringUtils.isNotEmpty(sshUserName)) {
                     if (!"key".equals(sshMethod.toLowerCase()) && !"password".equals(sshMethod.toLowerCase())) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SSH_METHOD_INCORRECT.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ACCOUNT_SSH_METHOD_INCORRECT.getMsg());
                     }
                     if (!CommonUtils.checkPort(sshPort)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.ACCOUNT_PORT_ERROR.getMsg());
                     } else {
                         String sshPassword = ExcelUtils.getCellValue(row.getCell(14));
                         String sshKey = ExcelUtils.getCellValue(row.getCell(15));
@@ -1067,7 +1042,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 if (StringUtils.isNotEmpty(telnetPort) && StringUtils.isNotEmpty(telnetUserName)) {
                     if (!CommonUtils.checkPort(telnetPort)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ACCOUNT_PORT_ERROR.getMsg());
                     } else {
                         String telnetUserTip = ExcelUtils.getCellValue(row.getCell(19));
                         String telnetPassword = ExcelUtils.getCellValue(row.getCell(20));
@@ -1081,18 +1056,18 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 String snmpPort = ExcelUtils.getCellValue(row.getCell(23));
                 String snmpVersion = ExcelUtils.getCellValue(row.getCell(26));
                 if (StringUtils.isNotEmpty(snmpPort) && StringUtils.isNotEmpty(snmpVersion)) {
-                    String snmpCommunity = ExcelUtils.getCellValue(row.getCell(24));
-                    String snmpContextName = ExcelUtils.getCellValue(row.getCell(25));
-                    String snmpUserName = ExcelUtils.getCellValue(row.getCell(27));
-                    String snmpSecurityLevel = ExcelUtils.getCellValue(row.getCell(28));
-                    String snmpPassword = ExcelUtils.getCellValue(row.getCell(29));
-                    String snmpAuthProtocol = ExcelUtils.getCellValue(row.getCell(30));
-                    String snmpPrivProtocol = ExcelUtils.getCellValue(row.getCell(31));
-                    String snmpPrivPassword = ExcelUtils.getCellValue(row.getCell(32));
                     // 校验snmp account 相关参数
-                    if (!this.validateExporterSnmpAccount(snmpPort, snmpVersion, snmpUserName, snmpSecurityLevel, snmpAuthProtocol, snmpPrivProtocol, dataFromExcelRowNum, failDetails)) {
+                    if (!this.validateExporterSnmpAccount(row, dataFromExcelRowNum,headerInfos, failDetails)) {
                         saveFlag = false;
                     } else {
+                        String snmpCommunity = ExcelUtils.getCellValue(row.getCell(24));
+                        String snmpContextName = ExcelUtils.getCellValue(row.getCell(25));
+                        String snmpUserName = ExcelUtils.getCellValue(row.getCell(27));
+                        String snmpSecurityLevel = ExcelUtils.getCellValue(row.getCell(28));
+                        String snmpPassword = ExcelUtils.getCellValue(row.getCell(29));
+                        String snmpAuthProtocol = ExcelUtils.getCellValue(row.getCell(30));
+                        String snmpPrivProtocol = ExcelUtils.getCellValue(row.getCell(31));
+                        String snmpPrivPassword = ExcelUtils.getCellValue(row.getCell(32));
                         Account exporterAccount = this.getImportSnmpAccount(snmpPort, snmpCommunity, snmpContextName, snmpVersion, snmpUserName, snmpPassword, snmpSecurityLevel, snmpAuthProtocol, snmpPrivProtocol, snmpPrivPassword, seqUUID);
                         accountList.add(exporterAccount);
                     }
@@ -1126,7 +1101,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                             R r = this.uploadBuildExporter(configs, asset, accountForUploadExporter);
                             Integer code = (Integer) r.get("code");
                             if (!RCode.SUCCESS.getCode().equals(code)) {
-                                this.addFailDetail(dataFromExcelRowNum, failDetails, (String) r.get("msg"));
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(34), (String) r.get("msg"));
                             }
                         }
                     }
@@ -1143,7 +1118,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     } catch (Exception e) {
                         // 手动回滚事务
                         dataSourceTransactionManager.rollback(transactionStatus);
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage());
                         logger.error("回滚事务失败,错误信息:" + e.getMessage(), e);
                     }
                 }
@@ -1154,7 +1129,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             resultInfo.put("totalNum", totalNum);
             resultInfo.put("successNum", successNum);
             resultInfo.put("failNum", totalNum - successNum);
-            resultInfo.put("failDetail", failDetails);
+            resultInfo.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
             logger.info("asset导入成功,信息是 {}", resultInfo);
         } catch (Exception e) {
             logger.error("asset导入失败,错误信息:" + e.getMessage(), e);
@@ -1281,11 +1256,17 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return account;
     }
 
-    private boolean validateExporterSnmpAccount(String snmpPort, String snmpVersion, String snmpUserName, String snmpSecurityLevel, String snmpAuthProtocol, String snmpPrivProtocol, int dataFromExcelRowNum, List<Map> failDetails) {
+    private boolean validateExporterSnmpAccount(Row row, int dataFromExcelRowNum, List<String> headerInfos, List<Map> failDetails) {
+        String snmpPort = ExcelUtils.getCellValue(row.getCell(23));
+        String snmpVersion = ExcelUtils.getCellValue(row.getCell(26));
+        String snmpUserName = ExcelUtils.getCellValue(row.getCell(27));
+        String snmpSecurityLevel = ExcelUtils.getCellValue(row.getCell(28));
+        String snmpAuthProtocol = ExcelUtils.getCellValue(row.getCell(30));
+        String snmpPrivProtocol = ExcelUtils.getCellValue(row.getCell(31));
         boolean saveFlag = true;
         if (!CommonUtils.checkPort(snmpPort)) {
             saveFlag = false;
-            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_PORT_ERROR.getMsg());
+            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(23), RCode.ACCOUNT_PORT_ERROR.getMsg());
         }
         switch (snmpVersion) {
             case "2": {
@@ -1294,28 +1275,28 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             case "3": {
                 if (StringUtils.isEmpty(snmpUserName)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_USERNAME_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(27), RCode.ACCOUNT_SNMP_USERNAME_ISNULL.getMsg());
                 }
                 // 验证级别不为空验证相关参数
                 if (StringUtils.isNotEmpty(snmpSecurityLevel)) {
                     if (!"noAuthNoPriv".equals(snmpSecurityLevel) && !"authNoPriv".equals(snmpSecurityLevel) && !"authPriv".equals(snmpSecurityLevel)) {
                         saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_SECURITYLEVEL_INVALID.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(28), RCode.ACCOUNT_SNMP_SECURITYLEVEL_INVALID.getMsg());
                     }
                     if ("authNoPriv".equals(snmpSecurityLevel)) {
                         if (!"MD5".equals(snmpAuthProtocol) && !"SHA".equals(snmpAuthProtocol)) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails,headerInfos.get(30), RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
                         }
                     }
                     if ("authPriv".equals(snmpSecurityLevel)) {
                         if (!"MD5".equals(snmpAuthProtocol) && !"SHA".equals(snmpAuthProtocol)) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(30), RCode.ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE.getMsg());
                         }
                         if (!"DES".equals(snmpPrivProtocol) && !"AES".equals(snmpPrivProtocol)) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(31), RCode.ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE.getMsg());
                         }
                     }
                 }
@@ -1323,7 +1304,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
             default: {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ACCOUNT_SNMP_VERSION_INVALIDE.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(26), RCode.ACCOUNT_SNMP_VERSION_INVALIDE.getMsg());
             }
         }
         return saveFlag;
@@ -1359,10 +1340,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
      * @param failDetails
      * @param msg
      */
-    private void addFailDetail(int i, List<Map> failDetails, String msg) {
-        Map failDetail = new HashMap();
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
+        Map failDetail = new HashMap(4);
         failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", msg);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
         failDetails.add(failDetail);
     }
 
@@ -1562,6 +1543,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         basicInfo.put("sn", asset.getSn());
         basicInfo.put("state", asset.getState());
         basicInfo.put("purchaseDate", asset.getPurchaseDate());
+        basicInfo.put("cabinetStart", asset.getCabinetStart());
+        basicInfo.put("cabinetEnd", ToolUtil.isEmpty(asset.getCabinetEnd()) ? null : asset.getCabinetEnd() - 1);
 
         Idc idc = idcService.getById(asset.getIdcId());
         if (ToolUtil.isNotEmpty(idc.getPrincipal())) {
@@ -1767,7 +1750,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Account> tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_SSH_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
         Account account = CollectionUtils.isNotEmpty(tempAccounts) ? tempAccounts.get(0) : null;
         Map<String, Object> accountParam;
-        Base64.Decoder decoder = Base64.getDecoder();
+        //Base64.Decoder decoder = Base64.getDecoder();
         if (account != null) {
             row.createCell(11).setCellValue(account.getPort());
             accountParam = (Map<String, Object>) account.getParams();
@@ -1775,10 +1758,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             row.createCell(13).setCellValue(accountParam.get("method").toString());
             String method = accountParam.get("method").toString();
             if ("password".equals(method)) {
-                row.createCell(14).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                //row.createCell(14).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                row.createCell(14).setCellValue("");
             } else if ("key".equals(method)) {
-                row.createCell(15).setCellValue(accountParam.get("key").toString());
-                row.createCell(16).setCellValue(accountParam.get("passwordKey").toString());
+                //row.createCell(15).setCellValue(accountParam.get("key").toString());
+                //row.createCell(16).setCellValue(accountParam.get("passwordKey").toString());
+                row.createCell(15).setCellValue("");
+                row.createCell(16).setCellValue("");
             }
         }
         tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_TELNET_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
@@ -1788,8 +1774,10 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             accountParam = (Map<String, Object>) account.getParams();
             row.createCell(18).setCellValue(accountParam.get("username").toString());
             row.createCell(19).setCellValue(accountParam.get("userTip").toString());
-            row.createCell(20).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
-            row.createCell(21).setCellValue(accountParam.get("passwordTip").toString());
+//            row.createCell(20).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+            //row.createCell(21).setCellValue(accountParam.get("passwordTip").toString());
+            row.createCell(20).setCellValue("");
+            row.createCell(21).setCellValue("");
             row.createCell(22).setCellValue(accountParam.get("reloginTip").toString());
         }
         tempAccounts = accountList.stream().filter(account1 -> Constant.ACCOUNT_SNMP_PROTOCOL.equals(account1.getProtocol())).collect(Collectors.toList());
@@ -1805,13 +1793,16 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 row.createCell(28).setCellValue(accountParam.get("securityLevel").toString());
 
                 if ("authNoPriv".equals(accountParam.get("securityLevel").toString())) {
-                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+//                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                    row.createCell(29).setCellValue("");
                     row.createCell(30).setCellValue(accountParam.get("authProtocol").toString());
                 } else if ("authPriv".equals(accountParam.get("securityLevel").toString())) {
-                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+//                    row.createCell(29).setCellValue(new String(decoder.decode(accountParam.get("password").toString())));
+                    row.createCell(29).setCellValue("");
                     row.createCell(30).setCellValue(accountParam.get("authProtocol").toString());
                     row.createCell(31).setCellValue(accountParam.get("privProtocol").toString());
-                    row.createCell(32).setCellValue(accountParam.get("privPassword").toString());
+//                    row.createCell(32).setCellValue(accountParam.get("privPassword").toString());
+                    row.createCell(32).setCellValue("");
                 }
             }
         }
@@ -1839,9 +1830,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
             }
         }
-       /* Collection headers = exportHeaderMap.keySet();
-        List<String> headerList = new ArrayList<>(headers.size());
-        headers.stream().forEach(value -> headerList.add(value.toString()));*/
+
         SXSSFWorkbook workbook = null;
         try {
             workbook = ExcelUtils.createExcel07(exportHeaderMap, "Assets", true);
@@ -1905,6 +1894,94 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             asset.setTags(assetIdAndTagsMap.get(asset.getId()));
         }
         return chartIdWithAssetEntity;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateBatchAccountAndTagByAssetIds(Map<String, Object> param) {
+        List<Integer> assetIds = (List<Integer>) param.get("assetIds");
+
+        // 校验资产是否存在
+        this.validateAssetsExist(assetIds);
+
+        List<Account> accounts = (List<Account>) param.get("accounts");
+        List<AssetTag> assetTags = (List<AssetTag>) param.get("tags");
+
+        accounts = CollectionUtils.isEmpty(accounts) ? Collections.emptyList() : JSONObject.parseArray(JSONObject.toJSONString(accounts), Account.class);
+        assetTags = CollectionUtils.isEmpty(assetTags) ? Collections.emptyList() : JSONObject.parseArray(JSONObject.toJSONString(assetTags), AssetTag.class);
+
+        // 批量更新 assetTag
+        this.updateBatchAssetTagByAssetIds(assetIds, assetTags);
+
+        // 批量更新 ACCOUNT
+        this.updateBatchAccountByAssetIds(assetIds, accounts);
+    }
+
+    private void updateBatchAccountByAssetIds(List<Integer> assetIds, List<Account> accounts) {
+        // 通过 assetids 先删除 account
+        accountService.remove(new QueryWrapper<Account>().lambda().in(Account::getAssetId, assetIds));
+
+        // 如果 account 信息为空 ， 只清空 这些asset的 account 信息
+        if (CollectionUtils.isEmpty(accounts)) return;
+
+        // 校验参数
+        this.validateAccount(accounts);
+
+        List<Account> saveAccounts = new ArrayList<>();
+        List<Account> tempAccounts;
+        Map<String, String> params;
+        for (Integer assetId : assetIds) {
+            tempAccounts = JSONObject.parseArray(JSONObject.toJSONString(accounts), Account.class);
+            for (Account pojo : tempAccounts) {
+                params = JSONObject.parseObject((String) pojo.getParams(), Map.class);
+                // 只有 SSH TELNET 协议对密码进行加密
+                if (ToolUtil.isNotEmpty(params.get("password")) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(pojo.getProtocol())) {
+                    params.put("password", Base64.getEncoder().encodeToString(params.get("password").getBytes()));
+                }
+                pojo.setParams(JSONObject.toJSONString(params));
+                pojo.setAssetId(assetId);
+            }
+            saveAccounts.addAll(tempAccounts);
+        }
+        accountService.saveBatch(saveAccounts);
+    }
+
+    private void updateBatchAssetTagByAssetIds(List<Integer> assetIds, List<AssetTag> assetTags) {
+        // 通过 assetids 先删除 tag
+        assetTagService.remove(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getAssetId, assetIds));
+
+        // 如果 tag 信息为空 ， 只清空 这些asset的 tag 信息
+        if (CollectionUtils.isEmpty(assetTags)) return;
+
+        // 存在则校验并保存
+        for (AssetTag pojo : assetTags) {
+            if (StringUtils.isEmpty(pojo.getTag())) {
+                throw new NZException(RCode.ASSET_TAGKEY_ISNULL);
+            }
+        }
+
+        List<AssetTag> saveTags = new ArrayList<>();
+        List<AssetTag> tempTags;
+        for (Integer assetId : assetIds) {
+            tempTags = JSONObject.parseArray(JSONObject.toJSONString(assetTags), AssetTag.class);
+            for (AssetTag pojo : tempTags) {
+                pojo.setAssetId(assetId);
+            }
+            saveTags.addAll(tempTags);
+        }
+        assetTagService.saveBatch(saveTags);
+    }
+
+    private void validateAssetsExist(List<Integer> assetIds) {
+        List<Asset> assetList = this.list();
+        List<Integer> alreadyExistsIds = assetList.stream().map(Asset::getId).collect(Collectors.toList());
+
+        List<Integer> tempList = new ArrayList<>(assetIds);
+        assetIds.retainAll(alreadyExistsIds);
+        if (tempList.size() != assetIds.size()) {
+            tempList.removeAll(assetIds);
+            throw new NZException("Asset information does not exist, assetIds info: " + tempList.toString(), RCode.ASSET_NOT_EXIST.getCode());
+        }
     }
 
     private Cabinet checkCabinet(String cabinetName, Integer idcId, List<Cabinet> cabinetList, String seqUUID, Map saveEntitys, Integer defaultCabinetUsize) {

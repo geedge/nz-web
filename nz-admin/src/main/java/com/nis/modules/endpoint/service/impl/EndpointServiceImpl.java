@@ -190,7 +190,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
 	@Override
-	public Map importEndpoint(MultipartFile excelFile) {
+	public Map importEndpoint(MultipartFile excelFile, String language) {
 		String seqUUID = UUID.randomUUID().toString();
 		logger.info(String.format("导入的文件是： %s, 本次导入的 uuid是：%s", excelFile.getOriginalFilename(), seqUUID));
 
@@ -224,9 +224,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_TEMPLATE_ERROR);
 		}
 
+		Map<String, String> exportHeader = (Map) map.get(language);
+		List<String> headerInfos = new ArrayList(exportHeader.keySet());
+
 		List<Map> failDetails = new ArrayList<>();
 		// 保存并返回成功条数
-		int successNum = this.saveEndpointDataFromSheet(sheet, failDetails, seqUUID);
+		int successNum = this.saveEndpointDataFromSheet(sheet, failDetails, headerInfos, seqUUID);
 		int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
 		Map resultMap = new HashMap(8);
@@ -235,12 +238,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		resultMap.put("totalNum", totalNum);
 		resultMap.put("successNum", successNum);
 		resultMap.put("failNum", totalNum - successNum);
-		resultMap.put("failDetail", failDetails);
+		resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
 
 		return resultMap;
 	}
 
-	private int saveEndpointDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID) {
+	private int saveEndpointDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
 		List<Project> projects = projectService.list();
 		List<Module> modules = moduleService.list();
 		List<Asset> assets = assetService.list();
@@ -263,27 +266,27 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			String projectName = ExcelUtils.getCellValue(row.getCell(0));
 			if (StringUtils.isEmpty(projectName)) {
 				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.PROJECT_NAME_ISNULL.getMsg());
+				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.PROJECT_NAME_ISNULL.getMsg());
 			}
 			String moduleName = ExcelUtils.getCellValue(row.getCell(1));
 			if (StringUtils.isEmpty(moduleName)) {
 				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_ISNULL.getMsg());
+				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_NAME_ISNULL.getMsg());
 			}
 			String type = ExcelUtils.getCellValue(row.getCell(2));
 			if (StringUtils.isEmpty(type)) {
 				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_ISNULL.getMsg());
+				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_ISNULL.getMsg());
 			} else {
 				type = type.toLowerCase();
 				if (!Constant.MODULE_TYPE_HTTP.equals(type) && !Constant.MODULE_TYPE_SNMP.equals(type)) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_INVALID.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_INVALID.getMsg());
 				}
 				// type 类型下必须存在 module
 				if (Constant.MODULE_TYPE_SNMP.equals(type) && ToolUtil.isEmpty(moduleNameAndModuleMap.get(moduleName))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_SNMP_NOTEXIST.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_SNMP_NOTEXIST.getMsg());
 				}
 			}
 			// module 存在 校验相关内容
@@ -293,18 +296,18 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				// moduel 存在 project 不存在 ， module 名称重复
 				if (projectId == null) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_DUPLICATE.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_NAME_DUPLICATE.getMsg());
 				} else {
 					// project 存在 校验 module 是否存在 这个 project 中
 					if (!module.getProjectId().equals(projectId)) {
 						saveFlag = false;
-						this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NOTEXIS_PROJECT.getMsg());
+						this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_NOTEXIS_PROJECT.getMsg());
 					}
 				}
 				// 校验 module type 与输入得是否匹配
 				if (!module.getType ().equals(type.toLowerCase())) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_TYPE_INCONSISTENT.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_INCONSISTENT.getMsg());
 				}
 			}
 			String sn = ExcelUtils.getCellValue(row.getCell(3));
@@ -312,30 +315,30 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			// sn host 不可同时为空
 			if (StringUtils.isEmpty(sn) && StringUtils.isEmpty(host)) {
 				saveFlag = false;
-				this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_SN_HOST_ISNULL.getMsg());
+				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ENDPOINT_SN_HOST_ISNULL.getMsg());
 			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isNotEmpty(host)) {
 				// 都不为空 校验 sn 是否可以找到 asset , host 格式是否正确
 				if (!CommonUtils.checkIp(host)) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_HOST_FORMAT.getMsg());
 				}
 				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
 				}
 			} else if (StringUtils.isNotEmpty(sn) && StringUtils.isEmpty(host)) {
 				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
 				}
 			} else if (StringUtils.isEmpty(sn) && StringUtils.isNotEmpty(host)) {
 				if (!CommonUtils.checkIp(host)) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_HOST_FORMAT.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_HOST_FORMAT.getMsg());
 				}
 				if (ToolUtil.isEmpty(assetHostAndIdMap.get(host))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ASSET_NOT_EXIST.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_NOT_EXIST.getMsg());
 				}
 			}
 
@@ -345,11 +348,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					Double aDouble = Double.valueOf(port);
 					if (!CommonUtils.checkPort(String.valueOf(aDouble.intValue()))) {
 						saveFlag = false;
-						this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_PORT_ERROR.getMsg());
+						this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
 					}
 				} catch (NumberFormatException e) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_PORT_ERROR.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
 				}
 			}
 
@@ -359,7 +362,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					JSONObject.parseObject(param);
 				} catch (Exception e) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ENDPOINT_PARAM_FORMAT_ERROR.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ENDPOINT_PARAM_FORMAT_ERROR.getMsg());
 				}
 			}
 			String path = ExcelUtils.getCellValue(row.getCell(6));
@@ -380,7 +383,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						projectId = project.getId();
 						// 先校验 module name 是否重复
 						if (ToolUtil.isNotEmpty(module)) {
-							this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.MODULE_NAME_DUPLICATE.getMsg());
+							this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_NAME_DUPLICATE.getMsg());
 							continue;
 						}
 						// 由于 type 为 snmp 类型时 module必须存在 所以此处保存的为 http 类型 module
@@ -434,7 +437,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					successNum++;
 				} catch (Exception e) {
 					dataSourceTransactionManager.rollback(transactionStatus);
-					this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage() + "");
+					this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
 					logger.error(String.format("保存 project module endpoint 失败,回滚事务,错误信息:%s", e.getMessage()), e);
 				}
 			}
@@ -442,10 +445,10 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		return successNum;
 	}
 
-	private void addFailDetail(int i, List<Map> failDetails, String msg) {
+	private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
 		Map failDetail = new HashMap(4);
 		failDetail.put("lineNo", i);
-		failDetail.put("errorMsg", msg);
+		failDetail.put("errorMsg", headerInfo + ": " + msg);
 		failDetails.add(failDetail);
 	}
 	

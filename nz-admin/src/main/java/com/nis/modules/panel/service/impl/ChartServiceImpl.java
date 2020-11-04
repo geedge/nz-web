@@ -1030,6 +1030,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             throw new NZException(RCode.PANEL_EXPORT_HEADER_TEMPLATE_ERROR);
         }
 
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
 
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
@@ -1047,9 +1049,9 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
         int successNum = 0;
         if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
-            successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage);
+            successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
         } else {
-            successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage);
+            successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
         }
         int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
@@ -1058,12 +1060,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         resultMap.put("totalNum", totalNum);
         resultMap.put("successNum", successNum);
         resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", failDetails);
+        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
 
         return resultMap;
     }
 
-    private int saveAssetChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage) {
+    private int saveAssetChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
         if (linkId == null) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
 
         Panel panel = panelService.getOne(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panelType).eq(Panel::getLink, linkId));
@@ -1080,53 +1082,53 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             String title = ExcelUtils.getCellValue(row.getCell(0));
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TITLE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.CHART_TITLE_ISNULL.getMsg());
             }
             String type = ExcelUtils.getCellValue(row.getCell(1));
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
                 type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
             String span = ExcelUtils.getCellValue(row.getCell(2));
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_SPAN_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_SPAN_ISNULL.getMsg());
             } else {
                 Integer width = null;
                 try {
                     width = Double.valueOf(span).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_WIDTH_FORMAT.getMsg());
                 }
                 if (width != null && (width < 1 || width > 12)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
             String height = ExcelUtils.getCellValue(row.getCell(3));
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_HEIGHT_ISNULL.getMsg());
             } else {
                 try {
                     Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_HEIGHT_FORMAT.getMsg());
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
             String param = ExcelUtils.getCellValue(row.getCell(5));
@@ -1134,7 +1136,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String msg = this.validateChartParamForImport(type, param, type);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), msg);
                 }
             }
             String elements = ExcelUtils.getCellValue(row.getCell(6));
@@ -1142,7 +1144,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String msg = this.validateChartElementForImport(type, elements);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
                 }
             }
             if (saveFlag) {
@@ -1187,7 +1189,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     successNum++;
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage() + "");
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
                     log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
                 }
             }
@@ -1195,7 +1197,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         return successNum;
     }
 
-    private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, Map<String,String> chartTypeMapByLanguage) {
+    private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, Map<String, String> chartTypeMapByLanguage, List<String> headerInfos) {
         List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
         Map<String, Integer> panelNameAndIdMap = panelList.stream().collect(Collectors.toMap(Panel::getName, Panel::getId));
         Row row;
@@ -1209,58 +1211,58 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             String panelName = ExcelUtils.getCellValue(row.getCell(0));
             if (StringUtils.isEmpty(panelName)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.PANEL_NAME_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.PANEL_NAME_ISNULL.getMsg());
             }
             String title = ExcelUtils.getCellValue(row.getCell(1));
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TITLE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TITLE_ISNULL.getMsg());
             }
             String type = ExcelUtils.getCellValue(row.getCell(2));
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
                 type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_TYPE_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
             String span = ExcelUtils.getCellValue(row.getCell(3));
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_SPAN_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_SPAN_ISNULL.getMsg());
             }else{
                 Integer width = null;
                 try {
                     width = Double.valueOf(span).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_FORMAT.getMsg());
                 }
                 if(width != null && (width < 1 || width > 12)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_WIDTH_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
             String height = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_ISNULL.getMsg());
             }else{
                 try {
                     Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_HEIGHT_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_FORMAT.getMsg());
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.CHART_UNIT_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
             String param = ExcelUtils.getCellValue(row.getCell(6));
@@ -1268,7 +1270,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String msg = this.validateChartParamForImport(type, param, "dashboard");
                 if(StringUtils.isNotEmpty(msg)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
                 }
             }
             String elements = ExcelUtils.getCellValue(row.getCell(7));
@@ -1276,7 +1278,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String msg = this.validateChartElementForImport(type, elements);
                 if(StringUtils.isNotEmpty(msg)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
             if(saveFlag){
@@ -1345,7 +1347,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     successNum++;
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, e.getMessage() + "");
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
                     log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
                 }
             }
@@ -1473,10 +1475,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
        return "";
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String msg) {
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
         Map failDetail = new HashMap(4);
         failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", msg);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
         failDetails.add(failDetail);
     }
 

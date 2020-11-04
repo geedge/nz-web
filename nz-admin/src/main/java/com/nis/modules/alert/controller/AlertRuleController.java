@@ -92,10 +92,11 @@ public class AlertRuleController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
-    public R importAlertFromExcelFile(MultipartFile excelFile) {
-        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL);
+    public R importAlertFromExcelFile(MultipartFile excelFile,String language) {
+        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL)
+                .and(language).notNull(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
 
-        return R.ok(alertRuleService.importAlertFromExcelFile(excelFile));
+        return R.ok(alertRuleService.importAlertFromExcelFile(excelFile, language));
     }
 
     @GetMapping("/export")

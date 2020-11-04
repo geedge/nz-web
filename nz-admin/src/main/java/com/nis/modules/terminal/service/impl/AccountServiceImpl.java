@@ -86,11 +86,13 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
     @Override
     public void saveOrUpdateAccount(Account account) {
         if (account.getId() == null) {
-            // 密码
             Map<String, String> params = JSONObject.parseObject((String) account.getParams(), Map.class);
-            if(ToolUtil.isNotEmpty(params.get("password"))){
-                String encodePwd = Base64.getEncoder().encodeToString(params.get("password").getBytes());
-                params.put("password", encodePwd);
+            if (!Constant.ACCOUNT_SNMP_PROTOCOL.equals(account.getProtocol())) {
+                // 不是 SNMP 类型才对密码进行加密
+                if (ToolUtil.isNotEmpty(params.get("password"))) {
+                    String encodePwd = Base64.getEncoder().encodeToString(params.get("password").getBytes());
+                    params.put("password", encodePwd);
+                }
             }
             account.setParams(JSONObject.toJSONString(params));
 
@@ -106,7 +108,8 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
                 // 前台传参密码和数据库存储密码不对应 证明修改了密码
                 Map<String, String> oldAccount = JSONObject.parseObject((String) accountEntity.getParams(), Map.class);
 
-                if (!params.get("password").equals(oldAccount.get("password"))) {
+                // 不是 SNMP 协议类型 并且 密码不对应
+                if (!params.get("password").equals(oldAccount.get("password")) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(account.getProtocol())) {
                     String encodePwd = Base64.getEncoder().encodeToString(params.get("password").getBytes());
                     params.put("password", encodePwd);
                 }

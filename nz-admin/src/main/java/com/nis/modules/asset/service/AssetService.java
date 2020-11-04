@@ -27,7 +27,7 @@ public interface AssetService extends IService<Asset> {
 
     void delete(Integer ... ids);
 
-    void validateAccount(Asset asset, List<Account> accounts);
+    void validateAccount(List<Account> accounts);
     
     List<MetricsDto> queryAssetStatisticsByModel();
     
@@ -58,4 +58,6 @@ public interface AssetService extends IService<Asset> {
     List<Asset> getAssetsWithTagsByModelId(Integer modelId);
 
     List<Chart> getAssetsWithTagByChartIds(List<Integer> chartIds);
+
+    void updateBatchAccountAndTagByAssetIds(Map<String, Object> param);
 }

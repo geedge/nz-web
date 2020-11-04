@@ -3,7 +3,6 @@ package com.nis.modules.alert.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.metric.dto.MetricsDto;
 
 import javax.servlet.http.HttpServletRequest;
@@ -22,7 +21,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
     PageUtils queryPage(Map<String, Object> params) throws Exception;
 
-	void saveBatch(AlertMessageReceiveDTO[] receive, HttpServletRequest request) throws Exception;
+	void saveBatch(String receiveStr, HttpServletRequest request) throws Exception;
 	
 	void removeByAssetIds(List<Integer> idList);
 

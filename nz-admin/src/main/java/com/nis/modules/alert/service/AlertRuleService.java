@@ -30,7 +30,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	void getExportTemplateByLanguage(HttpServletResponse response, String language);
 
-	Map importAlertFromExcelFile(MultipartFile excelFile);
+	Map importAlertFromExcelFile(MultipartFile excelFile, String language);
 
 	void export(HttpServletResponse response, Map<String, Object> params);
 

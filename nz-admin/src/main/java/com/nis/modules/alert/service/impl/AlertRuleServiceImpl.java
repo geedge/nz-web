@@ -378,7 +378,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     @Override
-    public Map importAlertFromExcelFile(MultipartFile excelFile) {
+    public Map importAlertFromExcelFile(MultipartFile excelFile, String language) {
         if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
             throw new NZException(RCode.ALERTRULE_IMPORTFILE_TYPE);
         }
@@ -408,6 +408,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
         }
 
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+
         // 预先查询出校验数据 避免循环查表
         List<AlertRuleEntity> alertList = this.list();
         List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getAlertName).collect(Collectors.toList());
@@ -416,7 +419,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
         // 保存并返回成功条数
-        int successNum = this.saveAlertDataFromSheet(sheet, alertNameList, failDetails, userList, seqUUID);
+        int successNum = this.saveAlertDataFromSheet(sheet, alertNameList, failDetails, userList, headerInfos,seqUUID);
         int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
         Map resultMap = new HashMap(8);
@@ -424,11 +427,11 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         resultMap.put("totalNum", totalNum);
         resultMap.put("successNum", successNum);
         resultMap.put("failNum", totalNum - successNum);
-        resultMap.put("failDetail", failDetails);
+        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
         return resultMap;
     }
 
-    private int saveAlertDataFromSheet(Sheet sheet, List<String> alertNameList, List<Map> failDetails, List<SysUserEntity> userList, String seqUUID) {
+    private int saveAlertDataFromSheet(Sheet sheet, List<String> alertNameList, List<Map> failDetails, List<SysUserEntity> userList, List<String> headerInfos, String seqUUID) {
         int successNum = 0;
         Row row;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
@@ -439,89 +442,89 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             String alertName = ExcelUtils.getCellValue(row.getCell(0));
             if (StringUtils.isEmpty(alertName)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_NAME_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ALERTRULE_NAME_ISNULL.getMsg());
             } else {
                 if (!this.checkImportAlertNameDuplicate(alertName, alertNameList)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_NAME_DUPLICATE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ALERTRULE_NAME_DUPLICATE.getMsg());
                 }
             }
             String expr = ExcelUtils.getCellValue(row.getCell(1));
             if (StringUtils.isEmpty(expr)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_EXPR_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1),RCode.ALERTRULE_EXPR_ISNULL.getMsg());
             }
             String operator = ExcelUtils.getCellValue(row.getCell(2));
             if (StringUtils.isEmpty(operator)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
             } else {
                 operator = operator.replaceAll(" ", "");
                 if (!Constant.RULE_OPERATORS.contains(operator)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
                 }
             }
             String threshold = ExcelUtils.getCellValue(row.getCell(3));
             if (StringUtils.isEmpty(threshold)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
             } else {
                 try {
                     Double.valueOf(threshold);
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isEmpty(unit)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_UNIT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
             } else {
                 Integer integer = Constant.ALERT_RULE_UNIT_MAP.get(unit);
                 if (ToolUtil.isEmpty(integer)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
                 }
             }
             String last = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isEmpty(last)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_LAST_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_LAST_ISNULL.getMsg());
             } else {
                 try {
                     Double.valueOf(last).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
                 }
             }
             String severity = ExcelUtils.getCellValue(row.getCell(6));
             if (StringUtils.isEmpty(severity)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
             }else{
                 if(!Constant.ALERT_SEVERITY_HIGH.equals(severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
                 }
             }
             String summary = ExcelUtils.getCellValue(row.getCell(7));
             if (StringUtils.isEmpty(summary)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
             }
             String description = ExcelUtils.getCellValue(row.getCell(8));
             if (StringUtils.isEmpty(description)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_DESCRIPTION_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_DESCRIPTION_ISNULL.getMsg());
             }
             String receiver = ExcelUtils.getCellValue(row.getCell(9));
             if (StringUtils.isNotEmpty(receiver)) {
                 if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_RECEIVER_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_RECEIVER_NOTFOUND.getMsg());
                 } else {
                     receiver = this.getUserIdsByUserNames(receiver, userList);
                 }
@@ -542,12 +545,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 try {
                     boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
                     if (!b) {
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_EXPR_ERROR.getMsg());
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                         continue;
                     }
                 } catch (Exception e) {
                     log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_EXPR_ERROR.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                 }
                 try {
                     this.save(ruleEntity);
@@ -555,7 +558,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     successNum++;
                 } catch (Exception e) {
                     log.error(String.format("rule导入保存失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e.getMessage()), e);
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, RCode.ALERTRULE_IMPORT_ERROR.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ALERTRULE_IMPORT_ERROR.getMsg());
                 }
             }
         }
@@ -589,10 +592,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         return list;
     }
 
-    private void addFailDetail(int i, List<Map> failDetails, String msg) {
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
         Map failDetail = new HashMap(4);
         failDetail.put("lineNo", i);
-        failDetail.put("errorMsg", msg);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
         failDetails.add(failDetail);
     }
 

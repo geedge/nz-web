@@ -17,8 +17,8 @@ public interface EndpointService extends IService<Endpoint> {
 	void validateParam(Endpoint endpointEntity);
 	
 	List<MetricsDto> queryEndpointStatisticsInfoByModule();
-	
-	Map importEndpoint(MultipartFile endpointExcelFile);
+
+	Map importEndpoint(MultipartFile endpointExcelFile, String language);
 	
 	void cancelImport(String seq);
 

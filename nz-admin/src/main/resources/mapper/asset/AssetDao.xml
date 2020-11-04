@@ -191,6 +191,11 @@
             <if test="params.pingStatus != null and params.pingStatus != ''">
                 AND assp.status = #{params.pingStatus}
             </if>
+
+            <if test="params.cabinetName != null and params.cabinetName != ''">
+                AND cab.name LIKE CONCAT('%', #{params.cabinetName}, '%')
+            </if>
+
             <if test="params.pingStates !=null and params.pingStates.length >0">
                 AND assp.status IN
                 <foreach collection="params.pingStates" item="status" index="no" open="(" separator="," close=")">
