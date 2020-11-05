@@ -134,29 +134,10 @@ public class MetricsController extends AbstractController {
 
     @GetMapping("/healthy")
     public R healthy() {
-        Map healthyMap = new HashMap(4);
-
-        healthyMap.put("web", "UP");
-
-        String mysqlState = mysqlHealthy();
-        String redisState = redisHealthy();
-
-        healthyMap.put("mysql", mysqlState);
-        healthyMap.put("redis", redisState);
-
-        if (("DOWN".equals(mysqlState) || "DOWN".equals(redisState))) {
-            R r = new R();
-            r.put("code", RCode.ERROR.getCode());
-            r.put("msg", RCode.ERROR.getMsg());
-            r.put("time", DateUtil.getUTCTimeByConfigTimeZone());
-            r.put("data", healthyMap);
-            return r;
-        }
-
-        return R.ok(healthyMap);
+        return R.ok();
     }
 
-    private String redisHealthy() {
+    /*private String redisHealthy() {
         String state = "";
         try {
             Object execute = redisTemplate.execute(new RedisCallback<String>() {
@@ -194,5 +175,5 @@ public class MetricsController extends AbstractController {
         } finally {
             return state;
         }
-    }
+    }*/
 }
