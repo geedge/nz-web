@@ -9,6 +9,7 @@
         <result property="host" column="host"/>
         <result property="port" column="port"/>
         <result property="param" column="param"/>
+        <result property="labels" column="labels"/>
         <result property="path" column="path"/>
         
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.Module">

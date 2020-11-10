@@ -32,22 +32,20 @@ public class EndpointController extends AbstractController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ENDPOINT)
-	public R save(@RequestBody List<Endpoint> endpointEntitys) {
-		for(Endpoint endpointEntity : endpointEntitys) {
-			endpointService.validateParam(endpointEntity);
-		}
-		endpointService.saveOrUpdateBatch(endpointEntitys);
+	public R save(@RequestBody List<Endpoint> endpointList) {
+
+		endpointService.saveOrUpdateBatchEndpointList(endpointList);
 		return R.ok();
 	}
-	
+
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ENDPOINT)
-	public R modify(@RequestBody List<Endpoint> endpointEntitys) {
-		for(Endpoint endpointEntity : endpointEntitys) {
+	public R modify(@RequestBody List<Endpoint> endpointList) {
+		for (Endpoint endpointEntity : endpointList) {
 			ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
-			endpointService.validateParam(endpointEntity);
 		}
-		endpointService.saveOrUpdateBatch(endpointEntitys);
+
+		endpointService.saveOrUpdateBatchEndpointList(endpointList);
 		return R.ok();
 	}
 	

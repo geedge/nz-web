@@ -14,8 +14,6 @@ public interface EndpointService extends IService<Endpoint> {
 	
 	PageUtils queryPage(Map<String, Object> params);
 	
-	void validateParam(Endpoint endpointEntity);
-	
 	List<MetricsDto> queryEndpointStatisticsInfoByModule();
 
 	Map importEndpoint(MultipartFile endpointExcelFile, String language);
@@ -27,4 +25,6 @@ public interface EndpointService extends IService<Endpoint> {
 	void export(HttpServletResponse response, Map<String, Object> params);
 
     void deleteEndpointByIds(List<Integer> endpointIdList);
+
+	void saveOrUpdateBatchEndpointList(List<Endpoint> endpointList);
 }

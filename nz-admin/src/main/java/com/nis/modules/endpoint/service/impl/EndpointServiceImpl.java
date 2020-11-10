@@ -177,11 +177,40 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		}
 	}
 
-	@Override
-	public void validateParam(Endpoint endpointEntity) {
-		ValidateUtils.is(endpointEntity.getModuleId()).notNull(RCode.ENDPOINT_MODULEID_ISNULL);
-		ValidateUtils.is(endpointEntity.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
-		ValidateUtils.is(endpointEntity.getPort()).notNull(RCode.ENDPOINT_PORT_ISNULL);
+	public void validateParam(List<Endpoint> endpointList) {
+		List<Module> moduleList = moduleService.list();
+		List<Integer> moduleIdList = moduleList.stream().map(Module::getId).collect(Collectors.toList());
+
+		List<Asset> assetList = assetService.list();
+		List<Integer> assetIdList = assetList.stream().map(Asset::getId).collect(Collectors.toList());
+
+		String labels;
+		Integer moduleId,assetId;
+		for (Endpoint endpoint : endpointList) {
+			moduleId = endpoint.getModuleId();
+			assetId = endpoint.getAssetId();
+
+			ValidateUtils.is(moduleId).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
+					.and(assetId).notNull(RCode.ENDPOINT_ASSETID_ISNULL)
+					.and(endpoint.getPort()).notNull(RCode.ENDPOINT_PORT_ISNULL);
+
+			if(!moduleIdList.contains(moduleId)){
+				throw new NZException(RCode.MODULE_NOTFOUND);
+			}
+
+			if(!assetIdList.contains(assetId)){
+				throw new NZException(RCode.ASSET_NOT_EXIST);
+			}
+
+			labels = endpoint.getLabels();
+			if (StringUtils.isNotEmpty(labels)) {
+				try {
+					Map map = JSONObject.parseObject(labels, Map.class);
+				} catch (Exception e) {
+					throw new NZException(RCode.ENDPOINT_LABELS_FORMAT);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -311,7 +340,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				}
 			}
 			String sn = ExcelUtils.getCellValue(row.getCell(3));
-			String host = ExcelUtils.getCellValue(row.getCell(7));
+			String host = ExcelUtils.getCellValue(row.getCell(8));
 			// sn host 不可同时为空
 			if (StringUtils.isEmpty(sn) && StringUtils.isEmpty(host)) {
 				saveFlag = false;
@@ -320,7 +349,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				// 都不为空 校验 sn 是否可以找到 asset , host 格式是否正确
 				if (!CommonUtils.checkIp(host)) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_HOST_FORMAT.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_HOST_FORMAT.getMsg());
 				}
 				if (ToolUtil.isEmpty(assetSnAndIdMap.get(sn))) {
 					saveFlag = false;
@@ -334,11 +363,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			} else if (StringUtils.isEmpty(sn) && StringUtils.isNotEmpty(host)) {
 				if (!CommonUtils.checkIp(host)) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_HOST_FORMAT.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_HOST_FORMAT.getMsg());
 				}
 				if (ToolUtil.isEmpty(assetHostAndIdMap.get(host))) {
 					saveFlag = false;
-					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ASSET_NOT_EXIST.getMsg());
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ASSET_NOT_EXIST.getMsg());
 				}
 			}
 
@@ -365,7 +394,18 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ENDPOINT_PARAM_FORMAT_ERROR.getMsg());
 				}
 			}
-			String path = ExcelUtils.getCellValue(row.getCell(6));
+
+			String labels = ExcelUtils.getCellValue(row.getCell(6));
+			if (StringUtils.isNotEmpty(labels)) {
+				try {
+					JSONObject.parseObject(param);
+				} catch (Exception e) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ENDPOINT_LABELS_FORMAT.getMsg());
+				}
+			}
+
+			String path = ExcelUtils.getCellValue(row.getCell(7));
 			// 前面没有报错
 			if (saveFlag) {
 				TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -428,6 +468,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					endpoint.setModuleId(moduleId);
 					endpoint.setPort(ToolUtil.isEmpty(port) ? module.getPort() : Double.valueOf(port).intValue());
 					endpoint.setParam(ToolUtil.isEmpty(param) ? module.getParam() : param);
+					endpoint.setLabels(ToolUtil.isEmpty(labels) ? module.getLabels() : labels);
 					endpoint.setPath(ToolUtil.isEmpty(path) ? module.getPath() : path);
 					endpoint.setSeq(seqUUID);
 					this.save(endpoint);
@@ -554,13 +595,15 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				row1.createCell(4).setCellValue(endpoint.getPort());
 				// param
 				row1.createCell(5).setCellValue(endpoint.getParam());
+				// labels
+				row1.createCell(6).setCellValue(endpoint.getLabels());
 				// path
-				row1.createCell(6).setCellValue(endpoint.getPath());
+				row1.createCell(7).setCellValue(endpoint.getPath());
 				// host
-				row1.createCell(7).setCellValue(asset.getHost());
+				row1.createCell(8).setCellValue(asset.getHost());
 
 				// 设置单元格样式
-				ExcelUtils.setDataCellStyle(workbook, row1, 7);
+				ExcelUtils.setDataCellStyle(workbook, row1, 8);
 			}
 
 			// 响应为流
@@ -594,4 +637,41 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
             logger.error(String.format("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：%s,错误信息是:%s", endpointIdList, e.getMessage()), e);
         }
     }
+
+	@Override
+	public void saveOrUpdateBatchEndpointList(List<Endpoint> endpointList) {
+		// 校验
+		this.validateParam(endpointList);
+
+		List<Module> moduleList = moduleService.list();
+		Map<Integer, Module> moduleIdAndModuleInfoMap = new HashMap();
+		for (Module module : moduleList) {
+			moduleIdAndModuleInfoMap.put(module.getId(), module);
+		}
+
+		List<Asset> assetList = assetService.list();
+		Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+
+		Module module;
+		for (Endpoint endpoint : endpointList) {
+			module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
+			if (ToolUtil.isEmpty(endpoint.getPort())) {
+				endpoint.setPort(module.getPort());
+			}
+			if (ToolUtil.isEmpty(endpoint.getParam())) {
+				endpoint.setParam(module.getParam());
+			}
+			if (ToolUtil.isEmpty(endpoint.getLabels())) {
+				endpoint.setLabels(module.getLabels());
+			}
+			if (ToolUtil.isEmpty(endpoint.getPath())) {
+				endpoint.setPath(module.getPath());
+			}
+			if (ToolUtil.isEmpty(endpoint.getHost())) {
+				endpoint.setHost(assetIdAndHostMap.get(endpoint.getAssetId()));
+			}
+		}
+
+		this.saveOrUpdateBatch(endpointList);
+	}
 }

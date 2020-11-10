@@ -1918,21 +1918,40 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     private void updateBatchAccountByAssetIds(List<Integer> assetIds, List<Account> accounts) {
-        // 通过 assetids 先删除 account
-        accountService.remove(new QueryWrapper<Account>().lambda().in(Account::getAssetId, assetIds));
-
-        // 如果 account 信息为空 ， 只清空 这些asset的 account 信息
+        // 如果 account 信息为空 ，不进行修改 account 信息
         if (CollectionUtils.isEmpty(accounts)) return;
 
         // 校验参数
         this.validateAccount(accounts);
+
+        List<Account> accountList = accountService.list();
+        Map<Integer, List<Account>> assetIdAndAccountsMap = accountList.stream().collect(Collectors.groupingBy(Account::getAssetId));
 
         List<Account> saveAccounts = new ArrayList<>();
         List<Account> tempAccounts;
         Map<String, String> params;
         for (Integer assetId : assetIds) {
             tempAccounts = JSONObject.parseArray(JSONObject.toJSONString(accounts), Account.class);
+
+            // 已经存在 accounts
+            List<Account> alreadyExistAccounts = assetIdAndAccountsMap.get(assetId);
+            if (CollectionUtils.isNotEmpty(alreadyExistAccounts)) {
+                // 相同协议进行更新操作
+                List<String> protocols = tempAccounts.stream().map(Account::getProtocol).collect(Collectors.toList());
+                Iterator<Account> iterator = alreadyExistAccounts.iterator();
+                while (iterator.hasNext()) {
+                    Account next = iterator.next();
+                    if (protocols.contains(next.getProtocol())) {
+                        iterator.remove();
+                    }
+                }
+            }
+
+            // 之前数据
+            if (CollectionUtils.isNotEmpty(alreadyExistAccounts)) tempAccounts.addAll(alreadyExistAccounts);
+
             for (Account pojo : tempAccounts) {
+                if (pojo.getId() != null) continue;
                 params = JSONObject.parseObject((String) pojo.getParams(), Map.class);
                 // 只有 SSH TELNET 协议对密码进行加密
                 if (ToolUtil.isNotEmpty(params.get("password")) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(pojo.getProtocol())) {
@@ -1943,14 +1962,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
             saveAccounts.addAll(tempAccounts);
         }
+
+        accountService.remove(new QueryWrapper<Account>().lambda().in(Account::getAssetId, assetIds));
         accountService.saveBatch(saveAccounts);
     }
 
     private void updateBatchAssetTagByAssetIds(List<Integer> assetIds, List<AssetTag> assetTags) {
-        // 通过 assetids 先删除 tag
-        assetTagService.remove(new QueryWrapper<AssetTag>().lambda().in(AssetTag::getAssetId, assetIds));
-
-        // 如果 tag 信息为空 ， 只清空 这些asset的 tag 信息
+        // 如果 tag 信息为空 ， 不进行修改 tag 信息
         if (CollectionUtils.isEmpty(assetTags)) return;
 
         // 存在则校验并保存
@@ -1960,16 +1978,45 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             }
         }
 
-        List<AssetTag> saveTags = new ArrayList<>();
+        List<AssetTag> tags = assetTagService.list();
+        Map<Integer, List<AssetTag>> assetIdAndTagList = tags.stream().collect(Collectors.groupingBy(AssetTag::getAssetId));
+
+        List<AssetTag> saveOrUpdateTags = new ArrayList<>();
         List<AssetTag> tempTags;
         for (Integer assetId : assetIds) {
             tempTags = JSONObject.parseArray(JSONObject.toJSONString(assetTags), AssetTag.class);
-            for (AssetTag pojo : tempTags) {
-                pojo.setAssetId(assetId);
+
+            // 已经存在 tag 信息
+            List<AssetTag> alreadyExistTag = assetIdAndTagList.get(assetId);
+            if (CollectionUtils.isNotEmpty(alreadyExistTag)) {
+                Map<String, String> saveTagAndValueMap = tempTags.stream().collect(Collectors.toMap(AssetTag::getTag, AssetTag::getValue));
+                for (AssetTag pojo : alreadyExistTag) {
+                    if (saveTagAndValueMap.get(pojo.getTag()) != null) {
+                        // 替换 tag 对应的 value 值
+                        pojo.setValue(saveTagAndValueMap.get(pojo.getTag()));
+                        // 删除 重复 tag
+                        saveTagAndValueMap.remove(pojo.getTag());
+                    }
+                }
+                saveOrUpdateTags.addAll(alreadyExistTag);
+                if (ToolUtil.isNotEmpty(saveTagAndValueMap)) {
+                    for (Map.Entry<String, String> entry : saveTagAndValueMap.entrySet()) {
+                        AssetTag assetTag = new AssetTag();
+                        assetTag.setAssetId(assetId);
+                        assetTag.setTag(entry.getKey());
+                        assetTag.setValue(entry.getValue());
+                        saveOrUpdateTags.add(assetTag);
+                    }
+                }
+            } else {
+                for (AssetTag pojo : tempTags) {
+                    pojo.setAssetId(assetId);
+                }
+                saveOrUpdateTags.addAll(tempTags);
             }
-            saveTags.addAll(tempTags);
         }
-        assetTagService.saveBatch(saveTags);
+
+        assetTagService.saveOrUpdateBatch(saveOrUpdateTags);
     }
 
     private void validateAssetsExist(List<Integer> assetIds) {

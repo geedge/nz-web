@@ -128,6 +128,16 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                 }
             }
         }
+
+		// 校验 labels 格式
+        String labels = moduleEntity.getLabels();
+        if (StringUtils.isNotEmpty(labels)) {
+            try {
+                JSONObject.parseObject(labels, Map.class);
+            } catch (Exception e) {
+                throw new NZException(RCode.MODULE_LABELS_FORMAT);
+            }
+        }
     }
 
     // 当snmp版本为V3时，需要校验用户信息

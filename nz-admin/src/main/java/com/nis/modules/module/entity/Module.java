@@ -27,6 +27,7 @@ public class Module {
 	@NotBlank(message="参数名不能为空")
 	private Integer port;
 	private String param;
+	private String labels;
 	@NotBlank(message="参数名不能为空")
 	private String path;
 	private String remark;

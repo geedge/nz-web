@@ -20,6 +20,7 @@ public class Endpoint {
 	private String host;
 	private Integer port;
 	private String param;
+	private String labels;
 	private String path;
 	@TableField(exist = false)
 	private Module module;

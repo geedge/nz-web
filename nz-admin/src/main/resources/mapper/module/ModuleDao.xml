@@ -8,6 +8,7 @@
         <result property="type" column="type"/>
         <result property="port" column="port"/>
         <result property="param" column="param"/>
+        <result property="labels" column="labels"/>
         <result property="path" column="path"/>
         <result property="remark" column="remark"/>
         <result property="name" column="name"/>
