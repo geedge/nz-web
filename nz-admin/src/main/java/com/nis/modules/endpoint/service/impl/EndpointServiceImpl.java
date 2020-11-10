@@ -204,11 +204,18 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 
 			labels = endpoint.getLabels();
 			if (StringUtils.isNotEmpty(labels)) {
+				Map labelMap;
 				try {
-					Map map = JSONObject.parseObject(labels, Map.class);
+					labelMap = JSONObject.parseObject(labels, Map.class);
 				} catch (Exception e) {
 					throw new NZException(RCode.ENDPOINT_LABELS_FORMAT);
 				}
+
+				labelMap.keySet().stream().forEach(key -> {
+					if (!Constant.PROMETHEUS_LABELSKEY_PATTERN.matcher(key.toString()).matches()) {
+						throw new NZException("labels's key " + key + " format is incorrect", RCode.ENDPOINT_LABELS_KEY_FORMAT.getCode());
+					}
+				});
 			}
 		}
 	}
@@ -397,11 +404,21 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 
 			String labels = ExcelUtils.getCellValue(row.getCell(6));
 			if (StringUtils.isNotEmpty(labels)) {
+				Map labelMap = null;
 				try {
-					JSONObject.parseObject(param);
+					labelMap = JSONObject.parseObject(labels, Map.class);
 				} catch (Exception e) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ENDPOINT_LABELS_FORMAT.getMsg());
+				}
+
+				if (ToolUtil.isNotEmpty(labelMap)) {
+					for (Object key : labelMap.keySet()) {
+						if (!Constant.PROMETHEUS_LABELSKEY_PATTERN.matcher(key.toString()).matches()) {
+							saveFlag = false;
+							this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ENDPOINT_LABELS_KEY_FORMAT.getMsg());
+						}
+					}
 				}
 			}
 

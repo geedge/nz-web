@@ -139,6 +139,7 @@ public enum RCode {
     MODULE_TYPE_INCONSISTENT(223023, "Module type is inconsistent with the filling type"),
     MODULE_SNMP_NOTEXIST(226024, "SNMP type module must exist"),
     MODULE_LABELS_FORMAT(223025,"Module labels must be JSON format"),
+    MODULE_LABELS_KEY_FORMAT(223026,"Module labels key format is incorrect"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),
@@ -161,6 +162,7 @@ public enum RCode {
     ENDPOINT_SN_HOST_ISNULL(231018, "Sn and host cannot be empty at the same time"),
     ENDPOINT_SN_HOST_MISMATCH(235019, "Asset sn and host address do not correspond"),
     ENDPOINT_LABELS_FORMAT(233020,"Endpoint labels must be JSON format"),
+    ENDPOINT_LABELS_KEY_FORMAT(233021,"Endpoint labels key format is incorrect"),
     /**
      * assets菜单项相关
      */

@@ -123,7 +123,7 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             Map tags = (Map) traffic.getTags();
             if (ToolUtil.isNotEmpty(tags)) {
                 tags.keySet().stream().forEach(key -> {
-                    if (!Constant.TRAFFIC_TAGSKEY_PATTERN.matcher(key.toString()).matches()) {
+                    if (!Constant.PROMETHEUS_LABELSKEY_PATTERN.matcher(key.toString()).matches()) {
                         throw new NZException("tags's key " + key + " format is incorrect", RCode.IDC_TRAFFIC_TAGSKEY_FORMAT.getCode());
                     }
                 });

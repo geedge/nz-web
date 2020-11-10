@@ -132,11 +132,18 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 		// 校验 labels 格式
         String labels = moduleEntity.getLabels();
         if (StringUtils.isNotEmpty(labels)) {
+            Map labelMap;
             try {
-                JSONObject.parseObject(labels, Map.class);
+                labelMap = JSONObject.parseObject(labels, Map.class);
             } catch (Exception e) {
                 throw new NZException(RCode.MODULE_LABELS_FORMAT);
             }
+
+            labelMap.keySet().stream().forEach(key -> {
+                if (!Constant.PROMETHEUS_LABELSKEY_PATTERN.matcher(key.toString()).matches()) {
+                    throw new NZException("labels's key " + key + " format is incorrect", RCode.MODULE_LABELS_KEY_FORMAT.getCode());
+                }
+            });
         }
     }
 
