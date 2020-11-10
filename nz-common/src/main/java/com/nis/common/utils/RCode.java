@@ -377,6 +377,10 @@ public enum RCode {
     IDC_TRAFFIC_PORT_INVALIDE(535036,"Idc traffic port is invalide"),
     IDC_TRAFFIC_TAGSKEY_FORMAT(533037,"Idc traffic tags key format is incorrect"),
     IDC_PROMSERVERS_EXISTS(533038, "These idc contain prometheus servers and cannot be deleted"),
+    IDC_STATE_ISNULL(531039, "Idc state can not be empty"),
+    IDC_STATE_ERROR(534040, "Idc state must be ON or OFF"),
+    IDC_LONGITUDE_ERROR(535041, "Idc longitude range is -180 to +180"),
+    IDC_LATITUDE_ERROR(535042, "Idc latitude range is -90 to +90"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang

@@ -151,6 +151,30 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
                 }
             }
         }
+
+        // 4. 校验 State 是否合法
+        String state = idc.getState();
+        if (StringUtils.isEmpty(state)) {
+            throw new NZException(RCode.IDC_STATE_ISNULL);
+        }
+
+        if (!Constant.SWITCH_OPEN.toUpperCase().equals(state) && !Constant.SWITCH_CLOSE.toUpperCase().equals(state)) {
+            throw new NZException(RCode.IDC_STATE_ERROR);
+        }
+
+        // 5. 经纬度校验
+        Double longitude = idc.getLongitude();
+        if (longitude != null) {
+            if (longitude > 180 || longitude < -180) {
+                throw new NZException(RCode.IDC_LONGITUDE_ERROR);
+            }
+        }
+        Double latitude = idc.getLatitude();
+        if (latitude != null) {
+            if (latitude > 90 || latitude < -90) {
+                throw new NZException(RCode.IDC_LATITUDE_ERROR);
+            }
+        }
     }
 
 
@@ -166,6 +190,9 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             }
             if (idc.getX() == null) {
                 idc.setX(1);
+            }
+            if (idc.getState() == null) {
+                idc.setState(Constant.SWITCH_OPEN.toUpperCase());
             }
         }
 

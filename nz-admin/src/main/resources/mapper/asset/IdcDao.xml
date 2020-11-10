@@ -9,44 +9,18 @@
         <result property="tel" column="tel"/>
         <result property="principal" column="principal"/>
         <result property="seq" column="seq"/>
-        <result property="areaId" column="area_id"/>
         <result property="x" column="x"/>
         <result property="y" column="y"/>
+        <result property="latitude" column="latitude"/>
+        <result property="longitude" column="longitude"/>
+        <result property="state" column="state"/>
         <result property="cabinetNum" column="cabinetNum" />
-        <association columnPrefix="sa_" property="area" javaType="com.nis.modules.sys.entity.SysArea">
-	    	<id column="id" property="id"/>
-	    	<result column="name" property="name"/>
-	    	<result column="pid" property="pid"/>
-	    	<result column="pids" property="pids"/>
-	    	<result column="longitude" property="longitude"/>
-	    	<result column="latitude" property="latitude"/>
-	    	<result column="i18n" property="i18n"/>
-	    </association>
-	    
-	    <!--<association columnPrefix="as_" property="assetStat" javaType="com.nis.modules.asset.entity.AssetStat">
-	    	<result column="total" property="total"/>
-	    	<result column="inStock" property="inStock"/>
-	    	<result column="outStock" property="outStock"/>
-	    	<result column="cabinetNum" property="cabinetNum"/>
-	    </association>-->
-	    
     </resultMap>
     
     <select id="queryPage" resultMap="idc">
        select i.*,
-       sa.id AS sa_id,
-       sa.name AS sa_name,
-       sa.pid AS sa_pid,
-       sa.pids AS sa_pids,
-       sa.longitude AS sa_longitude,
-       sa.latitude AS sa_latitude,
-       sa.i18n AS sa_i18n,
-       /*count(*) as_total,
-	     sum(case a.state when 1 then 1 else 0 end) as_inStock,
-       sum(case a.state when 2 then 1 else 0 end) as_outStock,*/
        count(DISTINCT c.id) cabinetNum
-       from idc i left join sys_area sa on i.area_id=sa.id 
-       /*left join asset a on i.id =a.idc_id*/
+       from idc i
        left join cabinet c on i.id=c.idc_id
 
        <where>
@@ -69,8 +43,12 @@
            <if test="params.principal != null and params.principal != ''">
                AND i.principal = #{params.principal}
            </if>
+
+           <if test="params.state != null and params.state != ''">
+               AND i.state = #{params.state}
+           </if>
        </where>
-		
+
 	   group by i.id
     </select>
 </mapper>

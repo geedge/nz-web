@@ -18,3 +18,13 @@ ALTER TABLE endpoint ADD COLUMN labels VARCHAR (256) COMMENT '使用json对象�
 /*  endpoint 导入导出表头增加 label 列  */
 DELETE FROM sys_config WHERE param_key = "endpoint_export_header";
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'endpoint_export_header', '{\"cn\":{\"*系统\":\"系统名称(必填) \\n示例: Nezha\",\"*组件\":\"组件名称(必填) \\n示例: node_exporter\",\"*组件类型\":\"组件类型(必填) 可选: HTTP、SNMP 当type = SNMP时，组件必须存在 \\n示例: HTTP\",\"资产序列号\":\"资产序列号(非必填) 与 主机地址 不能同时为空 \\n示例: A0420200101\",\"端口号\":\"端口号 范围0-65535 \\n示例: 9100\",\"参数\":\"端点查询参数，JSON格式， \\n示例: {\\\"key\\\":\\\"value\\\"}\",\"标签\":\"标签，JSON格式， \\n示例: {\\\"key\\\":\\\"value\\\"}\",\"*路径\":\"路径（必填） 请求路径，\\n示例: /metrics\",\"主机地址\":\"主机地址（非必填） 与 资产序列号 不能同时为空 \\n示例; 127.0.0.1\"},\"en\":{\"*Project Name\":\"Project Name(Required) \\nExample: Nezha\",\"*Module Name\":\"Module Name(Required) \\nExample: node_exporter\",\"*Module Type\":\"Module type(Required) Optional: HTTP or SNMP，When type = SNMP, the component must exist \\nExample: HTTP\",\"Sn\":\"Asset serial number(Not required) And host address cannot be empty at the same time \\nExample: A0420200101\",\"Port\":\"Port number range 0-65535 \\nExample: 9100\",\"Parameter\":\"Endpoint query parameters, JSON format  \\nExample: {\\\"key\\\":\\\"value\\\"}\",\"Labels\":\"Endpoint lebel, JSON format  \\nExample: {\\\"key\\\":\\\"value\\\"}\",\"*Path\":\"Path (required) Request path \\nExample: /metrics\",\"Host\":\"Host address (not required) and asset serial number cannot be empty at the same time \\nExample; 127.0.0.1\"}}', 1, NULL);
+
+
+
+/**
+ * idc 取消 area_id 列， 增加 longitude、latitude、state 三列
+ */
+ALTER TABLE idc DROP COLUMN area_id;
+ALTER TABLE idc ADD COLUMN `longitude` DOUBLE (8,5) COMMENT '经度 -180,180';
+ALTER TABLE idc ADD COLUMN `latitude` DOUBLE (8,5)  COMMENT '纬度 -90，90';
+ALTER TABLE idc ADD COLUMN `state` VARCHAR (8) NOT NULL DEFAULT 'ON' COMMENT '可选值：ON,OFF 默认：ON';

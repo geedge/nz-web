@@ -251,12 +251,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         for (SysUserEntity user : users) {
             userIdAndEntityMap.put(user.getUserId(), user);
         }
-        // idc area info
-        List<SysArea> sysAreas = sysAreaDao.selectList(null);
-        Map<Long, SysArea> areaIdAndAreaInfo = new HashMap();
-        for (SysArea sysArea : sysAreas) {
-            areaIdAndAreaInfo.put(sysArea.getId(), sysArea);
-        }
         // account
         List<Account> accountList = accountService.list();
         Map<Integer, List<Account>> assetIdAndAccountsMap = accountList.stream().collect(Collectors.groupingBy(Account::getAssetId));
@@ -314,11 +308,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             asset.setUpdateByUser(userIdAndEntityMap.get(asset.getUpdateBy()));
             // tag
             asset.setTags(assetIdAndTagsMap.get(assetId));
-            // idc area info
-            idc = asset.getIdc();
-            if (ToolUtil.isNotEmpty(idc.getAreaId())) {
-                idc.setArea(areaIdAndAreaInfo.get(idc.getAreaId().longValue()));
-            }
             // alertNum
             alertNum = assetIdAndAlertNumMap.get(assetId);
             asset.setAlertNum(ToolUtil.isEmpty(alertNum) ? 0 : alertNum);
@@ -2058,6 +2047,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (idc == null) {
             idc = new Idc();
             idc.setName(dcName);
+            idc.setState(Constant.SWITCH_OPEN.toUpperCase());
             idc.setSeq(seqUUID);
             saveEntitys.put("idc", idc);
         }

@@ -26,7 +26,6 @@
             <result property="location" column="location"/>
             <result property="tel" column="tel"/>
             <result property="principal" column="principal"/>
-            <result property="areaId" column="areaId"/>
         </association>
 
         <association property="cabinet" columnPrefix="cab_" javaType="com.nis.modules.asset.entity.Cabinet">
@@ -92,7 +91,6 @@
        idc.location AS idc_location,
        idc.tel AS idc_tel,
        idc.principal AS idc_principal,
-       idc.area_id AS idc_areaId,
 
        /*机柜*/
        cab.id AS cab_id,

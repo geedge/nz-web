@@ -55,12 +55,6 @@ public class Idc implements Serializable {
     private String seq;
     
     /**
-     * 区域id
-     */
-    @TableField(strategy = FieldStrategy.IGNORED)
-    private Integer areaId;
-
-    /**
      * 列
      */
     private Integer x;
@@ -71,10 +65,20 @@ public class Idc implements Serializable {
     private Integer y;
 
     /**
-     * 地域信息
+     * 经度
      */
-    @TableField(exist = false)
-    private SysArea area;
+    private Double longitude;
+
+    /**
+     * 纬度
+     */
+    private Double latitude;
+
+    /**
+     *  状态
+     */
+    private String state;
+
 
     /**
      * 资产统计
