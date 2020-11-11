@@ -22,7 +22,6 @@
             <result property="tel" column="tel"/>
             <result property="principal" column="principal"/>
             <result property="seq" column="seq"/>
-            <result property="areaId" column="areaId"/>
             <result property="x" column="x"/>
             <result property="y" column="y"/>
         </association>
@@ -46,7 +45,6 @@
         idc.tel AS idc_tel,
         idc.principal AS idc_principal,
         idc.seq AS idc_seq,
-        idc.area_id AS idc_areaId,
         idc.x AS idc_x,
         idc.y AS idc_y
     </sql>
