@@ -46,7 +46,7 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        log.debug("告警消息过期状态任务开始");
+        /*log.debug("告警消息过期状态任务开始");
         long start, end;
         start = System.currentTimeMillis();
 
@@ -54,7 +54,7 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
 
         end = System.currentTimeMillis();
         log.debug("告警消息过期状态任务 start time:" + start + "; end time:" + end + "; Run Time:" + (end - start) + "(ms)");
-        log.debug("告警消息过期状态任务结束");
+        log.debug("告警消息过期状态任务结束");*/
     }
 
     private void handleAlertStatus(){

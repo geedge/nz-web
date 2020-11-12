@@ -43,10 +43,7 @@ import org.apache.shiro.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -170,59 +167,79 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     @Override
     public void saveBatch(String receiveStr, HttpServletRequest request) {
 	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
+
+	    // 接收告警的当前时间
+	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+
 	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
 	    if (CollectionUtils.isEmpty(receiveData)) return;
 
 	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
 	    Integer buildRuleId = buildRule.getId();
 
-	    HashOperations<String, Object, Object> hashOperations = redisTemplate.opsForHash();
-
+	    // 最终保存入库的告警信息
 	    List<AlertMessageEntity> entities = new ArrayList<>();
-	    redisTemplate.executePipelined(new RedisCallback<Object>() {
-			@Override
-			public Object doInRedis(RedisConnection redis) throws DataAccessException {
+	    // 过期的告警消息
+	    List<AlertMessageEntity> expiredAlertList = new ArrayList<>();
 
-				for (AlertMessageReceiveDTO dto : receiveData) {
-					try{
-						getReceiveLabels(dto);
-                        AlertMessageEntity entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
+	    // 当前激活状态的告警消息
+	    List<AlertMessageEntity> pendingAlert = this.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1));
+	    Map<String, AlertMessageEntity> alertHashKeyAndEntityMap = new HashMap<>();
+	    for (AlertMessageEntity entity : pendingAlert) {
+		    alertHashKeyAndEntityMap.put(entity.getHashKey(), entity);
+	    }
 
-                        // 如果是内置告警直接入库
-						if (buildRuleId.equals(entity.getRuleId())) {
-							entities.add(entity);
-						} else {
-							// 新增-  判断缓存中是否存在改告警信息 不存在则保存数据库
-							Object cacheAlert = hashOperations.get(Constant.REDIS_KEY_ALERTMESSAGE, entity.getHashKey());
-							if (cacheAlert == null) {
-								entities.add(entity);
-							}
+	    AlertMessageEntity entity, expiredAlert;
+	    for (AlertMessageReceiveDTO dto : receiveData) {
+		    try {
+			    getReceiveLabels(dto);
+			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
 
-							HashMap<String, Object> map = new HashMap<>();
-							map.put("id", entity.getRuleId());
-							map.put("time", System.currentTimeMillis());
-							// 存在更新时间，不存在set
-							redis.hSet(Constant.REDIS_KEY_ALERTMESSAGE.getBytes(), entity.getHashKey().getBytes(), JSON.toJSONString(map).getBytes());
-						}
-					}catch (Exception e){
-						logger.error("解析告警信息失败，参数是：+" + dto.toString() + " 错误信息：" + e.getMessage(), e);
-						// 告警信息解析失败
-						throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
-					}
-				}
-				return null;
-			}
-		});
+			    // 如果是内置告警直接入库
+			    if (buildRuleId.equals(entity.getRuleId())) {
+				    entities.add(entity);
+			    } else {
+				    Date endAt = entity.getEndAt();
+				    // 当前时间比结束时间早 告警激活入库
+				    if (currentTime.before(endAt)) {
+					    // 已存在告警则不保存入库
+					    if (alertHashKeyAndEntityMap.get(entity.getHashKey()) != null) continue;
+
+					    entity.setEndAt(null);
+					    entities.add(entity);
+				    } else {
+					    // 当前时间比结束时间晚 告警失效
+					    expiredAlert = alertHashKeyAndEntityMap.get(entity.getHashKey());
+					    // 消息为空或者消息已经过期则不进行操作
+					    if(expiredAlert == null || expiredAlert.getState().equals(2)) continue;
+
+					    expiredAlert.setState(2);
+					    expiredAlert.setEndAt(entity.getEndAt());
+					    expiredAlertList.add(expiredAlert);
+				    }
+			    }
+		    } catch (Exception e) {
+			    logger.error("解析告警信息失败，参数是：+" + JSONObject.toJSONString(dto) + " 错误信息：" + e.getMessage(), e);
+			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
+		    }
+	    }
+
+	    // 更改过期消息状态
+	    logger.debug("状态变化的告警消息信息为 : {}", CollectionUtils.isEmpty(expiredAlertList) ? Collections.emptyList() : JSONObject.toJSONString(expiredAlertList));
+	    if (ToolUtil.isNotEmpty(expiredAlertList)) {
+		    this.updateBatchById(expiredAlertList);
+	    }
+
 	    logger.debug("告警消息处理完成，入库消息为 : {}", CollectionUtils.isEmpty(entities) ? Collections.emptyList() : JSONObject.toJSONString(entities));
-    	if (!CollectionUtils.isEmpty(entities)) {
-	    	this.saveBatch(entities);
-	    	String emailEnable = configService.getValue("email_enable");
-	    	//邮件通知
-	    	if (Constant.SWITCH_OPEN.equals(emailEnable)) {
+	    if (CollectionUtils.isNotEmpty(entities)) {
+		    this.saveBatch(entities);
+		    String emailEnable = configService.getValue("email_enable");
+		    //邮件通知
+		    if (Constant.SWITCH_OPEN.equals(emailEnable)) {
 			    logger.debug("向redi放入邮件消息数据：" + JSONObject.toJSONString(entities));
 			    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
 		    }
-    	}
+	    }
     }
 
     private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto){

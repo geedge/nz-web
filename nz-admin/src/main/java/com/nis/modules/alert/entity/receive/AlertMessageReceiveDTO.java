@@ -1,6 +1,7 @@
 package com.nis.modules.alert.entity.receive;
 
 import com.google.gson.Gson;
+import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import lombok.Data;
@@ -56,8 +57,15 @@ public class AlertMessageReceiveDTO implements Serializable {
 
         // 时区转换 按照数据库配置时区入库
         String startsAt = dto.getStartsAt();
+        String endsAt = dto.getEndsAt();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         Date sa = sdf.parse(startsAt);
+
+        // trap 推送过来的消息 endsAt 为空
+        Date endsAtDate = null;
+        if (StringUtils.isNotEmpty(endsAt)) {
+            endsAtDate = sdf.parse(endsAt);
+        }
 
         // snmptrap 不需要做时间处理
         String alertname = (String) receiveLabels.get("alertname");
@@ -69,9 +77,15 @@ public class AlertMessageReceiveDTO implements Serializable {
                 String timezoneStr = startsAt.substring(i - 3, i);
                 int timezone = Integer.parseInt(timezoneStr);
                 sa = getUTCDateByTimeZone(sa, timezone);
+
+                int i1 = endsAt.lastIndexOf(":");
+                String timezoneStr1 = startsAt.substring(i1 - 3, i1);
+                int timezone1 = Integer.parseInt(timezoneStr1);
+                endsAtDate = getUTCDateByTimeZone(endsAtDate, timezone1);
             }
         }
         entity.setStartAt(sa);
+        entity.setEndAt(endsAtDate);
 
         entity.setState(1);
 
