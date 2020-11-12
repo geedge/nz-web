@@ -148,47 +148,17 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			idcMap.put(dc.getId(), dc);
 		}
 
-		List<Project> projectList = projectService.list();
-		Map<Integer,Project> projectMap= new HashMap<>();
-		for (Project project:projectList) {
-			projectMap.put(project.getId(), project);
-		}
-
-		List<Module> moduleList = moduleService.list();
-		Map<Integer,Module> moduleMap= new HashMap<>();
-		for (Module module:moduleList) {
-			moduleMap.put(module.getId(),module);
-		}
-
 		List<Endpoint> endpointList = endpointService.list();
 		Map<Integer,Endpoint> endpointMap= new HashMap<>();
 		for (Endpoint endpoint: endpointList) {
 			endpointMap.put(endpoint.getId(),endpoint);
 		}
 
-		List<Asset> assetList = assetService.list();
-		Map<Integer,Asset> assetMap= new HashMap<>();
-		for (Asset asset:assetList) {
-			assetMap.put(asset.getId(), asset);
-		}
-
-		Integer projectId ,moduleId ,endpointId, assetId, dcId;
+	    Integer endpointId, dcId;
 		for (AlertMessageEntity entity:alertMessages) {
-			projectId = entity.getProjectId();
-			if(projectId != null){
-				entity.setProject(projectMap.get(projectId));
-			}
-			moduleId = entity.getModuleId();
-			if(moduleId != null){
-				entity.setModule(moduleMap.get(moduleId));
-			}
 			endpointId = entity.getEndpointId();
 			if(endpointId != null){
 				entity.setEndpoint(endpointMap.get(endpointId));
-			}
-			assetId = entity.getAssetId();
-			if(assetId != null){
-				entity.setAsset(assetMap.get(assetId));
 			}
 			dcId = entity.getDcId();
 			if(dcId != null){

@@ -27,6 +27,43 @@
 		<result property="endpointId" column="endpoint_id"/>
 		<result property="assetId" column="asset_id"/>
 		<result property="dcId" column="dc_id"/>
+
+		<association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.Project">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+			<result column="remark" property="remark"/>
+			<result column="buildIn" property="buildIn"/>
+		</association>
+
+		<association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.Module">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+			<result column="port" property="port"/>
+			<result column="type" property="type"/>
+			<result column="param" property="param"/>
+			<result column="path" property="path"/>
+			<result column="remark" property="remark"/>
+			<result column="buildIn" property="buildIn"/>
+			<result column="labels" property="labels"/>
+		</association>
+
+		<association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.Asset">
+			<id column="id" property="id"/>
+			<result column="host" property="host"/>
+			<result column="sn" property="sn"/>
+			<result column="modelId" property="modelId"/>
+			<result column="idcId" property="idcId"/>
+			<result column="cabinetId" property="cabinetId"/>
+			<result column="state" property="state"/>
+			<result column="cabinetStart" property="cabinetStart"/>
+			<result column="cabinetEnd" property="cabinetEnd"/>
+			<result column="purchaseDate" property="purchaseDate"/>
+			<result column="createAt" property="createAt"/>
+			<result column="updateAt" property="updateAt"/>
+			<result column="createBy" property="createBy"/>
+			<result column="updateBy" property="updateBy"/>
+
+		</association>
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
@@ -37,10 +74,43 @@
 			ar.operator,
 			ar.threshold,
 			ar.unit,
-			ar.build_in
+			ar.build_in,
+
+			p.id as p_id,
+			p.name as p_name,
+			p.remark as p_remark,
+			p.build_in as p_buildIn,
+
+			m.id as m_id,
+			m.type as m_type,
+			m.name as m_name,
+			m.port as m_port,
+			m.param as m_param,
+			m.path as m_path,
+			m.remark as m_remark,
+			m.build_in as m_buildIn,
+			m.labels as m_labels,
+
+			ass.id as ass_id,
+			ass.sn as ass_sn,
+			ass.host as ass_host,
+			ass.model_id as ass_modelId,
+			ass.idc_id as ass_idcId,
+			ass.cabinet_id as ass_cabinetId,
+			ass.cabinet_start as ass_cabinetStart,
+			ass.cabinet_end as ass_cabinetEnd,
+			ass.state as ass_state,
+			ass.purchase_date as ass_purchaseDate,
+			ass.create_at as ass_createAt,
+			ass.update_at as ass_updateAt,
+			ass.create_by as ass_createBy,
+			ass.update_by as ass_updateBy
 		FROM
 			alert_message am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN project p on am.project_id = p.id
+		LEFT JOIN module m on am.module_id = m.id
+		LEFT JOIN asset ass on am.asset_id = ass.id
 		<where>
 			<if test="params.alertName != null and params.alertName != ''">
 				ar.alert_name like concat('%', #{params.alertName}, '%')
@@ -99,6 +169,22 @@
 				AND am.labels = #{params.labels}
 			</if>
 
+
+			<if test="params.projectName != null and params.projectName != ''">
+				AND p.name LIKE concat('%', #{params.projectName}, '%')
+			</if>
+
+			<if test="params.moduleName != null and params.moduleName != ''">
+				AND m.name LIKE concat('%', #{params.moduleName}, '%')
+			</if>
+
+			<if test="params.asset != null and params.asset != ''">
+				AND (
+				   ass.host LIKE CONCAT('%', #{params.asset}, '%')
+				OR ass.sn LIKE CONCAT('%', #{params.asset}, '%')
+				)
+			</if>
+
 		</where>
 
 		/* 如果排序字段为null , 使用默认排序 */
@@ -141,8 +227,10 @@
 		SELECT am.id,am.labels,am.endpoint_id endpoint,am.severity,am.summary,am.description,am.start_at startAt,am.end_at endAt,am.state state,
 		ar.alert_name alertName,a. host asset,p.name project,i.name datacenter,m.name module
         FROM alert_message am
-        LEFT JOIN alert_rule ar ON ar.id = am.rule_id LEFT JOIN asset a ON a.id = am.asset_id
-        LEFT JOIN project p ON p.id = am.project_id LEFT JOIN idc i ON i.id = am.dc_id
+        LEFT JOIN alert_rule ar ON ar.id = am.rule_id
+        LEFT JOIN asset a ON a.id = am.asset_id
+        LEFT JOIN project p ON p.id = am.project_id
+        LEFT JOIN idc i ON i.id = am.dc_id
         LEFT JOIN module m ON m.id = am.module_id
         WHERE 1=1
 		<if test="params.id != null and params.id != ''">
@@ -195,6 +283,22 @@
 				#{ruleId}
 			</foreach>
 		</if>
+
+        <if test="params.projectName != null and params.projectName != ''">
+            AND p.name LIKE concat('%', #{params.projectName}, '%')
+        </if>
+
+        <if test="params.moduleName != null and params.moduleName != ''">
+            AND m.name LIKE concat('%', #{params.moduleName}, '%')
+        </if>
+
+        <if test="params.asset != null and params.asset != ''">
+            AND (
+			a.host LIKE CONCAT('%', #{params.asset}, '%')
+            OR a.sn LIKE CONCAT('%', #{params.asset}, '%')
+            )
+        </if>
+
 		<if test="params.orderBy == null or params.orderBy == ''">
 			ORDER BY am.state , am.start_at DESC
 		</if>
