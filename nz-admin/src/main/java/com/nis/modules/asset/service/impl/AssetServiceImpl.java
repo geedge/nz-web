@@ -657,12 +657,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         return assetDao.selectAssetStatisticsByModelOnLine();
     }
 
-    @Override
-    public MetricsDto queryAssetStatisticsByModelOffLine() {
-        return assetDao.selectAssetStatisticsByModelOffLine();
-    }
-
-
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 

@@ -238,14 +238,15 @@
             COUNT( * ) total,
             m.NAME,
             sd1.value as vendor,
-            sd2.value as assetType
+            sd2.value as assetType,
+            a.state
         FROM
             asset a
             LEFT JOIN model m ON a.model_id = m.id
             LEFT JOIN sys_dict sd1 ON sd1.CODE = m.vendor AND sd1.type = 'vendor'
             LEFT JOIN sys_dict sd2 ON sd2.CODE = m.type AND sd2.type = 'assetType'
         GROUP BY
-            a.model_id
+            a.model_id,a.state
 	</select>
 
     <select id="selectAssetStatisticsByModelOnLine" resultType="com.nis.modules.metric.dto.MetricsDto">
@@ -256,19 +257,14 @@
             sd2.value as assetType
         FROM
             asset a
+            LEFT JOIN asset_ping assp ON a.host = assp.host
             LEFT JOIN model m ON a.model_id = m.id
             LEFT JOIN sys_dict sd1 ON sd1.CODE = m.vendor AND sd1.type = 'vendor'
             LEFT JOIN sys_dict sd2 ON sd2.CODE = m.type AND sd2.type = 'assetType'
         WHERE
-            a.state = 1
+            assp.status = 1
         GROUP BY
             a.model_id;
-	</select>
-
-    <select id="selectAssetStatisticsByModelOffLine" resultType="com.nis.modules.metric.dto.MetricsDto">
-		select count(*) total 
-		from asset a 
-		where a.state=2
 	</select>
 
 

@@ -55,17 +55,17 @@ public class NezhaMetrics implements MeterBinder {
 
     @Autowired
     private PromserverService promserverService;
-    
+
     NezhaMetrics() {
         map = new HashMap<>();
     }
 
     @Override
     public void bindTo(MeterRegistry meterRegistry) {
-        if(map==null) {
-        	map=new HashMap<>();
+        if (map == null) {
+            map = new HashMap<>();
         }
-        
+
         /**
          *   alert_nums指标
          */
@@ -73,16 +73,7 @@ public class NezhaMetrics implements MeterBinder {
         Map<Integer, Double> ruleIdAndMessageTotalMap = alertNums.stream().collect(Collectors.toMap(MetricsDto::getId, MetricsDto::getTotal));
 
         // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_alert_nums");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
-
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums");
         List<AlertRuleEntity> rules = alertRuleDao.selectList(null);
 
         if (CollectionUtils.isNotEmpty(rules)) {
@@ -101,170 +92,130 @@ public class NezhaMetrics implements MeterBinder {
             }
         }
 
-        // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_asset_nums");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
-       
         /**
          * asset_nums指标
          */
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_asset_nums");
         List<MetricsDto> assetNums = assetService.queryAssetStatisticsByModel();
-        if(ToolUtil.isNotEmpty(assetNums)) {
+        if (ToolUtil.isNotEmpty(assetNums)) {
             MetricsDto metricsDto;
-        	for(int i=0;i<assetNums.size();i++) {
+            for (int i = 0; i < assetNums.size(); i++) {
                 metricsDto = assetNums.get(i);
                 // 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("assetNums"+i, metricsDto.getTotal());
-        		String key="assetNums"+i;
-        		Gauge.builder("nz_asset_nums", map, x -> x.get(key))
-                .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor())
-                .description("Asset statistics info")
-                .register(meterRegistry);
-        	}
-        }else {
-        	map.put("assetNums", 0.0);
-    		String key="assetNums";
-    		Gauge.builder("nz_asset_nums", map, x -> x.get(key))
-            .tags("model","null","type","null","vendor","null")
-            .description("Asset statistics info")
-            .register(meterRegistry);
-        }
-
-
-        // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_asset_offline");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
+                map.put("assetNums" + i, metricsDto.getTotal());
+                String key = "assetNums" + i;
+                Gauge.builder("nz_asset_nums", map, x -> x.get(key))
+                        .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor(), "state", metricsDto.getState())
+                        .description("Asset statistics info")
+                        .register(meterRegistry);
             }
-        }
-        /**
-         * asset_offline指标
-         */
-        MetricsDto assetOffline = assetService.queryAssetStatisticsByModelOffLine();
-        if(assetOffline!=null) {
-        	map.put("assetOffline", assetOffline.getTotal());
-        	Gauge.builder("nz_asset_offline", map, x -> x.get("assetOffline"))
-            .description("Asset offline statistics info")
-            .register(meterRegistry);
-        }else {
-        	map.put("assetOffline", 0.0);
-        	Gauge.builder("nz_asset_offline", map, x -> x.get("assetOffline"))
-            .description("Asset offline statistics info")
-            .register(meterRegistry);
+        } else {
+            map.put("assetNums", 0.0);
+            String key = "assetNums";
+            Gauge.builder("nz_asset_nums", map, x -> x.get(key))
+                    .tags("model", "null", "type", "null", "vendor", "null")
+                    .description("Asset statistics info")
+                    .register(meterRegistry);
         }
 
 
-        // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_asset_online_nums");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
-        /**
-         * asset_online_nums指标
-         */
-        List<MetricsDto> assetOnlineNums = assetService.queryAssetStatisticsByModelOnLine();
-        if(ToolUtil.isNotEmpty(assetOnlineNums)) {
-            MetricsDto metricsDto;
-        	for(int i=0;i<assetOnlineNums.size();i++) {
-                metricsDto = assetOnlineNums.get(i);
-                // 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("assetOnlineNums"+i, metricsDto.getTotal());
-        		String key="assetOnlineNums"+i;
-        		Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
-                .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor())
-                .description("Asset online statistics info")
-                .register(meterRegistry);
-        	}
-        }else {
-        	map.put("assetOnlineNums", 0.0);
-    		String key="assetOnlineNums";
-    		Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
-            .tags("model","null","type","null","vendor","null")
-            .description("Asset online statistics info")
-            .register(meterRegistry);
-        }
-
-
-
-        // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_endpoint_nums");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
         /**
          * endpoint_nums指标
          */
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_endpoint_nums");
         List<MetricsDto> endpointNums = endpointService.queryEndpointStatisticsInfoByModule();
-        if(ToolUtil.isNotEmpty(endpointNums)) {
-        	for(int i=0;i<endpointNums.size();i++) {
-        		// 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
-        		map.put("endpointNums"+i, endpointNums.get(i).getTotal());
-        		String key="endpointNums"+i;
-        		Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
-                .tags("module",endpointNums.get(i).getName().toString())
-                .description("Endpoint statistics info")
-                .register(meterRegistry);
-        	}
-        }else {
-        	map.put("endpointNums", 0.0);
-    		String key="endpointNums";
-    		Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
-            .tags("module","null")
-            .description("Endpoint statistics info")
-            .register(meterRegistry);
+        if (ToolUtil.isNotEmpty(endpointNums)) {
+            for (int i = 0; i < endpointNums.size(); i++) {
+                // 这里将统计值扔进map操作是避免弱引用  统计结果出现NaN
+                map.put("endpointNums" + i, endpointNums.get(i).getTotal());
+                String key = "endpointNums" + i;
+                Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
+                        .tags("module", endpointNums.get(i).getName())
+                        .description("Endpoint statistics info")
+                        .register(meterRegistry);
+            }
+        } else {
+            map.put("endpointNums", 0.0);
+            String key = "endpointNums";
+            Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
+                    .tags("module", "null")
+                    .description("Endpoint statistics info")
+                    .register(meterRegistry);
         }
 
 
         /**
-         * nz_asset_ping 指标
+         * asset ping 相关指标
          */
-        // 先清空指标 再更新数据防止旧数据存在
-        while (true) {
-            Search find = meterRegistry.find("nz_asset_ping");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_asset_ping");
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_asset_offline");
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_asset_online_nums");
 
         SysConfigEntity pingSwitchConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
         // ping 开关为开启状态统计 nz_asset_ping 指标
         if (pingSwitchConfig != null && Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
-            List<AssetPing> assetPings = assetPingDao.selectList(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getStatus, 1));
-            Map<String, Double> assetHostAndRttMap = assetPings.stream().collect(Collectors.toMap(AssetPing::getHost, AssetPing::getRtt));
+            List<AssetPing> assetPings = assetPingDao.selectList(null);
+            List<Asset> assetList = assetService.list();
+            Map<String, Asset> assetHostAndAssetMap = new HashMap<>();
+            for (Asset asset : assetList) {
+                assetHostAndAssetMap.put(asset.getHost(), asset);
+            }
+
+            /**
+             * asset_offline指标
+             */
+            List<AssetPing> offLineAssetPingList = assetPings.stream().filter(assetPing -> assetPing.getStatus().equals(0)).collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(offLineAssetPingList)) {
+                String host;
+                for (int i = 0; i < offLineAssetPingList.size(); i++) {
+                    host = offLineAssetPingList.get(i).getHost();
+                    map.put("nz_asset_offline" + i, 1d);
+                    String key = "nz_asset_offline" + i;
+                    Gauge.builder("nz_asset_offline", map, x -> x.get(key))
+                            .tags("host", host, "state", assetHostAndAssetMap.get(host).getState() + "")
+                            .description("Asset statistics info")
+                            .register(meterRegistry);
+                }
+            } else {
+                map.put("assetOffline", 0.0);
+                Gauge.builder("nz_asset_offline", map, x -> x.get("assetOffline"))
+                        .description("Asset offline statistics info")
+                        .register(meterRegistry);
+            }
+
+            /**
+             * asset_online_nums指标
+             */
+            List<MetricsDto> assetOnlineNums = assetService.queryAssetStatisticsByModelOnLine();
+            if (ToolUtil.isNotEmpty(assetOnlineNums)) {
+                MetricsDto metricsDto;
+                for (int i = 0; i < assetOnlineNums.size(); i++) {
+                    metricsDto = assetOnlineNums.get(i);
+                    map.put("assetOnlineNums" + i, metricsDto.getTotal());
+                    String key = "assetOnlineNums" + i;
+                    Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
+                            .tags("model", metricsDto.getName(), "type", metricsDto.getAssetType(), "vendor", metricsDto.getVendor())
+                            .description("Asset online statistics info")
+                            .register(meterRegistry);
+                }
+            } else {
+                map.put("assetOnlineNums", 0.0);
+                String key = "assetOnlineNums";
+                Gauge.builder("nz_asset_online_nums", map, x -> x.get(key))
+                        .tags("model", "null", "type", "null", "vendor", "null")
+                        .description("Asset online statistics info")
+                        .register(meterRegistry);
+            }
+
+            /**
+             * nz_asset_ping 指标
+             */
+            List<AssetPing> onLineAssetPingList = assetPings.stream().filter(assetPing -> assetPing.getStatus().equals(1)).collect(Collectors.toList());
+            Map<String, Double> assetHostAndRttMap = onLineAssetPingList.stream().collect(Collectors.toMap(AssetPing::getHost, AssetPing::getRtt));
             if (ToolUtil.isNotEmpty(assetHostAndRttMap)) {
 
                 List<Idc> idcList = idcDao.selectList(null);
                 Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
-                List<Asset> assetList = assetService.list();
-                Map<String, Asset> assetHostAndAssetMap = new HashMap<>();
-                for (Asset asset : assetList) {
-                    assetHostAndAssetMap.put(asset.getHost(), asset);
-                }
-
                 String assetHost;
                 Asset asset;
                 int i = 0;
@@ -284,17 +235,10 @@ public class NezhaMetrics implements MeterBinder {
         }
 
 
-        // nz_prometheus_status 指标
-        while (true) {
-            Search find = meterRegistry.find("nz_prometheus_status");
-            Meter meter = find.meter();
-            if (ToolUtil.isNotEmpty(meter)) {
-                meterRegistry.remove(meter);
-            } else {
-                break;
-            }
-        }
-
+        /**
+         * nz_prometheus_status 指标
+         */
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_prometheus_status");
         List<Promserver> promserverList = promserverService.list();
         if (CollectionUtils.isNotEmpty(promserverList)) {
             List<Idc> idcList = idcDao.selectList(null);
@@ -309,6 +253,24 @@ public class NezhaMetrics implements MeterBinder {
                         .tags("datacenter", idcIdAndNameMap.get(promserver.getIdcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
                         .description("Prometheus status")
                         .register(meterRegistry);
+            }
+        }
+    }
+
+    /**
+     * 按照指标名称清除之前数据
+     *
+     * @param registry
+     * @param meterName
+     */
+    private void cleanMeterInRegistryByName(MeterRegistry registry, String meterName) {
+        while (true) {
+            Search find = registry.find(meterName);
+            Meter meter = find.meter();
+            if (ToolUtil.isNotEmpty(meter)) {
+                registry.remove(meter);
+            } else {
+                break;
             }
         }
     }

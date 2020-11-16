@@ -11,4 +11,5 @@ public class MetricsDto {
 	private String name;
 	private String vendor;
 	private String assetType;
+	private String state;
 }
