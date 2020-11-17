@@ -2,7 +2,9 @@ package com.nis.modules.metric.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.annotation.SysLog;
-import com.nis.common.utils.*;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.R;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.Asset;
@@ -20,11 +22,6 @@ import com.nis.modules.sys.controller.AbstractController;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,9 +64,6 @@ public class MetricsController extends AbstractController {
 
     @Autowired
     private OverviewDao overviewDao;
-
-    @Autowired
-    private RedisTemplate redisTemplate;
 
     @RequestMapping(value = "/metrics", method = RequestMethod.GET)
     public ModelAndView counter1() {
@@ -131,49 +125,4 @@ public class MetricsController extends AbstractController {
         resultMap.put("systemAlert", systemAlert);
         return R.ok(resultMap);
     }
-
-    @GetMapping("/healthy")
-    public R healthy() {
-        return R.ok();
-    }
-
-    /*private String redisHealthy() {
-        String state = "";
-        try {
-            Object execute = redisTemplate.execute(new RedisCallback<String>() {
-                @Override
-                public String doInRedis(RedisConnection connection) throws DataAccessException {
-                    return connection.ping();
-                }
-            });
-
-            if ("PONG".equalsIgnoreCase(execute.toString())) {
-                state = "UP";
-            } else {
-                state = "DOWN";
-            }
-        } catch (Exception e) {
-            state = "DOWN";
-            logger.error("检查 redis 状态出现问题, 错误信息是：" + e.getMessage(), e);
-        } finally {
-            return state;
-        }
-    }
-
-    private String mysqlHealthy() {
-        String state = "";
-        try {
-            String healthy = overviewDao.healthy();
-            if ("1".equals(healthy)) {
-                state = "UP";
-            } else {
-                state = "DOWN";
-            }
-        } catch (Exception e) {
-            state = "DOWN";
-            logger.error("检查 mysql 状态出现问题, 错误信息是：" + e.getMessage(), e);
-        } finally {
-            return state;
-        }
-    }*/
 }

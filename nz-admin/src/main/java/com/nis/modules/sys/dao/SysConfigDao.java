@@ -14,6 +14,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * 系统配置信息
@@ -38,4 +39,7 @@ public interface SysConfigDao extends BaseMapper<SysConfigEntity> {
 	 * @param tableName
 	 */
 	void clearData(@Param("sql") String sql);
+
+	@Select("SELECT version();")
+	String getDataBasesVersion();
 }

@@ -663,6 +663,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Row row;
         String receiveIds, receiveNames;
         for (AlertRuleEntity rule : list) {
+            // 内置告警不导出
+            if (rule.getBuildIn() != null && rule.getBuildIn().equals(1)) continue;
             row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(rule.getAlertName());
             row.createCell(1).setCellValue(rule.getExpr());
@@ -726,7 +728,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
         }
 
-        if(unit < 1 || unit > 33){
+        List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
+        if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
             throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
         }
     }

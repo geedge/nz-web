@@ -382,6 +382,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 chartElementService.validateElements(elements);
             }
         }
+
+        // 4. 校验 unit 是否合法
+        Integer unit = chart.getUnit();
+        if (unit != null) {
+            List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
+            if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
+                throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+            }
+        }
     }
 
     /**

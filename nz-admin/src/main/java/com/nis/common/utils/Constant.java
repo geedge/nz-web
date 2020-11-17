@@ -309,6 +309,8 @@ public class Constant {
         ALERT_RULE_UNIT_MAP.put("days(d)", 33);
         ALERT_RULE_UNIT_MAP.put("days", 33);
         ALERT_RULE_UNIT_MAP.put("d", 33);
+        ALERT_RULE_UNIT_MAP.put("YYYY-MM-DD HH:mm:ss", 34);
+        ALERT_RULE_UNIT_MAP.put("MM/DD/YYYY h:mm:ss a", 35);
     }
     
     /**
@@ -520,6 +522,9 @@ public class Constant {
 
     // 主机连通性检查开关，1：开启，0：关闭
     public static final String SYSCONFIG_KEY_ASSET_PING_SWITCH = "asset_ping_switch";
+
+    // nezha 系统版本
+    public static final String SYSCONFIG_KEY_SYSTEM_VERSION = "system_version";
 
     // 主机连通性检查开关  打开状态 on
     public static final String ASSET_PING_OPEN_SWITCH = "on";
