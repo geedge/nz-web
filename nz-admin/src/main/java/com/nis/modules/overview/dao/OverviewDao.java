@@ -15,7 +15,4 @@ public interface OverviewDao {
     List<String> getIdcNameByPerPromeServer();
 
     List<EndpointStat> getEndpointInfoByDc();
-
-    @Select("SELECT 1;")
-    String healthy();
 }
