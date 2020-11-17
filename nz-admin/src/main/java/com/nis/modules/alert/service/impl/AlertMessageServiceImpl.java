@@ -213,6 +213,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		    			if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
 		    				Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
 		    				EndpointState endpointState = new EndpointState();
+		    				endpointState.setId(endpointId);
 		    				endpointState.setEndpointId(endpointId);
 		    				endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 		    				endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
@@ -227,7 +228,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    			endpointStateDao.deleteAll();
 	    			endpointStateService.saveBatch(endpointStates);
 	    			*/
-	    			
+	    			logger.debug("准备更新endpoint state表的数据为"+JSON.toJSONString(endpointStates));
 	    			//告警一次不会推送全部告警情况 不再清表 根据endpoint_id执行批量的新增或者修改
 	    			endpointStateService.saveOrUpdateBatch(endpointStates);
 	    		}

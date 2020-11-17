@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertMessageDao;
@@ -16,6 +17,7 @@ import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
+import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.module.dao.ModuleDao;
@@ -687,8 +689,17 @@ public class OverviewServiceImpl implements OverviewService {
             }
         }**/
         List<EndpointState> endpointStates = endpointStateService.list(new QueryWrapper<EndpointState>().lambda().eq(EndpointState::getState,1));
+        //获取当前时间
+		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
+		long time = nowTime.getTime();
         for(EndpointState endpointState : endpointStates) {
-        	endPointIds.add(endpointState.getEndpointId());
+    		long createTime = endpointState.getCreateTime().getTime();
+    		// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
+    		if(time-createTime>60000) {
+    			break;
+    		}else {
+    			endPointIds.add(endpointState.getEndpointId());
+    		}
         }
         return endPointIds;
     }

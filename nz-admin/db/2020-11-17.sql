@@ -30,12 +30,12 @@ update sys_config set  param_value = "<html><head><meta http-equiv=\"content-typ
  */
 DROP TABLE IF EXISTS `endpoint_state`;
 CREATE TABLE `endpoint_state`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `endpoint_id` int(11) NOT NULL,
   `create_time` datetime(0) NULL DEFAULT NULL,
   `state` int(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 /**
  * 创建sysconfig数据

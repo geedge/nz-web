@@ -17,7 +17,7 @@ public class EndpointState implements Serializable {
     /**
      * 主键
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id",type = IdType.INPUT)
     private Integer id;
 	private Integer endpointId;
 	private Date createTime;
