@@ -40,6 +40,6 @@ CREATE TABLE `endpoint_state`  (
  * 创建sysconfig数据
  */
 DELETE FROM sys_config WHERE param_key = "endpoint_alert_rule";
-INSERT INTO `nezha`.`sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (132, 'endpoint_alert_rule', '{\"alertName\": \"0\",\"for\": \"30s\",\"expr\": \"up{endpoint!=\'\'}>-1\"}', 1, NULL);
+INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (132, 'endpoint_alert_rule', '{\"alertName\": \"0\",\"for\": \"30s\",\"expr\": \"up{endpoint!=\'\'}>-1\"}', 1, NULL);
 DELETE FROM sys_config WHERE param_key = "endpoint_alert_push";
-INSERT INTO `nezha`.`sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (133, 'endpoint_alert_push', '1', 1, NULL);
+INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (133, 'endpoint_alert_push', '1', 1, NULL);
