@@ -253,7 +253,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void modify(Panel panel) {
+    public synchronized void modify(Panel panel) {
         String type = panel.getType();
         List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
         List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).collect(Collectors.toList());

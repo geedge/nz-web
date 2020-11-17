@@ -188,7 +188,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	}
 
     @Override
-    public void saveBatch(String receiveStr, HttpServletRequest request) {
+    public synchronized void saveBatch(String receiveStr, HttpServletRequest request) {
 	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
 
 	    // 接收告警的当前时间

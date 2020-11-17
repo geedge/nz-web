@@ -629,7 +629,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void modify(Integer panelId, Chart chart) {
+    public synchronized void modify(Integer panelId, Chart chart) {
         // 校验 panel 是否存在
         this.validatePanel(panelId);
 
