@@ -40,7 +40,10 @@ public class Endpoint {
 
 	@TableField(exist = false)
 	private Integer alertNum;
-
+	
+	@TableField(exist = false)
+	private EndpointState endpointState;
+	
 	public Endpoint() {
 	}
 

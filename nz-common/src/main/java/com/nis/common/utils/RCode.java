@@ -163,6 +163,7 @@ public enum RCode {
     ENDPOINT_SN_HOST_MISMATCH(235019, "Asset sn and host address do not correspond"),
     ENDPOINT_LABELS_FORMAT(233020,"Endpoint labels must be JSON format"),
     ENDPOINT_LABELS_KEY_FORMAT(233021,"Endpoint labels key format is incorrect"),
+    ENDPOINT_TIMEOUT_UPDATE(233022,"Data has not been updated for more than multiple cycles"),
     /**
      * assets菜单项相关
      */

@@ -23,3 +23,23 @@ INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) V
  * 更新 alert message 邮件发送模板
  */
 update sys_config set  param_value = "<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"></head><body><div style=\"padding:40px 0; height:auto; min-height:100px; text-align:center;\"><span align=\"center\" style=\"margin:0 auto; min-width:290px; max-width:750px;\">${alertMessage.description}</span></div></body></html>" where param_key = "email_template";
+
+
+/**
+ * 创建endpoint_state表
+ */
+DROP TABLE IF EXISTS `endpoint_state`;
+CREATE TABLE `endpoint_state`  (
+  `endpoint_id` int(11) NOT NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `state` int(11) NULL DEFAULT NULL,
+  PRIMARY KEY (`endpoint_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+/**
+ * 创建sysconfig数据
+ */
+DELETE FROM sys_config WHERE param_key = "endpoint_alert_rule";
+INSERT INTO `sys_config`(`param_key`, `param_value`, `status`, `remark`) VALUES ('endpoint_alert_rule', '{\"alertName\": \"0\",\"for\": \"30s\",\"expr\": \"up{endpoint!=\'\'}>-1\"}', 1, NULL);
+DELETE FROM sys_config WHERE param_key = "endpoint_alert_push";
+INSERT INTO `sys_config`(`param_key`, `param_value`, `status`, `remark`) VALUES ('endpoint_alert_push', '1', 1, NULL);

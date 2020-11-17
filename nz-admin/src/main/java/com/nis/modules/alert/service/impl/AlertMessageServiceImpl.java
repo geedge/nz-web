@@ -61,8 +61,11 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.endpoint.dao.EndpointStateDao;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -96,7 +99,11 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private AlertMessageDao alertMessageDao;
 	@Autowired
 	private SysConfigService configService;
-
+	@Autowired
+	private EndpointStateDao endpointStateDao;
+	@Autowired
+	private EndpointStateService endpointStateService;
+	
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
     	try {
@@ -190,6 +197,42 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
 	    if (CollectionUtils.isEmpty(receiveData)) return;
 
+	  //根据sysconfig判断数据是否为endpoint state
+	    String endpointAlertPush = configService.getValue(Constant.ENDPOINT_ALERT_PUSH);
+	    String endpointAlertRule = configService.getValue(Constant.ENDPOINT_ALERT_RULE);
+	    if(ToolUtil.isNotEmpty(endpointAlertPush)&&endpointAlertPush.equals("1")) {
+	    	if(ToolUtil.isNotEmpty(endpointAlertRule)) {
+	    		Map endpointAlertRuleMap = (Map) JSON.parse(endpointAlertRule);
+	    		Integer ednpointAlertName = Integer.parseInt((String)endpointAlertRuleMap.get("alertName"));
+	    		List<EndpointState> endpointStates =new ArrayList<EndpointState>();
+	    		for(int i=receiveData.size()-1;i>=0;i--) {
+		    		Map receiveLabels = receiveData.get(i).getLabels();
+		    		Map receiveAnnotations = receiveData.get(i).getAnnotations();
+		    		int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
+		    		if(receiveAlertName==ednpointAlertName) {
+		    			if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
+		    				Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
+		    				EndpointState endpointState = new EndpointState();
+		    				endpointState.setEndpointId(endpointId);
+		    				endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+		    				endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
+		    				endpointStates.add(endpointState);
+		    				receiveData.remove(i);
+		    			}
+		    		}
+		    	}
+	    		// 将产生告警的id信息存入endpoint_state表中
+	    		if(ToolUtil.isNotEmpty(endpointStates)) {
+	    			//先清空表 再批量添加数据
+	    			endpointStateDao.deleteAll();
+	    			endpointStateService.saveBatch(endpointStates);
+	    		}
+	    	}
+	    	
+	    }
+	    // 全为endpoint state告警 后续操作不用继续 
+	    if (CollectionUtils.isEmpty(receiveData)) return;
+	    
 	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
 	    Integer buildRuleId = buildRule.getId();
 
