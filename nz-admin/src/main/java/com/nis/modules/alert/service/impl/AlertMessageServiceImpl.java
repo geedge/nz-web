@@ -1,5 +1,39 @@
 package com.nis.modules.alert.service.impl;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.shiro.SecurityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -9,7 +43,13 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertMessageWithExport;
@@ -31,31 +71,7 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.shiro.SecurityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service("alertMessageService")
@@ -204,7 +220,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				    if (currentTime.before(endAt)) {
 					    // 已存在告警则不保存入库
 					    if (alertHashKeyAndEntityMap.get(entity.getHashKey()) != null) continue;
-
+					    entity.setState(1);
 					    entity.setEndAt(null);
 					    entities.add(entity);
 				    } else {
@@ -233,12 +249,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    logger.debug("告警消息处理完成，入库消息为 : {}", CollectionUtils.isEmpty(entities) ? Collections.emptyList() : JSONObject.toJSONString(entities));
 	    if (CollectionUtils.isNotEmpty(entities)) {
 		    this.saveBatch(entities);
-		    String emailEnable = configService.getValue("email_enable");
-		    //邮件通知
-		    if (Constant.SWITCH_OPEN.equals(emailEnable)) {
-			    logger.debug("向redi放入邮件消息数据：" + JSONObject.toJSONString(entities));
-			    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
-		    }
+	    }
+	    String emailEnable = configService.getValue("email_enable");
+	    //邮件通知
+	    if (Constant.SWITCH_OPEN.equals(emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
+	    	entities.addAll(expiredAlertList);//邮件通知 告警 pending 与 expired
+		    logger.debug("向redi放入邮件消息数据：" + JSONObject.toJSONString(entities));
+		    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
 	    }
     }
 

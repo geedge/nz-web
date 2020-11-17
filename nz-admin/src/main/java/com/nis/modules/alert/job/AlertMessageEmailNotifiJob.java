@@ -1,5 +1,27 @@
 package com.nis.modules.alert.job;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.mail.MessagingException;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
@@ -11,26 +33,15 @@ import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
+
 import freemarker.cache.StringTemplateLoader;
+import freemarker.core.ParseException;
 import freemarker.template.Configuration;
+import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import freemarker.template.TemplateNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-
-import javax.mail.MessagingException;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -44,26 +55,25 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     MailUtil mailUtil;
     @Autowired
     SysConfigService configService;
-
     @Autowired
     private SysUserService sysUserService;
 
+    private Template template;
+    
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        long start, end;
-        start = System.currentTimeMillis();
+    	StopWatch sw = new StopWatch();
+    	sw.start();
         try {
+        	// 加载模板文件
+        	template = this.getTemplate();
             this.execAlertMessage();
-        }catch (MessagingException e){
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TemplateException e) {
-            e.printStackTrace();
-        }
-        end = System.currentTimeMillis();
-
-        log.info("alert message job start time:" + start + "; end time:" + end + "; Run Time:" + (end - start) + "(ms)");
+        }catch (Exception e){
+            log.error("邮件发送任务异常", e);
+        }finally {
+			sw.stop();
+		}
+        log.info("alert message job  Run Time: {}" ,sw.toString());
     }
     private void execAlertMessage() throws IOException, TemplateException, MessagingException {
         ListOperations<String, Object> ops = redisTemplate.opsForList();
@@ -71,7 +81,6 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         if (ToolUtil.isEmpty(obj)) {
             return;
         }
-
         // 告警消息集合
         List<AlertMessageEntity> entities = null;
         try {
@@ -97,17 +106,21 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             if(StringUtils.isNotEmpty(receiver)){
                 log.info("邮件关联用户，进行邮件通知");
                 List<String> toSendEmails = new ArrayList<>();
-
                 Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
                     String email = userIdAndEmail.get(Long.valueOf(receiverId));
                     if(StringUtils.isNotEmpty(email)){
                         toSendEmails.add(email);
                     }
                 });
-
                 log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
+                String state = "UNKNOWN";
+                switch (messageEntity.getState()) {
+				case 1:state = "Pending";break;
+				case 2:state = "Expired";break;
+                }
+
                 if(ToolUtil.isNotEmpty(toSendEmails)){
-                    mailUtil.sendHTML(toSendEmails, messageEntity.getSummary(), this.sendMail(messageEntity.getDescription()));
+                    mailUtil.sendHTML(toSendEmails, state +" : " +messageEntity.getSummary(), this.sendMail(messageEntity));
                 }
             }else{
                 log.info("邮件没有关联用户，不进行邮件通知");
@@ -115,12 +128,20 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         }
     }
 
-
-    public String sendMail(String description) throws IOException, TemplateException {
-        // 创建配置类
+    public String sendMail(AlertMessageEntity alertMessage) throws IOException, TemplateException {
+        //创建模型数据
+        Map<String,Object> modelMap = new HashMap<String,Object>();
+        modelMap.put("alertMessage",alertMessage);
+        //执行静态化 方式1  获取静态化内容
+        String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, modelMap);
+        //静态化内容;
+        return content;
+    }
+    
+	private Template getTemplate() throws TemplateNotFoundException, MalformedTemplateNameException, ParseException, IOException {
+		String templateString = configService.getValue("email_template");
+		// 创建配置类
         Configuration configuration = new Configuration(Configuration.getVersion());
-        // 加载模板文件
-        String templateString = configService.getValue("email_template");
         //创建模板加载器
         StringTemplateLoader templateLoader = new StringTemplateLoader();
         // 存入模板
@@ -129,12 +150,6 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         configuration.setTemplateLoader(templateLoader);
         //得到模板
         Template template = configuration.getTemplate("template", "utf-8");
-        //创建模型数据
-        Map<String,Object> modelMap = new HashMap<String,Object>();
-        modelMap.put("description",description);
-        //执行静态化 方式1  获取静态化内容
-        String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, modelMap);
-        //静态化内容;
-        return content;
-    }
+		return template;
+	}
 }
