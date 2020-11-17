@@ -223,9 +223,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		    	}
 	    		// 将产生告警的id信息存入endpoint_state表中
 	    		if(ToolUtil.isNotEmpty(endpointStates)) {
-	    			//先清空表 再批量添加数据
+	    			/*先清空表 再批量添加数据 
 	    			endpointStateDao.deleteAll();
 	    			endpointStateService.saveBatch(endpointStates);
+	    			*/
+	    			
+	    			//告警一次不会推送全部告警情况 不再清表 根据endpoint_id执行批量的新增或者修改
+	    			endpointStateService.saveOrUpdateBatch(endpointStates);
 	    		}
 	    	}
 	    	

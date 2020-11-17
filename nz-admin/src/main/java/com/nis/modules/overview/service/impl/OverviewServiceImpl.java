@@ -3,6 +3,7 @@ package com.nis.modules.overview.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
@@ -14,7 +15,9 @@ import com.nis.modules.asset.dao.*;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.overview.dao.OverviewDao;
@@ -86,6 +89,9 @@ public class OverviewServiceImpl implements OverviewService {
     @Autowired
     private SysConfigDao sysConfigDao;
 
+    @Autowired
+    private EndpointStateService endpointStateService;
+    
     @Override
     public List<Map> alertRuleTopN(Integer top) {
         List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
@@ -634,7 +640,7 @@ public class OverviewServiceImpl implements OverviewService {
         Set<Integer> endPointIds = new HashSet<>();
 
         // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
-        List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
+        /**List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
         String url = "/api/v1/query?query=up";
         Map result = null;
         Map data;
@@ -679,6 +685,10 @@ public class OverviewServiceImpl implements OverviewService {
             } else {// 查询失败
                 logger.error("query endpoint status failed ,prometheus server is {}", promserver);
             }
+        }**/
+        List<EndpointState> endpointStates = endpointStateService.list(new QueryWrapper<EndpointState>().lambda().eq(EndpointState::getState,1));
+        for(EndpointState endpointState : endpointStates) {
+        	endPointIds.add(endpointState.getEndpointId());
         }
         return endPointIds;
     }
