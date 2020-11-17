@@ -16,6 +16,7 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
@@ -85,8 +86,39 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		logger.info("queryPage param is : {}",JSON.toJSON(params));
 		IPage<Endpoint> page = new Query<Endpoint>().getPage(params);
 		List<Endpoint> datas = endpointDao.queryPage(page, params);
+		//获取当前时间
+		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
+		long time = nowTime.getTime();
+		for(Endpoint data : datas) {
+			StateInfo stateInfo =new StateInfo();
+			EndpointState endpointState = data.getEndpointState();
+			if(ToolUtil.isNotEmpty(endpointState)) {
+				long createTime = endpointState.getCreateTime().getTime();
+				// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
+				if(time-createTime>60000) {
+					data.setState(0);
+					stateInfo.setCode(RCode.ENDPOINT_TIMEOUT_UPDATE.getCode());
+					stateInfo.setMsg(RCode.ENDPOINT_TIMEOUT_UPDATE.getMsg());
+				}else {
+					Integer state = endpointState.getState();
+					if(state.equals(0)) {
+						data.setState(state);
+						stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
+						stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
+					}else {
+						data.setState(state);
+					}
+				}
+			}else {
+				//数据库中无数据 则状态为down
+				data.setState(0);
+				stateInfo.setCode(RCode.ENDPOINT_PROMETHEUS_UNUSE.getCode());
+				stateInfo.setMsg(RCode.ENDPOINT_PROMETHEUS_UNUSE.getMsg());
+			}
+			data.setStateInfo(stateInfo);
+		}
 		//获取相关lastUpdate以及state数据信息
-		try {
+		/**try {
 			if(ToolUtil.isNotEmpty(datas)) {
 				Map resultMap=new HashMap();
 				Map map =new HashMap();
@@ -150,7 +182,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				}
 				data.setStateInfo(stateInfo);
 			}
-		}
+		}**/
 
 		// endpoint 告警数量
 		this.handleEndpointsAlertNum(datas);
