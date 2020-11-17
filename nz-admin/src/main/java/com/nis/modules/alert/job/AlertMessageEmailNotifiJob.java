@@ -77,53 +77,55 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     }
     private void execAlertMessage() throws IOException, TemplateException, MessagingException {
         ListOperations<String, Object> ops = redisTemplate.opsForList();
-        Object obj = ops.rightPop(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE);
-        if (ToolUtil.isEmpty(obj)) {
-            return;
-        }
-        // 告警消息集合
-        List<AlertMessageEntity> entities = null;
-        try {
-            entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
-        } catch (Exception e) {
-            log.error("从redis中取告警消息转化失败，错误信息：" + e.getMessage() + " 转化参数是：" + obj.toString(), e);
-        }
-        log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
-        if(CollectionUtils.isEmpty(entities)){
-            return;
-        }
-        // 规则及通知人信息
-        List<AlertRuleEntity> ruleList = alertRuleService.list();
-        Map<Integer, String> ruleIdAndReceiver = ruleList.stream().filter(entity -> ToolUtil.isNotEmpty(entity.getReceiver())).collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getReceiver));
+        while(true) {
+        	Object obj = ops.rightPop(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE);
+            if (ToolUtil.isEmpty(obj)) {
+                return;
+            }
+            // 告警消息集合
+            List<AlertMessageEntity> entities = null;
+            try {
+                entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
+            } catch (Exception e) {
+                log.error("从redis中取告警消息转化失败，错误信息：" + e.getMessage() + " 转化参数是：" + obj.toString(), e);
+            }
+            log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
+            if(CollectionUtils.isEmpty(entities)){
+                return;
+            }
+            // 规则及通知人信息
+            List<AlertRuleEntity> ruleList = alertRuleService.list();
+            Map<Integer, String> ruleIdAndReceiver = ruleList.stream().filter(entity -> ToolUtil.isNotEmpty(entity.getReceiver())).collect(Collectors.toMap(AlertRuleEntity::getId, AlertRuleEntity::getReceiver));
 
-        // 用户及邮箱信息
-        List<SysUserEntity> userList = sysUserService.list();
-        Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
+            // 用户及邮箱信息
+            List<SysUserEntity> userList = sysUserService.list();
+            Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
 
-        for (AlertMessageEntity messageEntity : entities) {
-            String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
-            // 通知人不为空 发件
-            if(StringUtils.isNotEmpty(receiver)){
-                log.info("邮件关联用户，进行邮件通知");
-                List<String> toSendEmails = new ArrayList<>();
-                Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
-                    String email = userIdAndEmail.get(Long.valueOf(receiverId));
-                    if(StringUtils.isNotEmpty(email)){
-                        toSendEmails.add(email);
+            for (AlertMessageEntity messageEntity : entities) {
+                String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
+                // 通知人不为空 发件
+                if(StringUtils.isNotEmpty(receiver)){
+                    log.info("邮件关联用户，进行邮件通知");
+                    List<String> toSendEmails = new ArrayList<>();
+                    Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
+                        String email = userIdAndEmail.get(Long.valueOf(receiverId));
+                        if(StringUtils.isNotEmpty(email)){
+                            toSendEmails.add(email);
+                        }
+                    });
+                    log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
+                    String state = "UNKNOWN";
+                    switch (messageEntity.getState()) {
+    				case 1:state = "Pending";break;
+    				case 2:state = "Expired";break;
                     }
-                });
-                log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
-                String state = "UNKNOWN";
-                switch (messageEntity.getState()) {
-				case 1:state = "Pending";break;
-				case 2:state = "Expired";break;
-                }
 
-                if(ToolUtil.isNotEmpty(toSendEmails)){
-                    mailUtil.sendHTML(toSendEmails, state +" : " +messageEntity.getSummary(), this.sendMail(messageEntity));
+                    if(ToolUtil.isNotEmpty(toSendEmails)){
+                        mailUtil.sendHTML(toSendEmails, state +" : " +messageEntity.getSummary(), this.sendMail(messageEntity));
+                    }
+                }else{
+                    log.info("邮件没有关联用户，不进行邮件通知");
                 }
-            }else{
-                log.info("邮件没有关联用户，不进行邮件通知");
             }
         }
     }
