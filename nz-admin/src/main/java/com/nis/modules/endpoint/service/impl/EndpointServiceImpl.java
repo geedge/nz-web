@@ -38,6 +38,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -81,6 +82,9 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	@Autowired
 	private SysConfigDao sysConfigDao;
 	
+	@Value("${nezha.endpointStateTime}")
+	private String endpointStateTime; 
+	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		logger.info("queryPage param is : {}",JSON.toJSON(params));
@@ -89,13 +93,18 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		//获取当前时间
 		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
 		long time = nowTime.getTime();
+		//获取配置文件里的配置时间信息
+		Integer alertTime=60000;
+		if(ToolUtil.isNotEmpty(endpointStateTime)) {
+			alertTime=Integer.valueOf(endpointStateTime);
+		}
 		for(Endpoint data : datas) {
 			StateInfo stateInfo =new StateInfo();
 			EndpointState endpointState = data.getEndpointState();
 			if(ToolUtil.isNotEmpty(endpointState)) {
 				long createTime = endpointState.getCreateTime().getTime();
 				// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
-				if(time-createTime>60000) {
+				if(time-createTime>alertTime) {
 					data.setState(0);
 					stateInfo.setCode(RCode.ENDPOINT_TIMEOUT_UPDATE.getCode());
 					stateInfo.setMsg(RCode.ENDPOINT_TIMEOUT_UPDATE.getMsg());

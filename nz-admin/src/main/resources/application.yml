@@ -32,6 +32,7 @@ spring:
         min-idle: 5       # 连接池中的最小空闲连接
 
 nezha:
+  endpointStateTime: 90000   #endpoint state超时周期时间 毫秒
   userId:
     expire: 300
   cluster: false  #集群配置  true集群环境   false单机环境，还需打开pom.xml里的spring-session-data-redis注释

@@ -37,6 +37,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -93,6 +94,9 @@ public class OverviewServiceImpl implements OverviewService {
 
     @Autowired
     private EndpointStateService endpointStateService;
+    
+    @Value("${nezha.endpointStateTime}")
+	private String endpointStateTime; 
     
     @Override
     public List<Map> alertRuleTopN(Integer top) {
@@ -692,10 +696,15 @@ public class OverviewServiceImpl implements OverviewService {
         //获取当前时间
 		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
 		long time = nowTime.getTime();
+		//获取配置文件里的配置时间信息
+		Integer alertTime=60000;
+		if(ToolUtil.isNotEmpty(endpointStateTime)) {
+			alertTime=Integer.valueOf(endpointStateTime);
+		}
         for(EndpointState endpointState : endpointStates) {
     		long createTime = endpointState.getCreateTime().getTime();
     		// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
-    		if(time-createTime>60000) {
+    		if(time-createTime>alertTime) {
     			break;
     		}else {
     			endPointIds.add(endpointState.getEndpointId());
