@@ -43,7 +43,7 @@ public class SysInfoServiceImpl implements SysInfoService {
         // 1. nehza 系统版本
         SysConfigEntity sysVersion = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SYSTEM_VERSION));
         Map sysVersionMap = new HashMap(4);
-        sysVersionMap.put("name", "nz-web");
+        sysVersionMap.put("name", "Nezha Monitoring System");
         sysVersionMap.put("version", sysVersion.getParamValue());
 
         resultMap.put("nezha", sysVersionMap);
@@ -54,7 +54,7 @@ public class SysInfoServiceImpl implements SysInfoService {
         // ① mariaDB version
         Map componentVersion = new HashMap(4);
         String dataBasesVersion = sysConfigDao.getDataBasesVersion();
-        componentVersion.put("name", "mariadb");
+        componentVersion.put("name", "Mariadb");
         componentVersion.put("version", dataBasesVersion);
         componentVersionInfoList.add(componentVersion);
 
@@ -68,7 +68,7 @@ public class SysInfoServiceImpl implements SysInfoService {
             }
         });
         componentVersion = new HashMap(4);
-        componentVersion.put("name", "redis");
+        componentVersion.put("name", "Redis");
         componentVersion.put("version", redisVersion.toString());
         componentVersionInfoList.add(componentVersion);
 
@@ -86,7 +86,7 @@ public class SysInfoServiceImpl implements SysInfoService {
                     Map map = JSONObject.parseObject(data.toString(), Map.class);
                     Object version = map.get("version");
                     componentVersion = new HashMap(4);
-                    componentVersion.put("name", "prometheus");
+                    componentVersion.put("name", "Prometheus");
                     componentVersion.put("version", version.toString());
                     componentVersionInfoList.add(componentVersion);
                 }
