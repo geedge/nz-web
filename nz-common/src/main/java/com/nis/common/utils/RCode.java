@@ -501,6 +501,9 @@ public enum RCode {
     SYS_CONFIG_MODELCHARTTPL_NOTFOUND(576058,"System config model chart tpl not found"),
     SYS_CONFIG_PROJECTCHARTTPL_NOTFOUND(576059,"System config project chart tpl not found"),
     SYS_CONFIG_DEFAULTCABINETUSIZE_INVALIDE(573060,"System config default cabinet usize should be an integer"),
+    SYS_CONFIG_QUERYMAXSERIES_ISNULL(571061, "System config Query max series can not be empty"),
+    SYS_CONFIG_QUERYMAXSERIES_INVALIDE(573062, "System config Query max series should be an integer"),
+    SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
 
 
     LINK_ID_ISNULL(581001,"link id can not be null"),

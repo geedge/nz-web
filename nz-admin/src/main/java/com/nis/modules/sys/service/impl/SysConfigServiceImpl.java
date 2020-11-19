@@ -23,6 +23,7 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
+import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -211,6 +212,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public R updateConfigs(Map<String, Object> param) {
         // 根据 类型 校验 需要添加/修改的 key , 不在常量中定义的不入库
         Set<String> keySet = Constant.SYSCONFIG_TYPEWITHKEYS_MAP.keySet();
@@ -438,10 +440,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
         this.saveOrUpdateBatch(configs);
 
-        // 更新配置市区值
-        SysConfigEntity timezone = configs.stream().filter(config -> config.getParamKey().equals("timezone") ? true : false).findAny().orElse(null);
-        if (timezone != null && !timezone.getParamValue().equals(DateUtil.configTimeZone + "")) {
-            DateUtil.configTimeZone = Integer.valueOf(timezone.getParamValue());
+        // 更新配置 query_max_series
+        SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("query_max_series") ? true : false).findAny().orElse(null);
+        if (configEntity != null && !configEntity.getParamValue().equals(PromConstant.queryMaxSeries + "")) {
+            PromConstant.queryMaxSeries = Integer.valueOf(configEntity.getParamValue());
+            logger.info("Prometheus query_range 查询最大条数限制更改为 " + PromConstant.queryMaxSeries);
         }
     }
 
@@ -452,11 +455,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      */
     private void validateBasicParams(Map<String, String> saveMap) {
         String assetPingSwitch = saveMap.get("asset_ping_switch");
-        String assetPingInterval = saveMap.get("asset_ping_interval");
+        //String assetPingInterval = saveMap.get("asset_ping_interval");
         String scrapeInterval = saveMap.get("scrape_interval");
         String storageLocalRetention = saveMap.get("storage_local_retention");
         String timezone = saveMap.get("timezone");
         String defaultCabU = saveMap.get("default_cabinet_usize");
+        String queryMaxSeries = saveMap.get("query_max_series");
 
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
                 .and(saveMap.get("node_exporter_target_path")).notNull(RCode.SYS_CONFIG_NODETARGETPATH_ISNULL)
@@ -465,7 +469,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 .and(scrapeInterval).notNull(RCode.SYS_CONFIG_SCRAPEINTERVAL_ISNULL)
                 .and(storageLocalRetention).notNull(RCode.SYS_CONFIG_LOCALRETENTION_ISNULL)
                 .and(saveMap.get("system_name")).notNull(RCode.SYS_CONFIG_SYSTEMNAME_ISNULL)
-                .and(timezone).notNull(RCode.SYS_CONFIG_TIMEZONE_ISNULL);
+                .and(timezone).notNull(RCode.SYS_CONFIG_TIMEZONE_ISNULL)
+                .and(queryMaxSeries).notNull(RCode.SYS_CONFIG_QUERYMAXSERIES_ISNULL);
 
         // 校验开关类型值
         this.validateSwitchValue(assetPingSwitch);
@@ -497,6 +502,15 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             throw new NZException(RCode.SYS_CONFIG_DEFAULTCABINETUSIZE_INVALIDE);
         }
         ValidateUtils.is(defaultCabUIntValue).min(1, RCode.IDC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
+
+        Integer queryMaxSeriesIntValue = CommonUtils.toInt(queryMaxSeries);
+        if (queryMaxSeriesIntValue == null) {
+            throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INVALIDE);
+        }
+
+        if (queryMaxSeriesIntValue < -1 || queryMaxSeriesIntValue > 1000) {
+            throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INTERVAL);
+        }
     }
 
     private boolean validateEmailParams(Map<String, String> saveMap) {

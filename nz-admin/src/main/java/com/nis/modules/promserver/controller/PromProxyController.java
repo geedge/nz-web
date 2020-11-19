@@ -7,6 +7,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.util.PromConstant;
 import net.sf.json.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -26,8 +27,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -36,20 +35,6 @@ import java.util.zip.GZIPOutputStream;
 public class PromProxyController {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromProxyController.class);
-	/**
-	 * global prometheus type
-	 */
-	private static final Integer PROMSERVER_GLOBAL = 1;
-
-	/**
-	 * per_datacenter type
-	 */
-	private static final Integer PROMSERVER_PER_DATACENTER = 2;
-
-	/**
-	 * thanos_query type
-	 */
-	private static final Integer PROMSERVER_THANOS_QUERY = 3;
 
 	@Autowired
 	private PromserverService promserverService;
@@ -84,11 +69,11 @@ public class PromProxyController {
 			break;
 		}
 		// type 优先使用 thanos_query
-		type = (type == null) ? PROMSERVER_THANOS_QUERY : type;
+		type = (type == null) ? PromConstant.PROMSERVER_THANOS_QUERY : type;
 		Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 		if (ToolUtil.isEmpty(server)) {
 			// type 其次使用 global
-			type = PROMSERVER_GLOBAL;
+			type = PromConstant.PROMSERVER_GLOBAL;
 			server = promserverService.getOneAvaPromServer(promId, idcId, type);
 			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
 		}
@@ -213,7 +198,13 @@ public class PromProxyController {
 
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
-			data.put("result", addMissingData(nullType, start, end, step, resultArray));
+			// 查询结果集超过系统设置最大限制 , -1 表示不做限制
+			if (!PromConstant.queryMaxSeries.equals(-1) && resultArray.size() > PromConstant.queryMaxSeries) {
+				data.put("result", Collections.emptyList());
+				result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", PromConstant.queryMaxSeries, resultArray.size()));
+			} else {
+				data.put("result", addMissingData(nullType, start, end, step, resultArray));
+			}
 			result.put("data", data);
 		}
 		return result;

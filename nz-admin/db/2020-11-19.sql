@@ -25,3 +25,10 @@ CREATE TABLE `user_notification` (
   `account` varchar(256) NOT NULL COMMENT '通知账号',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4;
+
+
+/**
+ * sys_config 系统配置表新增 query_max_series 限制 prometheus query_range 接口 result 数组大小
+ */
+DELETE FROM sys_config where param_key = "query_max_series";
+INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'query_max_series', '-1', 1, '限制 prometheus query_range 接口 result 数组大小 区间范围[-1 - 1000] -1表示不限制');
