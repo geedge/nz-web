@@ -9,11 +9,13 @@
 package com.nis.modules.sys.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.sys.entity.SysUserEntity;
-
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 系统用户
@@ -34,4 +36,6 @@ public interface SysUserDao extends BaseMapper<SysUserEntity> {
 	 */
 	List<Long> queryAllMenuId(Long userId);
 
+
+	List<SysUserEntity> queryList(IPage<SysUserEntity> page, @Param("params") Map<String, Object> params);
 }

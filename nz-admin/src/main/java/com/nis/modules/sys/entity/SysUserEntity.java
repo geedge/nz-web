@@ -99,6 +99,9 @@ public class SysUserEntity implements Serializable {
 	@TableField(exist = false)
 	private String userName;
 
+	@TableField(exist = false)
+	private List<SysUserNotification> notifications;
+
 	public String getUserName() {
 		return userName;
 	}

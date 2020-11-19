@@ -18,4 +18,25 @@
 		where ur.user_id = #{userId}
 	</select>
 
+	<select id="queryList" resultType="com.nis.modules.sys.entity.SysUserEntity">
+		SELECT
+			su.user_id,
+			su.username,
+			su.status,
+			su.email,
+			su.create_time,
+			su.source
+		FROM
+			sys_user su
+		<where>
+			<if test="params.userId != null and params.userId != ''">
+				su.user_id = #{params.userId}
+			</if>
+
+			<if test="params.username != null and params.username != ''">
+				AND su.username like CONCAT('%', #{params.username}, '%')
+			</if>
+		</where>
+	</select>
+
 </mapper>

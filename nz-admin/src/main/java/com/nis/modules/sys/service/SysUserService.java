@@ -55,4 +55,6 @@ public interface SysUserService extends IService<SysUserEntity> {
 	 * @return
 	 */
 	boolean checkName(SysUserEntity queryParam);
+
+	void deleteUsers(String userIds);
 }

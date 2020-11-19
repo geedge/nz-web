@@ -298,6 +298,17 @@ public enum RCode {
 
 
     /**
+     * 告警通知脚本
+     */
+    ALERT_NOTIFISCRIPT_NAME_ISNULL(431001, "Alert notification script name can not be empty"),
+    ALERT_NOTIFISCRIPT_FILE_NOTFOUND(436002, "Notification script file not found by file path"),
+    ALERT_NOTIFISCRIPT_NOT_FILE(439003, "The file found through this file path is not a file"),
+    ALERT_NOTIFISCRIPT_NOT_EXECUTABLE(439004, "The file does not have executable permissions"),
+    ALERT_NOTIFISCRIPT_ID_ISNULL(431005, "Alert notification script id can not be empty"),
+    ALERT_NOTIFISCRIPT_ACCOUNT_ISNULL(431006, "Alert notification script account can not be empty"),
+    ALERT_NOTIFISCRIPT_SCRIPT_NOTFOUND(436007, "Alert notification script not found"),
+
+    /**
      * setting菜单项相关
      */
     SYS_ERROR(517000, "system error"), //10xxxx，系统类（业务系统、用户组、权限等）通用错误以及其他系统内部错误
@@ -314,9 +325,16 @@ public enum RCode {
     SYS_MENU_DELSUB(517010, "Please delete the submenu first"),       //请先删除子菜单或按钮
     SYS_USER_OLDPWD(518011, "user oldpwd error"), //原密码不正确
     SYS_USER_DELADMIN(517012, "del admin error"), //系统管理员不能删除
-    SYS_USER_CANNOTDEL(517013, "cannot del user error"),          //当前用户不能删除
+    SYS_USER_CANNOTDEL(517013, "The currently logged in user cannot be deleted"),          //当前登录用户不能删除
     SYS_USER_DUPLICATENAME(517014, "user name duplicate error"), //业务系统选择错误
     SYS_USER_NOT_EXIST(516015, "System user does not exist"),    //系统用户不存在
+    SYS_USER_USERNAME_ISNULL(511016, "System user name can not be empty"),
+    SYS_USER_STATUS_ISNULL(511017, "System user status can not be empty"),
+    SYS_USER_PASSWORD_ISNULL(511018, "System user password can not be empty"),
+    SYS_USER_ID_ISNULL(511019, "System user id can not be empty"),
+    SYS_USER_SCRIPT_ACCOUNT_REPEATED(512020, "System user script id and account cannot be repeated"),
+    SYS_USER_STATUS_INVALIDE(514021, "System user status must be 0 or 1"),
+    SYS_USER_EMAIL_FORMAT(513022, "System user email format is incorrect"),
 
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),

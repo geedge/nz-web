@@ -32,20 +32,17 @@ import java.util.Map;
 @RestController
 @RequestMapping("/sys/user")
 public class SysUserController extends AbstractController {
+
 	@Autowired
 	private SysUserService sysUserService;
-	@Autowired
-	private SysUserRoleService sysUserRoleService;
 
 	/**
 	 * 所有用户列表
 	 */
 	@RequestMapping("/list")
-//	@RequiresPermissions("sys:user:list")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysUserService.queryPage(params);
-
 		return R.ok(page);
 	}
 
@@ -96,29 +93,22 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 保存用户
 	 */
-	@RequestMapping("/save")
-//	@RequiresPermissions("sys:user:save")
+	@PostMapping("/save")
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
 	public R save(@RequestBody SysUserEntity user){
-		ValidateUtils.is(user.getUsername()).notNull().maxLength(64)
-						.and(user.getPassword()).notNull().maxLength(64)
-						.and(user.getEmail()).notNull().email();
 		sysUserService.saveUser(user);
-
 		return R.ok();
 	}
 
 	/**
 	 * 修改用户
 	 */
-	@RequestMapping("/update")
+	@PostMapping("/update")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
 	public R update(@RequestBody SysUserEntity user){
-		ValidateUtils.is(user.getUsername()).notNull().max(64)
-		.and(user.getEmail()).notNull().email();
+		ValidateUtils.is(user.getUserId()).notNull(RCode.SYS_USER_ID_ISNULL);
 
 		sysUserService.update(user);
-
 		return R.ok();
 	}
 
@@ -126,21 +116,9 @@ public class SysUserController extends AbstractController {
 	 * 删除用户
 	 */
 	@RequestMapping("/delete")
-//	@RequiresPermissions("sys:user:delete")
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
 	public R delete(String userIds) {
-		ValidateUtils.is(userIds).notNull();
-		String[] split = userIds.split(",");
-		if(ArrayUtils.contains(split, "1")){
-			throw new NZException(RCode.SYS_USER_DELADMIN);
-		}
-
-		if(ArrayUtils.contains(split, getUserId().toString())){
-			throw new NZException(RCode.SYS_USER_CANNOTDEL);
-		}
-
-		sysUserService.removeByIds(Arrays.asList(split));
-
+		sysUserService.deleteUsers(userIds);
 		return R.ok();
 	}
 

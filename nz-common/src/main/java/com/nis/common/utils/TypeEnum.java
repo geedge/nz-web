@@ -21,7 +21,8 @@ public enum TypeEnum {
     ACCOUNT("account"),
     MIB("mib"),
     SYSTEM("system"),
-	LINK("link");
+	LINK("link"),
+    SCRIPT("notification script");
 	
     private String value;
 
