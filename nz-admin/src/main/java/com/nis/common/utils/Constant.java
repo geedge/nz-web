@@ -510,6 +510,9 @@ public class Constant {
     // 配置表中 刮取周期 key
     public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "scrape_interval";
 
+    // endpoint state 定时任务执行间隔时间
+    public static final String SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL = "endpoint_query_interval";
+
     // 内置 node_exporter 默认安装服务器路径
     public static final String SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH = "node_exporter_target_path";
 

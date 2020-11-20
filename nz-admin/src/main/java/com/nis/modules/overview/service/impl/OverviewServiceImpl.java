@@ -1,13 +1,10 @@
 package com.nis.modules.overview.service.impl;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
@@ -17,7 +14,6 @@ import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
-import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.module.dao.ModuleDao;
@@ -31,6 +27,7 @@ import com.nis.modules.project.entity.Project;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
+import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
@@ -40,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -645,70 +643,76 @@ public class OverviewServiceImpl implements OverviewService {
     public Set<Integer> getUpStatusEndpointIds() {
         Set<Integer> endPointIds = new HashSet<>();
 
-        // 1. 查询 global  prometheus 信息 global 会汇总up时序数据
-        /**List<Promserver> promservers = promserverService.list(new QueryWrapper<Promserver>().eq("type", 1).eq("status", 1));
-        String url = "/api/v1/query?query=up";
-        Map result = null;
-        Map data;
-        JSONArray resultArray;
-        JSONObject obj = null;
-        List<String> timeAndState = null;
-        String endPointValue = null;
-        Integer endpointId = null;
-        Map<String,String> metricLabels;
-        for (Promserver promserver : promservers) {
-        	//查询up
-            try {
-				result = promserverProxyService.promRequest(url, "GET", null, promserver.getId(), null, null, null);
-			} catch (Exception e1) {
-				logger.error("request error", e1);
-			}
-            // 查询成功
-            if (result != null && "success".equals(result.get("status"))) {
-                data = (Map) result.get("data");
-                resultArray = (JSONArray) data.get("result");
-                for (int i = 0; i < resultArray.size(); i++) {
-                    obj = (JSONObject) resultArray.get(i);
-                    timeAndState = (List<String>) obj.get("value");
-                    if ("1".equals(timeAndState.get(1))) {
-                        metricLabels = (Map) obj.get("metric");
-                        endPointValue = metricLabels.get(Constant.PROMSERVERUP_ENDPOINT_LABEL);
-                        if(StringUtils.isNotEmpty(endPointValue)){
-                            try {
-                                endpointId = Integer.parseInt(endPointValue);
-                            } catch (NumberFormatException e) {
-                                endpointId = null;
-                                logger.error("The prometheus server is {}, the value of endpoint value error {}", promserver, endPointValue);
+        SysConfigEntity config = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
+        String endpointStateAlertSwitch = config.getParamValue();
+        switch (endpointStateAlertSwitch) {
+            case "0": {
+                // 开关关闭 查询global prometheus 获取 endpoint 状态
+                Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
+                if (promserver == null) {
+                    endPointIds = Collections.emptySet();
+                    break;
+                }
+                URL url = null;
+                try {
+                    url = new URL("http", promserver.getHost(), promserver.getPort(), "/api/v1/query?query=up");
+                    JSONObject jsonObject = HttpClientUtils.httpGet(url.toString());
+                    if (jsonObject == null) {
+                        endPointIds = Collections.emptySet();
+                        break;
+                    }
+
+                    Object status = jsonObject.get("status");
+                    if (status != null && "success".equalsIgnoreCase(status.toString())) {
+                        Object data = jsonObject.get("data");
+                        Map dataMap = JSONObject.parseObject(data.toString(), Map.class);
+
+                        List<Map> result = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
+                        Map metricMap;
+                        List<String> timeAndState;
+                        for (Map pojo : result) {
+                            metricMap = (Map) pojo.get("metric");
+                            Object endpoint = metricMap.get(Constant.PROMSERVERUP_ENDPOINT_LABEL);
+                            if (endpoint == null) continue;
+                            timeAndState = (List<String>) pojo.get("value");
+                            if ("1".equals(timeAndState.get(1))) {
+                                endPointIds.add(Integer.valueOf(endpoint.toString()));
                             }
-                            if(endpointId != null){
-                                endPointIds.add(endpointId);
-                            }
-                        }else{
-                            logger.debug("The prometheus server is {} And the {} label's job label does not contain endpoint id", promserver, obj);
                         }
                     }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } else {// 查询失败
-                logger.error("query endpoint status failed ,prometheus server is {}", promserver);
+                break;
             }
-        }**/
-        List<EndpointState> endpointStates = endpointStateService.list(new QueryWrapper<EndpointState>().lambda().eq(EndpointState::getState,1));
-        //获取当前时间
-		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
-		long time = nowTime.getTime();
-		//获取配置文件里的配置时间信息
-		Integer alertTime=60000;
-		if(ToolUtil.isNotEmpty(endpointStateTime)) {
-			alertTime=Integer.valueOf(endpointStateTime);
-		}
-        for(EndpointState endpointState : endpointStates) {
-    		long createTime = endpointState.getCreateTime().getTime();
-    		// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
-    		if(time-createTime>alertTime) {
-    			break;
-    		}else {
-    			endPointIds.add(endpointState.getEndpointId());
-    		}
+            case "1": {
+            }
+            case "2": {
+                // 开关为 1 或者 2时,采用查库方式获取存活数据
+                List<EndpointState> endpointStates = endpointStateService.list(new QueryWrapper<EndpointState>().lambda().eq(EndpointState::getState, 1));
+                //获取当前时间
+                Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
+                long time = nowTime.getTime();
+                //获取配置文件里的配置时间信息
+                Integer alertTime = 60000;
+                if (ToolUtil.isNotEmpty(endpointStateTime)) {
+                    alertTime = Integer.valueOf(endpointStateTime);
+                }
+                for (EndpointState endpointState : endpointStates) {
+                    long createTime = endpointState.getCreateTime().getTime();
+                    // 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
+                    if (time - createTime > alertTime) {
+                        break;
+                    } else {
+                        endPointIds.add(endpointState.getEndpointId());
+                    }
+                }
+                break;
+            }
+            default: {
+                throw new NZException(RCode.ERROR);
+            }
         }
         return endPointIds;
     }
