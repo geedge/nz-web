@@ -25,6 +25,7 @@
             <result column="total" property="total"/>
             <result column="inStock" property="inStock"/>
             <result column="outStock" property="outStock"/>
+            <result column="suspended" property="suspended"/>
         </association>
     </resultMap>
     <resultMap id="modelWithMib" type="com.nis.modules.asset.entity.ModelWithMib">
@@ -69,7 +70,8 @@
           /*资产统计*/
           COUNT(ass.id) as as_total,
           SUM(CASE ass.state WHEN 1 THEN 1 ELSE 0 END) AS as_inStock,
-          SUM(CASE ass.state WHEN 2 THEN 1 ELSE 0 END) AS as_outStock
+          SUM(CASE ass.state WHEN 2 THEN 1 ELSE 0 END) AS as_outStock,
+          SUM(CASE ass.state WHEN 3 THEN 1 ELSE 0 END) AS as_suspended
     </sql>
 
     <select id="queryList" resultMap="modelWithVendorAndType">

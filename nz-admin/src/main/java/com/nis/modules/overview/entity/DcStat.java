@@ -23,6 +23,11 @@ public class DcStat extends EndpointStat {
     private long assetOutStock;
 
     /**
+     * 停用资产数量
+     */
+    private long assetSuspended;
+
+    /**
      * 可达资产数量
      */
     private long assetPingUp;
@@ -55,10 +60,11 @@ public class DcStat extends EndpointStat {
     public DcStat() {
     }
 
-    public DcStat(long assetTotal, long assetInStock, long assetOutStock, long assetPingUp, long assetPingDown, long alertTotal, long alertP1, long alertP2, long alertP3) {
+    public DcStat(long assetTotal, long assetInStock, long assetOutStock,long assetSuspended, long assetPingUp, long assetPingDown, long alertTotal, long alertP1, long alertP2, long alertP3) {
         this.assetTotal = assetTotal;
         this.assetInStock = assetInStock;
         this.assetOutStock = assetOutStock;
+        this.assetSuspended = assetSuspended;
         this.assetPingUp = assetPingUp;
         this.assetPingDown = assetPingDown;
         this.alertTotal = alertTotal;

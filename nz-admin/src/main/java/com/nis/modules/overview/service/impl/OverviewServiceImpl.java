@@ -284,6 +284,7 @@ public class OverviewServiceImpl implements OverviewService {
 
         long inStock = assetList.stream().filter(asset -> asset.getState().equals(1)).count();
         long outStock = assetList.stream().filter(asset -> asset.getState().equals(2)).count();
+        long suspended = assetList.stream().filter(asset -> asset.getState().equals(3)).count();
         long pingUp = assetPingByAsset.stream().filter(assetPing -> assetPing.getStatus().equals(1)).count();
         long pingDown = assetPingByAsset.stream().filter(assetPing -> assetPing.getStatus().equals(0)).count();
         long alertHigh = alertList.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
@@ -293,6 +294,7 @@ public class OverviewServiceImpl implements OverviewService {
         assetStat.setTotal(assetList.size());
         assetStat.setInStock(inStock);
         assetStat.setOutStock(outStock);
+        assetStat.setSuspended(suspended);
         assetStat.setPingUp(pingUp);
         assetStat.setPingDown(pingDown);
         assetStat.setAlertTotal(alertList.size());
@@ -436,7 +438,7 @@ public class OverviewServiceImpl implements OverviewService {
         DcStat dcStat;
         EndpointStat endpointStat;
         for (AssetStat assetStat : assetStatInfoByIdc) {
-            dcStat = new DcStat(assetStat.getTotal(), assetStat.getInStock(), assetStat.getOutStock(), assetStat.getPingUp(), assetStat.getPingDown(), assetStat.getAlertTotal(), assetStat.getAlertP1(), assetStat.getAlertP2(), assetStat.getAlertP3());
+            dcStat = new DcStat(assetStat.getTotal(), assetStat.getInStock(), assetStat.getOutStock(), assetStat.getSuspended(), assetStat.getPingUp(), assetStat.getPingDown(), assetStat.getAlertTotal(), assetStat.getAlertP1(), assetStat.getAlertP2(), assetStat.getAlertP3());
 
             endpointStat = dcNameWithEndpointStatMap.get(assetStat.getName());
             dcStat.setName(endpointStat.getName());

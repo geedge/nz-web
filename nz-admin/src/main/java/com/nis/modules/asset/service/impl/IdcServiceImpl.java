@@ -82,6 +82,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             assetStat.put("total", stat.getTotal());
             assetStat.put("inStock", stat.getInStock());
             assetStat.put("outStock", stat.getOutStock());
+            assetStat.put("suspended", stat.getSuspended());
 
             alertStat = new HashMap();
             alertStat.put("total", stat.getAlertTotal());

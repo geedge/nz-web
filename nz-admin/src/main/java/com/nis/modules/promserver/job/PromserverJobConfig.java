@@ -12,7 +12,7 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
 import javax.annotation.PostConstruct;
 
-@Configuration
+//@Configuration
 public class PromserverJobConfig {
 
     @Value("${nezha.promserverJobCron}")
@@ -23,12 +23,12 @@ public class PromserverJobConfig {
 
     private String promserverJobName = "PROMSERVER_JOB";
 
-    @Bean
+  /*  @Bean
     public JobDetail promserverCronJobDetail() {
         return JobBuilder.newJob(PromserverJob.class).withIdentity(ScheduleUtils.JOB_NAME + promserverJobName).storeDurably().build();
-    }
+    }*/
 
-    @PostConstruct
+   /* @PostConstruct
     public void init() throws Exception {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
@@ -38,5 +38,5 @@ public class PromserverJobConfig {
         }
 
         ScheduleUtils.createCronScheduleJob(promserverJobName, promserverCronJobDetail(), promserverJobCron, scheduler);
-    }
+    }*/
 }

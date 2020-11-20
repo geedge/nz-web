@@ -46,6 +46,11 @@ public class AssetStat {
     private long outStock;
 
     /**
+     * 停用资产数量
+     */
+    private long suspended;
+
+    /**
      * 可达资产数量
      */
     private long pingUp;
