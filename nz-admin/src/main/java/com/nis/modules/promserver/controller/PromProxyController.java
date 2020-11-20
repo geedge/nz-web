@@ -2,18 +2,24 @@ package com.nis.modules.promserver.controller;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import net.sf.json.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -27,6 +33,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -38,6 +45,12 @@ public class PromProxyController {
 
 	@Autowired
 	private PromserverService promserverService;
+
+	@Autowired
+	private SysConfigDao sysConfigDao;
+
+	@Autowired
+	private RedisTemplate redisTemplate;
 
 	@RequestMapping(value = "/prom/**")
 	public void promProxy(HttpServletRequest request, HttpServletResponse response) {
@@ -96,7 +109,7 @@ public class PromProxyController {
 	 * @throws IOException
 	 * @throws MalformedURLException
 	 */
-	public static void requestProm(String host, int port, String path, HttpServletRequest request,
+	public void requestProm(String host, int port, String path, HttpServletRequest request,
 			HttpServletResponse response)  {
 		String queryString = request.getQueryString();
 		// 请求 prometheus url
@@ -172,7 +185,7 @@ public class PromProxyController {
 		}
 	}
 
-	private static Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
+	private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
 		StringBuffer resultStr = new StringBuffer();
 		try (InputStreamReader inputStreamReader = new InputStreamReader(new GZIPInputStream(connInputStream), "UTF-8");
 		     BufferedReader bufferedReader = new BufferedReader(inputStreamReader);) {
@@ -198,10 +211,20 @@ public class PromProxyController {
 
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
+
 			// 查询结果集超过系统设置最大限制 , -1 表示不做限制
-			if (!PromConstant.queryMaxSeries.equals(-1) && resultArray.size() > PromConstant.queryMaxSeries) {
+			ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+			String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
+			if (StringUtils.isEmpty(queryMaxSeries)) {
+				SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.QUERY_MAX_SERIES));
+				valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
+				queryMaxSeries = configEntity.getParamValue();
+			}
+
+			Integer queryMaxSeriesIntVal = Integer.valueOf(queryMaxSeries);
+			if (!queryMaxSeriesIntVal.equals(-1) && resultArray.size() > queryMaxSeriesIntVal) {
 				data.put("result", Collections.emptyList());
-				result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", PromConstant.queryMaxSeries, resultArray.size()));
+				result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, resultArray.size()));
 			} else {
 				data.put("result", addMissingData(nullType, start, end, step, resultArray));
 			}

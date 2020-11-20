@@ -2,9 +2,6 @@ package com.nis.modules.promserver.util;
 
 public class PromConstant {
 
-    // query_range series 查询结果条数限制
-    public static Integer queryMaxSeries;
-
     /**
      * global prometheus type
      */

@@ -22,8 +22,6 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
-import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -43,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -66,8 +65,6 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
     @Autowired
     private SysConfigRedis sysConfigRedis;
-    @Autowired
-    private PromserverProxyServiceImpl promserverProxyService;
 	@Autowired
     private PromserverService promserverService;
 	@Autowired
@@ -441,10 +438,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.saveOrUpdateBatch(configs);
 
         // 更新配置 query_max_series
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
         SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("query_max_series") ? true : false).findAny().orElse(null);
-        if (configEntity != null && !configEntity.getParamValue().equals(PromConstant.queryMaxSeries + "")) {
-            PromConstant.queryMaxSeries = Integer.valueOf(configEntity.getParamValue());
-            logger.info("Prometheus query_range 查询最大条数限制更改为 " + PromConstant.queryMaxSeries);
+        if (configEntity != null && !configEntity.getParamValue().equals(queryMaxSeries)) {
+            valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
+            logger.info("Prometheus query_range 查询最大条数限制更改为 " + configEntity.getParamValue());
         }
     }
 
