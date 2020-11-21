@@ -173,24 +173,29 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     		Map endpointAlertRuleMap = (Map) JSON.parse(endpointAlertRule);
     		ednpointAlertName = Integer.parseInt((String)endpointAlertRuleMap.get("alertName"));
     	}
-	    if(ToolUtil.isNotEmpty(endpointAlertPush)&&endpointAlertPush.equals("1")) {
-    		List<EndpointState> endpointStates =new ArrayList<EndpointState>();
+	    if("1".equals(endpointAlertPush)) {
+    		Set<EndpointState> endpointStates =new HashSet<>();
+		    // 用于判断 endpoint id 是否重复
+		    List<EndpointState> list = endpointStateService.list();
+		    Set<Integer> tempEndpointIds = list.stream().map(EndpointState::getEndpointId).distinct().collect(Collectors.toSet());
     		for(int i=receiveData.size()-1;i>=0;i--) {
 	    		Map receiveLabels = receiveData.get(i).getLabels();
 	    		Map receiveAnnotations = receiveData.get(i).getAnnotations();
 	    		int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
-	    		if(receiveAlertName==ednpointAlertName) {
-	    			if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
-	    				Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
-	    				EndpointState endpointState = new EndpointState();
-	    				endpointState.setId(endpointId);
-	    				endpointState.setEndpointId(endpointId);
-	    				endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
-	    				endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
-	    				endpointStates.add(endpointState);
-	    				receiveData.remove(i);
-	    			}
-	    		}
+			    if (receiveAlertName == ednpointAlertName && ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))) {
+				    Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
+				    if (!tempEndpointIds.contains(endpointId)) {
+					    EndpointState endpointState = new EndpointState();
+					    endpointState.setId(endpointId);
+					    endpointState.setEndpointId(endpointId);
+					    endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+					    endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
+					    endpointStates.add(endpointState);
+
+					    tempEndpointIds.add(endpointId);
+				    }
+				    receiveData.remove(i);
+			    }
 	    	}
     		// 将产生告警的id信息存入endpoint_state表中
     		if(ToolUtil.isNotEmpty(endpointStates)) {

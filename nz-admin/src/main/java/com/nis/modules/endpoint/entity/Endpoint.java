@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -19,7 +20,11 @@ public class Endpoint {
 	private Integer assetId;
 	private String host;
 	private Integer port;
+
+	@TableField(strategy = FieldStrategy.IGNORED)
 	private String param;
+
+	@TableField(strategy = FieldStrategy.IGNORED)
 	private String labels;
 	private String path;
 	@TableField(exist = false)

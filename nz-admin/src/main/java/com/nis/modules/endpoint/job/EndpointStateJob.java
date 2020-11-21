@@ -21,9 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @DisallowConcurrentExecution
@@ -87,6 +85,8 @@ public class EndpointStateJob extends QuartzJobBean {
                     EndpointState endpointState;
                     Map metricMap;
                     List<String> timeAndState;
+                    // 用于判断 endpoint id 是否重复
+                    Set<Integer> tempEndpointIds = new HashSet<>();
                     for (Map pojo : result) {
 
                         metricMap = (Map) pojo.get("metric");
@@ -94,15 +94,20 @@ public class EndpointStateJob extends QuartzJobBean {
 
                         if (endpoint == null) continue;
 
-                        endpointState = new EndpointState();
-                        endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+                        Integer endpointId = Integer.valueOf(endpoint.toString());
+                        if (!tempEndpointIds.contains(endpointId)) {
+                            endpointState = new EndpointState();
+                            endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 
-                        timeAndState = (List<String>) pojo.get("value");
-                        endpointState.setState(Integer.valueOf(timeAndState.get(1)));
+                            timeAndState = (List<String>) pojo.get("value");
+                            endpointState.setState(Integer.valueOf(timeAndState.get(1)));
 
-                        endpointState.setId(Integer.valueOf(endpoint.toString()));
-                        endpointState.setEndpointId(Integer.valueOf(endpoint.toString()));
-                        saveEndpointStateList.add(endpointState);
+                            endpointState.setId(endpointId);
+                            endpointState.setEndpointId(endpointId);
+                            saveEndpointStateList.add(endpointState);
+
+                            tempEndpointIds.add(endpointId);
+                        }
                     }
 
                     endpointStateDao.deleteAll();
