@@ -1,5 +1,6 @@
 /**
- *
+ * 1. sys_config 增加 alert 导出最大条数限制 param_key = export_max_line
+ * 2. sys_config 增加 endpoint 状态采集调度周期设置 param_key = endpoint_query_interval 单位 s
  */
 DELETE from sys_config where param_key = "export_max_line";
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'export_max_line', '10000', 1, '告警导出最大行数');
