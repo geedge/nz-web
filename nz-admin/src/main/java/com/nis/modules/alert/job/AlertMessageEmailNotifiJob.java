@@ -1,15 +1,24 @@
 package com.nis.modules.alert.job;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.mail.MessagingException;
-
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.MailUtil;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.dao.AlertNotifiScriptDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertNotificationScript;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.sys.dao.SysUserNotificationDao;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserNotification;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.core.ParseException;
+import freemarker.template.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -17,36 +26,31 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.MailUtil;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserService;
-
-import freemarker.cache.StringTemplateLoader;
-import freemarker.core.ParseException;
-import freemarker.template.Configuration;
-import freemarker.template.MalformedTemplateNameException;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
-import freemarker.template.TemplateNotFoundException;
-import lombok.extern.slf4j.Slf4j;
+import javax.mail.MessagingException;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 @Slf4j
 @DisallowConcurrentExecution
 public class AlertMessageEmailNotifiJob extends QuartzJobBean {
+
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
+
+    // 告警通知脚本超时时间单位 s秒
+    @Value("${nezha.alertNotifiTimeOut:3}")
+    private Integer alertNotifiTimeOut;
+
     @Autowired
     RedisTemplate redisTemplate;
     @Autowired
@@ -58,8 +62,14 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     @Autowired
     private SysUserService sysUserService;
 
+    @Autowired
+    private SysUserNotificationDao userNotificationDao;
+
+    @Autowired
+    private AlertNotifiScriptDao alertNotifiScriptDao;
+
     private Template template;
-    
+
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     	StopWatch sw = new StopWatch();
@@ -101,18 +111,38 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             List<SysUserEntity> userList = sysUserService.list();
             Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
 
+            // 用户和关联脚本信息
+            List<SysUserNotification> userNotificationList = userNotificationDao.selectList(null);
+            Map<Integer, List<SysUserNotification>> userIdAndNotificationMap = userNotificationList.stream().collect(Collectors.groupingBy(SysUserNotification::getUserId));
+
+            // 脚本信息
+            List<AlertNotificationScript> scriptList = alertNotifiScriptDao.selectList(null);
+            Map<Integer, String> scriptIdAndFilePathMap = scriptList.stream().collect(Collectors.toMap(AlertNotificationScript::getId, AlertNotificationScript::getFilePath));
+
+
             for (AlertMessageEntity messageEntity : entities) {
                 String receiver = ruleIdAndReceiver.get(messageEntity.getRuleId());
                 // 通知人不为空 发件
                 if(StringUtils.isNotEmpty(receiver)){
                     log.info("邮件关联用户，进行邮件通知");
                     List<String> toSendEmails = new ArrayList<>();
+
+                    // 用户关联脚本
+                    List<SysUserNotification> userNotifications = new ArrayList<>();
+
                     Arrays.asList(receiver.split(",")).stream().forEach(receiverId -> {
                         String email = userIdAndEmail.get(Long.valueOf(receiverId));
                         if(StringUtils.isNotEmpty(email)){
                             toSendEmails.add(email);
                         }
+
+                        // 通过关联用户
+                        List<SysUserNotification> sysUserNotifications = userIdAndNotificationMap.get(Integer.valueOf(receiverId));
+                        if(CollectionUtils.isNotEmpty(sysUserNotifications)){
+                            userNotifications.addAll(sysUserNotifications);
+                        }
                     });
+
                     log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
                     String state = "UNKNOWN";
                     switch (messageEntity.getState()) {
@@ -123,9 +153,35 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
                     if(ToolUtil.isNotEmpty(toSendEmails)){
                         mailUtil.sendHTML(toSendEmails, state +" : " +messageEntity.getSummary(), this.sendMail(messageEntity));
                     }
+
+                    // 通知脚本信息不为空
+                    if (CollectionUtils.isNotEmpty(userNotifications)) {
+                        log.info("邮件进行脚本通知");
+                        executorService.submit(() -> this.notifiScript(userNotifications, scriptIdAndFilePathMap, JSONObject.toJSONString(messageEntity)));
+                    } else {
+                        log.info("邮件没有关联用户脚本，不进行脚本通知");
+                    }
                 }else{
                     log.info("邮件没有关联用户，不进行邮件通知");
                 }
+            }
+        }
+    }
+
+    private void notifiScript(List<SysUserNotification> userNotifications, Map<Integer, String> scriptIdAndFilePathMap, String alertMsg) {
+        String filePath, account;
+        for (SysUserNotification userNotification : userNotifications) {
+            filePath = scriptIdAndFilePathMap.get(userNotification.getScriptId());
+            account = userNotification.getAccount();
+            String[] commands = new String[]{filePath, account, alertMsg};
+            try {
+                Process exec = Runtime.getRuntime().exec(commands);
+                boolean b = exec.waitFor(alertNotifiTimeOut, TimeUnit.SECONDS);
+                if (log.isDebugEnabled())
+                    log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), b ? "成功" : "失败"));
+            } catch (Exception e) {
+                log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), "失败"));
+                log.error("alert通知脚本异常,异常消息是:" + e.getMessage(), e);
             }
         }
     }

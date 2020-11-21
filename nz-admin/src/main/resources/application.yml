@@ -47,6 +47,7 @@ nezha:
   corePoolSize: 20
   maxPoolSize: 100
   queueCapacity: 500
+  alertNotifiTimeOut: 3 # alert  通知脚本等待超时时间 单位 s 秒‘
 logging:
   config: ./config/logback-spring.xml
 
