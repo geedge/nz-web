@@ -3,7 +3,6 @@ package com.nis.modules.alert.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertMessageWithExport;
 import com.nis.modules.metric.dto.MetricsDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,8 +24,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     void updateBatch(@Param("hashKeys") List<String> updateCacheKeys, @Param("nowDate") Date utcTimeByConfigTimeZone);
 
     List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
-
-    List<AlertMessageWithExport> selectWithExport(@Param("params") Map<String, Object> params);
 
     void deleteByAssetIds(@Param("ids")List<Integer> idList);
 

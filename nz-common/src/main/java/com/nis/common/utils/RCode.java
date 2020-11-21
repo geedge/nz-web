@@ -504,6 +504,7 @@ public enum RCode {
     SYS_CONFIG_QUERYMAXSERIES_ISNULL(571061, "System config Query max series can not be empty"),
     SYS_CONFIG_QUERYMAXSERIES_INVALIDE(573062, "System config Query max series should be an integer"),
     SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
+    SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
 
 
     LINK_ID_ISNULL(581001,"link id can not be null"),

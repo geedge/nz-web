@@ -1,22 +1,37 @@
 package com.nis.modules.alert.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.EndpointState;
+import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.EndpointStateService;
+import com.nis.modules.metric.dto.MetricsDto;
+import com.nis.modules.module.entity.Module;
+import com.nis.modules.module.service.ModuleService;
+import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -34,46 +49,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.dao.AlertMessageDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertMessageWithExport;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.IdcService;
-import com.nis.modules.endpoint.dao.EndpointStateDao;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.endpoint.entity.EndpointState;
-import com.nis.modules.endpoint.service.EndpointService;
-import com.nis.modules.endpoint.service.EndpointStateService;
-import com.nis.modules.metric.dto.MetricsDto;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.module.service.ModuleService;
-import com.nis.modules.project.entity.Project;
-import com.nis.modules.project.service.ProjectService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 
@@ -100,13 +83,16 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private SysConfigService configService;
 	@Autowired
-	private EndpointStateDao endpointStateDao;
-	@Autowired
 	private EndpointStateService endpointStateService;
-	
-    @Override
-    public PageUtils queryPage(Map<String, Object> params)  {
-    	try {
+
+
+	/**
+	 * 处理请求参数
+	 *
+	 * @param params
+	 */
+	private void handleQueryDateParam(Map<String, Object> params) {
+		try {
 			if (params.get("startAt") != null && !StringUtils.isBlank(params.get("startAt").toString())) {
 				Date searchStartAt = DateUtils.parseDate(params.get("startAt").toString(), "yyyy-MM-dd HH:mm:ss");
 				params.put("startAt", searchStartAt);
@@ -115,34 +101,15 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				Date searchEndAt = DateUtils.parseDate(params.get("endAt").toString(), "yyyy-MM-dd HH:mm:ss");
 				params.put("endAt", searchEndAt);
 			}
-
 		} catch (ParseException e) {
-		    logger.error("时间转换异常,参数是 {}", params, e);
-	    }
+			logger.error("时间转换异常,参数是 {}", params, e);
+		}
+	}
 
-    	Integer searchId=resolveParamToInteger(params,"id");
-    	params.put("id",searchId);
+    @Override
+    public PageUtils queryPage(Map<String, Object> params)  {
 
-		Integer projectId=resolveParamToInteger(params,"projectId");
-		params.put("projectId",projectId);
-
-		Integer moduleId=resolveParamToInteger(params,"moduleId");
-		params.put("moduleId",moduleId);
-
-		Integer endpointId=resolveParamToInteger(params,"endpointId");
-		params.put("endpointId",endpointId);
-
-		Integer assetId=resolveParamToInteger(params,"assetId");
-		params.put("assetId",assetId);
-
-		Integer dcId=resolveParamToInteger(params,"dcId");
-		params.put("dcId",dcId);
-
-    	Integer searchState=resolveParamToInteger(params,"state");
-		params.put("state",searchState);
-
-		Integer searchRuleId=resolveParamToInteger(params,"ruleId");
-		params.put("ruleId",searchRuleId);
+    	this.handleQueryDateParam(params);
 
 	    IPage<AlertMessageEntity> page = new Query<AlertMessageEntity>().getPage(params);
 
@@ -155,6 +122,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
         return new PageUtils(page);
     }
+
 
     private void handleResultData(List<AlertMessageEntity> alertMessages){
 
@@ -351,17 +319,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     	return dto;
 	}
 
-	private Integer resolveParamToInteger(Map<String,Object> params,String paramName){
-		Integer param=null;
-		try {
-			if(params.get(paramName)!=null&&StringUtils.isNotBlank(params.get(paramName).toString())){
-				param=Integer.parseInt(params.get(paramName).toString());
-			}
-		}catch (NumberFormatException e){}
-
-		return param;
-	}
-
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void removeByAssetIds(List<Integer> idList) {
@@ -381,104 +338,81 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	}
 
 	@Override
-	public void export(HttpServletResponse response, Map<String, Object> params) {
-		if(ToolUtil.isNotEmpty(params.get("alertName"))) {
-			List<AlertRuleEntity> ruleEntityList = alertRuleService.list(
-					new LambdaQueryWrapper<AlertRuleEntity>().like(ToolUtil.isNotEmpty(params.get("alertName")), AlertRuleEntity::getAlertName, params.get("alertName").toString()));
-			List<Integer> ruleIds = ruleEntityList.stream().map(AlertRuleEntity::getId).distinct().collect(Collectors.toList());
-			params.put("ruleIds", ruleIds);
-		}
-		//根据页面参数查询需要导出的alert_message数据
-		int total ;
-		int pageNo = Integer.parseInt(params.get("pageNo").toString());
-		int pageSize = Integer.parseInt(params.get("pageSize").toString());
+    public void export(HttpServletResponse response, Map<String, Object> params) {
+        // 从 sys_config 获取 表头信息    每次加载条数  最大条数限制
+        String[] keys = {"alert_export_header", "export_pagesize", "export_max_line"};
+        List<SysConfigEntity> paramValues = this.configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, keys));
+        Map<String, String> configMap = paramValues.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-		try {
-			if (params.get("startAt") != null && !StringUtils.isBlank(params.get("startAt").toString())) {
-				Date searchStartAt = DateUtils.parseDate(params.get("startAt").toString(), "yyyy-MM-dd HH:mm:ss");
-				params.put("startAt", searchStartAt);
-			}
-			if (params.get("endAt") != null && !StringUtils.isBlank(params.get("endAt").toString())) {
-				Date searchEndAt = DateUtils.parseDate(params.get("endAt").toString(), "yyyy-MM-dd HH:mm:ss");
-				params.put("endAt", searchEndAt);
-			}
+        // 导出最大条数限制
+        int exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+        int exportRealTotal = 0;
 
-		} catch (ParseException e) {
-			logger.error("时间转换异常,参数是 {}", params, e);
-		}
+        //Excel2003版最大行数是65536，Excel2007最大行数是1048576
+        //Excel2003版最大列数是256，Excel2007最大列数是16384
+        //使用SXSSFWorkbook避免Excel数据超出65536行时报错
+        SXSSFWorkbook workbook = null;
+        try {
+            workbook = new SXSSFWorkbook();
+            Sheet sheet = workbook.createSheet("AlertMessages");
+            sheet.setDefaultColumnWidth(25);
+            int rowNum = 0;
+            Row row = sheet.createRow(rowNum);
 
-		//Excel2003版最大行数是65536，Excel2007最大行数是1048576
-		//Excel2003版最大列数是256，Excel2007最大列数是16384
-		//使用SXSSFWorkbook避免Excel数据超出65536行时报错
-		SXSSFWorkbook  workbook = null;
-		try {
-			workbook = new SXSSFWorkbook();
-			Sheet sheet = workbook.createSheet("AlertMessages");
-			sheet.setDefaultColumnWidth(25);
-			int rowNum = 0;
-			Row row = sheet.createRow(rowNum);
-			// 添加标题行
-			// 获取导出的语言选择
-			String language = ToolUtil.isEmpty(params.get("language"))?"en":params.get("language").toString();
-			// 从sys_config获取表头和查询数量限制
-			String [] keys  =  {"alert_export_header","export_pagesize"};
-			List<SysConfigEntity> paramValues = this.configService.list(
-					new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,keys));
-			// 得到表头
-			Map map = (Map)(JSON.parseObject(paramValues.get(0).getParamValue(), Feature.OrderedField).get(language));
-			Collection values =  map.values();
-			List<String> valueList = new ArrayList<>(values.size());
-			values.stream().forEach(value-> valueList.add(value.toString()));
-			// 筛选表头并添加表头至excel
-			CellStyle colStyle = ExcelUtils.createHeaderStyle(workbook);
-			for (int i = 0; i < valueList.size(); i++) {
-				// 创建列、单元格
-				Cell cell = row.createCell(i);
-				cell.setCellValue(valueList.get(i));
-				cell.setCellStyle(colStyle);
-			}
-	
-			// 添加数据
-			if("-1".equals(params.get("pageSize").toString())){
-				total = this.count();
-				int exportPagesize = Integer.parseInt(paramValues.get(1).getParamValue());
-				pageNo = (total % exportPagesize == 0) ? (total / exportPagesize) : (total / exportPagesize + 1);
-				for(int i =1;i<=pageNo;i++){
-					int start = (i-1)*exportPagesize;
-					int end = exportPagesize;
-					params.put("pageNo",start);
-					params.put("pageSize",end);
-					List<AlertMessageWithExport> list =this.baseMapper.selectWithExport(params);
-					rowNum = fill(list,rowNum,sheet, workbook);
-				}
-			}else {  //部分导出
-				int start = (pageNo-1)*pageSize;
-				int end = pageSize;
-				params.put("pageNo",start);
-				params.put("pageSize",end);
-				List<AlertMessageWithExport> list = this.baseMapper.selectWithExport(params);
-				fill(list,rowNum,sheet,workbook);
-			}
+            // 得到表头
+            String language = ToolUtil.isEmpty(params.get("language")) ? "en" : params.get("language").toString();
+            Map map = (Map) (JSON.parseObject(configMap.get("alert_export_header"), Feature.OrderedField).get(language));
+            Collection values = map.values();
+            List<String> valueList = new ArrayList<>(values.size());
+            values.stream().forEach(value -> valueList.add(value.toString()));
+            // 筛选表头并添加表头至excel
+            CellStyle colStyle = ExcelUtils.createHeaderStyle(workbook);
+            for (int i = 0; i < valueList.size(); i++) {
+                Cell cell = row.createCell(i);
+                cell.setCellValue(valueList.get(i));
+                cell.setCellStyle(colStyle);
+            }
 
-			// 响应为流
-			String fileName = "AlertMessagesExport.xlsx"; // 默认名称
-			response.setContentType("application/excel");
-			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-			workbook.write(response.getOutputStream());
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if(workbook!=null) {
-					workbook.close();
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+            PageUtils page = this.queryPage(params);
+            List<AlertMessageEntity> exportData = (List<AlertMessageEntity>) page.getList();
+            exportRealTotal = exportData.size();
+
+            // 判断导出条数是否超过配置最大导出量
+            if (exportData.size() > exportMaxLine) {
+                throw new NZException(RCode.SYS_CONFIG_EXPORT_MAX_LINE);
+            }
+
+            // 单元格样式
+            CellStyle cellStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+            fill(exportData, rowNum, sheet, cellStyle);
+
+            // 响应为流
+            String fileName = "AlertMessagesExport.xlsx"; // 默认名称
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (Exception e) {
+            try {
+                String errMsg;
+                if (e instanceof NZException) {
+                    errMsg = String.format("Configure the maximum number of export: %s, query the total number of export: %s", exportMaxLine, exportRealTotal);
+                } else {
+                    errMsg = "Export error";
+                }
+	            response.sendError(413, errMsg);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        } finally {
+            try {
+                if (workbook != null) {
+                    workbook.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
 	@Override
 	public void updateAlertStateByIds(Map<String, Object> params) {
@@ -521,45 +455,41 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     /**
 	 * 填充表格数据
 	 */
-	private static int fill(List<AlertMessageWithExport> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook){
-		for (AlertMessageWithExport alertMessageWithExport : list) {
-			Row r = sheet.createRow(++rowNum);
-			Integer id = alertMessageWithExport.getId();
-			String alertName = alertMessageWithExport.getAlertName();
-			String datacenter = alertMessageWithExport.getDatacenter();
-			String project = alertMessageWithExport.getProject();
-			String module = alertMessageWithExport.getModule();
-			String endpoint = alertMessageWithExport.getEndpoint();
-			String asset = alertMessageWithExport.getAsset();
-			String labels = alertMessageWithExport.getLabels();
-			String severity = alertMessageWithExport.getSeverity();
-			String summary = alertMessageWithExport.getSummary();
-			String description = alertMessageWithExport.getDescription();
-			String startAt = ToolUtil.isNotEmpty(alertMessageWithExport.getStartAt()) ? alertMessageWithExport.getStartAt() : "";
-			String endAt = ToolUtil.isNotEmpty(alertMessageWithExport.getEndAt()) ? alertMessageWithExport.getEndAt() : "";
-			String state = alertMessageWithExport.getState() == 1 ? "pending" : "expired";
+    private static void fill(List<AlertMessageEntity> list, int rowNum, Sheet sheet, CellStyle dataStyle) {
+        Row r;
+        for (AlertMessageEntity entity : list) {
+            r = sheet.createRow(++rowNum);
+            AlertRuleEntity alertRule = entity.getAlertRule();
+            String ruleName = alertRule == null ? "" : alertRule.getAlertName();
+            Idc dc = entity.getDc();
+            String dcName = dc == null ? "" : dc.getName();
+            Project project = entity.getProject();
+            String projectName = project == null ? "" : project.getName();
+            Module module = entity.getModule();
+            String moduleName = module == null ? "" : module.getName();
+            Endpoint endpoint = entity.getEndpoint();
+	        String endpointId = endpoint == null ? "" : endpoint.getId() + "";
+            Asset asset = entity.getAsset();
+            String assetHost = asset == null ? "" : asset.getHost();
+	        String startAt = ToolUtil.isNotEmpty(entity.getStartAt()) ? DateUtil.formatDate(entity.getStartAt(), "yyyy-MM-dd HH:mm:ss") : "";
+	        String endAt = ToolUtil.isNotEmpty(entity.getEndAt()) ? DateUtil.formatDate(entity.getEndAt(), "yyyy-MM-dd HH:mm:ss") : "";
 
-			r.createCell(0).setCellValue(id);
-			r.createCell(1).setCellValue(alertName);
-			r.createCell(2).setCellValue(datacenter);
-			r.createCell(3).setCellValue(project);
-			r.createCell(4).setCellValue(module);
-			r.createCell(5).setCellValue(endpoint);
-			r.createCell(6).setCellValue(asset);
-			r.createCell(7).setCellValue(labels);
-			r.createCell(8).setCellValue(severity);
-			r.createCell(9).setCellValue(summary);
-			r.createCell(10).setCellValue(description);
-			r.createCell(11).setCellValue(startAt);
-			r.createCell(12).setCellValue(endAt);
-			r.createCell(13).setCellValue(state);
+            r.createCell(0).setCellValue(entity.getId());
+            r.createCell(1).setCellValue(ruleName);
+            r.createCell(2).setCellValue(dcName);
+            r.createCell(3).setCellValue(projectName);
+            r.createCell(4).setCellValue(moduleName);
+            r.createCell(5).setCellValue(endpointId);
+            r.createCell(6).setCellValue(assetHost);
+            r.createCell(7).setCellValue(entity.getLabels());
+            r.createCell(8).setCellValue(entity.getSeverity());
+            r.createCell(9).setCellValue(entity.getSummary());
+            r.createCell(10).setCellValue(entity.getDescription());
+            r.createCell(11).setCellValue(startAt);
+            r.createCell(12).setCellValue(endAt);
+            r.createCell(13).setCellValue(entity.getState() == 1 ? "pending" : "expired");
 
-			ExcelUtils.setDataCellStyle(workbook, r, 13);
-		}
-		return rowNum;
-	}
-
-
-
-
+            ExcelUtils.setDataCellStyle(dataStyle, r, 13);
+        }
+    }
 }

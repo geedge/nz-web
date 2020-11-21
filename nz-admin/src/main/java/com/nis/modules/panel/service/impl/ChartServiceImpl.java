@@ -27,6 +27,7 @@ import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -981,6 +982,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     private void fillAssetModelChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
         Row row;
         String type;
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (Chart chart : charts) {
             if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
             row = sheet.createRow(rowNum++);
@@ -998,7 +1000,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(6).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, row, 6);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 6);
         }
     }
 
@@ -1496,6 +1498,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Map<Integer, String> panelIdAndNameMap = panelList.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
         Row row;
         String type;
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (Chart chart : charts) {
             if(chart == null) continue;
             row = sheet.createRow(rowNum++);
@@ -1514,7 +1517,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, row, 7);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 7);
         }
     }
 

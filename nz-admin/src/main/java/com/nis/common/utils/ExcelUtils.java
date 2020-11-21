@@ -194,7 +194,7 @@ public class ExcelUtils {
      * @param isBold   字体是否加粗
      * @return
      */
-    private static CellStyle createCellStyle(Workbook workbook, short fontsize, boolean isBold) {
+    public static CellStyle createCellStyle(Workbook workbook, short fontsize, boolean isBold) {
         CellStyle style = workbook.createCellStyle();
         // 上下左右边框
         style.setBorderBottom(CellStyle.BORDER_THIN);
@@ -220,12 +220,11 @@ public class ExcelUtils {
 
     /**
      * 设置单元格样式
-     * @param workbook
+     * @param dataStyle
      * @param row
      * @param cellNum
      */
-    public static void setDataCellStyle(Workbook workbook, Row row, int cellNum) {
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+    public static void setDataCellStyle(CellStyle dataStyle, Row row, int cellNum) {
         Cell cell;
         for (int i = 0; i <= cellNum; i++) {
             cell = row.getCell(i);

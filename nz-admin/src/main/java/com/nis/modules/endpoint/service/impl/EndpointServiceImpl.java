@@ -30,6 +30,7 @@ import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -73,8 +74,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	private TransactionDefinition transactionDefinition;
 	@Autowired
 	private RedisTemplate redisTemplate;
-	@Autowired
-	private PromserverService promserverService;
 
 	@Autowired
 	private AlertMessageDao alertMessageDao;
@@ -631,6 +630,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			String sheetName = "Endpoints";
 			workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
 			SXSSFSheet sheet = workbook.getSheet(sheetName);
+			CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
 
 			// 添加数据
 			Row row1;
@@ -661,7 +661,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				row1.createCell(8).setCellValue(asset.getHost());
 
 				// 设置单元格样式
-				ExcelUtils.setDataCellStyle(workbook, row1, 8);
+				ExcelUtils.setDataCellStyle(dataStyle, row1, 8);
 			}
 
 			// 响应为流

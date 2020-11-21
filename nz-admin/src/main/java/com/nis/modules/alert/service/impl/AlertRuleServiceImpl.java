@@ -28,6 +28,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -662,6 +663,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
         Row row;
         String receiveIds, receiveNames;
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (AlertRuleEntity rule : list) {
             // 内置告警不导出
             if (rule.getBuildIn() != null && rule.getBuildIn().equals(1)) continue;
@@ -688,7 +690,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, row, 9);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
         }
     }
 

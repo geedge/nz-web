@@ -28,7 +28,6 @@ import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.dao.SysAreaDao;
 import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysArea;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -39,6 +38,7 @@ import com.nis.modules.terminal.config.Constants;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.service.AccountService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -1678,6 +1678,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Integer start, end, ipmiPort;
         String ipmiHost, tagStr;
         //Map ipmiMap;
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (Asset asset : list) {
             row = sheet.createRow(rowNum++);
 
@@ -1707,20 +1708,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
                 row.createCell(33).setCellValue(tagStr);
             }
-            /*ipmiMap = JSONObject.parseObject(JSONObject.toJSONString(asset.getIpmi()), Map.class);
-            if (ToolUtil.isNotEmpty(ipmiMap)) {
-                ipmiHost = (String) ipmiMap.get("host");
-                if (ToolUtil.isNotEmpty(ipmiHost)) {
-                    row.createCell(34).setCellValue(ipmiHost);
-                }
-                ipmiPort = (Integer) ipmiMap.get("port");
-                if (ToolUtil.isNotEmpty(ipmiPort)) {
-                    row.createCell(35).setCellValue(ipmiPort);
-                }
-            }*/
-
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(workbook, row, 33);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 33);
         }
     }
 
