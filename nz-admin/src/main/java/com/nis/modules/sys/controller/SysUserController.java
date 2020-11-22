@@ -103,7 +103,7 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 修改用户
 	 */
-	@PostMapping("/update")
+	@PutMapping("/update")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
 	public R update(@RequestBody SysUserEntity user){
 		ValidateUtils.is(user.getUserId()).notNull(RCode.SYS_USER_ID_ISNULL);
