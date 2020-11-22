@@ -10,6 +10,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetDao;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.dao.ModuleDao;
@@ -55,6 +56,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
     @Autowired
     private OverviewService overviewService;
+
+    @Autowired
+    private EndpointDao endpointDao;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -288,12 +292,17 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             endpointStatMap.put("down", 0);
             return endpointStatMap;
         }
+        // 停用状态的 endpoint ids
+        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
         // 健康的 endpoint ids
-        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds();
+        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
         int totalEndpointNum = endpointIds.size();
+        Set<Integer> tempSet = new HashSet<>(endpointIds);
         endpointIds.retainAll(upStatusEndpointIds);
+        tempSet.retainAll(suspendedEndpointIds);
         endpointStatMap.put("up", endpointIds.size());
-        endpointStatMap.put("down", totalEndpointNum - endpointIds.size());
+        endpointStatMap.put("suspended", tempSet.size());
+        endpointStatMap.put("down", totalEndpointNum - endpointIds.size() - tempSet.size());
         return endpointStatMap;
     }
 

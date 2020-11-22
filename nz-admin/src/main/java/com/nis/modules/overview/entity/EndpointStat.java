@@ -48,4 +48,9 @@ public class EndpointStat {
      */
     private int endpointDown;
 
+    /**
+     * endpoint 停用计数
+     */
+    private int endpointSuspended;
+
 }

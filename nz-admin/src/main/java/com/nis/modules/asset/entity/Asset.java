@@ -1,8 +1,8 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.terminal.entity.Account;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -162,6 +162,12 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private Integer endpointDownNum;
+
+    /**
+     * endpoint 停用数量
+     */
+    @TableField(exist = false)
+    private Integer endpointSuspendedNum;
 
     /**
      * account 集合

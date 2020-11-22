@@ -12,6 +12,7 @@ import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.asset.dao.*;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.ModelService;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointService;
@@ -89,6 +90,9 @@ public class OverviewServiceImpl implements OverviewService {
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private EndpointDao endpointDao;
 
     @Autowired
     private EndpointStateService endpointStateService;
@@ -355,30 +359,39 @@ public class OverviewServiceImpl implements OverviewService {
         // 补充 endpointTotal endpointUp endpointDown 信息
         Map<String, List<Integer>> idcNameWithEndpointIdsMap = this.getDcNameWithEndpointInfo();
 
+        // 停用状态 endpoint id
+        List<Integer> suspendedEndpointList = endpointDao.getSuspendedEndpointIds();
+
         // 服务健康的endpoint id列表
-        Set<Integer> endpointUpIds = this.getUpStatusEndpointIds();
+        Set<Integer> endpointUpIds = this.getUpStatusEndpointIds(suspendedEndpointList);
 
         for (EndpointStat stat : endpointInfoByDc) {
             List<Integer> list = idcNameWithEndpointIdsMap.get(stat.getName());
             int endpointUp = 0;
+            int endpointSuspended = 0;
             int total = list.size();
             if (CollectionUtils.isNotEmpty(list)) {
                 for (Integer id : list) {
                     if (endpointUpIds.contains(id)) {
                         endpointUp++;
                     }
+                    if (suspendedEndpointList.contains(id)) {
+                        endpointSuspended++;
+                    }
                 }
             }
             stat.setEndpointTotal(total);
             stat.setEndpointUp(endpointUp);
-            stat.setEndpointDown(total - endpointUp);
+            stat.setEndpointSuspended(endpointSuspended);
+            stat.setEndpointDown(total - endpointUp - endpointSuspended);
         }
 
         int count = endpointService.count();
         Map resultData = new HashMap();
         resultData.put("total", count);
         resultData.put("up", endpointUpIds.size());
-        resultData.put("down", count - endpointUpIds.size());
+        resultData.put("suspended", suspendedEndpointList.size());
+        resultData.put("down", count - endpointUpIds.size() - suspendedEndpointList.size());
         resultData.put("dcStat", endpointInfoByDc);
 
         return resultData;
@@ -448,6 +461,7 @@ public class OverviewServiceImpl implements OverviewService {
             dcStat.setEndpointTotal(endpointStat.getEndpointTotal());
             dcStat.setEndpointUp(endpointStat.getEndpointUp());
             dcStat.setEndpointDown(endpointStat.getEndpointDown());
+            dcStat.setEndpointSuspended(endpointStat.getEndpointSuspended());
             dcStat.setId(endpointStat.getId());
 
             dcStatList.add(dcStat);
@@ -642,7 +656,7 @@ public class OverviewServiceImpl implements OverviewService {
 
     // 请求prometheus 然后返回状态可用的endpoint ids
     @Override
-    public Set<Integer> getUpStatusEndpointIds() {
+    public Set<Integer> getUpStatusEndpointIds(List<Integer> suspendedEndpointList) {
         Set<Integer> endPointIds = new HashSet<>();
 
         SysConfigEntity config = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
@@ -678,7 +692,11 @@ public class OverviewServiceImpl implements OverviewService {
                             if (endpoint == null) continue;
                             timeAndState = (List<String>) pojo.get("value");
                             if ("1".equals(timeAndState.get(1))) {
-                                endPointIds.add(Integer.valueOf(endpoint.toString()));
+                                Integer endpointId = Integer.valueOf(endpoint.toString());
+                                // 去除停用状态的 endpoint
+                                if (!suspendedEndpointList.contains(endpointId)) {
+                                    endPointIds.add(endpointId);
+                                }
                             }
                         }
                     }
@@ -707,7 +725,9 @@ public class OverviewServiceImpl implements OverviewService {
                     if (time - createTime > alertTime) {
                         break;
                     } else {
-                        endPointIds.add(endpointState.getEndpointId());
+                        if (!suspendedEndpointList.contains(endpointState.getEndpointId())) {
+                            endPointIds.add(endpointState.getEndpointId());
+                        }
                     }
                 }
                 break;

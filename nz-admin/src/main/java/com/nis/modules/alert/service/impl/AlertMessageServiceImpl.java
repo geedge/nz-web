@@ -20,6 +20,7 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointService;
@@ -85,6 +86,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private EndpointStateService endpointStateService;
 
+	@Autowired
+    private EndpointDao endpointDao;
 
 	/**
 	 * 处理请求参数
@@ -176,8 +179,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    if("1".equals(endpointAlertPush)) {
     		Set<EndpointState> endpointStates =new HashSet<>();
 		    // 用于判断 endpoint id 是否重复
-		    List<EndpointState> list = endpointStateService.list();
-		    Set<Integer> tempEndpointIds = list.stream().map(EndpointState::getEndpointId).distinct().collect(Collectors.toSet());
+		    Set<Integer> tempEndpointIds = new HashSet<>();
+            EndpointState endpointState;
     		for(int i=receiveData.size()-1;i>=0;i--) {
 	    		Map receiveLabels = receiveData.get(i).getLabels();
 	    		Map receiveAnnotations = receiveData.get(i).getAnnotations();
@@ -185,7 +188,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			    if (receiveAlertName == ednpointAlertName && ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))) {
 				    Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
 				    if (!tempEndpointIds.contains(endpointId)) {
-					    EndpointState endpointState = new EndpointState();
+					    endpointState = new EndpointState();
 					    endpointState.setId(endpointId);
 					    endpointState.setEndpointId(endpointId);
 					    endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
@@ -207,8 +210,19 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     			//告警一次不会推送全部告警情况 不再清表 根据endpoint_id执行批量的新增或者修改
     			endpointStateService.saveOrUpdateBatch(endpointStates);
     		}
-	    	
-	    }else{
+
+            List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+            if (CollectionUtils.isNotEmpty(suspendedEndpointIds)) {
+                endpointStateService.remove(new LambdaQueryWrapper<EndpointState>().eq(EndpointState::getState, 2));
+                endpointStates = new HashSet<>();
+                Date now = DateUtil.getUTCTimeByConfigTimeZone();
+                for (Integer endpointId : suspendedEndpointIds) {
+                    endpointState = new EndpointState(endpointId, endpointId, now, 2);
+                    endpointStates.add(endpointState);
+                }
+                endpointStateService.saveBatch(endpointStates);
+            }
+        }else{
 	    	// 当endpoint state开关关闭时 防止相关告警存入alert_message表
 	    	for(int i=receiveData.size()-1;i>=0;i--) {
 	    		Map receiveLabels = receiveData.get(i).getLabels();

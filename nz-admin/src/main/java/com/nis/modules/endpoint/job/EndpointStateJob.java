@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.dao.EndpointStateDao;
 import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointStateService;
@@ -29,6 +30,9 @@ public class EndpointStateJob extends QuartzJobBean {
 
     @Autowired
     private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private EndpointDao endpointDao;
 
     @Autowired
     private EndpointStateDao endpointStateDao;
@@ -87,6 +91,8 @@ public class EndpointStateJob extends QuartzJobBean {
                     List<String> timeAndState;
                     // 用于判断 endpoint id 是否重复
                     Set<Integer> tempEndpointIds = new HashSet<>();
+                    // 停用状态 endpoint ids
+                    List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
                     for (Map pojo : result) {
 
                         metricMap = (Map) pojo.get("metric");
@@ -95,7 +101,8 @@ public class EndpointStateJob extends QuartzJobBean {
                         if (endpoint == null) continue;
 
                         Integer endpointId = Integer.valueOf(endpoint.toString());
-                        if (!tempEndpointIds.contains(endpointId)) {
+                        // endpoint 未重复 并且 不是停用状态
+                        if (!tempEndpointIds.contains(endpointId) && !suspendedEndpointIds.contains(endpointId)) {
                             endpointState = new EndpointState();
                             endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
 
@@ -108,6 +115,12 @@ public class EndpointStateJob extends QuartzJobBean {
 
                             tempEndpointIds.add(endpointId);
                         }
+                    }
+
+                    // 停用状态 endpoint
+                    for (Integer suspendedEndpointId : suspendedEndpointIds) {
+                        endpointState = new EndpointState(suspendedEndpointId, suspendedEndpointId, DateUtil.getUTCTimeByConfigTimeZone(), 2);
+                        saveEndpointStateList.add(endpointState);
                     }
 
                     endpointStateDao.deleteAll();

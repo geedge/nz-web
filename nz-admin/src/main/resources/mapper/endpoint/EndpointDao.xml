@@ -134,4 +134,14 @@
         GROUP BY
             mo.id
 	</select>
+
+    <select id="getSuspendedEndpointIds" resultType="java.lang.Integer">
+        SELECT DISTINCT
+            en.id
+        FROM
+            asset ass
+            LEFT JOIN endpoint en ON ass.id = en.asset_id
+        WHERE
+            ass.state = 3
+    </select>
 </mapper>

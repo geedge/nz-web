@@ -31,7 +31,7 @@ public interface OverviewService {
 
     List<Map> alertStatByModuleTopN(Integer top);
     
-    Set<Integer> getUpStatusEndpointIds();
+    Set<Integer> getUpStatusEndpointIds(List<Integer> suspendedEndpointList);
 
     List<AssetStat> getAssetStatByDc(List<Asset> assetList, List<AssetPing> assetPingList, List<AlertMessageEntity> alertList);
 

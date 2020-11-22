@@ -16,6 +16,7 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.*;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.MetricsDto;
@@ -129,7 +130,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private AssetFeatureService assetFeatureService;
 
     @Autowired
-    private SysAreaDao sysAreaDao;
+    private EndpointDao endpointDao;
 
     @Autowired
     private AssetTagDao assetTagDao;
@@ -273,8 +274,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             assetIdAndEndpointNumMap.put(id, epList);
             assetIdAndMoudleNumMap.put(id, CollectionUtils.isEmpty(epList) ? 0 : Integer.valueOf((int) epList.stream().map(Endpoint::getModuleId).distinct().count()));
         }
+
+        // 停用状态的 endpoint ids
+        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
         // 添加 endpointdownNum
-        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds();
+        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
         // 处理返回格式
         String ipmi = null;
         Integer cabinetEnd, alertNum, moduleNum, endpointNum, assetId;
@@ -318,21 +322,42 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             endpointList = assetIdAndEndpointNumMap.get(assetId);
             endpointNum = CollectionUtils.isEmpty(endpointList) ? 0 : endpointList.size();
             asset.setEndpointNum(ToolUtil.isEmpty(endpointNum) ? 0 : endpointNum);
-            asset.setEndpointDownNum(this.getEndpointDownNum(endpointList, upStatusEndpointIds));
+            asset.setEndpointDownNum(this.getEndpointDownNum(endpointList, upStatusEndpointIds, suspendedEndpointIds));
+            asset.setEndpointSuspendedNum(this.getEndpointSuspendedNum(endpointList, suspendedEndpointIds));
         }
     }
 
-    private Integer getEndpointDownNum(List<Endpoint> endpointList, Set<Integer> upStatusEndpointIds) {
+    /**
+     * 获取 endpoint down 状态
+     * @param endpointList
+     * @param upStatusEndpointIds
+     * @param suspendedEndpointIds
+     * @return
+     */
+    private Integer getEndpointDownNum(List<Endpoint> endpointList, Set<Integer> upStatusEndpointIds, List<Integer> suspendedEndpointIds) {
+        if (CollectionUtils.isEmpty(endpointList)) return 0;
+        int num = 0;
+        for (Endpoint endpoint : endpointList) {
+            // 不属于 up 不属于 suspended
+            if (!upStatusEndpointIds.contains(endpoint.getId()) && !suspendedEndpointIds.contains(endpoint.getId())) {
+                num++;
+            }
+        }
+        return num;
+    }
+
+
+    private Integer getEndpointSuspendedNum(List<Endpoint> endpointList, List<Integer> upStatusEndpointIds) {
         if (CollectionUtils.isEmpty(endpointList)) {
             return 0;
         }
-        int downNum = 0;
+        int num = 0;
         for (Endpoint endpoint : endpointList) {
-            if (!upStatusEndpointIds.contains(endpoint.getId())) {
-                downNum++;
+            if (upStatusEndpointIds.contains(endpoint.getId())) {
+                num++;
             }
         }
-        return downNum;
+        return num;
     }
 
     /**

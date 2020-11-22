@@ -1,6 +1,5 @@
 package com.nis.modules.project.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,27 +9,20 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.service.OverviewService;
-import com.nis.modules.panel.dao.PanelDao;
-import com.nis.modules.panel.entity.Chart;
-import com.nis.modules.panel.entity.Panel;
-import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.entity.Topo;
 import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.project.service.TopoService;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,22 +43,16 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 	private AlertMessageService alertMessageService;
 	
 	@Autowired
-	private PanelDao panelDao;
-	
-	@Autowired
 	private OverviewService overviewService;
 	
 	@Autowired
 	private EndpointService endpointService;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private TopoService topoService;
 
     @Autowired
-    private ChartService chartService;
-	
-    @Autowired
-    private TopoService topoService;
+    private EndpointDao endpointDao;
     
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -97,12 +83,6 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		projectDao.deleteBatchIds(ids);
 		//删除alert表相关数据信息
 		alertMessageService.removeByProjectIds(ids);
-		// 删除关联 panel
-		/*List<Panel> panels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.PROJECT.getValue()).in(Panel::getLink, ids));
-		if(ToolUtil.isNotEmpty(panels)) {
-			Set<Integer> panelIds = panels.stream().map(Panel::getId).collect(Collectors.toSet());
-			panelService.delPanelsAndChartInfoByPanelIds(panelIds);
-		}*/
 		// 删除关联的 topo
 		topoService.remove(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, ids));
 	}
@@ -128,41 +108,9 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 
 		if (ToolUtil.isEmpty(project.getId())) {
 			this.save(project);
-
-			// 新增时需要新增 panel chart   remark : project 取消增加 panel chart 页面由拓扑图替换图表
-			// this.saveProjectPanel(project);
 		} else {
 			this.updateById(project);
 		}
-	}
-
-	private void saveProjectPanel(Project project) {
-		Panel panel = new Panel();
-		panel.setType(Constant.PanelType.PROJECT.getValue());
-		panel.setLink(project.getId());
-		panel.setCreateBy(ShiroUtils.getUserId().intValue());
-		// 固定格式 panel name format is project_panel_link
-		panel.setName("project_panel_" + project.getId());
-
-		panel.setPrev(0);
-		panel.setNext(-1);
-		panelDao.insert(panel);
-
-        // 配置信息获取
-        SysConfigEntity projectConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_PROJECT_CHART_TPL));
-        if (ToolUtil.isEmpty(projectConfig)) {
-            log.error(String.format("获取project配置信息失败%s", Constant.SYSCONFIG_KEY_PROJECT_CHART_TPL));
-            throw new NZException(RCode.SYS_CONFIG_PROJECTCHARTTPL_NOTFOUND);
-        }
-        // chart config
-        Chart chartConfig = JSONObject.parseObject(projectConfig.getParamValue(), Chart.class);
-
-        Chart target = new Chart();
-        BeanUtils.copyProperties(chartConfig, target);
-        target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? project.getId() + " Chart" : target.getTitle());
-        target.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
-        target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
-        chartService.saveChart(panel.getId(), target);
 	}
 
 	public boolean validateProjectName(Integer id, String name) {
@@ -187,7 +135,6 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 			List<Map<String, Object>> maps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("project_id", id).eq("state",1).groupBy("severity").select("severity","count(*) as count"));
 			Map projectAlertMessageInfos =new HashMap();
 			List<Integer> alertStat = project.getAlertStat();
-			Map handleMap=new HashMap();
 			for(Map<String,Object> map:maps) {
 				projectAlertMessageInfos.put(map.get("severity"),((Long)map.get("count")).intValue());
 			}
@@ -200,8 +147,10 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		    if(ObjectUtils.isEmpty(modules)) {
 		    	modules=new ArrayList<Module>();
 		    }
-		    
-		    Set<Integer> endpointStatus = overviewService.getUpStatusEndpointIds();
+			// 停用状态的 endpoint ids
+			List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+
+			Set<Integer> endpointUpIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
 		    
 		    for(Module module : modules) {
 		    	//module高中低alert message数据
@@ -215,18 +164,21 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		    	moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM));
 		    	moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW));
 		    	//组件endpoint up down统计
-		    	if(ObjectUtils.isNotEmpty(endpointStatus)) {
+		    	if(ObjectUtils.isNotEmpty(endpointUpIds)) {
 		    		List<Integer> endpointStat = module.getEndpointStat();
-		    		// 初始化endpoint up down状态
+		    		// 初始化endpoint up down suspended 状态
+		    		endpointStat.add(0);
 		    		endpointStat.add(0);
 		    		endpointStat.add(0);
 		    		List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().eq("module_id", module.getId()));
 			    	for(Endpoint endpoint : endpoints) {
-			    		if(endpointStatus.contains(endpoint.getId())) {
-			    			endpointStat.set(0, (endpointStat.get(0)+1));
-			    		}else {
-			    			endpointStat.set(1, (endpointStat.get(1)+1));
-			    		}
+					    if (endpointUpIds.contains(endpoint.getId())) {
+						    endpointStat.set(0, (endpointStat.get(0) + 1));
+					    } else if (suspendedEndpointIds.contains(endpoint.getId())) {
+						    endpointStat.set(2, (endpointStat.get(2) + 1));
+					    } else {
+						    endpointStat.set(1, (endpointStat.get(1) + 1));
+					    }
 			    	}
 		    	}
 		    }

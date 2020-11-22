@@ -22,4 +22,14 @@ public class EndpointState implements Serializable {
 	private Integer endpointId;
 	private Date createTime;
 	private Integer state;
+
+    public EndpointState() {
+    }
+
+    public EndpointState(Integer id, Integer endpointId, Date createTime, Integer state) {
+        this.id = id;
+        this.endpointId = endpointId;
+        this.createTime = createTime;
+        this.state = state;
+    }
 }
