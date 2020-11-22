@@ -107,7 +107,7 @@
            </if>
 
            <if test="params.state != null and params.state != ''">
-               AND a.state = #{params.state}
+               AND es.state = #{params.state}
            </if>
 
            <if test="params.purchaseDate != null and params.purchaseDate != ''">
