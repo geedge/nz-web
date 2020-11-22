@@ -79,7 +79,7 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         	template = this.getTemplate();
             this.execAlertMessage();
         }catch (Exception e){
-            log.error("邮件发送任务异常", e);
+            log.error("告警通知异常", e);
         }finally {
 			sw.stop();
 		}
@@ -150,8 +150,12 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
     				case 2:state = "Expired";break;
                     }
 
-                    if(ToolUtil.isNotEmpty(toSendEmails)){
-                        mailUtil.sendHTML(toSendEmails, state +" : " +messageEntity.getSummary(), this.sendMail(messageEntity));
+                    if (ToolUtil.isNotEmpty(toSendEmails)) {
+                        try {
+                            mailUtil.sendHTML(toSendEmails, state + " : " + messageEntity.getSummary(), this.sendMail(messageEntity));
+                        } catch (Exception e) {
+                            log.error("邮件发送任务异常", e);
+                        }
                     }
 
                     // 通知脚本信息不为空
