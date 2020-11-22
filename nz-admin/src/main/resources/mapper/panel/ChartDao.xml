@@ -11,6 +11,7 @@
         <result property="type" column="type"></result>
         <result property="prev" column="prev"></result>
         <result property="next" column="next"></result>
+        <result property="weight" column="weight"></result>
         <result property="panelId" column="panel_id"></result>
         <result property="param" column="param"></result>
         <result property="unit" column="unit"></result>
@@ -40,6 +41,9 @@
         <if test="title != null and title != ''">
             AND ch.title LIKE CONCAT('%', #{title}, '%')
         </if>
+
+        /** 按照 weight 排序 */
+        ORDER BY ch.weight,ch.id
     </select>
 
     <delete id="deleteByIds">
@@ -49,7 +53,7 @@
         </foreach>
     </delete>
 
-    <update id="updatePrevNextById">
+    <update id="updateSizeById">
         UPDATE chart
             <set>
                 prev = #{chart.prev},
@@ -80,6 +84,17 @@
                 </set>
             WHERE
                 id = #{chart.id}
+        </foreach>
+    </update>
+
+    <update id="updateWeightBatch">
+        <foreach item="chart" collection="charts" separator=";">
+            UPDATE chart
+            <set>
+                weight = #{chart.weight}
+            </set>
+            WHERE
+            id = #{chart.id}
         </foreach>
     </update>
 </mapper>

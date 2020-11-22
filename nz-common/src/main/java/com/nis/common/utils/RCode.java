@@ -93,6 +93,7 @@ public enum RCode {
     PANEL_CHART_TEMPLATE_TYPE_ISNULL(121054, "Panel charts template type is null"),
     CHART_TEXTPARAM_ISNULL(121055,"Chart param cannot be empty when type is text"),
     CHART_PARAMTEXT_ISNULL(121056,"Chart param text not found when type is text"),
+    CHART_WEIGHT_ISNULL(121057,"Chart weight can not be empty"),
 
 
     /**

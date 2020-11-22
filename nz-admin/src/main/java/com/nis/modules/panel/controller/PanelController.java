@@ -126,7 +126,7 @@ public class PanelController {
 
 
     /**
-     * charts 调整位置接口
+     * charts 调整大小接口
      *
      * @param panelId
      * @param chart
@@ -137,11 +137,25 @@ public class PanelController {
     public R modify(@PathVariable("id") Integer panelId, @RequestBody Chart chart) {
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
                 .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
-                .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
-                .and(chart.getPrev()).notNull(RCode.CHART_PREV_ISNULL)
-                .and(chart.getNext()).notNull(RCode.CHART_NEXT_ISNULL);
+                .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL);
+                /*.and(chart.getPrev()).notNull(RCode.CHART_PREV_ISNULL)
+                .and(chart.getNext()).notNull(RCode.CHART_NEXT_ISNULL);*/
 
         chartService.modify(panelId, chart);
+        return R.ok();
+    }
+
+    /**
+     * 调整位置接口
+     * @param panelId
+     * @param chartList
+     * @return
+     */
+    @PutMapping(value = {"/{id}/charts/weights"})
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
+    public R weights(@PathVariable("id") Integer panelId, @RequestBody List<Chart> chartList) {
+
+        chartService.weights(panelId, chartList);
         return R.ok();
     }
     

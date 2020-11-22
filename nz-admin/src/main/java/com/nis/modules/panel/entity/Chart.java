@@ -2,6 +2,7 @@ package com.nis.modules.panel.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
 import lombok.Data;
@@ -11,7 +12,21 @@ import java.util.List;
 
 @Data
 @TableName("chart")
-public class Chart extends Node{
+public class Chart{
+
+
+    @TableId
+    public Integer id;
+
+    /**
+     * 排序字段，前一个元素
+     */
+    public Integer prev;
+
+    /**
+     * 排序字段，后一个元素
+     */
+    public Integer next;
 
     /**
      * 图表id，关联panel表
@@ -42,6 +57,11 @@ public class Chart extends Node{
      * 单位
      */
     private Integer unit;
+
+    /**
+     * 默认为 0，用于chart排序
+     */
+    private Integer weight;
 
     /**
      * 模板ID

@@ -41,4 +41,6 @@ public interface ChartService extends IService<Chart> {
     void export(HttpServletResponse response, Map<String, Object> params);
 
     Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language);
+
+    void weights(Integer panelId, List<Chart> chartList);
 }
