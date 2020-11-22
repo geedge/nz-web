@@ -65,8 +65,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
     private void validateUserInfo(SysUserEntity user) {
 	    Integer status = user.getStatus();
         ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL)
-                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL)
-                .and(user.getPassword()).notNull(RCode.SYS_USER_PASSWORD_ISNULL);
+                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL);
 
 	    if(status != 0 && status != 1){
 	    	throw new NZException(RCode.SYS_USER_STATUS_INVALIDE);
