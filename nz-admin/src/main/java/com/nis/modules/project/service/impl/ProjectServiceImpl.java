@@ -147,8 +147,12 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectDao, Project> impleme
 		    if(ObjectUtils.isEmpty(modules)) {
 		    	modules=new ArrayList<Module>();
 		    }
-			// 停用状态的 endpoint ids
-			List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+			// 根据 asset 停用状态 获取对应 endpoint ids
+			List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+			// 停用的 endpoint ids
+			List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+			suspendedEndpointIds.addAll(disabledEndpointIds);
+			suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
 
 			Set<Integer> endpointUpIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
 		    

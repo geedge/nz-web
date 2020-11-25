@@ -165,6 +165,7 @@ public enum RCode {
     ENDPOINT_LABELS_FORMAT(233020,"Endpoint labels must be JSON format"),
     ENDPOINT_LABELS_KEY_FORMAT(233021,"Endpoint labels key format is incorrect"),
     ENDPOINT_TIMEOUT_UPDATE(233022,"Data has not been updated for more than multiple cycles"),
+    ENDPOINT_ENABLED_INVALIDE(234023, "Endpoint enabled must be 0 or 1"),
     /**
      * assets菜单项相关
      */

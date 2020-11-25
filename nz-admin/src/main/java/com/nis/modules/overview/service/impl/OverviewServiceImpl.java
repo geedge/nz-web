@@ -359,8 +359,12 @@ public class OverviewServiceImpl implements OverviewService {
         // 补充 endpointTotal endpointUp endpointDown 信息
         Map<String, List<Integer>> idcNameWithEndpointIdsMap = this.getDcNameWithEndpointInfo();
 
-        // 停用状态 endpoint id
-        List<Integer> suspendedEndpointList = endpointDao.getSuspendedEndpointIds();
+        // 根据 asset 停用状态 获取对应 endpoint ids
+        List<Integer> suspendedEndpointList = endpointDao.getSuspendedEndpointIdsByAssetState();
+        // 停用的 endpoint ids
+        List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+        suspendedEndpointList.addAll(disabledEndpointIds);
+        suspendedEndpointList = suspendedEndpointList.stream().distinct().collect(Collectors.toList());
 
         // 服务健康的endpoint id列表
         Set<Integer> endpointUpIds = this.getUpStatusEndpointIds(suspendedEndpointList);

@@ -17,5 +17,7 @@ public interface EndpointDao  extends BaseMapper<Endpoint> {
 	
 	List<MetricsDto> selectEndpointStatisticsInfoByModule();
 
-	List<Integer> getSuspendedEndpointIds();
+	List<Integer> getSuspendedEndpointIdsByAssetState();
+
+	List<Integer> getDisabledEndpointIds();
 }

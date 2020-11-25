@@ -276,7 +276,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 
         // 停用状态的 endpoint ids
-        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+        // 停用的 endpoint ids
+        List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+        suspendedEndpointIds.addAll(disabledEndpointIds);
+        suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
+
         // 添加 endpointdownNum
         Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
         // 处理返回格式

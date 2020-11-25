@@ -225,7 +225,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		List<Integer> assetIdList = assetList.stream().map(Asset::getId).collect(Collectors.toList());
 
 		String labels;
-		Integer moduleId,assetId;
+		Integer moduleId,assetId,enabled;
 		for (Endpoint endpoint : endpointList) {
 			moduleId = endpoint.getModuleId();
 			assetId = endpoint.getAssetId();
@@ -256,6 +256,13 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 						throw new NZException("labels's key " + key + " format is incorrect", RCode.ENDPOINT_LABELS_KEY_FORMAT.getCode());
 					}
 				});
+			}
+
+			enabled = endpoint.getEnabled();
+			if (enabled != null) {
+				if (enabled != 0 && enabled != 1) {
+					throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
+				}
 			}
 		}
 	}
@@ -463,6 +470,15 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 
 			String path = ExcelUtils.getCellValue(row.getCell(7));
+
+			String enabled = ExcelUtils.getCellValue(row.getCell(9));
+			if (StringUtils.isNotEmpty(enabled)) {
+				if (!"1".equals(enabled) && !"0".equals(enabled)) {
+					saveFlag = false;
+					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ENDPOINT_ENABLED_INVALIDE.getMsg());
+				}
+			}
+
 			// 前面没有报错
 			if (saveFlag) {
 				TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -527,6 +543,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					endpoint.setParam(ToolUtil.isEmpty(param) ? module.getParam() : param);
 					endpoint.setLabels(ToolUtil.isEmpty(labels) ? module.getLabels() : labels);
 					endpoint.setPath(ToolUtil.isEmpty(path) ? module.getPath() : path);
+					endpoint.setEnabled(ToolUtil.isEmpty(enabled) ? 1 : Double.valueOf(enabled).intValue());
 					endpoint.setSeq(seqUUID);
 					this.save(endpoint);
 					dataSourceTransactionManager.commit(transactionStatus);
@@ -659,9 +676,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				row1.createCell(7).setCellValue(endpoint.getPath());
 				// host
 				row1.createCell(8).setCellValue(asset.getHost());
+				// enabled
+				row1.createCell(9).setCellValue(endpoint.getEnabled());
 
 				// 设置单元格样式
-				ExcelUtils.setDataCellStyle(dataStyle, row1, 8);
+				ExcelUtils.setDataCellStyle(dataStyle, row1, 9);
 			}
 
 			// 响应为流
@@ -727,6 +746,9 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			}
 			if (ToolUtil.isEmpty(endpoint.getHost())) {
 				endpoint.setHost(assetIdAndHostMap.get(endpoint.getAssetId()));
+			}
+			if (ToolUtil.isEmpty(endpoint.getEnabled())) {
+				endpoint.setEnabled(1);
 			}
 		}
 

@@ -292,8 +292,13 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             endpointStatMap.put("down", 0);
             return endpointStatMap;
         }
-        // 停用状态的 endpoint ids
-        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+        // 根据 asset 停用状态 获取对应 endpoint ids
+        List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+        // 停用的 endpoint ids
+        List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+        suspendedEndpointIds.addAll(disabledEndpointIds);
+        suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
+
         // 健康的 endpoint ids
         Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
         int totalEndpointNum = endpointIds.size();

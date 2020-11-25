@@ -27,6 +27,7 @@ public class Endpoint {
 	@TableField(strategy = FieldStrategy.IGNORED)
 	private String labels;
 	private String path;
+	private Integer enabled;
 	@TableField(exist = false)
 	private Module module;
 	@TableField(exist = false)

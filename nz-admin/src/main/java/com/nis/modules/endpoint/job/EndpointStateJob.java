@@ -91,8 +91,12 @@ public class EndpointStateJob extends QuartzJobBean {
                     List<String> timeAndState;
                     // 用于判断 endpoint id 是否重复
                     Set<Integer> tempEndpointIds = new HashSet<>();
-                    // 停用状态 endpoint ids
-                    List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+                    // 根据 asset 停用状态 获取对应 endpoint ids
+                    List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+                    // 停用的 endpoint ids
+                    List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+                    suspendedEndpointIds.addAll(disabledEndpointIds);
+                    suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
                     for (Map pojo : result) {
 
                         metricMap = (Map) pojo.get("metric");

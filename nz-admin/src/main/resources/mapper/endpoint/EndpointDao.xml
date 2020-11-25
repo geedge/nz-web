@@ -11,7 +11,8 @@
         <result property="param" column="param"/>
         <result property="labels" column="labels"/>
         <result property="path" column="path"/>
-        
+        <result property="enabled" column="enabled"/>
+
         <association columnPrefix="es_" property="endpointState" javaType="com.nis.modules.endpoint.entity.EndpointState">
 	    	<id column="endpoint_id" property="endpointId"/>
 	    	<result column="create_time" property="createTime"/>
@@ -135,7 +136,7 @@
             mo.id
 	</select>
 
-    <select id="getSuspendedEndpointIds" resultType="java.lang.Integer">
+    <select id="getSuspendedEndpointIdsByAssetState" resultType="java.lang.Integer">
         SELECT DISTINCT
             en.id
         FROM
@@ -143,5 +144,14 @@
             LEFT JOIN endpoint en ON ass.id = en.asset_id
         WHERE
             ass.state = 3
+    </select>
+
+    <select id="getDisabledEndpointIds" resultType="java.lang.Integer">
+        SELECT
+            id
+        FROM
+            endpoint
+        WHERE
+            enabled = 0
     </select>
 </mapper>

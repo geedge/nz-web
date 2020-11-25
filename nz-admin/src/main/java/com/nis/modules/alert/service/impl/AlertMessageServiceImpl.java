@@ -211,7 +211,11 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     			endpointStateService.saveOrUpdateBatch(endpointStates);
     		}
 
-            List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIds();
+            List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+		    // 停用的 endpoint ids
+		    List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+		    suspendedEndpointIds.addAll(disabledEndpointIds);
+		    suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(suspendedEndpointIds)) {
                 endpointStateService.remove(new LambdaQueryWrapper<EndpointState>().eq(EndpointState::getState, 2));
                 endpointStates = new HashSet<>();
