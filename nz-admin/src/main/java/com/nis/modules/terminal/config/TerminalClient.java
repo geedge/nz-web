@@ -113,10 +113,10 @@ public class TerminalClient {
                 String keyPassword = params.get("keyPassword");
                 if (notEmpty(privateKey)) {
                     File keyFile = new File(terminal.getPrivateKeyPath());
-                    if (!keyFile.exists()) {
-                        //将数据库中的私钥写到用户的机器上
-                        IOUtils.writeFile(keyFile, new ByteArrayInputStream(privateKey.getBytes()));
-                    }
+//                    if (!keyFile.exists()) {
+                    //将数据库中的私钥写到用户的机器上
+                    IOUtils.writeFile(keyFile, new ByteArrayInputStream(privateKey.getBytes()));
+//                    }
                     if (notEmpty(keyPassword)) {
                         //设置带口令的密钥
                         jSch.addIdentity(terminal.getPrivateKeyPath(), keyPassword);
