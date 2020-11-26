@@ -19,6 +19,9 @@ import java.util.Map;
 @Data
 public class AlertMessageReceiveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
     private static Gson gson = new Gson();
 
     private Map labels;
@@ -35,14 +38,6 @@ public class AlertMessageReceiveDTO implements Serializable {
 
     private Boolean snmptrap;
 
-    /*public static List<AlertMessageEntity> toAlertMessageEntity(AlertMessageReceiveDTO[] entities) throws Exception {
-        List<AlertMessageEntity> list = new ArrayList<>();
-        for (AlertMessageReceiveDTO entity : entities) {
-            list.add(toAlertMessageEntity(entity));
-        }
-        return list;
-    }*/
-
     public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto, Integer buildRuleId) throws ParseException {
         AlertMessageEntity entity = new AlertMessageEntity();
         //取出labels，计算hash，查询redis看是否有重复
@@ -58,7 +53,7 @@ public class AlertMessageReceiveDTO implements Serializable {
         // 时区转换 按照数据库配置时区入库
         String startsAt = dto.getStartsAt();
         String endsAt = dto.getEndsAt();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
         Date sa = sdf.parse(startsAt);
 
         // trap 推送过来的消息 endsAt 为空

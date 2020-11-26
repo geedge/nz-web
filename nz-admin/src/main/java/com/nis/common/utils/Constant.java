@@ -531,6 +531,9 @@ public class Constant {
     // 主机连通性检查开关，1：开启，0：关闭
     public static final String SYSCONFIG_KEY_ASSET_PING_SWITCH = "asset_ping_switch";
 
+    // 邮件告警开关
+    public static final String SYSCONFIG_KEY_EMAIL_ENABLE = "email_enable";
+
     // nezha 系统版本
     public static final String SYSCONFIG_KEY_SYSTEM_VERSION = "system_version";
 

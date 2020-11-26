@@ -57,6 +57,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("sysConfigService")
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEntity> implements SysConfigService {
@@ -355,6 +356,18 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         }catch (Exception e){
             throw e;
         }
+    }
+
+    @Override
+    public boolean checkHaMode() {
+        List<SysConfigEntity> configList = this.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, new String[]{"ha_mode", "ha_vip"}));
+        Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        if ("2".equals(configMap.get("ha_mode"))) {
+            if (!CommonUtils.getInetIpAddress().contains(configMap.get("ha_vip"))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

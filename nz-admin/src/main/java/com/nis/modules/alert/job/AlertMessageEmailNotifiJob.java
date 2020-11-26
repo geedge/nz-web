@@ -72,6 +72,10 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        // 检查 haMode
+        boolean haMode = configService.checkHaMode();
+        if (!haMode) return;
+
     	StopWatch sw = new StopWatch();
     	sw.start();
         try {

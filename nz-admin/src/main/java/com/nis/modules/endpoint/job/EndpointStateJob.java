@@ -11,8 +11,8 @@ import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
-import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class EndpointStateJob extends QuartzJobBean {
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private SysConfigService sysConfigService;
 
     @Autowired
     private EndpointDao endpointDao;
@@ -46,6 +46,10 @@ public class EndpointStateJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+        // 检查 haMode
+        boolean haMode = sysConfigService.checkHaMode();
+        if (!haMode) return;
+
         StopWatch sw = new StopWatch();
         sw.start();
         try {
@@ -59,7 +63,7 @@ public class EndpointStateJob extends QuartzJobBean {
     }
 
     private void getEndpointStatusFromPrometheus() {
-        SysConfigEntity endpointStateSwitchConfig = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
+        SysConfigEntity endpointStateSwitchConfig = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
         String endpointStateSwitch = endpointStateSwitchConfig.getParamValue();
         if (!"2".equals(endpointStateSwitch)) {
             log.debug("Endpoint 状态定时任务关闭");

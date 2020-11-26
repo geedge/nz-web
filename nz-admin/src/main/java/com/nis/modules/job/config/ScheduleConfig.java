@@ -1,5 +1,9 @@
 package com.nis.modules.job.config;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +18,7 @@ import java.util.Properties;
 
  */
 @Configuration
+@Slf4j
 public class ScheduleConfig {
 
     @Autowired
@@ -21,6 +26,9 @@ public class ScheduleConfig {
 
     @Autowired
     private AutowiringSpringBeanJobFactory jobFactory;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
 
     @Bean
     public Properties quartzProperties() {
@@ -50,12 +58,17 @@ public class ScheduleConfig {
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
         // 设置自动启动
         factory.setAutoStartup(true);
-        // 设置数据源
-        factory.setDataSource(dataSource);
         // 添加job工厂类
         factory.setJobFactory(jobFactory);
-        // 配置文件
-        factory.setQuartzProperties(quartzProperties());
+
+        SysConfigEntity sysConfigEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, "ha_mode"));
+        String mode = sysConfigEntity.getParamValue();
+        if (!"2".equals(mode)) {
+            // 设置数据源
+            factory.setDataSource(dataSource);
+            // 配置文件
+            factory.setQuartzProperties(quartzProperties());
+        }
         return factory;
     }
 }

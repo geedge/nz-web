@@ -3,6 +3,9 @@ package com.nis.common.utils;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.File;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -547,6 +550,32 @@ public class CommonUtils {
 
     public static String getSystemCharset(){
         return System.getProperty("file.encoding");
+    }
+
+    /**
+     * 获取本机所有网卡IP
+     * @return
+     */
+    public static Set<String> getInetIpAddress() {
+        Enumeration allNetInterfaces = null;
+        Set<String> allIpaddress = new HashSet<>();
+        try {
+            allNetInterfaces = NetworkInterface.getNetworkInterfaces();
+            InetAddress ip = null;
+            while (allNetInterfaces.hasMoreElements()) {
+                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
+                Enumeration addresses = netInterface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    ip = (InetAddress) addresses.nextElement();
+                    if (ip != null && ip instanceof Inet4Address) {
+                        allIpaddress.add(ip.getHostAddress());
+                    }
+                }
+            }
+        } catch (java.net.SocketException e) {
+            e.printStackTrace();
+        }
+        return allIpaddress;
     }
 
     /**

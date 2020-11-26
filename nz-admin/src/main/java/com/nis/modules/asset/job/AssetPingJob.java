@@ -47,6 +47,10 @@ public class AssetPingJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+        // 检查 haMode
+        boolean haMode = sysConfigService.checkHaMode();
+        if (!haMode) return;
+
         StopWatch sw = new StopWatch();
         sw.start();
         try {

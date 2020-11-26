@@ -33,6 +33,10 @@ public class PromserverJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		// 检查 haMode
+		boolean haMode = sysConfigService.checkHaMode();
+		if (!haMode) return;
+
 		//查询内置confagent配置信息
 		String confagentPort=sysConfigService.getValue(Constant.CONFAGENT_PORT);
 		String confagentPath=sysConfigService.getValue(Constant.CONFAGENT_PATH);

@@ -3,6 +3,7 @@ package com.nis.modules.asset.job;
 import com.alibaba.fastjson.JSON;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -21,9 +22,16 @@ public class AssetFeatureJob extends QuartzJobBean {
 	
 	@Autowired
 	private AssetConcurrent assetConcurrent;
+
+	@Autowired
+	private SysConfigService sysConfigService;
 	
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+
+		// 检查 haMode
+		boolean haMode = sysConfigService.checkHaMode();
+		if (!haMode) return;
 		
 		logger.info("--------------------AssetFeatureJob starting--------------------");
 		// 查询所有asset信息列表

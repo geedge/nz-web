@@ -168,74 +168,13 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
 	    if (CollectionUtils.isEmpty(receiveData)) return;
 
-	    //根据sysconfig判断数据是否为endpoint state
-	    String endpointAlertPush = configService.getValue(Constant.ENDPOINT_ALERT_PUSH);
-	    String endpointAlertRule = configService.getValue(Constant.ENDPOINT_ALERT_RULE);
-	    Integer ednpointAlertName=0;
-	    if(ToolUtil.isNotEmpty(endpointAlertRule)) {
-    		Map endpointAlertRuleMap = (Map) JSON.parse(endpointAlertRule);
-    		ednpointAlertName = Integer.parseInt((String)endpointAlertRuleMap.get("alertName"));
-    	}
-	    if("1".equals(endpointAlertPush)) {
-    		Set<EndpointState> endpointStates =new HashSet<>();
-		    // 用于判断 endpoint id 是否重复
-		    Set<Integer> tempEndpointIds = new HashSet<>();
-            EndpointState endpointState;
-    		for(int i=receiveData.size()-1;i>=0;i--) {
-	    		Map receiveLabels = receiveData.get(i).getLabels();
-	    		Map receiveAnnotations = receiveData.get(i).getAnnotations();
-	    		int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
-			    if (receiveAlertName == ednpointAlertName && ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))) {
-				    Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
-				    if (!tempEndpointIds.contains(endpointId)) {
-					    endpointState = new EndpointState();
-					    endpointState.setId(endpointId);
-					    endpointState.setEndpointId(endpointId);
-					    endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
-					    endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
-					    endpointStates.add(endpointState);
+        String[] keys = {Constant.ENDPOINT_ALERT_PUSH, Constant.ENDPOINT_ALERT_RULE, Constant.SYSCONFIG_KEY_EMAIL_ENABLE};
+        List<SysConfigEntity> paramValues = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, keys));
+        Map<String, String> configMap = paramValues.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-					    tempEndpointIds.add(endpointId);
-				    }
-				    receiveData.remove(i);
-			    }
-	    	}
-    		// 将产生告警的id信息存入endpoint_state表中
-    		if(ToolUtil.isNotEmpty(endpointStates)) {
-    			/*先清空表 再批量添加数据 
-    			endpointStateDao.deleteAll();
-    			endpointStateService.saveBatch(endpointStates);
-    			*/
-    			logger.debug("准备更新endpoint state表的数据为"+JSON.toJSONString(endpointStates));
-    			//告警一次不会推送全部告警情况 不再清表 根据endpoint_id执行批量的新增或者修改
-    			endpointStateService.saveOrUpdateBatch(endpointStates);
-    		}
+        // endpoint state
+        this.handleEndpointStateByRule(configMap, receiveData);
 
-            List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
-		    // 停用的 endpoint ids
-		    List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
-		    suspendedEndpointIds.addAll(disabledEndpointIds);
-		    suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
-            if (CollectionUtils.isNotEmpty(suspendedEndpointIds)) {
-                endpointStateService.remove(new LambdaQueryWrapper<EndpointState>().eq(EndpointState::getState, 2));
-                endpointStates = new HashSet<>();
-                Date now = DateUtil.getUTCTimeByConfigTimeZone();
-                for (Integer endpointId : suspendedEndpointIds) {
-                    endpointState = new EndpointState(endpointId, endpointId, now, 2);
-                    endpointStates.add(endpointState);
-                }
-                endpointStateService.saveBatch(endpointStates);
-            }
-        }else{
-	    	// 当endpoint state开关关闭时 防止相关告警存入alert_message表
-	    	for(int i=receiveData.size()-1;i>=0;i--) {
-	    		Map receiveLabels = receiveData.get(i).getLabels();
-	    		int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
-	    		if(receiveAlertName==ednpointAlertName) {
-	    			receiveData.remove(i);
-	    		}
-	    	}
-	    }
 	    // 全为endpoint state告警 后续操作不用继续 
 	    if (CollectionUtils.isEmpty(receiveData)) return;
 	    
@@ -254,10 +193,38 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		    alertHashKeyAndEntityMap.put(entity.getHashKey(), entity);
 	    }
 
+	    List<Endpoint> endpointList = endpointService.list();
+	    Map<Integer, Endpoint> endpointMap = new HashMap<>();
+	    for (Endpoint endpoint : endpointList) {
+		    endpointMap.put(endpoint.getId(), endpoint);
+	    }
+
+	    List<Module> moduleList = moduleService.list();
+	    Map<Integer, Module> moduleIdAndEntityMap = new HashMap<>();
+	    Map<String, Module> moduleNameAndEntityMap = new HashMap<>();
+	    for (Module module : moduleList) {
+		    moduleIdAndEntityMap.put(module.getId(), module);
+		    moduleNameAndEntityMap.put(module.getName(), module);
+	    }
+
+	    List<Asset> assetList = assetService.list();
+	    Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
+	    Map<String, Asset> assetHostAndEntityMap = new HashMap<>();
+	    for (Asset asset : assetList) {
+		    assetIdAndEntityMap.put(asset.getId(), asset);
+		    assetHostAndEntityMap.put(asset.getHost(), asset);
+	    }
+
+	    List<Project> projectList = projectService.list();
+	    Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(Project::getName, Project::getId));
+
+	    List<Idc> idcList = idcService.list();
+	    Map<String, Integer> idcNameAndIdMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Idc::getId));
+
 	    AlertMessageEntity entity, expiredAlert;
 	    for (AlertMessageReceiveDTO dto : receiveData) {
 		    try {
-			    getReceiveLabels(dto);
+			    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, idcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
 			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
 
 			    // 如果是内置告警直接入库
@@ -284,72 +251,151 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				    }
 			    }
 		    } catch (Exception e) {
-			    logger.error("解析告警信息失败，参数是：+" + JSONObject.toJSONString(dto) + " 错误信息：" + e.getMessage(), e);
+			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" + e.getMessage(), e);
 			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 		    }
 	    }
-
-	    // 更改过期消息状态
-	    logger.debug("状态变化的告警消息信息为 : {}", CollectionUtils.isEmpty(expiredAlertList) ? Collections.emptyList() : JSONObject.toJSONString(expiredAlertList));
-	    if (ToolUtil.isNotEmpty(expiredAlertList)) {
-		    this.updateBatchById(expiredAlertList);
-	    }
-
-	    logger.debug("告警消息处理完成，入库消息为 : {}", CollectionUtils.isEmpty(entities) ? Collections.emptyList() : JSONObject.toJSONString(entities));
-	    if (CollectionUtils.isNotEmpty(entities)) {
-		    this.saveBatch(entities);
-	    }
-	    String emailEnable = configService.getValue("email_enable");
-	    //邮件通知
-	    if (Constant.SWITCH_OPEN.equals(emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
-	    	entities.addAll(expiredAlertList);//邮件通知 告警 pending 与 expired
-		    logger.debug("向redi放入邮件消息数据：" + JSONObject.toJSONString(entities));
-		    redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, JSONObject.toJSONString(entities));
-	    }
+	    // 处理转换之后的数据
+	    this.handleConvertedMsg(entities, expiredAlertList, configMap.get(Constant.SYSCONFIG_KEY_EMAIL_ENABLE));
     }
 
-    private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto){
+	/**
+	 * 从 告警中获取 endpoint state 状态
+	 * @param configMap
+	 * @param receiveData
+	 */
+	private void handleEndpointStateByRule(Map<String, String> configMap, List<AlertMessageReceiveDTO> receiveData) {
+		String endpointAlertPush = configMap.get(Constant.ENDPOINT_ALERT_PUSH);
+		String endpointAlertRule = configMap.get(Constant.ENDPOINT_ALERT_RULE);
+		Integer ednpointAlertName = 0;
+		if (ToolUtil.isNotEmpty(endpointAlertRule)) {
+			Map endpointAlertRuleMap = (Map) JSON.parse(endpointAlertRule);
+			ednpointAlertName = Integer.parseInt((String) endpointAlertRuleMap.get("alertName"));
+		}
+		if ("1".equals(endpointAlertPush)) {
+			Set<EndpointState> endpointStates = new HashSet<>();
+			// 用于判断 endpoint id 是否重复
+			Set<Integer> tempEndpointIds = new HashSet<>();
+			EndpointState endpointState;
+			for (int i = receiveData.size() - 1; i >= 0; i--) {
+				Map receiveLabels = receiveData.get(i).getLabels();
+				Map receiveAnnotations = receiveData.get(i).getAnnotations();
+				int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
+				if (receiveAlertName == ednpointAlertName && ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))) {
+					Integer endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
+					if (!tempEndpointIds.contains(endpointId)) {
+						endpointState = new EndpointState();
+						endpointState.setId(endpointId);
+						endpointState.setEndpointId(endpointId);
+						endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+						endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
+						endpointStates.add(endpointState);
+
+						tempEndpointIds.add(endpointId);
+					}
+					receiveData.remove(i);
+				}
+			}
+			// 将产生告警的id信息存入endpoint_state表中
+			if (ToolUtil.isNotEmpty(endpointStates)) {
+				//告警一次不会推送全部告警情况 不再清表 根据endpoint_id执行批量的新增或者修改
+				endpointStateService.saveOrUpdateBatch(endpointStates);
+			}
+
+			List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
+			// 停用的 endpoint ids
+			List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
+			suspendedEndpointIds.addAll(disabledEndpointIds);
+			suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
+			if (CollectionUtils.isNotEmpty(suspendedEndpointIds)) {
+				endpointStateService.remove(new LambdaQueryWrapper<EndpointState>().eq(EndpointState::getState, 2));
+				endpointStates = new HashSet<>();
+				Date now = DateUtil.getUTCTimeByConfigTimeZone();
+				for (Integer endpointId : suspendedEndpointIds) {
+					endpointState = new EndpointState(endpointId, endpointId, now, 2);
+					endpointStates.add(endpointState);
+				}
+				endpointStateService.saveBatch(endpointStates);
+			}
+		} else {
+			// 当endpoint state开关关闭时 防止相关告警存入alert_message表
+			for (int i = receiveData.size() - 1; i >= 0; i--) {
+				Map receiveLabels = receiveData.get(i).getLabels();
+				int receiveAlertName = Integer.parseInt((String) receiveLabels.get("alertname"));
+				if (receiveAlertName == ednpointAlertName) {
+					receiveData.remove(i);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 入库、过期、告警通知
+	 * @param entities
+	 * @param expiredAlertList
+	 * @param emailEnable
+	 */
+	private void handleConvertedMsg(List<AlertMessageEntity> entities, List<AlertMessageEntity> expiredAlertList, String emailEnable) {
+		logger.debug("状态变化的告警消息信息为 : {}", JSONObject.toJSONString(expiredAlertList));
+		if (ToolUtil.isNotEmpty(expiredAlertList)) {
+			this.updateBatchById(expiredAlertList);
+		}
+
+		logger.debug("告警消息处理完成，入库消息为 : {}", JSONObject.toJSONString(entities));
+		if (CollectionUtils.isNotEmpty(entities)) {
+			this.saveBatch(entities);
+		}
+
+		// 邮件通知
+		if (Constant.SWITCH_OPEN.equals(emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
+			// 邮件通知 告警 pending 与 expired
+			entities.addAll(expiredAlertList);
+			String jsonString = JSONObject.toJSONString(entities);
+			logger.debug("向redi放入邮件消息数据: {}", jsonString);
+			redisTemplate.opsForList().leftPush(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE, jsonString);
+		}
+	}
+
+	private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto, Map<Integer, Endpoint> endpointMap, Map<Integer, Asset> assetIdAndEntityMap, Map<String, Asset> assetHostAndEntityMap, Map<String, Integer> projectNameAndIdMap, Map<String, Integer> idcNameAndIdMap, Map<Integer, Module> moduleIdAndEntityMap, Map<String, Module> moduleNameAndEntityMap) {
 		Map receiveLabels = dto.getLabels();
 		Map labelIds = new HashMap();
-		Integer assertId=null,moduleId=null,projectId=null,endpointId=null,dcId=null ;
+		Integer assertId = null, moduleId = null, projectId = null, endpointId = null, dcId = null;
 		// 有endpointId ,即可查出所有
-		if(ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))){
+		if (ToolUtil.isNotEmpty(receiveLabels.get("endpoint"))) {
 			endpointId = Integer.valueOf(receiveLabels.get("endpoint").toString());
-			Endpoint endpoint = endpointService.getById(endpointId);
+			Endpoint endpoint = endpointMap.get(endpointId);
 			assertId = endpoint.getAssetId();
 			moduleId = endpoint.getModuleId();
-			Module module = moduleService.getById(moduleId);
+			Module module = moduleIdAndEntityMap.get(moduleId);
 			projectId = module.getProjectId();
-			Asset asset = assetService.getById(assertId);
+			Asset asset = assetIdAndEntityMap.get(assertId);
 			dcId = asset.getIdcId();
-		}else{
-			if(ToolUtil.isNotEmpty(receiveLabels.get("module"))){
-				Module module = moduleService.getOne(new LambdaQueryWrapper<Module>().eq(Module::getName, receiveLabels.get("module").toString()));
+		} else {
+			if (ToolUtil.isNotEmpty(receiveLabels.get("module"))) {
+				Module module = moduleNameAndEntityMap.get(receiveLabels.get("module").toString());
 				moduleId = module.getId();
 				projectId = module.getProjectId();
 			}
-			if(ToolUtil.isNotEmpty(receiveLabels.get("project"))&&ToolUtil.isEmpty(receiveLabels.get("module"))){
-				Project project = projectService.getOne(new LambdaQueryWrapper<Project>().eq(Project::getName,receiveLabels.get("project").toString()));
-				projectId = project.getId();
+			if (ToolUtil.isNotEmpty(receiveLabels.get("project")) && ToolUtil.isEmpty(receiveLabels.get("module"))) {
+				projectId = projectNameAndIdMap.get(receiveLabels.get("project").toString());
 			}
-			if(ToolUtil.isNotEmpty(receiveLabels.get("asset"))){
-				Asset asset = assetService.getOne(new LambdaQueryWrapper<Asset>().eq(Asset::getHost,receiveLabels.get("asset").toString()));
+			if (ToolUtil.isNotEmpty(receiveLabels.get("asset"))) {
+				Asset asset = assetHostAndEntityMap.get(receiveLabels.get("asset").toString());
 				assertId = asset.getId();
 				dcId = asset.getIdcId();
 			}
-			if(ToolUtil.isNotEmpty(receiveLabels.get("datacenter"))&&ToolUtil.isEmpty(receiveLabels.get("asset"))){
-				Idc dc = idcService.getOne(new LambdaQueryWrapper<Idc>().eq(Idc::getName,receiveLabels.get("datacenter").toString()));
-				dcId = dc.getId();
+			if (ToolUtil.isNotEmpty(receiveLabels.get("datacenter")) && ToolUtil.isEmpty(receiveLabels.get("asset"))) {
+				dcId = idcNameAndIdMap.get(receiveLabels.get("datacenter").toString());
 			}
 		}
-		labelIds.put("endpoint",endpointId);
-		labelIds.put("project",projectId);
-		labelIds.put("assetId",assertId);
-		labelIds.put("module",moduleId);
-		labelIds.put("datacenter",dcId);
+		labelIds.put("endpoint", endpointId);
+		labelIds.put("project", projectId);
+		labelIds.put("assetId", assertId);
+		labelIds.put("module", moduleId);
+		labelIds.put("datacenter", dcId);
 		dto.setLabelIds(labelIds);
 
-    	return dto;
+		return dto;
 	}
 
 	@Override
