@@ -58,17 +58,12 @@ public class ScheduleConfig {
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
         // 设置自动启动
         factory.setAutoStartup(true);
+        // 设置数据源
+        factory.setDataSource(dataSource);
         // 添加job工厂类
         factory.setJobFactory(jobFactory);
-
-        SysConfigEntity sysConfigEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, "ha_mode"));
-        String mode = sysConfigEntity.getParamValue();
-        if (!"2".equals(mode)) {
-            // 设置数据源
-            factory.setDataSource(dataSource);
-            // 配置文件
-            factory.setQuartzProperties(quartzProperties());
-        }
+        // 配置文件
+        factory.setQuartzProperties(quartzProperties());
         return factory;
     }
 }
