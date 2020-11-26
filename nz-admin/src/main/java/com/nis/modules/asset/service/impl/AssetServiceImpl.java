@@ -3,6 +3,7 @@ package com.nis.modules.asset.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
@@ -18,7 +19,9 @@ import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
@@ -27,7 +30,6 @@ import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
-import com.nis.modules.sys.dao.SysAreaDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
@@ -137,6 +139,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     @Autowired
     private OverviewService overviewService;
+
+    @Autowired
+    private EndpointStateService endpointStateService;
 
     /**
      * 处理查询 asset 请求参数
@@ -522,10 +527,33 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             if (!oldAsset.getModelId().equals(asset.getModelId())) {
                 chartService.updateAssetChartsByNewModel(asset);
             }
+
+            // 4. 如果状态发生改变 改为停用状态 修改endpoint state
+            if (!oldAsset.getState().equals(asset.getState()) && 3 == asset.getState()) {
+                this.handleEndpointStateByAsset(asset);
+            }
         }
 
         // 保存/修改 asset tag
         assetTagService.saveTagByAssetId(asset.getId(), asset.getTags());
+    }
+
+    /**
+     * asset 改为停用状态 ，更改相应 endpoint 状态
+     * @param asset
+     */
+    private void handleEndpointStateByAsset(Asset asset) {
+        List<Endpoint> endpointList = endpointService.list(new LambdaQueryWrapper<Endpoint>().eq(Endpoint::getAssetId, asset.getId()));
+        if (CollectionUtils.isEmpty(endpointList)) return;
+
+        List<EndpointState> endpointStateList = new ArrayList<>();
+        EndpointState endpointState;
+        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        for (Endpoint endpoint : endpointList) {
+            endpointState = new EndpointState(endpoint.getId(), endpoint.getId(), now, 2);
+            endpointStateList.add(endpointState);
+        }
+        endpointStateService.saveOrUpdateBatch(endpointStateList);
     }
 
 
@@ -573,6 +601,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Module module = moduleService.getById(initModule.getParamValue());
         Endpoint endpoint = new Endpoint(module.getId(), asset.getId(), asset.getHost(), module.getPort(), module.getParam(), module.getPath());
         endpointService.save(endpoint);
+
+        // endpoint state 新增
+        // 新增状态时 默认为 0
+        Integer endpointState = 0;
+        // asset 新增为停用状态 endpoint state 为2
+        if (asset.getState() == 3) endpointState = 2;
+        EndpointState endpointStateEntity = new EndpointState(endpoint.getId(), endpoint.getId(), DateUtil.getUTCTimeByConfigTimeZone(), endpointState);
+        endpointStateService.save(endpointStateEntity);
     }
 
     @Override
@@ -585,11 +621,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 1. 删除
         this.removeByIds(idList);
 
-        // 2. 删除关联的endponiet
+        // 2. 删除关联的endponiet,endpoint state
         List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, idList));
         if (CollectionUtils.isNotEmpty(endpoints)) {
             List<Integer> endpointIds = endpoints.stream().map(Endpoint::getId).collect(Collectors.toList());
             endpointService.deleteEndpointByIds(endpointIds);
+
+            // 删除关联的 endpoint state
+            endpointStateService.removeByIds(endpointIds);
         }
 
         // 3. 删除关联的alert信息
@@ -1218,7 +1257,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
         sshParam.put("method", sshMethod);
         sshParam.put("key", sshKey);
-        sshParam.put("passwordKey", sshKeyPassword);
+        sshParam.put("keyPassword", sshKeyPassword);
 
         account.setParams(JSONObject.toJSONString(sshParam));
         account.setSeq(seqUUID);
@@ -1461,8 +1500,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             accountService.remove(new QueryWrapper<Account>().lambda().eq(Account::getSeq, seq));
             // tag
             assetTagService.remove(new QueryWrapper<AssetTag>().lambda().eq(AssetTag::getSeq, seq));
-            // endpoint
-            endpointService.remove(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, assetIds));
+
+            // endpoint endpointState
+            List<Endpoint> endpointList = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, assetIds));
+            Set<Integer> endpointIds = endpointList.stream().map(Endpoint::getId).collect(Collectors.toSet());
+            endpointService.removeByIds(endpointIds);
+            endpointStateService.removeByIds(endpointIds);
             // 导入 asset 关联的 panel chart 信息
             List<Panel> assetPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, assetIds));
             if (CollectionUtils.isNotEmpty(assetPanels)) {

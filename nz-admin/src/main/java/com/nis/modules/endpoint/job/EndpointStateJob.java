@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.dao.EndpointStateDao;
 import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.promserver.entity.Promserver;
@@ -14,6 +13,7 @@ import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -34,9 +34,6 @@ public class EndpointStateJob extends QuartzJobBean {
 
     @Autowired
     private EndpointDao endpointDao;
-
-    @Autowired
-    private EndpointStateDao endpointStateDao;
 
     @Autowired
     private PromserverService promserverService;
@@ -132,8 +129,21 @@ public class EndpointStateJob extends QuartzJobBean {
                         saveEndpointStateList.add(endpointState);
                     }
 
-                    endpointStateDao.deleteAll();
-                    endpointStateService.saveBatch(saveEndpointStateList);
+                    List<EndpointState> list = endpointStateService.list();
+                    Map<Integer, Integer> idAndStateMap = list.stream().collect(Collectors.toMap(EndpointState::getId, EndpointState::getState));
+
+                    Iterator<EndpointState> iterator = saveEndpointStateList.iterator();
+                    while (iterator.hasNext()){
+                        EndpointState pojo = iterator.next();
+
+                        Integer state = idAndStateMap.get(pojo.getId());
+                        // 状态没有改变就不进行修改
+                        if(state != null && state.equals(pojo.getState())){
+                            iterator.remove();
+                        }
+                    }
+                    if (CollectionUtils.isNotEmpty(saveEndpointStateList))
+                        endpointStateService.saveOrUpdateBatch(saveEndpointStateList);
                 } else {
                     log.error(String.format("Endpoint 状态信息获取失败,URL: %s, 查询状态是: %s, 查询结果是: ", url.toString(), status == null ? "null" : status.toString(), jsonObject));
                 }

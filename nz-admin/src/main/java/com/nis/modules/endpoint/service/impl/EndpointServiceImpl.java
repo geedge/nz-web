@@ -1,9 +1,9 @@
 package com.nis.modules.endpoint.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -19,14 +19,12 @@ import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
 import com.nis.modules.endpoint.entity.StateInfo;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.ProjectService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverProxyService;
-import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
@@ -45,11 +43,11 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -60,8 +58,6 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	private static Logger logger = LoggerFactory.getLogger(EndpointServiceImpl.class);
 	@Autowired
 	private EndpointDao endpointDao;
-	@Autowired
-	private PromserverProxyService promserverProxyService;
 	@Autowired
 	private ProjectService projectService;
 	@Autowired
@@ -80,6 +76,9 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 
 	@Autowired
 	private SysConfigDao sysConfigDao;
+
+	@Autowired
+	private EndpointStateService endpointStateService;
 	
 	@Value("${nezha.endpointStateTime}")
 	private String endpointStateTime; 
@@ -89,6 +88,9 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		logger.info("queryPage param is : {}",JSON.toJSON(params));
 		IPage<Endpoint> page = new Query<Endpoint>().getPage(params);
 		List<Endpoint> datas = endpointDao.queryPage(page, params);
+
+		SysConfigEntity config = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
+		String endpointStateAlertSwitch = config.getParamValue();
 		//获取当前时间
 		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
 		long time = nowTime.getTime();
@@ -103,7 +105,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			if(ToolUtil.isNotEmpty(endpointState)) {
 				long createTime = endpointState.getCreateTime().getTime();
 				// 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
-				if(time-createTime>alertTime) {
+				if (!"2".equals(endpointStateAlertSwitch) && time - createTime > alertTime) {
 					data.setState(0);
 					stateInfo.setCode(RCode.ENDPOINT_TIMEOUT_UPDATE.getCode());
 					stateInfo.setMsg(RCode.ENDPOINT_TIMEOUT_UPDATE.getMsg());
@@ -546,6 +548,14 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					endpoint.setEnabled(ToolUtil.isEmpty(enabled) ? 1 : Double.valueOf(enabled).intValue());
 					endpoint.setSeq(seqUUID);
 					this.save(endpoint);
+
+					// 保存 endpoint state
+					Integer endpointState = 0;
+					// endpoint 停用状态
+					if (endpoint.getEnabled() == 0) endpointState = 2;
+					EndpointState state = new EndpointState(endpoint.getId(), endpoint.getId(), DateUtil.getUTCTimeByConfigTimeZone(), endpointState);
+					endpointStateService.save(state);
+
 					dataSourceTransactionManager.commit(transactionStatus);
 					projectNameAndIdMap.put(projectName, projectId);
 					moduleNameAndModuleMap.put(moduleName, module);
@@ -704,8 +714,13 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 	}
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteEndpointByIds(List<Integer> endpointIdList) {
+	    // 删除 endpoint
         this.removeByIds(endpointIdList);
+
+        // 删除 endpoint state
+        endpointStateService.removeByIds(endpointIdList);
         try {
             // 同时删除 redis  endpoint_prom 中 endpointId 对应的内容
             String[] strArray = endpointIdList.stream().map(s -> String.valueOf(s)).toArray(String[]::new);
@@ -716,6 +731,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
     }
 
 	@Override
+	@Transactional(rollbackFor = Exception.class)
 	public void saveOrUpdateBatchEndpointList(List<Endpoint> endpointList) {
 		// 校验
 		this.validateParam(endpointList);
@@ -729,7 +745,10 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		List<Asset> assetList = assetService.list();
 		Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
 
+		// endpoint 状态
+		List<EndpointState> endpointStateList = new ArrayList<>();
 		Module module;
+		Date now = DateUtil.getUTCTimeByConfigTimeZone();
 		for (Endpoint endpoint : endpointList) {
 			module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
 			if (ToolUtil.isEmpty(endpoint.getPort())) {
@@ -750,8 +769,18 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			if (ToolUtil.isEmpty(endpoint.getEnabled())) {
 				endpoint.setEnabled(1);
 			}
-		}
+			// endpoint state 新增状态时 默认为 0
+			Integer endpointState = 0;
+			// endpoint 停用状态
+			if (endpoint.getEnabled() == 0) endpointState = 2;
 
-		this.saveOrUpdateBatch(endpointList);
+			// 保存 endpoint
+			this.save(endpoint);
+
+			// endpointState
+			endpointStateList.add(new EndpointState(endpoint.getId(), endpoint.getId(), now, endpointState));
+		}
+		// 保存 endpointstate
+		endpointStateService.saveOrUpdateBatch(endpointStateList);
 	}
 }
