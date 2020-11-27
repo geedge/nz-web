@@ -141,9 +141,9 @@
             en.id
         FROM
             asset ass
-            LEFT JOIN endpoint en ON ass.id = en.asset_id
+            RIGHT JOIN endpoint en ON ass.id = en.asset_id
         WHERE
-            ass.state = 3
+            ass.state in (2,3)
     </select>
 
     <select id="getDisabledEndpointIds" resultType="java.lang.Integer">

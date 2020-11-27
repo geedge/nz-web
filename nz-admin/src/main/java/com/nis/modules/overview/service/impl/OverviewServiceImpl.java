@@ -726,7 +726,7 @@ public class OverviewServiceImpl implements OverviewService {
                 for (EndpointState endpointState : endpointStates) {
                     long createTime = endpointState.getCreateTime().getTime();
                     // 判断当数据的创建时间大于两个周期的时间时 prometheus down更新数据状态
-                    if (time - createTime > alertTime) {
+                    if (!"2".equals(endpointStateAlertSwitch) && time - createTime > alertTime) {
                         break;
                     } else {
                         if (!suspendedEndpointList.contains(endpointState.getEndpointId())) {

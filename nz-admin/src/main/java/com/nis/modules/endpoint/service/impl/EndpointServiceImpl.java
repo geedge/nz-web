@@ -775,7 +775,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			if (endpoint.getEnabled() == 0) endpointState = 2;
 
 			// 保存 endpoint
-			this.save(endpoint);
+			this.saveOrUpdate(endpoint);
 
 			// endpointState
 			endpointStateList.add(new EndpointState(endpoint.getId(), endpoint.getId(), now, endpointState));
