@@ -62,7 +62,8 @@
        es.state AS es_state,
        es.create_time AS es_create_time,
        es.endpoint_id AS es_endpoint_id
-       FROM endpoint e left join module m on e.module_id=m.id 
+       FROM endpoint e
+       left join module m on e.module_id=m.id
        left join project p on m.project_id=p.id
        left join asset a on e.asset_id=a.id
        left join endpoint_state es on e.id = es.endpoint_id
@@ -121,6 +122,14 @@
 
            <if test="params.idcIds != null and params.idcIds != ''">
                AND a.idc_id in (#{params.idcIds})
+           </if>
+
+           <if test="params.projectName != null and params.projectName != ''">
+               AND p.name like CONCAT('%', #{params.projectName}, '%')
+           </if>
+
+           <if test="params.moduleName != null and params.moduleName != ''">
+               AND m.name like CONCAT('%', #{params.moduleName}, '%')
            </if>
        </where>
     </select>

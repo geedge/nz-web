@@ -626,9 +626,6 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (CollectionUtils.isNotEmpty(endpoints)) {
             List<Integer> endpointIds = endpoints.stream().map(Endpoint::getId).collect(Collectors.toList());
             endpointService.deleteEndpointByIds(endpointIds);
-
-            // 删除关联的 endpoint state
-            endpointStateService.removeByIds(endpointIds);
         }
 
         // 3. 删除关联的alert信息
@@ -1484,6 +1481,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<Asset> assets = this.list(new QueryWrapper<Asset>().lambda().eq(Asset::getSeq, seq));
         List<Integer> assetIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(assetIds)) {
+            // 删除残留 assetPing 数据
+            Set<String> delAssetHosts = assets.stream().map(Asset::getHost).collect(Collectors.toSet());
+            if (CollectionUtils.isNotEmpty(delAssetHosts)) {
+                assetPingDao.delete(new QueryWrapper<AssetPing>().lambda().in(AssetPing::getHost, delAssetHosts));
+            }
             // asset
             this.remove(new QueryWrapper<Asset>().lambda().eq(Asset::getSeq, seq));
             // idc
@@ -1503,9 +1505,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
             // endpoint endpointState
             List<Endpoint> endpointList = endpointService.list(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getAssetId, assetIds));
-            Set<Integer> endpointIds = endpointList.stream().map(Endpoint::getId).collect(Collectors.toSet());
-            endpointService.removeByIds(endpointIds);
-            endpointStateService.removeByIds(endpointIds);
+            if(CollectionUtils.isNotEmpty(endpointList)){
+                Set<Integer> endpointIds = endpointList.stream().map(Endpoint::getId).collect(Collectors.toSet());
+
+                // 删除 endpoint 、endpoint_state 信息
+                endpointService.deleteEndpointByIds(new ArrayList<>(endpointIds));
+            }
             // 导入 asset 关联的 panel chart 信息
             List<Panel> assetPanels = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.ASSET.getValue()).in(Panel::getLink, assetIds));
             if (CollectionUtils.isNotEmpty(assetPanels)) {
