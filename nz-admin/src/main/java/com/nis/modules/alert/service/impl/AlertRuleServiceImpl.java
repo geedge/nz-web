@@ -105,21 +105,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
         });
 
-        // 处理告警消息数量
-        this.handleAlertMessageNumForRules(ruleEntityList);
-
         page.setRecords(ruleEntityList);
         return new PageUtils(page);
-    }
-
-    private void handleAlertMessageNumForRules(List<AlertRuleEntity> rules) {
-        List<AlertMessageEntity> alerts = alertMessageDao.getAlertsStatColumn();
-        Map<Integer, List<AlertMessageEntity>> ruleIdAndAlertsMap = alerts.stream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId));
-        List<AlertMessageEntity> messageEntities;
-        for (AlertRuleEntity entity : rules) {
-            messageEntities = ruleIdAndAlertsMap.get(entity.getId());
-            entity.setAlertNum(CollectionUtils.isEmpty(messageEntities) ? 0 : messageEntities.size());
-        }
     }
 
     public boolean checkName(AlertRuleEntity alertRule) {
