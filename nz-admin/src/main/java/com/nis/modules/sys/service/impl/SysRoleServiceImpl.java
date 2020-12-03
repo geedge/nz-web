@@ -141,13 +141,14 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         this.validateRoleExist(roleId);
 
         Map resultData = new HashMap(4);
-        List<SysMenuEntity> roleMenuList = sysMenuService.getRoleMenuList(roleId);
+        List<SysMenuEntity> menuList = sysMenuService.getMenuList(null);
 
+        List<SysMenuEntity> roleMenuList = sysMenuService.getRoleMenuList(roleId);
         List<Integer> selectedIds = Collections.emptyList();
         if(CollectionUtils.isNotEmpty(roleMenuList))
             selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);
 
-        resultData.put("menus", roleMenuList);
+        resultData.put("menus", menuList);
         resultData.put("selectedIds", selectedIds);
 
         return resultData;
