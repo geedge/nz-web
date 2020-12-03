@@ -3,7 +3,7 @@
 
 <mapper namespace="com.nis.modules.sys.dao.SysUserRoleDao">
 
-	<select id="queryRoleIdList" resultType="long">
+	<select id="queryRoleIdList" resultType="java.lang.Integer">
 		select role_id from sys_user_role where user_id = #{value}
 	</select>
 

@@ -1,25 +1,10 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.service;
-
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.sys.entity.SysMenuEntity;
 
 import java.util.List;
 
-
-/**
- * 菜单管理
- *
-
- */
 public interface SysMenuService extends IService<SysMenuEntity> {
 
 	/**
@@ -49,4 +34,25 @@ public interface SysMenuService extends IService<SysMenuEntity> {
 	 * 删除
 	 */
 	void delete(Long menuId);
+
+	/**
+	 * 根据角色获取 菜单列表
+	 * @param roleId
+	 * @return
+	 */
+	List<SysMenuEntity> getRoleMenuList(Integer roleId);
+
+	/**
+	 * 获取选中 所有 Menu(树结构) 的 ids
+	 * @param roleMenuList
+	 * @return
+	 */
+	List<Integer> getSelectedMenuIds(List<SysMenuEntity> roleMenuList);
+
+	/**
+	 * 菜单列表
+	 * @return
+	 * @param id
+	 */
+	List<SysMenuEntity> getMenuList(Integer id);
 }

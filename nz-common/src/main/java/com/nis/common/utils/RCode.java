@@ -509,6 +509,19 @@ public enum RCode {
     SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
 
 
+    SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
+    SYS_ROLE_ISNULL(586001, "Role is not exsits"),
+    SYS_ROLE_NAME_ISNULL(581002, "Role name is required"),
+    SYS_ROLE_REMARK_ISNULL(581003, "Role remark is required"),
+    SYS_ROLE_NAME_DUPLICATE(582004, "Role name duplicate"),
+    SYS_ROLE_MENUID_ISNULL(581005, "Role related menu id is required"),
+    SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
+    SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
+
+
+    SYS_MENU_ISNULL(596000, "Menu is not exsits"),
+
+
     LINK_ID_ISNULL(581001,"link id can not be null"),
     LINK_NAME_ISNULL(581002,"link name can not be null"),
     LINK_URL_ISNULL(581003,"link url can not be null"),

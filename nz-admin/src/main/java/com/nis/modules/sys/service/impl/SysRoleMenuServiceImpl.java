@@ -1,11 +1,3 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,47 +5,41 @@ import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.entity.SysRoleMenuEntity;
 import com.nis.modules.sys.service.SysRoleMenuService;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 角色与菜单对应关系
- *
-
- */
 @Service("sysRoleMenuService")
 public class SysRoleMenuServiceImpl extends ServiceImpl<SysRoleMenuDao, SysRoleMenuEntity> implements SysRoleMenuService {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void saveOrUpdate(Long roleId, List<Long> menuIdList) {
-		//先删除角色与菜单关系
-		deleteBatch(new Long[]{roleId});
+	public void saveOrUpdate(Integer roleId, List<Integer> menuIdList) {
+		// 先删除角色与菜单关系
+		this.deleteBatch(new Integer[]{roleId});
 
-		if(menuIdList.size() == 0){
-			return ;
+		if (CollectionUtils.isEmpty(menuIdList)) return;
+
+		List<SysRoleMenuEntity> saveList = new ArrayList<>(menuIdList.size());
+		SysRoleMenuEntity sysRoleMenuEntity;
+		for (Integer menuId : menuIdList) {
+			sysRoleMenuEntity = new SysRoleMenuEntity(null, roleId, menuId);
+			saveList.add(sysRoleMenuEntity);
 		}
 
-		//保存角色与菜单关系
-		for(Long menuId : menuIdList){
-			SysRoleMenuEntity sysRoleMenuEntity = new SysRoleMenuEntity();
-			sysRoleMenuEntity.setMenuId(menuId);
-			sysRoleMenuEntity.setRoleId(roleId);
-
-			this.save(sysRoleMenuEntity);
-		}
+		this.saveBatch(saveList);
 	}
 
 	@Override
-	public List<Long> queryMenuIdList(Long roleId) {
+	public List<Integer> queryMenuIdList(Integer roleId) {
 		return baseMapper.queryMenuIdList(roleId);
 	}
 
 	@Override
-	public int deleteBatch(Long[] roleIds){
+	public int deleteBatch(Integer[] roleIds){
 		return baseMapper.deleteBatch(roleIds);
 	}
-
 }

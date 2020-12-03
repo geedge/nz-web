@@ -1,114 +1,85 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.controller;
 
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
-import com.nis.common.validator.ValidatorUtils;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.nis.common.utils.RCode;
+import com.nis.modules.sys.entity.SysRoleEntity;
+import com.nis.modules.sys.service.SysRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.nis.common.annotation.SysLog;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.service.SysRoleMenuService;
-import com.nis.modules.sys.service.SysRoleService;
-
-import java.util.List;
 import java.util.Map;
 
 /**
  * 角色管理
- *
-
  */
 @RestController
 @RequestMapping("/sys/role")
 public class SysRoleController extends AbstractController {
+
 	@Autowired
 	private SysRoleService sysRoleService;
-	@Autowired
-	private SysRoleMenuService sysRoleMenuService;
 
 	/**
-	 * 角色列表
+	 * 角色列表查询
+	 * @param params
+	 * @return
 	 */
-	@RequestMapping("/list")
-	//@RequiresPermissions("sys:role:list")
+	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysRoleService.queryPage(params);
 
-		return R.ok().put("page", page);
+		return R.ok(page);
 	}
 
-	/**
-	 * 角色列表
-	 */
-	@RequestMapping("/select")
-	//@RequiresPermissions("sys:role:select")
-	public R select(){
-		List<SysRoleEntity> list = sysRoleService.list();
+    /**
+     * 角色菜单查询
+     * @param roleId
+     * @return
+     */
+    @GetMapping("/menu/{id}")
+    public R list(@PathVariable("id") Integer roleId) {
+        ValidateUtils.is(roleId).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
-		return R.ok().put("list", list);
-	}
-
-	/**
-	 * 角色信息
-	 */
-	@RequestMapping("/info/{roleId}")
-	//@RequiresPermissions("sys:role:info")
-	public R info(@PathVariable("roleId") Long roleId){
-		SysRoleEntity role = sysRoleService.getById(roleId);
-
-		//查询角色对应的菜单
-		List<Long> menuIdList = sysRoleMenuService.queryMenuIdList(roleId);
-		role.setMenuIdList(menuIdList);
+        return R.ok(sysRoleService.getMenuListByRoleId(roleId));
+    }
 
 
-		return R.ok().put("role", role);
-	}
-
-	/**
-	 * 保存角色
-	 */
-	@RequestMapping("/save")
-	//@RequiresPermissions("sys:role:save")
+    /**
+     * 角色保存
+     * @param role
+     * @return
+     */
+	@PostMapping
 	public R save(@RequestBody SysRoleEntity role){
-		ValidatorUtils.validateEntity(role);
-
 		sysRoleService.saveRole(role);
-
 		return R.ok();
 	}
 
 	/**
 	 * 修改角色
+	 * @param role
+	 * @return
 	 */
-	@RequestMapping("/update")
-	//@RequiresPermissions("sys:role:update")
+	@PutMapping
 	public R update(@RequestBody SysRoleEntity role){
-		ValidatorUtils.validateEntity(role);
+		ValidateUtils.is(role.getId()).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
 		sysRoleService.update(role);
-
 		return R.ok();
 	}
 
 	/**
 	 * 删除角色
+	 * @param ids
+	 * @return
 	 */
-	@RequestMapping("/delete")
-	//@RequiresPermissions("sys:role:delete")
-	public R delete(@RequestBody Long[] roleIds){
-		sysRoleService.deleteBatch(roleIds);
+	@DeleteMapping
+	public R delete(@RequestParam Integer... ids) {
+		ValidateUtils.is(ids).notNull(RCode.SYS_ROLE_ID_ISNULL);
 
+		sysRoleService.deleteBatch(ids);
 		return R.ok();
 	}
 }

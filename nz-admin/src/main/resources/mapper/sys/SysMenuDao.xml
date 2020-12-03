@@ -10,5 +10,14 @@
 	<select id="queryNotButtonList" resultType="com.nis.modules.sys.entity.SysMenuEntity">
 		select * from sys_menu where type != 2 order by order_num asc 
 	</select>
-	
+
+	<select id="getRoleMenuList" resultType="com.nis.modules.sys.entity.SysMenuEntity">
+		SELECT
+			sm.*
+		FROM
+			sys_role_menu rm
+			LEFT JOIN sys_menu sm ON rm.menu_id = sm.id
+		WHERE
+			rm.role_id = #{roleId}
+	</select>
 </mapper>

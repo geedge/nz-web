@@ -16,8 +16,6 @@ import java.util.List;
 
 /**
  * 系统用户
- *
-
  */
 @Data
 @TableName("sys_user")
@@ -68,9 +66,9 @@ public class SysUserEntity implements Serializable {
 	/**
 	 * 角色ID列表
 	 */
-	@TableField(exist=false)
-	private List<Long> roleIdList;
-	
+	@TableField(exist = false)
+	private List<Integer> roleIds;
+
 	/**
 	 * 用户组ID列表
 	 */
@@ -95,6 +93,11 @@ public class SysUserEntity implements Serializable {
 	 */
 	private String source;
 
+	/**
+	 * 用户关联角色列表
+	 */
+	@TableField(exist = false)
+	private List<SysRoleEntity> roles;
 
 	@TableField(exist = false)
 	private String userName;

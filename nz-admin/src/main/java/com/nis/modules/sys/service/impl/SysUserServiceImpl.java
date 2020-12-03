@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,9 +11,13 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertNotifiScriptDao;
 import com.nis.modules.alert.entity.AlertNotificationScript;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserNotification;
+import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.service.SysRoleService;
 import com.nis.modules.sys.service.SysUserNotificationService;
+import com.nis.modules.sys.service.SysUserRoleService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -24,10 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service("sysUserService")
@@ -37,7 +39,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	private SysUserNotificationService notificationService;
 
 	@Autowired
-	private AlertNotifiScriptDao alertNotifiScriptDac;
+	private AlertNotifiScriptDao alertNotifiScriptDao;
+
+	@Autowired
+	private SysRoleService sysRoleService;
+
+	@Autowired
+	private SysUserRoleService sysUserRoleService;
 
 	@Override
 	public List<Long> queryAllMenuId(Long userId) {
@@ -49,12 +57,32 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		IPage<SysUserEntity> page = new Query<SysUserEntity>().getPage(params);
 		List<SysUserEntity> userList = baseMapper.queryList(page, params);
 
-		// 补充 Notificationscript 信息
+		// 补充 Notificationscript roles 信息
 		if (CollectionUtils.isNotEmpty(userList)) {
 			List<SysUserNotification> sysUserNotifications = notificationService.list();
 			Map<Integer, List<SysUserNotification>> userIdAndScriptListMap = sysUserNotifications.stream().collect(Collectors.groupingBy(SysUserNotification::getUserId));
+
+			List<SysUserRoleEntity> userRoleList = sysUserRoleService.list();
+			Map<Integer, List<SysUserRoleEntity>> userRoleMap = userRoleList.stream().collect(Collectors.groupingBy(SysUserRoleEntity::getUserId));
+			List<SysRoleEntity> roleList = sysRoleService.list();
+			Map<Integer, SysRoleEntity> roleIdAndEntityMap = new HashMap<>();
+			for (SysRoleEntity sysRoleEntity : roleList) {
+				roleIdAndEntityMap.put(sysRoleEntity.getId(), sysRoleEntity);
+			}
+
 			for (SysUserEntity userEntity : userList) {
 				userEntity.setNotifications(userIdAndScriptListMap.get(userEntity.getUserId().intValue()));
+
+				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getUserId().intValue());
+				if (CollectionUtils.isEmpty(userRoleEntities)) {
+					userEntity.setRoles(Collections.emptyList());
+				} else {
+					List<SysRoleEntity> roles = new ArrayList<>();
+					for (SysUserRoleEntity userRoleEntity : userRoleEntities) {
+						roles.add(roleIdAndEntityMap.get(userRoleEntity.getRoleId()));
+					}
+					userEntity.setRoles(roles);
+				}
 			}
 		}
 
@@ -77,7 +105,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	    List<SysUserNotification> notifications = user.getNotifications();
         if (CollectionUtils.isNotEmpty(notifications)) {
-	        List<AlertNotificationScript> scripts = alertNotifiScriptDac.selectList(null);
+	        List<AlertNotificationScript> scripts = alertNotifiScriptDao.selectList(null);
 	        List<Integer> scriptIds = scripts.stream().map(AlertNotificationScript::getId).distinct().collect(Collectors.toList());
 
 	        int size = notifications.size();
@@ -102,6 +130,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
                 throw new NZException(RCode.SYS_USER_SCRIPT_ACCOUNT_REPEATED);
             }
         }
+
+	    // 校验角色
+	    List<Integer> roleIds = user.getRoleIds();
+	    if (CollectionUtils.isEmpty(roleIds)) throw new NZException(RCode.SYS_ROLE_ID_ISNULL);
+
+	    List<SysRoleEntity> roleList = sysRoleService.list();
+	    List<Integer> roleIdList = roleList.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
+
+	    for (Integer roleId : roleIds) {
+		    if (!roleIdList.contains(roleId))
+			    throw new NZException(RCode.SYS_ROLE_ISNULL);
+	    }
     }
 
 	@Override
@@ -126,6 +166,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 			notificationService.saveBatch(notifications);
 		}
+
+		// 保存用户 和 角色 关联关系
+		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIds());
 	}
 
 
@@ -155,6 +198,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 			notificationService.saveBatch(notifications);
 		}
+
+		// 保存用户 和 角色 关联关系
+		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIds());
 	}
 
 
@@ -202,6 +248,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 删除 关联 script 关系
 		notificationService.remove(new QueryWrapper<SysUserNotification>().lambda().in(SysUserNotification::getUserId, Arrays.asList(split)));
-	}
 
+		// 删除 关联 role 关系
+		sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getUserId, Arrays.asList(split)));
+	}
 }

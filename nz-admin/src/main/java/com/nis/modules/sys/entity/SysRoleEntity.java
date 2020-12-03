@@ -1,66 +1,29 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.entity;
-
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.io.Serializable;
-import java.util.Date;
 import java.util.List;
 
-/**
- * 角色
- *
-
- */
 @Data
 @TableName("sys_role")
 public class SysRoleEntity implements Serializable {
-	private static final long serialVersionUID = 1L;
-	
-	/**
-	 * 角色ID
-	 */
-	@TableId
-	private Long roleId;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * 角色名称
-	 */
-	@NotBlank(message="角色名称不能为空")
-	private String roleName;
+    @TableId
+    private Integer id;
 
-	/**
-	 * 国际化code
-	 * */
+    private String name;
 
-	private String i18nCode;
-	/**
-	 * 备注
-	 */
-	private String remark;
+    private String i18n;
 
+    private String remark;
 
+    private Integer buildIn;
 
-	@TableField(exist=false)
-	private List<Long> menuIdList;
-
-	/**
-	 * 创建时间
-	 */
-	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-	private Date createTime;
+    @TableField(exist = false)
+    private List<Integer> menuIds;
 }

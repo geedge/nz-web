@@ -1,34 +1,20 @@
 package com.nis.modules.sys.controller;
 
-
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.common.validator.Assert;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.nis.common.annotation.SysLog;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import io.swagger.annotations.ApiOperation;
-
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
-/**
- * 系统用户
- *
-
- */
 @RestController
 @RequestMapping("/sys/user")
 public class SysUserController extends AbstractController {
@@ -115,7 +101,7 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 删除用户
 	 */
-	@RequestMapping("/delete")
+	@DeleteMapping("/delete")
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
 	public R delete(String userIds) {
 		sysUserService.deleteUsers(userIds);

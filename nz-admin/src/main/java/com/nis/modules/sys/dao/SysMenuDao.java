@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.sys.entity.SysMenuEntity;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -34,4 +35,9 @@ public interface SysMenuDao extends BaseMapper<SysMenuEntity> {
 	 */
 	List<SysMenuEntity> queryNotButtonList();
 
+
+	/**
+	 * 根据角色获取 菜单列表
+	 */
+    List<SysMenuEntity> getRoleMenuList(@Param("roleId") Integer roleId);
 }
