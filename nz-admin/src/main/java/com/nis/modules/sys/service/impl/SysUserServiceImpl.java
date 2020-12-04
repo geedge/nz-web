@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -10,15 +11,13 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertNotifiScriptDao;
 import com.nis.modules.alert.entity.AlertNotificationScript;
+import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.SysRoleService;
-import com.nis.modules.sys.service.SysUserNotificationService;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -26,9 +25,12 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,10 +49,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	@Autowired
 	private SysUserRoleService sysUserRoleService;
 
-	@Override
-	public List<Long> queryAllMenuId(Long userId) {
-		return baseMapper.queryAllMenuId(userId);
-	}
+	@Autowired
+	private SysRoleDao sysRoleDao;
+
+	@Autowired
+	private SysMenuService sysMenuService;
+
+	@Autowired
+	private RedisTemplate redisTemplate;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -251,5 +257,33 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 删除 关联 role 关系
 		sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getUserId, Arrays.asList(split)));
+	}
+
+	@Override
+	public Map<String, Object> getUserPermissions(HttpServletRequest request) {
+		String requestToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
+		requestToken = StringUtils.isEmpty(requestToken) ? request.getParameter(Constant.AUTH_TOKEN_CODE) : requestToken;
+		if (StringUtils.isEmpty(requestToken))
+			throw new NZException(RCode.SYS_TOKEN_ISNULL);
+
+		ValueOperations<String, String> ops = redisTemplate.opsForValue();
+		String str = ops.get(requestToken);
+		if (StringUtils.isEmpty(str))
+			throw new NZException(RCode.SYS_LOGIN_REQUIRED);
+
+		Map<String, String> map = JSONObject.parseObject(new String(Base64.getDecoder().decode(str)), Map.class);
+		SysUserEntity user = this.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getUsername, map.get("username")));
+		if (user == null)
+			throw new NZException(RCode.SYS_USER_NOT_EXIST);
+
+		Map<String, Object> resultMap = new HashMap<>(4);
+		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getUserId().intValue());
+		resultMap.put("roles", rolesByUesr);
+
+		List<Integer> roleIdList = rolesByUesr.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
+		Map<String, Object> menuInfoByRoles = sysMenuService.getMenuInfoByRoles(roleIdList);
+		resultMap.put("menus", menuInfoByRoles.get("menus"));
+		resultMap.put("buttons", menuInfoByRoles.get("buttons"));
+		return resultMap;
 	}
 }

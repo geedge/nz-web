@@ -3,5 +3,14 @@
 
 <mapper namespace="com.nis.modules.sys.dao.SysRoleDao">
 
+    <select id="getRolesByUesrId" resultType="com.nis.modules.sys.entity.SysRoleEntity">
+        SELECT
+            sr.*
+        FROM
+            sys_user_role sur
+            LEFT JOIN sys_role sr ON sur.role_id = sr.id
+        WHERE
+            sur.user_id = #{userId}
+    </select>
 
 </mapper>

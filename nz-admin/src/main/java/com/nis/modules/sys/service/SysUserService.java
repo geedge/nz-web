@@ -13,7 +13,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 
 import com.nis.common.utils.PageUtils;
 
-import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 
@@ -25,11 +25,6 @@ import java.util.Map;
 public interface SysUserService extends IService<SysUserEntity> {
 
 	PageUtils queryPage(Map<String, Object> params);
-	
-	/**
-	 * 查询用户的所有菜单ID
-	 */
-	List<Long> queryAllMenuId(Long userId);
 	
 	/**
 	 * 保存用户
@@ -57,4 +52,6 @@ public interface SysUserService extends IService<SysUserEntity> {
 	boolean checkName(SysUserEntity queryParam);
 
 	void deleteUsers(String userIds);
+
+    Map<String, Object> getUserPermissions(HttpServletRequest request);
 }

@@ -13,6 +13,7 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -130,5 +131,15 @@ public class SysUserController extends AbstractController {
 		} else {
 			return R.ok();
 		}
+	}
+
+	/**
+	 * 用户权限查询接口
+	 * @param request
+	 * @return
+	 */
+	@PostMapping("/permissions")
+	public R permissions(HttpServletRequest request){
+		return R.ok(sysUserService.getUserPermissions(request));
 	}
 }

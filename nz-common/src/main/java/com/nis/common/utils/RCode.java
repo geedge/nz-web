@@ -337,6 +337,18 @@ public enum RCode {
     SYS_USER_SCRIPT_ACCOUNT_REPEATED(512020, "System user script id and account cannot be repeated"),
     SYS_USER_STATUS_INVALIDE(514021, "System user status must be 0 or 1"),
     SYS_USER_EMAIL_FORMAT(513022, "System user email format is incorrect"),
+    SYS_MENU_ISNULL(516023, "Menu is not exsits"),
+    SYS_MENU_ID_ISNULL(511024, "Menu id is required"),
+    SYS_MENU_NAME_ISNULL(511025, "Menu name is required"),
+    SYS_MENU_CODE_ISNULL(511026, "Menu code is required"),
+    SYS_MENU_I18N_ISNULL(511027, "Menu i18n is required"),
+    SYS_MENU_TYPE_ISNULL(511028, "Menu type is required"),
+    SYS_MENU_ORDERNUM_ISNULL(511029, "Menu order num is required"),
+    SYS_MENU_CODE_DUPLICATE(512030, "Menu code duplicate"),
+    SYS_MENU_TYPE_INVALIDE(513031,"Menu type must be 1 or 2"),
+    SYS_MENU_BUTTON_PARENTID_ISNULL(511032,"Button must have a parent id"),
+    SYS_MENU_BUTTON_PARENTTYPE_INVALIDE(513033,"Button cannot be used as a parent menu"),
+    SYS_TOKEN_ISNULL(511034,"Cannot get token information from request header"),
 
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
@@ -517,9 +529,6 @@ public enum RCode {
     SYS_ROLE_MENUID_ISNULL(581005, "Role related menu id is required"),
     SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
-
-
-    SYS_MENU_ISNULL(596000, "Menu is not exsits"),
 
 
     LINK_ID_ISNULL(581001,"link id can not be null"),

@@ -14,15 +14,15 @@ import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
 import com.nis.common.utils.SqlHelper.OracleHelper;
 import com.nis.common.utils.SqlHelper.PostgresqlHelper;
+import com.nis.common.interceptor.SysMenuInterceptor;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -69,5 +69,11 @@ public class WebConfig implements WebMvcConfigurer {
             default:
                 return new MysqlHelper();
         }
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        SysConfigService sysConfigService = (SysConfigService) SpringContextUtils.getBean("sysConfigService");
+        registry.addInterceptor(new SysMenuInterceptor(sysConfigService)).addPathPatterns("/sys/menu/**");
     }
 }

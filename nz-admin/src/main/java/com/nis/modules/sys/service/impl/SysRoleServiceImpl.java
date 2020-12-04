@@ -11,6 +11,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.dao.SysMenuDao;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.entity.SysMenuEntity;
 import com.nis.modules.sys.entity.SysRoleEntity;
@@ -38,6 +39,9 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
     @Autowired
     private SysMenuService sysMenuService;
+
+    @Autowired
+    private SysMenuDao sysMenuDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -143,10 +147,12 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         Map resultData = new HashMap(4);
         List<SysMenuEntity> menuList = sysMenuService.getMenuList(null);
 
-        List<SysMenuEntity> roleMenuList = sysMenuService.getRoleMenuList(roleId);
+       /* List<SysMenuEntity> roleMenuList = sysMenuService.getRoleMenuList(roleId);
         List<Integer> selectedIds = Collections.emptyList();
         if(CollectionUtils.isNotEmpty(roleMenuList))
-            selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);
+            selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);*/
+        List<SysMenuEntity> roleMenuList = sysMenuDao.getRoleMenuList(roleId);
+        Set<Integer> selectedIds = roleMenuList.stream().map(SysMenuEntity::getId).collect(Collectors.toSet());
 
         resultData.put("menus", menuList);
         resultData.put("selectedIds", selectedIds);
