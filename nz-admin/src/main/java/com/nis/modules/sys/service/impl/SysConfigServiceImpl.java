@@ -703,6 +703,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             environment.put(Context.SECURITY_PRINCIPAL, dn);
             environment.put(Context.SECURITY_CREDENTIALS, password);
             environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+            environment.put("com.sun.jndi.ldap.connect.timeout", "3000");
             environment.put(Context.PROVIDER_URL, address);
             initialDirContext = new InitialDirContext(environment);
             

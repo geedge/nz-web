@@ -259,7 +259,7 @@ public class Constant {
         SSH_SHELL_MAP = new HashMap<>();
         SSH_SHELL_MAP.put("hostname", "hostname");
         SSH_SHELL_MAP.put("cpu", "cat /proc/cpuinfo| grep \"physical id\"| sort| uniq| wc -l;echo `cat /proc/cpuinfo|grep \"model name\" | uniq -d|awk -F:  '{print $2}'` \\* `cat /proc/cpuinfo| grep \"processor\"| wc -l`");
-        SSH_SHELL_MAP.put("memory", "free -m  | grep Mem | awk -F ' ' '{printf (\"%.3f\\n\",$2/1000)}'");
+        SSH_SHELL_MAP.put("memory", "free -m  | grep Mem | awk -F ' ' '{printf (\"%.3f\\n\",$2/1024)}'");
         SSH_SHELL_MAP.put("disk", "lsblk|grep disk|awk '{print $1,$4}';cat /proc/scsi/scsi|grep Vendor|awk '{print $2,$4}'|grep -v DVD");
         SSH_SHELL_MAP.put("core", "cat /proc/version");
         //   		put("os","cat /etc/redhat-release");
