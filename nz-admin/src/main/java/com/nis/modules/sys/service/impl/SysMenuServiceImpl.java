@@ -199,15 +199,41 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 			return resultMap;
 		}
 
+		// 查到的所有子节点
 		List<SysMenuEntity> list = sysMenuDao.selectList(new LambdaQueryWrapper<SysMenuEntity>().in(SysMenuEntity::getId, menuIds));
 
-		List<SysMenuEntity> menuList = list.stream().filter(sysMenuEntity -> sysMenuEntity.getType() == Constant.MenuType.MENU.getValue()).collect(Collectors.toList());
-		List<SysMenuEntity> buttonList = list.stream().filter(sysMenuEntity -> sysMenuEntity.getType() == Constant.MenuType.BUTTON.getValue()).collect(Collectors.toList());
+		List<SysMenuEntity> menus = this.getMenuByLeafMenu(list);
+		List<SysMenuEntity> menuTreeList = this.getMenuTreeList(menus, 0);
 
-		List<SysMenuEntity> menuTreeList = this.getMenuTreeList(menuList, 0);
+		// 因为按钮不能作为父级节点，所以可以直接进行过滤
+		List<SysMenuEntity> buttonList = list.stream().filter(sysMenuEntity -> sysMenuEntity.getType() == Constant.MenuType.BUTTON.getValue()).collect(Collectors.toList());
 		List<String> buttonCodes = buttonList.stream().map(SysMenuEntity::getCode).collect(Collectors.toList());
 		resultMap.put("menus", menuTreeList);
 		resultMap.put("buttons", buttonCodes);
 		return resultMap;
+	}
+
+	private List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList) {
+		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().orderByAsc(SysMenuEntity::getOrderNum));
+		Map<Integer, SysMenuEntity> idAndMenuList = new HashMap<>();
+		for (SysMenuEntity entity : menuList) {
+			idAndMenuList.put(entity.getId(), entity);
+		}
+
+		List<SysMenuEntity> list = new ArrayList<>();
+		for (SysMenuEntity pojo : leafMenuList) {
+			this.getParentMenu(idAndMenuList, pojo, list);
+		}
+		list.addAll(leafMenuList);
+		list = list.stream().sorted(Comparator.comparing(SysMenuEntity::getOrderNum)).distinct().collect(Collectors.toList());
+		return list;
+	}
+
+	private void getParentMenu(Map<Integer, SysMenuEntity> idAndMenuList, SysMenuEntity pojo, List<SysMenuEntity> list) {
+		SysMenuEntity parentMenu = idAndMenuList.get(pojo.getParentId());
+		if (parentMenu != null) {
+			list.add(parentMenu);
+			this.getParentMenu(idAndMenuList, parentMenu, list);
+		}
 	}
 }

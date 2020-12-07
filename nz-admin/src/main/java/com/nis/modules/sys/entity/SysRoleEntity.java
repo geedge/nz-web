@@ -1,5 +1,6 @@
 package com.nis.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -20,6 +21,7 @@ public class SysRoleEntity implements Serializable {
 
     private String i18n;
 
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String remark;
 
     private Integer buildIn;

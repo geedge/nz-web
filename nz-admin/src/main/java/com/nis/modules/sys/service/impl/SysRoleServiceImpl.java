@@ -74,8 +74,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
      */
     private void validateRoleInfo(SysRoleEntity role) {
         String name = role.getName();
-        ValidateUtils.is(name).notNull(RCode.SYS_ROLE_NAME_ISNULL)
-                .and(role.getRemark()).notNull(RCode.SYS_ROLE_REMARK_ISNULL);
+        ValidateUtils.is(name).notNull(RCode.SYS_ROLE_NAME_ISNULL);
 
         // 校验名称重复
         List<SysRoleEntity> list = this.list(new QueryWrapper<SysRoleEntity>().lambda().eq(SysRoleEntity::getName, name));
