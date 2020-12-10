@@ -133,7 +133,7 @@ public class ShiroConfig {
 //    }
 
     @Bean
-    @ConditionalOnExpression("${nezha.shiroPermisSupport:false}")
+    @ConditionalOnExpression("${nezha.shiroPermisSupport:true}")
     public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {
         AuthorizationAttributeSourceAdvisor advisor = new AuthorizationAttributeSourceAdvisor();
         advisor.setSecurityManager(securityManager);
