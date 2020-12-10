@@ -1,24 +1,22 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.shiro;
 
 import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.R;
-import com.nis.modules.sys.dao.SysMenuDao;
+import com.nis.modules.sys.dao.SysRoleDao;
+import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysMenuEntity;
+import com.nis.modules.sys.entity.SysRoleEntity;
+import com.nis.modules.sys.entity.SysRoleMenuEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysMenuService;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authc.*;
@@ -43,47 +41,72 @@ import javax.naming.NamingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 认证
- *
-
  */
 @Component
 public class UserRealm extends AuthorizingRealm {
+
     @Autowired
     private SysUserDao sysUserDao;
-    @Autowired
-    private SysMenuDao sysMenuDao;
-    @Autowired
+
+	@Autowired
+    private SysRoleDao sysRoleDao;
+
+	@Autowired
+    private SysRoleMenuDao sysRoleMenuDao;
+
+	@Autowired
+	private SysMenuService sysMenuService;
+
+	@Autowired
     private SysConfigService sysConfigService;
+
     /**
      * 授权(验证权限时调用)
      */
 	@Override
 	protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
 		SysUserEntity user = (SysUserEntity)principals.getPrimaryPrincipal();
-		Long userId = user.getUserId();
-		
+
+		// 查看用户所有角色
+		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getUserId().intValue());
+
 		List<String> permsList;
-		
-		//系统管理员，拥有最高权限
-		if(userId == Constant.SUPER_ADMIN){
-			List<SysMenuEntity> menuList = sysMenuDao.selectList(null);
-			permsList = new ArrayList<>(menuList.size());
-			for(SysMenuEntity menu : menuList){
+		if (CollectionUtils.isEmpty(rolesByUesr)) {
+			permsList = Collections.emptyList();
+		} else {
+			SysRoleEntity buildRole = rolesByUesr.stream().filter(sysRoleEntity -> sysRoleEntity.getId().equals(Constant.SUPER_ADMIN)).findAny().orElse(null);
+			// admin 角色 拥有所有接口权限
+			List<SysMenuEntity> menuList;
+			if (buildRole != null) {
+				menuList = sysMenuService.list();
+			} else {
+				Set<Integer> roleIds = rolesByUesr.stream().map(SysRoleEntity::getId).collect(Collectors.toSet());
+				List<SysRoleMenuEntity> sysRoleMenuEntities = sysRoleMenuDao.selectList(new LambdaQueryWrapper<SysRoleMenuEntity>().in(SysRoleMenuEntity::getRoleId, roleIds));
+				if (CollectionUtils.isNotEmpty(sysRoleMenuEntities)) {
+					// 所有叶子节点
+					Set<Integer> menuIds = sysRoleMenuEntities.stream().map(SysRoleMenuEntity::getMenuId).collect(Collectors.toSet());
+					menuList = sysMenuService.list(new LambdaQueryWrapper<SysMenuEntity>().in(SysMenuEntity::getId, menuIds));
+					// 根据叶子节点得到完整的权限
+					menuList = sysMenuService.getMenuByLeafMenu(menuList);
+				} else {
+					menuList = Collections.emptyList();
+				}
+			}
+
+			permsList = new ArrayList<>();
+			for (SysMenuEntity menu : menuList) {
 				permsList.add(menu.getPerms());
 			}
-		}else{
-			permsList = sysUserDao.queryAllPerms(userId);
 		}
 
-		//用户权限列表
+		// 用户权限列表
 		Set<String> permsSet = new HashSet<>();
-		for(String perms : permsList){
-			if(StringUtils.isBlank(perms)){
-				continue;
-			}
+		for (String perms : permsList) {
+			if (StringUtils.isEmpty(perms)) continue;
 			permsSet.addAll(Arrays.asList(perms.trim().split(",")));
 		}
 		

@@ -9,6 +9,7 @@ import com.nis.modules.asset.entity.Idc;
 import com.nis.modules.asset.entity.IdcTraffic;
 import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.asset.service.IdcTrafficService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +41,7 @@ public class IdcController {
      */
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = idcService.queryPage(params);
         return R.ok(page);
@@ -53,6 +55,7 @@ public class IdcController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:save"})
     public R save(@RequestBody Idc idc) {
         ValidateUtils.is(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
                 .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
@@ -70,6 +73,7 @@ public class IdcController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:update"})
     public R update(@RequestBody Idc idc) {
         ValidateUtils.is(idc.getId()).notNull(RCode.IDC_IDCID_ISNULL)
                 .and(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
@@ -89,6 +93,7 @@ public class IdcController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:delete"})
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
 
@@ -99,6 +104,7 @@ public class IdcController {
 
     @GetMapping("/trafficSetting")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:taffic:list"})
     public R queryTrafficSetting(@RequestParam Map<String, Object> params) {
         PageUtils page = idcTrafficService.queryTrafficSetting(params);
         return R.ok(page);
@@ -106,6 +112,7 @@ public class IdcController {
 
     @PutMapping("/trafficSetting")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"idc:taffic:update"})
     public R updateTrafficSetting(@RequestBody Map params) {
         Integer idcId = (Integer) params.get("idcId");
         List<IdcTraffic> setting = JSONArray.parseArray(JSON.toJSONString(params.get("setting")), IdcTraffic.class);

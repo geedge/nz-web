@@ -1,19 +1,12 @@
 package com.nis.modules.terminal.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
-import com.nis.modules.terminal.entity.TerminalLog;
+import com.nis.modules.terminal.config.TerminalOneProcessor;
+import com.nis.modules.terminal.entity.TerminalConfigDto;
 import com.nis.modules.terminal.service.TerminalLogService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,15 +14,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.socket.WebSocketSession;
 
-import com.nis.common.exception.NZException;
-import com.nis.modules.terminal.config.TerminalClient;
-import com.nis.modules.terminal.config.TerminalContext;
-import com.nis.modules.terminal.config.TerminalOneProcessor;
-import com.nis.modules.terminal.config.TerminalSession;
-import com.nis.modules.terminal.entity.Account;
-import com.nis.modules.terminal.entity.TerminalConfigDto;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/terminal")
@@ -63,6 +54,7 @@ public class TerminalHandlerController {
 	
 	@RequestMapping(value = "upload", method = RequestMethod.POST)
     @ResponseBody
+    @RequiresPermissions("terminal:upload")
     public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
 		if(StringUtils.isBlank(uuid)) {
 			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
@@ -115,6 +107,7 @@ public class TerminalHandlerController {
 	
 	@RequestMapping(value = "download", method = RequestMethod.POST)
     @ResponseBody
+    @RequiresPermissions("terminal:download")
     public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws Exception {
 		String uuid = param.get("uuid");
 		String path = param.get("path");
@@ -138,6 +131,7 @@ public class TerminalHandlerController {
 
     @GetMapping(value = "/log")
     @ResponseBody
+    @RequiresPermissions({"terminal:log:list"})
     public R queryPage(@RequestParam Map<String, Object> params) throws Exception {
         PageUtils page = terminalLogService.queryPage(params);
         return R.ok(page);

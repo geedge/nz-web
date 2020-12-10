@@ -9,6 +9,7 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.project.service.TopoIconService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.controller.AbstractController;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,6 +36,7 @@ public class ProjectController extends AbstractController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = projectService.queryPage(params);
 		return R.ok(page);
@@ -42,6 +44,7 @@ public class ProjectController extends AbstractController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:save"})
 	public R save(@RequestBody Project project) {
 		ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL)
 				.and(project.getName()).maxLength(64, RCode.PROJECT_NAME_TOO_LONG)
@@ -53,6 +56,7 @@ public class ProjectController extends AbstractController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:update"})
 	public R modify(@RequestBody Project project) {
 		ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL)
 				.and(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL)
@@ -66,6 +70,7 @@ public class ProjectController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:delete"})
 	public R remove(@RequestParam Integer ... ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 		projectService.validateBulitinRule(Arrays.asList(ids));
@@ -75,6 +80,7 @@ public class ProjectController extends AbstractController {
 	
 	@GetMapping(value="info")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:info"})
 	public R info(@RequestParam Integer id) {
 		ValidateUtils.is(id).notNull(RCode.PROJECT_ID_ISNULL);
 		Map<String, Object> result = projectService.queryProjectInfo(id);
@@ -89,6 +95,7 @@ public class ProjectController extends AbstractController {
 	 */
 	@GetMapping(value = "/topo/icon")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:topo:icon:list"})
 	public R queryIconList(@RequestParam Map<String, Object> params) {
 		Map result = new HashMap(2);
 		List<TopoIcon> topoIcons = topoIconService.queryIconList(params);
@@ -105,6 +112,7 @@ public class ProjectController extends AbstractController {
 	 */
 	@PostMapping("/topo/icon")
 	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:topo:icon:save"})
 	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file) {
 		ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
 				.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
@@ -128,6 +136,7 @@ public class ProjectController extends AbstractController {
 	 */
 	@DeleteMapping("/topo/icon")
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:topo:icon:delete"})
 	public R removeIcons(@RequestParam Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -143,6 +152,7 @@ public class ProjectController extends AbstractController {
 	 * @param response
 	 */
 	@GetMapping(value = "/topo/icon/{id}")
+	@RequiresPermissions({"project:topo:icon:info"})
 	public void downloadIconFile(@PathVariable("id") Integer id, HttpServletResponse response) {
 		ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
 
@@ -156,6 +166,7 @@ public class ProjectController extends AbstractController {
 	 */
 	@GetMapping(value = "/topo")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:topo:list"})
 	public R queryTopo(Integer projectId) {
 		ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -166,6 +177,7 @@ public class ProjectController extends AbstractController {
 
 	@PutMapping("/topo")
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT)
+	@RequiresPermissions({"project:topo:update"})
 	public R updateProjectTopo(@RequestBody Map<String, Object> params) {
 		Integer projectId = (Integer) params.get("projectId");
 		String topoConfig = (String) params.get("topo");

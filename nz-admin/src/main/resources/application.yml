@@ -48,6 +48,7 @@ nezha:
   maxPoolSize: 100
   queueCapacity: 500
   alertNotifiTimeOut: 3 # alert  通知脚本等待超时时间 单位 s 秒‘
+  shiroPermisSupport: false # shiro 注解支持 ， 控制 接口上 @RequiresPermissions 是否生效 ， 启用： true  不启用： false
 logging:
   config: ./config/logback-spring.xml
 

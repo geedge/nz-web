@@ -5,6 +5,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.service.CabinetService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,7 @@ public class CabinetController {
      */
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = cabinetService.queryPage(params);
         return R.ok(page);
@@ -45,6 +47,7 @@ public class CabinetController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:save"})
     public R save(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
                 .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
@@ -63,6 +66,7 @@ public class CabinetController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:update"})
     public R update(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getId()).notNull(RCode.IDC_CABINETID_ISNULL)
                 .and(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
@@ -82,6 +86,7 @@ public class CabinetController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:delete"})
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.IDC_CABINETID_ISNULL);
 
@@ -96,6 +101,7 @@ public class CabinetController {
      */
     @GetMapping("/u")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:u:info"})
     public R getUInfo(Integer id) {
         ValidateUtils.is(id).notNull(RCode.IDC_CABINETID_ISNULL);
 

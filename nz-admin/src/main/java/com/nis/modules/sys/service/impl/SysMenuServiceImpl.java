@@ -213,7 +213,8 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 		return resultMap;
 	}
 
-	private List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList) {
+	@Override
+	public List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList) {
 		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().orderByAsc(SysMenuEntity::getOrderNum));
 		Map<Integer, SysMenuEntity> idAndMenuList = new HashMap<>();
 		for (SysMenuEntity entity : menuList) {

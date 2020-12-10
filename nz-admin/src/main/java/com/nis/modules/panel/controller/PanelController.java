@@ -8,6 +8,7 @@ import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +30,7 @@ public class PanelController {
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:list"})
     public R panelList(@RequestParam Map<String,Object> params){
         List<Panel> panels = panelService.queryList(params);
         Map list = new HashMap();
@@ -38,6 +40,7 @@ public class PanelController {
 
     @RequestMapping(method = {RequestMethod.POST})
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:save"})
     public R panelSave( @RequestBody Panel panel){
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
 
@@ -50,6 +53,7 @@ public class PanelController {
 
     @RequestMapping(method = {RequestMethod.PUT})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:update"})
     public R panelUpdate( @RequestBody Panel panel){
         ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL)
                      .and(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
@@ -63,6 +67,7 @@ public class PanelController {
 
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:delete"})
     public R panleDelete(@RequestParam Integer ... ids){
         ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
 
@@ -77,6 +82,7 @@ public class PanelController {
      */
     @PutMapping("/modify")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:modify"})
     public R modify(@RequestBody Panel panel){
         ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL)
                 .and(panel.getType()).notNull(RCode.PANEL_TYPE_ISNULL)
@@ -89,6 +95,7 @@ public class PanelController {
 
     @GetMapping(value={"/{id}/charts"})
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:list"})
     public R chartList(@PathVariable("id") Integer panelId, @RequestParam(value="id",required = false) Integer id,@RequestParam(value="title",required = false)String title){
         List<Chart> charts=chartService.queryCharts(panelId,id,title);
         Map<String,List<Chart>> map=new HashMap<String,List<Chart>>();
@@ -98,6 +105,7 @@ public class PanelController {
 
     @PostMapping("/{id}/charts")
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:save"})
     public R chartSave(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
 
         chartService.validateChart(panelId, chart);
@@ -107,6 +115,7 @@ public class PanelController {
 
     @PutMapping("/{id}/charts")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:update"})
     public R chartUpdate(@PathVariable("id") Integer panelId,@RequestBody Chart chart){
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
 
@@ -117,6 +126,7 @@ public class PanelController {
 
     @DeleteMapping("/{id}/charts")
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:delete"})
     public R chartDelete(@PathVariable("id") Integer panelId,@RequestParam Integer[] ids, Integer sync){
         ValidateUtils.is(ids).notNull(RCode.CHART_ID_ISNULL);
 
@@ -134,6 +144,7 @@ public class PanelController {
      */
     @PutMapping(value = {"/{id}/charts/modify"})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:modify"})
     public R modify(@PathVariable("id") Integer panelId, @RequestBody Chart chart) {
         ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL)
                 .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
@@ -153,6 +164,7 @@ public class PanelController {
      */
     @PutMapping(value = {"/{id}/charts/weights"})
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:weights"})
     public R weights(@PathVariable("id") Integer panelId, @RequestBody List<Chart> chartList) {
 
         chartService.weights(panelId, chartList);
@@ -167,6 +179,7 @@ public class PanelController {
      */
     @PostMapping(value={"/{id}/charts/duplicate"})
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:duplicate"})
     public R duplicate(@PathVariable("id") Integer panelId, @RequestBody Chart chart){
     	ValidateUtils.is(chart.getId()).notNull(RCode.CHART_ID_ISNULL);
     	Chart result = null;
@@ -179,6 +192,7 @@ public class PanelController {
     }
 
     @GetMapping("/template")
+    @RequiresPermissions({"chart:import:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language, String type) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
 
@@ -187,6 +201,7 @@ public class PanelController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:import"})
     public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
         ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
                 .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL)
@@ -197,12 +212,14 @@ public class PanelController {
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:export"})
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         chartService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
+    @RequiresPermissions({"chart:cancel:import"})
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.PANEL_CANCELIMPORTSEQ_ISNULL);
 

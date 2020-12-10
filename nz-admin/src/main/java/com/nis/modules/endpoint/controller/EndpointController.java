@@ -7,6 +7,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.sys.controller.AbstractController;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ public class EndpointController extends AbstractController {
 
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = endpointService.queryPage(params);
 		return R.ok(page);
@@ -32,6 +34,7 @@ public class EndpointController extends AbstractController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:save"})
 	public R save(@RequestBody List<Endpoint> endpointList) {
 
 		endpointService.saveOrUpdateBatchEndpointList(endpointList);
@@ -40,6 +43,7 @@ public class EndpointController extends AbstractController {
 
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:update"})
 	public R modify(@RequestBody List<Endpoint> endpointList) {
 		for (Endpoint endpointEntity : endpointList) {
 			ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
@@ -51,6 +55,7 @@ public class EndpointController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:delete"})
 	public R remove(@RequestParam Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.ENDPOINT_ID_ISNULL);
 
@@ -61,6 +66,7 @@ public class EndpointController extends AbstractController {
 
 	@PostMapping("/import")
 	@SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:import"})
 	public R importEndpoint(MultipartFile excelFile, String language) {
 		ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL)
 				.and(language).notNull(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -76,6 +82,7 @@ public class EndpointController extends AbstractController {
 	 */
 	@GetMapping("/export")
 	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:export"})
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
 		endpointService.export(response,params);
 	}
@@ -86,6 +93,7 @@ public class EndpointController extends AbstractController {
 	 */
 	@DeleteMapping("/cancelImport")
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ENDPOINT)
+	@RequiresPermissions({"endpoint:cancel:import"})
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ENDPOINT_CANCELIMPORTSEQ_ISNULL);
         endpointService.cancelImport(seq);
@@ -93,6 +101,7 @@ public class EndpointController extends AbstractController {
     }
 
 	@GetMapping("/template")
+	@RequiresPermissions({"endpoint:import:template"})
 	public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
 		if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
 

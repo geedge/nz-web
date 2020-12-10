@@ -11,6 +11,7 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,6 +44,7 @@ public class AssetController {
      */
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = assetService.queryPage(params);
         return R.ok(page);
@@ -55,6 +57,7 @@ public class AssetController {
      */
     @GetMapping("/info")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:info"})
     public R assetInfo(Integer id){
         Map detail = assetService.detail(id);
         return R.ok(detail);
@@ -68,6 +71,7 @@ public class AssetController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:save"})
     public R save(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
@@ -120,6 +124,7 @@ public class AssetController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:update"})
     public R update(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
@@ -152,6 +157,7 @@ public class AssetController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:delete"})
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
@@ -167,6 +173,7 @@ public class AssetController {
      */
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:import"})
     public R importAssetsFromExcel(MultipartFile excelFile,String language) {
         ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL)
                 .and(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -184,6 +191,7 @@ public class AssetController {
      */
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:export"})
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         assetService.export(response,params);
     }
@@ -194,6 +202,7 @@ public class AssetController {
      * @return
      */
     @DeleteMapping("/cancelImport")
+    @RequiresPermissions({"asset:cancel:import"})
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ASSET_CANCELIMPORTSEQ_ISNULL);
@@ -208,6 +217,7 @@ public class AssetController {
      */
     @GetMapping("updateFeature")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:feature"})
     public R updateFeature(Integer assetId) {
     	// 采集信息方法
     	try {
@@ -224,6 +234,7 @@ public class AssetController {
      * @return
      */
     @GetMapping("/filter")
+    @RequiresPermissions({"asset:filter"})
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
     public R updateFeature() {
         return R.ok(assetService.filterStat());
@@ -235,6 +246,7 @@ public class AssetController {
      * @param language
      */
     @GetMapping("/template")
+    @RequiresPermissions({"asset:import:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
 
@@ -242,6 +254,7 @@ public class AssetController {
     }
 
     @GetMapping("/tagKey")
+    @RequiresPermissions({"asset:tag:key"})
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
     public R tagKey(String key) {
         List<String> keys = assetService.getTagsBykeyOrderCounts(key);
@@ -252,6 +265,7 @@ public class AssetController {
 
     @GetMapping("/tagValue")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:tag:value"})
     public R tagValue(String key, String value) {
         ValidateUtils.is(key).notNull(RCode.ASSET_TAGKEY_ISNULL);
 
@@ -262,6 +276,7 @@ public class AssetController {
     }
 
     @PutMapping("/batch")
+    @RequiresPermissions({"asset:batch:update"})
     public R updateBatchAccountAndTagByAssetIds(@RequestBody Map<String, Object> param){
         ValidateUtils.is(param.get("assetIds")).notNull(RCode.ASSET_ID_ISNULL);
 

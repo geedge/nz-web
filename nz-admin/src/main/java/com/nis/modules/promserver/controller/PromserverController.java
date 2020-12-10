@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import com.nis.common.utils.*;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,7 @@ public class PromserverController extends AbstractController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"promserver:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = promserverService.queryPage(params);
 		return R.ok(page);
@@ -36,6 +38,7 @@ public class PromserverController extends AbstractController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"promserver:save"})
 	public R save(@RequestBody Promserver promserverEntity) {
 
 		promserverService.saveOrUpdatePromserver(promserverEntity,false);
@@ -44,6 +47,7 @@ public class PromserverController extends AbstractController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"promserver:update"})
 	public R modify(@RequestBody Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 
@@ -53,6 +57,7 @@ public class PromserverController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.PROMSERVER)
+	@RequiresPermissions({"promserver:delete"})
 	public R remove(String ids) {
 		ValidateUtils.is(ids).notNull(RCode.PROMSERVER_ID_ISNULL);
 		String[] split = ids.split(",");

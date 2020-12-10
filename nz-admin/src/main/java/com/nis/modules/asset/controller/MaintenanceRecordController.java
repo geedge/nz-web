@@ -8,6 +8,7 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.asset.entity.MaintenanceRecord;
 import com.nis.modules.asset.service.MaintenanceRecordService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,7 @@ public class MaintenanceRecordController {
      * @return
      */
     @GetMapping
+    @RequiresPermissions({"asset:maintenance:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = maintenanceRecordService.queryPage(params);
         return R.ok(page);
@@ -46,6 +48,7 @@ public class MaintenanceRecordController {
      * @return
      */
     @PostMapping
+    @RequiresPermissions({"asset:maintenance:save"})
     public R save(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(maintenance.getContent()).notNull(RCode.ASSET_MAINTENANCE_CONTENT_ISNULL);
@@ -55,6 +58,7 @@ public class MaintenanceRecordController {
     }
 
     @PutMapping
+    @RequiresPermissions({"asset:maintenance:update"})
     public R update(@RequestBody MaintenanceRecord maintenance) {
         ValidateUtils.is(maintenance.getId()).notNull(RCode.ASSET_MAINTENANCEID_ISNULL)
                 .and(maintenance.getAssetId()).notNull(RCode.ASSET_ID_ISNULL)

@@ -31,6 +31,14 @@ public interface SysMenuService extends IService<SysMenuEntity> {
 
     Map<String, Object> getMenuInfoByRoles(List<Integer> roleIds);
 
+
+    /**
+     * 根据叶子节点 得到关联完整节点集合
+     * @param leafMenuList
+     * @return
+     */
+    List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList);
+
     /**
      * 获取选中 所有 Menu(树结构) 的 ids
      * @param roleMenuList

@@ -8,7 +8,6 @@
 
 package com.nis.modules.sys.controller;
 
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
@@ -18,6 +17,7 @@ import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,7 +41,7 @@ public class SysDictController extends AbstractController {
      * 列表
      */
     @GetMapping("/list")
-//    @RequiresPermissions("sys:dict:list")
+    @RequiresPermissions("sys:dict:list")
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = sysDictService.queryPage(params);
 
@@ -59,6 +59,7 @@ public class SysDictController extends AbstractController {
         @ApiImplicitParam(paramType="query", name = "name", value = "名称", required = false),
         @ApiImplicitParam(paramType="query", name = "type", value = "类别", required = false)
     })
+    @RequiresPermissions({"sys:dict:all"})
     public R all(@ApiParam(hidden=true) @RequestParam Map<String, Object> params) {
     	String type = (String) params.get("type");
     	ValidateUtils.is(type).notNull(RCode.NOT_NULL_ERROR);
@@ -82,7 +83,7 @@ public class SysDictController extends AbstractController {
      * 保存
      */
     @RequestMapping("/save")
-//    @RequiresPermissions("sys:dict:save")
+    @RequiresPermissions("sys:dict:save")
     public R save(@RequestBody SysDictEntity dict){
 
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
@@ -98,7 +99,7 @@ public class SysDictController extends AbstractController {
      * 修改
      */
     @RequestMapping("/update")
-//    @RequiresPermissions("sys:dict:update")
+    @RequiresPermissions("sys:dict:update")
     public R update(@RequestBody SysDictEntity dict){
         //校验类型
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
@@ -120,33 +121,11 @@ public class SysDictController extends AbstractController {
      * 删除
      */
     @DeleteMapping("/delete")
-//    @RequiresPermissions("sys:dict:delete")
+    @RequiresPermissions("sys:dict:delete")
     public R delete(@RequestParam String ids){
     	ValidateUtils.is(ids).notNull(RCode.SYS_DICT_ID_ISNULL);
         sysDictService.delete(ids);
 
         return R.ok();
     }
-
-
-    /**
-     *  name type 相同下 value 值不能重复
-     * @param id     修改使用
-     * @param name   字典名称
-     * @param type   字典类型
-     * @param value  字典值
-     * @return
-     */
-//    @GetMapping("/dictValueCheck")
-    public R dictValueCheck(Long id, String name, String type, String value){
-        ValidateUtils.is(name).notNull(RCode.SYS_DICT_NAME_ISNULL)
-                .and(type).notNull(RCode.SYS_DICT_TYPE_ISNULL)
-                .and(value).notNull(RCode.SYS_DICT_VALUE_ISNULL);
-        if (sysDictService.dictValueCheck(id,name,type,value)) {
-            return R.ok();
-        }
-        // 字典值重复
-        throw new NZException(RCode.SYS_DICT_VALUE_DUPLICATE);
-    }
-
 }

@@ -10,6 +10,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import io.swagger.annotations.ApiOperation;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@RequestMapping("/list")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
+    @RequiresPermissions("sys:user:list")
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysUserService.queryPage(params);
 		return R.ok(page);
@@ -66,7 +68,7 @@ public class SysUserController extends AbstractController {
 	 * 用户信息
 	 */
 	@RequestMapping("/info/{userId}")
-//	@RequiresPermissions("sys:user:info")
+	@RequiresPermissions("sys:user:info")
 	public R info(@PathVariable("userId") Long userId){
 		SysUserEntity user = sysUserService.getById(userId);
 
@@ -82,6 +84,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@PostMapping("/save")
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
+    @RequiresPermissions("sys:user:save")
 	public R save(@RequestBody SysUserEntity user){
 		sysUserService.saveUser(user);
 		return R.ok();
@@ -92,6 +95,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@PutMapping("/update")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+    @RequiresPermissions("sys:user:update")
 	public R update(@RequestBody SysUserEntity user){
 		ValidateUtils.is(user.getUserId()).notNull(RCode.SYS_USER_ID_ISNULL);
 
@@ -104,6 +108,7 @@ public class SysUserController extends AbstractController {
 	 */
 	@DeleteMapping("/delete")
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
+    @RequiresPermissions("sys:user:delete")
 	public R delete(String userIds) {
 		sysUserService.deleteUsers(userIds);
 		return R.ok();

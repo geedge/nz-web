@@ -6,6 +6,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.sys.controller.AbstractController;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ public class ModuleController extends AbstractController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MODULE)
+	@RequiresPermissions({"module:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = moduleService.queryPage(params);
 		return R.ok(page);
@@ -28,6 +30,7 @@ public class ModuleController extends AbstractController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.MODULE)
+	@RequiresPermissions({"module:save"})
 	public R save(@RequestBody Module moduleEntity) {
 		moduleService.saveModule(moduleEntity);
 		return R.ok();
@@ -35,6 +38,7 @@ public class ModuleController extends AbstractController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODULE)
+	@RequiresPermissions({"module:update"})
 	public R modify(@RequestBody Module moduleEntity) {
 		ValidateUtils.is(moduleEntity.getId()).notNull(RCode.MODULE_ID_ISNULL);
 
@@ -44,6 +48,7 @@ public class ModuleController extends AbstractController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MODULE)
+	@RequiresPermissions({"module:delete"})
 	public R remove(@RequestParam Integer ... ids) {
 		ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
 		moduleService.validateBulitinRule(Arrays.asList(ids));
@@ -59,6 +64,7 @@ public class ModuleController extends AbstractController {
 	 */
 	@GetMapping("/stat")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
+	@RequiresPermissions({"module:stat"})
 	public R getModuleStatById(Integer id) {
 		ValidateUtils.is(id).notNull(RCode.MODULE_ID_ISNULL);
 		return R.ok(moduleService.getModuleStatById(id));

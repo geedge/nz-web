@@ -7,6 +7,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +43,7 @@ public class SnmpMibController extends AbstractController {
      */
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MIB)
+    @RequiresPermissions({"sys:mib:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = snmpMibService.queryPage(params);
         return R.ok(page);
@@ -56,6 +58,7 @@ public class SnmpMibController extends AbstractController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MIB)
+    @RequiresPermissions({"sys:mib:save"})
     public R save(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(file).notNull(RCode.SNMP_MIB_FILE_ISNULL);
 
@@ -73,6 +76,7 @@ public class SnmpMibController extends AbstractController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB)
+    @RequiresPermissions({"sys:mib:update"})
     public R update(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
         ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL);
 
@@ -88,6 +92,7 @@ public class SnmpMibController extends AbstractController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MIB)
+    @RequiresPermissions({"sys:mib:delete"})
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.SNMP_MIB_ID_ISNULL);
 
@@ -103,6 +108,7 @@ public class SnmpMibController extends AbstractController {
      * @param response
      */
     @GetMapping("/download")
+    @RequiresPermissions({"sys:mib:download"})
     public void download(Integer id, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.SNMP_MIB_ID_ISNULL);
 
@@ -151,6 +157,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @GetMapping("/tree")
+    @RequiresPermissions({"sys:mib:tree"})
     public R mibTree(String[] ids, String[] models) {
         String mibTrees = snmpMibService.getMibTrees(ids, models);
         return R.ok((Object) mibTrees);
@@ -163,6 +170,7 @@ public class SnmpMibController extends AbstractController {
      * @return
      */
     @PostMapping("/browser")
+    @RequiresPermissions({"sys:mib:browser"})
     public R browser(@RequestBody Map<String, Object> params) {
         String operation = (String) params.get("operation");
         Integer version = (Integer) params.get("version");

@@ -5,6 +5,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ public class AlertMessageController {
      */
     @RequestMapping(method = RequestMethod.GET)
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+    @RequiresPermissions({"alert:message:list"})
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page;
 		try {
@@ -49,6 +51,7 @@ public class AlertMessageController {
 
 	@RequestMapping( method = RequestMethod.PUT)
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
+	@RequiresPermissions({"alert:message:update"})
     public R update(@RequestBody Map<String, Object> params) {
 		ValidateUtils.is(params.get("ids")).notNull(RCode.ALERTMSG_IDS_ISNULL)
 				.and(params.get("state")).notNull(RCode.ALERTMSG_STATE_ISNULL)
@@ -69,6 +72,7 @@ public class AlertMessageController {
      */
     @RequestMapping( method = RequestMethod.DELETE)
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTMESSAGE)
+    @RequiresPermissions({"alert:message:delete"})
     public R delete(String ids) {
     	ValidateUtils.is(ids).notNull();
     	String[] split = ids.split(",");
@@ -82,6 +86,7 @@ public class AlertMessageController {
 	 */
 	@GetMapping(value = "/export")
 	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
+	@RequiresPermissions({"alert:message:export"})
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
 		alertMessageService.export(response,params);
 	}

@@ -5,6 +5,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Model;
 import com.nis.modules.asset.service.ModelService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class ModelController {
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.MODEL)
+    @RequiresPermissions("model:list")
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = modelService.queryPage(params);
         return R.ok(page);
@@ -39,6 +41,7 @@ public class ModelController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MODEL)
+    @RequiresPermissions("model:save")
     public R save(@RequestBody Model model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
                 .and(model.getVendorCode()).notNull(RCode.ASSET_VENDOR_ISNULL)
@@ -62,6 +65,7 @@ public class ModelController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
+    @RequiresPermissions("model:update")
     public R update(@RequestBody Model model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
@@ -85,6 +89,7 @@ public class ModelController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.MODEL)
+    @RequiresPermissions("model:delete")
     public R delete(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
@@ -101,6 +106,7 @@ public class ModelController {
      */
     @PutMapping("/syncChart")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MODEL)
+    @RequiresPermissions("model:sync:chart")
     public R syncChart(@RequestBody Map<String, Object> params) {
         modelService.syncChart(params);
         return R.ok();

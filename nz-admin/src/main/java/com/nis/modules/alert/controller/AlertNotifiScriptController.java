@@ -8,6 +8,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertNotificationScript;
 import com.nis.modules.alert.service.AlertNotifiScriptService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +25,7 @@ public class AlertNotifiScriptController {
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SCRIPT)
+    @RequiresPermissions({"alert:script:list"})
     public R list(@RequestParam Map<String, Object> params) {
         List<AlertNotificationScript> list = notifiScriptService.queryList(params);
         Map map = new HashMap(2);
@@ -34,13 +36,15 @@ public class AlertNotifiScriptController {
 
     @PostMapping
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SCRIPT)
+    @RequiresPermissions({"alert:script:save"})
     public R saveScript(@RequestBody AlertNotificationScript alertNotificationScript) {
         notifiScriptService.saveOrUpdateNotifiScript(alertNotificationScript);
         return R.ok();
     }
 
     @PutMapping
-    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.SCRIPT)
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.SCRIPT)
+    @RequiresPermissions({"alert:script:update"})
     public R updateScript(@RequestBody AlertNotificationScript alertNotificationScript) {
         ValidateUtils.is(alertNotificationScript.getId()).notNull(RCode.ALERT_NOTIFISCRIPT_ID_ISNULL);
 
@@ -50,6 +54,7 @@ public class AlertNotifiScriptController {
 
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.SCRIPT)
+    @RequiresPermissions({"alert:script:delete"})
     public R delete(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ALERT_NOTIFISCRIPT_ID_ISNULL);
 

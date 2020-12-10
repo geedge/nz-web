@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +32,7 @@ public class LinkController extends AbstractController{
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.LINK)
+	@RequiresPermissions({"sys:link:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		List<Link> result = linkService.queryList(params);
 		return R.ok(result);
@@ -38,6 +40,7 @@ public class LinkController extends AbstractController{
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.LINK)
+	@RequiresPermissions({"sys:link:save"})
 	public R save(@RequestBody Link link) {
 		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL);
 		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL);
@@ -47,6 +50,7 @@ public class LinkController extends AbstractController{
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.LINK)
+	@RequiresPermissions({"sys:link:update"})
 	public R update(@RequestBody Link link) {
 		ValidateUtils.is(link.getId()).notNull(RCode.LINK_ID_ISNULL);
 		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL);
@@ -57,6 +61,7 @@ public class LinkController extends AbstractController{
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.LINK)
+	@RequiresPermissions({"sys:link:delete"})
 	public R remove(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.LINK_ID_ISNULL);
 		String[] split = ids.split(",");
@@ -66,6 +71,7 @@ public class LinkController extends AbstractController{
 	
 	@PutMapping("/modify")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.LINK)
+		@RequiresPermissions({"sys:link:modify"})
 	public R modify(@RequestBody Link link){
 		ValidateUtils.is(link.getId()).notNull(RCode.LINK_ID_ISNULL);
 		ValidateUtils.is(link.getPrev()).notNull(RCode.LINK_PREV_ISNULL);
