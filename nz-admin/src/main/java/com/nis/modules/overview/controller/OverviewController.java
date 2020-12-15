@@ -127,9 +127,7 @@ public class OverviewController {
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     @RequiresPermissions({"overview:stat"})
     public R alertStatByAsset(Integer top) {
-        if (top == null) {
-            top = (int) Constant.PAGESIZE;
-        }
+        top = top == null ? 20 : top;
 
         List<Map> list = overviewService.alertStatByAssetTopN(top);
 
@@ -174,9 +172,7 @@ public class OverviewController {
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.SYSTEM)
     @RequiresPermissions({"overview:stat"})
     public R alertStatByModule(Integer top) {
-        if (top == null) {
-            top = (int) Constant.PAGESIZE;
-        }
+        top = top == null ? 20 : top;
 
         List<Map> list = overviewService.alertStatByModuleTopN(top);
 

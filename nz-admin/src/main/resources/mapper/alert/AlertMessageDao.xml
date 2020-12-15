@@ -223,6 +223,20 @@
 		</foreach>
 	</delete>
 
+	<delete id="deleteByEndpointIds">
+		delete from alert_message where endpoint_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</delete>
+
+	<delete id="deleteByDCIds">
+		delete from alert_message where dc_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</delete>
+
 	<select id="queryAlertMessageStatisticsInfoByRule" resultType="com.nis.modules.metric.dto.MetricsDto">
 		SELECT
 			count( am.id ) total,

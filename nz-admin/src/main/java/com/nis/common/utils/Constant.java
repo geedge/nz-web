@@ -25,6 +25,9 @@ public class Constant {
 	
 	/** 超级管理员ID */
 	public static final int SUPER_ADMIN = 1;
+
+	// 系统 普通用户角色
+	public static final int SYSTEM_COMMON_ROLE = 2;
     /** 数据权限过滤 */
 	public static final String SQL_FILTER = "sql_filter";
     /**

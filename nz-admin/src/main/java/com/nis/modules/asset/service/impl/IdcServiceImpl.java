@@ -238,5 +238,8 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
 
         // 4. 删除
         this.removeByIds(Arrays.asList(ids));
+
+        // 5. 删除 alert
+        alertMessageDao.deleteByDCIds(Arrays.asList(ids));
     }
 }

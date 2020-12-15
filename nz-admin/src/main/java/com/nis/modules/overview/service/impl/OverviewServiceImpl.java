@@ -27,7 +27,6 @@ import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -60,9 +59,6 @@ public class OverviewServiceImpl implements OverviewService {
 
     @Autowired
     private PromserverService promserverService;
-
-    @Autowired
-    private PromserverProxyServiceImpl promserverProxyService;
 
     @Autowired
     private CabinetDao cabinetDao;
@@ -524,25 +520,59 @@ public class OverviewServiceImpl implements OverviewService {
         alertList = alertList.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getAssetId())).collect(Collectors.toList());
 
         List<Asset> assetList = assetDao.getAssetsStatColumn();
-        Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+        Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
+        for (Asset asset : assetList) {
+            assetIdAndEntityMap.put(asset.getId(), asset);
+        }
+
 
         Map<Integer, List<AlertMessageEntity>> assetIdAndAlertsMap = alertList.stream().collect(Collectors.groupingBy(AlertMessageEntity::getAssetId));
         List<Map.Entry<Integer, Integer>> list = this.getAlertMessageTop(assetIdAndAlertsMap, top);
 
+        // 得到 各个告警级别的告警数量
+        Map<Integer, List<Map>> assetIdAndAlertStatMap = this.getAlertStatWithObjectIdMap(assetIdAndAlertsMap);
+
         List<Map> alertStatByAssetTopN = new ArrayList<>(top);
         Map map;
-        String host;
+        Asset asset;
         for (Map.Entry<Integer, Integer> entry : list) {
-            host = assetIdAndHostMap.get(entry.getKey());
-            if (StringUtils.isEmpty(host)) continue;
+            asset = assetIdAndEntityMap.get(entry.getKey());
+            if (asset == null) continue;
 
             map = new HashMap();
-            map.put("host", host);
+            map.put("id", asset.getId());
+            map.put("host", asset.getHost());
             map.put("nums", entry.getValue());
+            map.put("alert", assetIdAndAlertStatMap.get(entry.getKey()));
 
             alertStatByAssetTopN.add(map);
         }
         return alertStatByAssetTopN;
+    }
+
+    /**
+     * 返回 对象Id 和 各个告警级别的告警数量
+     * @param objectIdAndAlertsMap
+     * @return
+     */
+    private Map<Integer, List<Map>> getAlertStatWithObjectIdMap(Map<Integer, List<AlertMessageEntity>> objectIdAndAlertsMap) {
+        Map<Integer, List<Map>> resultMap = new HashMap<>();
+        Map map;
+        List severityNumStat;
+        for (Map.Entry<Integer, List<AlertMessageEntity>> entry : objectIdAndAlertsMap.entrySet()) {
+            List<AlertMessageEntity> alerts = entry.getValue();
+            long alertHigh = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
+            long alertMedium = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_MEDIUM.equals(alert.getSeverity())).count();
+            long alertLow = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_LOW.equals(alert.getSeverity())).count();
+            map = new HashMap();
+            map.put(Constant.ALERT_SEVERITY_HIGH, alertHigh);
+            map.put(Constant.ALERT_SEVERITY_MEDIUM, alertMedium);
+            map.put(Constant.ALERT_SEVERITY_LOW, alertLow);
+            severityNumStat = new ArrayList();
+            severityNumStat.add(map);
+            resultMap.put(entry.getKey(), severityNumStat);
+        }
+        return resultMap;
     }
 
     private List<Map.Entry<Integer, Integer>> getAlertMessageTop(Map<Integer, List<AlertMessageEntity>> objIdAndAlertsMap, Integer top) {
@@ -635,23 +665,36 @@ public class OverviewServiceImpl implements OverviewService {
     @Override
     public List<Map> alertStatByModuleTopN(Integer top) {
         List<Module> moduleList = moduleDao.getModulesStatColumn();
-        Map<Integer, String> moduleIdAndNameMap = moduleList.stream().collect(Collectors.toMap(Module::getId, Module::getName));
+        Map<Integer, Module> moduleIdAndEntityMap = new HashMap<>();
+        for (Module module : moduleList) {
+            moduleIdAndEntityMap.put(module.getId(), module);
+        }
+
+        List<Project> projects = projectDao.selectList(null);
+        Map<Integer,String> projectIdAndNameMap = projects.stream().collect(Collectors.toMap(Project::getId, Project::getName));
+
         List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
         alertList = alertList.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getModuleId())).collect(Collectors.toList());
 
         Map<Integer, List<AlertMessageEntity>> moduleIdAndAlertsMap = alertList.stream().collect(Collectors.groupingBy(AlertMessageEntity::getModuleId));
         List<Map.Entry<Integer, Integer>> list = this.getAlertMessageTop(moduleIdAndAlertsMap, top);
 
+        // 得到 各个告警级别的告警数量
+        Map<Integer, List<Map>> moduleIdAndAlertStatMap = this.getAlertStatWithObjectIdMap(moduleIdAndAlertsMap);
+
         List<Map> resultData = new ArrayList<>(top);
         Map map;
-        String moduleName;
+        Module module;
         for (Map.Entry<Integer, Integer> entry : list) {
-            moduleName = moduleIdAndNameMap.get(entry.getKey());
-            if (ToolUtil.isEmpty(moduleName)) continue;
+            module = moduleIdAndEntityMap.get(entry.getKey());
+            if (module == null) continue;
 
             map = new HashMap();
-            map.put("module", moduleName);
+            map.put("id", module.getId());
+            map.put("module", module.getName());
+            map.put("project", projectIdAndNameMap.get(module.getProjectId()));
             map.put("nums", entry.getValue());
+            map.put("alert", moduleIdAndAlertStatMap.get(entry.getKey()));
 
             resultData.add(map);
         }

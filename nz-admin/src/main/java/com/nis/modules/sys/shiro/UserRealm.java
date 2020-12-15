@@ -10,10 +10,8 @@ import com.nis.common.utils.R;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysMenuEntity;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysRoleMenuEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.dao.SysUserRoleDao;
+import com.nis.modules.sys.entity.*;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysMenuService;
 import org.apache.commons.collections.CollectionUtils;
@@ -63,6 +61,9 @@ public class UserRealm extends AuthorizingRealm {
 
 	@Autowired
     private SysConfigService sysConfigService;
+
+	@Autowired
+	private SysUserRoleDao sysUserRoleDao;
 
     /**
      * 授权(验证权限时调用)
@@ -179,6 +180,13 @@ public class UserRealm extends AuthorizingRealm {
 					} 
 				}
 				sysUserDao.insert(userInfo);
+
+				// ldap 登录用户默认分配 common 角色
+				SysUserRoleEntity sysUserRole = new SysUserRoleEntity();
+				sysUserRole.setUserId(userInfo.getUserId().intValue());
+				sysUserRole.setRoleId(Constant.SYSTEM_COMMON_ROLE);
+				sysUserRoleDao.insert(sysUserRole);
+
 				String salt = RandomStringUtils.randomAlphanumeric(20);
 				userInfo.setSalt(salt);
 				userInfo.setPassword(ShiroUtils.sha256(new String(token.getPassword()), userInfo.getSalt()));

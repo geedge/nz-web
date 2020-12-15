@@ -721,6 +721,9 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 
         // 删除 endpoint state
         endpointStateService.removeByIds(endpointIdList);
+
+        // 删除 alert
+	    alertMessageDao.deleteByEndpointIds(endpointIdList);
         try {
             // 同时删除 redis  endpoint_prom 中 endpointId 对应的内容
             String[] strArray = endpointIdList.stream().map(s -> String.valueOf(s)).toArray(String[]::new);
