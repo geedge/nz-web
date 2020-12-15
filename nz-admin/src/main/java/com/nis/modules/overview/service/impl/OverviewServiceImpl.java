@@ -557,16 +557,18 @@ public class OverviewServiceImpl implements OverviewService {
             addNum = addNum > assets.size() ? assets.size() : addNum;
             assets = assets.subList(0, addNum);
 
+            List tempList = new ArrayList();
             Map tempMap = new LinkedHashMap();
             tempMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
             tempMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
             tempMap.put(Constant.ALERT_SEVERITY_LOW, 0);
+            tempList.add(tempMap);
             for (Asset entity : assets) {
                 map = new HashMap();
                 map.put("id", entity.getId());
                 map.put("host", entity.getHost());
                 map.put("nums", 0);
-                map.put("alert", tempMap);
+                map.put("alert", tempList);
 
                 alertStatByAssetTopN.add(map);
             }
@@ -732,17 +734,19 @@ public class OverviewServiceImpl implements OverviewService {
             addNum = addNum > modules.size() ? modules.size() : addNum;
             modules = modules.subList(0, addNum);
 
+            List tempList = new ArrayList();
             Map tempMap = new LinkedHashMap();
             tempMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
             tempMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
             tempMap.put(Constant.ALERT_SEVERITY_LOW, 0);
+            tempList.add(tempMap);
             for (Module entity : modules) {
                 map = new HashMap();
                 map.put("id", entity.getId());
                 map.put("module", entity.getName());
                 map.put("project", projectIdAndNameMap.get(entity.getProjectId()));
                 map.put("nums", 0);
-                map.put("alert", tempMap);
+                map.put("alert", tempList);
 
                 resultData.add(map);
             }
