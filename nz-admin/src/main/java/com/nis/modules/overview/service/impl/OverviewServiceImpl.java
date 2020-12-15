@@ -527,6 +527,7 @@ public class OverviewServiceImpl implements OverviewService {
 
 
         Map<Integer, List<AlertMessageEntity>> assetIdAndAlertsMap = alertList.stream().collect(Collectors.groupingBy(AlertMessageEntity::getAssetId));
+        // 返回 topN 数量的 assetId 和 告警数量信息
         List<Map.Entry<Integer, Integer>> list = this.getAlertMessageTop(assetIdAndAlertsMap, top);
 
         // 得到 各个告警级别的告警数量
@@ -546,6 +547,29 @@ public class OverviewServiceImpl implements OverviewService {
             map.put("alert", assetIdAndAlertStatMap.get(entry.getKey()));
 
             alertStatByAssetTopN.add(map);
+        }
+
+        // 如果最终没有 top 数量，则需补充至 top 数量
+        if (alertStatByAssetTopN.size() < top) {
+            int addNum = top - alertStatByAssetTopN.size();
+            List<Integer> assetIds = list.stream().map(entry -> entry.getKey()).collect(Collectors.toList());
+            List<Asset> assets = assetList.stream().filter(pojo -> !assetIds.contains(pojo.getId())).collect(Collectors.toList());
+            addNum = addNum > assets.size() ? assets.size() : addNum;
+            assets = assets.subList(0, addNum);
+
+            Map tempMap = new LinkedHashMap();
+            tempMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
+            tempMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
+            tempMap.put(Constant.ALERT_SEVERITY_LOW, 0);
+            for (Asset entity : assets) {
+                map = new HashMap();
+                map.put("id", entity.getId());
+                map.put("host", entity.getHost());
+                map.put("nums", 0);
+                map.put("alert", tempMap);
+
+                alertStatByAssetTopN.add(map);
+            }
         }
         return alertStatByAssetTopN;
     }
@@ -677,6 +701,7 @@ public class OverviewServiceImpl implements OverviewService {
         alertList = alertList.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getModuleId())).collect(Collectors.toList());
 
         Map<Integer, List<AlertMessageEntity>> moduleIdAndAlertsMap = alertList.stream().collect(Collectors.groupingBy(AlertMessageEntity::getModuleId));
+        // 返回 topN 数量的 moduleId 和 告警数量信息
         List<Map.Entry<Integer, Integer>> list = this.getAlertMessageTop(moduleIdAndAlertsMap, top);
 
         // 得到 各个告警级别的告警数量
@@ -697,6 +722,30 @@ public class OverviewServiceImpl implements OverviewService {
             map.put("alert", moduleIdAndAlertStatMap.get(entry.getKey()));
 
             resultData.add(map);
+        }
+
+        // 如果最终没有 top 数量，则需补充至 top 数量
+        if (resultData.size() < top) {
+            int addNum = top - resultData.size();
+            List<Integer> moduleIds = list.stream().map(entry -> entry.getKey()).collect(Collectors.toList());
+            List<Module> modules = moduleList.stream().filter(pojo -> !moduleIds.contains(pojo.getId())).collect(Collectors.toList());
+            addNum = addNum > modules.size() ? modules.size() : addNum;
+            modules = modules.subList(0, addNum);
+
+            Map tempMap = new LinkedHashMap();
+            tempMap.put(Constant.ALERT_SEVERITY_HIGH, 0);
+            tempMap.put(Constant.ALERT_SEVERITY_MEDIUM, 0);
+            tempMap.put(Constant.ALERT_SEVERITY_LOW, 0);
+            for (Module entity : modules) {
+                map = new HashMap();
+                map.put("id", entity.getId());
+                map.put("module", entity.getName());
+                map.put("project", projectIdAndNameMap.get(entity.getProjectId()));
+                map.put("nums", 0);
+                map.put("alert", tempMap);
+
+                resultData.add(map);
+            }
         }
         return resultData;
     }
