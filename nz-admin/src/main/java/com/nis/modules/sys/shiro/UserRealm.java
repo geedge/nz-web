@@ -273,7 +273,12 @@ public class UserRealm extends AuthorizingRealm {
 	        ldapContextSource.afterPropertiesSet(); // important
 			
 			LdapTemplate ldapTemplate =new LdapTemplate(ldapContextSource);
-			
+
+			// 设置 ldap 超时时间 0 表示不限制, 单位 milliseconds 毫秒
+			SysConfigEntity ldapQueryTimeOutConfig = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_LDAP_QUERY_TIMEOUT));
+			int ldapQueryTimeOut = StringUtils.isEmpty(ldapQueryTimeOutConfig.getParamValue()) ? 0 : Integer.valueOf(ldapQueryTimeOutConfig.getParamValue());
+			ldapTemplate.setDefaultTimeLimit(ldapQueryTimeOut);
+
 			AndFilter filter = new AndFilter();
 			filter.and(new EqualsFilter(ldapUserFilter, userName));
 			boolean authenticate = ldapTemplate.authenticate(base,filter.toString(),password);
