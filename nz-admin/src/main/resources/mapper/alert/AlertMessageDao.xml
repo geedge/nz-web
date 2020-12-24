@@ -27,7 +27,7 @@
 		<result property="endpointId" column="endpoint_id"/>
 		<result property="assetId" column="asset_id"/>
 		<result property="dcId" column="dc_id"/>
-
+		<result property="remark" column="remark"/>
 		<association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.Project">
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
