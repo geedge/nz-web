@@ -236,6 +236,8 @@ public class ShiroConfig {
         // 配置缓存过期时间
         redisCacheManager.setExpire(loginExpiration * 60);
         redisCacheManager.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
+        // user entity ID
+        redisCacheManager.setPrincipalIdFieldName("userId");
         return redisCacheManager;
     }
 
@@ -260,6 +262,8 @@ public class ShiroConfig {
     @Bean
     public UserRealm myShiroRealm() {
         UserRealm myShiroRealm = new UserRealm();
+        // 关闭 cache
+        myShiroRealm.setCachingEnabled(false);
         return myShiroRealm;
     }
 
