@@ -2,6 +2,7 @@ package com.nis.modules.sys.shiro;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
@@ -99,6 +100,8 @@ public class ShiroUtils {
 		for (Map.Entry<String, Object> entry : map.entrySet()) {
 			Object obj = entry.getValue();
 			SimpleSession session = (SimpleSession) obj;
+			if (ToolUtil.isEmpty(session.getAttributes()))
+				continue;
 			SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
 			resultMap.put(entry.getKey(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
 		}

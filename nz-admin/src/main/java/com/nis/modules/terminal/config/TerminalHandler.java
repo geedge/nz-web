@@ -22,9 +22,7 @@
 package com.nis.modules.terminal.config;
 
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
@@ -35,19 +33,22 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants.SshType;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.service.AccountService;
 import com.nis.modules.terminal.service.TerminalLogService;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.session.mgt.SimpleSession;
+import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -102,22 +103,23 @@ public class TerminalHandler extends TextWebSocketHandler {
         token=(String)session.getAttributes().get("token");
         
         RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean("redisTemplate");
-        redisTemplate.setValueSerializer(RedisSerializer.string());
-        //判断用户传入的token是否为项目获取的token信息 
-        ValueOperations<String, String>  ops = redisTemplate.opsForValue();
-        String value = ops.get(token);
-        if(!CommonUtils.notEmpty(value)) {
+	    redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+        //判断用户传入的token是否为项目获取的token信息
+	    ValueOperations ops = redisTemplate.opsForValue();
+	    Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + token);
+        if(obj == null) {
         	session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
         	session.close();
         	return;
         }
-        String json= new String(Base64.getDecoder().decode(value),"UTF-8");
-        Map<String,String> map=JSON.parseObject(json, HashMap.class);
-        SysUserService sysUserService = (SysUserService) applicationContext.getBean("sysUserService");
+       /* SysUserService sysUserService = (SysUserService) applicationContext.getBean("sysUserService");
         String loginUserName=map.get("username");
         SysUserEntity user = sysUserService.getOne(new QueryWrapper<SysUserEntity>()
-				.eq("username", loginUserName));
-        userId = user.getUserId();
+				.eq("username", loginUserName));*/
+	    SimpleSession simpleSession = (SimpleSession) obj;
+	    SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) simpleSession.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+	    SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
+        userId = userEntity.getUserId();
         
         // 创建登录服务器日志记录相关内容
         terminalLogService=(TerminalLogService) applicationContext.getBean("terminalLogService");

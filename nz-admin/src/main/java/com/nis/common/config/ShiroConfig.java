@@ -4,6 +4,7 @@ import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.StringUtils;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.sys.shiro.UserRealm;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
@@ -55,6 +56,9 @@ public class ShiroConfig {
 
     @Value("${spring.redis.password}")
     private String redisPassword;
+
+    @Value("${spring.redis.database}")
+    private Integer redisDatabase;
 
     @Autowired
     private RedisTemplate<String,String> redisTemplate;
@@ -203,11 +207,7 @@ public class ShiroConfig {
      */
     public RedisManager redisManager() {
         RedisManager redisManager = new RedisManager();
-
-        redisManager.setHost(redisHost);
-        redisManager.setPort(redisPort);
-        // 配置缓存过期时间
-        redisManager.setExpire(loginExpiration * 60);
+        redisManager.setHost(redisHost + ":" + redisPort);
         Integer timeout;
         if (StringUtils.isEmpty(redisTimeout)) {
             timeout = 6000;
@@ -216,7 +216,10 @@ public class ShiroConfig {
             timeout = Integer.valueOf(matcher.replaceAll("").trim());
         }
         redisManager.setTimeout(timeout);
-        redisManager.setPassword(redisPassword);
+        if (StringUtils.isNotEmpty(redisPassword)) {
+            redisManager.setPassword(redisPassword);
+        }
+        redisManager.setDatabase(redisDatabase);
         return redisManager;
     }
 
@@ -230,6 +233,9 @@ public class ShiroConfig {
     public RedisCacheManager cacheManager() {
         RedisCacheManager redisCacheManager = new RedisCacheManager();
         redisCacheManager.setRedisManager(redisManager());
+        // 配置缓存过期时间
+        redisCacheManager.setExpire(loginExpiration * 60);
+        redisCacheManager.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
         return redisCacheManager;
     }
 
@@ -241,6 +247,8 @@ public class ShiroConfig {
     public RedisSessionDAO redisSessionDAO() {
         RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
         redisSessionDAO.setRedisManager(redisManager());
+        redisSessionDAO.setExpire(loginExpiration * 60);
+        redisSessionDAO.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
         return redisSessionDAO;
     }
 
