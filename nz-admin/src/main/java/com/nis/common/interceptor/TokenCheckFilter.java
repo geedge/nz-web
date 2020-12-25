@@ -1,41 +1,41 @@
 package com.nis.common.interceptor;
 
 import com.alibaba.fastjson.JSON;
-import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.IncorrectCredentialsException;
-import org.apache.shiro.authc.LockedAccountException;
-import org.apache.shiro.authc.UnknownAccountException;
-import org.apache.shiro.authc.UsernamePasswordToken;
-import org.apache.shiro.subject.Subject;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class TokenCheckFilter extends AccessControlFilter {
-    private RedisTemplate<String,String> redisTemplate;
-    private Integer loginExpiration;
 
-    public TokenCheckFilter(RedisTemplate redisTemplate){
-        this.redisTemplate=redisTemplate;
+    private Integer loginExpiration;
+    private SysUserDao sysUserDao;
+    private RedisTemplate<String, String> redisTemplate;
+
+    public TokenCheckFilter(RedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
-    public TokenCheckFilter(RedisTemplate redisTemplate,Integer loginExpiration){
-        this.redisTemplate=redisTemplate;
-        this.loginExpiration=loginExpiration;
+
+    public TokenCheckFilter(RedisTemplate redisTemplate, Integer loginExpiration) {
+        this.redisTemplate = redisTemplate;
+        this.loginExpiration = loginExpiration;
+    }
+
+    public TokenCheckFilter(RedisTemplate redisTemplate, Integer loginExpiration, SysUserDao sysUserDao) {
+        this.redisTemplate = redisTemplate;
+        this.loginExpiration = loginExpiration;
+        this.sysUserDao = sysUserDao;
     }
 
 
@@ -55,48 +55,32 @@ public class TokenCheckFilter extends AccessControlFilter {
 
     @Override
     protected boolean isAccessAllowed(ServletRequest req, ServletResponse resp, Object o) throws Exception {
-        HttpServletRequest request=(HttpServletRequest) req;
-        HttpServletResponse response=(HttpServletResponse)resp;
-        ValueOperations<String, String> ops = redisTemplate.opsForValue();
-        String requestToken=request.getHeader(Constant.AUTH_TOKEN_CODE);
-        if(StringUtils.isBlank(requestToken)){
-            requestToken=request.getParameter(Constant.AUTH_TOKEN_CODE);
+        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse) resp;
+        String requestToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
+        if (StringUtils.isBlank(requestToken)) {
+            requestToken = request.getParameter(Constant.AUTH_TOKEN_CODE);
         }
-        if(StringUtils.isBlank(requestToken)){
+        if (StringUtils.isBlank(requestToken)) {
             response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_REQUIRED)).toString());
             return false;
         }
 
-        String value=ops.get(requestToken);
-
-        if(StringUtils.isBlank(value)){
+        Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
+        if (exist) {
+            // 重新查询数据库
+            SysUserEntity entity = this.sysUserDao.selectById(ShiroUtils.getUserEntity().getUserId());
+            if (entity.getStatus() == 0) {
+                response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_LOCK)).toString());
+                return false;
+            }
+            // key 存在 证明验证成功，刷新过期时间
+            redisTemplate.expire(requestToken, this.loginExpiration, TimeUnit.MINUTES);
+            return true;
+        } else {
             response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_REQUIRED)).toString());
             return false;
         }
-        //验证成功刷新过期时间
-        redisTemplate.expire(requestToken,this.loginExpiration, TimeUnit.MINUTES);
-        Subject subject = ShiroUtils.getSubject();
-        String json= new String(Base64.getDecoder().decode(value),"UTF-8");
-        Map<String,String> map=JSON.parseObject(json, HashMap.class);
-        String username=map.get("username");
-        String password=map.get("password");
-        try{
-	        UsernamePasswordToken token = new UsernamePasswordToken(username, password);
-	        subject.login(token); //登录
-	        return true;
-        }catch (UnknownAccountException e) {
-			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_UNKNOWNACCOUNT)).toString());
-            return false;
-		}catch (IncorrectCredentialsException e) {
-			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_USERPWD)).toString());
-            return false;
-		}catch (LockedAccountException e) {
-			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_LOCK)).toString());
-            return false;
-		}catch (AuthenticationException e) {
-			response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_ACCOUNTAUTH)).toString());
-            return false;
-		}
     }
 
     @Override

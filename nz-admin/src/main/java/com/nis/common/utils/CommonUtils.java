@@ -605,7 +605,24 @@ public class CommonUtils {
         }
         return resultData;
     }
-	
+
+    /**
+     * 检查 id 集合 是否一致
+     * @param list
+     * @param list1
+     * @return
+     */
+    public static boolean checkIdListDiffrent(List<Integer> list, List<Integer> list1) {
+        if (list.size() != list1.size())
+            return false;
+
+        for (Integer i : list) {
+            if (!list1.contains(i))
+                return false;
+        }
+        return true;
+    }
+
 	/**
 	 * 端口合法性校验
 	 * @param port

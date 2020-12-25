@@ -1,6 +1,5 @@
 package com.nis.modules.sys.service.impl;
 
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -19,14 +18,19 @@ import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.session.mgt.SimpleSession;
+import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
 
@@ -205,8 +210,45 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			notificationService.saveBatch(notifications);
 		}
 
-		// 保存用户 和 角色 关联关系
-		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIds());
+		// 处理用户角色关系
+		this.handleUserRoleRelation(user.getUserId(), user.getRoleIds());
+	}
+
+	/**
+	 * 处理用户 和 角色 关联关系
+	 * @param userId
+	 * @param roleIds
+	 */
+	private void handleUserRoleRelation(Long userId, List<Integer> roleIds) {
+		// 当前用户关联的角色
+		List<SysUserRoleEntity> roles = sysUserRoleService.list(new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getUserId, userId.intValue()));
+		List<Integer> idList = roles.stream().map(SysUserRoleEntity::getRoleId).distinct().collect(Collectors.toList());
+
+		// 角色信息未改变 不进行处理
+		if (CommonUtils.checkIdListDiffrent(idList, roleIds))
+			return;
+
+		// 角色变更
+		sysUserRoleService.saveOrUpdate(userId, roleIds);
+
+		// 删除 redis 中的 token
+		List<String> removeKeys = new ArrayList<>();
+		try {
+			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
+			for (Map.Entry<String, SysUserEntity> entry : shiroSessionInfoMap.entrySet()) {
+				SysUserEntity userEntity = entry.getValue();
+				if (userId.equals(userEntity.getUserId())) {
+					removeKeys.add(entry.getKey());
+				}
+			}
+		} catch (Exception e) {
+			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,当前用户是:%s", e.getMessage(), userId), e);
+		} finally {
+			// 删除 关联key
+			if (CollectionUtils.isNotEmpty(removeKeys)) {
+				redisTemplate.delete(removeKeys);
+			}
+		}
 	}
 
 
@@ -240,12 +282,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public void deleteUsers(String userIds) {
 		ValidateUtils.is(userIds).notNull(RCode.SYS_USER_ID_ISNULL);
 		String[] split = userIds.split(",");
-		if(ArrayUtils.contains(split, "1")){
+		if (ArrayUtils.contains(split, "1")) {
 			throw new NZException(RCode.SYS_USER_DELADMIN);
 		}
 
 		SysUserEntity userEntity = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
-		if(ArrayUtils.contains(split, userEntity.getUserId().toString())){
+		if (ArrayUtils.contains(split, userEntity.getUserId().toString())) {
 			throw new NZException(RCode.SYS_USER_CANNOTDEL);
 		}
 
@@ -257,6 +299,29 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 删除 关联 role 关系
 		sysUserRoleService.remove(new LambdaQueryWrapper<SysUserRoleEntity>().in(SysUserRoleEntity::getUserId, Arrays.asList(split)));
+
+		// 删除 redis 中 用户token 信息
+		List<String> removeKeys = new ArrayList<>();
+		List<Long> userIdList = new ArrayList<>(split.length);
+		for (int i = 0; i < split.length; i++) {
+			userIdList.add(Long.valueOf(split[i]));
+		}
+		try {
+			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
+			for (Map.Entry<String, SysUserEntity> entry : shiroSessionInfoMap.entrySet()) {
+				SysUserEntity userInfo = entry.getValue();
+				if (userIdList.contains(userInfo.getUserId())) {
+					removeKeys.add(entry.getKey());
+				}
+			}
+		} catch (Exception e) {
+			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,删除用户ID:%s", e.getMessage(), userIdList.toString()), e);
+		} finally {
+			// 删除 关联key
+			if (CollectionUtils.isNotEmpty(removeKeys)) {
+				redisTemplate.delete(removeKeys);
+			}
+		}
 	}
 
 	@Override
@@ -266,13 +331,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		if (StringUtils.isEmpty(requestToken))
 			throw new NZException(RCode.SYS_TOKEN_ISNULL);
 
-		ValueOperations<String, String> ops = redisTemplate.opsForValue();
-		String str = ops.get(requestToken);
-		if (StringUtils.isEmpty(str))
+		Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
+		if (!exist)
 			throw new NZException(RCode.SYS_LOGIN_REQUIRED);
 
-		Map<String, String> map = JSONObject.parseObject(new String(Base64.getDecoder().decode(str)), Map.class);
-		SysUserEntity user = this.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getUsername, map.get("username")));
+		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		ValueOperations ops = redisTemplate.opsForValue();
+		Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + requestToken);
+		SimpleSession session = (SimpleSession) obj;
+		SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+		SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
+
+		SysUserEntity user = this.getById(userEntity.getUserId());
 		if (user == null)
 			throw new NZException(RCode.SYS_USER_NOT_EXIST);
 
@@ -285,5 +355,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		resultMap.put("menus", menuInfoByRoles.get("menus"));
 		resultMap.put("buttons", menuInfoByRoles.get("buttons"));
 		return resultMap;
+	}
+
+	@Override
+	public List<SysUserEntity> getUserListByRoleId(Integer roleId) {
+		List<SysUserEntity> userList = this.getBaseMapper().getUserListByRoleId(roleId);
+		return userList;
 	}
 }

@@ -9,11 +9,11 @@
 package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
 import com.nis.modules.sys.entity.SysUserEntity;
 
-import com.nis.common.utils.PageUtils;
-
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 
 
@@ -54,4 +54,7 @@ public interface SysUserService extends IService<SysUserEntity> {
 	void deleteUsers(String userIds);
 
     Map<String, Object> getUserPermissions(HttpServletRequest request);
+
+	// 根据角色ID 获取所属用户
+    List<SysUserEntity> getUserListByRoleId(Integer roleId);
 }

@@ -120,4 +120,27 @@ public class SysUserEntity implements Serializable {
 	public void setUsername(String username) {
 		this.username = username;
 	}
+
+
+	@Override
+	public String toString() {
+		return "SysUserEntity{" +
+				"userId=" + userId +
+				", username='" + username + '\'' +
+				", password='" + password + '\'' +
+				", salt='" + salt + '\'' +
+				", email='" + email + '\'' +
+				", status=" + status +
+				", lang='" + lang + '\'' +
+				", roleIds=" + roleIds +
+				", usergroupIds=" + usergroupIds +
+				", createTime=" + createTime +
+				", id=" + id +
+				", name='" + name + '\'' +
+				", source='" + source + '\'' +
+				", roles=" + roles +
+				", userName='" + userName + '\'' +
+				", notifications=" + notifications +
+				'}';
+	}
 }

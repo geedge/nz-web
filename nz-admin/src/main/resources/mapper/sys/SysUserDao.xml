@@ -31,4 +31,14 @@
 		</where>
 	</select>
 
+	<select id="getUserListByRoleId" resultType="com.nis.modules.sys.entity.SysUserEntity">
+		SELECT
+			su.*
+		FROM
+			sys_user_role sur
+			LEFT JOIN sys_user su ON sur.user_id = su.user_id
+		WHERE
+			sur.role_id = #{roleId}
+	</select>
+
 </mapper>

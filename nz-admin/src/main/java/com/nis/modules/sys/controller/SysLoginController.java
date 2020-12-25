@@ -1,15 +1,6 @@
-/**
-
- *
-
- *
-
- */
-
 package com.nis.modules.sys.controller;
 
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
@@ -21,13 +12,11 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,11 +29,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 登录相关
@@ -98,15 +85,8 @@ public class SysLoginController extends AbstractController {
 			subject.login(token); //登录
 			String loginToken=CommonUtils.uuid();
 			subject.getSession().setAttribute("token",loginToken);
-			Map<String,String> obj=new HashMap<String,String>();
-			obj.put("token",loginToken);
-			ValueOperations<String, String> ops = redisTemplate.opsForValue();
-			HashMap<String, String> map = new HashMap<String,String>();
-			map.put("username",username);
-			map.put("password",password);
-			String json=JSON.toJSONString(map);
-			String value = Base64.getEncoder().encodeToString(json.getBytes());
-			ops.set(loginToken,value ,this.loginExpiration, TimeUnit.MINUTES);
+			Map<String, String> obj = new HashMap<>();
+			obj.put("token", subject.getSession().getId().toString());
 			// 查询系统配置信息
 			String [] paramkeys = {"system_name","timezone","default_cabinet_usize","max_terminal_num","asset_ping_switch"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
