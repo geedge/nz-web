@@ -406,7 +406,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 4. ipmi 信息校验 只有在 assetType 为 server 时才可填写 ipmi 信息
         if (asset.getIpmi() != null) {
             SysDictEntity assetType = sysDictService.getOne(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_ASSET_MODEL_TYPE).eq(SysDictEntity::getCode, model.getTypeCode()).eq(SysDictEntity::getDelFlag, 0));
-            if (!Constant.ASSET_SERVER_TYPE.equals(assetType.getValue().toLowerCase())) {
+            if(!StrUtil.equals(Constant.ASSET_SERVER_TYPE,assetType.getValue().toLowerCase())) {
                 throw new NZException(RCode.ASSET_IPMITYPE_ERROR);
             } else {
                 // 校验 ipmi 内容格式
@@ -658,7 +658,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             // 1.协议校验
             protocol = account.getProtocol();
             ValidateUtils.is(protocol).notNull(RCode.ACCOUNT_PROTOCOL_ISNULL);
-            if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
+            if(!StrUtil.equals(Constant.ACCOUNT_SSH_PROTOCOL,protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
                 throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
             }
 
@@ -1127,7 +1127,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
                 // 是否内置exporter
                 exporter = ExcelUtils.getCellValue(row.getCell(34));
-                if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter)) {
+                if(StrUtil.equals(Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString(),exporter)) {
                     asset.setExporter(1);
                 }
                 // 前面没有报错
@@ -1193,7 +1193,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
     private String validateAssetStateForImport(String type, Map<String,String> assetStateMapByLanguage) {
         for (Map.Entry<String, String> entry : assetStateMapByLanguage.entrySet()) {
-            if(type.equals(entry.getValue())){
+            if(StrUtil.equals(type,entry.getValue())){
                 return entry.getKey();
             }
         }
@@ -2333,7 +2333,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 		for(Account account : accounts) {
 			String protocol = account.getProtocol();
 			
-			if(accounts.size()==1 && Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+			if(accounts.size()==1 && StrUtil.equals(Constant.ACCOUNT_TELNET_PROTOCOL,protocol)) {
 				// 该资产无ssh或snmp信息 采集失败 
 				logger.error("asset feature get data error,assetId : {} has no SSH or SNMP information",assetId);
 				throw new NZException("This asset has no SSH or SNMP information acquisition failure");
@@ -2378,7 +2378,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			}
 			
 			// snmp采集相关逻辑
-			if(Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
+			if(StrUtil.equals(Constant.ACCOUNT_SNMP_PROTOCOL,protocol)) {
 				try {
 					getSystemInfoBySnmp(assetFeatureMap, results, asset, account);
 				} catch (Exception e) {

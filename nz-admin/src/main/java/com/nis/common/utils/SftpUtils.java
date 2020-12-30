@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.jcraft.jsch.*;
 import com.nis.common.exception.NZException;
@@ -213,7 +214,8 @@ public class SftpUtils {
             isDirExistFlag = true;
             return sftpATTRS.isDir();
         } catch (SftpException e) {
-            if (e.getMessage().toLowerCase().equals("no such file")) {
+//            if (e.getMessage().toLowerCase().equals("no such file")) {
+            if (StrUtil.equals(e.getMessage().toLowerCase(),"no such file")) {
                 isDirExistFlag = false;
             }
         }

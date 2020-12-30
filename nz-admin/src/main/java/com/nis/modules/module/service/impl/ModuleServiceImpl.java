@@ -83,9 +83,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 				// .and(type).notNull(RCode.MODULE_TYPE_ISNULL);
 
 		// 校验 type 类型是否在枚举范围内
-		if (Constant.MODULE_TYPE_HTTP.equals(type)) {
+		if(StrUtil.equals(Constant.MODULE_TYPE_HTTP,type)) {
 			moduleEntity.setSnmpParam(null);
-		}else if(Constant.MODULE_TYPE_SNMP.equals(type)){
+		}else if(StrUtil.equals(Constant.MODULE_TYPE_SNMP,type)){
 			if(moduleEntity.getPort() == null){
 				moduleEntity.setPort(Constant.SNMP_DEFAULT_PORT);
 			}
@@ -237,7 +237,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         // 处理snmYml字段 , 如果module名称发生改动 并且 snmpParam不为空则重新生成snmpYml字段
         Module module = this.getById(moduleEntity.getId());
         String snmpParam = moduleEntity.getSnmpParam();
-        if (StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())) {
+//        if (StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())) {
+        if (StringUtils.isNotEmpty(snmpParam) || !StrUtil.equals(moduleEntity.getName(),module.getName())) {
             String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
             moduleEntity.setSnmpYml(snmpYml);
         }
@@ -256,7 +257,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         this.validateParam(moduleEntity);
 
         // 设置默认路径
-        if (Constant.MODULE_TYPE_HTTP.equals(moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
+        if(StrUtil.equals(Constant.MODULE_TYPE_HTTP,moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
             moduleEntity.setPath(Constant.MODULE_HTTP_DEFAULT_PATH);
         }
 
@@ -316,7 +317,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     private Map getAssetUpStatByAssetIds(Set<Integer> assetIds) {
         Map assetStatMap = new HashMap<>(4);
         SysConfigEntity pingSwitchConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
-        if (CollectionUtils.isEmpty(assetIds) || !Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+//        if (CollectionUtils.isEmpty(assetIds) || !Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+        if (CollectionUtils.isEmpty(assetIds) || !StrUtil.equals(pingSwitchConfig.getParamValue(),Constant.ASSET_PING_OPEN_SWITCH)) {
             assetStatMap.put("up", 0);
             assetStatMap.put("down", 0);
             return assetStatMap;

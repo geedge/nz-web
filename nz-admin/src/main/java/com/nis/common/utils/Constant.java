@@ -9,6 +9,7 @@
 package com.nis.common.utils;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 
@@ -386,7 +387,7 @@ public class Constant {
 
         public static String getOperationType(String value){
             for (SnmpOperationType type:SnmpOperationType.values()){
-                if(type.getValue().equals(value)){
+                if(StrUtil.equals(type.getValue(),value)){
                     return type.getValue();
                 }
             }

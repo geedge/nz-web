@@ -133,7 +133,7 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             try {
                 entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
             } catch (Exception e) {
-                log.error("从redis中取告警消息转化失败，错误信息：" + e.getMessage() + " 转化参数是：" + obj.toString(), e);
+                log.error("从redis中取告警消息转化失败，错误信息：" +e + " 转化参数是：" + obj.toString());
             }
             log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
             if(CollectionUtils.isEmpty(entities)){

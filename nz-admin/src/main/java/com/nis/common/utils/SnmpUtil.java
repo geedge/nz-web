@@ -1,5 +1,6 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import org.snmp4j.*;
@@ -153,16 +154,16 @@ public class SnmpUtil {
             PDU pdu = getPdu(version);
             pdu.add(new VariableBinding(new OID(oid)));
 
-            if (Constant.SnmpOperationType.GET.getValue().equals(operation.toLowerCase())) {
+            if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation.toLowerCase())) {
                 pdu.setType(PDU.GET);
-            } else if (Constant.SnmpOperationType.GETNEXT.getValue().equals(operation.toLowerCase())) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation.toLowerCase())) {
                 pdu.setType(PDU.GETNEXT);
             }
 
             ResponseEvent respEvent = snmp.send(pdu, target);
             PDU response = respEvent.getResponse();
             if (response == null) {
-                logger.error("response is null, request time out,ipAddress is {},oid is {}", ip + ":" + port, oid);
+                logger.error("response is null, request time out");
                 return null;
             } else {
                 VariableBinding vb = null;
@@ -382,7 +383,7 @@ public class SnmpUtil {
             ResponseEvent responseEvent = snmp.send(pdu, target);
             PDU response = responseEvent.getResponse();
             if (response == null) {
-                logger.error("response is null, request time out,ipAddress is {},oid is {}", ip + ":" + port, oid);
+                logger.error("response is null, request time out");
                 R.error(RCode.SNMP_MIB_BROWSER_TIMEOUT);
             } else {
                 int errorIndex = response.getErrorIndex();

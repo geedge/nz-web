@@ -8,6 +8,7 @@
 
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -90,9 +91,9 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		List<SysDictEntity> result = this.list(new QueryWrapper<SysDictEntity>().in("id", ids));
     	SysDictEntity sysDictEntity = result.get(0);
     	String param="";
-    	if(sysDictEntity.getType().equals(Constant.DICT_ASSET_MODEL_TYPE)) {
+    	if(StrUtil.equals(sysDictEntity.getType(),Constant.DICT_ASSET_MODEL_TYPE)) {
     		param="type";
-    	}else if(sysDictEntity.getType().equals(Constant.DICT_ASSET_MODEL_VENDOR)) {
+    	}else if(StrUtil.equals(sysDictEntity.getType(),Constant.DICT_ASSET_MODEL_VENDOR)) {
     		param=Constant.DICT_ASSET_MODEL_VENDOR;
     	}
     	if(ToolUtil.isNotEmpty(param)) {
@@ -108,7 +109,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 	@Override
 	public boolean save(SysDictEntity dict) {
 		super.save(dict);
-		if (dict.getType().equals(Constant.DICT_NAME_LANG)) {
+		if(StrUtil.equals(dict.getType(),Constant.DICT_NAME_LANG)) {
 			updateLangCache();
 		}
 		return true;
@@ -227,7 +228,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		}
 
 		// 如果是assetType 或者 vendor 类型校验名称重复
-		if(Constant.DICT_ASSET_MODEL_TYPE.equals(dict.getType()) || Constant.DICT_ASSET_MODEL_VENDOR.equals(dict.getType())){
+		if(StrUtil.equals(Constant.DICT_ASSET_MODEL_TYPE,dict.getType()) || StrUtil.equals(Constant.DICT_ASSET_MODEL_VENDOR,dict.getType())){
 			this.validateAssetTypeVendorValue(dict);
 		}
 

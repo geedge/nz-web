@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -123,7 +124,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
             // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对已通过对应 model panel 创建的 asset panel 追加新增的 chart
-            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                 this.saveAssetChartsSimultaneously(panel, chart);
             }
         }
@@ -205,7 +206,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
             // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对根据 chart pid 查找通过此 chart 创建的 chart 更新
-            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                 this.updateAssetChartsSimultaneously(chart);
             }
         }
@@ -299,7 +300,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String urlStr = url.toString();
                 // 如果是model panel添加charts url类型支持{{}}替换
                 Panel panel = panelService.getById(panelId);
-                if (Constant.PanelType.MODEL.getValue().equals(panel.getType())) {
+                if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType())) {
                     // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
                     urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 
@@ -421,7 +422,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if (sync != null) {
                 // 同步删除
                 Panel panel = panelService.getById(panelId);
-                if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+                if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                     this.syncDeleteAssetsCharts(deleteIds);
                 }
             }
@@ -903,7 +904,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (CollectionUtils.isNotEmpty(charts)) {
             Chart chart = charts.stream().findFirst().get();
             Panel panel = panelService.getById(chart.getPanelId());
-            if (!Constant.PanelType.DASHBOARD.getValue().equals(panel.getType())) {
+            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),panel.getType())) {
                 type = Constant.PanelType.ASSET.getValue();
             }
         }
@@ -928,7 +929,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             Map chartTypeMapByLanguage = (Map)  chartTypeMap.get(language);
 
             // 填充数据
-            if(!Constant.PanelType.DASHBOARD.getValue().equals(type)){
+            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)){
                 this.fillAssetModelChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }else{
                 this.fillDashboardChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
@@ -962,7 +963,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(2).setCellValue(chart.getSpan());
             row.createCell(3).setCellValue(chart.getHeight());
-            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
                 row.createCell(4).setCellValue("");
             } else {
                 row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
@@ -1026,7 +1027,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         int successNum = 0;
-        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
+        if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
         } else {
             successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
@@ -1349,7 +1350,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private String validateChartTypeForImport(String type, Map<String,String> chartTypeMapByLanguage) {
         for (Map.Entry<String, String> entry : chartTypeMapByLanguage.entrySet()) {
-            if(type.equals(entry.getValue())){
+            if(StrUtil.equals(type,entry.getValue())){
                 return entry.getKey();
             }
         }
@@ -1358,7 +1359,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private String validateChartElementForImport(String type, String elements) {
         // elemrnt 只有 alert  和 url , text 可以没有，其他必须有
-        if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type) && !Constant.CHART_TEXT_TYPE.equals(type)){
+        if(!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE,type) && !StrUtil.equals(Constant.CHART_URL_TYPE,type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE,type)){
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
@@ -1400,7 +1401,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                    return RCode.CHART_PARAMURL_ISNULL.getMsg();
                }
 
-               if (Constant.PanelType.MODEL.getValue().equals(panelType)) {
+               if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panelType)) {
                    // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
                    String urlStr = url.toString();
                    urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
@@ -1489,7 +1490,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(3).setCellValue(chart.getSpan());
             row.createCell(4).setCellValue(chart.getHeight());
-            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
                 row.createCell(5).setCellValue("");
             } else {
                 row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));

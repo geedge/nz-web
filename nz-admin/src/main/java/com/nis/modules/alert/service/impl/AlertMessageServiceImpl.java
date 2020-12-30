@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -250,7 +251,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				    }
 			    }
 		    } catch (Exception e) {
-			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" + e.getMessage(), e);
+			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
 			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 		    }
 	    }
@@ -346,7 +347,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 
 		// 邮件通知
-		if (Constant.SWITCH_OPEN.equals(emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
+		if(StrUtil.equals(Constant.SWITCH_OPEN,emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
 			// 邮件通知 告警 pending 与 expired
 			entities.addAll(expiredAlertList);
 			String jsonString = JSONObject.toJSONString(entities);

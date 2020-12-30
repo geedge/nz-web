@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -43,7 +44,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         }
         // 2. dashboard 类型 需要进行排序返回
         List<Panel> panelList = new ArrayList<>();
-        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
+        if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             List<Panel> panels = this.baseMapper.queryList(params);
             if (CollectionUtils.isEmpty(panels)) {
                 return panels;

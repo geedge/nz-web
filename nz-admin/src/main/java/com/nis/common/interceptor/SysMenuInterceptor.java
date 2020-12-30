@@ -1,5 +1,6 @@
 package com.nis.common.interceptor;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -26,12 +27,12 @@ public class SysMenuInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // GET 请求不拦截,不进行校验
-        if (request.getMethod().equals(HttpMethod.GET.toString())) {
+        if(StrUtil.equals(request.getMethod(),HttpMethod.GET.toString())) {
             return true;
         } else {
             SysUserEntity user = ShiroUtils.getUserEntity();
             SysConfigEntity developDdmin = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, "develop_admin"));
-            if (!user.getUsername().equals(developDdmin.getParamValue())) {
+            if(!StrUtil.equals(user.getUsername(),developDdmin.getParamValue())) {
                 response.sendError(HttpStatus.SC_NOT_FOUND, "Not Found");
                 return false;
             }

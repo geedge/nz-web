@@ -220,7 +220,7 @@ public class TerminalSession implements Serializable {
     public static TerminalClient get(String key) {
         for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
             TerminalClient client = entry.getValue();
-            if (client.getClientId().equals(key)) {
+            if(StrUtil.equals(client.getClientId(),key)) {
                 return client;
             }
         }
@@ -320,7 +320,7 @@ public class TerminalSession implements Serializable {
         if (notEmpty(terminalSession)) {
             for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
                 TerminalClient terminalClient = entry.getValue();
-                if (terminalClient.getHttpSessionId().equals(request.getSession().getId())
+                if(StrUtil.equals(terminalClient.getHttpSessionId(),request.getSession().getId())
                         || terminalClient.getHttpSessionId().equals(userAgent)) {
                     terminalClient.disconnect();
                     terminalClient.getWebSocketSession().sendMessage(new TextMessage("Sorry! Session was invalidated, so Nezha Terminal changed to closed. "));

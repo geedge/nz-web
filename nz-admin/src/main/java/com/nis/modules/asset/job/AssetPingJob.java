@@ -1,5 +1,6 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
@@ -74,7 +75,7 @@ public class AssetPingJob extends QuartzJobBean {
         }
 
         // 开启主机连通性开关
-        if (Constant.ASSET_PING_OPEN_SWITCH.equals(configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
+        if(StrUtil.equals(Constant.ASSET_PING_OPEN_SWITCH,configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
             logger.info("asset ping 开关开启");
 
             // 获取 所有 asset
@@ -98,7 +99,7 @@ public class AssetPingJob extends QuartzJobBean {
 
                     String[] commands = command.split(" ");
                     for (int i = 0; i < commands.length; i++) {
-                        if (Constant.ASSET_PING_COMMAND_FILENAME.equals(commands[i])) {
+                        if(StrUtil.equals(Constant.ASSET_PING_COMMAND_FILENAME,commands[i])) {
                             commands[i] = file.getAbsolutePath();
                         }
                     }
@@ -108,7 +109,7 @@ public class AssetPingJob extends QuartzJobBean {
                     try {
                         result = RuntimeUtil.run(null, null, commands);
                     } catch (Exception e) {
-                        logger.error(String.format("asset ping 执行命令失败, 执行命令是: %s, 错误信息是: %s", Arrays.asList(commands).toString(), e.getMessage()), e);
+	                        logger.error(String.format("asset ping 执行命令失败, 执行命令是: %s, 错误信息是: %s", Arrays.asList(commands).toString(), e));
                     } finally {
                         sw.stop();
                     }
@@ -121,7 +122,7 @@ public class AssetPingJob extends QuartzJobBean {
                         resultList.add(line);
                     }
 
-                    if (logger.isDebugEnabled()) logger.debug("asset fping 执行结果集 {}", resultList);
+//                    if (logger.isDebugEnabled()) logger.debug("asset fping 执行结果集 {}", resultList);
 
                     // ip 和描述信息
                     Map<String, String> ipAndDesc = new HashMap<>();
@@ -141,7 +142,7 @@ public class AssetPingJob extends QuartzJobBean {
                         statusInfo = entry.getValue();
                         host = entry.getKey();
                         // IP 不可达
-                        if (Constant.ASSET_PING_DOWN_FLAG.equals(statusInfo)) {
+                        if(StrUtil.equals(Constant.ASSET_PING_DOWN_FLAG,statusInfo)) {
                             unCallAssetPings.add(new AssetPing(host, 0, null, null));
                         } else {
                             // 可达

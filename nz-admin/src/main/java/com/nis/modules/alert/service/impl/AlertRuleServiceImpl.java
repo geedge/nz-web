@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -171,7 +172,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         try {
             checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
         } catch (Exception e) {
-            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e.getMessage()), e);
+            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
         }
 
         if (!checkRule) {
@@ -475,7 +476,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
             }else{
-                if(!Constant.ALERT_SEVERITY_HIGH.equals(severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
+                if(!StrUtil.equals(Constant.ALERT_SEVERITY_HIGH,severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
                 }

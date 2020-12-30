@@ -1,6 +1,7 @@
 package com.nis.common.aspect;
 
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -38,7 +39,7 @@ import java.util.*;
 @Component
 @Slf4j
 public class SysLogAspect {
-
+    private static final Log logger = Log.get();
     @Autowired
     private SysLogService sysLogService;
 

@@ -462,7 +462,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
         String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
         SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("query_max_series") ? true : false).findAny().orElse(null);
-        if (configEntity != null && !configEntity.getParamValue().equals(queryMaxSeries)) {
+        if(configEntity != null && !StrUtil.equals(configEntity.getParamValue(),queryMaxSeries)) {
             valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
             logger.info("Prometheus query_range 查询最大条数限制更改为 " + configEntity.getParamValue());
         }
@@ -542,7 +542,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(emailEnable);
 
         // 启用邮件 校验相关参数
-        if (emailEnable.equals(Constant.SWITCH_OPEN)) {
+        if(StrUtil.equals(emailEnable,Constant.SWITCH_OPEN)) {
             String emailSmtpHost = saveMap.get("email_smtp_host");
             String emailSmtpPort = saveMap.get("email_smtp_port");
             String emailSslFlag = saveMap.get("email_ssl_flag");
@@ -619,7 +619,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(ldapEnable);
 
         // 启用ldap 校验相关参数
-        if (ldapEnable.equals(Constant.SWITCH_OPEN)) {
+        if(StrUtil.equals(ldapEnable,Constant.SWITCH_OPEN)) {
             ValidateUtils.is(saveMap.get("ldap_address")).notNull(RCode.SYS_CONFIG_LDAPADDRESS_ISNULL)
                     .and(saveMap.get("ldap_dn")).notNull(RCode.SYS_CONFIG_LDAPDN_ISNULL)
                     //.and(saveMap.get("ldap_password")).notNull(RCode.SYS_CONFIG_LDAPPASSWORD_ISNULL)
@@ -640,7 +640,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
     // 校验开关类型值是否符合规范 on or off
     private void validateSwitchValue(String switchValue) {
-        if (!switchValue.equals(Constant.SWITCH_OPEN) && !switchValue.equals(Constant.SWITCH_CLOSE)) {
+        if(!StrUtil.equals(switchValue,Constant.SWITCH_OPEN) && !StrUtil.equals(switchValue,Constant.SWITCH_CLOSE)) {
             throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
         }
     }

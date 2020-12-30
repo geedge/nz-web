@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -73,7 +74,7 @@ class MyI18nInterceptor extends LocaleChangeInterceptor {
 					localeResolver.setLocale(request, response, parseLocaleValue(newLocale));
 					// 若语言和session中记录的值不同了，刷新session中的值
 					String currLang = (String) request.getSession().getAttribute(getParamName());
-					if (CommonUtil.isNull(currLang) || !currLang.equals(newLocale)) {
+					if (CommonUtil.isNull(currLang) || !StrUtil.equals(currLang,newLocale)) {
 						request.getSession().setAttribute(getParamName(), newLocale);
 					}
 				}

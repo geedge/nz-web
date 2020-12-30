@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -360,12 +361,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_ISNULL.getMsg());
 			} else {
 				type = type.toLowerCase();
-				if (!Constant.MODULE_TYPE_HTTP.equals(type) && !Constant.MODULE_TYPE_SNMP.equals(type)) {
+				if(!StrUtil.equals(Constant.MODULE_TYPE_HTTP,type) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP,type)) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_INVALID.getMsg());
 				}
 				// type 类型下必须存在 module
-				if (Constant.MODULE_TYPE_SNMP.equals(type) && ToolUtil.isEmpty(moduleNameAndModuleMap.get(moduleName))) {
+				if(StrUtil.equals(Constant.MODULE_TYPE_SNMP,type) && ToolUtil.isEmpty(moduleNameAndModuleMap.get(moduleName))) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_SNMP_NOTEXIST.getMsg());
 				}
@@ -386,7 +387,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					}
 				}
 				// 校验 module type 与输入得是否匹配
-				if (!module.getType ().equals(type.toLowerCase())) {
+				if(!StrUtil.equals(module.getType (),type.toLowerCase())) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.MODULE_TYPE_INCONSISTENT.getMsg());
 				}

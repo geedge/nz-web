@@ -1,5 +1,6 @@
 package com.nis.modules.overview.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -133,7 +134,8 @@ public class OverviewServiceImpl implements OverviewService {
 
         List<AssetPing> assetPingList = Collections.emptyList();
         SysConfigEntity pingSwitchConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
-        if (pingSwitchConfig != null && Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+//        if (pingSwitchConfig != null && Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+        if (pingSwitchConfig != null && StrUtil.equals(Constant.ASSET_PING_OPEN_SWITCH,pingSwitchConfig.getParamValue())) {
             assetPingList = assetPingDao.selectList(null);
         }
 

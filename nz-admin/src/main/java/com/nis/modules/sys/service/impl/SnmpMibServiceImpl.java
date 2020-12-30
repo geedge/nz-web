@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -259,7 +260,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
                 if (mvs.isTable()) {
                     mo.setType(Constant.MIB_TABLE_TYPE);
-                } else if (StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
+//                } else if (StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
+                } else if (StringUtils.isNotEmpty(syntax) && StrUtil.equals(Constant.MIB_ENTRY_SYNTAX,syntax.toUpperCase())) {
                     mo.setType(Constant.MIB_ENTRY_TYPE);
                 }
 
@@ -321,7 +323,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         for (MmMib object : mibs) {
             oid = object.getObjectID();
             pid = object.getPid();
-            if (parentId.equals(pid)) {
+            if(StrUtil.equals(parentId,pid)) {
                 object.setSubTree(this.handleDataFormat(mibs, oid));
                 resultList.add(object);
             }

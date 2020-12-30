@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -195,7 +196,7 @@ public class SnmpMibController extends AbstractController {
 
         String value = (String) params.get("value");
         String type = (String) params.get("type");
-        if (Constant.SnmpOperationType.SET.getValue().equals(operation)) {
+        if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
             ValidateUtils.is(value).notNull(RCode.SNMP_MIB_VALUE_ISNULL)
                     .and(type).notNull(RCode.SNMP_MIB_TYPE_ISNULL);
 
@@ -219,13 +220,13 @@ public class SnmpMibController extends AbstractController {
 
         List<Map> resultData = null;
         try {
-            if (Constant.SnmpOperationType.GET.getValue().equals(operation)) {
+            if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation)) {
                 resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
-            } else if (Constant.SnmpOperationType.GETNEXT.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation)) {
                 resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
-            } else if (Constant.SnmpOperationType.WALK.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.WALK.getValue(),operation)) {
                 resultData = SnmpUtil.snmpWalk(host, port, version, community, oid, auth);
-            } else if (Constant.SnmpOperationType.SET.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
                 R r = SnmpUtil.setPDU(host, port, version, community, oid, auth, value);
                 return r;
             }

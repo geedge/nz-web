@@ -1,5 +1,6 @@
 package com.nis.modules.alert.entity.receive;
 
+import cn.hutool.core.util.StrUtil;
 import com.google.gson.Gson;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
@@ -64,7 +65,7 @@ public class AlertMessageReceiveDTO implements Serializable {
 
         // snmptrap 不需要做时间处理
         String alertname = (String) receiveLabels.get("alertname");
-        if (!String.valueOf(buildRuleId).equals(alertname)) {
+        if(!StrUtil.equals(String.valueOf(buildRuleId),alertname)) {
             boolean b = startsAt.endsWith("Z");
             if (!b) {
                 // 其他时区 格式统一 为  2020-10-15T23:32:30.841162867（+12:00/+08:00/-05:00）

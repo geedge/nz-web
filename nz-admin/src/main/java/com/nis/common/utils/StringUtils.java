@@ -22,7 +22,8 @@
 package com.nis.common.utils;
 
 
-import java.io.PrintWriter;
+import cn.hutool.core.util.StrUtil;
+
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -660,7 +661,7 @@ public abstract class StringUtils {
     public static boolean isContains(String[] values, String value) {
         if (value != null && value.length() > 0 && values != null && values.length > 0) {
             for (String v : values) {
-                if (value.equals(v)) {
+                if(StrUtil.equals(value,v)) {
                     return true;
                 }
             }

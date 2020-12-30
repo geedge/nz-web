@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -159,7 +160,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
             throw new NZException(RCode.IDC_STATE_ISNULL);
         }
 
-        if (!Constant.SWITCH_OPEN.toUpperCase().equals(state) && !Constant.SWITCH_CLOSE.toUpperCase().equals(state)) {
+        if(!StrUtil.equals(Constant.SWITCH_OPEN.toUpperCase(),state) && !StrUtil.equals(Constant.SWITCH_CLOSE.toUpperCase(),state)) {
             throw new NZException(RCode.IDC_STATE_ERROR);
         }
 
