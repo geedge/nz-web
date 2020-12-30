@@ -8,8 +8,7 @@
 
 package com.nis.modules.job.task;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import cn.hutool.log.Log;
 import org.springframework.stereotype.Component;
 
 /**
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
  */
 @Component("testTask")
 public class TestTask implements ITask {
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private Log logger = Log.get();
 
 	@Override
 	public void run(String params){

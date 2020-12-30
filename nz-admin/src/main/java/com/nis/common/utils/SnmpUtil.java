@@ -1,8 +1,7 @@
 package com.nis.common.utils;
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snmp4j.*;
 import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.MPv3;
@@ -19,7 +18,7 @@ import java.util.Map;
 
 public class SnmpUtil {
 
-    private static Logger logger = LoggerFactory.getLogger(SnmpUtil.class);
+    private static Log logger = Log.get();
 
     // 默认版本 v2
     public static final int DEFAULT_VERSION = SnmpConstants.version2c;
@@ -186,14 +185,14 @@ public class SnmpUtil {
                 try {
                     snmp.close();
                 } catch (IOException e) {
-                    logger.error("关闭snmp失败", e);
+                    logger.error("关闭snmp失败",e);
                 }
             }
             if (transport != null) {
                 try {
                     transport.close();
                 } catch (IOException e) {
-                    logger.error("关闭transport失败", e);
+                    logger.error("关闭transport失败",e);
                 }
             }
         }
@@ -306,14 +305,14 @@ public class SnmpUtil {
                 try {
                     snmp.close();
                 } catch (Exception e) {
-                    logger.error("关闭snmp失败", e);
+                    logger.error("关闭snmp失败",e);
                 }
             }
             if (transport != null) {
                 try {
                     transport.close();
                 } catch (IOException e) {
-                    logger.error("关闭transport失败", e);
+                    logger.error("关闭transport失败",e);
                 }
             }
         }
@@ -417,14 +416,14 @@ public class SnmpUtil {
                 try {
                     snmp.close();
                 } catch (Exception e) {
-                    logger.error("关闭snmp失败", e);
+                    logger.error("关闭snmp失败",e);
                 }
             }
             if (transport != null) {
                 try {
                     transport.close();
                 } catch (IOException e) {
-                    logger.error("关闭transport失败", e);
+                    logger.error("关闭transport失败",e);
                 }
             }
         }

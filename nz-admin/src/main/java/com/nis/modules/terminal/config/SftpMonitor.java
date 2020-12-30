@@ -21,9 +21,8 @@
 
 package com.nis.modules.terminal.config;
 
+import cn.hutool.log.Log;
 import com.jcraft.jsch.SftpProgressMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.text.DecimalFormat;
 import java.util.Timer;
@@ -32,7 +31,7 @@ import java.util.TimerTask;
 
 public class SftpMonitor extends TimerTask implements SftpProgressMonitor {
 
-    private static Logger logger = LoggerFactory.getLogger(SftpMonitor.class);
+    private static Log logger = Log.get();
 
     private long progressInterval = 2000; // 间隔时间
 

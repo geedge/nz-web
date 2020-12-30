@@ -22,28 +22,19 @@
 package com.nis.modules.terminal.config;
 
 
-import com.alibaba.fastjson.JSON;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import cn.hutool.log.Log;
+import com.nis.common.utils.*;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.List;
 
-import javax.servlet.http.HttpServletResponse;
-
 @Component
 public class TerminalOneProcessor {
-    private Logger logger= LoggerFactory.getLogger(TerminalOneProcessor.class);
+    private Log logger= Log.get();
 
     public R sendAll(String token, String cmd) throws Exception {
 
@@ -108,7 +99,7 @@ public class TerminalOneProcessor {
 
             logger.debug("上传完成");
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
             success = false;
         }
 
@@ -130,7 +121,7 @@ public class TerminalOneProcessor {
         try {
         	terminalClient.download(path,res);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
     }
 }

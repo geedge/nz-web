@@ -202,7 +202,7 @@ public abstract class StringUtils {
         int num = 0;
         try {
             num = Integer.parseInt(str);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             num = defaultValue;
         }
         return num;
@@ -232,7 +232,7 @@ public abstract class StringUtils {
         long num = 0;
         try {
             num = Long.parseLong(str);
-        } catch (Exception e) {
+        } catch (NumberFormatException e ) {
             num = defaultValue;
         }
         return num;
@@ -548,18 +548,6 @@ public abstract class StringUtils {
         return str1 + replStr + str2;
     }
 
-    /**
-     * 生成计费ID bs+四位随机生成的
-     */
-    public static String generateString(int length) {
-        String corpid = "";
-        int value;
-        for (int i = 0; i < length; i++) {
-            value = (int) (Math.random() * 26); // 26 表示只用小写字母 52表示所有字母 61表示数字字母组合
-            corpid += generateChar(value);
-        }
-        return corpid;
-    }
 
     private static char generateChar(int value) {
         char temp = 't';
@@ -989,9 +977,6 @@ public abstract class StringUtils {
         return sb.toString();
     }
 
-    public static void main(String[] args) {
-        System.out.println(camelToSplitName("getName","_"));
-    }
 
 
 }

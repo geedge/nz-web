@@ -1,8 +1,7 @@
 package com.nis.common.utils.SqlHelper;
 
+import cn.hutool.log.Log;
 import com.nis.common.utils.SQLUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +15,7 @@ import java.util.Set;
  *  ps:使用双引号和没有双引号区别：不使用双引号，oracle会在执行时自动转为大写
  */
 public class OracleHelper extends SQLUtils {
-    private Logger log= LoggerFactory.getLogger(OracleHelper.class);
+    private Log log= Log.get();
 
     private final String QUOTE="\"";
 
@@ -176,43 +175,4 @@ public class OracleHelper extends SQLUtils {
         }
     }
 
-    public static void main(String[] args) {
-        OracleHelper o = new OracleHelper();
-
-        Map<String,String> map=new HashMap<String,String>();
-        map.put("test1",o.getRestrict(KeywordsType.PRIMARYKEY,null,null));
-        map.put("test2",o.getRestrict(KeywordsType.NUMBER,23,null));
-        map.put("test3",o.getRestrict(KeywordsType.DATE,null,null));
-        map.put("test4",o.getRestrict(KeywordsType.STRING,45,null));
-
-        o.createTable("t_tab",map);
-
-        o.queryTables("t_tab");
-
-        Map<String,String[]> indexs=new HashMap<String,String[]>();
-
-        indexs.put("T_TAB_AAA_INDEX",new String[]{"test1"});
-        indexs.put("T_TAB_BBB_INDEX",new String[]{"test2"});
-
-        o.addIndexs("t_tab",indexs);
-
-        String[] indexNames=new String[]{"T_TAB_AAA_INDEX","T_TAB_BBB_INDEX"};
-        o.delIndexs("t_tab",indexNames);
-
-        o.dropTable("t_tab");
-
-        map.clear();
-        map.put("test5",o.getRestrict(KeywordsType.DATE,null,null));
-        map.put("test6",o.getRestrict(KeywordsType.STRING,45,null));
-
-        o.addFields("t_tab",map);
-
-        String[] fields=new String[]{"test2","test3"};
-        o.delFields("t_tab",fields);
-
-        map.clear();
-        map.put("test2",o.getRestrict(KeywordsType.STRING,24,null));
-        map.put("test4",o.getRestrict(KeywordsType.NUMBER,45,null));
-        o.modifyFields("t_tab",map );
-    }
 }

@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.job;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @DisallowConcurrentExecution
 public class EndpointStateJob extends QuartzJobBean {
-
+    private Log logger = Log.get();
     @Autowired
     private SysConfigService sysConfigService;
 
@@ -52,7 +53,7 @@ public class EndpointStateJob extends QuartzJobBean {
         try {
             this.getEndpointStatusFromPrometheus();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         } finally {
             sw.stop();
         }
@@ -149,7 +150,7 @@ public class EndpointStateJob extends QuartzJobBean {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 }

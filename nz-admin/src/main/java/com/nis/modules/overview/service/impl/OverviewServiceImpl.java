@@ -1,5 +1,6 @@
 package com.nis.modules.overview.service.impl;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -31,8 +32,6 @@ import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -43,7 +42,7 @@ import java.util.stream.Collectors;
 
 @Service("overviewService")
 public class OverviewServiceImpl implements OverviewService {
-    private static Logger logger = LoggerFactory.getLogger(OverviewServiceImpl.class);
+    private static Log logger = Log.get();
 
     @Autowired
     private OverviewDao overviewDao;
@@ -802,7 +801,7 @@ public class OverviewServiceImpl implements OverviewService {
                     }
 
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
                 break;
             }

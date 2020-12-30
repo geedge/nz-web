@@ -8,6 +8,8 @@
 
 package com.nis.modules.job.utils;
 
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.log.Log;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.modules.job.entity.ScheduleJobEntity;
@@ -16,11 +18,7 @@ import com.nis.modules.job.service.ScheduleJobLogService;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-
-import java.lang.reflect.Method;
 
 
 /**
@@ -29,7 +27,7 @@ import java.lang.reflect.Method;
 
  */
 public class ScheduleJob extends QuartzJobBean {
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private Log logger = Log.get();
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
@@ -54,9 +52,9 @@ public class ScheduleJob extends QuartzJobBean {
         	logger.debug("任务准备执行，任务ID：" + scheduleJob.getJobId());
 
 			Object target = SpringContextUtils.getBean(scheduleJob.getBeanName());
-			Method method = target.getClass().getDeclaredMethod("run", String.class);
-			method.invoke(target, scheduleJob.getParams());
-			
+			/*Method method = target.getClass().getDeclaredMethod("run", String.class);
+			method.invoke(target, scheduleJob.getParams());*/
+			ReflectUtil.invoke(target,"run",scheduleJob.getParams());
 			//任务执行总时长
 			long times = System.currentTimeMillis() - startTime;
 			log.setTimes((int)times);
@@ -65,7 +63,7 @@ public class ScheduleJob extends QuartzJobBean {
 			
 			logger.debug("任务执行完毕，任务ID：" + scheduleJob.getJobId() + "  总共耗时：" + times + "毫秒");
 		} catch (Exception e) {
-			logger.error("任务执行失败，任务ID：" + scheduleJob.getJobId(), e);
+			logger.error("任务执行失败，任务ID：" + scheduleJob.getJobId(),e);
 			
 			//任务执行总时长
 			long times = System.currentTimeMillis() - startTime;

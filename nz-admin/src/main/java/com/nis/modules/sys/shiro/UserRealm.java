@@ -1,5 +1,7 @@
 package com.nis.modules.sys.shiro;
 
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -46,7 +48,7 @@ import java.util.stream.Collectors;
  */
 @Component
 public class UserRealm extends AuthorizingRealm {
-
+	private Log logger = Log.get();
     @Autowired
     private SysUserDao sysUserDao;
 
@@ -128,7 +130,8 @@ public class UserRealm extends AuthorizingRealm {
 		SysUserEntity user = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().eq("username", token.getUsername()));
 		//账号不存在
 		if(user == null) {
-			R result = getLdapAuthentication(token.getUsername(),new String(token.getPassword()));
+
+			R result = getLdapAuthentication(token.getUsername(), Arrays.toString(token.getPassword()));
 			if(ObjectUtils.isNotEmpty(result)) {
 				LinkedList resultList = (LinkedList) result.get("data");
 				
@@ -163,7 +166,7 @@ public class UserRealm extends AuthorizingRealm {
 							 	 fieldSetMethodMap.put(f.getName(), m);
 							 }
 						 } catch (Exception e) {
-							 e.printStackTrace();
+							 logger.error(e);
 						 }
 					}
 					 // 利用反射 将ldap查询出的数据一一对应赋值给实体类
@@ -171,9 +174,10 @@ public class UserRealm extends AuthorizingRealm {
 					for(String set:keySet) {
 						if(ObjectUtils.isNotEmpty(ldapResult.get(set))&&ObjectUtils.isNotEmpty(fieldSetMethodMap.get(set))) {
 							try {
-								fieldSetMethodMap.get(set).invoke(userInfo, ldapResult.get(set));
+//								fieldSetMethodMap.get(set).invoke(userInfo, ldapResult.get(set));
+								ReflectUtil.invoke(userInfo,fieldSetMethodMap.get(set).getName(),ldapResult.get(set));
 							} catch (Exception e) {
-								e.printStackTrace();
+								logger.error(e);
 								throw new UnknownAccountException("账号或密码不正确");
 							} 
 						}
@@ -189,7 +193,7 @@ public class UserRealm extends AuthorizingRealm {
 
 				String salt = RandomStringUtils.randomAlphanumeric(20);
 				userInfo.setSalt(salt);
-				userInfo.setPassword(ShiroUtils.sha256(new String(token.getPassword()), userInfo.getSalt()));
+				userInfo.setPassword(ShiroUtils.sha256(Arrays.toString(token.getPassword()), userInfo.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(userInfo, userInfo.getPassword(), ByteSource.Util.bytes(userInfo.getSalt()), getName());
 				return info;
 			}else {
@@ -198,11 +202,11 @@ public class UserRealm extends AuthorizingRealm {
 			}
 		}else if(user.getSource().equals("ldap")) {
 			// 判断用户是否为ldap用户 是则进行ldap验证登录
-			R result = getLdapAuthentication(token.getUsername(),new String(token.getPassword()));
+			R result = getLdapAuthentication(token.getUsername(),Arrays.toString(token.getPassword()));
 			if(ObjectUtils.isNotEmpty(result)) {
 				String salt = RandomStringUtils.randomAlphanumeric(20);
 				user.setSalt(salt);
-				user.setPassword(ShiroUtils.sha256(new String(token.getPassword()), user.getSalt()));
+				user.setPassword(ShiroUtils.sha256(Arrays.toString(token.getPassword()), user.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPassword(), ByteSource.Util.bytes(user.getSalt()), getName());
 				return info;
 			}else {
@@ -308,7 +312,7 @@ public class UserRealm extends AuthorizingRealm {
 					return R.ok(search);
 
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error(e);
 					return null;
 				}
 			}else if(authenticate){

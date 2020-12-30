@@ -1,15 +1,13 @@
 package com.nis.common.smartvalidate;
 
-import com.nis.common.smartvalidate.ann.*;
-import com.nis.common.smartvalidate.ValidateHandler;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.smartvalidate.utils.ReflectUtils;
 import com.nis.common.utils.RCode;
-import com.nis.common.smartvalidate.ValidateCache;
 import org.apache.commons.beanutils.PropertyUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 
 /**
@@ -349,10 +347,15 @@ public class ValidateUtils {
             if (CommonUtil.isNull(annotations)) {
                 return validateUtils;
             }
-            Object fieldValue;
+//            Object fieldValue;
             try {
-                fieldValue = PropertyUtils.getProperty(value, field.getName());
-            } catch (Exception e) {
+//                fieldValue = PropertyUtils.getProperty(value, field.getName());
+                PropertyUtils.getProperty(value, field.getName());
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
             /*for (Annotation annotation : annotations) {

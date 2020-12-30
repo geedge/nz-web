@@ -1,5 +1,6 @@
 package com.nis.common.aspect;
 
+import cn.hutool.core.util.ReflectUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -296,13 +297,7 @@ public class SysLogAspect {
             for (Field field : fields) {
                 Boolean isId = field.isAnnotationPresent(TableId.class);
                 if (isId) {
-                    // 私有属性必须设置访问权限;
-                    field.setAccessible(true);
-                    try {
-                        oepraId = field.get(arg).toString();
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
+                    oepraId=ReflectUtil.getFieldValue(arg,field).toString();
                     break;
                 }
             }

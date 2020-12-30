@@ -21,6 +21,7 @@
 
 package com.nis.modules.terminal.config;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.utils.DigestUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.terminal.entity.Account;
@@ -279,7 +280,7 @@ public class TerminalSession implements Serializable {
             for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
                 TerminalClient terminalClient = entry.getValue();
                 if (terminalClient != null && terminalClient.getTerminal() != null) {
-                    if (sessionId.equals(terminalClient.getHttpSessionId())) {
+                    if (StrUtil.equals(terminalClient.getHttpSessionId(),sessionId.toString())) {
                         terminalClients.add(terminalClient);
                     }
                 }

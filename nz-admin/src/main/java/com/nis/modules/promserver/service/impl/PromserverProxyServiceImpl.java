@@ -1,27 +1,6 @@
 package com.nis.modules.promserver.service.impl;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.utils.HttpClientUtils;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
@@ -29,16 +8,32 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.HttpClientUtils;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
+import java.util.Map.Entry;
 @Service
 public class PromserverProxyServiceImpl implements PromserverProxyService {
 
-    private static final Logger logger= LoggerFactory.getLogger(PromserverProxyServiceImpl.class);
+    private static final Log logger= Log.get();
     @Autowired
     private PromserverService promserverService;
     @Autowired
     private RedisTemplate<String,String> redisTemplate;
 
-    public JSONObject promRequest(String url,String method,Map<String,Object> params,Integer promId,Integer idcId,Integer type,Integer endpointId) throws Exception {
+    public JSONObject promRequest(String url,String method,Map<String,Object> params,Integer promId,Integer idcId,Integer type,Integer endpointId) throws IOException {
     	if(endpointId != null) {// endpointId 不为空则通过 redis key 获取prometheus id
     		Object pid = redisTemplate.opsForHash().get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
     		if(pid == null) {
@@ -104,7 +99,13 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     	if("GET".equalsIgnoreCase(method)&&params != null && !params.isEmpty()) {
     		queryStr= genQueryString(params);
     	}
-    	return String.format("http://%s:%s%s%s", host,port,url,queryStr.toString());
+    	String result=null;
+		try {
+			result=new URL("http", host,port,url+"?"+queryStr.toString()).toString();
+		} catch (MalformedURLException e) {
+			logger.error(e);
+		}
+		return result;
     }
     
     /**
@@ -136,7 +137,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     }
 
 	@Override
-	public JSONObject query(Map<String, Object> params) throws Exception {
+	public JSONObject query(Map<String, Object> params) throws IOException {
 		String url = "/api/v1/query";
 		String method = "GET";
 		Integer promId = null;
@@ -147,7 +148,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
 	}
 
 	@Override
-	public JSONObject queryRange(Map<String, Object> params) throws Exception {
+	public JSONObject queryRange(Map<String, Object> params) throws IOException {
 		String url = "/api/v1/query_range";
 		String method = "GET";
 		Integer promId = null;
@@ -158,7 +159,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
 	}
 
 	@Override
-	public JSONObject series(Map<String, Object> params) throws Exception {
+	public JSONObject series(Map<String, Object> params) throws IOException {
 		String url = "/api/v1/series";
 		String method = "GET";
 		Integer promId = null;
@@ -169,7 +170,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
 	}
 
 	@Override
-	public JSONObject labels(Map<String, Object> params) throws Exception {
+	public JSONObject labels(Map<String, Object> params) throws IOException {
 		String url = "/api/v1/labels";
 		String method = "GET";
 		Integer promId = null;

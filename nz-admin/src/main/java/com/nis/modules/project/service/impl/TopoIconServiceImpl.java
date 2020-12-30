@@ -72,7 +72,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
             os.write(bytes);
             os.flush();
         } catch (IOException e) {
-            log.error(String.format("拓扑图图标预览失败，参数是：%s,错误信息是：%s", id, e.getMessage()), e);
+            log.error(String.format("拓扑图图标预览失败，参数是：%s,错误信息是：%s", id, e));
         }
     }
 

@@ -1,16 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -20,12 +10,16 @@ import com.nis.modules.endpoint.dao.MetadataMetricDao;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
 
 @Service
 public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, MetadataMetric>
 		implements MetadataMetricService {
 
-	private static Logger logger = LoggerFactory.getLogger(MetadataMetricServiceImpl.class);
+	private static Log logger = Log.get();
 
 	@Autowired
 	private PromserverProxyServiceImpl promserverProxyService;

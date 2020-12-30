@@ -16,6 +16,7 @@
 package com.nis.common.utils;
 
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
@@ -27,11 +28,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DateUtil {
-
+	public final static Log logger = Log.get();
 	/**
 	 * 配置时区 默认为0
 	 */
-    public static int configTimeZone = 0;
 
 	private static final Object lock = new Object();
 
@@ -314,7 +314,7 @@ public class DateUtil {
 			int years = (int) (((fmt.parse(endTime).getTime() - fmt.parse(
 					startTime).getTime()) / (1000 * 60 * 60 * 24)) / 365);
 			return years;
-		} catch (Exception e) {
+		} catch (ParseException e) {
 			// 如果throw java.text.ParseException或者NullPointerException，就说明格式不对
 			return 0;
 		}
@@ -339,7 +339,7 @@ public class DateUtil {
 			beginDate = format.parse(beginDateStr);
 			endDate = format.parse(endDateStr);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		day = (endDate.getTime() - beginDate.getTime()) / (24 * 60 * 60 * 1000);
 		// System.out.println("相隔的天数="+day);
@@ -393,7 +393,8 @@ public class DateUtil {
 		gc.setTime(date);
     	gc.add(GregorianCalendar.MINUTE,Integer.parseInt(addnumber));
     	str=df.format(gc.getTime());
-		}catch (Exception e) {
+		}catch (ParseException e) {
+			logger.error(e);
 		}
 		return str;
 	}
@@ -411,7 +412,7 @@ public class DateUtil {
 				simpleDateFormat.setLenient(false);
 				simpleDateFormat.parse(date);
 			}
-		} catch (Exception ex) {
+		} catch (ParseException e) {
 			throw new NZException(RCode.DateFormatWrong);
 		}
 	}
@@ -427,7 +428,7 @@ public class DateUtil {
                 simpleDateFormat.setLenient(false);
                 simpleDateFormat.parse(date);
             }
-        } catch (Exception ex) {
+        } catch (ParseException ex) {
             throw new NZException(RCode.DateFormatWrong);
         }
     }
@@ -463,7 +464,7 @@ public class DateUtil {
 			sdf.setTimeZone(TimeZone.getDefault());
 			parse = sdf.parse(format);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return parse;
 	}

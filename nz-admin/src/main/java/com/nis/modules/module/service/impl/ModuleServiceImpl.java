@@ -1,9 +1,12 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -21,8 +24,7 @@ import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
 
-    protected Logger logger = LoggerFactory.getLogger(ModuleServiceImpl.class);
+    protected Log logger = Log.get();
 
 	@Autowired
 	private ModuleDao moduleDao;
@@ -167,7 +169,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String password = (String) authInfo.get("password");
+            String password = StrUtil.str((String)authInfo.get("password"));
 
             String privPassword = (String) authInfo.get("priv_password");
             String privProtocol = (String) authInfo.get("priv_protocol");
@@ -349,8 +351,10 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             yamlUtil.createYaml(generatorPath + File.separator + "generator.yml", JSONObject.toJSONString(modules));
 
             logger.debug("Write snmp param to generator.yml file succeeded");
-        } catch (Exception e) {
-            logger.error("Failed to write snmp param to generator.yml file", e);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to write snmp param to generator.yml file",e);
+        } catch (IOException e) {
+            logger.error("Failed to write snmp param to generator.yml file",e);
         }
 
         StringReader result = null;
@@ -373,17 +377,13 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
             logger.debug("Generate snmp.yml file succeeded {}", sw.toString());
         } catch (Exception e) {
-            logger.error("Failed to generate snmp.yml file", e);
+            logger.error("Failed to generate snmp.yml file",e);
         } finally {
             if (sw != null) {
-                try {
-                    sw.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(sw);
             }
             if (result != null) {
-                result.close();
+                IOUtils.closeQuietly(result);
             }
         }
 
@@ -394,9 +394,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             snmpYml = yamlUtil.yamlToJson(generatorPath + File.separator + "snmp.yml");
             logger.debug("Read the contents of snmp.yml file succeeded");
         } catch (FileNotFoundException e) {
-            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found", e);
+            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found",e);
         } catch (Exception e) {
-            logger.error("Failed to read the contents of snmp.yml file", e);
+            logger.error("Failed to read the contents of snmp.yml file",e);
         }
 
         return snmpYml;

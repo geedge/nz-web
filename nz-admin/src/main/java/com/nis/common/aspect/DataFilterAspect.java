@@ -45,7 +45,7 @@ public class DataFilterAspect {
     }
 
     @Before("dataFilterCut()")
-    public void dataFilter(JoinPoint point) throws Throwable {
+    public void dataFilter(JoinPoint point) {
         Object params = point.getArgs()[0];
         if(params != null && params instanceof Map){
             SysUserEntity user = ShiroUtils.getUserEntity();

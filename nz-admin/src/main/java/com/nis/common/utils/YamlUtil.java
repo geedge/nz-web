@@ -1,11 +1,13 @@
 package com.nis.common.utils;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,7 +22,7 @@ import java.util.Map;
 
 @Component
 public class YamlUtil {
-	
+	private final static Log logger = Log.get();
 	private static Yaml y;
 	
 	@Value("${nezha.promtoolPath}")
@@ -47,10 +49,10 @@ public class YamlUtil {
 		
 		//校验
 		StringReader result = RuntimeUtil.run(null, null, new String[]{promtoolPath + File.separator + "promtool", "check", "rules", file.getAbsolutePath()});
-		BufferedReader reader = new BufferedReader(result);
-		String line1 = reader.readLine();
+		BufferReaderWrapper reader = new BufferReaderWrapper(result);
+		String line1 = reader.load();
 		if (!StringUtils.isBlank(line1)) {
-			String line2 = reader.readLine();
+			String line2 = reader.load();
 			if (!StringUtils.isBlank(line2) && line2.contains("SUCCESS")) {
 				success = true;
 			}
@@ -60,7 +62,7 @@ public class YamlUtil {
 		if (file.isFile()) {
 			file.delete();
 		}
-		
+		IOUtils.closeQuietly(reader);
 		return success;
 	}
 	
@@ -135,21 +137,8 @@ public class YamlUtil {
             writer = new FileWriter(yaml_url);
             y.dump(map, writer);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 	
-	public static void main(String[] args) throws Exception {
-		/*AlertRuleEntity alertRule = new AlertRuleEntity();
-		alertRule.setAlertName("test");
-		alertRule.setDescription("descr");
-		alertRule.setExpr("up == 1");
-		alertRule.setLast(50);
-		alertRule.setReceiver(11);
-		alertRule.setSeverity("warning");
-		alertRule.setSummary("xixi");
-		
-		checkRule(alertRuleEntityToYamlMap(alertRule));*/
-		//File f = new File("C:/Users/song/git/nz-web/nz-admin/tmp/promRuleCheck1574821467589.yml");
-	}
 }

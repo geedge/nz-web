@@ -1,11 +1,10 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.net.NetUtil;
+import cn.hutool.log.Log;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.File;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -16,7 +15,7 @@ import java.util.stream.Collectors;
  *
  */
 public class CommonUtils {
-	
+    private final static Log logger = Log.get();
 	private static String OS = System.getProperty("os.name").toLowerCase();
 
     /**
@@ -190,8 +189,10 @@ public class CommonUtils {
         } else {
             try {
                 val = clazz.newInstance();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                logger.error(e);
+            } catch (InstantiationException e) {
+                logger.error(e);
             }
         }
         return (T) val;
@@ -557,25 +558,8 @@ public class CommonUtils {
      * @return
      */
     public static Set<String> getInetIpAddress() {
-        Enumeration allNetInterfaces = null;
-        Set<String> allIpaddress = new HashSet<>();
-        try {
-            allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-            InetAddress ip = null;
-            while (allNetInterfaces.hasMoreElements()) {
-                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-                Enumeration addresses = netInterface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    ip = (InetAddress) addresses.nextElement();
-                    if (ip != null && ip instanceof Inet4Address) {
-                        allIpaddress.add(ip.getHostAddress());
-                    }
-                }
-            }
-        } catch (java.net.SocketException e) {
-            e.printStackTrace();
-        }
-        return allIpaddress;
+
+        return NetUtil.localIpv4s();
     }
 
     /**

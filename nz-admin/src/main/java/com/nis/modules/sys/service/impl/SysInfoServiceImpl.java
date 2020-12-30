@@ -91,7 +91,7 @@ public class SysInfoServiceImpl implements SysInfoService {
                     componentVersionInfoList.add(componentVersion);
                 }
             } catch (Exception e) {
-                log.error(String.format("获取prometheus版本信息接口失败，promserver 信息是: %s, URL: %s, 错误信息: %s", JSONObject.toJSONString(server), url, e.getMessage()), e);
+                log.error(String.format("获取prometheus版本信息接口失败，promserver 信息是: %s, URL: %s, 错误信息: %s", JSONObject.toJSONString(server), url, e));
             }
         }
 

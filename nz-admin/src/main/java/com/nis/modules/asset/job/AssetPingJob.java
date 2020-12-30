@@ -1,5 +1,7 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.log.Log;
+import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.RuntimeUtil;
@@ -15,8 +17,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 @DisallowConcurrentExecution
 public class AssetPingJob extends QuartzJobBean {
 
-    private static Logger logger = LoggerFactory.getLogger(AssetPingJob.class);
+    private static Log logger = Log.get();
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -57,7 +57,7 @@ public class AssetPingJob extends QuartzJobBean {
             // 进行同步
             this.execAssetPing();
         } catch (Exception e) {
-            logger.error("asset ping 采集异常", e);
+            logger.error("asset ping 采集异常",e);
         } finally {
             sw.stop();
         }
@@ -91,7 +91,7 @@ public class AssetPingJob extends QuartzJobBean {
                 List<String> resultList = new ArrayList<>();
 
                 StringReader result = null;
-                BufferedReader reader = null;
+                BufferReaderWrapper reader = null;
                 try {
                     // 执行命令并返回结果
                     String command = configMap.get(Constant.SYSCONFIG_KEY_ASSET_FPING_COMMAND);
@@ -115,9 +115,9 @@ public class AssetPingJob extends QuartzJobBean {
                     logger.info("asset ping 执行命令是：" + Arrays.asList(commands).toString());
                     logger.info("asset ping 执行命令时长: " + sw.toString());
 
-                    reader = new BufferedReader(result);
+                    reader = new BufferReaderWrapper(result);
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    while ((line = reader.load()) != null) {
                         resultList.add(line);
                     }
 
@@ -169,7 +169,7 @@ public class AssetPingJob extends QuartzJobBean {
                     assetPingDao.deleteAll();
                     assetPingService.saveBatch(callAssetPings);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 } finally {
                     if (reader != null) {
                         try {
@@ -202,20 +202,20 @@ public class AssetPingJob extends QuartzJobBean {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
         } finally {
             if (bw != null) {
                 try {
                     bw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
             if (fw != null) {
                 try {
                     fw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }

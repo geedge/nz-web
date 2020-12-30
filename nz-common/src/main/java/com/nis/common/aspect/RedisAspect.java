@@ -8,12 +8,11 @@
 
 package com.nis.common.aspect;
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 public class RedisAspect {
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Log logger = Log.get();
     /**
      * 是否开启redis缓存  true开启   false关闭
      */
@@ -39,7 +38,7 @@ public class RedisAspect {
             try{
                 result = point.proceed();
             }catch (Exception e){
-                logger.error("redis error", e);
+                logger.error("redis error",e);
                 throw new NZException("Redis服务异常");
             }
         }

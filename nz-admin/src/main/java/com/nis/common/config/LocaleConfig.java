@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.log.Log;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +46,7 @@ public class LocaleConfig implements WebMvcConfigurer {
 }
 
 class MyI18nInterceptor extends LocaleChangeInterceptor {
-
+	private Log log = Log.get();
 	private boolean validateHttpMethod(String currentMethod) {
 		String[] configuredMethods = getHttpMethods();
 		if (ObjectUtils.isEmpty(configuredMethods)) {
@@ -78,7 +79,7 @@ class MyI18nInterceptor extends LocaleChangeInterceptor {
 				}
 				catch (IllegalArgumentException ex) {
 					if (isIgnoreInvalidLocale()) {
-						logger.debug("忽略无效的locale值 [" + newLocale + "]: " + ex.getMessage());
+						log.debug("忽略无效的locale值 [" + newLocale + "]: " + ex);
 					}
 					else {
 						throw ex;

@@ -21,6 +21,9 @@
 
 package com.nis.modules.terminal.config;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.google.common.primitives.Bytes;
@@ -30,9 +33,8 @@ import com.nis.common.utils.*;
 import com.nis.modules.terminal.entity.Account;
 import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.service.TerminalLogService;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.net.telnet.TelnetClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -45,7 +47,7 @@ import java.util.*;
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
 public class TerminalClient {
-    private final Logger logger = LoggerFactory.getLogger(TerminalClient.class);
+    private final Log logger = Log.get();
     private String clientId;//每次生成的唯一值token
     private String httpSessionId;//打开该终端的SessionId
     private WebSocketSession webSocketSession;
@@ -99,7 +101,7 @@ public class TerminalClient {
         this.jSch = new JSch();
     }
 
-    public void openTerminal(final int cols, int rows, int width, int height) throws Exception {
+    public void openTerminal(final int cols, int rows, int width, int height) throws JSchException, IOException {
         Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
         if (ToolUtil.isEmpty(params)) {
             params = new HashMap<>();
@@ -112,10 +114,11 @@ public class TerminalClient {
                 String privateKey = params.get("key");
                 String keyPassword = params.get("keyPassword");
                 if (notEmpty(privateKey)) {
-                    File keyFile = new File(terminal.getPrivateKeyPath());
+//                    File keyFile = new File(terminal.getPrivateKeyPath());
+                    File keyFile = FileUtil.file(terminal.getPrivateKeyPath());
 //                    if (!keyFile.exists()) {
                     //将数据库中的私钥写到用户的机器上
-                    IOUtils.writeFile(keyFile, new ByteArrayInputStream(privateKey.getBytes()));
+                    FileUtil.writeFromStream(new ByteArrayInputStream(privateKey.getBytes()),keyFile);
 //                    }
                     if (notEmpty(keyPassword)) {
                         //设置带口令的密钥
@@ -133,7 +136,7 @@ public class TerminalClient {
             case "password": {
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(new String(Base64.getDecoder().decode(params.get("password"))));
+                session.setPassword(Arrays.toString(Base64.getDecoder().decode(params.get("password"))));
                 break;
             }
             default: {
@@ -174,7 +177,7 @@ public class TerminalClient {
                         }
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        message = Arrays.toString(message.getBytes(DigestUtils.getEncoding(message)));
                         clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -211,9 +214,12 @@ public class TerminalClient {
                             }
                         }
                     }
-                } catch (Exception e) {
-                	logger.error("TerminalClient error info :",e);
-                	TerminalSession.remove(webSocketSession);
+                } catch (UnsupportedEncodingException e) {
+                    logger.error("TerminalClient error info :",e);
+                    TerminalSession.remove(webSocketSession);
+                } catch (IOException e) {
+                    logger.error("TerminalClient error info :",e);
+                    TerminalSession.remove(webSocketSession);
                 }
             }
         }).start();
@@ -263,7 +269,7 @@ public class TerminalClient {
                         }
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        message = Arrays.toString(message.getBytes(DigestUtils.getEncoding(message)));
                         clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -273,7 +279,7 @@ public class TerminalClient {
                                 }
                                 pwd = message.replace(sendTempCmdId, "").replaceAll("\r\n.*", "") + "/";
                                 if (logger.isInfoEnabled()) {
-                                    logger.info(" Sftp upload file target path:{}", pwd);
+	                                    logger.info(" Sftp upload file target path:{}", pwd);
                                 }
                             }
                         } else {
@@ -305,7 +311,7 @@ public class TerminalClient {
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                 } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-                                    String s = new String(Base64.getDecoder().decode(password));
+                                    String s = Arrays.toString(Base64.getDecoder().decode(password));
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                     write(s + "\r");
@@ -355,9 +361,12 @@ public class TerminalClient {
                             }
                         }
                     }
-                } catch (Exception e) {
-                	logger.error("TerminalClient error info :",e);
-                	TerminalSession.remove(webSocketSession);
+                } catch (UnsupportedEncodingException e) {
+                    logger.error("TerminalClient error info :",e);
+                    TerminalSession.remove(webSocketSession);
+                } catch (IOException e) {
+                    logger.error("TerminalClient error info :",e);
+                    TerminalSession.remove(webSocketSession);
                 }
             }
         }).start();
@@ -460,26 +469,25 @@ public class TerminalClient {
 	public String terminalResponseHandle(String param) {
 		byte[] bytes = param.getBytes();
 		List<Byte> asList = Bytes.asList(bytes);
-		List<Byte> asList2=new ArrayList(asList);
-		for(int i=asList2.size()-1;i>=0;i--) {
-			if(asList2.get(i)==8){
-				asList2.remove(i);
-			}else if(asList2.get(i)==13) {
-				asList2.remove(i);
-			}else if(asList2.get(i)==10) {
-				asList2.remove(i);
-			}else if(asList2.get(i)==27) {
-				asList2.remove(i);
-			}else if(asList2.get(i)==91) {
-				asList2.remove(i);
-			}else if(i!=0&&asList2.get(i-1)==91) {
-				asList2.remove(i);
-			}else if(asList2.get(i)==7) {
-				asList2.remove(i);
+		for(int i=asList.size()-1;i>=0;i--) {
+			if(asList.get(i)==8){
+                asList.remove(i);
+			}else if(asList.get(i)==13) {
+                asList.remove(i);
+			}else if(asList.get(i)==10) {
+                asList.remove(i);
+			}else if(asList.get(i)==27) {
+                asList.remove(i);
+			}else if(asList.get(i)==91) {
+                asList.remove(i);
+			}else if(i!=0&&asList.get(i-1)==91) {
+                asList.remove(i);
+			}else if(asList.get(i)==7) {
+                asList.remove(i);
 			}
 		}
-		byte[] array = Bytes.toArray(asList2);
-		return new String(array);
+		byte[] array = Bytes.toArray(asList);
+		return Arrays.toString(array);
 	}
 	
     /**
@@ -515,9 +523,8 @@ public class TerminalClient {
         	}
         }
 
-        if (writer != null) {
-            writer.write(message);
-            writer.flush();
+        if (outputStream != null) {
+            IoUtil.write(outputStream,false,message.getBytes());
         }
     }
 
@@ -525,7 +532,7 @@ public class TerminalClient {
     	FileInputStream file =null;
     	ChannelSftp channelSftp = null;
         try {
-			file = new FileInputStream(src);
+			file = IoUtil.toStream(FileUtil.file(src));
 			channelSftp = (ChannelSftp) this.session.openChannel("sftp");
 			channelSftp.connect(CHANNEL_TIMEOUT);
 			//当前路径下,获取用户终端的当前位置
@@ -558,7 +565,7 @@ public class TerminalClient {
 			    channelSftp.disconnect();
 			}
 			if(file!=null) {
-				file.close();
+				IOUtils.closeQuietly(file);
 			}
 		}
     }
@@ -568,7 +575,7 @@ public class TerminalClient {
     	InputStream is =null;
     	OutputStream outputStream =null;
     	try {
-			logger.info("TerminalClient download param is {}",path);
+				logger.info("TerminalClient download param is {}",path);
 			channelSftp = (ChannelSftp) this.session.openChannel("sftp");
 			channelSftp.connect(CHANNEL_TIMEOUT);
 			//当前路径下,获取用户终端的当前位置
@@ -590,8 +597,8 @@ public class TerminalClient {
 			//截取路径中的文件名称
 			String fileName = path.substring(path.lastIndexOf("/")+1);
 			String pathExceptFileName = path.substring(0,path.lastIndexOf("/"));
-			logger.info("TerminalClient download fileName is {}",fileName);
-			logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
+				logger.info("TerminalClient download fileName is {}",fileName);
+				logger.info("TerminalClient download pathExceptFileName is {}",pathExceptFileName);
 			channelSftp.cd(pathExceptFileName);
 			is = channelSftp.get(fileName);
 			res.setCharacterEncoding("utf-8");
@@ -611,10 +618,10 @@ public class TerminalClient {
 			throw e;
 		}  finally {
 			if(outputStream!=null) {
-				outputStream.close();
+				IOUtils.closeQuietly(outputStream);
 			}
 			if(is!=null) {
-				is.close();
+                IOUtils.closeQuietly(is);
 			}
 			//exit
 			if (channelSftp != null) {

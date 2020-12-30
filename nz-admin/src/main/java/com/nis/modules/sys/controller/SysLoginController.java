@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
@@ -73,7 +74,7 @@ public class SysLoginController extends AbstractController {
 	@SysLog(operation = OperationEnum.LOGIN,type = TypeEnum.SYSTEM)
 	public R login(@RequestBody SysUserEntity sysUser) {
 		String username = sysUser.getUsername();
-		String password = sysUser.getPassword();
+		String password = StrUtil.str(sysUser.getPassword());
 	//public R login( String username, String password, String captcha) {
 		/*String kaptcha = ShiroUtils.getKaptcha(Constants.KAPTCHA_SESSION_KEY);
 		if(!captcha.equalsIgnoreCase(kaptcha)){
@@ -119,7 +120,7 @@ public class SysLoginController extends AbstractController {
 		try {
 			redisTemplate.delete(requestToken);
 		}catch (Exception e){
-			logger.debug("登出操作删除redis信息失败，失败key：{}",requestToken);
+				logger.debug("登出操作删除redis信息失败，失败key：{}",requestToken);
 		}
 
 

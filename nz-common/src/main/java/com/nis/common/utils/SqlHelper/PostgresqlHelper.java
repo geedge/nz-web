@@ -1,15 +1,14 @@
 package com.nis.common.utils.SqlHelper;
 
+import cn.hutool.log.Log;
 import com.nis.common.utils.SQLUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class PostgresqlHelper extends SQLUtils {
-    private Logger log= LoggerFactory.getLogger(PostgresqlHelper.class);
+    private Log log= Log.get();
 
     private final String QUOTE="\"";
 

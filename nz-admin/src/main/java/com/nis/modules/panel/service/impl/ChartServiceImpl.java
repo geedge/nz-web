@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -26,6 +27,7 @@ import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -51,6 +53,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements ChartService {
+    private Log logger = Log.get();
     @Autowired
     private ChartElementService chartElementService;
 
@@ -817,7 +820,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, configKey));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
         Map<String, String> exportHeaderMap;
-        switch (language) {
+        /*switch (language) {
             case "en": {
                 exportHeaderMap = (Map) map.get("en");
                 break;
@@ -833,6 +836,11 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             default: {
                 throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
             }
+        }*/
+        if(map.get(language) != null){
+            exportHeaderMap = (Map) map.get(language);
+        }else{
+            throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
         }
         SXSSFWorkbook workbook = null;
         try {
@@ -842,16 +850,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("图表模板生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("图表模板生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
     }
@@ -935,16 +939,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("图表导出文件生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
 
@@ -989,16 +989,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (Exception e) {
-            log.error("解析导入图表文件格式有误", e);
+        } catch (IOException e) {
+            log.error("解析导入图表文件格式有误",e);
             throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {
-                try {
-                    work.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(work);
             }
         }
 
@@ -1190,7 +1186,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
                 }
             }
         }
@@ -1344,7 +1340,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
                 }
             }
         }

@@ -195,7 +195,6 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalLogService.save(terminalLog);
             } catch (Exception e) {
             	logger.error("error info :",e);
-            	e.printStackTrace();
             	if (e.getMessage().toLowerCase().contains("auth fail")) {
             		session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {

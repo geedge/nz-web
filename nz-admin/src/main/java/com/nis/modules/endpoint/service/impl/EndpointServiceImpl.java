@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -28,14 +29,13 @@ import com.nis.modules.project.service.ProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 @Service("endpointService")
 public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> implements EndpointService {
 	
-	private static Logger logger = LoggerFactory.getLogger(EndpointServiceImpl.class);
+	private static Log logger = Log.get();
 	@Autowired
 	private EndpointDao endpointDao;
 	@Autowired
@@ -181,7 +181,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 			// 处理prometheus不可用时 出现异常 无状态显示问题
 			for(Endpoint data: datas) {
 				StateInfo stateInfo =new StateInfo();
@@ -287,16 +287,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		Workbook work = null;
 		try {
 			work = ExcelUtils.getWork(originalFilename, excelFile.getInputStream());
-		} catch (Exception e) {
-			logger.error("解析endpoint导入文件格式有误", e);
+		} catch (IOException e) {
+			logger.error("解析endpoint导入文件格式有误",e);
 			throw new NZException(RCode.ENDPOINT_IMPORTFILE_FAILED);
 		} finally {
 			if (work != null) {
-				try {
-					work.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				IOUtils.closeQuietly(work);
 			}
 		}
 
@@ -563,7 +559,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				} catch (Exception e) {
 					dataSourceTransactionManager.rollback(transactionStatus);
 					this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-					logger.error(String.format("保存 project module endpoint 失败,回滚事务,错误信息:%s", e.getMessage()), e);
+					logger.error(String.format("保存 project module endpoint 失败,回滚事务,错误信息:%s", e));
 				}
 			}
 		}
@@ -599,7 +595,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		SysConfigEntity configEntity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER));
 		Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
 		Map<String, String> exportHeaderMap;
-		switch (language) {
+		/*switch (language) {
 			case "en": {
 				exportHeaderMap = (Map) map.get("en");
 				break;
@@ -615,6 +611,11 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			default: {
 				throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ERROR);
 			}
+		}*/
+		if(map.get(language) != null){
+			exportHeaderMap = (Map) map.get(language);
+		}else{
+			throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ERROR);
 		}
 		SXSSFWorkbook workbook = null;
 		try {
@@ -624,16 +625,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
 			workbook.write(response.getOutputStream());
 		} catch (IOException e) {
-			logger.error("endpoint 模板生成失败，错误信息是：" + e.getMessage(), e);
+			logger.error("endpoint 模板生成失败，错误信息是：" + e);
 		} catch (Exception e) {
-			logger.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+			logger.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" +e);
 		} finally {
 			if (workbook != null) {
-				try {
-					workbook.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				IOUtils.closeQuietly(workbook);
 			}
 		}
 	}
@@ -699,16 +696,12 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
 			workbook.write(response.getOutputStream());
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 		} finally {
 			if (workbook != null) {
-				try {
-					workbook.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				IOUtils.closeQuietly(workbook);
 			}
 		}
 	}
@@ -729,7 +722,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
             String[] strArray = endpointIdList.stream().map(s -> String.valueOf(s)).toArray(String[]::new);
             redisTemplate.opsForHash().delete(Constant.REDIS_KEY_ENDPOINT_PROM, strArray);
         } catch (Exception e) {
-            logger.error(String.format("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：%s,错误信息是:%s", endpointIdList, e.getMessage()), e);
+            logger.error(String.format("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：%s,错误信息是:%s", endpointIdList, e));
         }
     }
 

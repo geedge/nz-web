@@ -1,9 +1,10 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.log.Log;
 import com.jcraft.jsch.*;
 import com.nis.common.exception.NZException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.Properties;
@@ -14,7 +15,7 @@ import java.util.Properties;
  */
 public class SftpUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(SftpUtils.class);
+    private static Log logger = Log.get();
 
     private ChannelSftp sftp;
 
@@ -36,7 +37,7 @@ public class SftpUtils {
      * @param privateKey 密钥文件
      * @throws Exception
      */
-    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws Exception {
+    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws NZException  {
         OutputStream out = null;
         File file = null;
         try {
@@ -52,7 +53,7 @@ public class SftpUtils {
                 // 私钥文件登录
                 file = new File("privateKey");
                 out = new FileOutputStream(file);
-                out.write(privateKey.getBytes());
+                IoUtil.write(out,false,privateKey.getBytes());
                 if (StringUtils.isNotEmpty(keyPassword)) {
                     jsch.addIdentity(file.getAbsolutePath(), keyPassword);
                 } else {
@@ -70,10 +71,12 @@ public class SftpUtils {
 
             session.connect(connectTimeOut);
         } catch (JSchException e) {
-            throw new RuntimeException("user login SFTP server occur exception:" + e);
+            throw new NZException("user login SFTP server occur exception:" + e);
+        } catch (FileNotFoundException e) {
+            throw new NZException("user login SFTP server occur exception:" + e);
         } finally {
             if (out != null) {
-                out.close();
+                IOUtils.closeQuietly(out);
             }
             if (file != null && file.exists()) {
                 file.delete();
@@ -90,7 +93,7 @@ public class SftpUtils {
      * @param shellName  脚本名称
      * @throws Exception
      */
-    public void upload(String targetPath, String path, String fileName, String shellName) throws Exception {
+    public void upload(String targetPath, String path, String fileName, String shellName) throws NZException, JSchException {
         // sftp通道
         Channel channel = session.openChannel("sftp");
         channel.connect(connectTimeOut);
@@ -122,9 +125,9 @@ public class SftpUtils {
             sftp.put(in, file.getName());
         } catch (Exception e) {
             // 文件上传失败
-            logger.error("build node exporter upload faild {}", e.getMessage());
+            logger.error("build node exporter upload faild {}", e);
             // 抛出 controller 处理
-            throw new RuntimeException("build node exporter upload faild");
+            throw new NZException("build node exporter upload faild");
         } finally {
             if (in != null) {
                 try {
@@ -195,8 +198,8 @@ public class SftpUtils {
                 }
             }
             sftp.cd(createpath);
-        } catch (Exception e) {
-            logger.error("创建目标目录失败，目标路径为" + createpath, e);
+        } catch (SftpException e) {
+            logger.error("创建目标目录失败，目标路径为" + createpath,e);
         }
     }
 

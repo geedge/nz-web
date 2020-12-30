@@ -1,10 +1,10 @@
 package com.nis.modules.promserver.utils;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -13,8 +13,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -24,7 +22,7 @@ import java.io.IOException;
  * @author hang.luo
  */
 public class HttpClientUtils {
-    private static Logger logger = LoggerFactory.getLogger(HttpClientUtils.class); // 日志记录
+    private static Log logger = Log.get(); // 日志记录
 
     private static RequestConfig requestConfig = null;
 
@@ -67,17 +65,13 @@ public class HttpClientUtils {
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
             } catch (Exception e) {
-                logger.error("submit post request faild:" + url, e);
+                logger.error("submit post request faild:" + url,e);
             }
         } catch (IOException e) {
-            logger.error("submit post request faild:" + url, e);
+            logger.error("submit post request faild:" + url,e);
         } finally {
             httpPost.releaseConnection();
-            try {
-				httpClient.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+            IOUtils.closeQuietly(httpClient);
         }
         return jsonResult;
     }
@@ -116,16 +110,16 @@ public class HttpClientUtils {
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
             } catch (Exception e) {
-                logger.error("submit post request faild:" + url, e);
+                logger.error("submit post request faild:" + url,e);
             }
         } catch (IOException e) {
-            logger.error("submit post request faild:" + url, e);
+            logger.error("submit post request faild:" + url,e);
         } finally {
             httpPost.releaseConnection();
             try {
 				httpClient.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
         }
         return jsonResult;
@@ -153,13 +147,13 @@ public class HttpClientUtils {
             // 把json字符串转换成json对象
             jsonResult = JSONObject.parseObject(strResult);
         } catch (IOException e) {
-            logger.error("submit get request faild:" + url, e);
+            logger.error("submit get request faild:" + url,e);
         } finally {
             request.releaseConnection();
             try {
 				client.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
         }
         return jsonResult;
@@ -184,13 +178,13 @@ public class HttpClientUtils {
             return statusCode;
    
         } catch (IOException e) {
-            logger.error("submit get request faild:" + url, e);
+            logger.error("submit get request faild:" + url,e);
         } finally {
             request.releaseConnection();
             try {
 				client.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
         }
         return statusCode;

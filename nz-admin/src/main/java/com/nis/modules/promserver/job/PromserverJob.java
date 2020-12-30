@@ -1,5 +1,6 @@
 package com.nis.modules.promserver.job;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
@@ -8,19 +9,18 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.service.SysConfigService;
+import lombok.SneakyThrows;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import java.net.URL;
 import java.util.List;
 
 @DisallowConcurrentExecution
 public class PromserverJob extends QuartzJobBean {
-	private Logger logger= LoggerFactory.getLogger(PromserverJob.class);
+	private Log logger= Log.get();
 	private final static String HTTP_HEADER_PATH="http://";
 	private final static String COLON=":";
 	private final static String HEALTHY_PATH="/-/healthy"; 
@@ -31,8 +31,9 @@ public class PromserverJob extends QuartzJobBean {
 	private SysConfigService sysConfigService;
 	
 	@SuppressWarnings("unchecked")
+	@SneakyThrows
 	@Override
-	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+	protected void executeInternal(JobExecutionContext context) {
 		// 检查 haMode
 		boolean haMode = sysConfigService.checkHaMode();
 		if (!haMode) return;
@@ -47,10 +48,11 @@ public class PromserverJob extends QuartzJobBean {
 			for(Promserver promserver:promservers) {
 				String host = promserver.getHost();
 				Integer port = promserver.getPort();
-				String req=HTTP_HEADER_PATH+host+COLON+port+HEALTHY_PATH;
+//				String req=HTTP_HEADER_PATH+host+COLON+port+HEALTHY_PATH;
+				String req = new URL("http",host,port,HEALTHY_PATH).toString();
 				Integer result = requestPromAPI(req);
-				String confagentReq = HTTP_HEADER_PATH+host+COLON+confagentPort+"/"+confagentPath+CONFAGENT_HEALTHY_PATH;
-//				String confagentReq = "http://192.168.41.87:8989/nz-confagent/healthy";
+				//String confagentReq = HTTP_HEADER_PATH+host+COLON+confagentPort+"/"+confagentPath+CONFAGENT_HEALTHY_PATH;
+				String confagentReq = new URL("http",host,Integer.parseInt(confagentPort),confagentPath+CONFAGENT_HEALTHY_PATH).toString();
 				Integer confagentResult = requestPromAPI(confagentReq);
 				logger.info("current promserver info : {}",JSON.toJSON(promserver));
 				logger.info("prometheus healthy response :{}",JSON.toJSON(result));

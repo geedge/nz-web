@@ -1,14 +1,15 @@
 package com.nis.modules.terminal.controller;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.common.xss.XssUtil;
 import com.nis.modules.terminal.config.TerminalOneProcessor;
 import com.nis.modules.terminal.entity.TerminalConfigDto;
 import com.nis.modules.terminal.service.TerminalLogService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -26,7 +27,7 @@ import java.util.Map;
 @RequestMapping("/terminal")
 public class TerminalHandlerController {
 	
-	private Logger logger = LoggerFactory.getLogger(TerminalHandlerController.class);
+	private Log logger = Log.get();
 	
 	@Autowired
     private TerminalOneProcessor terminalOneProcessor;
@@ -67,7 +68,7 @@ public class TerminalHandlerController {
 		}
 		String rootPath=null;
         try{
-            File temp=new File("");
+            File temp= FileUtil.file("");
             rootPath = temp.getAbsolutePath();
             logger.info("项目根目录["+rootPath+"]");
         }catch (Exception e){
@@ -75,7 +76,7 @@ public class TerminalHandlerController {
         }
 
         String tmpPath=rootPath+configUploadPath;
-        File uploadDir=new File(tmpPath);
+        File uploadDir=FileUtil.file(tmpPath);
         if(!uploadDir.exists()){
             uploadDir.mkdirs();
         }else{//存在同名文件/文件夹
@@ -85,8 +86,8 @@ public class TerminalHandlerController {
             }
         }
 
-        File tempFile = new File(tmpPath, file.getOriginalFilename());
-        logger.debug("上传临时文件["+tempFile.getAbsolutePath()+"]");
+        File tempFile = FileUtil.file(tmpPath, file.getOriginalFilename());
+	        logger.debug("上传临时文件["+tempFile.getAbsolutePath()+"]");
         try {
             file.transferTo(tempFile);
             if (CommonUtils.isEmpty(path)) {
@@ -133,6 +134,7 @@ public class TerminalHandlerController {
     @ResponseBody
     @RequiresPermissions({"terminal:log:list"})
     public R queryPage(@RequestParam Map<String, Object> params) throws Exception {
+        params = XssUtil.filterParameters(params);
         PageUtils page = terminalLogService.queryPage(params);
         return R.ok(page);
     }

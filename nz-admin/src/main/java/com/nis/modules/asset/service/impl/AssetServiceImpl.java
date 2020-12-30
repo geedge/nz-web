@@ -1,5 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -8,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -47,8 +50,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -74,9 +75,7 @@ import java.util.stream.Collectors;
  */
 @Service("assetService")
 public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements AssetService {
-
-    private static Logger logger = LoggerFactory.getLogger(AssetServiceImpl.class);
-
+    private static Log logger = Log.get();
     @Autowired
     private IdcService idcService;
 
@@ -181,7 +180,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             try {
                 tagStr = URLDecoder.decode(String.valueOf(params.get("tags")), "UTF-8");
             } catch (UnsupportedEncodingException e) {
-                logger.error(String.format("tag url转码失败，转码字符串：%s,错误信息是：%s", params.get("tags"), e.getMessage()), e);
+                logger.error(String.format("tag url转码失败，转码字符串：%s,错误信息是：%s", params.get("tags"), e));
             }
             Map<String, List<String>> tagParams = JSONObject.parseObject(tagStr, Map.class);
 
@@ -744,14 +743,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         try {
             work = ExcelUtils.getWork(originalFilename, assetsExcelFile.getInputStream());
         } catch (Exception e) {
-            logger.error("解析文件格式有误", e);
+            logger.error("解析文件格式有误"+e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {
                 try {
                     work.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -815,7 +814,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         try {
             defaultCabinetUsize = Integer.parseInt(configs.get(Constant.SYSCONFIG_KEY_DEFAULT_CABINETU));
         } catch (NumberFormatException e) {
-            logger.error("配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
+            logger.error("配置表中机柜默认值有误 param_key 为 {}，error{}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
             throw new NZException(RCode.SYS_CONFIG_DEFALUTCABINETU_INTERVAL);
         }
 
@@ -1145,7 +1144,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 上传 exporter
                         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter) && accountForUploadExporter != null) {
                             Map accountParam = JSONObject.parseObject(accountForUploadExporter.getParams().toString(), Map.class);
-                            accountParam.put("password", new String(Base64.getDecoder().decode(accountParam.get("password").toString())));
+                            accountParam.put("password", Arrays.toString(Base64.getDecoder().decode(accountParam.get("password").toString())));
                             accountForUploadExporter.setParams(JSONObject.toJSONString(accountParam));
                             R r = this.uploadBuildExporter(configs, asset, accountForUploadExporter);
                             Integer code = (Integer) r.get("code");
@@ -1168,7 +1167,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 手动回滚事务
                         dataSourceTransactionManager.rollback(transactionStatus);
                         this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage());
-                        logger.error("回滚事务失败,错误信息:" + e.getMessage(), e);
+                        logger.error("回滚事务失败,错误信息:" + e);
                     }
                 }
             }
@@ -1181,12 +1180,12 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             resultInfo.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
             logger.info("asset导入成功,信息是 {}", resultInfo);
         } catch (Exception e) {
-            logger.error("asset导入失败,错误信息:" + e.getMessage(), e);
+            logger.error("asset导入失败,错误信息:" + e);
         } finally {
             try {
                 work.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
         return resultInfo;
@@ -1553,22 +1552,22 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 }
                 Integer authType = null;
                 String method = params.get("method");
-                if (Constants.SshType.ACCOUNT.getValue().equals(method)) {
+                if (StrUtil.equals(Constants.SshType.ACCOUNT.getValue(),method)) {
                     authType = 1;
-                } else if (Constants.SshType.SSHKEY.getValue().equals(method)) {
+                } else if (StrUtil.equals(Constants.SshType.SSHKEY.getValue(),method)) {
                     authType = 2;
                 }
                 sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("username"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
             } catch (Exception e) {
-                logger.error(String.format("用户登录sftp服务器失败,地址是：%s:%s,认证信息是：%s", asset.getHost(), account.getPort(), (String) account.getParams()), e);
+                logger.error(String.format("用户登录sftp服务器失败,地址是：%s:%s,认证信息是：%s", asset.getHost(), account.getPort(), (String) account.getParams())+e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);
             }
 
             // 上传压缩包和执行脚本
             try {
                 sftpUtils.upload(targetExporterPath, buildNodeExporterPath, buildNodeExporterName, shellName);
-            } catch (Exception e) {
-                logger.error(String.format("上传脚本失败，错误信息：%s，目标路径：%s,内置文件路径：%s,文件名称：%s", e.getMessage(), targetExporterPath, buildNodeExporterPath, buildNodeExporterName), e);
+            } catch (JSchException e) {
+                logger.error(String.format("上传脚本失败，错误信息：%s，目标路径：%s,内置文件路径：%s,文件名称：%s", e, targetExporterPath, buildNodeExporterPath, buildNodeExporterName));
                 return R.error(RCode.ASSET_UPLOADFILE_FAILED);
             }
 
@@ -1577,7 +1576,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             try {
                 sftpUtils.exec(execCommand);
             } catch (Exception e) {
-                logger.error(String.format("执行脚本文件失败,错误信息：%s,执行命令：%s", e.getMessage(), execCommand), e);
+                logger.error(String.format("执行脚本文件失败,错误信息：%s,执行命令：%s", e, execCommand));
                 return R.error(RCode.ASSET_EXECCOMMAND_FAILED);
             }
         } finally {
@@ -1736,15 +1735,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            logger.error("asset导出文件生成失败，错误信息是：" + e.getMessage(), e);
+            logger.error("asset导出文件生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+            logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
                 try {
                     workbook.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -1863,7 +1862,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
         Map<String, String> exportHeaderMap;
-        switch (language) {
+        /*switch (language) {
             case "en": {
                 exportHeaderMap = (Map) map.get("en");
                 break;
@@ -1879,6 +1878,11 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             default: {
                 throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
             }
+        }*/
+        if(map.get(language)!=null) {
+            exportHeaderMap = (Map) map.get(language);
+        }else{
+            throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
         }
 
         SXSSFWorkbook workbook = null;
@@ -1890,15 +1894,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            logger.error("asset模板生成失败，错误信息是：" + e.getMessage(), e);
+            logger.error("asset模板生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+            logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
                 try {
                     workbook.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -1918,7 +1922,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         try {
             key = URLDecoder.decode(String.valueOf(key), "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            logger.error(String.format("tag key url转码失败，转码字符串：%s,错误信息是：%s", key, e.getMessage()), e);
+            logger.error(String.format("tag key url转码失败，转码字符串：%s,错误信息是：%s", key, e));
         }
         List<AssetTag> tags = assetTagDao.getTagValsByKeyOrderCounts(key, value);
         List<String> values = tags.stream().map(AssetTag::getValue).collect(Collectors.toList());
@@ -2086,7 +2090,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         boolean flag = false;
         for (Cabinet entity : cabinetList) {
             // 如果该机房下有该机柜
-            if (cabinetName.equals(entity.getName()) && idcId.equals(entity.getIdcId())) {
+//            if (cabinetName.equals(entity.getName()) && idcId.equals(entity.getIdcId())) {
+            if (StrUtil.equals(cabinetName,entity.getName())&&idcId.equals(entity.getIdcId())) {
                 cabinet = entity;
                 flag = true;
                 break;
@@ -2155,7 +2160,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             boolean modelFlag = true;
             for (Model entity : modelList) {
                 // 如果 名称 类型 厂商 都一致的话 不用添加model
-                if (entity.getName().equals(modelName) && entity.getTypeCode().equals(type.getCode()) && entity.getVendorCode().equals(vendor.getCode())) {
+                if (StrUtil.equals(entity.getName(),modelName) && entity.getTypeCode().equals(type.getCode()) && entity.getVendorCode().equals(vendor.getCode())) {
                     model = entity;
                     modelFlag = false;
                     break;
@@ -2364,7 +2369,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        getSystemOsInfo(session,assetFeatureMap,results,assetId);
 			        
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error(e);
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new NZException(e.getMessage());
 				} finally {
@@ -2377,14 +2382,14 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 				try {
 					getSystemInfoBySnmp(assetFeatureMap, results, asset, account);
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error(e);
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new NZException(e.getMessage());
 				}
 			}
 			
 			// 存入db 无则新增 有则修改
-			if(ToolUtil.isNotEmpty(results)) {
+			if(results!=null&&results.size()>0) {
 				assetFeatureService.saveOrUpdateBatch(results);
 			}
 			

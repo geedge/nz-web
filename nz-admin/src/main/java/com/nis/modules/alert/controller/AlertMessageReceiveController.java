@@ -1,11 +1,10 @@
 package com.nis.modules.alert.controller;
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.modules.alert.service.AlertMessageService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,7 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("api/v1/alerts")
 public class AlertMessageReceiveController {
 
-	private final static Logger logger = LoggerFactory.getLogger(AlertMessageReceiveController.class);
+	private final static Log logger = Log.get();
 	
 	@Autowired
     private AlertMessageService alertMessageService;

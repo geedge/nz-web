@@ -61,7 +61,7 @@ public class ExcelUtils {
      * @return
      * @throws Exception
      */
-    public static Workbook getWork(String url, InputStream inputStream) throws Exception {
+    public static Workbook getWork(String url, InputStream inputStream) throws IOException {
         Workbook wb = null;
         String str = url.substring(url.lastIndexOf("."));
 
@@ -70,7 +70,7 @@ public class ExcelUtils {
         } else if (excel2007U.equals(str)) {
             wb = new XSSFWorkbook(inputStream);  // 2007+
         } else {
-            throw new Exception("解析文件格式有误!");
+            throw new IOException("解析文件格式有误!");
         }
         return wb;
     }

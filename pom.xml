@@ -189,6 +189,11 @@
             <artifactId>mibble</artifactId>
             <version>${mibble.version}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.5.2</version>
+        </dependency>
     </dependencies>
 
     <!-- 阿里云maven仓库 -->
