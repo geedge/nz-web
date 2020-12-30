@@ -100,7 +100,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         assetId=(String)session.getAttributes().get("assetId");
         accountId=(String)session.getAttributes().get("accountId");
         uuid=(String)session.getAttributes().get("uuid");
-        token=(String)session.getAttributes().get("token");
+        token=(String)session.getAttributes().get("terminalToken");
         
         RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean("redisTemplate");
 	    redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
@@ -110,6 +110,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         if(obj == null) {
         	session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
         	session.close();
+        	logger.error("terminal error user token Incorrect token info is : {}",token);
         	return;
         }
        /* SysUserService sysUserService = (SysUserService) applicationContext.getBean("sysUserService");

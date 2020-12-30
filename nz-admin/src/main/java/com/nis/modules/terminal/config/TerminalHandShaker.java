@@ -56,7 +56,7 @@ public class TerminalHandShaker extends HttpSessionHandshakeInterceptor {
             attributes.put("assetId", assetId);
             attributes.put("accountId", accountId);
             attributes.put("uuid", servletRequest.getServletRequest().getParameter("uuid"));
-            attributes.put("token", servletRequest.getServletRequest().getParameter("token"));
+            attributes.put("terminalToken", servletRequest.getServletRequest().getParameter("token"));
             attributes.put(Constants.PARAM_HTTP_SESSION_ID_KEY, session.getId());
         }
         return super.beforeHandshake(request, response, wsHandler, attributes);
