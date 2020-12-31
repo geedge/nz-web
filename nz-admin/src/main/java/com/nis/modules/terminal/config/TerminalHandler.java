@@ -46,9 +46,11 @@ import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -101,9 +103,14 @@ public class TerminalHandler extends TextWebSocketHandler {
         accountId=(String)session.getAttributes().get("accountId");
         uuid=(String)session.getAttributes().get("uuid");
         token=(String)session.getAttributes().get("terminalToken");
-        
-        RedisTemplate redisTemplate = (RedisTemplate) applicationContext.getBean("redisTemplate");
+
+	    RedisConnectionFactory factory = applicationContext.getBean(RedisConnectionFactory.class);
+	    RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+	    redisTemplate.setKeySerializer(new StringRedisSerializer());
 	    redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+	    redisTemplate.setConnectionFactory(factory);
+
+	    redisTemplate.afterPropertiesSet();
         //判断用户传入的token是否为项目获取的token信息
 	    ValueOperations ops = redisTemplate.opsForValue();
 	    Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + token);

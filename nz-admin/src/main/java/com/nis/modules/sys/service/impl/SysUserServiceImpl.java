@@ -28,9 +28,11 @@ import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private RedisTemplate redisTemplate;
+
+	@Autowired
+	private RedisConnectionFactory factory;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -331,11 +336,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		if (StringUtils.isEmpty(requestToken))
 			throw new NZException(RCode.SYS_TOKEN_ISNULL);
 
+		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
+		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		redisTemplate.setConnectionFactory(factory);
+
+		redisTemplate.afterPropertiesSet();
+
 		Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
 		if (!exist)
 			throw new NZException(RCode.SYS_LOGIN_REQUIRED);
 
-		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
 		ValueOperations ops = redisTemplate.opsForValue();
 		Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + requestToken);
 		SimpleSession session = (SimpleSession) obj;

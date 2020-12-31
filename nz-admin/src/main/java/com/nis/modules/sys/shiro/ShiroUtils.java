@@ -11,9 +11,11 @@ import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.*;
 
@@ -81,9 +83,14 @@ public class ShiroUtils {
 	 * @return
 	 */
 	public static Map<String, SysUserEntity> getShiroSessionInfoMap() {
-		RedisTemplate redisTemplate = (RedisTemplate) SpringContextUtils.getBean("redisTemplate");
-
+		RedisConnectionFactory factory = SpringContextUtils.getBean("redisConnectionFactory", RedisConnectionFactory.class);
+		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
 		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		redisTemplate.setConnectionFactory(factory);
+
+		redisTemplate.afterPropertiesSet();
+
 		ValueOperations ops = redisTemplate.opsForValue();
 
 		Set keys = redisTemplate.keys(ShiroUtils.REDIS_KEYPREFIX + "*");
