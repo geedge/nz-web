@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
@@ -21,8 +22,13 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service("sysInfoService")
@@ -97,5 +103,37 @@ public class SysInfoServiceImpl implements SysInfoService {
 
         resultMap.put("components", componentVersionInfoList);
         return resultMap;
+    }
+
+    @Override
+    public Map getGitVersionInfo() {
+        ClassLoader classLoader = getClass().getClassLoader();
+        try (InputStream inputStream = classLoader.getResourceAsStream("git.properties");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));) {
+            StringBuilder versionJson = null;
+            String line;
+            versionJson = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                versionJson.append(line);
+            }
+
+            JSONObject jsonObject = JSON.parseObject(versionJson.toString());
+            Set<Map.Entry<String, Object>> entrySet = jsonObject.entrySet();
+            if (CollectionUtils.isNotEmpty(entrySet)) {
+                // 默认排序 a-z
+                Map<String, Object> sortMap = new TreeMap<>(new Comparator<String>() {
+                    public int compare(String obj1, String obj2) {
+                        return obj1.compareTo(obj2);
+                    }
+                });
+                Map<String, Object> collect = entrySet.stream()
+                        .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (o, n) -> n));
+                sortMap.putAll(collect);
+                return sortMap;
+            }
+        } catch (IOException e) {
+            log.error("读取 git.properties 文件信息失败，错误信息是：" + e.getMessage(), e);
+        }
+        return Collections.emptyMap();
     }
 }
