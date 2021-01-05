@@ -10,7 +10,8 @@ package com.nis.common.utils;
 
 import com.alibaba.fastjson.JSON;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -27,14 +28,6 @@ public class RedisUtils {
     private RedisTemplate redisTemplate;
     @Resource(name="redisTemplate")
     private ValueOperations<String, String> valueOperations;
-    @Resource(name="redisTemplate")
-    private HashOperations<String, String, Object> hashOperations;
-    @Resource(name="redisTemplate")
-    private ListOperations<String, Object> listOperations;
-    @Resource(name="redisTemplate")
-    private SetOperations<String, Object> setOperations;
-    @Resource(name="redisTemplate")
-    private ZSetOperations<String, Object> zSetOperations;
     /**  默认过期时长，单位：秒 */
     public final static long DEFAULT_EXPIRE = 60 * 60 * 24;
     /**  不设置过期时长 */

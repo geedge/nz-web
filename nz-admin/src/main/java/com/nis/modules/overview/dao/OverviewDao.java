@@ -2,7 +2,6 @@ package com.nis.modules.overview.dao;
 
 import com.nis.modules.overview.entity.EndpointStat;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

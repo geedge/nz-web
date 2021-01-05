@@ -1,20 +1,5 @@
 package com.nis.modules.sys.controller;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.OperationEnum;
@@ -23,6 +8,13 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.Link;
 import com.nis.modules.sys.service.LinkService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/link")

@@ -17,8 +17,6 @@ public class SysMenuInterceptor extends HandlerInterceptorAdapter {
 
     private SysConfigService sysConfigService;
 
-    public SysMenuInterceptor() {
-    }
 
     public SysMenuInterceptor(SysConfigService sysConfigService) {
         this.sysConfigService = sysConfigService;

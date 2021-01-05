@@ -136,7 +136,7 @@ public class TerminalClient {
             case "password": {
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(Arrays.toString(Base64.getDecoder().decode(params.get("password"))));
+                session.setPassword(StringUtils.str(Base64.getDecoder().decode(params.get("password"))));
                 break;
             }
             default: {
@@ -177,7 +177,7 @@ public class TerminalClient {
                         }
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
-                        message = Arrays.toString(message.getBytes(DigestUtils.getEncoding(message)));
+                        message = StringUtils.str(message.getBytes(DigestUtils.getEncoding(message)));
                         clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -269,7 +269,7 @@ public class TerminalClient {
                         }
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
-                        message = Arrays.toString(message.getBytes(DigestUtils.getEncoding(message)));
+                        message = StringUtils.str(message.getBytes(DigestUtils.getEncoding(message)));
                         clientMessageHandle(terminalLogService,terminalLog,message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -311,7 +311,7 @@ public class TerminalClient {
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                 } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-                                    String s = Arrays.toString(Base64.getDecoder().decode(password));
+                                    String s = StringUtils.str(Base64.getDecoder().decode(password));
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                     write(s + "\r");
@@ -468,7 +468,7 @@ public class TerminalClient {
 	 */
 	public String terminalResponseHandle(String param) {
 		byte[] bytes = param.getBytes();
-		List<Byte> asList = Bytes.asList(bytes);
+		List<Byte> asList = new ArrayList<>(Bytes.asList(bytes));
 		for(int i=asList.size()-1;i>=0;i--) {
 			if(asList.get(i)==8){
                 asList.remove(i);
@@ -487,7 +487,7 @@ public class TerminalClient {
 			}
 		}
 		byte[] array = Bytes.toArray(asList);
-		return Arrays.toString(array);
+		return StringUtils.str(array);
 	}
 	
     /**
@@ -525,6 +525,7 @@ public class TerminalClient {
 
         if (outputStream != null) {
             IoUtil.write(outputStream,false,message.getBytes());
+            outputStream.flush();
         }
     }
 

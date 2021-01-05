@@ -23,6 +23,7 @@ package com.nis.common.utils;
 
 
 import cn.hutool.core.util.StrUtil;
+import io.netty.util.CharsetUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -113,38 +114,6 @@ public abstract class StringUtils {
     }
 
     /**
-     * 将字符串转换成List<String>
-     *
-     * @param str 要转换的目标字符串
-     * @return
-     */
-    public static List<String> stringToList(String str) {
-        return stringToList(str, null, 0);
-    }
-
-    /**
-     * 将字符串转换成List<String>
-     *
-     * @param str   要转换的目标字符串
-     * @param limit 对字符串截取的分隔符
-     * @return
-     */
-    public static List<String> stringToList(String str, int limit) {
-        return stringToList(str, null, limit);
-    }
-
-    /**
-     * 将字符串转换成List<String>
-     *
-     * @param str   要转换的目标字符串
-     * @param split 长度
-     * @return
-     */
-    public static List<String> stringToList(String str, String split) {
-        return stringToList(str, split, 0);
-    }
-
-    /**
      * 转换字符串成list
      *
      * @param str   字符串
@@ -209,15 +178,6 @@ public abstract class StringUtils {
         return num;
     }
 
-    /**
-     * 转换字符串为long类型，如果转换失败，则返回默认值 -1
-     *
-     * @param str 字符串
-     * @return
-     */
-    public static long parseLong(String str) {
-        return parseLong(str, -1);
-    }
 
     /**
      * 转换字符串为long类型，如果转换失败，则返回默认值 defaultValue
@@ -252,16 +212,6 @@ public abstract class StringUtils {
         return false;
     }
 
-    public static boolean isNotNullString(String str) {
-        return !isNullString(str);
-    }
-
-    public static String checkString(String str, String defaultValue) {
-        if (str == null || "".equals(str.trim())) {
-            return defaultValue;
-        }
-        return str;
-    }
 
     public static String objectToString(Object o) {
         if (o == null) {
@@ -364,33 +314,6 @@ public abstract class StringUtils {
         return html;
     }
 
-    /**
-     * 取字符串的前toCount个字符
-     *
-     * @param str     被处理字符串
-     * @param toCount 截取长度
-     * @param more    后缀字符串
-     * @return String
-     * @version 2004.11.24
-     * @author zhulx
-     */
-    public static String subString(String str, int toCount, String more) {
-        int reInt = 0;
-        String reStr = "";
-        if (str == null)
-            return "";
-        char[] tempChar = str.toCharArray();
-        for (int kk = 0; (kk < tempChar.length && toCount > reInt); kk++) {
-            String s1 = String.valueOf(tempChar[kk]);
-            byte[] b = s1.getBytes();
-            reInt += b.length;
-            reStr += tempChar[kk];
-        }
-        if (toCount == reInt || (toCount == reInt - 1)) {
-            reStr += more;
-        }
-        return reStr;
-    }
 
     /**
      * 按字节截取字符串，并保证不会截取半个汉字
@@ -683,42 +606,6 @@ public abstract class StringUtils {
     }
 
 
-    /**
-     * @param msg
-     * @param e
-     * @return string
-     */
-
-    /**
-     * translat.
-     *
-     * @param src  source string.
-     * @param from src char table.
-     * @param to   target char table.
-     * @return String.
-     */
-    public static String translat(String src, String from, String to) {
-        if (isEmpty(src)) return src;
-        StringBuilder sb = null;
-        int ix;
-        char c;
-        for (int i = 0, len = src.length(); i < len; i++) {
-            c = src.charAt(i);
-            ix = from.indexOf(c);
-            if (ix == -1) {
-                if (sb != null)
-                    sb.append(c);
-            } else {
-                if (sb == null) {
-                    sb = new StringBuilder(len);
-                    sb.append(src, 0, i);
-                }
-                if (ix < to.length())
-                    sb.append(to.charAt(ix));
-            }
-        }
-        return sb == null ? src : sb.toString();
-    }
 
     /**
      * split.
@@ -843,78 +730,6 @@ public abstract class StringUtils {
         return parseKeyValuePair(qs, "\\&");
     }
 
-    public static String toQueryString(Map<String, String> ps) {
-        StringBuilder buf = new StringBuilder();
-        if (ps != null && ps.size() > 0) {
-            for (Map.Entry<String, String> entry : new TreeMap<String, String>(ps).entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                if (key != null && key.length() > 0
-                        && value != null && value.length() > 0) {
-                    if (buf.length() > 0) {
-                        buf.append("&");
-                    }
-                    buf.append(key);
-                    buf.append("=");
-                    buf.append(value);
-                }
-            }
-        }
-        return buf.toString();
-    }
-
-    public static String camelToSplitName(String camelName, String split) {
-        if (camelName == null || camelName.length() == 0) {
-            return camelName;
-        }
-        StringBuilder buf = null;
-        for (int i = 0; i < camelName.length(); i++) {
-            char ch = camelName.charAt(i);
-            if (ch >= 'A' && ch <= 'Z') {
-                if (buf == null) {
-                    buf = new StringBuilder();
-                    if (i > 0) {
-                        buf.append(camelName.substring(0, i));
-                    }
-                }
-                if (i > 0) {
-                    buf.append(split);
-                }
-                buf.append(Character.toLowerCase(ch));
-            } else if (buf != null) {
-                buf.append(ch);
-            }
-        }
-        return buf == null ? camelName : buf.toString();
-    }
-
-    public static Long[] splitToLongArray(String agentIds) {
-        if (CommonUtils.isEmpty(agentIds)) {
-            return new Long[0];
-        }
-        String array[] = stringToArray(agentIds, ",");
-        if (CommonUtils.isEmpty(array)) return new Long[0];
-
-        Long longArray[] = new Long[array.length];
-        for (int i = 0; i < array.length; i++) {
-            longArray[i] = Long.parseLong(array[i]);
-        }
-        return longArray;
-    }
-
-    public static Integer[] splitToIntArray(String agentIds, String s) {
-        if (CommonUtils.isEmpty(agentIds)) {
-            return new Integer[0];
-        }
-        String array[] = stringToArray(agentIds, ",");
-        if (CommonUtils.isEmpty(array)) return new Integer[0];
-
-        Integer intArray[] = new Integer[array.length];
-        for (int i = 0; i < array.length; i++) {
-            intArray[i] = Integer.parseInt(array[i]);
-        }
-        return intArray;
-    }
 
     public static String line(int count) {
         String str = "";
@@ -978,7 +793,15 @@ public abstract class StringUtils {
         return sb.toString();
     }
 
+    public static String str(byte[] bytes) {
+        return StrUtil.str(bytes, CharsetUtil.UTF_8);
+    }
 
+    public static String str(char[] chars) {
+        StringBuffer stringBuffer = new StringBuffer();
+        stringBuffer.append(chars);
+        return stringBuffer.toString();
+    }
 
 }
 

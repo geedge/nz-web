@@ -149,30 +149,6 @@ public class RuntimeUtil {
 		// 用结果缓冲构建StringReader
 		return new StringReader(result.toString());
 	}
- 
-	/**
-	 * 读取StringReader为String
-	 * 
-	 * @param stringReader
-	 *            StringReader
-	 * @param skipWhiteLine
-	 *            是否需要跳过空行
-	 * @return
-	 */
-	public static String readStringReader(StringReader stringReader, boolean skipWhiteLine) {
-		StringBuilder result = new StringBuilder();
-		BufferReaderWrapper reader = new BufferReaderWrapper(stringReader);
- 
-		for (String temp = readLine(reader); temp != null; temp = readLine(reader)) {
-			if (skipWhiteLine == false || !temp.trim().equals("")) {
-				result.append(temp + "\n");
-			}
-		}
- 
-		return result.toString();
- 
-	}
- 
 	/**
 	 * 运行一个命令
 	 * 
@@ -248,25 +224,6 @@ public class RuntimeUtil {
 			out.write(buffer, 0, length);
 		} catch (IOException e) {
 		}
-	}
- 
-	/**
-	 * 非阻塞模式回调
-	 * 
-	 * @author fox
-	 */
-	public static interface RuntimeCallback {
-		/**
-		 * 非阻塞模式回调函数
-		 * 
-		 * @param result
-		 *            命令执行结果
-		 * @param startCommand
-		 *            起始命令
-		 * @param commands
-		 *            其他后续命令，如果有设置，会使用管道来关联前后命令的标准输出流和标准输入流
-		 */
-		public void onExit(StringReader result, String[] envp, File dir, String[] startCommand, String[]... commands);
 	}
  
 	/**

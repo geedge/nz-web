@@ -1,7 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -54,7 +53,6 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements ChartService {
-    private Log logger = Log.get();
     @Autowired
     private ChartElementService chartElementService;
 
@@ -360,19 +358,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
     }
 
-    /**
-     * 校验 chart 是否存在该 panel 下
-     *
-     * @param panelId
-     * @param chartId
-     */
-    private void validateChartExists(Integer panelId, Integer chartId) {
-        Chart chart = this.getOne(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, panelId).eq(Chart::getId, chartId));
-
-        if (chart == null) {
-            throw new NZException(RCode.CHART_NOTEXSITS);
-        }
-    }
 
     /**
      * 校验 panel 是否存在
@@ -438,58 +423,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
     }
 
-    /**
-     * 处理删除之后的位置信息
-     *
-     * @param sequentialChartList 有序集合列表
-     * @param deleteIds           删除的charts ids
-     */
-    private void handlePositionAfterDelete(List<Chart> sequentialChartList, List<Integer> deleteIds) {
-        // 全删除了
-        if (sequentialChartList.size() == deleteIds.size()) {
-            return;
-        }
-
-        // 保证原先次序 并且 删除之后剩余的集合
-        List<Chart> deletedChartList = new ArrayList<>();
-        for (Chart obj : sequentialChartList) {
-            if (!deleteIds.contains(obj.getId())) {
-                deletedChartList.add(obj);
-            }
-        }
-
-        Chart firstChart = deletedChartList.get(0);
-        firstChart.setPrev(Constant.START_PREV_VALUE);
-
-        // 剩余一个
-        if (deletedChartList.size() == 1) {
-            firstChart.setNext(Constant.END_NEXT_VALUE);
-            chartDao.updateSizeById(firstChart);
-        } else {
-            // 剩余数量大于 1
-            List<Chart> updateCharts = new ArrayList<>();
-
-            Chart tempChart = null;
-            int size = deletedChartList.size();
-            for (int i = 0; i < size; i++) {
-                if (i == 0) {
-                    firstChart.setNext(deletedChartList.get(i + 1).getId());
-                    updateCharts.add(firstChart);
-                } else {
-                    tempChart = deletedChartList.get(i);
-                    tempChart.setPrev(updateCharts.get(updateCharts.size() - 1).getId());
-                    if (i < size - 1) {
-                        tempChart.setNext(deletedChartList.get(i + 1).getId());
-                    }
-                    updateCharts.add(tempChart);
-                }
-            }
-            updateCharts.get(updateCharts.size() - 1).setNext(Constant.END_NEXT_VALUE);
-
-            // 批量修改前后值
-            chartDao.updatePrevNextBatch(updateCharts);
-        }
-    }
 
     /**
      * 根据 chart.pid 查找引用自此chart，同步删除
@@ -526,44 +459,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }*/
     }
 
-    /**
-     * charts 排序
-     *
-     * @param charts
-     * @return
-     */
-    private List<Chart> getSequentialChartList(List<Chart> charts) {
-        if (CollectionUtils.isEmpty(charts)) {
-            return new ArrayList();
-        }
-
-        List<Chart> resultList = new ArrayList<>();
-
-        // 按照prev升序排序
-        charts = charts.stream().sorted(Comparator.comparing(Chart::getPrev)).collect(Collectors.toList());
-
-        Map<Integer, Chart> idAndChartMap = new HashMap<>();
-        for (Chart chart1 : charts) {
-            idAndChartMap.put(chart1.getId(), chart1);
-        }
-
-        Chart firstChart = charts.get(0);
-
-        Chart tempChar = firstChart;
-        resultList.add(firstChart);
-        Chart nextChart = null;
-
-        while (true) {
-            nextChart = idAndChartMap.get(tempChar.getNext());
-            if (nextChart != null) {
-                resultList.add(nextChart);
-                tempChar = nextChart;
-            } else {
-                break;
-            }
-        }
-        return resultList;
-    }
 
 
     @Override

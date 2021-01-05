@@ -1,9 +1,9 @@
 package com.nis.common.smartvalidate;
 
 
-import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.utils.CharUtil;
+import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.RCode;
 

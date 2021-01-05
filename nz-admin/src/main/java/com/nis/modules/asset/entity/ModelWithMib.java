@@ -1,10 +1,5 @@
 package com.nis.modules.asset.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.overview.entity.AssetStat;
-import com.nis.modules.sys.entity.SysDictEntity;
 import lombok.Data;
 
 import java.io.Serializable;

@@ -9,13 +9,11 @@
 package com.nis.modules.sys.redis;
 
 
+import com.nis.common.utils.RedisKeys;
 import com.nis.common.utils.RedisUtils;
-
+import com.nis.modules.sys.entity.SysConfigEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.nis.common.utils.RedisKeys;
-import com.nis.modules.sys.entity.SysConfigEntity;
 
 /**
  * 系统配置Redis

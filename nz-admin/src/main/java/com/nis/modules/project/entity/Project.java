@@ -1,15 +1,13 @@
 package com.nis.modules.project.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.validation.constraints.NotBlank;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @TableName("project")

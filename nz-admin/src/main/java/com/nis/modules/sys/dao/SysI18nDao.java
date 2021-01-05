@@ -1,7 +1,7 @@
 package com.nis.modules.sys.dao;
 
-import com.nis.modules.sys.entity.SysI18nEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nis.modules.sys.entity.SysI18nEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
-import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.List;

@@ -10,16 +10,13 @@ package com.nis.modules.job.controller;
 
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
+import com.nis.modules.job.entity.ScheduleJobLogEntity;
+import com.nis.modules.job.service.ScheduleJobLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.nis.modules.job.entity.ScheduleJobLogEntity;
-import com.nis.modules.job.service.ScheduleJobLogService;
 
 import java.util.Map;
 

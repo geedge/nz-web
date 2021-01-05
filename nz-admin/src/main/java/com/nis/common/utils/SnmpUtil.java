@@ -22,7 +22,6 @@ public class SnmpUtil {
     private static Log logger = Log.get();
 
     // 默认版本 v2
-    public static final int DEFAULT_VERSION = SnmpConstants.version2c;
     public static final String DEFAULT_PROTOCOL = "udp";
     public static final long DEFAULT_TIMEOUT = 1000L;
     public static final int DEFAULT_RETRY = 3;

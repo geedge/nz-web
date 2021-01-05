@@ -8,13 +8,13 @@
 
 package com.nis.common.config;
 
+import com.nis.common.interceptor.SysMenuInterceptor;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.SQLUtils;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
 import com.nis.common.utils.SqlHelper.OracleHelper;
 import com.nis.common.utils.SqlHelper.PostgresqlHelper;
-import com.nis.common.interceptor.SysMenuInterceptor;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;

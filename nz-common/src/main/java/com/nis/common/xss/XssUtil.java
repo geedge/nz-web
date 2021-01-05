@@ -27,18 +27,4 @@ public class XssUtil {
         }
         return null;
     }
-
-    public static String stripXSS(String str){
-        str=filterString(str);
-        String regex="[\\r\\n\\\\r\\\\n]";
-        Pattern pattern = Pattern.compile(regex,Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(str);
-        StringBuffer sb=new StringBuffer();
-        while (matcher.find()){
-            matcher.appendReplacement(sb,"");
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
-    }
-
 }

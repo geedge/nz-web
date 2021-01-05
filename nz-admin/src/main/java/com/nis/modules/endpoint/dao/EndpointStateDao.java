@@ -8,6 +8,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface EndpointStateDao  extends BaseMapper<EndpointState> {
 
-	void deleteAll();
-	
+
 }

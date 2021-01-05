@@ -43,7 +43,7 @@ public class AlertMessageController {
 			page = alertMessageService.queryPage(params);
 			return R.ok(page);
 		} catch (Exception e) {
-			logger.error("查询告警信息失败", e);
+			logger.error("查询告警信息失败",e);
 			throw new NZException(RCode.SYS_ERROR);
 		}
     }

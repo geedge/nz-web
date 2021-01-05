@@ -1,12 +1,14 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.util.StrUtil;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
 public class BufferReaderWrapper extends BufferedReader {
     public Reader in;
-    public static final int MAX_STR_LEN=1024;
+    // public static final int MAX_STR_LEN=1024;
     public BufferReaderWrapper(Reader in) {
         super(in);
         this.in=in;
@@ -19,11 +21,11 @@ public class BufferReaderWrapper extends BufferedReader {
             if (c == '\n') {
                 break;
             }
-            if (sb.length() >= MAX_STR_LEN) {
+           /* if (sb.length() >= MAX_STR_LEN) {
                 throw new IOException("input too long");
-            }
+            }*/
             sb.append(c);
         }
-        return sb.toString();
+        return StrUtil.isEmpty(sb.toString()) ? null : sb.toString();
     }
 }

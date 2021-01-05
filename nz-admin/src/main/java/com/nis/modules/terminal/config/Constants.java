@@ -20,14 +20,6 @@ public class Constants {
             this.value = value;
         }
 
-        public static SshType getByType(Integer type) {
-            for (SshType sshType : SshType.values()) {
-                if (sshType.getType().equals(type)) {
-                    return sshType;
-                }
-            }
-            return null;
-        }
 
         public Integer getType() {
             return type;

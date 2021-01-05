@@ -1,14 +1,12 @@
 package com.nis.modules.sys.entity;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Idc;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * 区域表

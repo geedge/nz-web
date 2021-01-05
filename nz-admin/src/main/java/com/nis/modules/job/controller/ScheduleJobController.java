@@ -8,18 +8,15 @@
 
 package com.nis.modules.job.controller;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.validator.ValidatorUtils;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import com.nis.common.annotation.SysLog;
 import com.nis.modules.job.entity.ScheduleJobEntity;
 import com.nis.modules.job.service.ScheduleJobService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 

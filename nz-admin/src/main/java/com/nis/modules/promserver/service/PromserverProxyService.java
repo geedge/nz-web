@@ -1,8 +1,8 @@
 package com.nis.modules.promserver.service;
 
-import java.util.Map;
-
 import com.alibaba.fastjson.JSONObject;
+
+import java.util.Map;
 
 public interface PromserverProxyService {
 

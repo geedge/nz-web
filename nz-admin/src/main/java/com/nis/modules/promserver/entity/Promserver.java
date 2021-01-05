@@ -1,13 +1,11 @@
 package com.nis.modules.promserver.entity;
 
-import java.util.Date;
-
-import javax.validation.constraints.NotBlank;
-
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-
 import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import java.util.Date;
 
 @Data
 @TableName("prom_server")

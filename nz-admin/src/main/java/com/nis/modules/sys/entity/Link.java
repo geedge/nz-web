@@ -1,12 +1,11 @@
 package com.nis.modules.sys.entity;
 
-import java.io.Serializable;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.panel.entity.Node;
-
 import lombok.Data;
+
+import java.io.Serializable;
 
 @Data
 @TableName("link")

@@ -1,11 +1,9 @@
 package com.nis.modules.alert.entity;
 
-import com.nis.common.utils.ToolUtil;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  *
@@ -79,19 +77,5 @@ public class AlertMessageWithExport implements Serializable{
 	private Integer state;
 
 
-	public String getStartAt() {
-		return startAt;
-	}
 
-	public void setStartAt(Date startAt) {
-		this.startAt = ToolUtil.isNotEmpty(startAt)?DATE_FORMAT.format(startAt):null;
-	}
-
-	public String getEndAt() {
-		return endAt;
-	}
-
-	public void setEndAt(Date endAt) {
-		this.endAt = ToolUtil.isNotEmpty(endAt)?DATE_FORMAT.format(endAt):null;
-	}
 }

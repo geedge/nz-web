@@ -57,8 +57,6 @@ public class DcStat extends EndpointStat {
      */
     private long alertP3;
 
-    public DcStat() {
-    }
 
     public DcStat(long assetTotal, long assetInStock, long assetOutStock,long assetSuspended, long assetPingUp, long assetPingDown, long alertTotal, long alertP1, long alertP2, long alertP3) {
         this.assetTotal = assetTotal;

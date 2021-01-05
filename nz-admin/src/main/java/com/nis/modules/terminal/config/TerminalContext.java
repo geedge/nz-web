@@ -21,9 +21,7 @@
 
 package com.nis.modules.terminal.config;
 
-import com.nis.common.utils.Constant;
 import com.nis.modules.terminal.entity.Account;
-
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;

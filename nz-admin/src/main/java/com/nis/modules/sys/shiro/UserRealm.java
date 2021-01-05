@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.R;
+import com.nis.common.utils.StringUtils;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -18,7 +19,6 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysMenuService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
@@ -130,8 +130,7 @@ public class UserRealm extends AuthorizingRealm {
 		SysUserEntity user = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().eq("username", token.getUsername()));
 		//账号不存在
 		if(user == null) {
-
-			R result = getLdapAuthentication(token.getUsername(), Arrays.toString(token.getPassword()));
+			R result = getLdapAuthentication(token.getUsername(), StringUtils.str(token.getPassword()));
 			if(ObjectUtils.isNotEmpty(result)) {
 				LinkedList resultList = (LinkedList) result.get("data");
 				
@@ -193,7 +192,7 @@ public class UserRealm extends AuthorizingRealm {
 
 				String salt = RandomStringUtils.randomAlphanumeric(20);
 				userInfo.setSalt(salt);
-				userInfo.setPassword(ShiroUtils.sha256(Arrays.toString(token.getPassword()), userInfo.getSalt()));
+				userInfo.setPassword(ShiroUtils.sha256(StringUtils.str(token.getPassword()), userInfo.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(userInfo, userInfo.getPassword(), ByteSource.Util.bytes(userInfo.getSalt()), getName());
 				return info;
 			}else {
@@ -202,11 +201,11 @@ public class UserRealm extends AuthorizingRealm {
 			}
 		}else if(user.getSource().equals("ldap")) {
 			// 判断用户是否为ldap用户 是则进行ldap验证登录
-			R result = getLdapAuthentication(token.getUsername(),Arrays.toString(token.getPassword()));
+			R result = getLdapAuthentication(token.getUsername(), StringUtils.str(token.getPassword()));
 			if(ObjectUtils.isNotEmpty(result)) {
 				String salt = RandomStringUtils.randomAlphanumeric(20);
 				user.setSalt(salt);
-				user.setPassword(ShiroUtils.sha256(Arrays.toString(token.getPassword()), user.getSalt()));
+				user.setPassword(ShiroUtils.sha256(StringUtils.str(token.getPassword()), user.getSalt()));
 				SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPassword(), ByteSource.Util.bytes(user.getSalt()), getName());
 				return info;
 			}else {
@@ -265,7 +264,7 @@ public class UserRealm extends AuthorizingRealm {
 				return null;
 			}
 			String base = split[split.length-2]+","+split[split.length-1];
-			if(StringUtils.isNotBlank(ldapOu)) {
+			if(StringUtils.isNotEmpty(ldapOu)) {
 				base="ou="+ldapOu+","+base;
 			}
 			// 允许ldap登录 进行ldap验证
@@ -286,7 +285,7 @@ public class UserRealm extends AuthorizingRealm {
 			AndFilter filter = new AndFilter();
 			filter.and(new EqualsFilter(ldapUserFilter, userName));
 			boolean authenticate = ldapTemplate.authenticate(base,filter.toString(),password);
-			if(authenticate&&StringUtils.isNotBlank(ldapMapping)) {
+			if(authenticate&&StringUtils.isNotEmpty(ldapMapping)) {
 				//如果可登录并且有用户设定映射 则查询映射内容补充到系统用户表信息中
 				try {
 //					ldapTemplate.authenticate(LdapQueryBuilder.query().base("dc=bifang,dc=com").where("uid").is("th"), "th");
@@ -302,7 +301,7 @@ public class UserRealm extends AuthorizingRealm {
 	                        Map<String,Object> result =new HashMap<String,Object>();
 	                        for(String key : keySet) {
 	                        	String ldapValue = context.getStringAttribute(ldapMap.get(key));
-	                        	if(StringUtils.isNotBlank(ldapValue)) {
+	                        	if(StringUtils.isNotEmpty(ldapValue)) {
 	                        		result.put(key, ldapValue);
 	                        	}
 	                        }

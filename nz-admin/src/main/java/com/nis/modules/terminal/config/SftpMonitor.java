@@ -131,9 +131,6 @@ public class SftpMonitor extends TimerTask implements SftpProgressMonitor {
         return transfered;
     }
 
-    public synchronized void setTransfered(long transfered) {
-        this.transfered = transfered;
-    }
 
     private synchronized void setEnd(boolean isEnd) {
         this.isEnd = isEnd;

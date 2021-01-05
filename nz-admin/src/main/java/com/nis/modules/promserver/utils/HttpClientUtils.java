@@ -3,7 +3,6 @@ package com.nis.modules.promserver.utils;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -31,50 +30,6 @@ public class HttpClientUtils {
         requestConfig = RequestConfig.custom().setSocketTimeout(10000).setConnectTimeout(10000).build();
     }
 
-    /**
-     * post请求传输json参数
-     *
-     * @param url  url地址
-     * @param jsonParam 参数
-     * @return
-     */
-    public static JSONObject httpPost(String url, JSONObject jsonParam) {
-        // post请求返回结果
-        CloseableHttpClient httpClient = HttpClients.createDefault();
-        JSONObject jsonResult = null;
-        HttpPost httpPost = new HttpPost(url);
-        // 设置请求和传输超时时间
-        httpPost.setConfig(requestConfig);
-        try {
-            if (null != jsonParam) {
-                // 解决中文乱码问题
-                StringEntity entity = new StringEntity(jsonParam.toString(), "utf-8");
-                entity.setContentEncoding("UTF-8");
-                entity.setContentType("application/json");
-                httpPost.setEntity(entity);
-            }
-            CloseableHttpResponse result = httpClient.execute(httpPost);
-            // 请求发送成功，并得到响应
-            String str = "";
-            try {
-            	// 防止有的响应没有返回值报异常情况
-            	if(ObjectUtils.isNotEmpty(result.getEntity())) {
-            		// 读取服务器返回过来的json字符串数据
-                    str = EntityUtils.toString(result.getEntity(), "utf-8");
-            	}
-                // 把json字符串转换成json对象
-                jsonResult = JSONObject.parseObject(str);
-            } catch (Exception e) {
-                logger.error("submit post request faild:" + url,e);
-            }
-        } catch (IOException e) {
-            logger.error("submit post request faild:" + url,e);
-        } finally {
-            httpPost.releaseConnection();
-            IOUtils.closeQuietly(httpClient);
-        }
-        return jsonResult;
-    }
 
     /**
      * post请求传输String参数 例如：name=Jack&sex=1&type=2

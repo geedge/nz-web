@@ -291,7 +291,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 处理返回格式
         String ipmi = null;
         Integer cabinetEnd, alertNum, moduleNum, endpointNum, assetId;
-        Idc idc;
+
         List<Account> accounts;
         List<Endpoint> endpointList;
         for (Asset asset : assetEntities) {
@@ -845,7 +845,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             String sn, type, vendor, model, dcName, cabinetName, cabinetStart, cabinetEnd, host, state, purchaseDate, exporter; //, ipmiHost, ipmiPort;
             Integer start, end;
 
-            Map saveEntitys, ipmiMap;
+            Map saveEntitys;
             Long userId = ShiroUtils.getUserId();
             Model modelEntity = null;
             Asset asset;
@@ -1144,7 +1144,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 上传 exporter
                         if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.toString().equals(exporter) && accountForUploadExporter != null) {
                             Map accountParam = JSONObject.parseObject(accountForUploadExporter.getParams().toString(), Map.class);
-                            accountParam.put("password", Arrays.toString(Base64.getDecoder().decode(accountParam.get("password").toString())));
+                            accountParam.put("password", StringUtils.str(Base64.getDecoder().decode(accountParam.get("password").toString())));
                             accountForUploadExporter.setParams(JSONObject.toJSONString(accountParam));
                             R r = this.uploadBuildExporter(configs, asset, accountForUploadExporter);
                             Integer code = (Integer) r.get("code");
@@ -1752,8 +1752,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     private void fillData(List<Asset> list, int rowNum, Sheet sheet, SXSSFWorkbook workbook, Map assetStateMapByLanguage) {
         Row row;
         Model model;
-        Integer start, end, ipmiPort;
-        String ipmiHost, tagStr;
+        Integer start, end;
+        String  tagStr;
         //Map ipmiMap;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (Asset asset : list) {

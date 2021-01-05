@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class DigestUtils {
-	private static final List<String> ENCODE_LIST = Arrays.asList("UTF-8","ISO-8859-1","GB2312","GBK");
+	private static final List<String> ENCODE_LIST = Arrays.asList("ISO-8859-1", "GB2312", "UTF-8", "GBK");
 	private static final String DEFAULT_URL_ENCODING = "UTF-8";
 	
 	public static String getEncoding(String text) {

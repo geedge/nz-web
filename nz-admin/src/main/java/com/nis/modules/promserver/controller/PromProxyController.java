@@ -12,6 +12,7 @@ import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.common.xss.XssUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
@@ -30,6 +31,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.util.*;
@@ -153,6 +155,7 @@ public class PromProxyController {
 			//复制响应头
 			for(Entry<String, List<String>> en : responseHeaders.entrySet()) {
 				String key = en.getKey();
+				if (StringUtils.isEmpty(key)) continue;
 				List<String> value = en.getValue();
 //				response.addHeader(XssUtil.stripXSS(key), XssUtil.stripXSS(StringUtils.join(value, "; ")));
 				ReflectUtil.invoke(response,"addHeader",key,StringUtils.join(value, "; "));

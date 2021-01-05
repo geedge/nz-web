@@ -1,6 +1,5 @@
 package com.nis.modules.sys.shiro;
 
-import com.nis.common.exception.NZException;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -11,9 +10,11 @@ import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.*;
 
@@ -65,25 +66,20 @@ public class ShiroUtils {
 		SecurityUtils.getSubject().logout();
 	}
 	
-	public static String getKaptcha(String key) {
-		Object kaptcha = getSessionAttribute(key);
-		if(kaptcha == null){
-			throw new NZException("验证码已失效");
-		}
-		getSession().removeAttribute(key);
-		return kaptcha.toString();
-	}
-
-
 	/**
 	 * 从 redis 中获取 token 和 用户信息
 	 *
 	 * @return
 	 */
 	public static Map<String, SysUserEntity> getShiroSessionInfoMap() {
-		RedisTemplate redisTemplate = (RedisTemplate) SpringContextUtils.getBean("redisTemplate");
-
+		RedisConnectionFactory factory = SpringContextUtils.getBean("redisConnectionFactory", RedisConnectionFactory.class);
+		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
 		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		redisTemplate.setConnectionFactory(factory);
+
+		redisTemplate.afterPropertiesSet();
+
 		ValueOperations ops = redisTemplate.opsForValue();
 
 		Set keys = redisTemplate.keys(ShiroUtils.REDIS_KEYPREFIX + "*");

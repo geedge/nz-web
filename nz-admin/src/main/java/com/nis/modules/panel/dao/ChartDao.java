@@ -15,7 +15,6 @@ public interface ChartDao extends BaseMapper<Chart> {
 
     void updateSizeById(@Param("chart") Chart firstChart);
 
-    void updatePrevNextBatch(@Param("charts") List<Chart> updateCharts);
 
     void updateWeightBatch(@Param("charts") List<Chart> updateCharts);
 }

@@ -1,7 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -51,7 +50,6 @@ import java.util.stream.Collectors;
 @Service("alertRuleService")
 @Slf4j
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
-    private Log logger = Log.get();
     @Autowired
     private AlertRuleDao alertRuleDao;
 
