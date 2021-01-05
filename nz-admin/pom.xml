@@ -237,6 +237,13 @@
 			<version>2.5.11</version>
 		</dependency>
 
+		<!-- 添加 XJar 依赖 -->
+		<dependency>
+			<groupId>com.github.core-lib</groupId>
+			<artifactId>xjar</artifactId>
+			<version>4.0.1</version>
+			<!-- <scope>test</scope> -->
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -280,6 +287,20 @@
 					</resources>
 				</configuration>
 				<!-- 运行命令 mvn clean package docker:build 打包并生成docker镜像 -->
+			</plugin>
+
+			<plugin>
+				<groupId>com.github.core-lib</groupId>
+				<artifactId>xjar-maven-plugin</artifactId>
+				<version>4.0.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build</goal>
+						</goals>
+						<phase>install</phase>
+					</execution>
+				</executions>
 			</plugin>
 
 			<plugin>
