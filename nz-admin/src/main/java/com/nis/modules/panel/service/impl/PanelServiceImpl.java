@@ -112,19 +112,13 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             allPanelIds.add(id);
             allPanelIds.addAll(this.getChildrenIds(panelList, id));
         }
-        Set<Integer> delPanelIds = ObjectUtil.clone(allPanelIds);
 
-        // 2. 若关联 chart 则不允许删除
-        List<Chart> charts = chartService.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, allPanelIds));
-        Set<Integer> chartUsedPanelIds = charts.stream().map(Chart::getPanelId).collect(Collectors.toSet());
-        allPanelIds.retainAll(chartUsedPanelIds);
-        if (CollectionUtils.isNotEmpty(allPanelIds)) {
-            List<String> panelNames = this.listByIds(allPanelIds).stream().map(Panel::getName).collect(Collectors.toList());
-            throw new NZException("These panel contain charts and cannot be deleted, panels info: " + panelNames.toString(), RCode.PANEL_CHARTS_EXISTS.getCode());
-        }
+        // 2. 删除 panel ,如果包含子节点，也一并删除
+        this.removeByIds(allPanelIds);
 
-        // 3. 如果包含子节点 以及 子节点 ，也一并删除
-        this.removeByIds(delPanelIds);
+        // 3. 删除关联的 chart chartElement
+        Integer[] removePanelIds = allPanelIds.stream().toArray(n -> new Integer[n]);
+        chartService.delChartsByPanelId(removePanelIds);
     }
 
     /**
