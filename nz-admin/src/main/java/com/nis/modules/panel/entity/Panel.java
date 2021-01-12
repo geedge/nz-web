@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @TableName("panel")
 public class Panel extends Node {
@@ -37,6 +39,19 @@ public class Panel extends Node {
      * 导入唯一标识
      */
     private String seq;
+
+    /**
+     * 父ID
+     */
+    private Integer pid;
+
+    /**
+     * 排序
+     */
+    private Integer weight;
+
+    @TableField(exist = false)
+    private List<Panel> children;
 
     @TableField(exist = false)
     private SysUserEntity creator;

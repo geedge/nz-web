@@ -1198,8 +1198,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, Map<String, String> chartTypeMapByLanguage, List<String> headerInfos) {
-        List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
-        Map<String, Integer> panelNameAndIdMap = panelList.stream().collect(Collectors.toMap(Panel::getName, Panel::getId));
+        List<Panel> panelTreeList = panelService.queryList(new HashMap());
+        Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
+        for (Panel panel : panelTreeList) {
+            nodeNamePathAndIdMap.put(panel.getName(), panel.getId());
+            this.getPanelNamePathAndIdMapFromTree(panel, panel.getName(), nodeNamePathAndIdMap);
+        }
+
         Row row;
         int successNum = 0;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
@@ -1284,29 +1289,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
-                    Integer panelId = panelNameAndIdMap.get(panelName);
-                    if(panelId == null){
-                        Panel panel = new Panel();
-                        panel.setName(panelName);
-                        panel.setType(Constant.PanelType.DASHBOARD.getValue());
-                        panel.setCreateBy(ShiroUtils.getUserId().intValue());
-                        panel.setSeq(seqUUID);
-                        panel.setNext(Constant.END_NEXT_VALUE);
-                        if(panelNameAndIdMap.size() == 0){
-                            panel.setPrev(Constant.START_PREV_VALUE);
-                            panelService.save(panel);
-                        } else {
-                            // 已存在chart 再次新增时自动排到末尾
-                            List<Panel> list = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
-                            Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(Constant.END_NEXT_VALUE)).findAny().orElse(null);
-                            panel.setPrev(endPanel.getId());
-                            panelService.save(panel);
-                            // 更新原来最后图表顺序
-                            endPanel.setNext(panel.getId());
-                            panelService.updateById(endPanel);
-                        }
-                        panelId = panel.getId();
-                    }
+                    Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID);
                     Chart chart = new Chart();
                     chart.setSeq(seqUUID);
                     chart.setPanelId(panelId);
@@ -1339,7 +1322,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                         chartElementService.saveBatch(chartElements);
                     }
                     dataSourceTransactionManager.commit(transactionStatus);
-                    panelNameAndIdMap.put(panelName, panelId);
+                    // panelNameAndIdMap.put(panelName, panelId);
                     successNum++;
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
@@ -1349,6 +1332,68 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             }
         }
         return successNum;
+    }
+
+    public void getPanelNamePathAndIdMapFromTree(Panel panel, String path, Map<String, Integer> nodeNamePathAndIdMap) {
+        if (CollectionUtils.isEmpty(panel.getChildren())) {
+            return;
+        }
+        for (Panel cPanel : panel.getChildren()) {
+            String cPath = "";
+            cPath += path + "/" + cPanel.getName();
+            nodeNamePathAndIdMap.put(cPath, cPanel.getId());
+            this.getPanelNamePathAndIdMapFromTree(cPanel, cPath, nodeNamePathAndIdMap);
+        }
+    }
+
+    /**
+     * @param panelName 格式： 使用 / 作为字符分隔，表示 父子节点关系
+     * @param seqUUID   导入序列号
+     */
+    private Integer handlePanelNameForCellVal(Map<String, Integer> nodeNamePathAndIdMap, String panelName, String seqUUID) {
+        String savePanelNames = panelName;
+        Integer panelId;
+        while (true) {
+            panelId = nodeNamePathAndIdMap.get(panelName);
+            if (panelId != null) {
+                break;
+            }
+            panelName = panelName.substring(0, panelName.lastIndexOf("/"));
+        }
+        savePanelNames = savePanelNames.replace(panelName, "");
+
+        // 如果存在需要保存的 panel
+        if (StringUtils.isNotEmpty(savePanelNames)) {
+            if (savePanelNames.startsWith("/")) {
+                savePanelNames = savePanelNames.substring(savePanelNames.indexOf("/") + 1);
+            }
+
+            Panel panel = new Panel();
+            panel.setType(Constant.PanelType.DASHBOARD.getValue());
+            panel.setCreateBy(ShiroUtils.getUserId().intValue());
+            panel.setPrev(Constant.START_PREV_VALUE);
+            panel.setNext(Constant.END_NEXT_VALUE);
+            panel.setSeq(seqUUID);
+
+            List<String> saveList = Arrays.asList(savePanelNames.split("/"));
+            int size = saveList.size();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < size; i++) {
+                String name = saveList.get(i);
+                panel.setName(name);
+                if (panel.getId() == null) {
+                    panel.setPid(panelId);
+                } else {
+                    panel.setPid(panel.getId());
+                }
+                panelService.save(panel);
+                sb.append(name + "/");
+                String temp = panelName + "/" + sb.substring(0, sb.lastIndexOf("/"));
+                nodeNamePathAndIdMap.put(temp, panel.getId());
+            }
+            return panel.getId();
+        }
+        return panelId;
     }
 
     private String validateChartTypeForImport(String type, Map<String,String> chartTypeMapByLanguage) {
@@ -1479,8 +1524,13 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     }
 
     private void fillDashboardChartData(List<Chart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
-        List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
-        Map<Integer, String> panelIdAndNameMap = panelList.stream().collect(Collectors.toMap(Panel::getId, Panel::getName));
+        List<Panel> panelTreeList = panelService.queryList(new HashMap());
+        Map<Integer, String> nodeIdAndNamePathMap = new HashMap<>();
+        for (Panel panel : panelTreeList) {
+            nodeIdAndNamePathMap.put(panel.getId(), panel.getName());
+            this.getPanelIdAndNamePathMapFromTree(panel, panel.getName(), nodeIdAndNamePathMap);
+        }
+
         Row row;
         String type;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
@@ -1488,7 +1538,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if(chart == null) continue;
             row = sheet.createRow(rowNum++);
              type = chart.getType();
-            row.createCell(0).setCellValue(panelIdAndNameMap.get(chart.getPanelId()));
+            row.createCell(0).setCellValue(nodeIdAndNamePathMap.get(chart.getPanelId()));
             row.createCell(1).setCellValue(chart.getTitle());
             row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(3).setCellValue(chart.getSpan());
@@ -1503,6 +1553,18 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
             // 设置单元格样式
             ExcelUtils.setDataCellStyle(dataStyle, row, 7);
+        }
+    }
+
+    public void getPanelIdAndNamePathMapFromTree(Panel panel, String path, Map<Integer, String> nodeIdAndNamePathMap) {
+        if (CollectionUtils.isEmpty(panel.getChildren())) {
+            return;
+        }
+        for (Panel cPanel : panel.getChildren()) {
+            String cPath = "";
+            cPath += path + "/" + cPanel.getName();
+            nodeIdAndNamePathMap.put(cPanel.getId(), cPath);
+            this.getPanelIdAndNamePathMapFromTree(cPanel, cPath, nodeIdAndNamePathMap);
         }
     }
 

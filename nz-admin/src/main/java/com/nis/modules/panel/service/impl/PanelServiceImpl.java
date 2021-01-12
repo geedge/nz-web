@@ -1,5 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -44,29 +46,37 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         // 2. dashboard 类型 需要进行排序返回
         List<Panel> panelList = new ArrayList<>();
         if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
-            List<Panel> panels = this.baseMapper.queryList(params);
-            if (CollectionUtils.isEmpty(panels)) {
-                return panels;
+            panelList = this.baseMapper.queryList(params);
+            if (CollectionUtils.isEmpty(panelList) || panelList.size() == 1) {
+                return panelList;
             }
-            List<Integer> ids = panels.stream().map(Panel::getId).collect(Collectors.toList());
-
-            // 该type下所有的panel
-            panelList = this.baseMapper.queryListByType(type);
-            // 排序
-            panelList = this.getSequentialPanelList(panelList);
-
-            Iterator<Panel> iterator = panelList.iterator();
-            while (iterator.hasNext()) {
-                Panel next = iterator.next();
-                if (!ids.contains(next.getId())) {
-                    iterator.remove();
-                }
-            }
+            panelList = this.getPanelTreeList(panelList, 0);
+            return panelList;
         } else {
             // 3. 其他类型不进行排序
             panelList = this.baseMapper.queryList(params);
         }
         return panelList;
+    }
+
+    /**
+     * 递归获取树结构
+     *
+     * @param panelList
+     * @param parentId
+     * @return
+     */
+    private List<Panel> getPanelTreeList(List<Panel> panelList, Integer parentId) {
+        List<Panel> resultList = new ArrayList<>();
+        for (Panel panel : panelList) {
+            Integer id = panel.getId();
+            Integer pid = panel.getPid();
+            if (parentId.equals(pid)) {
+                panel.setChildren(this.getPanelTreeList(panelList, id));
+                resultList.add(panel);
+            }
+        }
+        return resultList;
     }
 
     @Override
@@ -94,27 +104,46 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         // 1. 校验内置panel不能被删除
         this.validateBuildInPanels(panels, ids);
 
-        // 2. 若关联 chart 则不允许删除
+        // 获取这些节点的所有子节点
         List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
-        List<Chart> charts = chartService.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, idList));
+        List<Panel> panelList = this.list();
+        Set<Integer> allPanelIds = new HashSet<>();
+        for (Integer id : idList) {
+            allPanelIds.add(id);
+            allPanelIds.addAll(this.getChildrenIds(panelList, id));
+        }
+        Set<Integer> delPanelIds = ObjectUtil.clone(allPanelIds);
+
+        // 2. 若关联 chart 则不允许删除
+        List<Chart> charts = chartService.list(new QueryWrapper<Chart>().lambda().in(Chart::getPanelId, allPanelIds));
         Set<Integer> chartUsedPanelIds = charts.stream().map(Chart::getPanelId).collect(Collectors.toSet());
-        idList.retainAll(chartUsedPanelIds);
-        if (CollectionUtils.isNotEmpty(idList)) {
-            List<String> panelNames = this.listByIds(idList).stream().map(Panel::getName).collect(Collectors.toList());
+        allPanelIds.retainAll(chartUsedPanelIds);
+        if (CollectionUtils.isNotEmpty(allPanelIds)) {
+            List<String> panelNames = this.listByIds(allPanelIds).stream().map(Panel::getName).collect(Collectors.toList());
             throw new NZException("These panel contain charts and cannot be deleted, panels info: " + panelNames.toString(), RCode.PANEL_CHARTS_EXISTS.getCode());
         }
 
-        // 3. dashboard panel 是有序的 获取当前所有 panel 留作稍后处理删除后的位置
-        List<Panel> dashboardPanels = panels.stream().filter(panel -> Constant.PanelType.DASHBOARD.getValue().equals(panel.getType())).collect(Collectors.toList());
+        // 3. 如果包含子节点 以及 子节点 ，也一并删除
+        this.removeByIds(delPanelIds);
+    }
 
-        List<Panel> deletePanel = dashboardPanels.stream().filter(panel -> Arrays.asList(ids).contains(panel.getId()) ? true : false).collect(Collectors.toList());
-        List<Integer> delDeletePanelIds = deletePanel.stream().map(Panel::getId).collect(Collectors.toList());
-
-        // 4. 删除 panel
-        this.removeByIds(Arrays.asList(ids));
-
-        // 5. 处理删除后的位置
-        this.handlePositionAfterDelete(this.getSequentialPanelList(dashboardPanels), delDeletePanelIds);
+    /**
+     * 查询所有子节点 ID
+     * @param panelList
+     * @param parentId
+     * @return
+     */
+    private List<Integer> getChildrenIds(List<Panel> panelList, Integer parentId) {
+        List<Integer> resultList = new ArrayList<>();
+        for (Panel panel : panelList) {
+            Integer id = panel.getId();
+            Integer pid = panel.getPid();
+            if (parentId.equals(pid)) {
+                resultList.add(id);
+                resultList.addAll(this.getChildrenIds(panelList, id));
+            }
+        }
+        return resultList;
     }
 
     /**
@@ -187,27 +216,30 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         }
     }
 
-    @Override
-    public boolean validatePanelName(Integer id, String name) {
-        List<Panel> list = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getName, name));
-        boolean flag = false;
-
-        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
-        if ((list == null || list.size() == 0) || (list != null && list.size() == 1 && list.get(0).getId().equals(id))) {
-            flag = true;
-        }
-        return flag;
-    }
-
     /**
-     * 保存/修改
+     * 校验 panel 相关参数是否正确
      *
      * @param panel
      */
-    @Override
-    public void saveOrUpdatePanel(Panel panel) {
+    public void validatePanel(Panel panel) {
+        String name = panel.getName();
+        ValidateUtils.is(name).notNull(RCode.PANEL_NAME_ISNULL);
+
+        if (name.contains("/")) {
+            throw new NZException(RCode.PANEL_NAME_FORMAT_ERROR);
+        }
+
+        Integer pid = panel.getPid();
+        pid = (pid == null) ? 0 : pid;
         // 校验name是否重复
-        if (!this.validatePanelName(panel.getId(), panel.getName())) {
+        List<Panel> list = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getPid, pid).eq(Panel::getName, panel.getName()));
+        boolean flag = false;
+        //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) || (list != null && list.size() == 1 && list.get(0).getId().equals(panel.getId()))) {
+            flag = true;
+        }
+
+        if (!flag) {
             throw new NZException(RCode.PANEL_NAME_DUPLICATE);
         }
 
@@ -221,34 +253,73 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             if (!types.contains(type)) {
                 throw new NZException(RCode.PANEL_TYPE_INVALIDE);
             }
-        } else {
-            panel.setType(Constant.PanelType.DASHBOARD.getValue());
         }
+
+        // pid 是否存在
+        if (panel.getPid() != null && panel.getPid() != 0) {
+            Panel entity = this.getById(panel.getPid());
+            if (entity == null) {
+                throw new NZException(RCode.PANEL_NOT_EXIST);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void savePanel(Panel panel) {
+        this.validatePanel(panel);
 
         Long userId = ShiroUtils.getUserId();
         panel.setCreateBy(userId.intValue());
 
-        if (panel.getId() == null) {
-            panel.setNext(-1);
-            // 保存
-            List<Panel> list = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()));
-            if (CollectionUtils.isEmpty(list)) {
-                panel.setPrev(0);
-                this.save(panel);
-            } else {
-                // 已存在chart 再次新增时自动排到末尾
-                Panel endPanel = list.stream().filter(panel1 -> panel1.getNext().equals(Constant.END_NEXT_VALUE)).findAny().orElse(null);
-                panel.setPrev(endPanel.getId());
-                this.save(panel);
+        panel.setPrev(0);
+        panel.setNext(-1);
 
-                // 更新原来最后图表顺序
-                endPanel.setNext(panel.getId());
-                this.updateById(endPanel);
-            }
-        } else {
-            // 修改
-            this.updateById(panel);
+        if (ToolUtil.isEmpty(panel.getLink())) {
+            panel.setType(Constant.PanelType.DASHBOARD.getValue());
         }
+
+        Integer pid = panel.getPid();
+        pid = (pid == null) ? 0 : pid;
+        // 查询该父级节点下是否存在 Panel 节点
+        List<Panel> list = this.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, panel.getType()).eq(Panel::getPid, pid));
+        if (CollectionUtils.isEmpty(list)) {
+            // 父级节点下暂无其他节点，直接保存
+            this.save(panel);
+        } else {
+            // 找到当前末尾的 panel ， 加到其后
+            Panel endPanel = list.stream().max(Comparator.comparingInt(Panel::getWeight)).get();
+            Integer weight = endPanel.getWeight();
+            panel.setWeight(++weight);
+            this.save(panel);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePanel(Panel panel) {
+        this.validatePanel(panel);
+
+        Panel oldPanel = this.getById(panel.getId());
+
+        if (oldPanel == null) {
+            throw new NZException(RCode.PANEL_NOT_EXIST);
+        }
+
+        // 改变 pid 父级节点时，将该 panel 加入到该 pid 下末尾位置
+        if (!oldPanel.getPid().equals(panel.getPid())) {
+            Panel endPanel = this.getOne(new LambdaQueryWrapper<Panel>().eq(Panel::getPid, panel.getPid()).orderByDesc(Panel::getWeight).last("limit 0,1"));
+            // 该 pid 下存在节点
+            if (endPanel != null) {
+                Integer weight = endPanel.getWeight();
+                panel.setWeight(++weight);
+            } else {
+                panel.setWeight(0);
+            }
+        }
+
+        // 修改
+        this.updateById(panel);
     }
 
     @Override
@@ -302,6 +373,19 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
             }
             this.saveOrUpdateBatch(panels);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void modify(List<Panel> panelList) {
+        if (CollectionUtils.isEmpty(panelList)) throw new NZException(RCode.PANEL_ID_ISNULL);
+        for (Panel panel : panelList) {
+            if (panel.getId() == null) throw new NZException(RCode.PANEL_ID_ISNULL);
+            if (panel.getPid() == null) throw new NZException(RCode.PANEL_PID_ISNULL);
+            if (panel.getWeight() == null) throw new NZException(RCode.PANEL_WEIGHT_ISNULL);
+        }
+
+        this.getBaseMapper().updateWeightBatch(panelList);
     }
 
     @Override

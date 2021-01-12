@@ -94,6 +94,9 @@ public enum RCode {
     CHART_TEXTPARAM_ISNULL(121055,"Chart param cannot be empty when type is text"),
     CHART_PARAMTEXT_ISNULL(121056,"Chart param text not found when type is text"),
     CHART_WEIGHT_ISNULL(121057,"Chart weight can not be empty"),
+    PANEL_PID_ISNULL(121058,"Panel pid can not be empty"),
+    PANEL_WEIGHT_ISNULL(121059,"Panel weight not be empty"),
+    PANEL_NAME_FORMAT_ERROR(123060,"Panel name format error, can not include '/'"),
 
 
     /**
