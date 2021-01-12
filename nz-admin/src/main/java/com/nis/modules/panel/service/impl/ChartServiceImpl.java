@@ -1617,8 +1617,8 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         List<Chart> chartList = new ArrayList<>();
         if (panelId == null) {
             // 导出所有 dashboard panel
-            List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
-            panelList = panelService.getSequentialPanelList(panelList);
+            List<Panel> panelList = panelService.list(new QueryWrapper<Panel>().lambda().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()).orderByAsc(Panel::getWeight, Panel::getId));
+           // panelList = panelService.getSequentialPanelList(panelList);
             for (Panel panel : panelList) {
                 chartList.addAll(this.queryChartsByPanelId(panel.getId(),null));
             }
