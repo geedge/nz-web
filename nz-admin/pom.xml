@@ -346,7 +346,7 @@
 					<!--获取指定属性-->
 					<includeOnlyProperties>
 						<includeOnlyProperty>^git.branch$</includeOnlyProperty>
-						<includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+						<includeOnlyProperty>^git.build.version$</includeOnlyProperty>
 						<includeOnlyProperty>^git.commit.id.full$</includeOnlyProperty>
 						<includeOnlyProperty>^git.commit.time$</includeOnlyProperty>
 						<includeOnlyProperty>^git.commit.tags$</includeOnlyProperty>
