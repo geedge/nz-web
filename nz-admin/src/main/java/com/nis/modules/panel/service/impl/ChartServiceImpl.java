@@ -1358,7 +1358,14 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if (panelId != null) {
                 break;
             }
-            panelName = panelName.substring(0, panelName.lastIndexOf("/"));
+            // 仍然包含 ‘/’ 证明还是有父子关系
+            if (panelName.lastIndexOf("/") != -1) {
+                panelName = panelName.substring(0, panelName.lastIndexOf("/"));
+            } else {
+                // 最后的 panel 也不存在，赋值 为空 ，下面会进行过滤添加
+                panelName = "";
+                break;
+            }
         }
         savePanelNames = savePanelNames.replace(panelName, "");
 
