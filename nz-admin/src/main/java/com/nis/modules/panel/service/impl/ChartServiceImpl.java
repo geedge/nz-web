@@ -1396,6 +1396,10 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 panelService.save(panel);
                 sb.append(name + "/");
                 String temp = panelName + "/" + sb.substring(0, sb.lastIndexOf("/"));
+                // 因为用户输入根节点没有 ‘/’，所以不保存根节点 '/' 路径作为对比
+                if (temp.startsWith("/")) {
+                    temp = temp.substring(temp.indexOf("/") + 1);
+                }
                 nodeNamePathAndIdMap.put(temp, panel.getId());
             }
             return panel.getId();
