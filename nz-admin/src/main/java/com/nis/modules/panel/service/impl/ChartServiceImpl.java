@@ -1205,6 +1205,15 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             this.getPanelNamePathAndIdMapFromTree(panel, panel.getName(), nodeNamePathAndIdMap);
         }
 
+        List<Panel> dashboardTypePanelList = panelService.list(new LambdaQueryWrapper<Panel>().eq(Panel::getType, Constant.PanelType.DASHBOARD.getValue()));
+        Integer panelMaxWeight;
+        if (CollectionUtils.isEmpty(dashboardTypePanelList)) {
+            panelMaxWeight = 0;
+        } else {
+            Panel endPanel = dashboardTypePanelList.stream().max(Comparator.comparingInt(Panel::getWeight)).get();
+            panelMaxWeight = endPanel.getWeight();
+        }
+
         Row row;
         int successNum = 0;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
@@ -1289,7 +1298,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
-                    Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID);
+                    Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID, ++panelMaxWeight);
                     Chart chart = new Chart();
                     chart.setSeq(seqUUID);
                     chart.setPanelId(panelId);
@@ -1350,7 +1359,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
      * @param panelName 格式： 使用 / 作为字符分隔，表示 父子节点关系
      * @param seqUUID   导入序列号
      */
-    private Integer handlePanelNameForCellVal(Map<String, Integer> nodeNamePathAndIdMap, String panelName, String seqUUID) {
+    private Integer handlePanelNameForCellVal(Map<String, Integer> nodeNamePathAndIdMap, String panelName, String seqUUID, Integer panelWeight) {
         String savePanelNames = panelName;
         Integer panelId;
         while (true) {
@@ -1381,6 +1390,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             panel.setPrev(Constant.START_PREV_VALUE);
             panel.setNext(Constant.END_NEXT_VALUE);
             panel.setSeq(seqUUID);
+            panel.setWeight(panelWeight);
 
             List<String> saveList = Arrays.asList(savePanelNames.split("/"));
             int size = saveList.size();
