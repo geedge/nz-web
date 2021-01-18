@@ -198,6 +198,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		if (StringUtils.isBlank(user.getPassword())) {
 			user.setPassword(null);
 		} else {
+			// 如果不是本人更改 自己密码的话，删除 redis 中用户session
+			Long loginUserId = ShiroUtils.getUserId();
+			if (!loginUserId.equals(user.getUserId())) {
+				// 通过 userId 删除 redis 中记录的 登录信息
+				this.removeUserInfoInRedis(user.getUserId());
+			}
 			SysUserEntity userEntity = this.getById(user.getUserId());
 			user.setPassword(ShiroUtils.sha256(user.getPassword(), userEntity.getSalt()));
 		}
@@ -236,6 +242,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// 角色变更
 		sysUserRoleService.saveOrUpdate(userId, roleIds);
 
+		// 通过 userId 删除 redis 中记录的 登录信息
+		this.removeUserInfoInRedis(userId);
+	}
+
+	/**
+	 * 通过 userId 删除 redis 中记录的 登录信息
+	 *
+	 * @param userId
+	 */
+	private void removeUserInfoInRedis(Long userId) {
 		// 删除 redis 中的 token
 		List<String> removeKeys = new ArrayList<>();
 		try {
