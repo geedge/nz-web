@@ -12,6 +12,7 @@ import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -22,6 +23,7 @@ import java.sql.SQLException;
 
  */
 @Configuration
+@DependsOn("flywayConfig")
 public class MybatisPlusConfig {
 	
     /**

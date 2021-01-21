@@ -200,7 +200,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         if(CollectionUtils.isNotEmpty(roleMenuList))
             selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);*/
         List<SysMenuEntity> roleMenuList = sysMenuDao.getRoleMenuList(roleId);
-        Set<Integer> selectedIds = roleMenuList.stream().map(SysMenuEntity::getId).collect(Collectors.toSet());
+        Set<Integer> selectedIds = roleMenuList.stream().filter(Objects::nonNull).map(SysMenuEntity::getId).collect(Collectors.toSet());
 
         resultData.put("menus", menuList);
         resultData.put("selectedIds", selectedIds);
