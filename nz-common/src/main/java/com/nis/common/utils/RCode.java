@@ -522,6 +522,7 @@ public enum RCode {
     SYS_CONFIG_QUERYMAXSERIES_INVALIDE(573062, "System config Query max series should be an integer"),
     SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
     SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
+    SYS_CONFIG_UNSAVEDCHANGE_ISNULL(571065, "System config unsaved change can not be empty"),
 
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
