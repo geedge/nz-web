@@ -94,6 +94,9 @@ public enum RCode {
     CHART_TEXTPARAM_ISNULL(121055,"Chart param cannot be empty when type is text"),
     CHART_PARAMTEXT_ISNULL(121056,"Chart param text not found when type is text"),
     CHART_WEIGHT_ISNULL(121057,"Chart weight can not be empty"),
+    PANEL_PID_ISNULL(121058,"Panel pid can not be empty"),
+    PANEL_WEIGHT_ISNULL(121059,"Panel weight not be empty"),
+    PANEL_NAME_FORMAT_ERROR(123060,"Panel name format error, can not include '/'"),
 
 
     /**
@@ -519,6 +522,7 @@ public enum RCode {
     SYS_CONFIG_QUERYMAXSERIES_INVALIDE(573062, "System config Query max series should be an integer"),
     SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
     SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
+    SYS_CONFIG_UNSAVEDCHANGE_ISNULL(571065, "System config unsaved change can not be empty"),
 
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),

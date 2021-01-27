@@ -30,4 +30,9 @@ public class SysInfoController {
         Map aboutInfo = sysInfoService.getAboutInfo();
         return R.ok(aboutInfo);
     }
+
+    @GetMapping("/buildInfo")
+    public R getVersionInfo() {
+        return R.ok(sysInfoService.getGitVersionInfo());
+    }
 }

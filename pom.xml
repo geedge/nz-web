@@ -213,6 +213,12 @@
             <name>opennms</name>
             <url>https://repo.opennms.org/maven2/</url>
         </repository>
+
+        <!-- 设置 jitpack.io 仓库 -->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
@@ -225,6 +231,12 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </pluginRepository>
+
+        <!-- 设置 jitpack.io 插件仓库 -->
+        <pluginRepository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </pluginRepository>
     </pluginRepositories>
 </project>

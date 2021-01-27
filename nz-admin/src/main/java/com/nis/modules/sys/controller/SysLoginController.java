@@ -89,7 +89,7 @@ public class SysLoginController extends AbstractController {
 			Map<String, String> obj = new HashMap<>();
 			obj.put("token", subject.getSession().getId().toString());
 			// 查询系统配置信息
-			String [] paramkeys = {"system_name","timezone","default_cabinet_usize","max_terminal_num","asset_ping_switch"};
+			String[] paramkeys = {"system_name", "timezone", "default_cabinet_usize", "max_terminal_num", "asset_ping_switch", "unsaved_change"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
             configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
 			return R.ok(obj);

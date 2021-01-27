@@ -1,6 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -27,9 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("sysRoleService")
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> implements SysRoleService {
+
+    private static Log log = Log.get();
 
     @Autowired
     private SysRoleMenuService sysRoleMenuService;
@@ -201,7 +203,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         if(CollectionUtils.isNotEmpty(roleMenuList))
             selectedIds = sysMenuService.getSelectedMenuIds(roleMenuList);*/
         List<SysMenuEntity> roleMenuList = sysMenuDao.getRoleMenuList(roleId);
-        Set<Integer> selectedIds = roleMenuList.stream().map(SysMenuEntity::getId).collect(Collectors.toSet());
+        Set<Integer> selectedIds = roleMenuList.stream().filter(Objects::nonNull).map(SysMenuEntity::getId).collect(Collectors.toSet());
 
         resultData.put("menus", menuList);
         resultData.put("selectedIds", selectedIds);

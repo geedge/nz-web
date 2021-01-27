@@ -127,6 +127,7 @@ public class ShiroConfig {
         filterMap.put("/login.html", "anon");
         filterMap.put("/sys/login", "anon");
         filterMap.put("/healthy", "anon");
+        filterMap.put("/buildInfo", "anon");
 //        filterMap.put("/logout","anon");
         filterMap.put("/favicon.ico", "anon");
         filterMap.put("/captcha.jpg", "anon");

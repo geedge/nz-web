@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -18,7 +19,6 @@ import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
@@ -40,9 +40,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
+
+	private static Log log = Log.get();
 
 	@Autowired
 	private SysUserNotificationService notificationService;
@@ -198,6 +199,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		if (StringUtils.isBlank(user.getPassword())) {
 			user.setPassword(null);
 		} else {
+			// 如果不是本人更改 自己密码的话，删除 redis 中用户session
+			Long loginUserId = ShiroUtils.getUserId();
+			if (!loginUserId.equals(user.getUserId())) {
+				// 通过 userId 删除 redis 中记录的 登录信息
+				this.removeUserInfoInRedis(user.getUserId());
+			}
 			SysUserEntity userEntity = this.getById(user.getUserId());
 			user.setPassword(ShiroUtils.sha256(user.getPassword(), userEntity.getSalt()));
 		}
@@ -236,6 +243,16 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// 角色变更
 		sysUserRoleService.saveOrUpdate(userId, roleIds);
 
+		// 通过 userId 删除 redis 中记录的 登录信息
+		this.removeUserInfoInRedis(userId);
+	}
+
+	/**
+	 * 通过 userId 删除 redis 中记录的 登录信息
+	 *
+	 * @param userId
+	 */
+	private void removeUserInfoInRedis(Long userId) {
 		// 删除 redis 中的 token
 		List<String> removeKeys = new ArrayList<>();
 		try {

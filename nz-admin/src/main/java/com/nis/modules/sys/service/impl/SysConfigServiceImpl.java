@@ -481,6 +481,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         String timezone = saveMap.get("timezone");
         String defaultCabU = saveMap.get("default_cabinet_usize");
         String queryMaxSeries = saveMap.get("query_max_series");
+        String unsavedChange = saveMap.get("unsaved_change");
 
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
                 .and(saveMap.get("node_exporter_target_path")).notNull(RCode.SYS_CONFIG_NODETARGETPATH_ISNULL)
@@ -490,10 +491,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 .and(storageLocalRetention).notNull(RCode.SYS_CONFIG_LOCALRETENTION_ISNULL)
                 .and(saveMap.get("system_name")).notNull(RCode.SYS_CONFIG_SYSTEMNAME_ISNULL)
                 .and(timezone).notNull(RCode.SYS_CONFIG_TIMEZONE_ISNULL)
-                .and(queryMaxSeries).notNull(RCode.SYS_CONFIG_QUERYMAXSERIES_ISNULL);
+                .and(queryMaxSeries).notNull(RCode.SYS_CONFIG_QUERYMAXSERIES_ISNULL)
+                .and(unsavedChange).notNull(RCode.SYS_CONFIG_UNSAVEDCHANGE_ISNULL);
 
         // 校验开关类型值
         this.validateSwitchValue(assetPingSwitch);
+        this.validateSwitchValue(unsavedChange);
 
         // 校验数值类型参数是否正确
         /*if (ToolUtil.isNotEmpty(assetPingInterval) && CommonUtils.toInt(assetPingInterval) == null) {

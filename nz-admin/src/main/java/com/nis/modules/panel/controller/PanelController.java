@@ -42,9 +42,7 @@ public class PanelController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.PANEL)
     @RequiresPermissions({"panel:save"})
     public R panelSave( @RequestBody Panel panel){
-        ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL);
-
-        panelService.saveOrUpdatePanel(panel);
+        panelService.savePanel(panel);
         // 添加之后相应 panel 对象
         Map<String, Panel> resultMap = new HashMap<>(2);
         resultMap.put("panel", panel);
@@ -55,10 +53,9 @@ public class PanelController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
     @RequiresPermissions({"panel:update"})
     public R panelUpdate( @RequestBody Panel panel){
-        ValidateUtils.is(panel.getName()).notNull(RCode.PANEL_NAME_ISNULL)
-                     .and(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
+        ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
 
-        panelService.saveOrUpdatePanel(panel);
+        panelService.updatePanel(panel);
         // 修改之后相应 panel 对象
         Map<String, Panel> resultMap = new HashMap<>(2);
         resultMap.put("panel", panel);
@@ -92,6 +89,20 @@ public class PanelController {
         panelService.modify(panel);
         return R.ok();
     }
+
+    /**
+     * 排序
+     * @param panelList
+     * @return
+     */
+    @PutMapping("/tree")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.PANEL)
+    @RequiresPermissions({"panel:modify"})
+    public R modify(@RequestBody List<Panel> panelList){
+        panelService.modify(panelList);
+        return R.ok();
+    }
+
 
     @GetMapping(value={"/{id}/charts"})
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CHART)

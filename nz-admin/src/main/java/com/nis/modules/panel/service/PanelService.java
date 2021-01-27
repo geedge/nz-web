@@ -10,11 +10,9 @@ import java.util.Set;
 public interface PanelService extends IService<Panel> {
     void delPanels(Integer... ids);
 
-    boolean validatePanelName(Integer id, String name);
-
-    void saveOrUpdatePanel(Panel panel);
-
     void modify(Panel panel);
+
+    void modify(List<Panel> panelList);
 
     List<Panel> queryList(Map<String, Object> params);
 
@@ -23,4 +21,8 @@ public interface PanelService extends IService<Panel> {
     List<Panel> getSequentialPanelList(List<Panel> panels);
 
     void handlePositionAfterDelete(List<Panel> sequentialPanelList, List<Integer> deleteIds);
+
+    void savePanel(Panel panel);
+
+    void updatePanel(Panel panel);
 }

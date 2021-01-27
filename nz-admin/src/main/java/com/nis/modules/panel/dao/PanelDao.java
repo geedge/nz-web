@@ -13,4 +13,6 @@ public interface PanelDao extends BaseMapper<Panel> {
     List<Panel> queryList(@Param("params")Map<String, Object> params);
 
     List<Panel> queryListByType(@Param("type")String type);
+
+    void updateWeightBatch(@Param("panels") List<Panel> updatePanels);
 }

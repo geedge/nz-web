@@ -485,10 +485,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
             }
             String description = ExcelUtils.getCellValue(row.getCell(8));
-            if (StringUtils.isEmpty(description)) {
+            /*if (StringUtils.isEmpty(description)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_DESCRIPTION_ISNULL.getMsg());
-            }
+            }*/
             String receiver = ExcelUtils.getCellValue(row.getCell(9));
             if (StringUtils.isNotEmpty(receiver)) {
                 if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {

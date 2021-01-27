@@ -30,6 +30,16 @@ spring:
         max-wait: -1ms      # 连接池最大阻塞等待时间（使用负值表示没有限制）
         max-idle: 10      # 连接池中的最大空闲连接
         min-idle: 5       # 连接池中的最小空闲连接
+  flyway:
+    enabled: true              # 是否开启
+    encoding: UTF-8            # 编码
+    sql-migration-prefix: V    # 脚本文件的前缀，默认为V
+    sql-migration-separator: __ #  双下划线
+    baseline-on-migrate: true  # 连接数据库中存在表时设置为true
+    locations: classpath:db    # 脚本路径
+    clean-disabled: false      # flyway 的 clean 命令会删除指定 schema 下的所有 table, 生产务必禁掉。这个默认值是 false 理论上作为默认配置是不科学的
+    validate-on-migrate: true # 执行迁移时是否自动调用验证   当你的 版本不符合逻辑 比如 你先执行了 DML 而没有 对应的DDL 会抛出异常
+    placeholder-replacement: false  # 不做取值替换 默认替换为 ${} ，初始化sql中有sql语句存在freemarker替换，所以禁用此项
 
 nezha:
   endpointStateTime: 90000   #endpoint state超时周期时间 毫秒
