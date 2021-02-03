@@ -1,10 +1,14 @@
 package com.nis.modules.terminal.controller;
 
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.terminal.config.TerminalOneProcessor;
 import com.nis.modules.terminal.entity.TerminalConfigDto;
+import com.nis.modules.terminal.service.TerminalCmdService;
 import com.nis.modules.terminal.service.TerminalLogService;
+import com.nis.modules.terminal.service.TerminalRecordService;
+import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.slf4j.Logger;
@@ -32,6 +36,15 @@ public class TerminalHandlerController {
     private TerminalOneProcessor terminalOneProcessor;
 	@Autowired
     private TerminalLogService terminalLogService;
+
+	@Autowired
+    private TerminalSessionService terminalSessionService;
+
+	@Autowired
+    private TerminalCmdService terminalCmdService;
+
+	@Autowired
+    private TerminalRecordService terminalRecordService;
 	
 	@Value("${nezha.uploadTempPath}")
     private String configUploadPath;
@@ -137,5 +150,45 @@ public class TerminalHandlerController {
         return R.ok(page);
     }
 
-	
+    /**
+     * terminal审计日志会话查询接口 默认按照 id 倒序
+     *
+     * @param params
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/session")
+    public R querySessionPage(@RequestParam Map<String, Object> params) {
+        PageUtils page = terminalSessionService.queryPage(params);
+        return R.ok(page);
+    }
+
+    /**
+     * terminal审计日志命令查询接口 按照  id asc
+     *
+     * @param params
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/cmd")
+    public R queryCmdPage(@RequestParam Map<String, Object> params) {
+        Map map = terminalCmdService.queryCmdInfos(params);
+        return R.ok(map);
+    }
+
+    @ResponseBody
+    @PutMapping("/kill")
+    public R killTerminal(@RequestBody Map<String, String> params) {
+        ValidateUtils.is(params.get("uuid")).notNull(RCode.TERMINAL_UUID_ISNULL);
+
+        terminalSessionService.killSession(params.get("uuid"));
+        return R.ok();
+    }
+
+    @ResponseBody
+    @GetMapping("/record")
+    public R queryTerminalRecord(@RequestParam Map<String, Object> params) {
+        Map map = terminalRecordService.queryTerminalRecordInfos(params);
+        return R.ok(map);
+    }
 }

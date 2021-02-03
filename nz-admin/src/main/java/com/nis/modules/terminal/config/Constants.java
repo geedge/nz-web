@@ -45,4 +45,47 @@ public class Constants {
             this.value = value;
         }
     }
+
+
+    public enum SessionStatus {
+
+        /**
+         * 连接中
+         */
+        CONNECTING(0),
+
+        /**
+         * 连接失败
+         */
+        CONNECTION_FAILED(1),
+
+        /**
+         * 已结束
+         */
+        OVER(2),
+
+        /**
+         * 强制退出
+         */
+        FORCE_QUIT(3),
+
+        /**
+         * 未知错误
+         */
+        UNKNOWN_ERROR(4);
+
+
+        private int value;
+
+        SessionStatus(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    // 单位为 byte , 10485760 byte = 10Mb
+    public static Integer RECORD_TEMPFILE_MAX_LENGTH = 10485760;
 }

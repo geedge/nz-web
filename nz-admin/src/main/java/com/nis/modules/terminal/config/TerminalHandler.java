@@ -23,6 +23,8 @@ package com.nis.modules.terminal.config;
 
 
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
@@ -35,10 +37,8 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants.SshType;
-import com.nis.modules.terminal.entity.Account;
-import com.nis.modules.terminal.entity.TerminalLog;
-import com.nis.modules.terminal.service.AccountService;
-import com.nis.modules.terminal.service.TerminalLogService;
+import com.nis.modules.terminal.entity.*;
+import com.nis.modules.terminal.service.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
@@ -57,14 +57,18 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
 public class TerminalHandler extends TextWebSocketHandler {
-	
-	private final Logger logger = LoggerFactory.getLogger(TerminalHandler.class);
+
+	private final static Logger logger = LoggerFactory.getLogger(TerminalHandler.class);
 	
     private TerminalClient terminalClient;
 
@@ -92,6 +96,14 @@ public class TerminalHandler extends TextWebSocketHandler {
     private Long userId;
     
     private TerminalLogService terminalLogService;
+
+    private TerminalSessionService terminalSessionService;
+
+    private TerminalCmdService terminalCmdService;
+
+    private TerminalRecordService terminalRecordService;
+
+    private AssetService assetService;
     
     @Override
     public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -130,8 +142,18 @@ public class TerminalHandler extends TextWebSocketHandler {
         userId = userEntity.getUserId();
         
         // 创建登录服务器日志记录相关内容
-        terminalLogService=(TerminalLogService) applicationContext.getBean("terminalLogService");
-        TerminalSession.clientAttributeInfo.put("terminalLogService", terminalLogService);
+	    terminalLogService = (TerminalLogService) applicationContext.getBean("terminalLogService");
+	    terminalSessionService = (TerminalSessionService) applicationContext.getBean("terminalSessionService");
+	    terminalCmdService = (TerminalCmdService) applicationContext.getBean("terminalCmdService");
+	    terminalRecordService = (TerminalRecordService) applicationContext.getBean("terminalRecordService");
+	    assetService = (AssetService) applicationContext.getBean("assetService");
+
+	    TerminalSession.clientAttributeInfo.put("terminalLogService", terminalLogService);
+	    TerminalSession.clientAttributeInfo.put("terminalSessionService", terminalSessionService);
+	    TerminalSession.clientAttributeInfo.put("terminalCmdService", terminalCmdService);
+	    TerminalSession.clientAttributeInfo.put("terminalRecordService", terminalRecordService);
+	    TerminalSession.clientAttributeInfo.put("assetService", assetService);
+
         // 初始化服务器连接基本属性配置
         Map terminalAttribute = TerminalSession.getTerminalAttributeInfo(uuid);
         terminalAttribute.put("userId", userId);
@@ -179,7 +201,16 @@ public class TerminalHandler extends TextWebSocketHandler {
             terminalLog.setProtocol(terminal.getProtocol());
             terminalLog.setUserId(userId);
             terminalLog.setUuid(uuid);
-            try {
+
+	        TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
+	        sessionEntity.setUuid(uuid);
+	        sessionEntity.setHost(terminal.getAsset().getHost());
+	        sessionEntity.setPort(terminal.getPort());
+	        sessionEntity.setProtocol(terminal.getProtocol());
+	        sessionEntity.setAuthType(SshType.ACCOUNT.getValue().equals(params.get("method")) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
+	        sessionEntity.setUserId(userId);
+	        sessionEntity.setAssetId(terminal.getAssetId());
+	        try {
                 getClient(session, terminal);
                 int cols = toInt(session.getAttributes().get("cols").toString());
                 int rows = toInt(session.getAttributes().get("rows").toString());
@@ -191,7 +222,22 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                 TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 
-                // 根据协议选择打开窗口类型
+		        // terminal session 信息
+		        sessionEntity.setLoginUser(params.get("username"));
+		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
+		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
+
+		        // terminal cmd 信息
+		        TerminalCmd terminalCmd = new TerminalCmd();
+		        terminalCmd.setUuid(uuid);
+		        terminalCmd.setTime(0);
+		        terminalCmd.setCmd("Login");
+		        terminalCmdService.save(terminalCmd);
+
+		        // 根据协议选择打开窗口类型
 	            String protocol = terminal.getProtocol();
 	            if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
 		            terminalClient.openTerminal(cols, rows, width, height);
@@ -200,6 +246,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	            }
 
                 terminalLogService.save(terminalLog);
+	            terminalSessionService.save(sessionEntity);
             } catch (Exception e) {
             	logger.error("error info :",e);
             	e.printStackTrace();
@@ -214,7 +261,18 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 	            terminalLog.setUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
                 terminalLogService.save(terminalLog);
-                terminalClient.disconnect();
+
+		        // 连接异常，关闭session 记录，更改状态为 连接失败
+		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setLoginUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
+		        sessionEntity.setLoginUser(params.get("username"));
+		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+		        terminalSessionService.save(sessionEntity);
+
+		        terminalClient.disconnect();
                 TerminalSession.remove(session);
                 //           session.close();
                 unloginUserHandle(session);
@@ -502,7 +560,26 @@ public class TerminalHandler extends TextWebSocketHandler {
         	terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
         	terminalLog.setCmd("Terminal due to abnormal disconnection");
         	terminalLogService.save(terminalLog);
-        	TerminalSession.removeTerminalAttributeInfo(uuid);
+
+	        // cmd 信息保存
+	        TerminalCmd terminalCmd = new TerminalCmd();
+	        terminalCmd.setCmd("Terminal due to abnormal disconnection");
+	        terminalCmd.setUuid(uuid);
+	        long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
+	        terminalCmd.setTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
+	        terminalCmdService.save(terminalCmd);
+
+	        // terminal sesssion 信息保存
+	        TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
+	        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	        sessionEntity.setUuid(uuid);
+	        sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
+	        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+	        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+	        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+	        terminalSessionService.save(sessionEntity);
+
+	        TerminalSession.removeTerminalAttributeInfo(uuid);
         	TerminalSession.removeTerminalMessage(uuid+"telnetFlag");
         	session.sendMessage(new TextMessage(e.getMessage()+"\r\n"));
             session.sendMessage(new TextMessage("Sorry! Nezha Terminal was closed, please try again. \r\n"));
@@ -526,8 +603,64 @@ public class TerminalHandler extends TextWebSocketHandler {
     	TerminalSession.removeWindowSize(token);
         super.afterConnectionClosed(session, status);
         this.closeTerminal(session);
+
+        // client 关闭后，处理 session 和 record 信息
+	    this.handleSessionAfterClientClose(uuid);
         TerminalSession.removeTerminalAttributeInfo(uuid);
     }
+
+	/**
+	 * 窗口关闭后
+	 * 1. 处理 session 相关信息
+	 * 2. 处理 record 剩余文件信息
+	 * @param uuid
+	 */
+	private void handleSessionAfterClientClose(String uuid) {
+		TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
+		if (sessionEntity != null) {
+			sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+			sessionEntity.setStatus(Constants.SessionStatus.OVER.getValue());
+			terminalSessionService.saveOrUpdate(sessionEntity);
+
+			// 窗口关闭，处理 record 文件
+			handleRecodeAfterClientClose(uuid, terminalRecordService);
+		}
+	}
+
+	/**
+	 * 窗口关闭后
+	 *  处理 record 剩余文件信息
+	 * @param uuid
+	 */
+	public static void handleRecodeAfterClientClose(String uuid, TerminalRecordService terminalRecordService) {
+		String fileName = Constant.TEMP_PATH + File.separator + uuid + ".log";
+		File file = new File(fileName);
+		if(!file.exists()){
+			return;
+		}
+
+		Path path = Paths.get(fileName);
+		try {
+			// 将本次内容保存至数据库
+			List<TerminalRecord> list = terminalRecordService.list(new LambdaQueryWrapper<TerminalRecord>().eq(TerminalRecord::getUuid, uuid).orderByAsc(TerminalRecord::getId));
+			TerminalRecord terminalRecord = new TerminalRecord();
+			terminalRecord.setUuid(uuid);
+			// 如果是第一次保存到库的话 ， start time 为 0
+			if (CollectionUtils.isEmpty(list)) {
+				terminalRecord.setStartTime(0);
+			} else {
+				// 其他的开始时间为上一次的结束时间
+				terminalRecord.setStartTime(list.get(list.size() - 1).getEndTime());
+			}
+			long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
+			terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
+			terminalRecord.setContent(Files.readAllBytes(path));
+			terminalRecordService.save(terminalRecord);
+			file.delete();
+		} catch (IOException e) {
+			logger.error(String.format("terminal record 文件入库失败，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
+		}
+	}
 
     private TerminalClient getClient(WebSocketSession session, Account terminal) {
         this.terminalClient = TerminalSession.get(session);
@@ -562,6 +695,31 @@ public class TerminalHandler extends TextWebSocketHandler {
     	terminalLog.setCmd(message);
     	terminalLog.setProtocol("");
     	terminalLog.setStatus(0);
+
+	    // cmd 信息保存
+	    TerminalCmd terminalCmd = new TerminalCmd();
+	    terminalCmd.setCmd(message);
+	    terminalCmd.setUuid(uuid);
+
+
+	    // terminal session 信息保存
+	    TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
+	    sessionEntity.setUuid(uuid);
+	    sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
+	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	    sessionEntity.setAuthType(1);
+	    sessionEntity.setProtocol("");
+	    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+	    Account terminalInfo = terminalContext.get(uuid);
+	    if (terminalInfo != null) {
+		    sessionEntity.setAssetId(terminalInfo.getAssetId());
+	    } else {
+		    // 直接输入命令登录的，没有asset 信息，通过 host 尝试获取
+		    String host = TerminalSession.getTerminalMessage(uuid + "ip");
+		    Asset asset = assetService.getOne(new LambdaQueryWrapper<Asset>().eq(Asset::getHost, host));
+		    sessionEntity.setAssetId((asset != null) ? asset.getId() : null);
+	    }
+
     	logger.info("nezhaMessageHandle message info {}",message);
     	if(StringUtils.isEmpty(message)) {
     		message="";
@@ -574,7 +732,16 @@ public class TerminalHandler extends TextWebSocketHandler {
     		terminalLog.setCmd("Login");
     		terminalLog.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
     		terminalLog.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid+"port")));
-    		sshLogin=false;
+
+		    // cmd 信息
+		    terminalCmd.setCmd("Login");
+
+		    // session 信息
+		    sessionEntity.setProtocol("SSH");
+		    sessionEntity.setHost(TerminalSession.getTerminalMessage(uuid + "ip"));
+		    sessionEntity.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid + "port")));
+
+		    sshLogin=false;
     		//获取到用户ssh pwd
     		Asset asset=new Asset();
     		asset.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
@@ -593,6 +760,8 @@ public class TerminalHandler extends TextWebSocketHandler {
 		    terminal.setParams(JSONObject.toJSONString(params));
 
     		terminalLog.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
+
+		    sessionEntity.setLoginUser(TerminalSession.getTerminalMessage(uuid + "user"));
     		//连接服务
     		try {
 				getClient(session, terminal);
@@ -600,15 +769,28 @@ public class TerminalHandler extends TextWebSocketHandler {
 				int rows = toInt(session.getAttributes().get("rows").toString());
 				int width = toInt(session.getAttributes().get("width").toString());
 				int height = toInt(session.getAttributes().get("height").toString());
+
 			    TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
+			    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
+			    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
+
 				terminalClient.openTerminal(cols, rows, width, height);
 				terminalLog.setStatus(1);
 				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+
+				// 连接之后 session 状态为 connecting
+			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+			    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
 			} catch (Exception e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 				terminalLog.setStatus(0);
 				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
-				sshLogin=false;
+
+			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+			    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+			    sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+
+			    sshLogin=false;
 				TerminalSession.remove(session);
 				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"ip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
 			}
@@ -618,6 +800,12 @@ public class TerminalHandler extends TextWebSocketHandler {
             TerminalSession.setTerminalAttributeInfo(uuid,"historyIndex",0);
             TerminalSession.setTerminalAttributeInfo(uuid, "sshLogin", false);
     		terminalLogService.save(terminalLog);
+
+		    long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionStartTime");
+		    terminalCmd.setTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
+		    terminalCmdService.save(terminalCmd);
+
+		    terminalSessionService.save(sessionEntity);
     	}else if(message.startsWith("ssh")) {
     		sshLoginHandle(session,message,sshLogin);
     	}else if(message.startsWith("telnet")){
@@ -681,8 +869,8 @@ public class TerminalHandler extends TextWebSocketHandler {
     				"$: "));
     	}
     }
-    
-    public void unloginUserHandle(WebSocketSession session) throws Exception{
+
+	public static void unloginUserHandle(WebSocketSession session) throws Exception {
     	StringBuilder sb=new StringBuilder();
         sb.append("Welcome to Nezha Terminal! \r\n");
     	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
@@ -814,7 +1002,19 @@ public class TerminalHandler extends TextWebSocketHandler {
 		terminalLog.setHost(ip);
 		terminalLog.setPort(Integer.valueOf(port));
 		terminalLog.setProtocol("TELNET");
-		try {
+
+	    // terminal session 信息保存
+	    TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
+	    sessionEntity.setUuid(uuid);
+	    sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
+	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	    sessionEntity.setAuthType(1);
+	    sessionEntity.setProtocol("TELNET");
+	    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+	    sessionEntity.setHost(ip);
+	    sessionEntity.setPort(Integer.valueOf(port));
+
+	    try {
 			getClient(session, terminal);
 			int cols = toInt(session.getAttributes().get("cols").toString());
 			int rows = toInt(session.getAttributes().get("rows").toString());
@@ -822,15 +1022,22 @@ public class TerminalHandler extends TextWebSocketHandler {
 			int height = toInt(session.getAttributes().get("height").toString());
 			terminalClient.openTelnetTerminal(cols, rows, width, height);
 			TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
+		    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
+		    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
 		} catch (Exception e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
 			terminalLog.setStatus(0);
 			terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 			terminalLogService.save(terminalLog);
+
+			// 连接失败 更改 terminal session 状态
+		    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+		    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+		    sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+
+		    terminalSessionService.save(sessionEntity);
 			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"telip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"telport")+"): Connection failed."+"\r\n$: "));
 			TerminalSession.remove(session);
 		}
-		
     }
 }
-

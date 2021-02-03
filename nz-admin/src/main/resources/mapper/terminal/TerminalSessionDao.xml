@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
+<mapper namespace="com.nis.modules.terminal.dao.TerminalSessionDao">
+
+    <select id="queryList" resultType="com.nis.modules.terminal.entity.TerminalSessionEntity">
+        SELECT
+            ts.*
+        FROM
+            terminal_session ts
+        LEFT JOIN sys_user su ON ts.user_id = su.user_id
+
+        <where>
+            <if test="params.protocol != null and params.protocol != ''">
+                ts.protocol = #{params.protocol}
+            </if>
+
+            <if test="params.loginUser != null and params.loginUser != ''">
+                AND ts.login_user like CONCAT('%', #{params.loginUser}, '%')
+            </if>
+
+            <if test="params.host != null and params.host != ''">
+                AND ts.host like CONCAT('%', #{params.host}, '%')
+            </if>
+
+            <if test="params.startTime != null">
+                AND ts.start_time &gt;= #{params.startTime}
+            </if>
+
+            <if test="params.endTime != null">
+                AND ts.end_time &lt;= #{params.endTime}
+            </if>
+
+            <if test="params.username != null and params.username != ''">
+                AND su.username like CONCAT('%', #{params.username}, '%')
+            </if>
+        </where>
+
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY ts.id DESC
+        </if>
+    </select>
+</mapper>

@@ -309,6 +309,21 @@ public class TerminalSession implements Serializable {
         return null;
     }
 
+    /**
+     * 通过 uuid 得到 webSocketSession 对象
+     * @param uuid
+     * @return
+     */
+    public static WebSocketSession findSession(String uuid) {
+        for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
+            TerminalClient client = entry.getValue();
+            if (client.getClientId().equalsIgnoreCase(uuid)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     public static void exit(HttpServletRequest request) throws IOException {
         String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
         if (userAgent != null) {
