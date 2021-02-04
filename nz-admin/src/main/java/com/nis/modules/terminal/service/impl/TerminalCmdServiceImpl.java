@@ -43,7 +43,7 @@ public class TerminalCmdServiceImpl extends ServiceImpl<TerminalCmdDao, Terminal
         List<TerminalCmd> list = this.list(new LambdaQueryWrapper<TerminalCmd>()
                 .eq(TerminalCmd::getUuid, params.get("uuid"))
                 .like(TerminalCmd::getCmd, cmd)
-                .ge(TerminalCmd::getTime, time)
+                .gt(TerminalCmd::getTime, time)
                 .orderByAsc(TerminalCmd::getId));
 
         Map map = new HashMap(8);

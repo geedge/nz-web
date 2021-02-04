@@ -80,8 +80,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
 
             moduleIds = entry.getValue().stream().map(Module::getId).collect(Collectors.toList());
             configMap = JSONObject.parseObject(topoConfig.toString(), Map.class);
-            configMap.put("nodes", this.removeModuleEntity(configMap.get("nodes"), moduleIds));
-            configMap.put("lines", this.removeModuleEntity(configMap.get("lines"), moduleIds));
+            configMap.put("pens", this.removeModuleEntity(configMap.get("pens"), moduleIds));
             topoProjectIdAndConfigMap.put(entry.getKey(), JSONObject.toJSONString(configMap));
         }
 
@@ -95,22 +94,24 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
         this.saveOrUpdateBatch(topos);
     }
 
-    private JSONArray removeModuleEntity(JSONArray nodes, List<Integer> moduleIds) {
-        Map<String, Object> node;
-        Integer moduleId, source, target;
-        Iterator<Object> iterator = nodes.iterator();
+    private JSONArray removeModuleEntity(JSONArray pens, List<Integer> moduleIds) {
+        Map<String, Object> node, nodeData;
+        Integer moduleId, type;
+        Iterator<Object> iterator = pens.iterator();
         while (iterator.hasNext()) {
             node = (Map<String, Object>) iterator.next();
-            moduleId = (Integer) node.get("moduleId");
-            source = (Integer) node.get("source");
-            target = (Integer) node.get("target");
-            moduleId = moduleId == null ? source : moduleId;
+            type = (Integer) node.get("type");
+            // type 为 0 是 module 节点，只处理 节点
+            if (!type.equals(0)) {
+                continue;
+            }
+
+            nodeData = (Map<String, Object>) node.get("data");
+            moduleId = (Integer) nodeData.get("moduleId");
             if (moduleIds.contains(moduleId)) {
-                iterator.remove();
-            } else if (target != null && moduleIds.contains(target)) {
                 iterator.remove();
             }
         }
-        return nodes;
+        return pens;
     }
 }

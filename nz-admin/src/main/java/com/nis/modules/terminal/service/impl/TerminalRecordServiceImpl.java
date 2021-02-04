@@ -42,7 +42,9 @@ public class TerminalRecordServiceImpl extends ServiceImpl<TerminalRecordDao, Te
 
         if (CollectionUtils.isNotEmpty(list)) {
             int hashNext = 0;
-            if (list.size() > size) {
+
+            // size 为 1 表示不限制条数
+            if (!size.equals(1) && list.size() > size) {
                 list = list.subList(0, size);
                 hashNext = 1;
             }
