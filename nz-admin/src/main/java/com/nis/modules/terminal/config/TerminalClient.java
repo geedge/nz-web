@@ -297,7 +297,13 @@ public class TerminalClient {
         }
         // 以追加的方式追加服务器返回内容
         try {
-            Files.write(path, message.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.DSYNC);
+            long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionStartTime");
+            Map<String, Object> map = new HashMap(4);
+            map.put("t",(int) (System.currentTimeMillis() - terminalSessionStartTime));
+            map.put("c",message);
+            String s = JSONObject.toJSONString(map);
+            s += ",";
+            Files.write(path, s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.DSYNC);
         } catch (IOException e) {
             logger.error(String.format("追加 terminal record 文件失败，文件路径是: %s,错误信息是: %s", path.toString(), e.getMessage()), e);
         }
