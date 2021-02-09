@@ -247,6 +247,7 @@ public class UserRealm extends AuthorizingRealm {
 			String ldapAddress = (String) ldap.get("ldap_address");
 			String ldapDN = (String) ldap.get("ldap_dn");
 			String ldapPassword = (String) ldap.get("ldap_password");
+			ldapPassword = new String(Base64.getDecoder().decode(ldapPassword));
 			String ldapUserFilter = (String) ldap.get("ldap_user_filter");
 			String ldapMapping = (String) ldap.get("ldap_mapping");
 			String ldapOu = (String) ldap.get("ldap_ou");

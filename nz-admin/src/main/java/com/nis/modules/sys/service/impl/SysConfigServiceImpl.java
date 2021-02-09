@@ -295,7 +295,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                         return r;
                     } else {
                         if (ldapEnableFlag) {
-                            this.updateEntity(saveMap);
+                        	// ldap密码进行加密处理
+                        	String ldapPwd = saveMap.get("ldap_password");
+                        	String ldapPwdEncoder = Base64.getEncoder().encodeToString(ldapPwd.getBytes());
+                            saveMap.put("ldap_password", ldapPwdEncoder);
+                        	this.updateEntity(saveMap);
                         } else {
                             SysConfigEntity ldapEnable = this.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", "ldap_enable"));
                             // 数据库目前没有此项
