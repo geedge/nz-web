@@ -190,9 +190,9 @@ public class TerminalClient {
                         File file = new File(fileName);
                         Path path = Paths.get(fileName);
 
+                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         clientMessageHandle(terminalLogService, terminalCmdService, terminalLog, message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -362,9 +362,9 @@ public class TerminalClient {
                         File file = new File(fileName);
                         Path path = Paths.get(fileName);
 
+                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         clientMessageHandle(terminalLogService, terminalCmdService, terminalLog, message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
@@ -413,16 +413,16 @@ public class TerminalClient {
                             		terminalLogService.save(terminalLog);
 
                                     // cmd 信息
-                                    TerminalCmd terminalCmd = new TerminalCmd();
-                                    terminalCmd.setUuid(clientId);
-                                    terminalCmd.setCmd("Login");
-                                    terminalCmd.setTime(0);
-                                    terminalCmdService.save(terminalCmd);
+//                                    TerminalCmd terminalCmd = new TerminalCmd();
+//                                    terminalCmd.setUuid(clientId);
+//                                    terminalCmd.setCmd("Login");
+//                                    terminalCmd.setTime(0);
+//                                    terminalCmdService.save(terminalCmd);
 
                                     // session 信息
-                                    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-                                    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-                                    terminalSessionService.save(sessionEntity);
+//                                    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+//                                    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+//                                    terminalSessionService.save(sessionEntity);
 
                             		telnetConnect=false;
                             		// 登录成功后清空 前端输入字符 防止日志保存空数据
@@ -468,6 +468,20 @@ public class TerminalClient {
                                 		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                                 		terminalLog.setUser(user);
                                 		terminalLogService.save(terminalLog);
+
+                                        // cmd 信息
+                                        TerminalCmd terminalCmd = new TerminalCmd();
+                                        terminalCmd.setUuid(clientId);
+                                        terminalCmd.setCmd("Login");
+                                        terminalCmd.setTime(0);
+                                        terminalCmdService.save(terminalCmd);
+
+                                        // session 信息
+                                        sessionEntity.setLoginUser(user);
+                                        sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+                                        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+                                        terminalSessionService.saveOrUpdate(sessionEntity);
+
                             			TerminalSession.remove(webSocketSession);
                             			closed=true;
                                         // 强制退出 错误达到限制

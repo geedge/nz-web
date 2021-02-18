@@ -265,7 +265,6 @@ public class TerminalHandler extends TextWebSocketHandler {
 		        // 连接异常，关闭session 记录，更改状态为 连接失败
 		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setLoginUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
-		        sessionEntity.setLoginUser(params.get("username"));
 		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
 		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
