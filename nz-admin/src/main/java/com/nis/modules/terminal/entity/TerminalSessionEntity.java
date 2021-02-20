@@ -93,6 +93,12 @@ public class TerminalSessionEntity implements Serializable {
 	private Long killUserId;
 
 	/**
+	 * 系统用户
+	 */
+	@TableField(exist = false)
+	private String username;
+
+	/**
 	 * 强制退出踢出用户名
 	 */
 	@TableField(exist = false)
@@ -115,6 +121,7 @@ public class TerminalSessionEntity implements Serializable {
 				", endTime=" + endTime +
 				", status=" + status +
 				", killUserId=" + killUserId +
+				", username='" + username + '\'' +
 				", killUserName='" + killUserName + '\'' +
 				'}';
 	}
