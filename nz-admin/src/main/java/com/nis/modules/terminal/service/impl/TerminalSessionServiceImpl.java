@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.text.ParseException;
@@ -111,7 +112,11 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
         try {
             TerminalSession.remove(session);
-            TerminalHandler.unloginUserHandle(session);
+            // TerminalHandler.unloginUserHandle(session);
+            StringBuilder sb = new StringBuilder();
+            sb.append("\u001B[01;31m\u001B[K Administrator disconnected \u001B[m\u001B[K  \r\n");
+            sb.append("$: ");
+            session.sendMessage(new TextMessage(sb.toString()));
         } catch (Exception e) {
             log.error(String.format("terminal session kill failed,uuid = %s,错误信息 = %s", uuid, e.getMessage()), e);
         }

@@ -128,6 +128,7 @@ public class SysLogAspect {
 
         // 处理参数记录
         String paramResult = this.handleArgs(syslog, args, ShiroUtils.getUserEntity());
+        paramResult = this.handleLogParam(paramResult);
         sysLog.setParams(paramResult);
 
         // 登录出现异常时
@@ -200,6 +201,8 @@ public class SysLogAspect {
         }
         sysLog.setOperaId(oepraId);
 
+        // 处理 参数信息
+        paramResult = this.handleLogParam(paramResult);
         sysLog.setParams(paramResult);
 
         Long userId = null;
@@ -221,6 +224,35 @@ public class SysLogAspect {
         if (!"query".equals(operationType)) {
             sysLogService.save(sysLog);
         }
+    }
+
+    /**
+     * 处理保存参数信息
+     * 1. system ldap 不保存 ldap_password
+     * 2. system email 不保存 email_smtp_password
+     * @param paramResult
+     */
+    private String handleLogParam(String paramResult) {
+        if (StringUtils.isNotEmpty(paramResult)) {
+            try {
+                Map<String, Object> map = JSONObject.parseObject(paramResult, Map.class);
+                for (Map.Entry<String, Object> obj : map.entrySet()) {
+                    Object value = obj.getValue();
+                    if (value instanceof Map) {
+                        for (Object pojo : ((Map) value).values()) {
+                            if (pojo instanceof Map && pojo != null) {
+                                ((Map) pojo).remove("ldap_password");
+                                ((Map) pojo).remove("email_smtp_password");
+                            }
+                        }
+                        obj.setValue(value);
+                    }
+                }
+                return JSONObject.toJSONString(map);
+            } catch (Exception e) {
+            }
+        }
+        return paramResult;
     }
 
 
