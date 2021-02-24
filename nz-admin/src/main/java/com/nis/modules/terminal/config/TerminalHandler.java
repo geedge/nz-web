@@ -618,7 +618,11 @@ public class TerminalHandler extends TextWebSocketHandler {
 		TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
 		if (sessionEntity != null) {
 			sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
-			sessionEntity.setStatus(Constants.SessionStatus.OVER.getValue());
+
+			// 正常连接状态 关闭窗口，将状态改为 已结束，其他不做处理
+			if (Constants.SessionStatus.CONNECTING.getValue() == sessionEntity.getStatus()) {
+				sessionEntity.setStatus(Constants.SessionStatus.OVER.getValue());
+			}
 			terminalSessionService.saveOrUpdate(sessionEntity);
 
 			// 窗口关闭，处理 record 文件
