@@ -28,6 +28,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.CustomSSLSocketFactory;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -710,11 +711,18 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             environment.put(Context.SECURITY_PRINCIPAL, dn);
             environment.put(Context.SECURITY_CREDENTIALS, password);
             environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-            environment.put("com.sun.jndi.ldap.connect.timeout", "3000");
+            // 当连接ldaps时候  会发生异常 无法进行连接 
+//            environment.put("com.sun.jndi.ldap.connect.timeout", "3000");
             environment.put(Context.PROVIDER_URL, address);
+            // 当使用ldaps进行连接的时候 需要开启ssl进行连接
+            if(address.startsWith("ldaps")) {
+            	environment.put("java.naming.security.protocol", "ssl");
+                environment.put("java.naming.ldap.factory.socket", CustomSSLSocketFactory.class.getName());
+            }
             initialDirContext = new InitialDirContext(environment);
             
-            // 校验ou属性
+            
+            /*// 校验ou属性  该方法有问题  先注释 优先测试能够登陆ldap服务器功能
             if (StringUtils.isNotBlank(ou)) {
                 String[] split = dn.split(",");
                 String base = split[split.length - 2] + "," + split[split.length - 1];
@@ -735,7 +743,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 if (ouFlag) {
                     return R.error(RCode.SYS_CONFIG_LDAP_OU_NOT_EXIST);
                 }
-            }
+            }*/
             
         } catch (AuthenticationException e) {
             // 账户类异常 造成原因： 用户名或者密码错误 也就是 dn和password

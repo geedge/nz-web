@@ -263,14 +263,20 @@ public class UserRealm extends AuthorizingRealm {
 			}
 			String base = split[split.length-2]+","+split[split.length-1];
 			if(StringUtils.isNotBlank(ldapOu)) {
-				base="ou="+ldapOu+","+base;
+				base=ldapOu;
 			}
-			// 允许ldap登录 进行ldap验证
-			LdapContextSource ldapContextSource = new LdapContextSource();
+			// 允许ldap登录 进行ldap验证 判断连接是ldap还是ldaps
+			LdapContextSource ldapContextSource=null;
+			if(ldapAddress.startsWith("ldaps")) {
+				ldapContextSource = new SSLLdapContextSource();
+			}else {
+				ldapContextSource = new LdapContextSource();
+			}
 			ldapContextSource.setUrl(ldapAddress);
 			ldapContextSource.setUserDn(ldapDN);
 	        ldapContextSource.setPassword(ldapPassword);
 	        ldapContextSource.setReferral("follow");
+	        ldapContextSource.setPooled(false);  
 	        ldapContextSource.afterPropertiesSet(); // important
 			
 			LdapTemplate ldapTemplate =new LdapTemplate(ldapContextSource);
@@ -281,7 +287,13 @@ public class UserRealm extends AuthorizingRealm {
 			ldapTemplate.setDefaultTimeLimit(ldapQueryTimeOut);
 
 			AndFilter filter = new AndFilter();
-			filter.and(new EqualsFilter(ldapUserFilter, userName));
+			filter.and(new EqualsFilter("uid", userName));
+			// 将用户设置的filter以及用户的名称uid组装
+			if(ldapUserFilter.contains("&")) {
+				ldapUserFilter=ldapUserFilter.substring(0, ldapUserFilter.length()-1)+filter.encode()+")";
+			}else {
+				ldapUserFilter="(&{}{})".format(ldapUserFilter, filter.encode());
+			}
 			boolean authenticate = ldapTemplate.authenticate(base,filter.toString(),password);
 			if(authenticate&&StringUtils.isNotBlank(ldapMapping)) {
 				//如果可登录并且有用户设定映射 则查询映射内容补充到系统用户表信息中
@@ -291,7 +303,7 @@ public class UserRealm extends AuthorizingRealm {
 //					ldapTemplate.authenticate("th","(uid=%s)","th");
 					Map<String,String> ldapMap = (Map) JSON.parse(ldapMapping);
 					List<Map> search = ldapTemplate.search(LdapQueryBuilder.query().base(base)
-			                .where(ldapUserFilter).is(userName), new ContextMapper<Map>() {
+			                .filter(filter.toString()), new ContextMapper<Map>() {
 	                    @Override
 	                    public Map mapFromContext(Object ctx) throws NamingException {
 	                        DirContextAdapter  context = (DirContextAdapter) ctx;
@@ -317,7 +329,6 @@ public class UserRealm extends AuthorizingRealm {
 			}else {
 				return null;
 			}
-			
 		}
 	}
 }
