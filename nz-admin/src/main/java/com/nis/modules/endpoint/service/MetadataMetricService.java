@@ -1,9 +1,9 @@
 package com.nis.modules.endpoint.service;
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.endpoint.entity.MetadataMetric;
+
+import java.util.List;
 
 public interface MetadataMetricService extends IService<MetadataMetric> {
 

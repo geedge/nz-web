@@ -8,9 +8,10 @@
 
 package com.nis.common.xss;
 
+import cn.hutool.log.Log;
+
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 
 /**
  * XSS过滤
@@ -18,6 +19,8 @@ import java.io.IOException;
  * @author Mark sunlightcs@gmail.com
  */
 public class XssFilter implements Filter {
+
+	private final static Log logger = Log.get();
 
 	@Override
 	public void init(FilterConfig config) throws ServletException {
@@ -30,7 +33,7 @@ public class XssFilter implements Filter {
 		try {
 			chain.doFilter(xssRequest, response);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 	}
 

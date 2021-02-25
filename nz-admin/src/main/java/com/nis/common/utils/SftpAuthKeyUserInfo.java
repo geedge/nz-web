@@ -43,6 +43,6 @@ public class SftpAuthKeyUserInfo implements UserInfo {
     
     @Override
     public void showMessage(String message) {
-        //log.info ("SSH Message:{}", message);
+//        	log.info ("SSH Message:{}", message);
     }
 }

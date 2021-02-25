@@ -8,6 +8,9 @@
 
 package com.nis.common.utils;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 
 import javax.sql.DataSource;
@@ -22,7 +25,7 @@ import java.util.regex.Pattern;
 
  */
 public class Constant {
-	
+    private final static Log logger = Log.get();
 	/** 超级管理员ID */
 	public static final int SUPER_ADMIN = 1;
 
@@ -185,11 +188,11 @@ public class Constant {
 		try {
 			databaseId = databaseIdProvider.getDatabaseId(dataSource);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		DB_TYPE = databaseId;
 		
-		File tempPath = new File(TEMP_PATH);
+		File tempPath = FileUtil.file(TEMP_PATH);
 		if (!tempPath.isDirectory()) {
 			tempPath.mkdir();
 		}
@@ -355,10 +358,8 @@ public class Constant {
         }
     }
 
-    public static final Long GLOBAL_ID = 1L;
-    
+
     //delFlag
-    public static final String DELFLAG_TRUE = "1"; //删除
     public static final String DELFLAG_FALSE = "0"; //未删除
 
     public static final Integer AUTH_PASSWORD=1;//密码认证
@@ -384,7 +385,7 @@ public class Constant {
 
         public static String getOperationType(String value){
             for (SnmpOperationType type:SnmpOperationType.values()){
-                if(type.getValue().equals(value)){
+                if(StrUtil.equals(type.getValue(),value)){
                     return type.getValue();
                 }
             }

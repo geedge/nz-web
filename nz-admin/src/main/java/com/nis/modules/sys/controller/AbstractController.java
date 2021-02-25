@@ -8,11 +8,9 @@
 
 package com.nis.modules.sys.controller;
 
-import org.apache.shiro.SecurityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import cn.hutool.log.Log;
 import com.nis.modules.sys.entity.SysUserEntity;
+import org.apache.shiro.SecurityUtils;
 
 /**
  * Controller公共组件
@@ -20,7 +18,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 
  */
 public abstract class AbstractController {
-	protected Logger logger = LoggerFactory.getLogger(getClass());
+	protected Log logger = Log.get();
 	
 	protected SysUserEntity getUser() {
 		return (SysUserEntity) SecurityUtils.getSubject().getPrincipal();

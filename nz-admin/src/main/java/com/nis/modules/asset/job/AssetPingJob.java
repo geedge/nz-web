@@ -1,5 +1,8 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.RuntimeUtil;
@@ -15,8 +18,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,7 @@ import java.util.regex.Pattern;
 @DisallowConcurrentExecution
 public class AssetPingJob extends QuartzJobBean {
 
-    private static Logger logger = LoggerFactory.getLogger(AssetPingJob.class);
+    private static Log logger = Log.get();
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -57,7 +58,7 @@ public class AssetPingJob extends QuartzJobBean {
             // 进行同步
             this.execAssetPing();
         } catch (Exception e) {
-            logger.error("asset ping 采集异常", e);
+            logger.error("asset ping 采集异常",e);
         } finally {
             sw.stop();
         }
@@ -74,7 +75,7 @@ public class AssetPingJob extends QuartzJobBean {
         }
 
         // 开启主机连通性开关
-        if (Constant.ASSET_PING_OPEN_SWITCH.equals(configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
+        if(StrUtil.equals(Constant.ASSET_PING_OPEN_SWITCH,configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH).trim())) {
             logger.info("asset ping 开关开启");
 
             // 获取 所有 asset
@@ -91,14 +92,14 @@ public class AssetPingJob extends QuartzJobBean {
                 List<String> resultList = new ArrayList<>();
 
                 StringReader result = null;
-                BufferedReader reader = null;
+                BufferReaderWrapper reader = null;
                 try {
                     // 执行命令并返回结果
                     String command = configMap.get(Constant.SYSCONFIG_KEY_ASSET_FPING_COMMAND);
 
                     String[] commands = command.split(" ");
                     for (int i = 0; i < commands.length; i++) {
-                        if (Constant.ASSET_PING_COMMAND_FILENAME.equals(commands[i])) {
+                        if(StrUtil.equals(Constant.ASSET_PING_COMMAND_FILENAME,commands[i])) {
                             commands[i] = file.getAbsolutePath();
                         }
                     }
@@ -108,20 +109,20 @@ public class AssetPingJob extends QuartzJobBean {
                     try {
                         result = RuntimeUtil.run(null, null, commands);
                     } catch (Exception e) {
-                        logger.error(String.format("asset ping 执行命令失败, 执行命令是: %s, 错误信息是: %s", Arrays.asList(commands).toString(), e.getMessage()), e);
+	                        logger.error(String.format("asset ping 执行命令失败, 执行命令是: %s, 错误信息是: %s", Arrays.asList(commands).toString(), e));
                     } finally {
                         sw.stop();
                     }
                     logger.info("asset ping 执行命令是：" + Arrays.asList(commands).toString());
                     logger.info("asset ping 执行命令时长: " + sw.toString());
 
-                    reader = new BufferedReader(result);
+                    reader = new BufferReaderWrapper(result);
                     String line;
-                    while ((line = reader.readLine()) != null) {
+                    while ((line = reader.load()) != null) {
                         resultList.add(line);
                     }
 
-                    if (logger.isDebugEnabled()) logger.debug("asset fping 执行结果集 {}", resultList);
+//                    if (logger.isDebugEnabled()) logger.debug("asset fping 执行结果集 {}", resultList);
 
                     // ip 和描述信息
                     Map<String, String> ipAndDesc = new HashMap<>();
@@ -141,7 +142,7 @@ public class AssetPingJob extends QuartzJobBean {
                         statusInfo = entry.getValue();
                         host = entry.getKey();
                         // IP 不可达
-                        if (Constant.ASSET_PING_DOWN_FLAG.equals(statusInfo)) {
+                        if(StrUtil.equals(Constant.ASSET_PING_DOWN_FLAG,statusInfo)) {
                             unCallAssetPings.add(new AssetPing(host, 0, null, null));
                         } else {
                             // 可达
@@ -169,7 +170,7 @@ public class AssetPingJob extends QuartzJobBean {
                     assetPingDao.deleteAll();
                     assetPingService.saveBatch(callAssetPings);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 } finally {
                     if (reader != null) {
                         try {
@@ -202,20 +203,20 @@ public class AssetPingJob extends QuartzJobBean {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
         } finally {
             if (bw != null) {
                 try {
                     bw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
             if (fw != null) {
                 try {
                     fw.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }

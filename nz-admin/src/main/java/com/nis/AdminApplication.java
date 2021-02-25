@@ -2,9 +2,7 @@
 package com.nis;
 
 import com.nis.modules.terminal.config.TerminalHandler;
-
 import io.micrometer.core.instrument.MeterRegistry;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;

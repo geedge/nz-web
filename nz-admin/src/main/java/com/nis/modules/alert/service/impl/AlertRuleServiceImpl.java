@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -28,6 +29,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -48,7 +50,6 @@ import java.util.stream.Collectors;
 @Service("alertRuleService")
 @Slf4j
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
-
     @Autowired
     private AlertRuleDao alertRuleDao;
 
@@ -169,7 +170,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         try {
             checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
         } catch (Exception e) {
-            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e.getMessage()), e);
+            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
         }
 
         if (!checkRule) {
@@ -326,22 +327,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
         Map<String, String> exportHeaderMap;
-        switch (language) {
-            case "en": {
-                exportHeaderMap = (Map) map.get("en");
-                break;
-            }
-            case "cn": {
-                exportHeaderMap = (Map) map.get("cn");
-                break;
-            }
-            case "ru": {
-                exportHeaderMap = (Map) map.get("ru");
-                break;
-            }
-            default: {
-                throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ERROR);
-            }
+        if(map.get(language) != null){
+            exportHeaderMap = (Map) map.get(language);
+        }else{
+            throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ERROR);
         }
         SXSSFWorkbook workbook = null;
         try {
@@ -351,16 +340,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("告警规则模板生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("告警规则模板生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("获取告警规则导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+            log.error("获取告警规则导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
     }
@@ -374,16 +359,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (Exception e) {
-            log.error("解析导入告警规则文件格式有误", e);
+        } catch (IOException e) {
+            log.error("解析导入告警规则文件格式有误",e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {
-                try {
-                    work.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(work);
             }
         }
 
@@ -493,7 +474,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
             }else{
-                if(!Constant.ALERT_SEVERITY_HIGH.equals(severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
+                if(!StrUtil.equals(Constant.ALERT_SEVERITY_HIGH,severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
                 }
@@ -537,7 +518,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                         continue;
                     }
                 } catch (Exception e) {
-                    log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e.getMessage()), e);
+                    log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                 }
                 try {
@@ -545,7 +526,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     alertNameList.add(alertName);
                     successNum++;
                 } catch (Exception e) {
-                    log.error(String.format("rule导入保存失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e.getMessage()), e);
+                    log.error(String.format("rule导入保存失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ALERTRULE_IMPORT_ERROR.getMsg());
                 }
             }
@@ -626,16 +607,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("告警规则导出文件生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("告警规则导出文件生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("告警规则导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+            log.error("告警规则导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
     }

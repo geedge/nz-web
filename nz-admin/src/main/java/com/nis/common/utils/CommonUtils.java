@@ -1,11 +1,9 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.net.NetUtil;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.File;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -16,7 +14,6 @@ import java.util.stream.Collectors;
  *
  */
 public class CommonUtils {
-	
 	private static String OS = System.getProperty("os.name").toLowerCase();
 
     /**
@@ -99,20 +96,7 @@ public class CommonUtils {
         return !isEmpty(obj);
     }
 
-    public static Long toLong(Object val, Long defVal) {
-        if (isEmpty(val)) {
-            return defVal;
-        }
-        try {
-            return Long.parseLong(val.toString());
-        } catch (NumberFormatException e) {
-            return defVal;
-        }
-    }
 
-    public static Long toLong(Object val) {
-        return toLong(val, null);
-    }
 
     public static Integer toInt(Object val, Integer defVal) {
         if (isEmpty(val)) {
@@ -126,81 +110,15 @@ public class CommonUtils {
     }
 
 
-    public static float toFloat(Object val, float defVal) {
-        if (isEmpty(val)) {
-            return defVal;
-        }
-        try {
-            return Float.parseFloat(val.toString());
-        } catch (NumberFormatException e) {
-            return defVal;
-        }
-    }
 
-    public static Boolean toBoolean(String text, Boolean defVal) {
-        if (isEmpty(text)) {
-            return false;
-        }
-        try {
-            return Boolean.parseBoolean(text);
-        } catch (NumberFormatException e) {
-            return defVal;
-        }
-    }
 
-    public static Boolean toBoolean(String text) {
-        return toBoolean(text, false);
-    }
 
     public static Integer toInt(Object val) {
         return toInt(val, null);
     }
 
-    public static Float toFloat(Object val) {
-        return toFloat(val, 0f);
-    }
-
-    /**
-     * 对Null作预处理
-     *
-     * @param obj   待处理的对象
-     * @param clazz 该对象的类型
-     * @return T 返回处理后的不为Null的该对象
-     * @author <a href="mailto:benjobs@qq.com">Ben</a>
-     * @see <b>对Null作预处理,有效避免NullPointerException</b>
-     * @since 1.0
-     */
-    public static <T> T preparedNull(T obj, Class<?> clazz) {
-
-        if (notEmpty(obj)) {
-            return obj;
-        }
-
-        AssertUtils.notNull(clazz, "this class must be not null!");
-
-        Object val = null;
-
-        // 单列集合
-        if (List.class.isAssignableFrom(clazz)) {
-            val = new ArrayList<Object>(0);
-        } else if (Set.class.isAssignableFrom(clazz)) {
-            val = new HashSet<Object>(0);
-        } else if (Map.class.isAssignableFrom(clazz)) {
-            val = new HashMap<Object, Object>(0);
-        } else {
-            try {
-                val = clazz.newInstance();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return (T) val;
-    }
 
 
-    public static List arrayToList(Object source) {
-        return Arrays.asList(ObjectUtils.toObjectArray(source));
-    }
 
     public static boolean contains(Iterator iterator, Object element) {
         if (iterator != null) {
@@ -233,25 +151,6 @@ public class CommonUtils {
         return false;
     }
 
-    /**
-     * Check whether the given Collection contains the given element instance.
-     * <p>Enforces the given instance to be present, rather than returning
-     * <code>true</code> for an equal element as well.
-     *
-     * @param collection the Collection to check
-     * @param element    the element to look for
-     * @return <code>true</code> if found, <code>false</code> else
-     */
-    public static boolean containsInstance(Collection collection, Object element) {
-        if (collection != null) {
-            for (Object candidate : collection) {
-                if (candidate == element) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
 
     public static <A, E extends A> A[] toArray(Enumeration<E> enumeration, A[] array) {
@@ -262,47 +161,7 @@ public class CommonUtils {
         return elements.toArray(array);
     }
 
-    /**
-     * Adapt an enumeration to an iterator.
-     *
-     * @param enumeration the enumeration
-     * @return the iterator
-     */
-    public static <E> Iterator<E> toIterator(Enumeration<E> enumeration) {
-        @SuppressWarnings("hiding")
-        class EnumerationIterator<E> implements Iterator<E> {
-            private Enumeration<E> enumeration;
 
-            public EnumerationIterator(Enumeration<E> enumeration) {
-                this.enumeration = enumeration;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return this.enumeration.hasMoreElements();
-            }
-
-            @Override
-            public E next() {
-                if (!this.hasNext()) {
-                    throw new NoSuchElementException();
-                } else {
-                    return this.enumeration.nextElement();
-                }
-            }
-
-            @Override
-            public void remove() throws UnsupportedOperationException {
-                throw new UnsupportedOperationException("Not supported");
-            }
-        }
-        return new EnumerationIterator<E>(enumeration);
-    }
-
-    //获取系统名字
-    public static String getOsName() {
-        return OS;
-    }
 
     public static boolean isLinux(){
         return OS.indexOf("linux")>=0;
@@ -439,96 +298,7 @@ public class CommonUtils {
         }
         return platform;
     }
-    /**
-     * 将String数组转化为Long数组
-     *
-     * @param strArr String数组
-     * @return Long数组
-     * @Title: strArr2LongArr
-     * @author: wanghajie 2012-12-13上午10:15:42
-     */
-    public static Long[] string2LongArray(String[] strArr) {
-        if (CommonUtils.isEmpty(strArr)) {
-            return null;
-        }
-        Long longArray[] = new Long[strArr.length];
-        for (int i = 0; i < longArray.length; i++) {
-            longArray[i] = StringUtils.parseLong(strArr[i]);
-        }
-        return longArray;
-    }
 
-    /**
-     * 将将String数组转化为LongList
-     *
-     * @param strArr String数组
-     * @return LongList
-     * @Title: strArr2LongList
-     * @author: wanghajie 2012-12-13上午11:09:10
-     */
-    public static List<Long> string2LongList(String[] strArr) {
-        // 将String数组转化为Long数组
-        Long[] longArr = string2LongArray(strArr);
-        return longArr == null ? ((List<Long>) Collections.EMPTY_LIST) : Arrays.asList(longArr);
-    }
-
-    public static <K, V extends Comparable<? super V>> Map<K, V> sortMapByValue(Map<K, V> map) {
-        List<Map.Entry<K, V>> list = new LinkedList<Map.Entry<K, V>>(map.entrySet());
-        Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
-            @Override
-            public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
-                return (o1.getValue()).compareTo(o2.getValue());
-            }
-        });
-
-        Map<K, V> result = new LinkedHashMap<K, V>();
-        for (Map.Entry<K, V> entry : list) {
-            result.put(entry.getKey(), entry.getValue());
-        }
-        return result;
-    }
-
-    public static <T> T[] arrayRemoveElements(T[] array, T... elem) {
-        AssertUtils.notNull(array);
-        List<T> arrayList = new ArrayList<T>(0);
-        Collections.addAll(arrayList, array);
-        if (isEmpty(elem)) return array;
-        for (T el : elem) arrayList.remove(el);
-        return Arrays.copyOf(arrayList.toArray(array), arrayList.size());
-    }
-
-    public static <T> T[] arrayRemoveIndex(T[] array, int... index) {
-        AssertUtils.notNull(array);
-        for (int j : index) {
-            if (j < 0 || j > array.length - 1) throw new IndexOutOfBoundsException("index error.@" + j);
-        }
-        List<T> arrayList = new ArrayList<T>(0);
-        Collections.addAll(arrayList, array);
-        int i = 0;
-        for (int j : index) {
-            arrayList.remove(j - i);
-            ++i;
-        }
-        return Arrays.copyOf(arrayList.toArray(array), arrayList.size());
-    }
-
-
-    public static <T> T[] arrayInsertIndex(T[] array, int index, T t) {
-        AssertUtils.notNull(array);
-        List<T> arrayList = new ArrayList<T>(array.length + 1);
-        if (index == 0) {
-            arrayList.add(t);
-            Collections.addAll(arrayList, array);
-
-        } else {
-            T[] before = Arrays.copyOfRange(array, 0, index);
-            T[] after = Arrays.copyOfRange(array, index, array.length);
-            Collections.addAll(arrayList, before);
-            arrayList.add(t);
-            Collections.addAll(arrayList, after);
-        }
-        return arrayList.toArray(array);
-    }
 
     public static String uuid() {
         return UUID.randomUUID().toString().replaceAll("-", "");
@@ -548,34 +318,14 @@ public class CommonUtils {
         return sb.toString().substring(0, len);
     }
 
-    public static String getSystemCharset(){
-        return System.getProperty("file.encoding");
-    }
 
     /**
      * 获取本机所有网卡IP
      * @return
      */
     public static Set<String> getInetIpAddress() {
-        Enumeration allNetInterfaces = null;
-        Set<String> allIpaddress = new HashSet<>();
-        try {
-            allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-            InetAddress ip = null;
-            while (allNetInterfaces.hasMoreElements()) {
-                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-                Enumeration addresses = netInterface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    ip = (InetAddress) addresses.nextElement();
-                    if (ip != null && ip instanceof Inet4Address) {
-                        allIpaddress.add(ip.getHostAddress());
-                    }
-                }
-            }
-        } catch (java.net.SocketException e) {
-            e.printStackTrace();
-        }
-        return allIpaddress;
+
+        return NetUtil.localIpv4s();
     }
 
     /**

@@ -15,10 +15,6 @@
         <result property="receiver" column="receiver"/>
     </resultMap>
 
-    <select id="queryIdsByAlertName" resultType="integer">
-        select id from alert_rule where alert_name like concat('%',#{alertName},'%')
-    </select>
-
     <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
         SELECT
         ar.id,

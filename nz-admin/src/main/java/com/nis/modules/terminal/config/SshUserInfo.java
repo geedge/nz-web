@@ -21,11 +21,12 @@
 
 package com.nis.modules.terminal.config;
 
+import cn.hutool.log.Log;
 import com.jcraft.jsch.UserInfo;
 
 public class SshUserInfo implements UserInfo {
     //private String passphrase = null;
-
+    private Log logger = Log.get();
     public SshUserInfo() {
         //this.passphrase = passphrase;
     }
@@ -51,6 +52,6 @@ public class SshUserInfo implements UserInfo {
     }
 
     public void showMessage(String s) {
-        System.out.println(s);
+        logger.debug(s);
     }
 }

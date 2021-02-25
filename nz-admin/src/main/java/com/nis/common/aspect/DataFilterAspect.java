@@ -9,8 +9,12 @@
 package com.nis.common.aspect;
 
 
+import com.nis.common.annotation.DataFilter;
 import com.nis.common.exception.NZException;
-
+import com.nis.common.utils.Constant;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysUserRoleService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang.StringUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -20,13 +24,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.nis.common.annotation.DataFilter;
-import com.nis.common.utils.Constant;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import java.util.*;
+import java.util.Map;
 
 /**
  * 数据过滤，切面处理类
@@ -45,7 +43,7 @@ public class DataFilterAspect {
     }
 
     @Before("dataFilterCut()")
-    public void dataFilter(JoinPoint point) throws Throwable {
+    public void dataFilter(JoinPoint point) {
         Object params = point.getArgs()[0];
         if(params != null && params instanceof Map){
             SysUserEntity user = ShiroUtils.getUserEntity();

@@ -9,11 +9,9 @@
 package com.nis.modules.job.utils;
 
 import com.nis.common.exception.NZException;
-
-import org.quartz.*;
-
 import com.nis.common.utils.Constant;
 import com.nis.modules.job.entity.ScheduleJobEntity;
+import org.quartz.*;
 
 /**
  * 定时任务工具类
@@ -164,7 +162,7 @@ public class ScheduleUtils {
      * @param scheduler
      * @throws Exception
      */
-    public static void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression, Scheduler scheduler) throws Exception {
+    public static void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression, Scheduler scheduler) throws SchedulerException {
         CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
 
         CronTrigger cronTrigger = TriggerBuilder.newTrigger()
@@ -190,7 +188,7 @@ public class ScheduleUtils {
      * @param scheduler
      * @throws Exception
      */
-    public static void createSimpleScheduleJob(String jobName, JobDetail jobDetail, Integer intervalInSeconds, Scheduler scheduler) throws Exception {
+    public static void createSimpleScheduleJob(String jobName, JobDetail jobDetail, Integer intervalInSeconds, Scheduler scheduler) throws SchedulerException {
         SimpleScheduleBuilder simpleScheduleBuilder = SimpleScheduleBuilder.simpleSchedule();
         SimpleTrigger simpleTrigger = TriggerBuilder.newTrigger()
                 .forJob(jobDetail)

@@ -1,5 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -26,6 +27,7 @@ import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -120,7 +122,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
             // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对已通过对应 model panel 创建的 asset panel 追加新增的 chart
-            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                 this.saveAssetChartsSimultaneously(panel, chart);
             }
         }
@@ -202,7 +204,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (sync != null) {
             Panel panel = panelService.getById(chart.getPanelId());
             // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对根据 chart pid 查找通过此 chart 创建的 chart 更新
-            if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                 this.updateAssetChartsSimultaneously(chart);
             }
         }
@@ -296,7 +298,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 String urlStr = url.toString();
                 // 如果是model panel添加charts url类型支持{{}}替换
                 Panel panel = panelService.getById(panelId);
-                if (Constant.PanelType.MODEL.getValue().equals(panel.getType())) {
+                if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType())) {
                     // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
                     urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 
@@ -356,19 +358,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
     }
 
-    /**
-     * 校验 chart 是否存在该 panel 下
-     *
-     * @param panelId
-     * @param chartId
-     */
-    private void validateChartExists(Integer panelId, Integer chartId) {
-        Chart chart = this.getOne(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, panelId).eq(Chart::getId, chartId));
-
-        if (chart == null) {
-            throw new NZException(RCode.CHART_NOTEXSITS);
-        }
-    }
 
     /**
      * 校验 panel 是否存在
@@ -418,7 +407,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             if (sync != null) {
                 // 同步删除
                 Panel panel = panelService.getById(panelId);
-                if (Constant.PanelType.MODEL.getValue().equals(panel.getType()) && sync.equals(1)) {
+                if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
                     this.syncDeleteAssetsCharts(deleteIds);
                 }
             }
@@ -434,58 +423,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
     }
 
-    /**
-     * 处理删除之后的位置信息
-     *
-     * @param sequentialChartList 有序集合列表
-     * @param deleteIds           删除的charts ids
-     */
-    private void handlePositionAfterDelete(List<Chart> sequentialChartList, List<Integer> deleteIds) {
-        // 全删除了
-        if (sequentialChartList.size() == deleteIds.size()) {
-            return;
-        }
-
-        // 保证原先次序 并且 删除之后剩余的集合
-        List<Chart> deletedChartList = new ArrayList<>();
-        for (Chart obj : sequentialChartList) {
-            if (!deleteIds.contains(obj.getId())) {
-                deletedChartList.add(obj);
-            }
-        }
-
-        Chart firstChart = deletedChartList.get(0);
-        firstChart.setPrev(Constant.START_PREV_VALUE);
-
-        // 剩余一个
-        if (deletedChartList.size() == 1) {
-            firstChart.setNext(Constant.END_NEXT_VALUE);
-            chartDao.updateSizeById(firstChart);
-        } else {
-            // 剩余数量大于 1
-            List<Chart> updateCharts = new ArrayList<>();
-
-            Chart tempChart = null;
-            int size = deletedChartList.size();
-            for (int i = 0; i < size; i++) {
-                if (i == 0) {
-                    firstChart.setNext(deletedChartList.get(i + 1).getId());
-                    updateCharts.add(firstChart);
-                } else {
-                    tempChart = deletedChartList.get(i);
-                    tempChart.setPrev(updateCharts.get(updateCharts.size() - 1).getId());
-                    if (i < size - 1) {
-                        tempChart.setNext(deletedChartList.get(i + 1).getId());
-                    }
-                    updateCharts.add(tempChart);
-                }
-            }
-            updateCharts.get(updateCharts.size() - 1).setNext(Constant.END_NEXT_VALUE);
-
-            // 批量修改前后值
-            chartDao.updatePrevNextBatch(updateCharts);
-        }
-    }
 
     /**
      * 根据 chart.pid 查找引用自此chart，同步删除
@@ -522,44 +459,6 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }*/
     }
 
-    /**
-     * charts 排序
-     *
-     * @param charts
-     * @return
-     */
-    private List<Chart> getSequentialChartList(List<Chart> charts) {
-        if (CollectionUtils.isEmpty(charts)) {
-            return new ArrayList();
-        }
-
-        List<Chart> resultList = new ArrayList<>();
-
-        // 按照prev升序排序
-        charts = charts.stream().sorted(Comparator.comparing(Chart::getPrev)).collect(Collectors.toList());
-
-        Map<Integer, Chart> idAndChartMap = new HashMap<>();
-        for (Chart chart1 : charts) {
-            idAndChartMap.put(chart1.getId(), chart1);
-        }
-
-        Chart firstChart = charts.get(0);
-
-        Chart tempChar = firstChart;
-        resultList.add(firstChart);
-        Chart nextChart = null;
-
-        while (true) {
-            nextChart = idAndChartMap.get(tempChar.getNext());
-            if (nextChart != null) {
-                resultList.add(nextChart);
-                tempChar = nextChart;
-            } else {
-                break;
-            }
-        }
-        return resultList;
-    }
 
 
     @Override
@@ -817,7 +716,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, configKey));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
         Map<String, String> exportHeaderMap;
-        switch (language) {
+        /*switch (language) {
             case "en": {
                 exportHeaderMap = (Map) map.get("en");
                 break;
@@ -833,6 +732,11 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             default: {
                 throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
             }
+        }*/
+        if(map.get(language) != null){
+            exportHeaderMap = (Map) map.get(language);
+        }else{
+            throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
         }
         SXSSFWorkbook workbook = null;
         try {
@@ -842,16 +746,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("图表模板生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("图表模板生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
     }
@@ -899,7 +799,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         if (CollectionUtils.isNotEmpty(charts)) {
             Chart chart = charts.stream().findFirst().get();
             Panel panel = panelService.getById(chart.getPanelId());
-            if (!Constant.PanelType.DASHBOARD.getValue().equals(panel.getType())) {
+            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),panel.getType())) {
                 type = Constant.PanelType.ASSET.getValue();
             }
         }
@@ -924,7 +824,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             Map chartTypeMapByLanguage = (Map)  chartTypeMap.get(language);
 
             // 填充数据
-            if(!Constant.PanelType.DASHBOARD.getValue().equals(type)){
+            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)){
                 this.fillAssetModelChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }else{
                 this.fillDashboardChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
@@ -935,16 +835,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
+            log.error("图表导出文件生成失败，错误信息是：" + e);
         } catch (Exception e) {
-            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(workbook);
             }
         }
 
@@ -962,7 +858,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(2).setCellValue(chart.getSpan());
             row.createCell(3).setCellValue(chart.getHeight());
-            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
                 row.createCell(4).setCellValue("");
             } else {
                 row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
@@ -989,16 +885,12 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (Exception e) {
-            log.error("解析导入图表文件格式有误", e);
+        } catch (IOException e) {
+            log.error("解析导入图表文件格式有误",e);
             throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {
-                try {
-                    work.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(work);
             }
         }
 
@@ -1030,7 +922,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         int successNum = 0;
-        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
+        if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
         } else {
             successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
@@ -1190,7 +1082,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
                 }
             }
         }
@@ -1336,7 +1228,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                 } catch (Exception e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
-                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e.getMessage()), e);
+                    log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
                 }
             }
         }
@@ -1419,7 +1311,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private String validateChartTypeForImport(String type, Map<String,String> chartTypeMapByLanguage) {
         for (Map.Entry<String, String> entry : chartTypeMapByLanguage.entrySet()) {
-            if(type.equals(entry.getValue())){
+            if(StrUtil.equals(type,entry.getValue())){
                 return entry.getKey();
             }
         }
@@ -1428,7 +1320,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
 
     private String validateChartElementForImport(String type, String elements) {
         // elemrnt 只有 alert  和 url , text 可以没有，其他必须有
-        if(!Constant.CHART_ALERTLIST_TYPE.equals(type) && !Constant.CHART_URL_TYPE.equals(type) && !Constant.CHART_TEXT_TYPE.equals(type)){
+        if(!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE,type) && !StrUtil.equals(Constant.CHART_URL_TYPE,type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE,type)){
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
@@ -1470,7 +1362,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                    return RCode.CHART_PARAMURL_ISNULL.getMsg();
                }
 
-               if (Constant.PanelType.MODEL.getValue().equals(panelType)) {
+               if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panelType)) {
                    // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
                    String urlStr = url.toString();
                    urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
@@ -1564,7 +1456,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
             row.createCell(3).setCellValue(chart.getSpan());
             row.createCell(4).setCellValue(chart.getHeight());
-            if (Constant.CHART_TEXT_TYPE.equals(type)) {
+            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
                 row.createCell(5).setCellValue("");
             } else {
                 row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));

@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -26,9 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("sysRoleService")
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> implements SysRoleService {
+
+    private static Log log = Log.get();
 
     @Autowired
     private SysRoleMenuService sysRoleMenuService;
@@ -133,7 +136,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
 
         // 内置角色 name 不允许修改
         if (oldRole.getBuildIn() == 1) {
-            if (!oldRole.getName().equals(role.getName()))
+            if(!StrUtil.equals(oldRole.getName(),role.getName()))
                 throw new NZException(RCode.SYS_ROLE_NAME_CANNOT_MODIFY);
         }
 

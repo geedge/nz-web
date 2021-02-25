@@ -10,7 +10,6 @@ package com.nis.modules.job.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.job.entity.ScheduleJobLogEntity;
-
 import org.apache.ibatis.annotations.Mapper;
 
 /**

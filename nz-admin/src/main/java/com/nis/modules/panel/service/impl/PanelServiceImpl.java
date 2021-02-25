@@ -1,6 +1,6 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -11,7 +11,6 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.panel.dao.PanelDao;
-import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.service.ChartService;
@@ -45,7 +44,7 @@ public class PanelServiceImpl extends ServiceImpl<PanelDao, Panel> implements Pa
         }
         // 2. dashboard 类型 需要进行排序返回
         List<Panel> panelList = new ArrayList<>();
-        if (Constant.PanelType.DASHBOARD.getValue().equals(type)) {
+        if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             panelList = this.baseMapper.queryList(params);
             if (CollectionUtils.isEmpty(panelList) || panelList.size() == 1) {
                 return panelList;

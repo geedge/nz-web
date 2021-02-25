@@ -1,8 +1,8 @@
 package com.nis.common.smartvalidate.ann;
 
-import java.lang.annotation.*;
-
 import com.nis.common.utils.RCode;
+
+import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})

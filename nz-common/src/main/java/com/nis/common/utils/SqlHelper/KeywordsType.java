@@ -10,7 +10,7 @@ public enum KeywordsType {
 
     private String key;
 
-    private KeywordsType(String key){
+    KeywordsType(String key){
         this.key=key;
     }
 }

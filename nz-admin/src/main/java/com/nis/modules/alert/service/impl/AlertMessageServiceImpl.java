@@ -1,5 +1,7 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -42,8 +44,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.shiro.SecurityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
 
 @Service("alertMessageService")
 public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertMessageEntity> implements AlertMessageService {
-	private Logger logger= LoggerFactory.getLogger(AlertMessageServiceImpl.class);
+	private Log logger= Log.get();
 
 	@Autowired
 	private AssetService assetService;
@@ -105,7 +105,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				params.put("endAt", searchEndAt);
 			}
 		} catch (ParseException e) {
-			logger.error("时间转换异常,参数是 {}", params, e);
+			logger.error("时间转换异常,参数是 {},异常信息：{}", params, e);
 		}
 	}
 
@@ -251,7 +251,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				    }
 			    }
 		    } catch (Exception e) {
-			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" + e.getMessage(), e);
+			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
 			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 		    }
 	    }
@@ -347,7 +347,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 
 		// 邮件通知
-		if (Constant.SWITCH_OPEN.equals(emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
+		if(StrUtil.equals(Constant.SWITCH_OPEN,emailEnable) && (CollectionUtils.isNotEmpty(entities) || CollectionUtils.isNotEmpty(expiredAlertList))) {
 			// 邮件通知 告警 pending 与 expired
 			entities.addAll(expiredAlertList);
 			String jsonString = JSONObject.toJSONString(entities);
@@ -480,7 +480,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
                 }
 	            response.sendError(413, errMsg);
             } catch (IOException ex) {
-                ex.printStackTrace();
+                logger.error(ex);
             }
         } finally {
             try {
@@ -488,7 +488,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
                     workbook.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
     }

@@ -1,9 +1,12 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -21,8 +24,7 @@ import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
 @Service("moduleService")
 public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implements ModuleService {
 
-    protected Logger logger = LoggerFactory.getLogger(ModuleServiceImpl.class);
+    protected Log logger = Log.get();
 
 	@Autowired
 	private ModuleDao moduleDao;
@@ -81,9 +83,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 				// .and(type).notNull(RCode.MODULE_TYPE_ISNULL);
 
 		// 校验 type 类型是否在枚举范围内
-		if (Constant.MODULE_TYPE_HTTP.equals(type)) {
+		if(StrUtil.equals(Constant.MODULE_TYPE_HTTP,type)) {
 			moduleEntity.setSnmpParam(null);
-		}else if(Constant.MODULE_TYPE_SNMP.equals(type)){
+		}else if(StrUtil.equals(Constant.MODULE_TYPE_SNMP,type)){
 			if(moduleEntity.getPort() == null){
 				moduleEntity.setPort(Constant.SNMP_DEFAULT_PORT);
 			}
@@ -167,7 +169,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String password = (String) authInfo.get("password");
+            String password = StrUtil.str((String)authInfo.get("password"));
 
             String privPassword = (String) authInfo.get("priv_password");
             String privProtocol = (String) authInfo.get("priv_protocol");
@@ -235,7 +237,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         // 处理snmYml字段 , 如果module名称发生改动 并且 snmpParam不为空则重新生成snmpYml字段
         Module module = this.getById(moduleEntity.getId());
         String snmpParam = moduleEntity.getSnmpParam();
-        if (StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())) {
+//        if (StringUtils.isNotEmpty(snmpParam) || !moduleEntity.getName().equals(module.getName())) {
+        if (StringUtils.isNotEmpty(snmpParam) || !StrUtil.equals(moduleEntity.getName(),module.getName())) {
             String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(snmpParam, Map.class), moduleEntity);
             moduleEntity.setSnmpYml(snmpYml);
         }
@@ -254,7 +257,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
         this.validateParam(moduleEntity);
 
         // 设置默认路径
-        if (Constant.MODULE_TYPE_HTTP.equals(moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
+        if(StrUtil.equals(Constant.MODULE_TYPE_HTTP,moduleEntity.getType()) && ToolUtil.isEmpty(moduleEntity.getPath())) {
             moduleEntity.setPath(Constant.MODULE_HTTP_DEFAULT_PATH);
         }
 
@@ -314,7 +317,8 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
     private Map getAssetUpStatByAssetIds(Set<Integer> assetIds) {
         Map assetStatMap = new HashMap<>(4);
         SysConfigEntity pingSwitchConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_SWITCH));
-        if (CollectionUtils.isEmpty(assetIds) || !Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+//        if (CollectionUtils.isEmpty(assetIds) || !Constant.ASSET_PING_OPEN_SWITCH.equals(pingSwitchConfig.getParamValue())) {
+        if (CollectionUtils.isEmpty(assetIds) || !StrUtil.equals(pingSwitchConfig.getParamValue(),Constant.ASSET_PING_OPEN_SWITCH)) {
             assetStatMap.put("up", 0);
             assetStatMap.put("down", 0);
             return assetStatMap;
@@ -349,8 +353,10 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             yamlUtil.createYaml(generatorPath + File.separator + "generator.yml", JSONObject.toJSONString(modules));
 
             logger.debug("Write snmp param to generator.yml file succeeded");
-        } catch (Exception e) {
-            logger.error("Failed to write snmp param to generator.yml file", e);
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to write snmp param to generator.yml file",e);
+        } catch (IOException e) {
+            logger.error("Failed to write snmp param to generator.yml file",e);
         }
 
         StringReader result = null;
@@ -373,17 +379,13 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
             logger.debug("Generate snmp.yml file succeeded {}", sw.toString());
         } catch (Exception e) {
-            logger.error("Failed to generate snmp.yml file", e);
+            logger.error("Failed to generate snmp.yml file",e);
         } finally {
             if (sw != null) {
-                try {
-                    sw.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                IOUtils.closeQuietly(sw);
             }
             if (result != null) {
-                result.close();
+                IOUtils.closeQuietly(result);
             }
         }
 
@@ -394,9 +396,9 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             snmpYml = yamlUtil.yamlToJson(generatorPath + File.separator + "snmp.yml");
             logger.debug("Read the contents of snmp.yml file succeeded");
         } catch (FileNotFoundException e) {
-            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found", e);
+            logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found",e);
         } catch (Exception e) {
-            logger.error("Failed to read the contents of snmp.yml file", e);
+            logger.error("Failed to read the contents of snmp.yml file",e);
         }
 
         return snmpYml;

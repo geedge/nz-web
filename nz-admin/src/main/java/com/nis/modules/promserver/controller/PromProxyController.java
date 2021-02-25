@@ -1,22 +1,25 @@
 package com.nis.modules.promserver.controller;
 
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.http.HttpConnection;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.common.xss.XssUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import net.sf.json.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -28,9 +31,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +44,7 @@ import java.util.zip.GZIPOutputStream;
 @SuppressWarnings("all")
 public class PromProxyController {
 
-	private static final Logger logger = LoggerFactory.getLogger(PromProxyController.class);
+	private static final Log logger = Log.get();
 
 	@Autowired
 	private PromserverService promserverService;
@@ -93,7 +96,7 @@ public class PromProxyController {
 		// type 默认为 global
 		// type = (type == null) ? PROMSERVER_GLOBAL : type;
 		// Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
-		logger.debug("path:{},prometheus server:{}", promPath, JSONUtils.valueToString(server));
+//			logger.debug("path:{},prometheus server:{}", promPath, JSONUtils.valueToString(server));
 		// 请求 prometheus server
 		requestProm(server.getHost(), server.getPort(), promPath, request, response);
 	}
@@ -113,8 +116,10 @@ public class PromProxyController {
 			HttpServletResponse response)  {
 		String queryString = request.getQueryString();
 		// 请求 prometheus url
-		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
-		logger.debug("prometheus url: {}", url);
+//		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
+		String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
+
+			logger.debug("prometheus url: {}", url);
 		String method = request.getMethod();
 		HttpURLConnection conn = null;
 		ServletInputStream reqInputStream = null;
@@ -122,7 +127,9 @@ public class PromProxyController {
 		OutputStream connOutputStream = null;
 		InputStream connInputStream = null;
 		try {
-			conn = (HttpURLConnection) new URL(url).openConnection();
+//			conn = (HttpURLConnection) new URL(url).openConnection();
+//			conn = (HttpURLConnection) URLUtil.toUrlForHttp(url).openConnection();
+			conn = HttpConnection.create(url, null).getHttpURLConnection();
 			reqInputStream = request.getInputStream();
 			resOutputStream = response.getOutputStream();
 			conn.setRequestMethod(method);
@@ -130,7 +137,8 @@ public class PromProxyController {
 			Enumeration<String> headerNames = request.getHeaderNames();
 			while (headerNames.hasMoreElements()) {
 				String hn = headerNames.nextElement();
-				conn.addRequestProperty(hn, request.getHeader(hn));
+				/*conn.addRequestProperty(XssUtil.stripXSS(hn), XssUtil.stripXSS(request.getHeader(hn)));*/
+				ReflectUtil.invoke(conn,"addRequestProperty",hn,request.getHeader(hn));
 			}
 			if (!"GET".equalsIgnoreCase(method)) {
 				conn.setDoOutput(true);
@@ -147,8 +155,10 @@ public class PromProxyController {
 			//复制响应头
 			for(Entry<String, List<String>> en : responseHeaders.entrySet()) {
 				String key = en.getKey();
+				if (StringUtils.isEmpty(key)) continue;
 				List<String> value = en.getValue();
-				response.addHeader(key, StringUtils.join(value, "; "));
+//				response.addHeader(XssUtil.stripXSS(key), XssUtil.stripXSS(StringUtils.join(value, "; ")));
+				ReflectUtil.invoke(response,"addHeader",key,StringUtils.join(value, "; "));
 			}
 			response.setStatus(responseCode, responseMessage);
 
@@ -176,7 +186,7 @@ public class PromProxyController {
 			try {
 				response.sendError(500, "request error");
 			} catch (IOException e1) {
-				logger.error("proxy request error", e1);
+				logger.error("proxy request error",e1);
 			}
 			logger.error("request error : ",e);
 		}finally {
@@ -188,13 +198,13 @@ public class PromProxyController {
 	private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
 		StringBuffer resultStr = new StringBuffer();
 		try (InputStreamReader inputStreamReader = new InputStreamReader(new GZIPInputStream(connInputStream), "UTF-8");
-		     BufferedReader bufferedReader = new BufferedReader(inputStreamReader);) {
+			 BufferReaderWrapper bufferedReader = new BufferReaderWrapper(inputStreamReader);) {
 			String str = null;
-			while ((str = bufferedReader.readLine()) != null) {
+			while ((str = bufferedReader.load()) != null) {
 				resultStr.append(str);
 			}
 		} catch (IOException e) {
-			logger.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e.getMessage()), e);
+			logger.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e));
 		}
 
 		Map result = new HashMap();
@@ -326,7 +336,7 @@ public class PromProxyController {
 			gzip.write(str.getBytes());
 			gzip.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return out.toByteArray();
 	}

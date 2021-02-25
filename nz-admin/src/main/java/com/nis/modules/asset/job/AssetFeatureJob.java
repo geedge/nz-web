@@ -1,14 +1,12 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
@@ -16,7 +14,7 @@ import java.util.List;
 
 @DisallowConcurrentExecution
 public class AssetFeatureJob extends QuartzJobBean {
-	private Logger logger= LoggerFactory.getLogger(AssetFeatureJob.class);
+	private Log logger= Log.get();
 	@Autowired
 	private AssetService assetService;
 	
@@ -27,7 +25,7 @@ public class AssetFeatureJob extends QuartzJobBean {
 	private SysConfigService sysConfigService;
 	
 	@Override
-	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+	protected void executeInternal(JobExecutionContext context)  {
 
 		// 检查 haMode
 		boolean haMode = sysConfigService.checkHaMode();
@@ -42,7 +40,7 @@ public class AssetFeatureJob extends QuartzJobBean {
 			try {
 				assetConcurrent.execute(asset.getId());
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
 		}
 		logger.info("---------------AssetFeatureJob finish-------------------");

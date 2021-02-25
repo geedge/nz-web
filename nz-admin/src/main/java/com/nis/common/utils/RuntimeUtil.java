@@ -1,22 +1,14 @@
 package com.nis.common.utils;
- 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.StringReader;
+
+import cn.hutool.log.Log;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import org.apache.commons.io.IOUtils;
+
+import java.io.*;
 import java.util.Arrays;
 import java.util.UUID;
- 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.Session;
  
 /**
  * Runtime工具类，用于本机执行某些命令
@@ -26,7 +18,7 @@ import com.jcraft.jsch.Session;
  */
 public class RuntimeUtil {
 	// Log
-	private static Log log = LogFactory.getLog(RuntimeUtil.class);
+	private static Log log = Log.get();
 	// 当前Runtime
 	private static Runtime runtime = Runtime.getRuntime();
  
@@ -34,36 +26,7 @@ public class RuntimeUtil {
 	private RuntimeUtil() {
 	}
  
-	/**
-	 * 以非阻塞模式执行命令
-	 * 
-	 * @param callback
-	 *            回调类，当命令全部执行完成后会执行其onExit方法，null表示不进行回调
-	 * @param envp
-	 *            运行的上下文环境变量，每项都应该写成name=value的格式；null表示直接继承当前Java进程的全部环境变量
-	 * @param dir
-	 *            命令执行的工作目录；null表示继承当前Java进程的工作目录
-	 * @param startCommand
-	 *            起始命令
-	 * @param commands
-	 *            其他后续命令，如果有设置，会使用管道来关联前后命令的标准输出流和标准输入流
-	 */
-	public static void runAsUnblocking(final RuntimeCallback callback, final String[] envp, final File dir,
-			final String[] startCommand, final String[]... commands) {
-		// 非阻塞的实现就是交给其他函数执行
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				StringReader result = RuntimeUtil.run(envp, dir, startCommand, commands);
- 
-				// 如果需要回调的话，调用回调函数
-				if (callback != null) {
-					callback.onExit(result, envp, dir, startCommand, commands);
-				}
-			}
-		}).start();
-	}
- 
+
 	/**
 	 * 以阻塞模式执行命令
 	 * 
@@ -80,7 +43,7 @@ public class RuntimeUtil {
 	public static StringReader run(String[] envp, File dir, String[] startCommand, String[]... commands) {
 		// 生成一个命令id，只是为日志区别用
 		String commandId = UUID.randomUUID().toString();
-		log.info("Command(" + commandId + ") start");
+			log.info("Command(" + commandId + ") start");
  
 		StringBuilder result = new StringBuilder();
 		Process currentProcess = null;
@@ -92,7 +55,7 @@ public class RuntimeUtil {
 			// 用于管道的字节输出流
 			BufferedOutputStream out = null;
 			// 用于标准错误输出和最终结果的字符输入流
-			BufferedReader reader = null;
+			BufferReaderWrapper reader = null;
 			// 用于管道的字节输入流
 			BufferedInputStream in = null;
 			// 用于管道的IO缓冲
@@ -102,11 +65,11 @@ public class RuntimeUtil {
 				for (String[] command : commands) {
 					try {
 						// 获取当前命令的标准错误流
-						reader = new BufferedReader(new InputStreamReader(currentProcess.getErrorStream()));
+						reader = new BufferReaderWrapper(new InputStreamReader(currentProcess.getErrorStream()));
  
 						// 输出错误
 						for (String temp = readLine(reader); temp != null; temp = readLine(reader)) {
-							log.warn("Command(" + commandId + ") Error: " + temp);
+								log.warn("Command(" + commandId + ") Error: " + temp);
 						}
 						// 获取当前命令的标准输出流
 						in = new BufferedInputStream(currentProcess.getInputStream());
@@ -125,57 +88,51 @@ public class RuntimeUtil {
 					} finally { // 流关闭操作
 						if (out != null) {
 							out.flush();
-							out.close();
-							out = null;
+							IOUtils.closeQuietly(out);
 						}
  
 						if (in != null) {
-							in.close();
-							in = null;
+							IOUtils.closeQuietly(in);
 						}
  
 						if (reader != null) {
-							reader.close();
-							reader = null;
+							IOUtils.closeQuietly(reader);
 						}
 					}
 				}
  
 				// 获取最终命令的标准错误流，
-				reader = new BufferedReader(new InputStreamReader(currentProcess.getErrorStream()));
+				reader = new BufferReaderWrapper(new InputStreamReader(currentProcess.getErrorStream()));
 				// 输出错误
 				for (String temp = readLine(reader); temp != null; temp = readLine(reader)) {
-					log.warn("Command(" + commandId + ") Error: " + temp);
+						log.warn("Command(" + commandId + ") Error: " + temp);
 				}
 				// 关闭
 				reader.close();
 				reader = null;
  
 				// 获取最终命令的标准输出流
-				reader = new BufferedReader(new InputStreamReader(currentProcess.getInputStream()));
+				reader = new BufferReaderWrapper(new InputStreamReader(currentProcess.getInputStream()));
 				// 将输出添加到结果缓冲中
-				for (String temp = reader.readLine(); temp != null; temp = reader.readLine()) {
+				for (String temp = reader.load(); temp != null; temp = reader.load()) {
 					result.append(temp + "\n");
 				}
 			} finally { // 流关闭操作
 				if (out != null) {
 					out.flush();
-					out.close();
-					out = null;
+					IOUtils.closeQuietly(out);
 				}
- 
+
 				if (in != null) {
-					in.close();
-					in = null;
+					IOUtils.closeQuietly(in);
 				}
- 
+
 				if (reader != null) {
-					reader.close();
-					reader = null;
+					IOUtils.closeQuietly(reader);
 				}
 			}
 		} catch (Exception e) { // 出现异常，尝试把启动的进程都销毁
-			log.warn("Command(" + commandId + ") Error", e);
+				log.warn("Command(" + commandId + ") Error", e);
  
 			if (currentProcess != null) {
 				currentProcess.destroy();
@@ -188,34 +145,10 @@ public class RuntimeUtil {
 			}
 		}
  
-		log.info("Command(" + commandId + ") end");
+			log.info("Command(" + commandId + ") end");
 		// 用结果缓冲构建StringReader
 		return new StringReader(result.toString());
 	}
- 
-	/**
-	 * 读取StringReader为String
-	 * 
-	 * @param stringReader
-	 *            StringReader
-	 * @param skipWhiteLine
-	 *            是否需要跳过空行
-	 * @return
-	 */
-	public static String readStringReader(StringReader stringReader, boolean skipWhiteLine) {
-		StringBuilder result = new StringBuilder();
-		BufferedReader reader = new BufferedReader(stringReader);
- 
-		for (String temp = readLine(reader); temp != null; temp = readLine(reader)) {
-			if (skipWhiteLine == false || !temp.trim().equals("")) {
-				result.append(temp + "\n");
-			}
-		}
- 
-		return result.toString();
- 
-	}
- 
 	/**
 	 * 运行一个命令
 	 * 
@@ -231,7 +164,7 @@ public class RuntimeUtil {
 	 * @throws Exception
 	 */
 	private static Process run(String commandId, String[] command, String[] envp, File dir) throws Exception {
-		log.info("Command(" + commandId + ") exec: " + Arrays.toString(command));
+			log.info("Command(" + commandId + ") exec: " + Arrays.toString(command));
  
 		return runtime.exec(command, envp, dir);
 	}
@@ -264,11 +197,11 @@ public class RuntimeUtil {
 	 *            输入流
 	 * @return 基本等同于reader.readLine()的返回值，不过在出现异常时，不会抛出异常而是返回null
 	 */
-	private static String readLine(BufferedReader reader) {
+	private static String readLine(BufferReaderWrapper reader) {
 		String result = null;
  
 		try {
-			result = reader.readLine();
+			result = reader.load();
 		} catch (IOException e) {
 			result = null;
 		}
@@ -294,54 +227,26 @@ public class RuntimeUtil {
 	}
  
 	/**
-	 * 非阻塞模式回调
-	 * 
-	 * @author fox
-	 */
-	public static interface RuntimeCallback {
-		/**
-		 * 非阻塞模式回调函数
-		 * 
-		 * @param result
-		 *            命令执行结果
-		 * @param startCommand
-		 *            起始命令
-		 * @param commands
-		 *            其他后续命令，如果有设置，会使用管道来关联前后命令的标准输出流和标准输入流
-		 */
-		public void onExit(StringReader result, String[] envp, File dir, String[] startCommand, String[]... commands);
-	}
- 
-	/**
 	 * 使用ssh登录执行command命令 获取服务器响应结果
 	 * @param session
 	 * @param command
 	 * @return
 	 * @throws Exception
 	 */
-	public static String sshCommondResult(Session session,String command) throws Exception {
+	public static String sshCommondResult(Session session,String command) throws JSchException, IOException {
 		String s="";
 		ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
 		channelExec.setCommand(command);
 		channelExec.connect();
         InputStream in = channelExec.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+		BufferReaderWrapper reader = new BufferReaderWrapper(new InputStreamReader(in));
         String buf = null;
-        while ((buf = reader.readLine()) != null) {
+        while ((buf = reader.load()) != null) {
             s += new String(buf.getBytes("gbk"), "UTF-8")+"\r\n";
         }
         channelExec.disconnect();
+        IOUtils.closeQuietly(reader);
 		return s;
 	}
 	
-	public static void main(String[] args) {
-		
-		System.out.println(readStringReader(run(null, null, new String[] { "c:/promtool", "check", "rules", "d:/test.yml" }), false));
-		// 例子 ps -ef (注意用String[]方式来表示命令是不需要做转移的)
-		/*System.out.println(readStringReader(run(null, null, new String[] { "ps", "-ef" }), true));
-		System.out.println("-----------------------------------------------------------------");
-		// 例子 ps -ef | grep -i java
-		System.out.println(readStringReader(
-				run(null, null, new String[] { "ps", "-ef" }, new String[] { "grep", "-i", "java" }), true));*/
-	}
 }

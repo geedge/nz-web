@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -25,8 +27,6 @@ import net.percederberg.mibble.snmp.SnmpIndex;
 import net.percederberg.mibble.snmp.SnmpObjectType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @Service("snmpMibService")
 public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> implements SnmpMibService {
 
-    private static Logger logger = LoggerFactory.getLogger(SnmpMibServiceImpl.class);
+    private static Log logger = Log.get();
 
     @Autowired
     private SnmpMibDao snmpMibDao;
@@ -110,7 +110,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 File dest = new File(mibsPath + File.separator + mibFile.getOriginalFilename());
                 FileUtils.copyInputStreamToFile(mibFile.getInputStream(), dest);
             } catch (IOException e) {
-                logger.error(String.format("拷贝mib文件到%s下失败，失败信息是:%s", mibsPath, e.getMessage()), e);
+                logger.error(String.format("拷贝mib文件到%s下失败，失败信息是:%s", mibsPath, e));
             }
         }
     }
@@ -179,7 +179,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         try {
             snmpMib.setContent(multipartFile.getBytes());
         } catch (IOException e) {
-            logger.error("transfer mib file error", e);
+            logger.error("transfer mib file error",e);
         }
 
         // 加载器
@@ -197,9 +197,9 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), mibFile);
             mib = ml.load(mibFile);
         } catch (IOException e) {
-            logger.error("mib文件获取失败", e);
+            logger.error("mib文件获取失败",e);
         } catch (MibLoaderException e) {
-            logger.error("mib文件解析失败", e);
+            logger.error("mib文件解析失败",e);
         } finally {
             if (mibFile != null && mibFile.exists()) {
                 mibFile.delete();
@@ -260,7 +260,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
                 if (mvs.isTable()) {
                     mo.setType(Constant.MIB_TABLE_TYPE);
-                } else if (StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
+//                } else if (StringUtils.isNotEmpty(syntax) && Constant.MIB_ENTRY_SYNTAX.equals(syntax.toUpperCase())) {
+                } else if (StringUtils.isNotEmpty(syntax) && StrUtil.equals(Constant.MIB_ENTRY_SYNTAX,syntax.toUpperCase())) {
                     mo.setType(Constant.MIB_ENTRY_TYPE);
                 }
 
@@ -322,7 +323,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         for (MmMib object : mibs) {
             oid = object.getObjectID();
             pid = object.getPid();
-            if (parentId.equals(pid)) {
+            if(StrUtil.equals(parentId,pid)) {
                 object.setSubTree(this.handleDataFormat(mibs, oid));
                 resultList.add(object);
             }

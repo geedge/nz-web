@@ -1,18 +1,16 @@
 package com.nis.modules.asset.job;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import cn.hutool.log.Log;
+import com.nis.common.utils.DateUtil;
+import com.nis.modules.asset.service.AssetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import com.nis.common.utils.DateUtil;
-import com.nis.modules.asset.service.AssetService;
-
 @Component
 public class AssetConcurrent {
 	
-	private Logger logger = LoggerFactory.getLogger(AssetConcurrent.class);
+	private Log logger = Log.get();
 	
 	@Autowired
 	private AssetService assetService;
@@ -26,7 +24,7 @@ public class AssetConcurrent {
 			assetService.collectData(assetId);
 			logger.info("AssetConcurrent task finished time ："+DateUtil.getTime());
 		} catch (Exception e) {
-			logger.error("AssetConcurrent fail assetId : {} info : {} ",assetId,e);
+			logger.error("AssetConcurrent fail assetId : {} info : {} ",assetId, e);
 		}
 		
 	}

@@ -22,6 +22,8 @@
 package com.nis.modules.terminal.config;
 
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
@@ -43,8 +45,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -67,8 +67,8 @@ import java.util.*;
 import static com.nis.common.utils.CommonUtils.toInt;
 @Component
 public class TerminalHandler extends TextWebSocketHandler {
-
-	private final static Logger logger = LoggerFactory.getLogger(TerminalHandler.class);
+	
+	private static final Log logger = Log.get();
 	
     private TerminalClient terminalClient;
 
@@ -241,7 +241,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	            String protocol = terminal.getProtocol();
 	            if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
 		            terminalClient.openTerminal(cols, rows, width, height);
-	            } else if (Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol)) {
+	            } else if(StrUtil.equals(Constant.ACCOUNT_TELNET_PROTOCOL,protocol)) {
 		            terminalClient.openTelnetTerminal(cols, rows, width, height);
 	            }
 
@@ -249,7 +249,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	            terminalSessionService.save(sessionEntity);
             } catch (Exception e) {
             	logger.error("error info :",e);
-            	e.printStackTrace();
+            	logger.error(e);
             	if (e.getMessage().toLowerCase().contains("auth fail")) {
             		session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {

@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import org.apache.commons.collections.CollectionUtils;
@@ -61,16 +62,16 @@ public class ExcelUtils {
      * @return
      * @throws Exception
      */
-    public static Workbook getWork(String url, InputStream inputStream) throws Exception {
+    public static Workbook getWork(String url, InputStream inputStream) throws IOException {
         Workbook wb = null;
         String str = url.substring(url.lastIndexOf("."));
 
-        if (excel2003L.equals(str)) {
+        if(StrUtil.equals(excel2003L,str)) {
             wb = new HSSFWorkbook(inputStream);  // 2003-
         } else if (excel2007U.equals(str)) {
             wb = new XSSFWorkbook(inputStream);  // 2007+
         } else {
-            throw new Exception("解析文件格式有误!");
+            throw new IOException("解析文件格式有误!");
         }
         return wb;
     }
@@ -244,7 +245,8 @@ public class ExcelUtils {
             if (CollectionUtils.isNotEmpty(columns)) {
                 boolean flag = true;
                 for (int i = 0; i < columns.size(); i++) {
-                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
+//                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
+                    if (!StrUtil.equals(columns.get(i).toLowerCase(),ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
                         flag = false;
                         break;
                     }

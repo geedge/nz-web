@@ -1,5 +1,8 @@
 package com.nis.modules.alert.job;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.RuntimeUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
@@ -18,7 +21,6 @@ import com.nis.modules.sys.service.SysUserService;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.core.ParseException;
 import freemarker.template.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -32,20 +34,20 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
-import javax.mail.MessagingException;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 
-@Slf4j
+
 @DisallowConcurrentExecution
 public class AlertMessageEmailNotifiJob extends QuartzJobBean {
 
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final Log log = Log.get();
+
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
+    private static final BlockingQueue<Future<?>> futureQueue = CollUtil.newBlockingQueue(Integer.MAX_VALUE, true);
 
     // 告警通知脚本超时时间单位 s秒
     @Value("${nezha.alertNotifiTimeOut:3}")
@@ -70,29 +72,59 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
 
     private Template template;
 
+
+    static {
+        /**
+         * 创建一个持续运行线程处理 任务执行超时的问题
+         */
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Future<?> future = futureQueue.take();
+                        try {
+                            future.get(10, TimeUnit.SECONDS);
+                        } catch (InterruptedException | ExecutionException | TimeoutException e1) {
+                            future.cancel(true);
+                        }
+                    } catch (Exception e) {
+                        log.error("error", e);
+                    }
+                }
+            }
+        });
+    }
+
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 检查 haMode
         boolean haMode = configService.checkHaMode();
         if (!haMode) return;
 
-    	StopWatch sw = new StopWatch();
-    	sw.start();
+        StopWatch sw = new StopWatch();
+        sw.start();
         try {
-        	// 加载模板文件
-        	template = this.getTemplate();
+            // 加载模板文件
+            template = this.getTemplate();
             this.execAlertMessage();
-        }catch (Exception e){
-            log.error("告警通知异常", e);
-        }finally {
-			sw.stop();
-		}
+        }catch (ParseException e) {
+            log.error("告警通知异常",e);
+        } catch (MalformedTemplateNameException e) {
+            log.error("告警通知异常",e);
+        } catch (TemplateNotFoundException e) {
+            log.error("告警通知异常",e);
+        } catch (IOException e) {
+            log.error("告警通知异常",e);
+        } finally {
+            sw.stop();
+        }
         log.info("alert message job  Run Time: {}" ,sw.toString());
     }
-    private void execAlertMessage() throws IOException, TemplateException, MessagingException {
+    private void execAlertMessage()  {
         ListOperations<String, Object> ops = redisTemplate.opsForList();
         while(true) {
-        	Object obj = ops.rightPop(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE);
+            Object obj = ops.rightPop(Constant.REDIS_KEY_EMAIL_ALERT_MESSAGE);
             if (ToolUtil.isEmpty(obj)) {
                 return;
             }
@@ -101,7 +133,7 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             try {
                 entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
             } catch (Exception e) {
-                log.error("从redis中取告警消息转化失败，错误信息：" + e.getMessage() + " 转化参数是：" + obj.toString(), e);
+                log.error("从redis中取告警消息转化失败，错误信息：" +e + " 转化参数是：" + obj.toString());
             }
             log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
             if(CollectionUtils.isEmpty(entities)){
@@ -150,22 +182,23 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
                     log.info("需要发送的邮箱 -> {}",JSON.toJSONString(toSendEmails));
                     String state = "UNKNOWN";
                     switch (messageEntity.getState()) {
-    				case 1:state = "Pending";break;
-    				case 2:state = "Expired";break;
+                        case 1:state = "Pending";break;
+                        case 2:state = "Expired";break;
                     }
 
                     if (ToolUtil.isNotEmpty(toSendEmails)) {
                         try {
                             mailUtil.sendHTML(toSendEmails, state + " : " + messageEntity.getSummary(), this.sendMail(messageEntity));
                         } catch (Exception e) {
-                            log.error("邮件发送任务异常", e);
+                            log.error("邮件发送任务异常",e);
                         }
                     }
 
                     // 通知脚本信息不为空
                     if (CollectionUtils.isNotEmpty(userNotifications)) {
                         log.info("邮件进行脚本通知");
-                        executorService.submit(() -> this.notifiScript(userNotifications, scriptIdAndFilePathMap, JSONObject.toJSONString(messageEntity)));
+                        Future<?> future = executorService.submit(() -> this.notifiScript(userNotifications, scriptIdAndFilePathMap, JSONObject.toJSONString(messageEntity)));
+                        futureQueue.add(future);//future放到 队列中，单独线程判断 future 超时
                     } else {
                         log.info("邮件没有关联用户脚本，不进行脚本通知");
                     }
@@ -183,13 +216,12 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
             account = userNotification.getAccount();
             String[] commands = new String[]{filePath, account, alertMsg};
             try {
-                Process exec = Runtime.getRuntime().exec(commands);
-                boolean b = exec.waitFor(alertNotifiTimeOut, TimeUnit.SECONDS);
+                String result = RuntimeUtil.execForStr(commands);
                 if (log.isDebugEnabled())
-                    log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), b ? "成功" : "失败"));
+                    log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), result));
             } catch (Exception e) {
                 log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), "失败"));
-                log.error("alert通知脚本异常,异常消息是:" + e.getMessage(), e);
+                log.error("alert通知脚本异常,异常消息是:" + e);
             }
         }
     }
@@ -203,10 +235,10 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         //静态化内容;
         return content;
     }
-    
-	private Template getTemplate() throws TemplateNotFoundException, MalformedTemplateNameException, ParseException, IOException {
-		String templateString = configService.getValue("email_template");
-		// 创建配置类
+
+    private Template getTemplate() throws TemplateNotFoundException, MalformedTemplateNameException, ParseException, IOException {
+        String templateString = configService.getValue("email_template");
+        // 创建配置类
         Configuration configuration = new Configuration(Configuration.getVersion());
         //创建模板加载器
         StringTemplateLoader templateLoader = new StringTemplateLoader();
@@ -216,6 +248,6 @@ public class AlertMessageEmailNotifiJob extends QuartzJobBean {
         configuration.setTemplateLoader(templateLoader);
         //得到模板
         Template template = configuration.getTemplate("template", "utf-8");
-		return template;
-	}
+        return template;
+    }
 }

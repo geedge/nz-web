@@ -1,13 +1,12 @@
 package com.nis.modules.alert.controller;
 
+import cn.hutool.log.Log;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +26,7 @@ import java.util.Map;
 @RequestMapping("alert/message")
 public class AlertMessageController {
 
-	private final static Logger logger = LoggerFactory.getLogger(AlertMessageController.class);
+	private final static Log logger = Log.get();
 
 	@Autowired
     private AlertMessageService alertMessageService;
@@ -44,7 +43,7 @@ public class AlertMessageController {
 			page = alertMessageService.queryPage(params);
 			return R.ok(page);
 		} catch (Exception e) {
-			logger.error("查询告警信息失败", e);
+			logger.error("查询告警信息失败",e);
 			throw new NZException(RCode.SYS_ERROR);
 		}
     }

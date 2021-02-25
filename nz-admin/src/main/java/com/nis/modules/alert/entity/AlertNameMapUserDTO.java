@@ -1,10 +1,9 @@
 package com.nis.modules.alert.entity;
 
-import java.util.List;
-
 import com.nis.modules.sys.entity.SysUserEntity;
-
 import lombok.Data;
+
+import java.util.List;
 
 /**
  * alertname和需要邮件通知的user的映射类

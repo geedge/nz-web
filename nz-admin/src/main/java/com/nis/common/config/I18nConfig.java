@@ -1,15 +1,11 @@
 package com.nis.common.config;
 
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import cn.hutool.log.Log;
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.Constant;
+import com.nis.modules.sys.entity.SysI18nEntity;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysI18nService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.support.AbstractMessageSource;
@@ -17,11 +13,12 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
-import com.nis.modules.sys.service.SysDictService;
-import com.nis.modules.sys.service.SysI18nService;
-import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.modules.sys.entity.SysI18nEntity;
+import javax.annotation.PostConstruct;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Service("messageSource")
 public class I18nConfig extends AbstractMessageSource implements ResourceLoaderAware {
@@ -33,7 +30,7 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
     @Autowired
     SysDictService sysDictService;
 
-    private final Logger logger = LoggerFactory.getLogger(I18nConfig.class);
+    private final Log logger = Log.get();
     
     /**
      * 国际化缓存 
@@ -77,7 +74,7 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
         }
     }
@@ -103,7 +100,7 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
                     return this.getParentMessageSource().getMessage(code, null, locale);
                 }
             } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
+                logger.error(ex);
             }
             return code;
         }

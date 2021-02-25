@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
 import com.baomidou.mybatisplus.core.injector.ISqlInjector;
 import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
@@ -25,7 +26,7 @@ import java.sql.SQLException;
 @Configuration
 @DependsOn("flywayConfig")
 public class MybatisPlusConfig {
-	
+	private static final Log logger = Log.get();
     /**
      * 分页插件
      */
@@ -61,7 +62,7 @@ public class MybatisPlusConfig {
 			try {
 				databaseId = databaseIdProvider.getDatabaseId(dataSource);
 			} catch (SQLException e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
 
 			if(ToolUtil.isEmpty(databaseId)){

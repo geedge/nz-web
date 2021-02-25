@@ -1,5 +1,6 @@
 package com.nis.modules.sys.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -7,6 +8,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SnmpMib;
 import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -127,15 +130,13 @@ public class SnmpMibController extends AbstractController {
 
                 os.write(snmpMib.getContent());
                 os.flush();
-            } catch (Exception e) {
-                logger.error("snmp mib file download error {}", e.getMessage());
+            } catch (UnsupportedEncodingException e) {
+                logger.error("snmp mib file download error {}", e);
+            } catch (IOException e) {
+                logger.error("snmp mib file download error {}", e);
             } finally {
                 if (os != null) {
-                    try {
-                        os.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    IOUtils.closeQuietly(os);
                 }
             }
         } else {
@@ -143,8 +144,10 @@ public class SnmpMibController extends AbstractController {
                 String msg = "snmp mib cannot be found.";
                 OutputStream outputStream = response.getOutputStream();
                 outputStream.write(msg.getBytes("UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                logger.error(e);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
     }
@@ -193,7 +196,7 @@ public class SnmpMibController extends AbstractController {
 
         String value = (String) params.get("value");
         String type = (String) params.get("type");
-        if (Constant.SnmpOperationType.SET.getValue().equals(operation)) {
+        if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
             ValidateUtils.is(value).notNull(RCode.SNMP_MIB_VALUE_ISNULL)
                     .and(type).notNull(RCode.SNMP_MIB_TYPE_ISNULL);
 
@@ -217,13 +220,13 @@ public class SnmpMibController extends AbstractController {
 
         List<Map> resultData = null;
         try {
-            if (Constant.SnmpOperationType.GET.getValue().equals(operation)) {
+            if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation)) {
                 resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
-            } else if (Constant.SnmpOperationType.GETNEXT.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation)) {
                 resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
-            } else if (Constant.SnmpOperationType.WALK.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.WALK.getValue(),operation)) {
                 resultData = SnmpUtil.snmpWalk(host, port, version, community, oid, auth);
-            } else if (Constant.SnmpOperationType.SET.getValue().equals(operation)) {
+            } else if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
                 R r = SnmpUtil.setPDU(host, port, version, community, oid, auth, value);
                 return r;
             }
@@ -256,7 +259,7 @@ public class SnmpMibController extends AbstractController {
 
                     name = oidWithNameMap.get(resultOid);
                     if (StringUtils.isNotEmpty(name)) {
-                        str = str.replaceAll(resultOid, "");
+                        str = str.replace(resultOid, "");
                         name += str;
                     }
                 }

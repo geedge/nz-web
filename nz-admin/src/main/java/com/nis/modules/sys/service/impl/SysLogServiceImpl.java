@@ -14,7 +14,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysLogDao;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;

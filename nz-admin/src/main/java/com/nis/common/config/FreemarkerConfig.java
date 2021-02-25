@@ -8,11 +8,10 @@
 
 package com.nis.common.config;
 
+import com.nis.modules.sys.shiro.ShiroTag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
-
-import com.nis.modules.sys.shiro.ShiroTag;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -16,44 +16,22 @@
 package com.nis.common.utils;
 
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.regex.Pattern;
 
 /**
  * 高频方法集合类
  */
 public class ToolUtil {
 
-
+    public final static Log logger = Log.get();
     /**
      * 字符连接符
      */
     private static final char SEPARATOR = '_';
-    /**
-     * 默认编码
-     */
-    private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-
-	private static Pattern humpPattern = Pattern.compile("[A-Z]");
-
-
-
-
 
     /**
      * 下划线命名 转 驼峰命名 首字母小写
@@ -86,108 +64,8 @@ public class ToolUtil {
         return sb.toString();
     }
 
-    /**
-     * 下划线命名 转 驼峰命名 首字母大写
-     *
-     * @param s the s
-     * @return String  toCamelCase("hello_world") == "helloWorld" toCapitalizeCamelCase("hello_world") == "HelloWorld" toUnderScoreCase("helloWorld") = "hello_world"
-     */
-    public static String toCapitalizeCamelCase(String s) {
-        if (s == null) {
-            return null;
-        }
-        String cs = toCamelCase(s);
-        return cs.substring(0, 1).toUpperCase() + cs.substring(1);
-    }
 
-    /**
-     * 驼峰命名 转 下划线命名
-     *
-     * @param s the s
-     * @return String  toCamelCase("hello_world") == "helloWorld" toCapitalizeCamelCase("hello_world") == "HelloWorld" toUnderScoreCase("helloWorld") = "hello_world"
-     */
-    public static String toUnderScoreCase(String s) {
-        if (s == null) {
-            return null;
-        }
 
-        StringBuilder sb = new StringBuilder();
-        boolean upperCase = false;
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-
-            boolean nextUpperCase = true;
-
-            if (i < (s.length() - 1)) {
-                nextUpperCase = Character.isUpperCase(s.charAt(i + 1));
-            }
-
-            if ((i > 0) && Character.isUpperCase(c)) {
-                if (!upperCase || !nextUpperCase) {
-                    sb.append(SEPARATOR);
-                }
-                upperCase = true;
-            } else {
-                upperCase = false;
-            }
-
-            sb.append(Character.toLowerCase(c));
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * 获取随机位数的字符串
-     *
-     * @author fengshuonan
-     * @Date 2017/8/24 14:09
-     */
-    public static String getRandomString(int length) {
-        String base = "abcdefghijklmnopqrstuvwxyz0123456789";
-        Random random = new Random();
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < length; i++) {
-            int number = random.nextInt(base.length());
-            sb.append(base.charAt(number));
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 判断一个对象是否是时间类型
-     *
-     * @author stylefeng
-     * @Date 2017/4/18 12:55
-     */
-    public static String dateType(Object o) {
-        if (o instanceof Date) {
-            return DateUtil.getDay((Date) o);
-        } else {
-            return o.toString();
-        }
-    }
-
-    /**
-     * 获取异常的具体信息
-     *
-     * @author fengshuonan
-     * @Date 2017/3/30 9:21
-     * @version 2.0
-     */
-    public static String getExceptionMsg(Exception e) {
-        StringWriter sw = new StringWriter();
-        try {
-            e.printStackTrace(new PrintWriter(sw));
-        } finally {
-            try {
-                sw.close();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        }
-        return sw.getBuffer().toString().replaceAll("\\$", "T");
-    }
 
     /**
      * 比较两个对象是否相等。<br>
@@ -355,36 +233,6 @@ public class ToolUtil {
         }
         return false;
     }
-
-    /**
-     * 对象组中是否存在 Empty Object
-     *
-     * @param os 对象组
-     * @return
-     */
-    public static boolean isOneEmpty(Object... os) {
-        for (Object o : os) {
-            if (isEmpty(o)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * 对象组中是否全是 Empty Object
-     *
-     * @param os
-     * @return
-     */
-    public static boolean isAllEmpty(Object... os) {
-        for (Object o : os) {
-            if (!isEmpty(o)) {
-                return false;
-            }
-        }
-        return true;
-    }
     /**
      * 对象组都不是empty
      */
@@ -397,20 +245,6 @@ public class ToolUtil {
         return true;
     }
 
-    /**
-     * 是否为数字
-     *
-     * @param obj
-     * @return
-     */
-    public static boolean isNum(Object obj) {
-        try {
-            Integer.parseInt(obj.toString());
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
 
     /**
      * 如果为空, 则调用默认值
@@ -452,183 +286,6 @@ public class ToolUtil {
     }
 
     /**
-     * map的key转为小写
-     *
-     * @param map
-     * @return Map<String,Object>
-     */
-    public static Map<String, Object> caseInsensitiveMap(Map<String, Object> map) {
-        Map<String, Object> tempMap = new HashMap<>();
-        for (String key : map.keySet()) {
-            tempMap.put(key.toLowerCase(), map.get(key));
-        }
-        return tempMap;
-    }
-
-    /**
-     * 获取map中第一个数据值
-     *
-     * @param <K> Key的类型
-     * @param <V> Value的类型
-     * @param map 数据源
-     * @return 返回的值
-     */
-    public static <K, V> V getFirstOrNull(Map<K, V> map) {
-        V obj = null;
-        for (Entry<K, V> entry : map.entrySet()) {
-            obj = entry.getValue();
-            if (obj != null) {
-                break;
-            }
-        }
-        return obj;
-    }
-
-    /**
-     * 创建StringBuilder对象
-     *
-     * @return StringBuilder对象
-     */
-    public static StringBuilder builder(String... strs) {
-        final StringBuilder sb = new StringBuilder();
-        for (String str : strs) {
-            sb.append(str);
-        }
-        return sb;
-    }
-
-    /**
-     * 创建StringBuilder对象
-     *
-     * @return StringBuilder对象
-     */
-    public static void builder(StringBuilder sb, String... strs) {
-        for (String str : strs) {
-            sb.append(str);
-        }
-    }
-
-    /**
-     * 去掉指定后缀
-     *
-     * @param str    字符串
-     * @param suffix 后缀
-     * @return 切掉后的字符串，若后缀不是 suffix， 返回原字符串
-     */
-    public static String removeSuffix(String str, String suffix) {
-        if (isEmpty(str) || isEmpty(suffix)) {
-            return str;
-        }
-
-        if (str.endsWith(suffix)) {
-            return str.substring(0, str.length() - suffix.length());
-        }
-        return str;
-    }
-
-    /**
-     * 判断是否是windows操作系统
-     *
-     * @author stylefeng
-     * @Date 2017/5/24 22:34
-     */
-    public static Boolean isWinOs() {
-        String os = System.getProperty("os.name");
-        if (os.toLowerCase().startsWith("win")) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * 获取临时目录
-     *
-     * @author stylefeng
-     * @Date 2017/5/24 22:35
-     */
-    public static String getTempPath() {
-        return System.getProperty("java.io.tmpdir");
-    }
-
-    /**
-     * 把一个数转化为int
-     *
-     * @author fengshuonan
-     * @Date 2017/11/15 下午11:10
-     */
-    public static Integer toInt(Object val) {
-        if (val instanceof Double) {
-            BigDecimal bigDecimal = new BigDecimal((Double) val);
-            return bigDecimal.intValue();
-        } else {
-            return Integer.valueOf(val.toString());
-        }
-
-    }
-
-    /**
-     * 获取项目路径
-     */
-    public static String getWebRootPath(String filePath) {
-        try {
-            String path = ToolUtil.class.getClassLoader().getResource("").toURI().getPath();
-            path = path.replace("/WEB-INF/classes/", "");
-            path = path.replace("/target/classes/", "");
-            path = path.replace("file:/", "");
-            if (ToolUtil.isEmpty(filePath)) {
-                return path;
-            } else {
-                return path + "/" + filePath;
-            }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-	/**
-	 * 字符串是否包含不可见字符
-	 * 包含：true
-	 * 不包含：false
-	 * @param content
-	 * @return Boolean
-	 */
-	public static Boolean containsInvisibleChar(String content) {
-		if (content != null && content.length() > 0) {
-			char[] contentCharArr = content.toCharArray();
-			for (int i = 0; i < contentCharArr.length; i++) {
-				if ((contentCharArr[i] <= 0x1F) || contentCharArr[i] == 0x7F) {
-					return true;
-				}
-			}
-			return false;
-		}
-		return false;
-	}
-
-    /**
-     * 获取客户端ip
-     * @param req
-     * @return
-     */
-    public static String getRealIp(HttpServletRequest req) {
-        String ip = req.getHeader("x-forwarded-for");
-
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = req.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = req.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = req.getRemoteAddr();
-        }
-        if (ip == null || ip.length() == 0 || "0:0:0:0:0:0:0:1".equals(ip)) {
-            ip = "127.0.0.1";
-        }
-        return ip;
-    }
-
-    /**
      *  判断开始时间是否在结束时间之前
      * @param opStartTime
      * @param opEndTime
@@ -644,77 +301,4 @@ public class ToolUtil {
 
     }
 
-    /**
-     * 验证开始时间和结束时间:格式 开始时间不能大于结束时间
-     * @param startTime
-     * @param endTime
-     * @return
-     */
-    public static Boolean validateStartAndEndDateFormat(String startTime,String endTime){
-        Boolean result  = true;
-        try {
-            Date start =  ToolUtil.isNotEmpty(startTime)?DateUtil.parseTime(startTime):null;
-            Date end =  ToolUtil.isNotEmpty(endTime)?DateUtil.parseTime(endTime):null;
-            if (ToolUtil.isNotEmpty(start)&&ToolUtil.isNotEmpty(end)&&start.after(end)){
-                result = false;
-            }
-        }catch (Exception e){
-            result  = false;
-        }
-        return result;
-    }
-
-    /**
-     * 获取Annotation 中 memberValues的值
-     *
-     * @param object
-     * @param property
-     * @param <T>
-     * @return
-     */
-    public static <T> Object getFieldValue(T object, String property) {
-        if (object != null && property != null) {
-            Class<T> currClass = (Class<T>) object.getClass();
-            try {
-                Field field = currClass.getDeclaredField(property);
-                field.setAccessible(true);
-                return field.get(object);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
-	/**
-	 * //递归获取cls实体对象及父级对象的属性 wx:修改，子类覆盖父类的同名方法
-	 *
-	 * @param list
-	 * @param cls
-	 */
-	public static void getFields(List<Field> list, Class<?> cls) {
-		Field[] fields = cls.getDeclaredFields();
-		if (fields != null && fields.length > 0) {
-			List<Field> tempList = new ArrayList<>();
-			for (Field field : fields) {
-				if (list.size() == 0) {
-					tempList.add(field);
-				} else {
-					boolean has = false;
-					for (Field checkF : list) {
-						if (checkF.getName().equals(field.getName())) {
-							has = true;
-							break;
-						}
-					}
-					if (!has) {
-						tempList.add(field);
-					}
-				}
-			}
-			list.addAll(tempList);
-		}
-		if (cls.getSuperclass() != null) {
-			getFields(list, cls.getSuperclass());
-		}
-	}
 }

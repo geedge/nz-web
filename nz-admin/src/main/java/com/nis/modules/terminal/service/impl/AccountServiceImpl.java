@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -65,7 +66,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
                     .and(port).notNull(RCode.ACCOUNT_PORT_ISNULL)
                     .and(params).notNull(RCode.ACCOUNT_PROTOCOL_PARAMS_ISNULL);
 
-        if (!Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_TELNET_PROTOCOL.equals(protocol) && !Constant.ACCOUNT_SNMP_PROTOCOL.equals(protocol)) {
+        if(!StrUtil.equals(Constant.ACCOUNT_SSH_PROTOCOL,protocol) && !StrUtil.equals(Constant.ACCOUNT_TELNET_PROTOCOL,protocol) && !StrUtil.equals(Constant.ACCOUNT_SNMP_PROTOCOL,protocol)) {
             throw new NZException(RCode.ACCOUNT_PROTOCOL_INCORRECT);
         }
 

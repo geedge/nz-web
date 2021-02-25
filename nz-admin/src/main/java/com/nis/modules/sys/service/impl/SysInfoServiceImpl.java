@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -11,7 +12,6 @@ import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysInfoService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +30,10 @@ import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("sysInfoService")
 public class SysInfoServiceImpl implements SysInfoService {
+
+    private static Log log = Log.get();
 
     @Autowired
     private SysConfigDao sysConfigDao;
@@ -97,7 +98,7 @@ public class SysInfoServiceImpl implements SysInfoService {
                     componentVersionInfoList.add(componentVersion);
                 }
             } catch (Exception e) {
-                log.error(String.format("获取prometheus版本信息接口失败，promserver 信息是: %s, URL: %s, 错误信息: %s", JSONObject.toJSONString(server), url, e.getMessage()), e);
+                log.error(String.format("获取prometheus版本信息接口失败，promserver 信息是: %s, URL: %s, 错误信息: %s", JSONObject.toJSONString(server), url, e));
             }
         }
 

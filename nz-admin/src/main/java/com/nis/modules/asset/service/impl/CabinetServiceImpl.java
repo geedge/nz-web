@@ -102,7 +102,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
                 try {
                     defaultSize = Integer.parseInt(configEntity.getParamValue());
                 } catch (NumberFormatException e) {
-                    log.error("系统配置表中机柜默认值有误 param_key 为 {}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
+                    log.error("系统配置表中机柜默认值有误 param_key 为 {},error:{}", Constant.SYSCONFIG_KEY_DEFAULT_CABINETU, e);
                 }
                 if (defaultSize == null) {
                     throw new NZException(RCode.SYS_CONFIG_DEFALUTCABINETU_INTERVAL);

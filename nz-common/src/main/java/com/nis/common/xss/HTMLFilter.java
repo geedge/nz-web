@@ -182,7 +182,7 @@ public final class HTMLFilter {
 
     private void debug(final String msg) {
         if (vDebug) {
-            Logger.getAnonymousLogger().info(msg);
+            Logger.getAnonymousLogger().info(XssUtil.filterString(msg));
         }
     }
 

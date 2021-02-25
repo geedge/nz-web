@@ -8,6 +8,8 @@
 
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -37,8 +39,6 @@ import freemarker.template.TemplateException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -55,6 +55,7 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +64,7 @@ import java.util.stream.Collectors;
 @Service("sysConfigService")
 public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEntity> implements SysConfigService {
 
-    private static Logger logger = LoggerFactory.getLogger(SysConfigServiceImpl.class);
+    private static Log logger = Log.get();
 
     @Autowired
     private SysConfigRedis sysConfigRedis;
@@ -144,10 +145,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
 		try {
 			return clazz.newInstance();
-		} catch (Exception e) {
-			throw new NZException("获取参数失败");
-		}
-	}
+		} catch (IllegalAccessException e) {
+            throw new NZException("获取参数失败");
+        } catch (InstantiationException e) {
+            throw new NZException("获取参数失败");
+        }
+    }
     @Override
     public Map getConfigListByTypes(String[] types, String[] paramKey) {
 
@@ -328,7 +331,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetConfig(Map<String, Object> param) throws Exception{
-        String password = param.get("password").toString();
+        String password = StrUtil.str(param.get("password").toString());
         List<String> types = (List<String>)param.get("type");
         try {
             if(ToolUtil.isEmpty(password)||ToolUtil.isEmpty(types)){
@@ -342,7 +345,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             String salt = userEntity.getSalt();
             // 现加密密码
             String currentPassword = ShiroUtils.sha256(password,salt);
-            if(!oriPassword.equals(currentPassword)){
+            if(!StrUtil.equals(oriPassword,currentPassword)){
                 // 密码不对，禁止重置
                 throw new NZException(RCode.SYS_CONFIG_PASSWORD_ERROR);
             }
@@ -387,8 +390,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         if(ToolUtil.isNotEmpty(promserverList)){
         	final String key=URLEncoder.encode("{__name__=~'.+'}","UTF-8");
             promserverList.forEach(promserver -> {
-                HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+seriesUri,"match[]="+key);
-                HttpClientUtils.httpPost("http://"+promserver.getHost()+":"+promserver.getPort()+tombstonesUri,"");
+                try{
+                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),seriesUri).toString(),"match[]="+key);
+                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),tombstonesUri).toString(),"");
+                }catch (Exception e){
+                    logger.error(e);
+                }
+
             });
         }
     }
@@ -404,7 +412,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * 清除用户输入数据
      */
     @Transactional(rollbackFor = Exception.class)
-    public void resetEnterData() throws Exception{
+    public void resetEnterData() {
         try {
 			// redis写入当前用户id
 			Long userId = ShiroUtils.getUserId();
@@ -459,7 +467,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
         String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
         SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("query_max_series") ? true : false).findAny().orElse(null);
-        if (configEntity != null && !configEntity.getParamValue().equals(queryMaxSeries)) {
+        if(configEntity != null && !StrUtil.equals(configEntity.getParamValue(),queryMaxSeries)) {
             valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
             logger.info("Prometheus query_range 查询最大条数限制更改为 " + configEntity.getParamValue());
         }
@@ -542,7 +550,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(emailEnable);
 
         // 启用邮件 校验相关参数
-        if (emailEnable.equals(Constant.SWITCH_OPEN)) {
+        if(StrUtil.equals(emailEnable,Constant.SWITCH_OPEN)) {
             String emailSmtpHost = saveMap.get("email_smtp_host");
             String emailSmtpPort = saveMap.get("email_smtp_port");
             String emailSslFlag = saveMap.get("email_ssl_flag");
@@ -619,7 +627,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         this.validateSwitchValue(ldapEnable);
 
         // 启用ldap 校验相关参数
-        if (ldapEnable.equals(Constant.SWITCH_OPEN)) {
+        if(StrUtil.equals(ldapEnable,Constant.SWITCH_OPEN)) {
             ValidateUtils.is(saveMap.get("ldap_address")).notNull(RCode.SYS_CONFIG_LDAPADDRESS_ISNULL)
                     .and(saveMap.get("ldap_dn")).notNull(RCode.SYS_CONFIG_LDAPDN_ISNULL)
                     //.and(saveMap.get("ldap_password")).notNull(RCode.SYS_CONFIG_LDAPPASSWORD_ISNULL)
@@ -640,7 +648,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
     // 校验开关类型值是否符合规范 on or off
     private void validateSwitchValue(String switchValue) {
-        if (!switchValue.equals(Constant.SWITCH_OPEN) && !switchValue.equals(Constant.SWITCH_CLOSE)) {
+        if(!StrUtil.equals(switchValue,Constant.SWITCH_OPEN) && !StrUtil.equals(switchValue,Constant.SWITCH_CLOSE)) {
             throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
         }
     }
@@ -685,14 +693,14 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
         try {
             String receicer = map.get("email_test_reciver");
-            String password = map.get("email_smtp_password");
+            String password = StrUtil.str(map.get("email_smtp_password"));
 
             mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, password, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
         } catch (IOException e) {
-            logger.error("获取测试发送邮件模板失败", e);
+            logger.error("获取测试发送邮件模板失败",e);
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND);
         } catch (TemplateException e) {
-            logger.error("静态化模板内容失败", e);
+            logger.error("静态化模板内容失败",e);
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED);
         }
     }
@@ -747,14 +755,14 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             
         } catch (AuthenticationException e) {
             // 账户类异常 造成原因： 用户名或者密码错误 也就是 dn和password
-            logger.error("ldap service config connection failed : username/password wrong", e);
+            logger.error("ldap service config connection failed : username/password wrong",e);
             return R.error(RCode.SYS_CONFIG_LDAP_AUTHENTICATIONFAIL);
         } catch (NamingException e) {
             // 连接类异常 造成原因 1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
-            logger.error("ldap service config connection failed", e);
+            logger.error("ldap service config connection failed",e);
             return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } catch (Exception e) {
-            logger.error("ldap service config connection failed", e);
+            logger.error("ldap service config connection failed",e);
             return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } finally {
             if (initialDirContext != null) {

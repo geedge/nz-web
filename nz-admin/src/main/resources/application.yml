@@ -7,7 +7,6 @@ server:
     basedir: /opt/nezha/nz-web/tmp
   port: 80
 
-
 spring:
   profiles:
     active: dev

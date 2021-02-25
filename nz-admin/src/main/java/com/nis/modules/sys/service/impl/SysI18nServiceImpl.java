@@ -1,19 +1,5 @@
 package com.nis.modules.sys.service.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.i18n.SessionLocaleResolver;
-import org.springframework.web.util.WebUtils;
-
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.alibaba.druid.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -27,6 +13,18 @@ import com.nis.modules.sys.dao.SysI18nDao;
 import com.nis.modules.sys.entity.SysI18nEntity;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.service.SysI18nService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.util.WebUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 
 @Service("sysI18nService")

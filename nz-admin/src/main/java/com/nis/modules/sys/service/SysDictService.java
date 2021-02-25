@@ -9,10 +9,9 @@
 package com.nis.modules.sys.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.RCode;
 import com.nis.modules.sys.entity.SysDictEntity;
-
-import com.nis.common.utils.PageUtils;
 
 import java.util.List;
 import java.util.Map;

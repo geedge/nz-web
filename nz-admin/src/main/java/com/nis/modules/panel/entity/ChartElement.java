@@ -72,13 +72,4 @@ public class ChartElement {
         return Objects.hashCode(this.getId());
     }
 
-    public static void main(String[] args) {
-        ChartElement ce1=new ChartElement();
-        ce1.setId(2);
-        ChartElement ce2=new ChartElement();
-        ce2.setId(2);
-
-        System.out.println(ce1.equals(ce2));
-        System.out.println(ce2.equals(ce1));
-    }
 }

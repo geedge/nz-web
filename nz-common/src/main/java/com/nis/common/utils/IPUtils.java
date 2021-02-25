@@ -8,9 +8,8 @@
 
 package com.nis.common.utils;
 
+import cn.hutool.log.Log;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -20,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
  * @author Mark sunlightcs@gmail.com
  */
 public class IPUtils {
-	private static Logger logger = LoggerFactory.getLogger(IPUtils.class);
+	private static Log logger = Log.get();
 
 	/**
 	 * 获取IP地址
@@ -48,7 +47,7 @@ public class IPUtils {
                 ip = request.getRemoteAddr();
             }
         } catch (Exception e) {
-        	logger.error("IPUtils ERROR ", e);
+        	logger.error("IPUtils ERROR ",e);
         }
         
 //        //使用代理，则获取第一个IP地址

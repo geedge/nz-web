@@ -1,11 +1,10 @@
 package com.nis.common.utils;
 
+import cn.hutool.log.Log;
 import com.nis.common.exception.NZException;
 import com.nis.modules.sys.service.SysConfigService;
 import com.sun.mail.util.MailConnectException;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +20,7 @@ import java.util.Properties;
 @Slf4j
 public class MailUtil {
 
-	private static Logger logger = LoggerFactory.getLogger(MailUtil.class);
+	private static Log logger = Log.get();
 
 	@Autowired
 	SysConfigService configService;
@@ -162,25 +161,25 @@ public class MailUtil {
 			ts.sendMessage(message, message.getAllRecipients());
 		} catch (AuthenticationFailedException e) {
 			// for authentication failures
-			logger.error("Authentication failed to connect to SMTP server", e);
+			logger.error("Authentication failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
 		} catch (MailConnectException e) {
 			// 连接smtp服务异常 造成此类问题的原因：  1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
-			logger.error("Failed to connect to SMTP server", e);
+			logger.error("Failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
 		} catch (MessagingException e) {
 			// 其他关于登陆的错误 比如 连接超时
-			logger.error("Failed to connect to SMTP server", e);
+			logger.error("Failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
 		} catch (Exception e) {
-			logger.error("Failed to connect to SMTP server", e);
+			logger.error("Failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
 		} finally {
 			if (ts != null) {
 				try {
 					ts.close();
 				} catch (MessagingException e) {
-					logger.error("关闭Transport失败", e);
+					logger.error("关闭Transport失败",e);
 				}
 			}
 		}

@@ -123,7 +123,7 @@ public class ProjectController extends AbstractController {
 			result.put("id", iconId);
 			return R.ok(result);
 		} catch (IOException e) {
-			logger.error("拓朴图图标保存失败，错误信息是：" + e.getMessage(), e);
+			logger.error("拓朴图图标保存失败，错误信息是：" + e);
 			return R.error(RCode.ERROR);
 		}
 	}

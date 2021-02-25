@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -18,7 +19,6 @@ import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
@@ -40,9 +40,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
+
+	private static Log log = Log.get();
 
 	@Autowired
 	private SysUserNotificationService notificationService;
