@@ -9,6 +9,7 @@
 package com.nis.modules.sys.controller;
 
 
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -123,6 +124,12 @@ public class SysConfigController extends AbstractController {
 		}
 
         Map resultData = sysConfigService.getConfigListByTypes(type, paramKey);
+
+        // 返回前端界面结果中 去除ldap密码
+        Map ldaps = (Map) resultData.get("ldap");
+        if(ObjectUtils.isNotEmpty(ldaps)) {
+        	ldaps.remove("ldap_password");
+        }
 
         return R.ok(resultData);
     }
