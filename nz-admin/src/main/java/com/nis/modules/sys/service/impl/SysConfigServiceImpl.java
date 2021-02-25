@@ -164,6 +164,11 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             }
         }
 
+        // ldap的密码不进行结果返回
+        if(paramKeys.contains("ldap_password")){
+        	paramKeys.remove("ldap_password");
+        }
+        
         List<SysConfigEntity> list = this.list(new QueryWrapper<SysConfigEntity>()
                 .eq("status", 1)
                 .in(CollectionUtils.isNotEmpty(paramKeys), "param_key", paramKeys));
