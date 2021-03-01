@@ -1,12 +1,18 @@
 package com.nis.modules.project.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.project.dao.TopoIconDao;
 import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.TopoIconService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +26,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -36,7 +43,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
-    public Integer saveTopoIcon(String name, MultipartFile file) throws IOException {
+    public Integer saveTopoIcon(String name, MultipartFile file,String unit) throws IOException {
         // 校验文件类型
         this.validateIconFileType(file);
         String filename = file.getOriginalFilename();
@@ -45,6 +52,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         TopoIcon topoIcon = new TopoIcon();
         topoIcon.setName(name);
         topoIcon.setType(fileType);
+        topoIcon.setUnit(unit);
         topoIcon.setBytes(Base64.getEncoder().encodeToString(file.getBytes()));
         this.save(topoIcon);
         return topoIcon.getId();
@@ -94,4 +102,11 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
                 throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
         }
     }
+
+	@Override
+	public List<String> queryTopoIconUnitName(String name) {
+		List<TopoIcon> topoIcons = topoIconDao.selectList(new LambdaQueryWrapper<TopoIcon>().like(TopoIcon::getName, name));
+		List<String> result = topoIcons.stream().map(TopoIcon::getUnit).collect(Collectors.toList());
+		return result;
+	}
 }

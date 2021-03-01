@@ -116,7 +116,8 @@ public enum RCode {
     PROJECT_ICON_NOTFOUND(216011, "Topo icon not found"),
     PROJECT_TOPOCONFIG_ISNULL(211012, "Project topo is null"),
     PROJECT_NOTFOUND(216013, "Project not found"),
-
+    PROJECT_TOPOICON_UNIT_ISNULL(211014,"Topo icon unit is null"),
+    
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),
     MODULE_NAME_ISNULL(221002, "Module name info can not be empty"),

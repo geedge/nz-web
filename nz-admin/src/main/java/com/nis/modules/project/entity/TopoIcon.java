@@ -21,4 +21,6 @@ public class TopoIcon {
 	private String bytes;
 
 	private String type;
+	
+	private String unit;
 }

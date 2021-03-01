@@ -108,17 +108,20 @@ public class ProjectController extends AbstractController {
 	 *
 	 * @param name
 	 * @param file
+	 * 
 	 * @return
 	 */
 	@PostMapping("/topo/icon")
 	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
 	@RequiresPermissions({"project:topo:icon:save"})
-	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file) {
+	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file,String unit) {
 		ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
-				.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
+		.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
+		.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
+		
 		try {
-			Integer iconId = topoIconService.saveTopoIcon(name, file);
+			Integer iconId = topoIconService.saveTopoIcon(name, file,unit);
 			Map result = new HashMap(2);
 			result.put("id", iconId);
 			return R.ok(result);
@@ -187,5 +190,21 @@ public class ProjectController extends AbstractController {
 
 		topoService.updateProjectTopo(projectId, topoConfig);
 		return R.ok();
+	}
+	
+	/**
+	 * icon unit 查询
+	 *
+	 * @param id
+	 * @param response
+	 */
+	@GetMapping(value = "/topo/iconUnit")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	/* @RequiresPermissions({"project:topo:icon:unit"}) */
+	public R queryTopoUnit(String name) {
+
+		List<String> result = topoIconService.queryTopoIconUnitName(name);
+		
+		return R.ok(result);
 	}
 }

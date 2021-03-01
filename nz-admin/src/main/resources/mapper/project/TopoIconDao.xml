@@ -7,7 +7,8 @@
         SELECT
             pti.id,
             pti.NAME,
-            pti.type
+            pti.type,
+            pti.unit
         FROM
             project_topo_icon pti
         <where>
