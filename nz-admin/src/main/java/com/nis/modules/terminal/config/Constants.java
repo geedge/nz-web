@@ -1,12 +1,33 @@
 package com.nis.modules.terminal.config;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Constants {
     public static final String PARAM_HTTP_SESSION_ID_KEY = "http_session_id";
     public static final String CHARSET_UTF8 = "UTF-8";
     public static final String NZ_USER_HOME = System.getProperty("user.home") + File.separator + ".nezha";
     public static final String PARAM_TERMINAL_PREFIX_KEY = "nezha_term_";
+
+    // 不可见字符
+    public static final List<Integer> INVISIBLE_CHAR;
+
+    static {
+        INVISIBLE_CHAR = new ArrayList<>();
+        INVISIBLE_CHAR.add(7);
+        INVISIBLE_CHAR.add(8);
+        INVISIBLE_CHAR.add(12);
+        INVISIBLE_CHAR.add(10);
+        INVISIBLE_CHAR.add(13);
+        INVISIBLE_CHAR.add(9);
+        INVISIBLE_CHAR.add(11);
+        INVISIBLE_CHAR.add(92);
+        INVISIBLE_CHAR.add(63);
+        INVISIBLE_CHAR.add(39);
+        INVISIBLE_CHAR.add(34);
+        INVISIBLE_CHAR.add(0);
+    }
 
     public enum SshType {
         ACCOUNT(0x1, "password"),

@@ -54,7 +54,14 @@ public class TerminalSession implements Serializable {
      * 当前用户操作的服务器指令信息
      */
     public static Map<String,String> terminalMessageInfo = new HashMap<String,String>();
-    
+
+    // terminal cmd 信息
+    public static Map<String, List<Character>> terminalCmdInfo = new HashMap();
+
+    public static void removeTerminalCmd(String uuid) {
+        terminalCmdInfo.remove(uuid);
+    }
+
     /**
      * 用以保存用户连接websocket后的指令历史记录信息 包含未登录以及登录服务器后的历史指令
      */
@@ -127,7 +134,10 @@ public class TerminalSession implements Serializable {
     		map.put("sshLogin", false);
     		//tab键标识
     		map.put("tabFlag", false);
-    		terminalAttributeInfo.put(uuid, map);
+
+            // 光标位置
+            map.put("cmdCharPos", 0);
+            terminalAttributeInfo.put(uuid, map);
     	}
     	return map;
     }
