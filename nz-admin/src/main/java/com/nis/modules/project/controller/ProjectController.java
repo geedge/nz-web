@@ -116,7 +116,7 @@ public class ProjectController extends AbstractController {
 	@RequiresPermissions({"project:topo:icon:save"})
 	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file,String unit) {
 		ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
-		.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
+		.and(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
 		.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
 		

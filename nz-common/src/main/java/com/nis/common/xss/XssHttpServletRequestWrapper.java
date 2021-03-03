@@ -45,6 +45,7 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
+    	String header = super.getHeader(HttpHeaders.CONTENT_TYPE);
         //非json类型，直接返回
         if(!MediaType.APPLICATION_JSON_VALUE.equalsIgnoreCase(super.getHeader(HttpHeaders.CONTENT_TYPE))){
             return super.getInputStream();
@@ -58,6 +59,10 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
 
         //xss过滤
         json = xssEncode(json);
+        
+        //htmlfilter会将引号处理 导致json解析异常
+        json = json.replaceAll("&quot;","\"");
+        
         final ByteArrayInputStream bis = new ByteArrayInputStream(json.getBytes("utf-8"));
         return new ServletInputStream() {
             @Override
