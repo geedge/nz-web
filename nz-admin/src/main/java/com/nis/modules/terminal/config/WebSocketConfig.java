@@ -12,10 +12,16 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(new TerminalHandler(),"/terminal.ws").setAllowedOrigins("*").addInterceptors(new TerminalHandShaker());
+        registry.addHandler(new TerminalMonitorHandler(), "/terminal/monitor.ws").setAllowedOrigins("*").addInterceptors(new TerminalMonitorHandShaker());
     }
 
     @Bean
     public TerminalHandler getTerminalHandler(){
         return new TerminalHandler();
+    }
+
+    @Bean
+    public TerminalMonitorHandler getTerminalMonitorHandler() {
+        return new TerminalMonitorHandler();
     }
 }

@@ -190,6 +190,15 @@ public class TerminalClient {
                         Path path = Paths.get(fileName);
 
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        TerminalSession.terminalMonitorFirstMesage.put(clientId, message);
+
+                        List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
+                        if(CollectionUtils.isNotEmpty(webSocketSessions)){
+                            for (WebSocketSession socketSession : webSocketSessions) {
+                                socketSession.sendMessage(new TextMessage(message));
+                            }
+                        }
+
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
                         processCommand(terminalCmdService, message);
@@ -368,6 +377,15 @@ public class TerminalClient {
                         Path path = Paths.get(fileName);
 
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        TerminalSession.terminalMonitorFirstMesage.put(clientId, message);
+
+                        List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
+                        if(CollectionUtils.isNotEmpty(webSocketSessions)){
+                            for (WebSocketSession socketSession : webSocketSessions) {
+                                socketSession.sendMessage(new TextMessage(message));
+                            }
+                        }
+
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
                         processCommand(terminalCmdService, message);
@@ -422,12 +440,12 @@ public class TerminalClient {
                                     terminalCmd.setUuid(clientId);
                                     terminalCmd.setCmd("Login");
                                     terminalCmd.setTime(0);
-                                    terminalCmdService.save(terminalCmd);
+                                    terminalCmdService.saveOrUpdate(terminalCmd);
 
                                     // session 信息
                                     sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
                                     sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-                                    terminalSessionService.save(sessionEntity);
+                                    terminalSessionService.saveOrUpdate(sessionEntity);
 
                             		telnetConnect=false;
                             		// 登录成功后清空 前端输入字符 防止日志保存空数据

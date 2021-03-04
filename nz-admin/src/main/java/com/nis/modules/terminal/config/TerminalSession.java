@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
@@ -49,7 +50,17 @@ public class TerminalSession implements Serializable {
      * 保存所有正在连接的服务器列表信息
      */
     public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
-    
+
+    /**
+     * terminal 对应的 monitors
+     */
+    public static Map<String, List<WebSocketSession>> terminalMonitorsMap = new ConcurrentHashMap<>();
+
+    /**
+     * terminal 对应的 monitor 返回的第一条消息
+     */
+    public static Map<String,String> terminalMonitorFirstMesage = new HashMap<>();
+
     /**
      * 当前用户操作的服务器指令信息
      */
