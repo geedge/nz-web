@@ -57,11 +57,6 @@ public class TerminalSession implements Serializable {
     public static Map<String, List<WebSocketSession>> terminalMonitorsMap = new ConcurrentHashMap<>();
 
     /**
-     * terminal 对应的 monitor 返回的第一条消息
-     */
-    public static Map<String,String> terminalMonitorFirstMesage = new HashMap<>();
-
-    /**
      * 当前用户操作的服务器指令信息
      */
     public static Map<String,String> terminalMessageInfo = new HashMap<String,String>();

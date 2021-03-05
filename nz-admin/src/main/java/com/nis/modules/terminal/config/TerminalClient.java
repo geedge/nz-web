@@ -190,7 +190,6 @@ public class TerminalClient {
                         Path path = Paths.get(fileName);
 
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
-                        TerminalSession.terminalMonitorFirstMesage.put(clientId, message);
 
                         List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
                         if(CollectionUtils.isNotEmpty(webSocketSessions)){
@@ -377,7 +376,6 @@ public class TerminalClient {
                         Path path = Paths.get(fileName);
 
                         message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
-                        TerminalSession.terminalMonitorFirstMesage.put(clientId, message);
 
                         List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
                         if(CollectionUtils.isNotEmpty(webSocketSessions)){

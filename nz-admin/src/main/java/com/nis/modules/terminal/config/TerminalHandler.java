@@ -606,6 +606,17 @@ public class TerminalHandler extends TextWebSocketHandler {
         // client 关闭后，处理 session 和 record 信息
 	    this.handleSessionAfterClientClose(uuid);
         TerminalSession.removeTerminalAttributeInfo(uuid);
+
+
+	    // 处理 monitor 窗口
+	    String uuid = (String) session.getAttributes().get("uuid");
+	    List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(uuid);
+	    if(CollectionUtils.isNotEmpty(webSocketSessions)){
+		    for (WebSocketSession socketSession : webSocketSessions) {
+			    socketSession.sendMessage(new TextMessage("\u001B[01;31m\u001B[KConnection closed \u001B[m\u001B[K"));
+		    }
+		    TerminalSession.terminalMonitorsMap.remove(uuid);
+	    }
     }
 
 	/**
