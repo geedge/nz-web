@@ -30,7 +30,6 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.CustomSSLSocketFactory;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -722,11 +721,6 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             // 当连接ldaps时候  会发生异常 无法进行连接 
 //            environment.put("com.sun.jndi.ldap.connect.timeout", "3000");
             environment.put(Context.PROVIDER_URL, address);
-            // 当使用ldaps进行连接的时候 需要开启ssl进行连接
-            if(address.startsWith("ldaps")) {
-            	environment.put("java.naming.security.protocol", "ssl");
-                environment.put("java.naming.ldap.factory.socket", CustomSSLSocketFactory.class.getName());
-            }
             initialDirContext = new InitialDirContext(environment);
             
             
