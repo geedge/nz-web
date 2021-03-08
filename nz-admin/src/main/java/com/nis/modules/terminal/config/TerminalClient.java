@@ -22,6 +22,7 @@
 package com.nis.modules.terminal.config;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -48,8 +49,6 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
@@ -187,7 +186,7 @@ public class TerminalClient {
 
                         // terminal record 信息梳理
                         File file = FileUtil.file(Constant.TEMP_PATH, clientId + ".log");
-                        Path path = Paths.get(file.getName());
+                        Path path = file.toPath();
 
                         message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
 
@@ -316,8 +315,8 @@ public class TerminalClient {
             map.put("c",message);
             String s = JSONObject.toJSONString(map);
             s += ",";
-            Files.write(path, s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.DSYNC);
-        } catch (IOException e) {
+            FileUtil.writeBytes(s.getBytes(), file, 0, s.getBytes().length, true);
+        } catch (IORuntimeException e) {
             logger.error(String.format("追加 terminal record 文件失败，文件路径是: %s,错误信息是: %s", path.toString(), e.getMessage()), e);
         }
     }
@@ -373,7 +372,7 @@ public class TerminalClient {
                         // terminal record 信息梳理
                         String fileName = Constant.TEMP_PATH + File.separator + clientId + ".log";
                         File file = new File(fileName);
-                        Path path = Paths.get(fileName);
+                        Path path = file.toPath();
 
                         message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
 
