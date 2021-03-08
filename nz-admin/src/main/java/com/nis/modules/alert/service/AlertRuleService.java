@@ -35,5 +35,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	void export(HttpServletResponse response, Map<String, Object> params);
 
 	void cancelImport(String seq);
+	
+	AlertRuleEntity queryAlertRule(Integer id);
 }
 

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.alert.dao.AlertSilenceDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.nis.modules.alert.entity.AlertSilenceConf" id="alertSilenceConfMap">
+        <result property="id" column="id"/>
+        <result property="ruleId" column="reule_id"/>
+        <result property="type" column="type"/>
+        <result property="linkId" column="link_id"/>
+        <result property="reason" column="reason"/>
+        <result property="startAt" column="start_at"/>
+        <result property="endAt" column="end_at"/>
+        <result property="utime" column="utime"/>
+        <result property="state" column="state"/>
+        <result property="seq" column="seq"/>
+        <result property="linkName" column="link_name"/>
+        <result property="ruleName" column="rule_name"/>
+    </resultMap>
+
+    <select id="selectAlertSilenceConfs" resultType="com.nis.modules.alert.entity.AlertSilenceConf">
+         select asic.id,
+				asic.rule_id,
+				asic.type,
+				asic.link_id,
+				asic.reason,
+				asic.start_at,
+				asic.end_at,
+				asic.utime,
+				ar.alert_name
+				<choose>
+				    <when test="params.type != null and params.type!='' and params.query!=null and params.query!=''">
+				      	<if test='params.type=="datacenter"'>
+				      		,i.name as link_name
+				      	</if>
+				      	<if test='params.type=="project"'>
+				      		,p.name as link_name
+				      	</if>
+				      	<if test='params.type=="module"'>
+				      	    ,m.name as link_name
+				      	</if>
+				      	<if test='params.type=="asset"'>
+				      		,concat(aa.sn," : ",aa.host) as link_name
+				      	</if>
+				      	<if test='params.type=="endpoint"'>
+				      		,concat(a.sn," : ",e.host) as link_name
+				      	</if>
+				    </when>
+				    <otherwise>
+				    	,(case asic.type when 'asset' then concat (aa.sn,':',aa.`host`)  
+										when 'endpoint' then concat (a.sn,':',e.host)
+										when 'project' then p.name
+										when 'module' then m.name
+										when 'datacenter' then i.name end) as link_name
+				    </otherwise>
+		  		 </choose>
+		  		 <!--  此处asset表join两次 第一次是endpoint 关联asset出现 第二次是本身作为asset出现 注意aa和a的区别 -->
+		 from alert_silence_conf asic left join alert_rule  ar on asic.rule_id = ar.id
+		 							  left join endpoint e on asic.link_id = e.id 
+									  left join asset a on e.asset_id = a.id 
+									  left join project p on asic.link_id=p.id 
+									  left join module m on asic.link_id=m.id 
+									  left join asset aa on asic.link_id = aa.id 
+									  left join idc i on asic.link_id=i.id
+         where 1=1 
+         <if test="params.id != null and params.id !='' ">
+         	and asic.id = #{params.id}
+         </if>
+         <if test="params.startAt != null">
+         	and asic.start_at &gt;= #{params.startAt}
+         </if>
+         <if test="params.endAt != null">
+         	and asic.end_at &lt;= #{params.endAt}
+         </if>
+         <choose>
+		    <when test="params.type != null and params.type!='' and params.query!=null and params.query!=''">
+		      	<if test='params.type=="datacenter"'>
+		      		and i.name like concat('%', #{params.query}, '%')
+		      	</if>
+		      	<if test='params.type=="project"'>
+		      		and p.name like concat('%', #{params.query}, '%')
+		      	</if>
+		      	<if test='params.type=="module"'>
+		      	    and m.name like concat('%', #{params.query}, '%')
+		      	</if>
+		      	<if test='params.type=="asset"'>
+		      		and (aa.host like concat('%', #{params.query}, '%') or aa.sn like concat('%', #{params.query}, '%'))
+		      	</if>
+		      	<if test='params.type=="endpoint"'>
+		      		and (e.host like concat('%', #{params.query}, '%') or a.host like concat('%', #{params.query}, '%') or a.sn like concat('%', #{params.query}, '%'))
+		      	</if>
+		    </when>
+		    <when test="params.type != null and params.type!=''">
+		      and asic.type = #{params.type}
+		    </when>
+  		 </choose>
+         
+    </select>
+
+</mapper>

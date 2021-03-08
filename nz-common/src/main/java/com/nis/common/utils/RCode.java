@@ -315,6 +315,15 @@ public enum RCode {
     ALERT_NOTIFISCRIPT_SCRIPT_NOTFOUND(436007, "Alert notification script not found"),
 
     /**
+     * 告警静默
+     */
+    ALERTSILENCE_STARTTIME_ISNULL(441001,"AlertSilence start time can not be null"),
+    ALERTSILENCE_ENDTIME_ISNULL(441002,"AlertSilence end time can not be null"),
+    ALERTSILENCE_RULE_LINK_IS_NULL(441003,"AlertSilence ruleId or linkId can not be empty at the same time"),
+    ALERTSILENCE_TYPE_LINKID_IS_NULL(441004,"LinkId is not empty, Type can not be empty"),
+    ALERTSILENCE_TYPE_ERROR(445005,"AlertSilence type value error"),
+    
+    /**
      * setting菜单项相关
      */
     SYS_ERROR(517000, "system error"), //10xxxx，系统类（业务系统、用户组、权限等）通用错误以及其他系统内部错误

@@ -22,8 +22,8 @@ public enum TypeEnum {
     MIB("mib"),
     SYSTEM("system"),
 	LINK("link"),
-    SCRIPT("notification script");
-	
+    SCRIPT("notification script"),
+	ALERTSILENCE("alert silence");
     private String value;
 
     public String getValue(){

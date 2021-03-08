@@ -1,8 +1,10 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -699,4 +701,34 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
         }
     }
+
+	@Override
+	public AlertRuleEntity queryAlertRule(Integer id) {
+		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
+		
+		if(ObjectUtil.isNotEmpty(alertRule)) {
+			// 获取所有用户
+	        List<SysUserEntity> userList = sysUserService.list();
+	        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+			
+	        String receiver = alertRule.getReceiver();
+	        if (StringUtils.isNotEmpty(receiver)) {
+	            List<SysUserEntity> list = new ArrayList<>();
+	            Arrays.asList(receiver.split(",")).stream().forEach(userId -> {
+	                SysUserEntity userEntity = new SysUserEntity();
+	                userEntity.setUserId(Long.valueOf(userId));
+	                userEntity.setUserName(userIdAndName.get(Long.valueOf(userId)));
+	                list.add(userEntity);
+	            });
+	            alertRule.setReceivers(list);
+	        }
+	        
+	        // 获取该告警下的告警数量
+	        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id).eq(AlertMessageEntity::getState, 1));
+	        
+	        alertRule.setAlertNum(alertNum);
+		}
+		
+		return alertRule;
+	}
 }

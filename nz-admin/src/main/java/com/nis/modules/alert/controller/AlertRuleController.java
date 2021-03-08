@@ -123,4 +123,15 @@ public class AlertRuleController {
         alertRuleService.cancelImport(seq);
         return R.ok();
     }
+    
+    
+    @GetMapping("/{id}")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
+    public R queryAlertRule(@PathVariable Integer id) {
+    	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
+    	
+    	AlertRuleEntity alertRule = alertRuleService.queryAlertRule(id);
+    	
+    	return R.ok(alertRule);
+    }
 }
