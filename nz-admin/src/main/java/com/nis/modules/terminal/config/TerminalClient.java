@@ -23,6 +23,7 @@ package com.nis.modules.terminal.config;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -185,11 +186,10 @@ public class TerminalClient {
                         String message = builder.toString();
 
                         // terminal record 信息梳理
-                        String fileName = Constant.TEMP_PATH + File.separator + clientId + ".log";
-                        File file = new File(fileName);
-                        Path path = Paths.get(fileName);
+                        File file = FileUtil.file(Constant.TEMP_PATH, clientId + ".log");
+                        Path path = Paths.get(file.getName());
 
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
 
                         List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
                         if(CollectionUtils.isNotEmpty(webSocketSessions)){
@@ -375,7 +375,7 @@ public class TerminalClient {
                         File file = new File(fileName);
                         Path path = Paths.get(fileName);
 
-                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
+                        message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
 
                         List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
                         if(CollectionUtils.isNotEmpty(webSocketSessions)){
@@ -823,9 +823,9 @@ public class TerminalClient {
         	}
         }
 
-        if (writer != null) {
-            writer.write(message);
-            writer.flush();
+        if (outputStream != null) {
+            IoUtil.write(outputStream, false, message.getBytes());
+            outputStream.flush();
         }
     }
 

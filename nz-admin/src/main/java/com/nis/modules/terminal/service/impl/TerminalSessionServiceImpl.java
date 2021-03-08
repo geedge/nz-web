@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.service.impl;
 
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.DateUtil;
@@ -15,7 +16,6 @@ import com.nis.modules.terminal.dao.TerminalSessionDao;
 import com.nis.modules.terminal.entity.TerminalSessionEntity;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -30,9 +30,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service("terminalSessionService")
 public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, TerminalSessionEntity> implements TerminalSessionService {
+
+    private Log log = Log.get();
 
     @Autowired
     private TerminalSessionDao terminalSessionDao;

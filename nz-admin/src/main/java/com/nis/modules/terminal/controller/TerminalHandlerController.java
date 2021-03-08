@@ -14,11 +14,8 @@ import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,7 +26,7 @@ import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.util.Map;
 
-@Controller
+@RestController
 @RequestMapping("/terminal")
 public class TerminalHandlerController {
 	
@@ -52,8 +49,7 @@ public class TerminalHandlerController {
 	@Value("${nezha.uploadTempPath}")
     private String configUploadPath;
 	
-	@RequestMapping(value = "resize", method = RequestMethod.POST)
-    @ResponseBody
+	@PostMapping(value = "resize")
     public R resize(ServletRequest req, @RequestBody TerminalConfigDto dto) throws Exception {
 		HttpServletRequest request=(HttpServletRequest) req;
 		String token=request.getHeader(Constant.AUTH_TOKEN_CODE);
@@ -68,8 +64,7 @@ public class TerminalHandlerController {
 		}
     }
 	
-	@RequestMapping(value = "upload", method = RequestMethod.POST)
-    @ResponseBody
+	@PostMapping(value = "upload")
     @RequiresPermissions("terminal:upload")
     public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
 		if(StringUtils.isBlank(uuid)) {
@@ -121,8 +116,7 @@ public class TerminalHandlerController {
         }
     }
 	
-	@RequestMapping(value = "download", method = RequestMethod.POST)
-    @ResponseBody
+	@PostMapping(value = "download")
     @RequiresPermissions("terminal:download")
     public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws Exception {
 		String uuid = param.get("uuid");
@@ -146,10 +140,9 @@ public class TerminalHandlerController {
     }
 
     @GetMapping(value = "/log")
-    @ResponseBody
     @RequiresPermissions({"terminal:log:list"})
     public R queryPage(@RequestParam Map<String, Object> params) throws Exception {
-        params = XssUtil.filterParameters(params);
+        params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
         PageUtils page = terminalLogService.queryPage(params);
         return R.ok(page);
     }
@@ -160,9 +153,9 @@ public class TerminalHandlerController {
      * @param params
      * @return
      */
-    @ResponseBody
     @GetMapping("/session")
     public R querySessionPage(@RequestParam Map<String, Object> params) {
+        params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
         PageUtils page = terminalSessionService.queryPage(params);
         return R.ok(page);
     }
@@ -173,14 +166,13 @@ public class TerminalHandlerController {
      * @param params
      * @return
      */
-    @ResponseBody
     @GetMapping("/cmd")
     public R queryCmdPage(@RequestParam Map<String, Object> params) {
+        params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
         Map map = terminalCmdService.queryCmdInfos(params);
         return R.ok(map);
     }
 
-    @ResponseBody
     @PutMapping("/kill")
     public R killTerminal(@RequestBody Map<String, String> params) {
         ValidateUtils.is(params.get("uuid")).notNull(RCode.TERMINAL_UUID_ISNULL);
@@ -189,9 +181,9 @@ public class TerminalHandlerController {
         return R.ok();
     }
 
-    @ResponseBody
     @GetMapping("/record")
     public R queryTerminalRecord(@RequestParam Map<String, Object> params) {
+        params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
         Map map = terminalRecordService.queryTerminalRecordInfos(params);
         return R.ok(map);
     }

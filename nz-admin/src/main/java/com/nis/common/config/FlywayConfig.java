@@ -1,5 +1,6 @@
 package com.nis.common.config;
 
+import cn.hutool.core.util.ReflectUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
@@ -12,7 +13,6 @@ import javax.sql.DataSource;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,8 +40,9 @@ public class FlywayConfig {
             for (PropertyDescriptor property : propertyDescriptors) {
                 String key = property.getName();
                 if (!"class".equals(key) && !"enabled".equals(key)) {
-                    Method getter = property.getReadMethod();
-                    Object value = getter.invoke(flywayProperties);
+                    //Method getter = property.getReadMethod();
+                    //Object value = getter.invoke(flywayProperties);
+                    Object value = ReflectUtil.invoke(flywayProperties, property.getReadMethod(), key);
                     map.put("flyway." + key, value.toString());
                 }
             }

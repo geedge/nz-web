@@ -224,7 +224,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 
 		        // terminal session 信息
 		        sessionEntity.setLoginUser(params.get("username"));
-		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
 		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
 		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
@@ -265,7 +265,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 		        // 连接异常，关闭session 记录，更改状态为 连接失败
 		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setLoginUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
-		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
 		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
 		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
@@ -570,7 +570,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 
 	        // terminal sesssion 信息保存
 	        TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
-	        sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
 	        sessionEntity.setUuid(uuid);
 	        sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
 	        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
@@ -720,7 +720,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	    TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
 	    sessionEntity.setUuid(uuid);
 	    sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
-	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
 	    sessionEntity.setAuthType(1);
 	    sessionEntity.setProtocol("");
 	    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
@@ -1021,7 +1021,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	    TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
 	    sessionEntity.setUuid(uuid);
 	    sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
-	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getAddress().getHostAddress());
+	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
 	    sessionEntity.setAuthType(1);
 	    sessionEntity.setProtocol("TELNET");
 	    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());

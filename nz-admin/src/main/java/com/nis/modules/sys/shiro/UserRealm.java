@@ -1,33 +1,24 @@
 package com.nis.modules.sys.shiro;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.ldap.LdapName;
-
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.nis.common.utils.Constant;
+import com.nis.modules.sys.dao.SysRoleDao;
+import com.nis.modules.sys.dao.SysRoleMenuDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.dao.SysUserRoleDao;
+import com.nis.modules.sys.entity.*;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysMenuService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.AuthenticationInfo;
-import org.apache.shiro.authc.AuthenticationToken;
-import org.apache.shiro.authc.IncorrectCredentialsException;
-import org.apache.shiro.authc.LockedAccountException;
-import org.apache.shiro.authc.SimpleAuthenticationInfo;
-import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.authc.*;
 import org.apache.shiro.authc.credential.CredentialsMatcher;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authz.AuthorizationInfo;
@@ -50,26 +41,13 @@ import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.support.LdapUtils;
 import org.springframework.stereotype.Component;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-import com.nis.common.utils.Constant;
-import com.nis.modules.sys.dao.SysRoleDao;
-import com.nis.modules.sys.dao.SysRoleMenuDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.dao.SysUserRoleDao;
-import com.nis.modules.sys.entity.SysMenuEntity;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysRoleMenuEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysMenuService;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
-import cn.hutool.log.Log;
+import javax.naming.NamingException;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
+import javax.naming.ldap.LdapName;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * 认证
@@ -169,7 +147,9 @@ public class UserRealm extends AuthorizingRealm {
 		SysUserEntity user = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().eq("username", token.getUsername()));
 		// 账号不存在，使用ldap验证
 		if (user == null) {
-			user = getLdapAuthentication(token.getUsername(), new String(token.getPassword()));
+			StringBuilder sb = new StringBuilder();
+			sb.append(token.getPassword());
+			user = getLdapAuthentication(token.getUsername(), sb.toString());
 			if (user == null) {
 				throw new IncorrectCredentialsException("账号或密码不正确");
 			}
@@ -184,10 +164,12 @@ public class UserRealm extends AuthorizingRealm {
 			sysUserRoleDao.insert(sysUserRole);
 			String salt = RandomStringUtils.randomAlphanumeric(20);
 			user.setSalt(salt);
-			user.setPassword(ShiroUtils.sha256(new String(token.getPassword()), salt));
+			user.setPassword(ShiroUtils.sha256(sb.toString(), salt));
 		} else if(user.getSource().equals("ldap")){
 			//ldap非首次登陆，更新同步内容
-			SysUserEntity tmpUser = getLdapAuthentication(token.getUsername(), new String(token.getPassword()));
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append(token.getPassword());
+			SysUserEntity tmpUser = getLdapAuthentication(token.getUsername(), stringBuilder.toString());
 			if(tmpUser == null) {
 				// 验证失败 则登录失败
 				throw new IncorrectCredentialsException("账号或密码不正确");
@@ -202,7 +184,7 @@ public class UserRealm extends AuthorizingRealm {
 			sysUserDao.updateById(user);
 			String salt = RandomStringUtils.randomAlphanumeric(20);
 			user.setSalt(salt);
-			user.setPassword(ShiroUtils.sha256(new String(token.getPassword()), salt));
+			user.setPassword(ShiroUtils.sha256(stringBuilder.toString(), salt));
 		} else {
 			// 判断系统内用户账号是否锁定
 			if (user.getStatus() == 0) {
@@ -239,7 +221,7 @@ public class UserRealm extends AuthorizingRealm {
 		String ldapAddress = ldap.get("ldap_address");
 		String ldapDN = ldap.get("ldap_dn");
 		String ldapPassword = ldap.get("ldap_password");
-		ldapPassword = new String(Base64.getDecoder().decode(ldapPassword));
+		ldapPassword = StrUtil.str(Base64.getDecoder().decode(ldapPassword), "UTF-8");
 		String ldapUserFilter = ldap.get("ldap_user_filter");
 		String ldapMapping = ldap.get("ldap_mapping");
 		String ldapOu = ldap.get("ldap_ou");
