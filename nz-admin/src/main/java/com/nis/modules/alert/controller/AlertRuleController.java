@@ -127,6 +127,7 @@ public class AlertRuleController {
     
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
+    @RequiresPermissions({"alert:rule:info"})
     public R queryAlertRule(@PathVariable Integer id) {
     	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
     	

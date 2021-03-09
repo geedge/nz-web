@@ -3,6 +3,7 @@ package com.nis.modules.alert.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +39,7 @@ public class AlertSilenceController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
+	@RequiresPermissions({"alert:silence:list"})
 	public R list(@RequestParam Map<String,Object> params) {
 		
 		logger.debug("alertsilence query params is {}",JSON.toJSONString(params));
@@ -49,6 +51,7 @@ public class AlertSilenceController {
 	
 	@GetMapping("/{id}")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
+	@RequiresPermissions({"alert:silence:info"})
 	public R queryAlertSilenceConf(@PathVariable("id") Integer id) {
 		
 		AlertSilenceConf result = alertSilenceService.queryAlertSilence(id);
@@ -58,6 +61,7 @@ public class AlertSilenceController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTSILENCE)
+	@RequiresPermissions({"alert:silence:save"})
 	public R save(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
 		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL);
@@ -72,6 +76,7 @@ public class AlertSilenceController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSILENCE)
+	@RequiresPermissions({"alert:silence:modify"})
 	public R modify(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
 		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL);
@@ -86,6 +91,7 @@ public class AlertSilenceController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTSILENCE)
+	@RequiresPermissions({"alert:silence:remove"})
 	public R remove(@RequestParam Integer... ids) {
 		
 		alertSilenceService.removeByIds(Arrays.asList(ids));

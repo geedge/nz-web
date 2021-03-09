@@ -200,7 +200,7 @@ public class ProjectController extends AbstractController {
 	 */
 	@GetMapping(value = "/topo/iconUnit")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
-	/* @RequiresPermissions({"project:topo:icon:unit"}) */
+	@RequiresPermissions({"project:topo:icon:unit"})
 	public R queryTopoUnit(String name) {
 
 		List<String> result = topoIconService.queryTopoIconUnitName(name);
