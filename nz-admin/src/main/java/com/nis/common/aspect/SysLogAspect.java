@@ -330,7 +330,8 @@ public class SysLogAspect {
             for (Field field : fields) {
                 Boolean isId = field.isAnnotationPresent(TableId.class);
                 if (isId) {
-                    oepraId=ReflectUtil.getFieldValue(arg,field).toString();
+                    Object fieldValue = ReflectUtil.getFieldValue(arg, field);
+                    oepraId = ToolUtil.isNotEmpty(fieldValue) ? fieldValue.toString() : "";
                     break;
                 }
             }

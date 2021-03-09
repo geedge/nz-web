@@ -23,7 +23,8 @@ public enum TypeEnum {
     SYSTEM("system"),
 	LINK("link"),
     SCRIPT("notification script"),
-	ALERTSILENCE("alert silence");
+	ALERTSILENCE("alert silence"),
+    ASSETSTATECONF("asset state conf");
     private String value;
 
     public String getValue(){

@@ -205,4 +205,6 @@ public class Asset implements Serializable {
      */
     @TableField(exist = false)
     private List<AssetTag> tags;
+
+    private Integer stateId;
 }

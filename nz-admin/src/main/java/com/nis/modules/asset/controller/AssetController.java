@@ -7,7 +7,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetStateConf;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.AssetStateConfService;
 import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +37,9 @@ public class AssetController {
 
     @Autowired
     private AssetService assetService;
+
+    @Autowired
+    private AssetStateConfService confService;
 
     /**
      * 资产请求列表
@@ -283,4 +288,53 @@ public class AssetController {
         assetService.updateBatchAccountAndTagByAssetIds(param);
         return R.ok();
     }
+
+    @GetMapping("/stateConf")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
+    public R queryStateConfList(@RequestParam Map<String, Object> params) {
+        PageUtils page = confService.queryPage(params);
+        return R.ok(page);
+    }
+
+    @GetMapping("/stateConf/{id}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
+    public R queryStateConfInfo(@PathVariable("id") Integer id) {
+        AssetStateConf assetStateConf = confService.queryConfInfo(id);
+        return R.ok(assetStateConf);
+    }
+
+    @PostMapping("/stateConf")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETSTATECONF)
+    public R saveAssetStateConf(@RequestBody AssetStateConf conf) {
+        ValidateUtils.is(conf.getName()).notNull(RCode.STATECONF_NAME_ISNULL)
+                .and(conf.getPing()).notNull(RCode.STATECONF_PING_ISNULL)
+                .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
+                .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
+
+        confService.saveConf(conf);
+        return R.ok();
+    }
+
+    @PutMapping("/stateConf")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETSTATECONF)
+    public R editAssetStateConf(@RequestBody AssetStateConf conf) {
+        ValidateUtils.is(conf.getId()).notNull(RCode.STATECONF_ID_ISNULL)
+                .and(conf.getName()).notNull(RCode.STATECONF_NAME_ISNULL)
+                .and(conf.getPing()).notNull(RCode.STATECONF_PING_ISNULL)
+                .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
+                .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
+
+        confService.updateConf(conf);
+        return R.ok();
+    }
+
+    @DeleteMapping("/stateConf")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETSTATECONF)
+    public R deleteAssetStateConf(@RequestParam Integer... ids) {
+        ValidateUtils.is(ids).notNull(RCode.STATECONF_ID_ISNULL);
+
+        confService.delete(ids);
+        return R.ok();
+    }
+
 }

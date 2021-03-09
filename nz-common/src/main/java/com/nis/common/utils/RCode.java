@@ -256,6 +256,20 @@ public enum RCode {
     ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE(334019,"Auth protocol must be MD5 or SHA"),
     ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE(334020,"Priv protocol must be DES or AES"),
 
+    STATECONF_NAME_ISNULL(341000,"Asset state conf name is null"),
+    STATECONF_PING_ISNULL(341001,"Asset state conf ping is null"),
+    STATECONF_MONITOR_ISNULL(341002,"Asset state conf monitor is null"),
+    STATECONF_ALERT_ISNULL(341003,"Asset state conf alert is null"),
+    STATECONF_NAME_DUPLICATE(342004, "Asset state conf name is duplicate"),
+    STATECONF_ID_ISNULL(341005,"Asset state conf id is null"),
+    STATECONF_BUILDIN_CAN_NOT_REMOVE(347006, "This config is built-in and cannot be deleted"),
+    STATECONF_PING_INCORRECT(344007,"Asset state conf ping must be 0 or 1"),
+    STATECONF_MONITOR_INCORRECT(344008,"Asset state conf monitor must be 0 or 1"),
+    STATECONF_ALERT_INCORRECT(344009,"Asset state conf alert must be 0 or 1"),
+    STATECONF_BUILDIN_INCORRECT(344010,"Asset state conf buildin must be 0 or 1"),
+    STATECONF_CAN_NOT_REMOVE(347011, "This config is already used by the asset and cannot be deleted"),
+    STATECONF_NOT_FOUND(346012, "Asset state conf not found"),
+
 
     /**
      * alerts菜单栏相关
