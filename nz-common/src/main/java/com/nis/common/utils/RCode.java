@@ -270,6 +270,23 @@ public enum RCode {
     STATECONF_CAN_NOT_REMOVE(347011, "This config is already used by the asset and cannot be deleted"),
     STATECONF_NOT_FOUND(346012, "Asset state conf not found"),
 
+    TYPECONF_NOT_FOUND(356000, "Asset type config not found"),
+    TYPECONF_NAME_ISNULL(351001, "Asset type config name is null"),
+    TYPECONF_VM_ISNULL(351002, "Asset type config vm is null"),
+    TYPECONF_VMH_ISNULL(351003, "Asset type config vmh is null"),
+    TYPECONF_SSH_ISNULL(351004, "Asset type config ssh is null"),
+    TYPECONF_TELNET_ISNULL(351005, "Asset type config telnet is null"),
+    TYPECONF_NAME_DUPLICATE(352006, "Asset type config name is duplicate"),
+    TYPECONF_VM_INCORRECT(354007, "Asset type config vm must be 0 or 1"),
+    TYPECONF_VMH_INCORRECT(354008, "Asset type config vmh must be 0 or 1"),
+    TYPECONF_SSH_INCORRECT(354009, "Asset type config ssh must be 0 or 1"),
+    TYPECONF_TELNET_INCORRECT(354010, "Asset type config telnet must be 0 or 1"),
+    TYPECONF_BUILDIN_INCORRECT(354011, "Asset type config buildin must be 0 or 1"),
+    TYPECONF_ID_ISNULL(351012, "Asset type config id is null"),
+    TYPECONF_BUILDIN_CAN_NOT_REMOVE(357013, "This configuration is built-in and cannot be deleted"),
+    TYPECONF_BEUSED_CAN_NOT_REMOVE(357014, "This configurations is already used by the asset and cannot be deleted"),
+    TYPECONF_PARENT_NOT_FOUND(356015, "Asset type parent config not found"),
+    TYPECONF_CONTAIN_BABY_CAN_NOT_REMOVE(357016, "This configurations contain sub-configuration and cannot be deleted"),
 
     /**
      * alerts菜单栏相关

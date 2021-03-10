@@ -207,4 +207,6 @@ public class Asset implements Serializable {
     private List<AssetTag> tags;
 
     private Integer stateId;
+
+    private Integer typeId;
 }
