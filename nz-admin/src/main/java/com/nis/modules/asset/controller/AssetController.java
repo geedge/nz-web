@@ -8,8 +8,10 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetStateConf;
+import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.AssetStateConfService;
+import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -39,7 +41,10 @@ public class AssetController {
     private AssetService assetService;
 
     @Autowired
-    private AssetStateConfService confService;
+    private AssetStateConfService stateConfService;
+
+    @Autowired
+    private AssetTypeConfService typeConfService;
 
     /**
      * 资产请求列表
@@ -292,14 +297,14 @@ public class AssetController {
     @GetMapping("/stateConf")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
     public R queryStateConfList(@RequestParam Map<String, Object> params) {
-        PageUtils page = confService.queryPage(params);
+        PageUtils page = stateConfService.queryPage(params);
         return R.ok(page);
     }
 
     @GetMapping("/stateConf/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
     public R queryStateConfInfo(@PathVariable("id") Integer id) {
-        AssetStateConf assetStateConf = confService.queryConfInfo(id);
+        AssetStateConf assetStateConf = stateConfService.queryConfInfo(id);
         return R.ok(assetStateConf);
     }
 
@@ -311,7 +316,7 @@ public class AssetController {
                 .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
                 .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
 
-        confService.saveConf(conf);
+        stateConfService.saveConf(conf);
         return R.ok();
     }
 
@@ -324,7 +329,7 @@ public class AssetController {
                 .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
                 .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
 
-        confService.updateConf(conf);
+        stateConfService.updateConf(conf);
         return R.ok();
     }
 
@@ -333,7 +338,58 @@ public class AssetController {
     public R deleteAssetStateConf(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.STATECONF_ID_ISNULL);
 
-        confService.delete(ids);
+        stateConfService.delete(ids);
+        return R.ok();
+    }
+
+
+    @GetMapping("/typeConf/{id}")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    public R queryTypeConfInfo(@PathVariable("id") Integer id) {
+        AssetTypeConf assetTypeConf = typeConfService.queryConfInfo(id);
+        return R.ok(assetTypeConf);
+    }
+
+    @GetMapping("/typeConf")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    public R queryTypeConfList(@RequestParam Map<String, Object> params) {
+        PageUtils page = typeConfService.queryPage(params);
+        return R.ok(page);
+    }
+
+    @PostMapping("/typeConf")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETTYPECONF)
+    public R saveAssetTypeConf(@RequestBody AssetTypeConf conf) {
+        ValidateUtils.is(conf.getName()).notNull(RCode.TYPECONF_NAME_ISNULL)
+                .and(conf.getVm()).notNull(RCode.TYPECONF_VM_ISNULL)
+                .and(conf.getVmh()).notNull(RCode.TYPECONF_VMH_ISNULL)
+                .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
+                .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
+
+        typeConfService.saveConf(conf);
+        return R.ok();
+    }
+
+    @PutMapping("/typeConf")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETTYPECONF)
+    public R editAssetTypeConf(@RequestBody AssetTypeConf conf) {
+        ValidateUtils.is(conf.getId()).notNull(RCode.TYPECONF_ID_ISNULL)
+                .and(conf.getName()).notNull(RCode.TYPECONF_NAME_ISNULL)
+                .and(conf.getVm()).notNull(RCode.TYPECONF_VM_ISNULL)
+                .and(conf.getVmh()).notNull(RCode.TYPECONF_VMH_ISNULL)
+                .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
+                .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
+
+        typeConfService.updateConf(conf);
+        return R.ok();
+    }
+
+    @DeleteMapping("/typeConf")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETTYPECONF)
+    public R deleteAssetTypeConf(@RequestParam Integer... ids) {
+        ValidateUtils.is(ids).notNull(RCode.TYPECONF_ID_ISNULL);
+
+        typeConfService.delete(ids);
         return R.ok();
     }
 

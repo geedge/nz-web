@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
 /**
- * AssetPing
+ * AssetStateConf
  *
  * @author shizhendong
  * @date 2021-03-08
