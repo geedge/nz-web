@@ -276,4 +276,24 @@
 			state = 1
 	</select>
 
+
+	<update id="updateStateBySilence" parameterType="com.nis.modules.alert.entity.AlertSilenceConf">
+		update alert_message set state = 3 
+		where rule_id = #{ruleId} and start_at &gt;= #{startAt} and end_at &lt;= #{endAt}
+		<if test="type=='datacenter'">
+		   and dc_id = #{linkId}
+		</if>
+		<if test="type=='asset'">
+		   and asset_id = #{linkId}
+		</if>
+		<if test="type=='project'">
+		   and project_id = #{linkId}
+		</if>
+		<if test="type=='module'">
+		   and module_id = #{linkId}
+		</if>
+		<if test="type=='endpoint'">
+		   and endpoint_id = #{linkId}
+		</if>
+	</update>
 </mapper>

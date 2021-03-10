@@ -19,6 +19,7 @@ import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
@@ -64,6 +65,9 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Autowired
 	private AlertRuleDao alertRuleDao;
 	
+	@Autowired
+	private AlertMessageDao alertMessageDao;
+	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		
@@ -105,6 +109,22 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			throw new NZException(RCode.ALERTSILENCE_TYPE_ERROR);
 		}
 		
+		// 根据传入的时间判断静默的状态
+	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+	    /**
+	     *  判断当前时间与静默设置时间的对比 
+	     *  如果当前时间小于开始时间 状态为active
+	     *  如果当前时间大于开始时间 小于结束时间 状态为pending
+	     *  如果当前时间大于结束时间 状态为expired 
+	     */
+		if(currentTime.before(alertSilenceConf.getStartAt())) {
+			alertSilenceConf.setState(1);
+		}else if(currentTime.after(alertSilenceConf.getStartAt())&&currentTime.before(alertSilenceConf.getEndAt())){
+			alertSilenceConf.setState(2);
+		}else {
+			alertSilenceConf.setState(3);
+		}
+	    
 		//更新时间
 		alertSilenceConf.setUtime(DateUtil.getUTCTimeByConfigTimeZone());
 		
@@ -113,6 +133,11 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		}else {
 			alertSilenceDao.insert(alertSilenceConf);
 		}
+		
+		// 如果alert message已经存在告警 需要将符合静默的数据状态state改为3
+		if(alertSilenceConf.getState().equals(2)) {
+			alertMessageDao.updateStateBySilence(alertSilenceConf);
+		}		
 	}
 
 	@Override

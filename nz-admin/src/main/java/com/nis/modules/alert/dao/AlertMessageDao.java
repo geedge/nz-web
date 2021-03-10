@@ -3,6 +3,7 @@ package com.nis.modules.alert.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.metric.dto.MetricsDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -41,4 +42,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     // 只返回用于统计的列  severity rule_id  project_id module_id asset_id dc_id
     List<AlertMessageEntity> getAlertsStatColumn();
+    
+    void updateStateBySilence(AlertSilenceConf alertSilenceConf);
 }
