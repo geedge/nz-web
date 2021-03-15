@@ -1,11 +1,13 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 
 /**
@@ -29,6 +31,12 @@ public class AssetTypeConf implements Serializable {
      * 父id
      */
     private Integer pid;
+
+    /**
+     * 父名称
+     */
+    @TableField(exist = false)
+    private String pname;
 
     /**
      * 是否为虚拟机宿主  0:不是宿主机，不支持挂载 虚拟机 1:是宿主机，支持挂载虚拟机
@@ -65,18 +73,10 @@ public class AssetTypeConf implements Serializable {
      */
     private Integer buildIn;
 
-    @Override
-    public String toString() {
-        return "AssetTypeConf{" +
-                "id=" + id +
-                ", pid=" + pid +
-                ", vm=" + vm +
-                ", vmh=" + vmh +
-                ", name='" + name + '\'' +
-                ", ssh=" + ssh +
-                ", telnet=" + telnet +
-                ", remark='" + remark + '\'' +
-                ", buildIn=" + buildIn +
-                '}';
-    }
+    /**
+     * 子 配置项集合
+     */
+    @TableField(exist = false)
+    private List<AssetTypeConf> children;
+
 }

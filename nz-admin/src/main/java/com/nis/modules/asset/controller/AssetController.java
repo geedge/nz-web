@@ -357,6 +357,15 @@ public class AssetController {
         return R.ok(page);
     }
 
+    @GetMapping("/typeConf/tree")
+    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
+    public R queryTypeConfTree(Integer pid) {
+        List<AssetTypeConf> typeConfTreeList = typeConfService.queryTypeConfTree(pid);
+        Map map = new HashMap(2);
+        map.put("list", typeConfTreeList);
+        return R.ok(map);
+    }
+
     @PostMapping("/typeConf")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETTYPECONF)
     public R saveAssetTypeConf(@RequestBody AssetTypeConf conf) {

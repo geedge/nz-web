@@ -41,6 +41,8 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
         if (ToolUtil.isEmpty(conf)) {
             throw new NZException(RCode.TYPECONF_NOT_FOUND);
         }
+        AssetTypeConf pconf = this.getById(conf.getPid());
+        conf.setPname(ToolUtil.isNotEmpty(pconf) ? pconf.getName() : "default");
         return conf;
     }
 
@@ -53,6 +55,16 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
                 .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"));
 
         IPage<AssetTypeConf> page = this.page(new Query<AssetTypeConf>().getPage(params), queryWrapper);
+        List<AssetTypeConf> assetTypeConfs = page.getRecords();
+        if (CollectionUtils.isNotEmpty(assetTypeConfs)) {
+            List<AssetTypeConf> allConfig = this.list();
+            Map<Integer, String> confIdAndNameMap = allConfig.stream().collect(Collectors.toMap(AssetTypeConf::getId, AssetTypeConf::getName));
+            for (AssetTypeConf conf : assetTypeConfs) {
+                String pname = confIdAndNameMap.get(conf.getPid());
+                conf.setPname(ToolUtil.isNotEmpty(pname) ? pname : "default");
+            }
+            page.setRecords(assetTypeConfs);
+        }
         return new PageUtils(page);
     }
 
@@ -147,6 +159,27 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+    }
+
+    @Override
+    public List<AssetTypeConf> queryTypeConfTree(Integer pid) {
+        List<AssetTypeConf> assetTypeConfList = this.list();
+        Map<Integer, String> confIdAndNameMap = assetTypeConfList.stream().collect(Collectors.toMap(AssetTypeConf::getId, AssetTypeConf::getName));
+        assetTypeConfList = this.getConfTreeList(assetTypeConfList, confIdAndNameMap, ToolUtil.isEmpty(pid) ? 0 : pid);
+        return assetTypeConfList;
+    }
+
+    private List<AssetTypeConf> getConfTreeList(List<AssetTypeConf> assetTypeConfList, Map<Integer, String> confIdAndNameMap, Integer pid) {
+        List<AssetTypeConf> resultList = new ArrayList<>();
+        for (AssetTypeConf conf : assetTypeConfList) {
+            if (conf.getPid().equals(pid)) {
+                conf.setChildren(this.getConfTreeList(assetTypeConfList, confIdAndNameMap, conf.getId()));
+                resultList.add(conf);
+            }
+            String pname = confIdAndNameMap.get(conf.getPid());
+            conf.setPname(ToolUtil.isNotEmpty(pname) ? pname : "default");
+        }
+        return resultList;
     }
 
 }
