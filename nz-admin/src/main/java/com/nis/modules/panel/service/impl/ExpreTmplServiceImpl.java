@@ -81,7 +81,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         LambdaQueryWrapper<ExpressionTmpl> queryWrapper = new LambdaQueryWrapper<ExpressionTmpl>()
                 .eq(ToolUtil.isNotEmpty(params.get("id")), ExpressionTmpl::getId, params.get("id"))
                 .like(ToolUtil.isNotEmpty(params.get("name")), ExpressionTmpl::getName, params.get("name"))
-                .like(ToolUtil.isNotEmpty(params.get("gname")), ExpressionTmpl::getGname, params.get("gname"));
+                .eq(ToolUtil.isNotEmpty(params.get("gname")), ExpressionTmpl::getGname, params.get("gname"));
 
         IPage<ExpressionTmpl> page = this.page(new Query<ExpressionTmpl>().getPage(params), queryWrapper);
         return new PageUtils(page);
