@@ -692,4 +692,13 @@ public class Constant {
     
     // endpoint state告警规则
     public static final String ENDPOINT_ALERT_RULE="endpoint_alert_rule";
+    
+    // 存放prometheus推送过来的告警消息
+    public static final String ALERT_MESSAGE_RECV="alert_message_recv";
+    
+    // 存放prometheus已经处理过的告警信息
+    public static final String ALERT_MESSAGE_SILENCE="alert_message_silence";
+    
+    // 存放需要通知的告警信息
+    public static final String ALERT_MESSAGE_NOTIFY="alert_message_notify";
 }

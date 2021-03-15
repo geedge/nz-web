@@ -273,6 +273,18 @@ public enum RCode {
     ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE(334019,"Auth protocol must be MD5 or SHA"),
     ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE(334020,"Priv protocol must be DES or AES"),
 
+    ASSET_ACCOUNT_ID_ISNULL(331021,"asset account id can not be null"),
+    ASSET_ACCOUNT_NAME_ISNULL(331022,"asset account name can not be null"),
+    ASSET_ACCOUNT_PROTOCOL_ISNULL(331023,"asset account protocol can not be null"),
+    ASSET_ACCOUNT_AUTHTYPE_ISNULL(331024,"asset account auth type can not be null"),
+    ASSET_ACCOUNT_USERNAME_ISNULL(331025,"asset account username can not be null"),
+    ASSET_ACCOUNT_PASSWORD_ISNULL(331026,"asset account password can not be null"),
+    ASSET_ACCOUNT_PRIKEY_ISNULL(331027,"asset account prikey can not be null"),
+    ASSET_ACCOUNT_USERTIP_ISNULL(331028,"asset account user tip can not be null when auth type is telnet"),
+    ASSET_ACCOUNT_PASSWORDTIP_ISNULL(331029,"asset account password tip can not be null when auth type is telnet"),
+    ASSET_ACCOUNT_WEIGHT_ISNULL(331030,"asset account id can not be null"),
+    ASSET_ACCOUNT_STATE_ISNULL(331031,"asset account id can not be null"),
+    
     STATECONF_NAME_ISNULL(341000,"Asset state conf name is null"),
     STATECONF_PING_ISNULL(341001,"Asset state conf ping is null"),
     STATECONF_MONITOR_ISNULL(341002,"Asset state conf monitor is null"),

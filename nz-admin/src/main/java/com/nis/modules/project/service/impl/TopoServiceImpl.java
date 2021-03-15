@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -64,7 +65,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
         if (CollectionUtils.isEmpty(topos)) {
             return;
         }
-        Map<Integer, Object> topoProjectIdAndConfigMap = topos.stream().collect(Collectors.toMap(Topo::getProjectId, Topo::getTopo));
+        Map<Integer, Object> topoProjectIdAndConfigMap = topos.stream().collect(Collectors.toMap(Topo::getProjectId, Function.identity()));
 
         // module 是批量删除，删除的或许不属于同一个 project
         Map<Integer, List<Module>> projectIdAndMoudles = modules.stream().collect(Collectors.groupingBy(Module::getProjectId));

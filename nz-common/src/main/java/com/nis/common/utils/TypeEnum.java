@@ -6,6 +6,8 @@ package com.nis.common.utils;
 public enum TypeEnum {
     //类型type
     ASSET("asset"),
+    ASSETACCOUNT("asset account"),
+    ASSETACCOUNTREL("asset account rel"),
     ENDPOINT("endpoint"),
     PROJECT("project"),
     MODULE("module"),
