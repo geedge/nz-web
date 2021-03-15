@@ -25,7 +25,8 @@ public enum TypeEnum {
     SCRIPT("notification script"),
 	ALERTSILENCE("alert silence"),
     ASSETSTATECONF("asset state conf"),
-    ASSETTYPECONF("asset type conf");
+    ASSETTYPECONF("asset type conf"),
+    EXPRESSIONTMPL("expression tmpl");
     private String value;
 
     public String getValue(){

@@ -98,6 +98,23 @@ public enum RCode {
     PANEL_WEIGHT_ISNULL(121059,"Panel weight not be empty"),
     PANEL_NAME_FORMAT_ERROR(123060,"Panel name format error, can not include '/'"),
 
+    EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
+    EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
+    EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),
+    EXPRETMPL_NAME_DUPLICATE(132003, "Expression template name is duplicate"),
+    EXPRETMPL_ID_ISNULL(131004, "Expression template id is null"),
+    EXPRETMPL_BUILDIN_CAN_NOT_REMOVE(137005, "This expression template is built-in and cannot be deleted"),
+    EXPRETMPL_CONTAIN_BABY_CAN_NOT_REMOVE(137006, "This expression template contain sub-templates and cannot be deleted"),
+    EXPRETMPL_EXPORT_HEADER_LANGUAGE_ISNULL(131007, "Export header language can not be empty"),
+    EXPRETMPL_EXPORT_HEADER_LANGUAGE_ERROR(134008, "Export header language must be en, cn and ru"),
+    EXPRETMPL_RENDER_DATA_ISNULL(131009, "Expression template render data is null"),
+    EXPRETMPL_IMPORT_FILE_ISNULL(131010, "Expression template import file is null"),
+    EXPRETMPL_SEQ_ISNULL(131011, "Cancel import serial number is empty"),
+    EXPRETMPL_IMPORTFILE_TYPE(139012, "Only support import XLS or XLSX file"),
+    EXPRETMPL_IMPORTFILE_FAILED(139013, "Import file resolution failed"),
+    EXPRETMPL_GROUP_NOT_FOUND(136014, "Expression group not found"),
+    EXPRETMPL_IMPORT_ERROR(133015, "Expression template import error"),
+    EXPRETMPL_BUILDIN_INCORRECT(134016, "Expression template buildin must be 0 or 1"),
 
     /**
      * project菜单项相关

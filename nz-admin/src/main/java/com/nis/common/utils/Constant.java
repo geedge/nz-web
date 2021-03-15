@@ -583,6 +583,9 @@ public class Constant {
     // endpoint 导入表头
     public static final String SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER = "endpoint_export_header";
 
+    // expression template 导入表头
+    public static final String SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER = "expretmpl_export_header";
+
     // 登录时 ldap template 超时时间
     public static final String SYSCONFIG_KEY_LDAP_QUERY_TIMEOUT = "ldap_query_timeout";
 
