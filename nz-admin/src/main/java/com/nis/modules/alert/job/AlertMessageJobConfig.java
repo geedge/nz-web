@@ -20,6 +20,9 @@ public class AlertMessageJobConfig {
     @Value("${nezha.alertMessageJobCron}")
     private String alertMessageJobCron;
 
+    @Value("${nezha.alertSilenceJobCron}")
+    private String alertSilenceJobCron;
+    
     @Autowired
     private SchedulerFactoryBean schedulerFactoryBean;
 
@@ -28,6 +31,7 @@ public class AlertMessageJobConfig {
 
     private String alertMessageEmailNotificationJobName = "ALERTMESSAGEEMAILNOTIFICATION_JOB";
     private String alertMessageExpirStatusJobName = "ALERTMESSAGEEXPIRSTATUS_JOB";
+    private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
 
     @Bean
     public JobDetail alertMessageEmailNotifiJobDetail() {
@@ -37,6 +41,11 @@ public class AlertMessageJobConfig {
     @Bean
     public JobDetail alertMessageExpirStatusJobDetail() {
         return JobBuilder.newJob(AlertMessageExpirStatusJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageExpirStatusJobName).storeDurably().build();
+    }
+    
+    @Bean
+    public JobDetail alertSilenceStatusJobDetail() {
+        return JobBuilder.newJob(AlertSilenceStatusJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertSilenceStatusJobName).storeDurably().build();
     }
 
     @PostConstruct
@@ -55,5 +64,8 @@ public class AlertMessageJobConfig {
 
         // alertmessageJob 配置
         ScheduleUtils.createCronScheduleJob(alertMessageExpirStatusJobName, alertMessageExpirStatusJobDetail(), alertMessageJobCron, scheduler);
+    
+        // alertSilenceStatusJob 配置
+        ScheduleUtils.createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), alertSilenceJobCron, scheduler);
     }
 }

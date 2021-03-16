@@ -46,6 +46,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -571,4 +572,71 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
             ExcelUtils.setDataCellStyle(dataStyle, r, 13);
         }
     }
+
+	@Override
+	public void saveBatchToCache(String receiveStr, HttpServletRequest request) throws Exception {
+		logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
+
+	    // 接收告警的当前时间
+	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+
+	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
+	    if (CollectionUtils.isEmpty(receiveData)) return;
+    
+	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
+	    Integer buildRuleId = buildRule.getId();
+
+	    // 当前激活状态的告警消息
+	    List<AlertMessageEntity> pendingAlert = this.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1));
+	    Map<String, AlertMessageEntity> alertHashKeyAndEntityMap = new HashMap<>();
+	    for (AlertMessageEntity entity : pendingAlert) {
+		    alertHashKeyAndEntityMap.put(entity.getHashKey(), entity);
+	    }
+
+	    List<Endpoint> endpointList = endpointService.list();
+	    Map<Integer, Endpoint> endpointMap = new HashMap<>();
+	    for (Endpoint endpoint : endpointList) {
+		    endpointMap.put(endpoint.getId(), endpoint);
+	    }
+
+	    List<Module> moduleList = moduleService.list();
+	    Map<Integer, Module> moduleIdAndEntityMap = new HashMap<>();
+	    Map<String, Module> moduleNameAndEntityMap = new HashMap<>();
+	    for (Module module : moduleList) {
+		    moduleIdAndEntityMap.put(module.getId(), module);
+		    moduleNameAndEntityMap.put(module.getName(), module);
+	    }
+
+	    List<Asset> assetList = assetService.list();
+	    Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
+	    Map<String, Asset> assetHostAndEntityMap = new HashMap<>();
+	    for (Asset asset : assetList) {
+		    assetIdAndEntityMap.put(asset.getId(), asset);
+		    assetHostAndEntityMap.put(asset.getHost(), asset);
+	    }
+
+	    List<Project> projectList = projectService.list();
+	    Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(Project::getName, Project::getId));
+
+	    List<Idc> idcList = idcService.list();
+	    Map<String, Integer> idcNameAndIdMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Idc::getId));
+
+	    AlertMessageEntity entity;
+	    List<AlertMessageEntity> entities =new ArrayList<AlertMessageEntity>();
+	    ListOperations<String, Object> opsForList = redisTemplate.opsForList();
+	    
+	    for (AlertMessageReceiveDTO dto : receiveData) {
+		    try {
+			    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, idcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
+			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
+			    entities.add(entity);
+			    
+		    } catch (Exception e) {
+			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
+			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
+		    }
+	    }
+	    // 存入缓存
+	    opsForList.leftPush(Constant.ALERT_MESSAGE_RECV, JSON.toJSONString(entities));
+	}
 }

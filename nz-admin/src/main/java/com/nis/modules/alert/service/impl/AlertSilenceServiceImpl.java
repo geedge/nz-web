@@ -10,6 +10,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
@@ -22,6 +23,7 @@ import com.nis.common.utils.RCode;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.service.AlertSilenceService;
@@ -216,6 +218,53 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 				result=false;
 		}
 		return result;
+	}
+
+	@Override
+	public boolean checkMatchSilence(AlertMessageEntity alertMessageEntity) {
+		if(ObjectUtil.isEmpty(alertMessageEntity)) {
+			return false;
+		}
+		List<AlertSilenceConf> alertSilenceConfs = this.list(new LambdaQueryWrapper<AlertSilenceConf>().eq(AlertSilenceConf::getRuleId, alertMessageEntity.getRuleId()).eq(AlertSilenceConf::getState, 2));
+		if(ObjectUtil.isEmpty(alertSilenceConfs)) {
+			return false;
+		}else {
+			for(AlertSilenceConf alertSilenceConf : alertSilenceConfs) {
+				if(alertSilenceConf.getLinkId().equals(-1)) {
+					return true;
+				}
+				switch(alertSilenceConf.getType()) {
+					case "datacenter":
+						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getDcId())){
+							return true;
+						}
+					case "project":
+						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getProjectId())){
+							return true;
+						}
+					case "module":
+						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getModuleId())){
+							return true;
+						}
+					case "endpoint":
+						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getEndpointId())){
+							return true;
+						}
+					case "asset":
+						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getAssetId())){
+							return true;
+						}
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public void modifySilenceState() {
+		
+		alertSilenceDao.updateSilenceState();
+		
 	}
 	
 }

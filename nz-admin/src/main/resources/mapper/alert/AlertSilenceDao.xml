@@ -68,6 +68,9 @@
          <if test="params.id != null and params.id !='' ">
          	and asic.id = #{params.id}
          </if>
+         <if test="params.state != null and params.state !='' ">
+         	and asic.state = #{params.state}
+         </if>
          <if test="params.startAt != null">
          	and asic.start_at &gt;= #{params.startAt}
          </if>
@@ -99,4 +102,9 @@
          
     </select>
 
+
+	<update id="updateSilenceState">
+		UPDATE alert_silence_conf 
+		SET state = ( CASE WHEN now() &lt; start_at THEN 1 WHEN ( now() &gt;= start_at AND now() &lt;= end_at ) THEN 2 ELSE 3 END);
+	</update>
 </mapper>

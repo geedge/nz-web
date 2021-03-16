@@ -8,10 +8,13 @@ import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 
 @Mapper
 public interface AlertSilenceDao extends BaseMapper<AlertSilenceConf>{
 
 	List<AlertSilenceConf> selectAlertSilenceConfs(IPage<AlertSilenceConf> page,@Param("params")Map<String,Object> params);
+
+	void updateSilenceState();
 }

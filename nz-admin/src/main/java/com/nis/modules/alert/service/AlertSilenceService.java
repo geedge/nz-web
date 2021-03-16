@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 
 public interface AlertSilenceService extends IService<AlertSilenceConf>{
@@ -16,4 +17,8 @@ public interface AlertSilenceService extends IService<AlertSilenceConf>{
 	void removeByIds(List<Integer> ids);
 	
 	AlertSilenceConf queryAlertSilence(Integer id);
+	
+	boolean checkMatchSilence(AlertMessageEntity alertMessageEntity);
+	
+	void modifySilenceState();
 }
