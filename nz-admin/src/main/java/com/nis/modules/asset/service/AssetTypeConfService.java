@@ -19,9 +19,9 @@ public interface AssetTypeConfService extends IService<AssetTypeConf> {
 
     PageUtils queryPage(Map<String, Object> params);
 
-    void saveConf(AssetTypeConf conf);
+    Integer saveConf(AssetTypeConf conf);
 
-    void updateConf(AssetTypeConf conf);
+    Integer updateConf(AssetTypeConf conf);
 
     void delete(Integer... ids);
 

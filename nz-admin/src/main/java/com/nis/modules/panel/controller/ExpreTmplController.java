@@ -61,8 +61,9 @@ public class ExpreTmplController {
         ValidateUtils.is(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
                 .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
 
-        expreTmplService.saveTmpl(tmpl);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", expreTmplService.saveTmpl(tmpl));
+        return R.ok(map);
     }
 
     @PutMapping
@@ -73,8 +74,9 @@ public class ExpreTmplController {
                 .and(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
                 .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
 
-        expreTmplService.updateTmpl(tmpl);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", expreTmplService.updateTmpl(tmpl));
+        return R.ok(map);
     }
 
     @DeleteMapping

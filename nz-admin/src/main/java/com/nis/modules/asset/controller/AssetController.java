@@ -316,8 +316,9 @@ public class AssetController {
                 .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
                 .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
 
-        stateConfService.saveConf(conf);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", stateConfService.saveConf(conf));
+        return R.ok(map);
     }
 
     @PutMapping("/stateConf")
@@ -329,8 +330,9 @@ public class AssetController {
                 .and(conf.getAlert()).notNull(RCode.STATECONF_ALERT_ISNULL)
                 .and(conf.getMonitor()).notNull(RCode.STATECONF_MONITOR_ISNULL);
 
-        stateConfService.updateConf(conf);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", stateConfService.updateConf(conf));
+        return R.ok(map);
     }
 
     @DeleteMapping("/stateConf")
@@ -375,8 +377,9 @@ public class AssetController {
                 .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
                 .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
 
-        typeConfService.saveConf(conf);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", typeConfService.saveConf(conf));
+        return R.ok(map);
     }
 
     @PutMapping("/typeConf")
@@ -389,8 +392,9 @@ public class AssetController {
                 .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
                 .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
 
-        typeConfService.updateConf(conf);
-        return R.ok();
+        Map map = new HashMap(2);
+        map.put("id", typeConfService.updateConf(conf));
+        return R.ok(map);
     }
 
     @DeleteMapping("/typeConf")

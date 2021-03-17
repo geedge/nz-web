@@ -115,7 +115,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     }
 
     @Override
-    public void saveTmpl(ExpressionTmpl tmpl) {
+    public Integer saveTmpl(ExpressionTmpl tmpl) {
         // 1. 校验
         this.validateExpressionTmplInfo(tmpl);
 
@@ -125,10 +125,11 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
         // 保存
         this.save(tmpl);
+        return tmpl.getId();
     }
 
     @Override
-    public void updateTmpl(ExpressionTmpl tmpl) {
+    public Integer updateTmpl(ExpressionTmpl tmpl) {
         // 1. 校验
         this.validateExpressionTmplInfo(tmpl);
 
@@ -138,6 +139,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
         // 保存
         this.updateById(tmpl);
+        return tmpl.getId();
     }
 
     @Override

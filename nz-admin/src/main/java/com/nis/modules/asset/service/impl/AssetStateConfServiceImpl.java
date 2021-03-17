@@ -98,21 +98,23 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
     }
 
     @Override
-    public void saveConf(AssetStateConf conf) {
+    public Integer saveConf(AssetStateConf conf) {
         // 1. 校验
         this.validateAssetStateConfInfo(conf);
 
         // 2. 保存
         this.save(conf);
+        return conf.getId();
     }
 
     @Override
-    public void updateConf(AssetStateConf conf) {
+    public Integer updateConf(AssetStateConf conf) {
         // 1. 校验
         this.validateAssetStateConfInfo(conf);
 
         // 2. 保存
         this.updateById(conf);
+        return conf.getId();
     }
 
     @Override

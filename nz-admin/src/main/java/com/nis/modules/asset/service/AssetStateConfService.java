@@ -16,9 +16,9 @@ public interface AssetStateConfService extends IService<AssetStateConf> {
 
     PageUtils queryPage(Map<String, Object> params);
 
-    void saveConf(AssetStateConf conf);
+    Integer saveConf(AssetStateConf conf);
 
-    void updateConf(AssetStateConf conf);
+    Integer updateConf(AssetStateConf conf);
 
     void delete(Integer... ids);
 

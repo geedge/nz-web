@@ -109,21 +109,23 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
     }
 
     @Override
-    public void saveConf(AssetTypeConf conf) {
+    public Integer saveConf(AssetTypeConf conf) {
         // 1. 校验
         this.validateAssetTypeConfInfo(conf);
 
         // 2. 保存
         this.save(conf);
+        return conf.getId();
     }
 
     @Override
-    public void updateConf(AssetTypeConf conf) {
+    public Integer updateConf(AssetTypeConf conf) {
         // 1. 校验
         this.validateAssetTypeConfInfo(conf);
 
         // 2. 保存
         this.updateById(conf);
+        return conf.getId();
     }
 
     @Override

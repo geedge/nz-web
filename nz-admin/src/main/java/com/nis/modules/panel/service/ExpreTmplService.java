@@ -23,9 +23,9 @@ public interface ExpreTmplService extends IService<ExpressionTmpl> {
 
     List<String> queryTmplsByGname(String gname);
 
-    void saveTmpl(ExpressionTmpl tmpl);
+    Integer saveTmpl(ExpressionTmpl tmpl);
 
-    void updateTmpl(ExpressionTmpl tmpl);
+    Integer updateTmpl(ExpressionTmpl tmpl);
 
     void delete(Integer... ids);
 
