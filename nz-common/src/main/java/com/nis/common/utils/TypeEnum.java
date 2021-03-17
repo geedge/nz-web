@@ -28,7 +28,8 @@ public enum TypeEnum {
 	ALERTSILENCE("alert silence"),
     ASSETSTATECONF("asset state conf"),
     ASSETTYPECONF("asset type conf"),
-    EXPRESSIONTMPL("expression tmpl");
+    EXPRESSIONTMPL("expression tmpl"),
+    ASSETBRAND("asset brand");
     private String value;
 
     public String getValue(){

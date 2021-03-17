@@ -209,4 +209,6 @@ public class Asset implements Serializable {
     private Integer stateId;
 
     private Integer typeId;
+
+    private Integer brandId;
 }

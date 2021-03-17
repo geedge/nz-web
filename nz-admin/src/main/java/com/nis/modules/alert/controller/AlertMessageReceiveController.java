@@ -41,7 +41,7 @@ public class AlertMessageReceiveController {
     	try {
 		    alertMessageService.saveBatchToCache(receiveStr, request);
     	} catch (Exception e) {
-			    logger.error(request.getRemoteAddr() + " 推送过来的 promethues 告警消息处理异常，消息是：" + receiveStr + " 异常信息是：" +  e);
+		    logger.error(request.getRemoteAddr() + " 推送过来的 promethues 告警消息处理异常，消息是：" + receiveStr + " 异常信息是：" + e.getMessage(), e);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
 		}
 

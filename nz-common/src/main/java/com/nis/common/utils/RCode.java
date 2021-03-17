@@ -250,6 +250,8 @@ public enum RCode {
     ASSET_MODELID_INCONSISTENT(323010,"Asset model is inconsistent with model Id"),
     ASSET_IPMITYPE_ERROR(323011,"Asset type must be a server can save ipmi information"),
     ASSET_MODELRELATED_MIBS(323012, "These models contain mibs and cannot be deleted"),
+    ASSET_MODEL_BRANDID_ISNULL(321013, "Asset model brand id can not be null"),
+
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
@@ -316,6 +318,12 @@ public enum RCode {
     TYPECONF_BEUSED_CAN_NOT_REMOVE(357014, "This configurations is already used by the asset and cannot be deleted"),
     TYPECONF_PARENT_NOT_FOUND(356015, "Asset type parent config not found"),
     TYPECONF_CONTAIN_BABY_CAN_NOT_REMOVE(357016, "This configurations contain sub-configuration and cannot be deleted"),
+
+    ASSET_BRAND_NOT_FOUND(366000, "Asset brand not found"),
+    ASSET_BRAND_NAME_ISNULL(361001, "Asset brand name is null"),
+    ASSET_BRAND_ID_ISNULL(361002, "Asset brand id is null"),
+    ASSET_BRAND_NAME_DUPLICATE(362003, "Asset brand name is duplicate"),
+    ASSET_BRAND_BEUSED_CAN_NOT_REMOVE(367004, "This brand is already used and cannot be deleted"),
 
     /**
      * alerts菜单栏相关
