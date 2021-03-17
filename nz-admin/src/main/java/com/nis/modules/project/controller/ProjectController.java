@@ -168,7 +168,7 @@ public class ProjectController extends AbstractController {
 	 * @param projectId
 	 */
 	@GetMapping(value = "/topo")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
 	@RequiresPermissions({"project:topo:list"})
 	public R queryTopo(Integer projectId) {
 		ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
@@ -179,7 +179,7 @@ public class ProjectController extends AbstractController {
 	}
 
 	@PutMapping("/topo")
-	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT)
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TOPO)
 	@RequiresPermissions({"project:topo:update"})
 	public R updateProjectTopo(@RequestBody Map<String, Object> params) {
 		Integer projectId = (Integer) params.get("projectId");
@@ -199,7 +199,7 @@ public class ProjectController extends AbstractController {
 	 * @param response
 	 */
 	@GetMapping(value = "/topo/iconUnit")
-	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
 	@RequiresPermissions({"project:topo:icon:unit"})
 	public R queryTopoUnit(String name) {
 

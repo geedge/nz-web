@@ -10,6 +10,7 @@ public enum TypeEnum {
     ASSETACCOUNTREL("asset account rel"),
     ENDPOINT("endpoint"),
     PROJECT("project"),
+    TOPO("project topo"),
     MODULE("module"),
     ALERTRULE("alert rule"),
     ALERTMESSAGE("alert message"),

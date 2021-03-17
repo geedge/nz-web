@@ -130,7 +130,7 @@ public class SysLogAspect {
 
         // 处理参数记录
         String paramResult = this.handleArgs(syslog, args, ShiroUtils.getUserEntity());
-        paramResult = this.handleLogParam(paramResult);
+        paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
         sysLog.setParams(paramResult);
 
         // 登录出现异常时
@@ -202,9 +202,11 @@ public class SysLogAspect {
             oepraId = JSON.toJSONString(params.get(0)).replace("\"", "");
         }
         sysLog.setOperaId(oepraId);
+        // 获取request
+        HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
 
         // 处理 参数信息
-        paramResult = this.handleLogParam(paramResult);
+        paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
         sysLog.setParams(paramResult);
 
         Long userId = null;
@@ -215,8 +217,6 @@ public class SysLogAspect {
         }
         sysLog.setUserId(userId == null ? null : userId.intValue());
 
-        // 获取request
-        HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
         // 设置IP地址
         sysLog.setIp(IPUtils.getIpAddr(request));
 
@@ -232,9 +232,14 @@ public class SysLogAspect {
      * 处理保存参数信息
      * 1. system ldap 不保存 ldap_password
      * 2. system email 不保存 email_smtp_password
+     * 3. project topo 不保存 更新配置信息 topo
+     * @param requestURI
      * @param paramResult
      */
-    private String handleLogParam(String paramResult) {
+    private String handleLogParam(String requestURI, String paramResult) {
+        if (!requestURI.endsWith("project/topo") && !requestURI.endsWith("sysConfig")) {
+            return paramResult;
+        }
         if (StringUtils.isNotEmpty(paramResult)) {
             try {
                 Map<String, Object> map = JSONObject.parseObject(paramResult, Map.class);
@@ -247,6 +252,7 @@ public class SysLogAspect {
                                 ((Map) pojo).remove("email_smtp_password");
                             }
                         }
+                        ((Map) value).remove("topo");
                         obj.setValue(value);
                     }
                 }
