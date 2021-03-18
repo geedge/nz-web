@@ -59,10 +59,10 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
         try{
-            Resource applicationResource = Utils.getResource(null);
+            Resource applicationResource = Utils.getResource(profile,null);
             modifyApplication(applicationResource, setup.getRedis());
 
-            Resource applicationProfileResource = Utils.getResource(profile);
+            Resource applicationProfileResource = Utils.getResource(profile,profile);
             modifyApplicationProfile(applicationProfileResource,setup.getDatabase());
 
             writeTmpFile(setup);
@@ -70,7 +70,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             restart();
             return R.ok();
         }catch (IOException e){
-           return R.error();
+            return R.error();
         }
     }
     @GetMapping("/checkCode")

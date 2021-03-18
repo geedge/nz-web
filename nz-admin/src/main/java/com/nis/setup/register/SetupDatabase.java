@@ -40,6 +40,9 @@ public class SetupDatabase {
     @Value("${nezha.adminId:1}")
     private String adminId;
 
+    @Value("${spring.profiles.active}")
+    private String profile;
+
     @Value("${server.tomcat.basedir}")
     private String tmpDir;
 
@@ -70,7 +73,7 @@ public class SetupDatabase {
 
         sysUserService.updateById(sysUser);
 
-        Resource applicationResource = Utils.getResource(null);
+        Resource applicationResource = Utils.getResource(profile,null);
         modifyApplication(applicationResource);
     }
 
