@@ -8,6 +8,8 @@ public enum TypeEnum {
     ASSET("asset"),
     ASSETACCOUNT("asset account"),
     ASSETACCOUNTREL("asset account rel"),
+    ASSETFIELDGROUP("asset field group"),
+    ASSETFIELDMETA("asset field meta"),
     ENDPOINT("endpoint"),
     PROJECT("project"),
     TOPO("project topo"),

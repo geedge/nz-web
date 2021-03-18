@@ -181,6 +181,9 @@ public class Constant {
     // alert rule unit
     public static final Map<String,Integer> ALERT_RULE_UNIT_MAP;
 
+    // asset field meta 配置值
+    public static final List<String> ASSET_FIELD_META_VALUE;
+    
     static {
     	DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider", DatabaseIdProvider.class);
         DataSource dataSource = SpringContextUtils.getBean("dataSource",DataSource.class);
@@ -322,6 +325,8 @@ public class Constant {
         ALERT_RULE_UNIT_MAP.put("d", 33);
         ALERT_RULE_UNIT_MAP.put("YYYY-MM-DD HH:mm:ss", 34);
         ALERT_RULE_UNIT_MAP.put("MM/DD/YYYY h:mm:ss a", 35);
+        
+        ASSET_FIELD_META_VALUE = Arrays.asList(new String[]{"text", "multitext", "textarea", "radio", "checkbox", "select","integer","double","datetime","email"});
     }
     
     /**

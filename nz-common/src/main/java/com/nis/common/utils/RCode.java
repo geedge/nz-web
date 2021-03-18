@@ -275,17 +275,17 @@ public enum RCode {
     ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE(334019,"Auth protocol must be MD5 or SHA"),
     ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE(334020,"Priv protocol must be DES or AES"),
 
-    ASSET_ACCOUNT_ID_ISNULL(331021,"asset account id can not be null"),
-    ASSET_ACCOUNT_NAME_ISNULL(331022,"asset account name can not be null"),
-    ASSET_ACCOUNT_PROTOCOL_ISNULL(331023,"asset account protocol can not be null"),
-    ASSET_ACCOUNT_AUTHTYPE_ISNULL(331024,"asset account auth type can not be null"),
-    ASSET_ACCOUNT_USERNAME_ISNULL(331025,"asset account username can not be null"),
-    ASSET_ACCOUNT_PASSWORD_ISNULL(331026,"asset account password can not be null"),
-    ASSET_ACCOUNT_PRIKEY_ISNULL(331027,"asset account prikey can not be null"),
-    ASSET_ACCOUNT_USERTIP_ISNULL(331028,"asset account user tip can not be null when auth type is telnet"),
-    ASSET_ACCOUNT_PASSWORDTIP_ISNULL(331029,"asset account password tip can not be null when auth type is telnet"),
-    ASSET_ACCOUNT_WEIGHT_ISNULL(331030,"asset account id can not be null"),
-    ASSET_ACCOUNT_STATE_ISNULL(331031,"asset account id can not be null"),
+    ASSET_ACCOUNT_ID_ISNULL(331001,"asset account id can not be null"),
+    ASSET_ACCOUNT_NAME_ISNULL(331002,"asset account name can not be null"),
+    ASSET_ACCOUNT_PROTOCOL_ISNULL(331003,"asset account protocol can not be null"),
+    ASSET_ACCOUNT_AUTHTYPE_ISNULL(331004,"asset account auth type can not be null"),
+    ASSET_ACCOUNT_USERNAME_ISNULL(331005,"asset account username can not be null"),
+    ASSET_ACCOUNT_PASSWORD_ISNULL(331006,"asset account password can not be null"),
+    ASSET_ACCOUNT_PRIKEY_ISNULL(331007,"asset account prikey can not be null"),
+    ASSET_ACCOUNT_USERTIP_ISNULL(331008,"asset account user tip can not be null when auth type is telnet"),
+    ASSET_ACCOUNT_PASSWORDTIP_ISNULL(331009,"asset account password tip can not be null when auth type is telnet"),
+    ASSET_ACCOUNT_WEIGHT_ISNULL(331010,"asset account id can not be null"),
+    ASSET_ACCOUNT_STATE_ISNULL(331011,"asset account id can not be null"),
     
     STATECONF_NAME_ISNULL(341000,"Asset state conf name is null"),
     STATECONF_PING_ISNULL(341001,"Asset state conf ping is null"),
@@ -325,6 +325,19 @@ public enum RCode {
     ASSET_BRAND_NAME_DUPLICATE(362003, "Asset brand name is duplicate"),
     ASSET_BRAND_BEUSED_CAN_NOT_REMOVE(367004, "This brand is already used and cannot be deleted"),
 
+    ASSET_FIELD_GROUP_ID_ISNULL(361001,"Asset field group id can not be empty"),
+    ASSET_FIELD_GROUP_NAME_ISNULL(361002,"Asset field group name can not be empty"),
+    
+    ASSET_FIELD_META_ID_ISNULL(371001,"Asset field meta id can not be empty"),
+    ASSET_FIELD_META_NAME_ISNULL(371002,"Asset field meta name can not be empty"),
+    ASSET_FIELD_META_KEY_ISNULL(371003,"Asset field meta key can not be empty"),
+    ASSET_FIELD_META_GROUPID_ISNULL(371004,"Asset field meta group id can not be empty"),
+    ASSET_FIELD_META_SEARCH_ISNULL(371005,"Asset field meta search can not be empty"),
+    ASSET_FIELD_META_DISPLAY_ISNULL(371006,"Asset field meta display can not be empty"),
+    ASSET_FIELD_META_TYPE_ISNULL(371007,"Asset field meta type can not be empty"),
+    ASSET_FIELD_META_TYPE_ERROR(375008,"Asset field type value out of range"),
+    ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
+    
     /**
      * alerts菜单栏相关
      */

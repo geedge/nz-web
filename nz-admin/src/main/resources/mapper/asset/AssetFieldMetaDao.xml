@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.AssetFieldMetaDao">
+	<resultMap type="com.nis.modules.asset.entity.AssetFieldMeta" id="assetFieldMeta">
+		<result property="id" column="id"/>
+		<result property="name" column="name" />
+		<result property="metaKey" column="meta_key" />
+		<result property="groupId" column="group_id" />
+		<result property="search" column="search" />
+		<result property="display" column="display" />
+		<result property="type" column="type" />
+		<result property="param" column="param" />
+		<result property="remark" column="remark" />
+		<association columnPrefix="afg_" property="group" javaType="com.nis.modules.asset.entity.AssetFieldGroup">
+	    	<id column="id" property="id"/>
+	    	<result column="name" property="name"/>
+	    	<result column="remark" property="remark"/>
+	    </association>
+	</resultMap>
+    
+    <select id="selectAssetFieldMeta" resultMap="assetFieldMeta">
+    	select afm.id,
+    	afm.name,
+    	afm.meta_key,
+    	afm.group_id,
+    	afm.search,
+    	afm.display,
+    	afm.type,
+    	afm.param,
+    	afm.remark,
+    	afg.name as afg_name,
+    	afg.id as afg_id
+    	from asset_field_meta afm left join asset_field_group afg on afm.group_id = afg.id
+    	where afm.id = #{id}
+    </select>
+	
+	
+	<select id="selectAssetFieldMetaList" resultMap="assetFieldMeta">
+    	select afm.id,
+    	afm.name,
+    	afm.meta_key,
+    	afm.group_id,
+    	afm.search,
+    	afm.display,
+    	afm.type,
+    	afm.param,
+    	afm.remark,
+    	afg.name as afg_name,
+    	afg.id as afg_id
+    	from asset_field_meta afm left join asset_field_group afg on afm.group_id = afg.id
+    	where 1=1 
+    	<if test="params.name!=null and params.name !=''">
+    		and afm.name like CONCAT('%', #{params.name}, '%')
+    	</if>
+    	<if test="params.key!=null and params.key !=''">
+    		and afm.key like CONCAT('%', #{params.key}, '%')
+    	</if>
+    	<if test="params.groupId!=null">
+    		and afm.group_id = #{params.groupId}
+    	</if>
+    	<if test="params.search!=null">
+    		and afm.search = #{params.search}
+    	</if>
+    	<if test="params.display!=null">
+    		and afm.display = #{params.display}
+    	</if>
+    </select>
+	
+</mapper>

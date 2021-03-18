@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.DateUtil;
@@ -61,6 +62,8 @@ public class AssetAccountServiceImpl extends ServiceImpl<AssetAccountDao,AssetAc
 
 	@Override
 	public void saveAssetAccountRel(Integer accountId, List<Integer> assetIds) {
+		// 先清空跟accountId关联的现有数据  再全量新增
+		assetAccountRelService.remove(new QueryWrapper<AssetAccountRel>().lambda().eq(AssetAccountRel::getAccountId, accountId));
 		List<AssetAccountRel> datas =new ArrayList<AssetAccountRel>();
 		for(Integer assetId: assetIds) {
 			AssetAccountRel data = new AssetAccountRel();
