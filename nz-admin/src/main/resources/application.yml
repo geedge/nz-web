@@ -8,8 +8,15 @@ server:
   port: 80
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   profiles:
     active: dev
+  autoconfigure:
+    exclude: #未初始化时，启动需排除
+      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -60,6 +67,7 @@ nezha:
   queueCapacity: 500
   alertNotifiTimeOut: 3 # alert  通知脚本等待超时时间 单位 s 秒‘
   shiroPermisSupport: false # shiro 注解支持 ， 控制 接口上 @RequiresPermissions 是否生效 ， 启用： true  不启用： false
+  inited: 0  #系统初始化状态 0 未初始化，1 配置文件初始化完成 2 所有初始化完成
 logging:
   config: ./config/logback-spring.xml
 

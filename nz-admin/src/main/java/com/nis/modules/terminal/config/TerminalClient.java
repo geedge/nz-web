@@ -22,9 +22,7 @@
 package com.nis.modules.terminal.config;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -32,6 +30,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.google.common.primitives.Bytes;
 import com.jcraft.jsch.*;
+import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.terminal.entity.*;
 import com.nis.modules.terminal.service.TerminalCmdService;
@@ -49,6 +48,8 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
@@ -166,8 +167,10 @@ public class TerminalClient {
         new Thread(new Runnable() {
             @Override
             public void run() {
+            	TerminalLogService terminalLogService = (TerminalLogService) TerminalSession.clientAttributeInfo.get("terminalLogService");
                 TerminalCmdService terminalCmdService = (TerminalCmdService) TerminalSession.clientAttributeInfo.get("terminalCmdService");
                 TerminalRecordService terminalRecordService = (TerminalRecordService) TerminalSession.clientAttributeInfo.get("terminalRecordService");
+            	TerminalLog terminalLog=(TerminalLog) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalLog");
                 byte[] buffer = new byte[1024 * 4];
                 StringBuilder builder = new StringBuilder();
                 try {
@@ -185,21 +188,14 @@ public class TerminalClient {
                         String message = builder.toString();
 
                         // terminal record 信息梳理
-                        File file = FileUtil.file(Constant.TEMP_PATH, clientId + ".log");
-                        Path path = file.toPath();
+                        String fileName = Constant.TEMP_PATH + File.separator + clientId + ".log";
+                        File file = new File(fileName);
+                        Path path = Paths.get(fileName);
 
-                        message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
-
-                        List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
-                        if(CollectionUtils.isNotEmpty(webSocketSessions)){
-                            for (WebSocketSession socketSession : webSocketSessions) {
-                                socketSession.sendMessage(new TextMessage(message));
-                            }
-                        }
-
+                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
-                        processCommand(terminalCmdService, message);
+                        clientMessageHandle(terminalLogService, terminalCmdService, terminalLog, message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
                             if (message.contains(sendTempCmdId)) {
@@ -246,8 +242,6 @@ public class TerminalClient {
                                     receiveEnd = false;
                                 } else {
                                     if (sendBuffer.toString().equals("exit") && trimMessage.equals("logout")) {
-                                        channelShell.disconnect();
-                                        webSocketSession.close();
                                     	TerminalSession.remove(webSocketSession);
                                         closed = true;
                                     }
@@ -315,8 +309,8 @@ public class TerminalClient {
             map.put("c",message);
             String s = JSONObject.toJSONString(map);
             s += ",";
-            FileUtil.writeBytes(s.getBytes(), file, 0, s.getBytes().length, true);
-        } catch (IORuntimeException e) {
+            Files.write(path, s.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.DSYNC);
+        } catch (IOException e) {
             logger.error(String.format("追加 terminal record 文件失败，文件路径是: %s,错误信息是: %s", path.toString(), e.getMessage()), e);
         }
     }
@@ -372,20 +366,12 @@ public class TerminalClient {
                         // terminal record 信息梳理
                         String fileName = Constant.TEMP_PATH + File.separator + clientId + ".log";
                         File file = new File(fileName);
-                        Path path = file.toPath();
+                        Path path = Paths.get(fileName);
 
-                        message = StrUtil.str(message.getBytes(DigestUtils.getEncoding(message)),"UTF-8");
-
-                        List<WebSocketSession> webSocketSessions = TerminalSession.terminalMonitorsMap.get(clientId);
-                        if(CollectionUtils.isNotEmpty(webSocketSessions)){
-                            for (WebSocketSession socketSession : webSocketSessions) {
-                                socketSession.sendMessage(new TextMessage(message));
-                            }
-                        }
-
+                        message = new String(message.getBytes(DigestUtils.getEncoding(message)), "UTF-8");
                         TerminalClient.handleTerminalRecordMessage(file, path, terminalRecordService, clientId, message);
 
-                        processCommand(terminalCmdService, message);
+                        clientMessageHandle(terminalLogService, terminalCmdService, terminalLog, message);
                         //获取pwd的结果输出,不能发送给前台
                         if (sendTempCmd) {
                             if (message.contains(sendTempCmdId)) {
@@ -433,16 +419,16 @@ public class TerminalClient {
                             		terminalLogService.save(terminalLog);
 
                                     // cmd 信息
-                                    TerminalCmd terminalCmd = new TerminalCmd();
-                                    terminalCmd.setUuid(clientId);
-                                    terminalCmd.setCmd("Login");
-                                    terminalCmd.setTime(0);
-                                    terminalCmdService.saveOrUpdate(terminalCmd);
+//                                    TerminalCmd terminalCmd = new TerminalCmd();
+//                                    terminalCmd.setUuid(clientId);
+//                                    terminalCmd.setCmd("Login");
+//                                    terminalCmd.setTime(0);
+//                                    terminalCmdService.save(terminalCmd);
 
                                     // session 信息
-                                    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-                                    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-                                    terminalSessionService.saveOrUpdate(sessionEntity);
+//                                    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+//                                    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+//                                    terminalSessionService.save(sessionEntity);
 
                             		telnetConnect=false;
                             		// 登录成功后清空 前端输入字符 防止日志保存空数据
@@ -502,13 +488,11 @@ public class TerminalClient {
                                         sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
                                         terminalSessionService.saveOrUpdate(sessionEntity);
 
+                            			TerminalSession.remove(webSocketSession);
+                            			closed=true;
                                         // 强制退出 错误达到限制
                             			String unloginInfo = getUnloginInfo(Constants.SessionStatus.FORCE_QUIT.getValue());
                                     	webSocketSession.sendMessage(new TextMessage(unloginInfo));
-
-                                        webSocketSession.close();
-                                        TerminalSession.remove(webSocketSession);
-                                        closed=true;
                             		}
                             	}
                             }
@@ -518,8 +502,7 @@ public class TerminalClient {
                                     receiveEnd = false;
                                 } else {
                                     if (sendBuffer.toString().equals("exit") && trimMessage.equals("logout")) {
-                                        webSocketSession.close();
-                                        TerminalSession.remove(webSocketSession);
+                                    	TerminalSession.remove(webSocketSession);
                                         closed = true;
                                     }
                                     receiveEnd = true;
@@ -544,220 +527,101 @@ public class TerminalClient {
     
     /**
      * 处理服务器方向键以及tab操作返回的指令信息 便于做日志记录
+     * @param terminalLogService    
+     * @param terminalLog       日志信息
      * @param serverResponse    服务器响应内容
      */
-    public void processCommand(TerminalCmdService terminalCmdService,  String serverResponse) {
-        Map terminalAttributeInfo = TerminalSession.getTerminalAttributeInfo(clientId);
-        Integer cmdCharPos = (Integer) terminalAttributeInfo.get("cmdCharPos");
-
-        List<Character> list = TerminalSession.terminalCmdInfo.get(clientId);
-        list = (list == null) ? new ArrayList<>() : list;
-
-        char[] charArray = serverResponse.toCharArray();
-
-        // 转义字符
-        boolean esc_mode = false;
-        int esc_arg = 0;
-
-        boolean maybeCmd = false;
-        if (charArray.length >= 2) {
-            maybeCmd = (charArray[0] == 13 && charArray[1] == 10); // 0x0d 13 \r  0x0a 10 \n
-        }
-
-        boolean client_single_char = false;
-        if (charArray.length == 1) {
-            int c = charArray[0];
-            if (Constants.INVISIBLE_CHAR.contains(c)) {
-                client_single_char = true;
-            }
-        }
-
-        int offset = 0;
-        int len = charArray.length;
-        for (; offset < charArray.length; ) {
-            char ch = charArray[offset];
-            if (esc_mode) {
-                switch (ch) {
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                    case '8':
-                    case '9': {
-                        // 字符转数字
-                        esc_arg = esc_arg * 10 + (ch - '0');
-                        break;
-                    }
-                    case 63:
-                    case ';':
-                    case '>': {
-                        TerminalSession.terminalCmdInfo.put(clientId, new ArrayList<>());
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", 0);
-                        return;
-                    }
-                    case 75: { // K
-                        if (0 == esc_arg) {
-                            list = list.subList(0, cmdCharPos);
-                            cmdCharPos = list.size();
-                        } else if (1 == esc_arg) {
-                            list = list.subList(cmdCharPos, list.size());
-                            cmdCharPos = list.size();
-                        } else if (2 == esc_arg) {
-                            list = new ArrayList<>();
-                            cmdCharPos = 0;
-                        }
-                        TerminalSession.terminalCmdInfo.put(clientId, list);
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                        esc_mode = false;
-                        break;
-                    }
-                    case 67: {    // ^[C
-                        // 光标右移
-                        if (esc_arg == 0) {
-                            esc_arg = 1;
-                        }
-
-                        for (int j = 0; j < esc_arg; ++j) {
-                            if (cmdCharPos != list.size()) {
-                                cmdCharPos++;
-                            }
-                        }
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                        esc_mode = false;
-                        break;
-                    }
-                    case 68: { // ^[D
-                        // 光标左移
-                        if (esc_arg == 0) {
-                            esc_arg = 1;
-                        }
-                        for (int j = 0; j < esc_arg; ++j) {
-                            if (cmdCharPos != 0) {
-                                cmdCharPos--;
-                            }
-                        }
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                        esc_mode = false;
-                        break;
-                    }
-                    case 80: { // 'P' 删除指定数量的字符
-                        if (esc_arg == 0) {
-                            esc_arg = 1;
-                        }
-
-                        for (int j = 0; j < esc_arg; ++j) {
-                            // 不是最后一个
-                            if (cmdCharPos != list.size()) {
-                                int index = cmdCharPos;
-                                list.remove(index);
-                            }
-                        }
-                        TerminalSession.terminalCmdInfo.put(clientId, list);
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                        esc_mode = false;
-                        break;
-                    }
-                    case 64:{
-                        if (esc_arg == 0){
-                            esc_arg = 1;
-                        }
-                        for (int j = 0; j < esc_arg; ++j){
-                            list.add(cmdCharPos, ' ');
-                            cmdCharPos++;
-                        }
-                        TerminalSession.terminalCmdInfo.put(clientId, list);
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                        esc_mode = false;
-                        break;
-                    }
-                    default:
-                        esc_mode = false;
-                        break;
+    public void clientMessageHandle(TerminalLogService terminalLogService,TerminalCmdService terminalCmdService,TerminalLog terminalLog,String serverResponse) {
+    	Map terminalAttributeInfo = TerminalSession.getTerminalAttributeInfo(clientId);
+    	Integer cursorIndex = (Integer) terminalAttributeInfo.get("cursorIndex");
+        boolean cursorFlag = (boolean) terminalAttributeInfo.get("cursorFlag");
+        Integer  historyIndex = (Integer) terminalAttributeInfo.get("historyIndex");
+    	// 前端每次传给后端服务器的指令字符
+    	TextMessage message = (TextMessage) TerminalSession.clientAttributeInfo.get(clientId+"shell");
+    	if(ObjectUtils.isNotEmpty(message) && message.asBytes()[0]!=3) {
+    		// 处理前端方向键
+    		if(message.asBytes()[0]==27) {
+        		String operation = ByteUtils.toHexAscii(message.asBytes());
+        		if(operation.equals("1B5B44")){
+        			// 左方向操作
+        			if(cursorIndex!=0) {
+        				// 光标在初始位置不可移动
+        				cursorIndex--;
+        				cursorFlag=true;
+        			}else if(TerminalSession.getTerminalMessage(clientId)==null || cursorIndex==TerminalSession.getTerminalMessage(clientId).length()){
+        				cursorFlag=false;
+        			}
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorFlag", cursorFlag);
+        			return;
+        		} else if(operation.equals("1B5B43")) {
+        			// 右方向操作
+        			if((cursorIndex==0 && (TerminalSession.getTerminalMessage(clientId)==null || TerminalSession.getTerminalMessage(clientId).length()==0))  || cursorIndex==TerminalSession.getTerminalMessage(clientId).length()) {
+        				// 光标位置在初始位置 或者已经为当前输入内容最右处
+        				cursorFlag=false;
+        			}else {
+        				cursorIndex++;
+        				cursorFlag=true;
+        			}
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorFlag", cursorFlag);
+        			return;
+        		} else if(operation.equals("1B5B41")||operation.equals("1B5B42")) {
+        			// 上方向操作 获取用户之前保存的指令信息
+        			String data = terminalResponseHandle(serverResponse);
+        			TerminalSession.removeTerminalMessage(clientId);
+        			TerminalSession.setTerminalMessage(clientId, data, null);
+        			cursorIndex=data.length();
+                    TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+        		} 
+    		}else if(message.asBytes()[0]==9) {
+    			//处理用户tab键操作
+    			String data = terminalResponseHandle(serverResponse);
+    			TerminalSession.setTerminalMessage(clientId, data, cursorIndex);
+    			cursorIndex+=data.length();
+    			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    		}else if(message.getPayload().equals("\r")) {
+                Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
+                if (ToolUtil.isEmpty(params)) {
+                    params = new HashMap<>();
                 }
+    			// 服务器执行完命令 保存日志
+    			if(!telnetConnect) {
+    				String cmd = TerminalSession.getTerminalMessage(clientId);
+    				if(StringUtils.isNotEmpty(cmd)) {
+    					terminalLog.setCmd(TerminalSession.getTerminalMessage(clientId));
+                		terminalLog.setStatus(1);
+                		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                		terminalLog.setUser(params.get("username"));
+                		terminalLogService.save(terminalLog);
 
-                offset++;
-                continue;
-            }
 
-            switch (ch) {
-                case 7:
-                    // 响铃
-                    break;
-                case 8: {
-                    // 光标左移
-                    if (cmdCharPos != 0 && CollectionUtils.isNotEmpty(list)) {
-                        cmdCharPos--;
-                        TerminalSession.terminalCmdInfo.put(clientId, list);
-                        TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                    }
-                    break;
-                }
-                case 27: {  // 0x1b esc
-                    if (offset + 1 < len) {
-                        if (charArray[offset + 1] == 91 || charArray[offset + 1] == 93) {
-                            if (offset == 0 && client_single_char) {
-                                TerminalSession.removeTerminalCmd(clientId);
-                                TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", 0);
-                                maybeCmd = false;
-                                client_single_char = false;
-                                return;
-                            }
-                        }
+                        // 保存日志
+                        TerminalCmd terminalCmd = new TerminalCmd();
+                        terminalCmd.setCmd(TerminalSession.getTerminalMessage(clientId));
+                        terminalCmd.setUuid(clientId);
+                        long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionStartTime");
+                        terminalCmd.setTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
+                        terminalCmdService.save(terminalCmd);
 
-                        if (charArray[offset + 1] == 91 || charArray[offset + 1] == 93) {
-                            esc_mode = true;
-
-                            esc_arg = 0;
-                            offset += 1;
-                        }
-                    }
-                    break;
-                }
-                // 0x0d 13 \r  0x0a 10 \n
-                case 13: {
-                    if (offset + 1 < len && charArray[offset + 1] == 10) {
-                        if (maybeCmd) {
-                            if (CollectionUtils.isNotEmpty(list) && !telnetConnect) {
-                                String cmd = "";
-                                for (Character character : list) {
-                                    cmd += character;
-                                }
-                                TerminalCmd terminalCmd = new TerminalCmd();
-                                terminalCmd.setCmd(cmd);
-                                terminalCmd.setUuid(clientId);
-                                long terminalSessionStartTime = (long) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionStartTime");
-                                terminalCmd.setTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
-                                terminalCmdService.save(terminalCmd);
-                            }
-                            TerminalSession.removeTerminalCmd(clientId);
-                            TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", 0);
-                            maybeCmd = false;
-                        }
-                    }
-                    TerminalSession.removeTerminalCmd(clientId);
-                    TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", 0);
-                    return;
-                }
-                default: {
-                    if (cmdCharPos != list.size()) {
-                        int index = cmdCharPos;
-                        list.remove(index);
-                        list.add(cmdCharPos, ch);
-                        cmdCharPos++;
-                    } else {
-                        list.add(ch);
-                        cmdCharPos = list.size();
-                    }
-                    TerminalSession.terminalCmdInfo.put(clientId, list);
-                    TerminalSession.setTerminalAttributeInfo(clientId, "cmdCharPos", cmdCharPos);
-                }
-            }
-            offset++;
-        }
+                		TerminalSession.removeTerminalMessage(clientId);
+                		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", 0);
+                		TerminalSession.clientAttributeInfo.put(clientId+"shell",null);
+    				}
+    			}
+    		}else if(message.asBytes()[0]==127) {
+    			// 处理用户删除退格操作
+    			boolean flag = TerminalSession.backspaceMessage(clientId,cursorIndex);
+    			if(flag) {
+    				cursorIndex--;
+        			TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    			}
+    		}else{
+    			TerminalSession.setTerminalMessage(clientId, message.getPayload(), cursorIndex);
+        		cursorIndex++;
+        		TerminalSession.setTerminalAttributeInfo(clientId, "cursorIndex", cursorIndex);
+    		}    		
+    	}
     }
     
 	/**
@@ -822,9 +686,9 @@ public class TerminalClient {
         	}
         }
 
-        if (outputStream != null) {
-            IoUtil.write(outputStream, false, message.getBytes());
-            outputStream.flush();
+        if (writer != null) {
+            writer.write(message);
+            writer.flush();
         }
     }
 
@@ -1011,7 +875,9 @@ public class TerminalClient {
 
         StringBuilder sb = new StringBuilder();
         sb.append("\r\nlogout\r\n");
-        sb.append("Connection closed \r\n");
+        sb.append("Welcome to Nezha Terminal! \r\n");
+        sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
+        sb.append("$: ");
         return sb.toString();
     }
 }

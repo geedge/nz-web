@@ -5,6 +5,7 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,7 @@ public class PromserverJobConfig {
     private String promserverJobCron;
 
     @Autowired
+    @Qualifier("costomSchedulerFactoryBean")
     private SchedulerFactoryBean schedulerFactoryBean;
 
     private String promserverJobName = "PROMSERVER_JOB";

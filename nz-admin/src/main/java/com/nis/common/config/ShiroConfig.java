@@ -15,6 +15,7 @@ import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisManager;
 import org.crazycake.shiro.RedisSessionDAO;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -22,6 +23,8 @@ import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,8 +43,8 @@ import java.util.regex.Pattern;
  *
  */
 @Configuration
-public class ShiroConfig {
-
+public class ShiroConfig implements ApplicationContextAware {
+    private ApplicationContext applicationContext;
     @Value("${nezha.loginExpiration:30}")
     private Integer loginExpiration;
 
@@ -159,35 +162,7 @@ public class ShiroConfig {
         advisor.setSecurityManager(securityManager);
         return advisor;
     }
-    @Bean
-    public FilterRegistrationBean corsFilter() {
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        final CorsConfiguration config = new CorsConfiguration();
-        // 允许cookies跨域
-        config.setAllowCredentials(true);
-        // #允许向该服务器提交请求的URI，*表示全部允许，在SpringMVC中，如果设成*，会自动转成当前请求头中的Origin
-        config.addAllowedOrigin("*");
-        // #允许访问的头信息,*表示全部
-        config.addAllowedHeader("*");
-        // 预检请求的缓存时间（秒），即在这个时间段里，对于相同的跨域请求不会再预检了
-        config.setMaxAge(18000L);
-        // 允许提交请求的方法，*表示全部允许
-        config.addAllowedMethod("OPTIONS");
-        config.addAllowedMethod("HEAD");
-        config.addAllowedMethod("GET");
-        config.addAllowedMethod("PUT");
-        config.addAllowedMethod("POST");
-        config.addAllowedMethod("DELETE");
-        config.addAllowedMethod("PATCH");
-        source.registerCorsConfiguration("/**", config);
-
-        FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
-        // 设置监听器的优先级
-        bean.setOrder(0);
-
-        return bean;
-    }
-    @Bean
+    @Bean(name={"tomcatServletWebServerFactory"})
     public ConfigurableServletWebServerFactory webServerFactory() {
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
         factory.addConnectorCustomizers(new TomcatConnectorCustomizer() {
@@ -198,6 +173,7 @@ public class ShiroConfig {
                 connector.setProperty("relaxedQueryChars", "\"<>[\\]^`{|}");
             }
         });
+
         return factory;
     }
 
@@ -291,5 +267,10 @@ public class ShiroConfig {
         // 自定义session管理 使用redis
         securityManager.setSessionManager(sessionManager());
         return securityManager;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }

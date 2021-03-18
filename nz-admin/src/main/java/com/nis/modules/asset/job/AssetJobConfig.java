@@ -5,6 +5,7 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ public class AssetJobConfig {
     private String assetFeatureJobCron;
 
     @Autowired
+    @Qualifier("costomSchedulerFactoryBean")
     private SchedulerFactoryBean schedulerFactoryBean;
 
     private String assetPingJobName = "ASSETPING_JOB";

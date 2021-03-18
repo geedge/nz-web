@@ -1,12 +1,9 @@
 package com.nis.common.utils;
 
-import java.awt.Graphics;
-import java.awt.Robot;
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import java.awt.*;
+import java.lang.ref.*;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -17,9 +14,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
-
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
 
 public class Tool {
 

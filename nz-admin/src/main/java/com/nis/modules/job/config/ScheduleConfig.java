@@ -19,8 +19,7 @@ import java.util.Properties;
  */
 @Configuration
 @Slf4j
-public class ScheduleConfig {
-
+public class ScheduleConfig{
     @Autowired
     private DataSource dataSource;
 
@@ -53,9 +52,10 @@ public class ScheduleConfig {
         return prop;
     }
 
-    @Bean
+    @Bean("costomSchedulerFactoryBean")
     public SchedulerFactoryBean schedulerFactoryBean() {
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
+
         // 设置自动启动
         factory.setAutoStartup(true);
         // 添加job工厂类

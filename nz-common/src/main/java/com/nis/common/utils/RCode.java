@@ -601,7 +601,18 @@ public enum RCode {
     SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
     SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
     SYS_CONFIG_UNSAVEDCHANGE_ISNULL(571065, "System config unsaved change can not be empty"),
-
+    SYS_CONFIG_CODE_FILE_ISNULL(574001,"The validate file is not exist"), //不存在校验使用的文件
+    SYS_CONFIG_CODE_INVALID(574002,"The code is invalid"),//校验文件中的code与传递的值不符
+    SYS_CONFIG_DB_PARAM_INVALID(574003,"The DB connect params is invalid"),//校验文件中的code与传递的值不符
+    SYS_CONFIG_REDIS_PASSWORD_INVALID(574004,"The redis password is invalid"),
+    SYS_CONFIG_REDIS_PASSWORD_REQUIRED(574005,"The redis password is required"),
+    SYS_CONFIG_REDIS_PARAM_INVALID(574006,"The redis params is invalid"),
+    SYS_CONFIG_DB_URL_ISNULL(574007,"The DB host is null"),
+    SYS_CONFIG_DB_USERNAME_ISNULL(574008,"The DB username is null"),
+    SYS_CONFIG_DB_PASSWORD_ISNULL(574009,"The DB password is null"),
+    SYS_CONFIG_REDIS_HOST_ISNULL(574010,"The redis host is null"),
+    SYS_CONFIG_REDIS_PORT_ISNULL(574011,"The redis host is null"),
+    SYS_CONFIG_HAD_CONFIG(574012,"Someone has started to configure the system"),
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
     SYS_ROLE_ISNULL(586001, "Role is not exsits"),

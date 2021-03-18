@@ -48,10 +48,7 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
-import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
 import java.net.URL;

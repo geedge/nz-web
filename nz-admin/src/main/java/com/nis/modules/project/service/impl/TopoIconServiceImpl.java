@@ -1,18 +1,13 @@
 package com.nis.modules.project.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.project.dao.TopoIconDao;
 import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.TopoIconService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
