@@ -43,8 +43,8 @@ import java.util.regex.Pattern;
  *
  */
 @Configuration
-public class ShiroConfig implements ApplicationContextAware {
-    private ApplicationContext applicationContext;
+public class ShiroConfig {
+
     @Value("${nezha.loginExpiration:30}")
     private Integer loginExpiration;
 
@@ -267,10 +267,5 @@ public class ShiroConfig implements ApplicationContextAware {
         // 自定义session管理 使用redis
         securityManager.setSessionManager(sessionManager());
         return securityManager;
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }
