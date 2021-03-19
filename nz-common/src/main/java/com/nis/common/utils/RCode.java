@@ -339,6 +339,7 @@ public enum RCode {
 
     ASSET_FIELD_GROUP_ID_ISNULL(361001,"Asset field group id can not be empty"),
     ASSET_FIELD_GROUP_NAME_ISNULL(361002,"Asset field group name can not be empty"),
+    ASSET_FIELD_GROUP_NAME_DUPLICATE(362003,"Asset field group name can not duplicate"),
     
     ASSET_FIELD_META_ID_ISNULL(371001,"Asset field meta id can not be empty"),
     ASSET_FIELD_META_NAME_ISNULL(371002,"Asset field meta name can not be empty"),
@@ -349,7 +350,7 @@ public enum RCode {
     ASSET_FIELD_META_TYPE_ISNULL(371007,"Asset field meta type can not be empty"),
     ASSET_FIELD_META_TYPE_ERROR(375008,"Asset field type value out of range"),
     ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
-    
+    ASSET_FIELD_META_KEY_DUPLICATE(372010,"Asset field key value duplicate"),
     /**
      * alerts菜单栏相关
      */
