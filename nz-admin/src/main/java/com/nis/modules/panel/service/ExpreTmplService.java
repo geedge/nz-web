@@ -31,6 +31,8 @@ public interface ExpreTmplService extends IService<ExpressionTmpl> {
 
     String renderExpression(ExpressionTmpl tmpl);
 
+    String renderExpression(String expression, Map varsVal);
+
     void getExportTemplateByLanguage(HttpServletResponse response, String language);
 
     Map importExpreTmplsFromExcel(MultipartFile excelFile, String language);

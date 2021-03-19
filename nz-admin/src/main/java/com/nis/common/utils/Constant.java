@@ -588,6 +588,9 @@ public class Constant {
     // endpoint 导入表头
     public static final String SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER = "endpoint_export_header";
 
+    // endpoint 导入表头
+    public static final String SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER = "monitor_endpoint_export_header";
+
     // expression template 导入表头
     public static final String SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER = "expretmpl_export_header";
 

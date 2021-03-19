@@ -134,13 +134,14 @@ public enum RCode {
     PROJECT_TOPOCONFIG_ISNULL(211012, "Project topo is null"),
     PROJECT_NOTFOUND(216013, "Project not found"),
     PROJECT_TOPOICON_UNIT_ISNULL(211014,"Topo icon unit is null"),
-    
+    PROJECT_BUILDIN_CAN_NOT_EDIT(217015, "The built-in project does not allow editing"),
+
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),
     MODULE_NAME_ISNULL(221002, "Module name info can not be empty"),
     MODULE_PORT_ISNULL(221003, "Module port info can not be empty"),
     MODULE_PATH_ISNULL(221004, "Module path info can not be empty"),
-    MODULE_PORT_ERROR(221005, "Module port  is incorrect"),
+    MODULE_PORT_ERROR(221005, "Module port is incorrect"),
     MODULE_BUILDIN_CAN_NOT_REMOVE(227006, "This module is built-in and cannot be deleted"),
     MODULE_NAME_TOO_LONG(223007, "Module name too long"),
     MODULE_REMARK_TOO_LONG(223008, "Module remark too long"),
@@ -162,6 +163,9 @@ public enum RCode {
     MODULE_SNMP_NOTEXIST(226024, "SNMP type module must exist"),
     MODULE_LABELS_FORMAT(223025,"Module labels must be JSON format"),
     MODULE_LABELS_KEY_FORMAT(223026,"Module labels key format is incorrect"),
+    MODULE_ENDPOINTNAMETMPL_ISNULL(221027, "Module endpoint name template can not be empty"),
+    MODULE_CONFIGS_ISNULL(221028, "Module configs can not be empty"),
+    MODULE_CONFIGS_FORMAT(223029,"Module configs must be JSON format"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),
@@ -187,6 +191,14 @@ public enum RCode {
     ENDPOINT_LABELS_KEY_FORMAT(233021,"Endpoint labels key format is incorrect"),
     ENDPOINT_TIMEOUT_UPDATE(233022,"Data has not been updated for more than multiple cycles"),
     ENDPOINT_ENABLED_INVALIDE(234023, "Endpoint enabled must be 0 or 1"),
+    ENDPOINT_NOTFOUND(236024, "Endpoint not found"),
+    ENDPOINT_NAME_ISNULL(231025, "Endpoint name can not be empty"),
+    ENDPOINT_NAME_DUPLICATE(232026, "Endpoint name duplicate"),
+    ENDPOINT_PORT_ERROR(231027, "Endpoint port is incorrect"),
+    ENDPOINT_ASSET_NAME_HOST_ISNULL(231028, "Asset name and host cannot be empty at the same time"),
+    ENDPOINT_IMPORT_ERROR(233029, "Endpoint template import error"),
+    ENDPOINT_CONFIGS_FORMAT(233030,"Endpoint configs must be JSON format"),
+
     /**
      * assets菜单项相关
      */
@@ -653,7 +665,15 @@ public enum RCode {
     TERMINAL_ISNULL(611004, "Error,Terminal is null"),
     TERMINAL_TELNET_TRANSFER(610005,"Telnet does not allow upload and download"),
     TERMINAL_QUERYSIZE_INVALIDED(613006, "Terminal query size cannot be less than 1"),
-    
+
+
+    /**
+     * 导入相关
+     */
+    IMPORT_EXCELFILE_TYPE(900, "Only support import XLS or XLSX file"),
+    IMPORT_EXCELFILE_PARSE_ERROR(901, "Import file resolution failed"),
+    IMPORT_EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the excel import template is inconsistent with the system template"),
+
     NOT_NULL_ERROR(990, "not null error"), //not null错误
     NOT_NUMBER_ERROR(991, "not number error"), //not number错误
     /**

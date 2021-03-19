@@ -20,4 +20,6 @@ public interface TopoIconService extends IService<TopoIcon> {
     void downloadIconFileById(Integer id, HttpServletResponse response);
     
     List<String> queryTopoIconUnitName(String name);
+
+    void deleteTopoIconByUnit(String unit);
 }

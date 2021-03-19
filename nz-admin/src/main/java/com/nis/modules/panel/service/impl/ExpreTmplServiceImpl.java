@@ -162,6 +162,17 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         String expression = tmpl.getExpression();
         Map varsVal = tmpl.getVarsVal();
 
+        expression = this.generateExpression(expression, varsVal);
+        return expression;
+    }
+
+    @Override
+    public String renderExpression(String expression, Map varsVal) {
+        expression = this.generateExpression(expression, varsVal);
+        return expression;
+    }
+
+    private String generateExpression(String expression, Map varsVal) {
         String[] vars = this.parseExpre(expression);
         for (int i = 0; i < vars.length; i++) {
             Object o = varsVal.get(vars[i]);
@@ -207,28 +218,9 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         }
     }
 
-    private Workbook getWorkBookFromFile(MultipartFile excelFile) {
-        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
-            throw new NZException(RCode.EXPRETMPL_IMPORTFILE_TYPE);
-        }
-
-        Workbook work = null;
-        try {
-            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (IOException e) {
-            logger.error("解析导入表达式模板文件格式有误", e);
-            throw new NZException(RCode.EXPRETMPL_IMPORTFILE_FAILED);
-        } finally {
-            if (work != null) {
-                IOUtils.closeQuietly(work);
-            }
-        }
-        return work;
-    }
-
     @Override
     public Map importExpreTmplsFromExcel(MultipartFile excelFile, String language) {
-        Workbook work = this.getWorkBookFromFile(excelFile);
+        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
 
         Sheet sheet = work.getSheetAt(0);
 

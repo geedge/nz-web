@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
+<mapper namespace="com.nis.modules.endpoint.dao.MonitorEndpointDao">
+	
+	<resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpoint">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="moduleId" column="module_id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="host" column="host"/>
+        <result property="port" column="port"/>
+        <result property="hash" column="hash"/>
+        <result property="enabled" column="enabled"/>
+        <result property="configs" column="configs"/>
+
+        <association columnPrefix="es_" property="endpointState" javaType="com.nis.modules.endpoint.entity.EndpointState">
+	    	<id column="endpoint_id" property="endpointId"/>
+	    	<result column="create_time" property="createTime"/>
+	    	<result column="state" property="state"/>
+	    </association>
+
+        <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
+	    	<id column="id" property="id"/>
+	    	<result column="name" property="name"/>
+	    </association>
+
+	    <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
+		    <id column="id" property="id"/>
+	    	<result column="name" property="name"/>
+	    </association>
+
+	    <association columnPrefix="a_" property="asset" javaType="com.nis.modules.asset.entity.Asset">
+	    	<id column="id" property="id"/>
+	    	<result column="host" property="host"/>
+	    	<result column="sn" property="sn"/>
+	    	<result column="cabinet_id" property="cabinetId"/>
+	    	<result column="state" property="state"/>
+	    	<result column="purchase_date" property="purchaseDate"/>
+	    	<result column="idc_id" property="idcId"/>
+	    	<result column="model_id" property="modelId"/>
+	    	<result column="name" property="name"/>
+	    </association>
+    </resultMap>
+	
+	<select id="queryPage" resultMap="endpoint">
+       SELECT e.*,
+       m.id AS m_id,
+       m.name AS m_name,
+
+       a.id AS a_id,
+       a.host AS a_host,
+       a.sn AS a_sn,
+       a.state AS a_state,
+       a.purchase_date AS a_purchase_date,
+       a.idc_id AS a_idc_id,
+       a.model_id AS a_model_id,
+       a.cabinet_id AS a_cabinet_id,
+       a.name AS a_name,
+
+       p.id AS p_id,
+       p.name AS p_name,
+
+       es.state AS es_state,
+       es.create_time AS es_create_time,
+       es.endpoint_id AS es_endpoint_id
+       FROM monitor_endpoint e
+       left join monitor_module m on e.module_id=m.id
+       left join monitor_project p on m.project_id=p.id
+       left join asset a on e.asset_id=a.id
+       left join endpoint_state es on e.id = es.endpoint_id
+       <where>
+           <if test="params.id != null and params.id != ''">
+                e.id = #{params.id}
+           </if>
+
+           <if test="params.name != null and params.name != ''">
+               AND e.name like CONCAT('%', #{params.name}, '%')
+           </if>
+
+           <if test="params.host != null and params.host != ''">
+               AND e.host like CONCAT('%', #{params.host}, '%')
+           </if>
+
+           <if test="params.projectId != null and params.projectId != ''">
+               AND p.id = #{params.projectId}
+           </if>
+
+           <if test="params.assetId != null and params.assetId != ''">
+               AND e.asset_id = #{params.assetId}
+           </if>
+
+           <if test="params.moduleId != null and params.moduleId != ''">
+               AND e.module_id = #{params.moduleId}
+           </if>
+
+           <if test="params.state != null and params.state != ''">
+               AND es.state = #{params.state}
+           </if>
+       </where>
+    </select>
+</mapper>
