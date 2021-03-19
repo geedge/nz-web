@@ -315,6 +315,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		                        alertNotifyLog.setMessageState(messageEntity.getState());
 		                        alertNotifyLog.setMethod(email);
 		                        alertNotifyLog.setUserId(Long.valueOf(receiverId));
+		                        alertNotifyLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
 		                        alertNotifyLogs.add(alertNotifyLog);
 		                        alertNotifyLogMap.put(messageEntity.getId(), alertNotifyLogs);
 		                        
@@ -385,6 +386,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
                     alertNotifyLog.setMessageState(alertMsg.getState());
                     alertNotifyLog.setMethod(userNotification.getScriptName());
                     alertNotifyLog.setUserId(Long.valueOf(userNotification.getUserId()));
+                    alertNotifyLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
                     
 		            filePath = scriptIdAndFilePathMap.get(userNotification.getScriptId());
 		            account = userNotification.getAccount();

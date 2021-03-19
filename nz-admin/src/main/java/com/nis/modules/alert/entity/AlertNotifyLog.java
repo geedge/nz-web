@@ -1,6 +1,8 @@
 package com.nis.modules.alert.entity;
 
 
+import java.util.Date;
+
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
@@ -22,4 +24,6 @@ public class AlertNotifyLog {
 	private Integer state;
 	
 	private String errorMsg;
+	
+	private Date time;
 }
