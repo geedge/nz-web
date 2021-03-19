@@ -20,7 +20,7 @@ public class Tool {
 	/**
 	 * 数据库操作工具类
 	 */
-	public static cn.hutool.db.DbUtil DbUtil = new cn.hutool.db.DbUtil();
+	public final static cn.hutool.db.DbUtil DbUtil = new cn.hutool.db.DbUtil();
 	/**
 	 * 安全相关工具类<br>
 	 * 加密分为三种：<br>
@@ -28,15 +28,15 @@ public class Tool {
 	 * 2、非对称加密（asymmetric），例如：RSA、DSA等<br>
 	 * 3、摘要加密（digest），例如：MD5、SHA-1、SHA-256、HMAC等<br>
 	 */
-	public static cn.hutool.crypto.SecureUtil SecureUtil = new cn.hutool.crypto.SecureUtil();
+	public final static cn.hutool.crypto.SecureUtil SecureUtil = new cn.hutool.crypto.SecureUtil();
 	/**
 	 * 代理工具类
 	 */
-	public static cn.hutool.aop.ProxyUtil ProxyUtil = new cn.hutool.aop.ProxyUtil();
+	public final static cn.hutool.aop.ProxyUtil ProxyUtil = new cn.hutool.aop.ProxyUtil();
 	/**
 	 * 敏感词工具类
 	 */
-	public static cn.hutool.dfa.SensitiveUtil SensitiveUtil = new  cn.hutool.dfa.SensitiveUtil();
+	public final static cn.hutool.dfa.SensitiveUtil SensitiveUtil = new  cn.hutool.dfa.SensitiveUtil();
 	
 	/**
 	 * 数据库元数据信息工具类

@@ -34,9 +34,9 @@ import java.util.Set;
 public class TerminalContext implements Serializable {
 
     //key-->uuid value--->Terminal User
-    public static Map<String, Account> terminalContext = new HashMap<String, Account>();
+    public static final Map<String, Account> terminalContext = new HashMap<String, Account>();
 
-    public static Map<String,Set<String>> terminalUuid = new HashMap<String,Set<String>>();
+    public static final Map<String,Set<String>> terminalUuid = new HashMap<String,Set<String>>();
     
     private String uuid;
 

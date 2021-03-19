@@ -44,25 +44,25 @@ public class TerminalSession implements Serializable {
     /**
      * 当前websockt连接信息对应的服务器信息   将来可以实现远程连接列表 用以进行主动断开服务器连接功能
      */
-    public static Map<WebSocketSession, TerminalClient> terminalSession = new HashMap<WebSocketSession, TerminalClient>();
+    public static final Map<WebSocketSession, TerminalClient> terminalSession = new HashMap<WebSocketSession, TerminalClient>();
     
     /**
      * 保存所有正在连接的服务器列表信息
      */
-    public static Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
+    public static final Map<String, Set<String>> terminalInfo = new HashMap<String, Set<String>>();
 
     /**
      * terminal 对应的 monitors
      */
-    public static Map<String, List<WebSocketSession>> terminalMonitorsMap = new ConcurrentHashMap<>();
+    public static final Map<String, List<WebSocketSession>> terminalMonitorsMap = new ConcurrentHashMap<>();
 
     /**
      * 当前用户操作的服务器指令信息
      */
-    public static Map<String,String> terminalMessageInfo = new HashMap<String,String>();
+    public static final Map<String,String> terminalMessageInfo = new HashMap<String,String>();
 
     // terminal cmd 信息
-    public static Map<String, List<Character>> terminalCmdInfo = new HashMap();
+    public static final Map<String, List<Character>> terminalCmdInfo = new HashMap();
 
     public static void removeTerminalCmd(String uuid) {
         terminalCmdInfo.remove(uuid);
@@ -71,22 +71,22 @@ public class TerminalSession implements Serializable {
     /**
      * 用以保存用户连接websocket后的指令历史记录信息 包含未登录以及登录服务器后的历史指令
      */
-    public static Map<String,List<String>> userInstructions =new HashMap<String,List<String>>();
+    public static final Map<String,List<String>> userInstructions =new HashMap<String,List<String>>();
     
     /**
      * 主要用于存放client相关需要属性
      */
-    public static Map<String,Object> clientAttributeInfo =new HashMap<String,Object>();
+    public static final Map<String,Object> clientAttributeInfo =new HashMap<String,Object>();
     /**
      * 保存用户连接当前websocket的一些配置信息 包括光标位置、未登录时的一些状态信息
      * 每个连接功能会公用一个terminalHandler类 将各自属性根据uuid以及相应的状态信息进行保存
      */
-    public static Map<String,Map> terminalAttributeInfo = new HashMap<String,Map>();
+    public static final Map<String,Map> terminalAttributeInfo = new HashMap<String,Map>();
     
     /**
      * 管理前端窗口数量
      */
-    public static Map<String,Integer> windowSize =new HashMap<String,Integer>();
+    public static final Map<String,Integer> windowSize =new HashMap<String,Integer>();
     
     public static Integer getWindowSize(String token) {
     	Integer result = windowSize.get(token);

@@ -100,5 +100,5 @@ public class Constants {
     }
 
     // 单位为 byte , 10485760 byte = 10Mb
-    public static Integer RECORD_TEMPFILE_MAX_LENGTH = 10485760;
+    public static final Integer RECORD_TEMPFILE_MAX_LENGTH = 10485760;
 }

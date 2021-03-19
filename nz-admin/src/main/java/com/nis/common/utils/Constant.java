@@ -332,7 +332,7 @@ public class Constant {
     /**
      * 支持的语言 [{"name":"简体中文","value":"zh"},...]
      */
-    public static List<Map<String, String>> langList = new ArrayList<>();
+    public static final List<Map<String, String>> langList = new ArrayList<>();
     
     /**
      * 字典中语言的名称和类型
