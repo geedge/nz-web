@@ -19,9 +19,9 @@ import java.util.Map;
  */
 public interface AlertMessageService extends IService<AlertMessageEntity> {
 
-    PageUtils queryPage(Map<String, Object> params) throws Exception;
+    PageUtils queryPage(Map<String, Object> params);
 
-	void saveBatch(String receiveStr, HttpServletRequest request) throws Exception;
+//	void saveBatch(String receiveStr, HttpServletRequest request) throws Exception;
 	
 	void removeByAssetIds(List<Integer> idList);
 

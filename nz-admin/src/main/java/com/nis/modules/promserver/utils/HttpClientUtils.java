@@ -1,6 +1,8 @@
 package com.nis.modules.promserver.utils;
 
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import org.apache.http.HttpEntity;
@@ -64,7 +66,7 @@ public class HttpClientUtils {
             	}
                 // 把json字符串转换成json对象
                 jsonResult = JSONObject.parseObject(str);
-            } catch (Exception e) {
+            } catch (JSONException e) {
                 logger.error("submit post request faild:" + url,e);
             }
         } catch (IOException e) {

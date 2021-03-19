@@ -3,6 +3,7 @@ package com.nis.modules.panel.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -1327,7 +1328,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             List<ChartElement> elementsList = null;
             try {
                 elementsList = JSONArray.parseArray(elements, ChartElement.class);
-            } catch (Exception e) {
+            } catch (JSONException e) {
                 return RCode.CHART_ELEMENTS_FORMAT.getMsg();
             }
 
@@ -1354,7 +1355,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                Map map = null;
                try {
                    map = JSONObject.parseObject(param, Map.class);
-               } catch (Exception e) {
+               } catch (JSONException e) {
                    return RCode.CHART_PARAM_FORMAT.getMsg();
                }
                Object url = map.get(Constant.CHART_URL_TYPE);
@@ -1388,7 +1389,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                Map map = null;
                try {
                    map = JSONObject.parseObject(param, Map.class);
-               } catch (Exception e) {
+               } catch (JSONException e) {
                    return RCode.CHART_PARAM_FORMAT.getMsg();
                }
                Object statistics = map.get(Constant.CHART_SINGLESTAT_PARAMkEY);
@@ -1407,7 +1408,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                Map map = null;
                try {
                    map = JSONObject.parseObject(param, Map.class);
-               } catch (Exception e) {
+               } catch (JSONException e) {
                    return RCode.CHART_PARAM_FORMAT.getMsg();
                }
                Object text = map.get(Constant.CHART_TEXT_TYPE);
@@ -1420,7 +1421,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                if(StringUtils.isNotEmpty(param)){
                    try {
                        JSONObject.parseObject(param, Map.class);
-                   } catch (Exception e) {
+                   } catch (JSONException e) {
                        return RCode.CHART_PARAM_FORMAT.getMsg();
                    }
                }

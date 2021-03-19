@@ -4,6 +4,7 @@ import com.nis.modules.job.utils.ScheduleUtils;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,7 @@ public class PromserverJobConfig {
     }
 
     @PostConstruct
-    public void init() throws Exception {
+    public void init() throws SchedulerException{
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // 如果配置文件没有配置定时周期 默认为2分钟执行一次

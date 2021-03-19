@@ -2,6 +2,8 @@ package com.nis.modules.module.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -141,7 +143,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             Map labelMap;
             try {
                 labelMap = JSONObject.parseObject(labels, Map.class);
-            } catch (Exception e) {
+            } catch (JSONException e) {
                 throw new NZException(RCode.MODULE_LABELS_FORMAT);
             }
 

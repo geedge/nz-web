@@ -6,6 +6,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,19 +32,19 @@ public class AlertMessageJobConfig {
     @Autowired
     private SysConfigService configService;
 
-    private String alertMessageEmailNotificationJobName = "ALERTMESSAGEEMAILNOTIFICATION_JOB";
-    private String alertMessageExpirStatusJobName = "ALERTMESSAGEEXPIRSTATUS_JOB";
+//    private String alertMessageEmailNotificationJobName = "ALERTMESSAGEEMAILNOTIFICATION_JOB";
+//    private String alertMessageExpirStatusJobName = "ALERTMESSAGEEXPIRSTATUS_JOB";
     private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
 
-    @Bean
-    public JobDetail alertMessageEmailNotifiJobDetail() {
-        return JobBuilder.newJob(AlertMessageEmailNotifiJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageEmailNotificationJobName).storeDurably().build();
-    }
+	/*   @Bean
+	public JobDetail alertMessageEmailNotifiJobDetail() {
+	    return JobBuilder.newJob(AlertMessageEmailNotifiJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageEmailNotificationJobName).storeDurably().build();
+	}
 
     @Bean
     public JobDetail alertMessageExpirStatusJobDetail() {
         return JobBuilder.newJob(AlertMessageExpirStatusJob.class).withIdentity(ScheduleUtils.JOB_NAME + alertMessageExpirStatusJobName).storeDurably().build();
-    }
+    }*/
     
     @Bean
     public JobDetail alertSilenceStatusJobDetail() {
@@ -51,7 +52,7 @@ public class AlertMessageJobConfig {
     }
 
     @PostConstruct
-    public void init() throws Exception {
+    public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // alertemailJob 配置
@@ -62,10 +63,10 @@ public class AlertMessageJobConfig {
             alertMessageInterval = "300";
         }
 
-        ScheduleUtils.createSimpleScheduleJob(alertMessageEmailNotificationJobName, alertMessageEmailNotifiJobDetail(), Integer.parseInt(alertMessageInterval), scheduler);
+//        ScheduleUtils.createSimpleScheduleJob(alertMessageEmailNotificationJobName, alertMessageEmailNotifiJobDetail(), Integer.parseInt(alertMessageInterval), scheduler);
 
         // alertmessageJob 配置
-        ScheduleUtils.createCronScheduleJob(alertMessageExpirStatusJobName, alertMessageExpirStatusJobDetail(), alertMessageJobCron, scheduler);
+//        ScheduleUtils.createCronScheduleJob(alertMessageExpirStatusJobName, alertMessageExpirStatusJobDetail(), alertMessageJobCron, scheduler);
     
         // alertSilenceStatusJob 配置
         ScheduleUtils.createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), alertSilenceJobCron, scheduler);

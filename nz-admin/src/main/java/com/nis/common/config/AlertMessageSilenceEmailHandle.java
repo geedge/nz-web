@@ -1,6 +1,7 @@
 package com.nis.common.config;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -24,6 +25,7 @@ import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.log.Log;
@@ -47,6 +49,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import javax.mail.MessagingException;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -116,7 +120,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		            List<AlertMessageEntity> recvs = null;
 		            try {
 		            	recvs = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
-		            } catch (Exception e) {
+		            } catch(JSONException e) {
 		                log.error("从redis中取告警消息转化失败，错误信息：" +e + " 转化参数是：" + obj.toString());
 		            }
 					
@@ -195,7 +199,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 								    }
 							    }
 							}
-						}catch(Exception e) {
+						}catch(JSONException e) {
 							e.printStackTrace();
 							log.error("取出redis中接收告警信息 转换异常："+e.getMessage());
 							continue;
@@ -247,7 +251,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		            List<AlertMessageEntity> entities = null;
 		            try {
 		                entities = JSONObject.parseArray(obj.toString(), AlertMessageEntity.class);
-		            } catch (Exception e) {
+		            } catch (JSONException e) {
 		                log.error("从redis中取告警消息转化失败，错误信息：" +e + " 转化参数是：" + obj.toString());
 		            }
 		            log.info("取出告警消息，准备邮件通知：" + JSONObject.toJSONString(entities));
@@ -337,7 +341,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		                        			log.setState(1);
 		                        		}
 		                        	}
-		                        } catch (Exception e) {
+		                        } catch (MessagingException | IOException | TemplateException e) {
 		                        	List<AlertNotifyLog> list = alertNotifyLogMap.get(messageEntity.getId());
 		                        	if(ObjectUtil.isNotEmpty(list)) {
 		                        		for(AlertNotifyLog log : list) {
@@ -390,7 +394,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		                if (log.isDebugEnabled())
 		                    log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), result));
 		                alertNotifyLog.setState(1);
-		            } catch (Exception e) {
+		            } catch (IORuntimeException e) {
 		                log.debug(String.format("通知命令执行结束，执行命令是: %s , 结果是: %s", Arrays.asList(commands).toString(), "失败"));
 		                log.error("alert通知脚本异常,异常消息是:" + e);
 		                alertNotifyLog.setState(0);

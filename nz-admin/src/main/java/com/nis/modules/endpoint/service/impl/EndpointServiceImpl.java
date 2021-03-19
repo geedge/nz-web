@@ -3,6 +3,7 @@ package com.nis.modules.endpoint.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -250,7 +251,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				Map labelMap;
 				try {
 					labelMap = JSONObject.parseObject(labels, Map.class);
-				} catch (Exception e) {
+				} catch (JSONException e) {
 					throw new NZException(RCode.ENDPOINT_LABELS_FORMAT);
 				}
 
@@ -442,7 +443,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			if (StringUtils.isNotEmpty(param)) {
 				try {
 					JSONObject.parseObject(param);
-				} catch (Exception e) {
+				} catch (JSONException e) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ENDPOINT_PARAM_FORMAT_ERROR.getMsg());
 				}
@@ -453,7 +454,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 				Map labelMap = null;
 				try {
 					labelMap = JSONObject.parseObject(labels, Map.class);
-				} catch (Exception e) {
+				} catch (JSONException e) {
 					saveFlag = false;
 					this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ENDPOINT_LABELS_FORMAT.getMsg());
 				}

@@ -159,106 +159,106 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 	}
 
-    @Override
-    public synchronized void saveBatch(String receiveStr, HttpServletRequest request) {
-	    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
-
-	    // 接收告警的当前时间
-	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
-
-	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
-	    if (CollectionUtils.isEmpty(receiveData)) return;
-
-        String[] keys = {Constant.ENDPOINT_ALERT_PUSH, Constant.ENDPOINT_ALERT_RULE, Constant.SYSCONFIG_KEY_EMAIL_ENABLE};
-        List<SysConfigEntity> paramValues = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, keys));
-        Map<String, String> configMap = paramValues.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-
-        // endpoint state
-        this.handleEndpointStateByRule(configMap, receiveData);
-
-	    // 全为endpoint state告警 后续操作不用继续 
-	    if (CollectionUtils.isEmpty(receiveData)) return;
-	    
-	    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
-	    Integer buildRuleId = buildRule.getId();
-
-	    // 最终保存入库的告警信息
-	    List<AlertMessageEntity> entities = new ArrayList<>();
-	    // 过期的告警消息
-	    List<AlertMessageEntity> expiredAlertList = new ArrayList<>();
-
-	    // 当前激活状态的告警消息
-	    List<AlertMessageEntity> pendingAlert = this.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1));
-	    Map<String, AlertMessageEntity> alertHashKeyAndEntityMap = new HashMap<>();
-	    for (AlertMessageEntity entity : pendingAlert) {
-		    alertHashKeyAndEntityMap.put(entity.getHashKey(), entity);
-	    }
-
-	    List<Endpoint> endpointList = endpointService.list();
-	    Map<Integer, Endpoint> endpointMap = new HashMap<>();
-	    for (Endpoint endpoint : endpointList) {
-		    endpointMap.put(endpoint.getId(), endpoint);
-	    }
-
-	    List<Module> moduleList = moduleService.list();
-	    Map<Integer, Module> moduleIdAndEntityMap = new HashMap<>();
-	    Map<String, Module> moduleNameAndEntityMap = new HashMap<>();
-	    for (Module module : moduleList) {
-		    moduleIdAndEntityMap.put(module.getId(), module);
-		    moduleNameAndEntityMap.put(module.getName(), module);
-	    }
-
-	    List<Asset> assetList = assetService.list();
-	    Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
-	    Map<String, Asset> assetHostAndEntityMap = new HashMap<>();
-	    for (Asset asset : assetList) {
-		    assetIdAndEntityMap.put(asset.getId(), asset);
-		    assetHostAndEntityMap.put(asset.getHost(), asset);
-	    }
-
-	    List<Project> projectList = projectService.list();
-	    Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(Project::getName, Project::getId));
-
-	    List<Idc> idcList = idcService.list();
-	    Map<String, Integer> idcNameAndIdMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Idc::getId));
-
-	    AlertMessageEntity entity, expiredAlert;
-	    for (AlertMessageReceiveDTO dto : receiveData) {
-		    try {
-			    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, idcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
-			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
-
-			    // 如果是内置告警直接入库
-			    if (buildRuleId.equals(entity.getRuleId())) {
-				    entities.add(entity);
-			    } else {
-				    Date endAt = entity.getEndAt();
-				    // 当前时间比结束时间早 告警激活入库
-				    if (currentTime.before(endAt)) {
-					    // 已存在告警则不保存入库
-					    if (alertHashKeyAndEntityMap.get(entity.getHashKey()) != null) continue;
-					    entity.setState(1);
-					    entity.setEndAt(null);
+	/*    @Override
+	public synchronized void saveBatch(String receiveStr, HttpServletRequest request) {
+		    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
+	
+		    // 接收告警的当前时间
+		    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+	
+		    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
+		    if (CollectionUtils.isEmpty(receiveData)) return;
+	
+	    String[] keys = {Constant.ENDPOINT_ALERT_PUSH, Constant.ENDPOINT_ALERT_RULE, Constant.SYSCONFIG_KEY_EMAIL_ENABLE};
+	    List<SysConfigEntity> paramValues = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, keys));
+	    Map<String, String> configMap = paramValues.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+	
+	    // endpoint state
+	    this.handleEndpointStateByRule(configMap, receiveData);
+	
+		    // 全为endpoint state告警 后续操作不用继续 
+		    if (CollectionUtils.isEmpty(receiveData)) return;
+		    
+		    AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
+		    Integer buildRuleId = buildRule.getId();
+	
+		    // 最终保存入库的告警信息
+		    List<AlertMessageEntity> entities = new ArrayList<>();
+		    // 过期的告警消息
+		    List<AlertMessageEntity> expiredAlertList = new ArrayList<>();
+	
+		    // 当前激活状态的告警消息
+		    List<AlertMessageEntity> pendingAlert = this.list(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getState, 1));
+		    Map<String, AlertMessageEntity> alertHashKeyAndEntityMap = new HashMap<>();
+		    for (AlertMessageEntity entity : pendingAlert) {
+			    alertHashKeyAndEntityMap.put(entity.getHashKey(), entity);
+		    }
+	
+		    List<Endpoint> endpointList = endpointService.list();
+		    Map<Integer, Endpoint> endpointMap = new HashMap<>();
+		    for (Endpoint endpoint : endpointList) {
+			    endpointMap.put(endpoint.getId(), endpoint);
+		    }
+	
+		    List<Module> moduleList = moduleService.list();
+		    Map<Integer, Module> moduleIdAndEntityMap = new HashMap<>();
+		    Map<String, Module> moduleNameAndEntityMap = new HashMap<>();
+		    for (Module module : moduleList) {
+			    moduleIdAndEntityMap.put(module.getId(), module);
+			    moduleNameAndEntityMap.put(module.getName(), module);
+		    }
+	
+		    List<Asset> assetList = assetService.list();
+		    Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
+		    Map<String, Asset> assetHostAndEntityMap = new HashMap<>();
+		    for (Asset asset : assetList) {
+			    assetIdAndEntityMap.put(asset.getId(), asset);
+			    assetHostAndEntityMap.put(asset.getHost(), asset);
+		    }
+	
+		    List<Project> projectList = projectService.list();
+		    Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(Project::getName, Project::getId));
+	
+		    List<Idc> idcList = idcService.list();
+		    Map<String, Integer> idcNameAndIdMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Idc::getId));
+	
+		    AlertMessageEntity entity, expiredAlert;
+		    for (AlertMessageReceiveDTO dto : receiveData) {
+			    try {
+				    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, idcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
+				    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
+	
+				    // 如果是内置告警直接入库
+				    if (buildRuleId.equals(entity.getRuleId())) {
 					    entities.add(entity);
 				    } else {
-					    // 当前时间比结束时间晚 告警失效
-					    expiredAlert = alertHashKeyAndEntityMap.get(entity.getHashKey());
-					    // 消息为空或者消息已经过期则不进行操作
-					    if(expiredAlert == null || expiredAlert.getState().equals(2)) continue;
-
-					    expiredAlert.setState(2);
-					    expiredAlert.setEndAt(entity.getEndAt());
-					    expiredAlertList.add(expiredAlert);
+					    Date endAt = entity.getEndAt();
+					    // 当前时间比结束时间早 告警激活入库
+					    if (currentTime.before(endAt)) {
+						    // 已存在告警则不保存入库
+						    if (alertHashKeyAndEntityMap.get(entity.getHashKey()) != null) continue;
+						    entity.setState(1);
+						    entity.setEndAt(null);
+						    entities.add(entity);
+					    } else {
+						    // 当前时间比结束时间晚 告警失效
+						    expiredAlert = alertHashKeyAndEntityMap.get(entity.getHashKey());
+						    // 消息为空或者消息已经过期则不进行操作
+						    if(expiredAlert == null || expiredAlert.getState().equals(2)) continue;
+	
+						    expiredAlert.setState(2);
+						    expiredAlert.setEndAt(entity.getEndAt());
+						    expiredAlertList.add(expiredAlert);
+					    }
 				    }
+			    } catch (Exception e) {
+				    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
+				    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 			    }
-		    } catch (Exception e) {
-			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
-			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 		    }
-	    }
-	    // 处理转换之后的数据
-	    this.handleConvertedMsg(entities, expiredAlertList, configMap.get(Constant.SYSCONFIG_KEY_EMAIL_ENABLE));
-    }
+		    // 处理转换之后的数据
+		    this.handleConvertedMsg(entities, expiredAlertList, configMap.get(Constant.SYSCONFIG_KEY_EMAIL_ENABLE));
+	}*/
 
 	/**
 	 * 从 告警中获取 endpoint state 状态
@@ -471,7 +471,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
             response.setContentType("application/excel");
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
-        } catch (Exception e) {
+        } catch (IOException | NZException e) {
             try {
                 String errMsg;
                 if (e instanceof NZException) {

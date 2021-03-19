@@ -38,14 +38,8 @@ public class AlertMessageController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
     @RequiresPermissions({"alert:message:list"})
     public R list(@RequestParam Map<String, Object> params){
-        PageUtils page;
-		try {
-			page = alertMessageService.queryPage(params);
-			return R.ok(page);
-		} catch (Exception e) {
-			logger.error("查询告警信息失败",e);
-			throw new NZException(RCode.SYS_ERROR);
-		}
+        PageUtils page = alertMessageService.queryPage(params);
+		return R.ok(page);
     }
 
 	@RequestMapping( method = RequestMethod.PUT)

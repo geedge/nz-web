@@ -60,7 +60,7 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
         	if (CommonUtil.isNull(Constant.langList)) { //语言种类列表
     			sysDictService.updateLangCache();
     		}
-        	try {
+//        	try {
 				for (Map<String, String> l : Constant.langList) {
 					Map<String, String> langMap = I18N_CACHE.get(l.get("value"));
 					if (CommonUtil.isNull(langMap)) {
@@ -73,9 +73,9 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
 						}
 					}
 				}
-			} catch (Exception e) {
+/*			} catch (Exception e) {
 				logger.error(e);
-			}
+			}*/
         }
     }
 
@@ -95,13 +95,13 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
         if (null != props && props.containsKey(code)) {
             return props.get(code);
         } else {
-            try {
+//            try {
                 if (null != this.getParentMessageSource()) {
                     return this.getParentMessageSource().getMessage(code, null, locale);
                 }
-            } catch (Exception ex) {
-                logger.error(ex);
-            }
+				/*            } catch (Exception ex) {
+				    logger.error(ex);
+				}*/
             return code;
         }
     }

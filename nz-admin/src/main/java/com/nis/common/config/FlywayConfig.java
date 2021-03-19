@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.util.HashMap;
@@ -46,7 +47,7 @@ public class FlywayConfig {
                     map.put("flyway." + key, value.toString());
                 }
             }
-        } catch (Exception e) {
+        } catch (IntrospectionException e) {
             e.printStackTrace();
         }
 

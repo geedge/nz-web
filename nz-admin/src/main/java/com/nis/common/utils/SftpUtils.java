@@ -124,7 +124,7 @@ public class SftpUtils {
 
             // 放进sftp中进行传输
             sftp.put(in, file.getName());
-        } catch (Exception e) {
+        } catch (FileNotFoundException | SftpException e) {
             // 文件上传失败
             logger.error("build node exporter upload faild {}", e);
             // 抛出 controller 处理

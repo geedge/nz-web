@@ -9,6 +9,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,7 @@ public class EndpointStateJobConfig {
     }
 
     @PostConstruct
-    public void init() throws Exception {
+    public void init(){
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // 查询job执行周期
@@ -50,6 +51,12 @@ public class EndpointStateJobConfig {
             scrapeInterval = scrapeIntervalConfig.getParamValue();
         }
 
-        ScheduleUtils.createSimpleScheduleJob(endpointStateJobName, endpointStateJobDetail(), Integer.parseInt(scrapeInterval), scheduler);
+        try {
+			ScheduleUtils.createSimpleScheduleJob(endpointStateJobName, endpointStateJobDetail(), Integer.parseInt(scrapeInterval), scheduler);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (SchedulerException e) {
+			e.printStackTrace();
+		}
     }
 }

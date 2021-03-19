@@ -304,7 +304,7 @@ public class SnmpUtil {
             if (snmp != null) {
                 try {
                     snmp.close();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.error("关闭snmp失败",e);
                 }
             }
@@ -415,7 +415,7 @@ public class SnmpUtil {
             if (snmp != null) {
                 try {
                     snmp.close();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.error("关闭snmp失败",e);
                 }
             }
