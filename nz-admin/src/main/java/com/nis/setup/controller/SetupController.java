@@ -2,9 +2,11 @@ package com.nis.setup.controller;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.druid.pool.DruidDataSource;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -24,11 +26,14 @@ import org.springframework.web.bind.annotation.*;
 import org.yaml.snakeyaml.Yaml;
 import redis.clients.jedis.Jedis;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/setup")
@@ -89,12 +94,23 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
                 .and(setup.getDatabase().getPassword()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
         Connection connection=null;
+        DruidDataSource druidDataSource = null;
         String driver = environment.getProperty("spring.datasource.druid.driver-class-name");
         try{
 
             Class.forName(driver);
-            connection = DriverManager.getConnection(setup.getDatabase().getUrl(),setup.getDatabase().getUsername(),setup.getDatabase().getPassword());
-            if(connection.isValid(5)){
+//            connection = DriverManager.getConnection(setup.getDatabase().getUrl(),setup.getDatabase().getUsername(),setup.getDatabase().getPassword());
+            druidDataSource = new DruidDataSource();
+            druidDataSource.setUrl(setup.getDatabase().getUrl());
+            druidDataSource.setUsername(setup.getDatabase().getUsername());
+            druidDataSource.setPassword(setup.getDatabase().getPassword());
+            druidDataSource.setValidationQuery("SELECT 1");
+            druidDataSource.setTestOnBorrow(true);
+            druidDataSource.setMaxActive(2);
+            druidDataSource.setInitialSize(1);
+            druidDataSource.init();
+            connection = druidDataSource.getConnection(5000);
+            if(connection != null){
                 return R.ok();
             }
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
@@ -103,6 +119,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
         }finally {
             IoUtil.close(connection);
+            IoUtil.close(druidDataSource);
         }
     }
 
@@ -143,21 +160,18 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         if(!FileUtil.exist(codeFile)){
             return R.error(RCode.SYS_CONFIG_CODE_FILE_ISNULL);
         }
-        try{
-            FileReader reader  = new FileReader(codeFile);
-            BufferedReader br = new BufferedReader(reader);
-            String readCode = br.readLine();
-            if(StrUtil.isEmpty(readCode) || !readCode.equals(code)){
-                return R.error(RCode.SYS_CONFIG_CODE_INVALID);
-            }
-            return R.ok();
-        }catch (IOException e){
+        BufferedReader reader = FileUtil.getReader(codeFile, CharsetUtil.UTF_8);
+        List<String> codes = new ArrayList<String>(1);
+        codes=IoUtil.readLines(reader,new ArrayList<String>());
+        String readCode = codes.get(0);
+        if(StrUtil.isEmpty(readCode) || !readCode.equals(code)){
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
+        return R.ok();
     }
 
     private void modifyApplication(Resource resource,RedisEntity redisEntity) throws IOException{
-        FileWriter writer=null;
+
         try{
             Yaml yaml = new Yaml();
             Map<String,Object> application = yaml.load(resource.getInputStream());
@@ -178,20 +192,15 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             Map<String,Object> nezha =(Map<String,Object>) application.get("nezha");
             nezha.put("inited",1);
 
-            writer = new FileWriter(resource.getFile());
-            writer.write(yaml.dumpAsMap(application));
-            writer.flush();
-            writer.close();
+            BufferedOutputStream outputStream = FileUtil.getOutputStream(resource.getURL().toString());
+            IoUtil.write(outputStream,true,yaml.dumpAsMap(application).getBytes());
         }catch (IOException e){
             log.error(e);
             throw e;
-        }finally {
-            IoUtil.close(writer);
         }
     }
 
     private void modifyApplicationProfile(Resource resource, DatabaseEntity database) throws IOException {
-        FileWriter writer=null;
         try{
             Yaml yaml = new Yaml();
             Map<String,Object> profile = yaml.load(resource.getInputStream());
@@ -207,15 +216,12 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             datasource.put("druid",druid);
             profile.put("datasource",datasource);
 
-            writer = new FileWriter(resource.getFile());
-            writer.write(yaml.dumpAsMap(profile));
-            writer.flush();
+            BufferedOutputStream outputStream = FileUtil.getOutputStream(resource.getURL().toString());
+            IoUtil.write(outputStream,true,yaml.dumpAsMap(profile).getBytes());
 
         }catch (IOException e){
             log.error(e);
             throw e;
-        }finally {
-            IoUtil.close(writer);
         }
     }
     public void writeTmpFile(SetupEntity setup) throws IOException{
@@ -223,16 +229,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         if (FileUtil.exist(file)){
             file.delete();
         }
-        ObjectOutputStream oos=null;
-        try {
-            oos = new ObjectOutputStream(new FileOutputStream(file));
-            oos.writeObject(setup);
-        } catch (IOException e) {
-            log.error(e);
-            throw e ;
-        }finally {
-            IoUtil.close(oos);
-        }
+        IoUtil.writeObj(FileUtil.getOutputStream(file),true,setup);
     }
 
     public void restart(){
