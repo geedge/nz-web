@@ -9,6 +9,7 @@ import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.module.entity.Module;
+import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.dao.TopoDao;
 import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.entity.Topo;
@@ -93,6 +94,44 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
         }
         this.saveOrUpdateBatch(topos);
     }
+
+    @Override
+    public void removeTopoConfigNodeAndLineByModules(List<MonitorModule> modules) {
+        Set<Integer> projectIds = modules.stream().map(MonitorModule::getProjectId).collect(Collectors.toSet());
+        List<Topo> topos = this.list(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, projectIds));
+        if (CollectionUtils.isEmpty(topos)) {
+            return;
+        }
+        Map<Integer, Object> topoProjectIdAndConfigMap = topos.stream().collect(Collectors.toMap(Topo::getProjectId, Topo::getTopo));
+
+        // module 是批量删除，删除的或许不属于同一个 project
+        Map<Integer, List<MonitorModule>> projectIdAndMoudles = modules.stream().collect(Collectors.groupingBy(MonitorModule::getProjectId));
+
+        Object topoConfig;
+        Map<String, JSONArray> configMap;
+        List<Integer> moduleIds;
+        for (Map.Entry<Integer, List<MonitorModule>> entry : projectIdAndMoudles.entrySet()) {
+            topoConfig = topoProjectIdAndConfigMap.get(entry.getKey());
+            if (ToolUtil.isEmpty(topoConfig)) {
+                continue;
+            }
+
+            moduleIds = entry.getValue().stream().map(MonitorModule::getId).collect(Collectors.toList());
+            configMap = JSONObject.parseObject(topoConfig.toString(), Map.class);
+            configMap.put("pens", this.removeModuleEntity(configMap.get("pens"), moduleIds));
+            topoProjectIdAndConfigMap.put(entry.getKey(), JSONObject.toJSONString(configMap));
+        }
+
+        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Integer userId = ShiroUtils.getUserId().intValue();
+        for (Topo topo : topos) {
+            topo.setTopo(topoProjectIdAndConfigMap.get(topo.getProjectId()).toString());
+            topo.setUpdateBy(userId);
+            topo.setUpdateAt(now);
+        }
+        this.saveOrUpdateBatch(topos);
+    }
+
 
     private JSONArray removeModuleEntity(JSONArray pens, List<Integer> moduleIds) {
         Map<String, Object> node, nodeData;

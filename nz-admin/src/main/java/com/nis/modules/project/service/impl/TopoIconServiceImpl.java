@@ -1,5 +1,6 @@
 package com.nis.modules.project.service.impl;
 
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -8,7 +9,6 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.project.dao.TopoIconDao;
 import com.nis.modules.project.entity.TopoIcon;
 import com.nis.modules.project.service.TopoIconService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,10 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
-@Slf4j
 @Service("topoIconService")
 public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> implements TopoIconService {
+
+    private static Log log = Log.get();
 
     @Autowired
     private TopoIconDao topoIconDao;
@@ -104,4 +104,9 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
 		List<String> result = topoIcons.stream().map(TopoIcon::getUnit).collect(Collectors.toList());
 		return result;
 	}
+
+    @Override
+    public void deleteTopoIconByUnit(String unit) {
+        this.remove(new LambdaQueryWrapper<TopoIcon>().eq(TopoIcon::getUnit, unit));
+    }
 }

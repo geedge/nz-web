@@ -4,7 +4,9 @@ package com.nis.common.utils;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.nis.common.exception.NZException;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -13,6 +15,7 @@ import org.apache.poi.util.Units;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -261,4 +264,23 @@ public class ExcelUtils {
         }
         return headerFlag;
     }
+
+    public static Workbook getWorkBookFromMultipartFile(MultipartFile excelFile) {
+        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
+            throw new NZException(RCode.IMPORT_EXCELFILE_TYPE);
+        }
+
+        Workbook work = null;
+        try {
+            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
+        } catch (IOException e) {
+            throw new NZException(RCode.IMPORT_EXCELFILE_PARSE_ERROR);
+        } finally {
+            if (work != null) {
+                IOUtils.closeQuietly(work);
+            }
+        }
+        return work;
+    }
+
 }
