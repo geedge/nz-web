@@ -1,5 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.bean.BeanPath;
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -9,13 +11,22 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.dao.ExpreTmplDao;
 import com.nis.modules.panel.entity.ExpressionTmpl;
 import com.nis.modules.panel.service.ExpreTmplService;
+import com.nis.modules.project.entity.MonitorProject;
+import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -48,6 +59,21 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
     @Autowired
     private SysConfigService sysConfigService;
+
+    @Autowired
+    private IdcService idcService;
+
+    @Autowired
+    private AssetService assetService;
+
+    @Autowired
+    private MonitorModuleService moduleService;
+
+    @Autowired
+    private MonitorProjectService projectService;
+
+    @Autowired
+    private MonitorEndpointService endpointService;
 
     @Override
     public ExpressionTmpl queryTmplInfoById(Integer id) {
@@ -157,15 +183,57 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         this.removeByIds(Arrays.asList(ids));
     }
 
+    /**
+     * 表达式渲染
+     * @param tmpl ExpressionTmpl 对象 ，
+     *             expression为表达式内容
+     *             varsVal 是替换内容，其中key asset.datacenter project module endpoint ，value 为 id
+     * @return
+     */
     @Override
     public String renderExpression(ExpressionTmpl tmpl) {
         String expression = tmpl.getExpression();
         Map varsVal = tmpl.getVarsVal();
 
-        expression = this.generateExpression(expression, varsVal);
+        String[] vars = this.parseExpre(expression);
+        for (String var : vars) {
+            Integer assetId = var.startsWith("asset.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
+            Integer dcId = var.startsWith("datacenter.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
+            Integer projectId = var.startsWith("project.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
+            Integer moduleId = var.startsWith("module.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
+            Integer endpointId = var.startsWith("endpoint.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
+
+            Asset asset = ToolUtil.isNotEmpty(assetId) ? assetService.getById(assetId) : null;
+            Idc dc = ToolUtil.isNotEmpty(dcId) ? idcService.getById(dcId) : null;
+            MonitorProject project = ToolUtil.isNotEmpty(projectId) ? projectService.getById(projectId) : null;
+            MonitorModule module = ToolUtil.isNotEmpty(moduleId) ? moduleService.getById(moduleId) : null;
+            MonitorEndpoint endpoint = ToolUtil.isNotEmpty(endpointId) ? endpointService.getById(endpointId) : null;
+
+            Object renderValue = null;
+            boolean flag = true;
+            if (var.startsWith("asset.") || var.startsWith("datacenter.") || var.startsWith("project.") || var.startsWith("module.") || var.startsWith("endpoint.")) {
+                flag = false;
+            }
+            renderValue = (var.startsWith("asset.") && ToolUtil.isNotEmpty(asset) && renderValue == null) ? BeanPath.create(var).get(asset) : renderValue;
+            renderValue = (var.startsWith("datacenter.") && ToolUtil.isNotEmpty(dc) && renderValue == null) ? BeanUtil.getProperty(dc, var.replaceAll("datacenter.", "")) : renderValue;
+            renderValue = (var.startsWith("project.") && ToolUtil.isNotEmpty(project) && renderValue == null) ? BeanUtil.getProperty(project, var.replaceAll("project.", "")) : renderValue;
+            renderValue = (var.startsWith("module.") && ToolUtil.isNotEmpty(module) && renderValue == null) ? BeanUtil.getProperty(module, var.replaceAll("module.", "")) : renderValue;
+            renderValue = (var.startsWith("endpoint.") && ToolUtil.isNotEmpty(endpoint) && renderValue == null) ? BeanUtil.getProperty(endpoint, var.replaceAll("endpoint.", "")) : renderValue;
+            renderValue = (renderValue == null && flag) ? varsVal.get(var) : renderValue;
+            if (renderValue == null && flag) {
+                continue;
+            }
+            expression = expression.replaceAll("\\{\\{" + var + "\\}\\}", renderValue == null ? "" : renderValue.toString());
+        }
         return expression;
     }
 
+    /**
+     * 渲染表达式
+     * @param expression  表达式
+     * @param varsVal     表达式内容 直接进行 key value 渲染
+     * @return
+     */
     @Override
     public String renderExpression(String expression, Map varsVal) {
         expression = this.generateExpression(expression, varsVal);
