@@ -23,12 +23,17 @@ package com.nis.modules.terminal.config;
 
 
 import cn.hutool.log.Log;
+
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.SftpException;
 import com.nis.common.utils.*;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
 
@@ -36,7 +41,7 @@ import java.util.List;
 public class TerminalOneProcessor {
     private Log logger= Log.get();
 
-    public R sendAll(String token, String cmd) throws Exception {
+    public R sendAll(String token, String cmd) throws IOException,UnsupportedEncodingException,RuntimeException {
 
         cmd = URLDecoder.decode(cmd, Constants.CHARSET_UTF8);
         List<TerminalClient> terminalClients=null;
@@ -57,12 +62,12 @@ public class TerminalOneProcessor {
         return R.ok();
     }
 
-    public R theme(String token, String theme) throws Exception {
+    public R theme(String token, String theme) throws RuntimeException {
         TerminalClient terminalClient = TerminalSession.get(token);
         return R.ok();
     }
 
-    public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws Exception {
+    public R resize(String token, Integer cols, Integer rows, Integer width, Integer height) throws IOException {
         List<TerminalClient> terminalClients = TerminalSession.getAllTerminalClient(token);
         if (ToolUtil.isNotEmpty(terminalClients)) {
         	for(TerminalClient terminalClient : terminalClients) {
@@ -98,7 +103,7 @@ public class TerminalOneProcessor {
             }
 
             logger.debug("上传完成");
-        } catch (Exception e) {
+        } catch (InterruptedException | JSchException | SftpException | IOException e) {
             logger.error(e);
             success = false;
         }
@@ -120,7 +125,7 @@ public class TerminalOneProcessor {
         }
         try {
         	terminalClient.download(path,res);
-		} catch (Exception e) {
+		} catch (IOException | SftpException | JSchException | InterruptedException e) {
 			logger.error(e);
 		}
     }

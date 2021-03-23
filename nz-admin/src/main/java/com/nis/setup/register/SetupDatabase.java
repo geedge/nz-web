@@ -46,7 +46,7 @@ public class SetupDatabase {
     SysUserService sysUserService;
 
     @PostConstruct
-    public void initDatabase() throws Exception{
+    public void initDatabase() throws IOException{
         if (!"1".equals(inited)) {
             return;
         }

@@ -37,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -802,7 +803,7 @@ public class OverviewServiceImpl implements OverviewService {
                         }
                     }
 
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.error(e);
                 }
                 break;

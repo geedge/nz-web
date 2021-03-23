@@ -44,7 +44,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -171,7 +174,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         boolean checkRule = false;
         try {
             checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
         }
 
@@ -343,7 +346,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error("告警规则模板生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取告警规则导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -519,7 +522,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                         continue;
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                     log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                 }
@@ -527,7 +530,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     this.save(ruleEntity);
                     alertNameList.add(alertName);
                     successNum++;
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     log.error(String.format("rule导入保存失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ALERTRULE_IMPORT_ERROR.getMsg());
                 }
@@ -610,7 +613,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error("告警规则导出文件生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("告警规则导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {

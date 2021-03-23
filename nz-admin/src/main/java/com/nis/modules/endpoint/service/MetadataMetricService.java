@@ -3,10 +3,11 @@ package com.nis.modules.endpoint.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface MetadataMetricService extends IService<MetadataMetric> {
 
-    List<MetadataMetric> metadata(Integer endpointId) throws Exception;
+    List<MetadataMetric> metadata(Integer endpointId) throws IOException;
 
 }

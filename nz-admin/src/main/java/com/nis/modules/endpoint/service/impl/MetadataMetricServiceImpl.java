@@ -13,6 +13,7 @@ import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -27,7 +28,7 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
 
 
 	@Override
-	public List<MetadataMetric> metadata(Integer endpointId) throws Exception{
+	public List<MetadataMetric> metadata(Integer endpointId) throws IOException{
 		// 返回结果
 		List<MetadataMetric> metrics = new ArrayList<>();
 		Map<String,Object> queryParam = new HashMap<String,Object>();

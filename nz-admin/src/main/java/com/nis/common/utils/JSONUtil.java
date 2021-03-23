@@ -750,7 +750,7 @@ public class JSONUtil {
 
 			// 默认按照JSONObject对待
 			return new JSONObject(object, jsonConfig);
-		} catch (Exception exception) {
+		} catch (RuntimeException exception) {
 			return null;
 		}
 	}

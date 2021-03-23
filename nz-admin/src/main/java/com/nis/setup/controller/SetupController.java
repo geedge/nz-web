@@ -31,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -114,7 +115,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
                 return R.ok();
             }
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
-        }catch (Exception e){
+        }catch (SQLException | ReflectiveOperationException e){
             log.error(e);
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
         }finally {
@@ -142,7 +143,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
                 return R.ok();
             }
             return R.error(RCode.SYS_CONFIG_REDIS_PARAM_INVALID);
-        }catch (Exception e){
+        }catch (RuntimeException e){
             log.error(e);
             if(e.getMessage().indexOf("NOAUTH") != -1){
                 return R.error(RCode.SYS_CONFIG_REDIS_PASSWORD_REQUIRED);

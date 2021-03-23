@@ -78,7 +78,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountDao, Account> impleme
         try {
             Map map = (Map) params;
             account.setParams(JSONObject.toJSONString(map));
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_FORMATERROR);
         }
     }

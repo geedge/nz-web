@@ -303,7 +303,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error("endpoint 模板生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -408,7 +408,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error(e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error(e);
         } finally {
             if (workbook != null) {
@@ -595,7 +595,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                     monitorEndpointNameList.add(name);
                     moduleIdAndEndpointNamesMap.put(module.getId(), monitorEndpointNameList);
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     log.error(String.format("endpoint 导入保存失败,表达式信息是：%s,错误信息是：%s", monitorEndpoint.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ENDPOINT_IMPORT_ERROR.getMsg());
                 }

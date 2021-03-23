@@ -39,7 +39,7 @@ public class YamlUtil {
 	 * @return
 	 * @throws Exception
 	 */
-	public boolean checkRule(Map toCheck) throws Exception {
+	public boolean checkRule(Map toCheck) throws IOException {
 		boolean success = false;
 		
 		File file = new File(Constant.TEMP_PATH + File.separator + "promRuleCheck" + System.currentTimeMillis() + ".yml");

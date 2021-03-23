@@ -13,6 +13,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.modules.sys.entity.SysConfigEntity;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -62,7 +63,7 @@ public interface SysConfigService extends IService<SysConfigEntity> {
 
     R updateConfigs(Map<String, Object> param);
 
-    void resetConfig(Map<String, Object> param) throws Exception;
+    void resetConfig(Map<String, Object> param) throws IOException,RuntimeException;
 
     boolean checkHaMode();
 }

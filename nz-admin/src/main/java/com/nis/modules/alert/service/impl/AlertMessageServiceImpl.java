@@ -574,7 +574,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     }
 
 	@Override
-	public void saveBatchToCache(String receiveStr, HttpServletRequest request) throws Exception {
+	public void saveBatchToCache(String receiveStr, HttpServletRequest request) throws RuntimeException {
 		logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
 
 	    // 接收告警的当前时间
@@ -631,7 +631,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
 			    entities.add(entity);
 			    
-		    } catch (Exception e) {
+		    } catch (ParseException | RuntimeException e) {
 			    logger.error("解析告警信息失败，参数是：" + JSONObject.toJSONString(dto) + " 错误信息：" ,e);
 			    throw new NZException(RCode.ALERTMSG_SAVE_ERROR);
 		    }

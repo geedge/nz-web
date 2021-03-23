@@ -233,7 +233,7 @@ public class AssetController {
     	try {
 			assetService.collectData(assetId);
 			return R.ok();
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			return R.error(500,e.getMessage());
 		}
     }

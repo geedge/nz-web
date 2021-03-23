@@ -100,7 +100,7 @@ public class MailUtil {
 			// 把邮件发送出去
 			transport.sendMessage(message, message.getAllRecipients());
 			transport.close();
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			log.error("send to {} subject {} from {} faild with exception ",to.toString(),from,subject,e);
 			throw e;
 		}
@@ -171,7 +171,7 @@ public class MailUtil {
 			// 其他关于登陆的错误 比如 连接超时
 			logger.error("Failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			logger.error("Failed to connect to SMTP server",e);
 			throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
 		} finally {

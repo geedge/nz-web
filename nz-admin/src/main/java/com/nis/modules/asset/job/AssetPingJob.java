@@ -57,7 +57,7 @@ public class AssetPingJob extends QuartzJobBean {
         try {
             // 进行同步
             this.execAssetPing();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("asset ping 采集异常",e);
         } finally {
             sw.stop();
@@ -108,7 +108,7 @@ public class AssetPingJob extends QuartzJobBean {
                     sw.start();
                     try {
                         result = RuntimeUtil.run(null, null, commands);
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
 	                        logger.error(String.format("asset ping 执行命令失败, 执行命令是: %s, 错误信息是: %s", Arrays.asList(commands).toString(), e));
                     } finally {
                         sw.stop();

@@ -35,6 +35,6 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
 	List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
 	
-	void saveBatchToCache(String receiveStr, HttpServletRequest request) throws Exception;
+	void saveBatchToCache(String receiveStr, HttpServletRequest request) throws RuntimeException;
 }
 

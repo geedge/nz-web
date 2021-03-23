@@ -380,7 +380,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             }
 
             logger.debug("Generate snmp.yml file succeeded {}", sw.toString());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to generate snmp.yml file",e);
         } finally {
             if (sw != null) {
@@ -399,7 +399,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
             logger.debug("Read the contents of snmp.yml file succeeded");
         } catch (FileNotFoundException e) {
             logger.error("Failed to read the contents of snmp.yml file, because the snmp.yml file not found",e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("Failed to read the contents of snmp.yml file",e);
         }
 

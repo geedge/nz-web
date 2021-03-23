@@ -263,7 +263,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					removeKeys.add(entry.getKey());
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,当前用户是:%s", e.getMessage(), userId), e);
 		} finally {
 			// 删除 关联key
@@ -336,7 +336,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 					removeKeys.add(entry.getKey());
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,删除用户ID:%s", e.getMessage(), userIdList.toString()), e);
 		} finally {
 			// 删除 关联key

@@ -273,7 +273,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             logger.error("表达式模板生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("获取表达式导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -371,7 +371,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
                     nameLisInGroup = CollectionUtils.isEmpty(nameLisInGroup) ? new ArrayList<>() : nameLisInGroup;
                     nameLisInGroup.add(name);
                     gnameAndTmplNameMap.put(gname, nameLisInGroup);
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     logger.error(String.format("表达式模板导入保存失败,表达式信息是：%s,错误信息是：%s", tmpl.toString(), e));
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXPRETMPL_IMPORT_ERROR.getMsg());
                 }
@@ -414,7 +414,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             logger.error("表达式模板导出文件生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("表达式模板导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {

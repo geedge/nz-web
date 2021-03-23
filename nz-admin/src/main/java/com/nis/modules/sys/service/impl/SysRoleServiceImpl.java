@@ -179,7 +179,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                     removeKeys.add(entry.getKey());
                 }
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error(String.format("从redis中获取用户登录信息失败,错误信息是：%s,角色Id是：%s", e.getMessage(), roleId), e);
         } finally {
             // 删除 关联key

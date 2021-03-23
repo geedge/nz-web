@@ -21,6 +21,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -170,10 +171,10 @@ public class SysConfigController extends AbstractController {
 	@PutMapping("/reset")
 	@SysLog(operation = OperationEnum.RESET,type = TypeEnum.SYSTEM)
 	@RequiresPermissions({"sys:config:reset"})
-	public R resetConfig(@RequestBody Map<String, Object> param) throws Exception{
+	public R resetConfig(@RequestBody Map<String, Object> param) throws IOException,RuntimeException{
 		try {
 			sysConfigService.resetConfig(param);
-		}catch (Exception e){
+		}catch (IOException | RuntimeException e){
 			throw e;
 		}
     	return R.ok();

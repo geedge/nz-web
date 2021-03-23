@@ -180,7 +180,7 @@ public class PromProxyController {
 				IOUtils.copy(connInputStream, resOutputStream);
 				resOutputStream.flush();//flush 输出流
 			}
-		} catch (Exception e) {
+		} catch (IOException e) {
 			try {
 				response.sendError(500, "request error");
 			} catch (IOException e1) {

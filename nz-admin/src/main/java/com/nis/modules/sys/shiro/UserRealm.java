@@ -296,7 +296,7 @@ public class UserRealm extends AuthorizingRealm {
 								return user;
 							}
 						});
-			} catch (Exception e) {
+			} catch (RuntimeException e) {
 				log.warn(e,"ldap Authentication failed,base: {}",base);
 			}
 			if (entity != null) {

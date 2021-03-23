@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +37,13 @@ public class MetricController {
     @GetMapping("/metadata")
     @ResponseBody
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROMSERVER)
-    public R queryMetadata(Integer endpointId) throws Exception {
+    public R queryMetadata(Integer endpointId) throws IOException {
         ValidateUtils.is(endpointId).notNull(RCode.ENDPOINT_ID_ISNULL);
         List<MetadataMetric> metadata;
 		try {
 			metadata = metricService.metadata(endpointId);
-		} catch (Exception e) {
-			throw (e instanceof NZException) ? e : new NZException(RCode.ERROR);
+		} catch (IOException e) {
+			throw new NZException(RCode.ERROR);
 		}
         Map data = new HashMap();
         data.put("list", metadata);

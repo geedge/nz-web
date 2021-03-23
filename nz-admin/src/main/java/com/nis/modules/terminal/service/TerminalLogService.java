@@ -8,5 +8,5 @@ import java.util.Map;
 
 public interface TerminalLogService extends IService<TerminalLog> {
 
-    PageUtils queryPage(Map<String, Object> params) throws Exception;
+    PageUtils queryPage(Map<String, Object> params) throws RuntimeException;
 }

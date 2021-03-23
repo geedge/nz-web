@@ -24,7 +24,7 @@ public class TerminalLogServiceImpl extends ServiceImpl<TerminalLogDao, Terminal
     private SysUserDao userDao;
 
     @Override
-    public PageUtils queryPage(Map<String, Object> params) throws Exception{
+    public PageUtils queryPage(Map<String, Object> params) throws RuntimeException{
         if (ToolUtil.isNotAllEmpty(params.get("startTime"), params.get("endTime"))) {
             ToolUtil.validateOpTime((String) params.get("startTime"),(String) params.get("endTime"));
         }

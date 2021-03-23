@@ -304,7 +304,7 @@ public class TerminalClient {
                 terminalRecordService.save(terminalRecord);
                 // 清空文件内容
                 file.delete();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.error(String.format("terminal record 文件入库失败，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
             }
         }
@@ -322,7 +322,7 @@ public class TerminalClient {
         }
     }
 
-    public void openTelnetTerminal(final int cols, int rows, int width, int height) throws Exception {
+    public void openTelnetTerminal(final int cols, int rows, int width, int height) throws IOException {
     	TelnetClient telnet = new TelnetClient("VT100");// VT100 VT52 VT220 VTNT ANSI  
         telnet.connect(terminal.getAsset().getHost(), terminal.getPort());  
         // telnet 不允许上传下载操作
@@ -829,7 +829,7 @@ public class TerminalClient {
         }
     }
 
-    public void upload(String src, String dst, long fileSize) throws Exception {
+    public void upload(String src, String dst, long fileSize) throws IOException,SftpException,JSchException,InterruptedException {
     	FileInputStream file =null;
     	ChannelSftp channelSftp = null;
         try {
@@ -854,7 +854,7 @@ public class TerminalClient {
 			}
 			channelSftp.put(file, dst, new SftpMonitor(fileSize));
 			
-		} catch (Exception e) {
+		} catch (InterruptedException | JSchException | SftpException | IOException e) {
 			throw e;
 		} finally {
 			//exit
@@ -871,7 +871,7 @@ public class TerminalClient {
 		}
     }
 
-    public void download(String path,HttpServletResponse res) throws Exception {
+    public void download(String path,HttpServletResponse res) throws IOException,SftpException,JSchException,InterruptedException {
     	ChannelSftp channelSftp=null;
     	InputStream is =null;
     	OutputStream outputStream =null;
@@ -915,7 +915,7 @@ public class TerminalClient {
 			    outputStream.flush();
 			    i = is.read(buff);
 			}
-		} catch (Exception e) {
+		} catch (InterruptedException | JSchException | SftpException | IOException e) {
 			throw e;
 		}  finally {
 			if(outputStream!=null) {

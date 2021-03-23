@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -50,7 +51,7 @@ public class TerminalHandlerController {
     private String configUploadPath;
 	
 	@PostMapping(value = "resize")
-    public R resize(ServletRequest req, @RequestBody TerminalConfigDto dto) throws Exception {
+    public R resize(ServletRequest req, @RequestBody TerminalConfigDto dto) throws IOException,RuntimeException {
 		HttpServletRequest request=(HttpServletRequest) req;
 		String token=request.getHeader(Constant.AUTH_TOKEN_CODE);
 		Integer cols = dto.getCols();
@@ -66,7 +67,7 @@ public class TerminalHandlerController {
 	
 	@PostMapping(value = "upload")
     @RequiresPermissions("terminal:upload")
-    public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws Exception {
+    public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws RuntimeException {
 		if(StringUtils.isBlank(uuid)) {
 			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
 		}
@@ -81,7 +82,7 @@ public class TerminalHandlerController {
             File temp= FileUtil.file("");
             rootPath = temp.getAbsolutePath();
             logger.info("项目根目录["+rootPath+"]");
-        }catch (Exception e){
+        }catch (RuntimeException e){
         	logger.error("error info :",e);
         }
 
@@ -110,7 +111,7 @@ public class TerminalHandlerController {
             logger.debug("上传目录：["+path+"]");
  //           tempFile.delete();
             return terminalOneProcessor.upload(uuid, tempFile, path + "/" + file.getOriginalFilename(), file.getSize());
-        } catch (Exception e) {
+        } catch (IOException | IllegalStateException e) {
         	logger.error("error info :",e);
             throw new NZException(RCode.SYS_ERROR);
         }
@@ -118,7 +119,7 @@ public class TerminalHandlerController {
 	
 	@PostMapping(value = "download")
     @RequiresPermissions("terminal:download")
-    public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws Exception {
+    public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws RuntimeException {
 		String uuid = param.get("uuid");
 		String path = param.get("path");
 		if(StringUtils.isBlank(uuid)) {
@@ -133,7 +134,7 @@ public class TerminalHandlerController {
 				path="./"+path;
 			}
             terminalOneProcessor.download(uuid,path,res);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
         	logger.error("error info :",e);
             throw new NZException(RCode.SYS_ERROR);
         }
@@ -141,7 +142,7 @@ public class TerminalHandlerController {
 
     @GetMapping(value = "/log")
     @RequiresPermissions({"terminal:log:list"})
-    public R queryPage(@RequestParam Map<String, Object> params) throws Exception {
+    public R queryPage(@RequestParam Map<String, Object> params) throws RuntimeException {
         params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
         PageUtils page = terminalLogService.queryPage(params);
         return R.ok(page);

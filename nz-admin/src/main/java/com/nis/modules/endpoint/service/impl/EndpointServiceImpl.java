@@ -558,7 +558,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					projectNameAndIdMap.put(projectName, projectId);
 					moduleNameAndModuleMap.put(moduleName, module);
 					successNum++;
-				} catch (Exception e) {
+				} catch (RuntimeException e) {
 					dataSourceTransactionManager.rollback(transactionStatus);
 					this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
 					logger.error(String.format("保存 project module endpoint 失败,回滚事务,错误信息:%s", e));
@@ -628,7 +628,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			workbook.write(response.getOutputStream());
 		} catch (IOException e) {
 			logger.error("endpoint 模板生成失败，错误信息是：" + e);
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			logger.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" +e);
 		} finally {
 			if (workbook != null) {
@@ -699,7 +699,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 			workbook.write(response.getOutputStream());
 		} catch (IOException e) {
 			logger.error(e);
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			logger.error(e);
 		} finally {
 			if (workbook != null) {
@@ -723,7 +723,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
             // 同时删除 redis  endpoint_prom 中 endpointId 对应的内容
             String[] strArray = endpointIdList.stream().map(s -> String.valueOf(s)).toArray(String[]::new);
             redisTemplate.opsForHash().delete(Constant.REDIS_KEY_ENDPOINT_PROM, strArray);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error(String.format("endpoint删除时，同步删除redis信息失败，key:endpoint_prom，失败参数：%s,错误信息是:%s", endpointIdList, e));
         }
     }

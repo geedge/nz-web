@@ -101,7 +101,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
     private Template template;
     
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) throws RuntimeException {
     	
 		executorService.execute(new Runnable() {
 			

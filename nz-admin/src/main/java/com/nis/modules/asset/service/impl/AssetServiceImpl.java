@@ -3,6 +3,7 @@ package com.nis.modules.asset.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -55,6 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -699,7 +701,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 // 格式校验
                 Map map = (Map) params;
                 account.setParams(JSONObject.toJSONString(map));
-            } catch (Exception e) {
+            } catch (JSONException e) {
                 throw new NZException(RCode.ACCOUNT_PROTOCOL_PARAMS_FORMATERROR);
             }
         }
@@ -744,7 +746,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(originalFilename, assetsExcelFile.getInputStream());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("解析文件格式有误"+e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
         } finally {
@@ -1165,7 +1167,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                         // 更新 asset 关联的信息 用作后续导入数据对比校验
                         this.updateImportAssetRelatedInfo(updateMap, assetTypesMap, vendorsMap, modelList, idcMap, cabinetList, assetSnList, assetHostList);
                         successNum++;
-                    } catch (Exception e) {
+                    } catch (RuntimeException e) {
                         // 手动回滚事务
                         dataSourceTransactionManager.rollback(transactionStatus);
                         this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage());
@@ -1181,7 +1183,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             resultInfo.put("failNum", totalNum - successNum);
             resultInfo.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
             logger.info("asset导入成功,信息是 {}", resultInfo);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("asset导入失败,错误信息:" + e);
         } finally {
             try {
@@ -1560,7 +1562,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                     authType = 2;
                 }
                 sftpUtils.loginIn(asset.getHost(), account.getPort(), params.get("username"), authType, params.get("password"), params.get("key"), params.get("keyPassword"));
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 logger.error(String.format("用户登录sftp服务器失败,地址是：%s:%s,认证信息是：%s", asset.getHost(), account.getPort(), (String) account.getParams())+e);
                 return R.error(RCode.ASSET_LOGINSERVER_FAILED);
             }
@@ -1577,7 +1579,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             String execCommand = "chmod +x " + targetExporterPath + "/" + shellName + " && " + targetExporterPath + "/" + shellName;
             try {
                 sftpUtils.exec(execCommand);
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 logger.error(String.format("执行脚本文件失败,错误信息：%s,执行命令：%s", e, execCommand));
                 return R.error(RCode.ASSET_EXECCOMMAND_FAILED);
             }
@@ -1738,7 +1740,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             logger.error("asset导出文件生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -1897,7 +1899,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             logger.error("asset模板生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -2370,7 +2372,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			        // 针对不同操作系统获取os信息
 			        getSystemOsInfo(session,assetFeatureMap,results,assetId);
 			        
-				} catch (Exception e) {
+				} catch (JSchException | IOException e) {
 					logger.error(e);
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new NZException(e.getMessage());
@@ -2383,7 +2385,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 			if(StrUtil.equals(Constant.ACCOUNT_SNMP_PROTOCOL,protocol)) {
 				try {
 					getSystemInfoBySnmp(assetFeatureMap, results, asset, account);
-				} catch (Exception e) {
+				} catch (IOException e) {
 					logger.error(e);
 					logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
 					throw new NZException(e.getMessage());
@@ -2486,7 +2488,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
     }
 
-    public void getSystemInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
+    public void getSystemInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws JSchException,IOException {
 		Set<String> sshKeySet = Constant.SSH_SHELL_MAP.keySet();
         for(String key : sshKeySet) {
         	String value = RuntimeUtil.sshCommondResult(session, Constant.SSH_SHELL_MAP.get(key));
@@ -2534,7 +2536,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         }
 	}
 	
-	public void getSystemInterfaceInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
+	public void getSystemInterfaceInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws JSchException,IOException {
         String interfaceNames = RuntimeUtil.sshCommondResult(session, "ifconfig |grep mtu|awk -F ':' '{print $1}'|grep -v lo");
         String[] names = interfaceNames.split("\r\n");
         List interfaceInfos =new ArrayList();
@@ -2561,7 +2563,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         results.add(result);
 	}
 	
-	public void getSystemOsInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws Exception {
+	public void getSystemOsInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws JSchException,IOException {
 		String value="";
 		String osInfo = RuntimeUtil.sshCommondResult(session, "echo `cat /etc/system-release` `uname -p`");
 		if(osInfo.toLowerCase().contains("centos")) {
@@ -2583,7 +2585,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         results.add(result);
 	}
 	
-	public void getSystemInfoBySnmp(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Asset asset,Account account) throws Exception {
+	public void getSystemInfoBySnmp(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Asset asset,Account account) throws IOException {
 		Map snmpInfos = JSONObject.parseObject((String) account.getParams(), Map.class);
 		Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
 		for(String key:keySet) {

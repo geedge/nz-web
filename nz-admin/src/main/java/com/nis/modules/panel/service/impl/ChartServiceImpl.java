@@ -748,7 +748,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error("图表模板生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -837,7 +837,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
             log.error("图表导出文件生成失败，错误信息是：" + e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
         } finally {
             if (workbook != null) {
@@ -1080,7 +1080,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     }
                     dataSourceTransactionManager.commit(transactionStatus);
                     successNum++;
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
                     log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));
@@ -1226,7 +1226,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     dataSourceTransactionManager.commit(transactionStatus);
                     // panelNameAndIdMap.put(panelName, panelId);
                     successNum++;
-                } catch (Exception e) {
+                } catch (RuntimeException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", e.getMessage() + "");
                     log.error(String.format("保存 panel chart chartelement失败,回滚事务,错误信息:%s", e));

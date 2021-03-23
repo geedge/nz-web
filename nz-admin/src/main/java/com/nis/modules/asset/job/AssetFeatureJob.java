@@ -39,7 +39,7 @@ public class AssetFeatureJob extends QuartzJobBean {
 		for(Asset asset : assets) {
 			try {
 				assetConcurrent.execute(asset.getId());
-			} catch (Exception e) {
+			} catch (RuntimeException e) {
 				logger.error(e);
 			}
 		}

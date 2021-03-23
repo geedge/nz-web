@@ -285,7 +285,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             }
 
             log.debug("成功生成 snmp.yml 文件 {}", sw.toString());
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("生成 snmp.yml 文件失败", e);
         } finally {
             if (sw != null) {
@@ -304,7 +304,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             log.debug("读取 snmp.yml 文件的内容成功");
         } catch (FileNotFoundException e) {
             log.error("无法读取snmp.yml文件的内容，找不到 snmp.yml 文件", e);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("无法读取snmp.yml文件的内容", e);
         }
         return snmpYml;

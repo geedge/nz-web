@@ -196,7 +196,7 @@ public class PanelController {
     	Chart result = null;
     	try {
     		result = chartService.duplicate(panelId, chart.getId());
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			return R.error(500, e.getMessage());
 		}
         return R.ok(result);

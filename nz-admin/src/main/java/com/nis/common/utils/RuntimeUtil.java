@@ -131,7 +131,7 @@ public class RuntimeUtil {
 					IOUtils.closeQuietly(reader);
 				}
 			}
-		} catch (Exception e) { // 出现异常，尝试把启动的进程都销毁
+		} catch (IOException e) { // 出现异常，尝试把启动的进程都销毁
 				log.warn("Command(" + commandId + ") Error", e);
  
 			if (currentProcess != null) {
@@ -163,7 +163,7 @@ public class RuntimeUtil {
 	 * @return 命令对应的Process对象Process
 	 * @throws Exception
 	 */
-	private static Process run(String commandId, String[] command, String[] envp, File dir) throws Exception {
+	private static Process run(String commandId, String[] command, String[] envp, File dir) throws IOException {
 			log.info("Command(" + commandId + ") exec: " + Arrays.toString(command));
  
 		return runtime.exec(command, envp, dir);

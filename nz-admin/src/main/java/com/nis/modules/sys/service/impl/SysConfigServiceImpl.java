@@ -326,7 +326,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void resetConfig(Map<String, Object> param) throws Exception{
+    public void resetConfig(Map<String, Object> param) throws IOException,RuntimeException{
         String password = StrUtil.str(param.get("password").toString());
         List<String> types = (List<String>)param.get("type");
         try {
@@ -357,7 +357,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                     resetEnterData();
                 }
             }
-        }catch (Exception e){
+        }catch (IOException | RuntimeException e){
             throw e;
         }
     }
@@ -377,7 +377,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     /**
      * 重置metric
      */
-    private void resetMetric() throws Exception{
+    private void resetMetric() throws IOException{
         String seriesUri = "/api/v1/admin/tsdb/delete_series";
         String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
         // 获取正常的监控服务列表
@@ -389,7 +389,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
                 try{
                     HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),seriesUri).toString(),"match[]="+key);
                     HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),tombstonesUri).toString(),"");
-                }catch (Exception e){
+                }catch (IOException e){
                     logger.error(e);
                 }
 
@@ -400,7 +400,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     /**
      * 重置alert
      */
-    private void resetAlert() throws Exception{
+    private void resetAlert() throws RuntimeException{
         alertMessageService.remove(new LambdaQueryWrapper<AlertMessageEntity>());
     }
 

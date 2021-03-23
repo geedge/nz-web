@@ -3,6 +3,7 @@ package com.nis.modules.endpoint.job;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jcraft.jsch.JSchException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.modules.endpoint.dao.EndpointDao;
@@ -22,6 +23,7 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,7 +54,7 @@ public class EndpointStateJob extends QuartzJobBean {
         sw.start();
         try {
             this.getEndpointStatusFromPrometheus();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error(e);
         } finally {
             sw.stop();
@@ -149,7 +151,7 @@ public class EndpointStateJob extends QuartzJobBean {
                     log.error(String.format("Endpoint 状态信息获取失败,URL: %s, 查询状态是: %s, 查询结果是: ", url.toString(), status == null ? "null" : status.toString(), jsonObject));
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error(e);
         }
     }
