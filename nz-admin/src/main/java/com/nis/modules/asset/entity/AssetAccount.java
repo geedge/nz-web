@@ -22,7 +22,7 @@ public class AssetAccount {
 	
 	private String username;
 	
-	private String password;
+	private String pin;
 	
 	private String priKey;
 	
@@ -32,7 +32,7 @@ public class AssetAccount {
 	
 	private String userTip;
 	
-	private String passwordTip;
+	private String pinTip;
 	
 	private Integer weight;
 	

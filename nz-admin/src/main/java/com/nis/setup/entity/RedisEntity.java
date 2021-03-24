@@ -9,5 +9,5 @@ import java.io.Serializable;
 public class RedisEntity implements Serializable {
     private String host;
     private Integer port = 6379;
-    private String password ;
+    private String pin ;
 }

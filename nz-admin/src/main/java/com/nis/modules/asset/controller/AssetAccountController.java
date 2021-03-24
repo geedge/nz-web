@@ -72,14 +72,14 @@ public class AssetAccountController {
 		.and(assetAccount.getProtocol()).notNull(RCode.ASSET_ACCOUNT_PROTOCOL_ISNULL)
 		.and(assetAccount.getAuthType()).notNull(RCode.ASSET_ACCOUNT_AUTHTYPE_ISNULL)
 		.and(assetAccount.getUsername()).notNull(RCode.ASSET_ACCOUNT_USERNAME_ISNULL)
-		.and(assetAccount.getPassword()).notNull(RCode.ASSET_ACCOUNT_PASSWORD_ISNULL)
+		.and(assetAccount.getPin()).notNull(RCode.ASSET_ACCOUNT_PASSWORD_ISNULL)
 		.and(assetAccount.getPriKey()).notNull(RCode.ASSET_ACCOUNT_PRIKEY_ISNULL)
 		.and(assetAccount.getWeight()).notNull(RCode.ASSET_ACCOUNT_WEIGHT_ISNULL)
 		.and(assetAccount.getState()).notNull(RCode.ASSET_ACCOUNT_STATE_ISNULL);
 		
 		if(assetAccount.getProtocol().equals(2)) {
 			ValidateUtils.is(assetAccount.getUserTip()).notNull(RCode.ASSET_ACCOUNT_USERTIP_ISNULL)
-			.and(assetAccount.getPasswordTip()).notNull(RCode.ASSET_ACCOUNT_PASSWORDTIP_ISNULL);
+			.and(assetAccount.getPinTip()).notNull(RCode.ASSET_ACCOUNT_PASSWORDTIP_ISNULL);
 		}
 		
 		assetAccountService.saveOrUpdateAssetAccount(assetAccount);
@@ -96,14 +96,14 @@ public class AssetAccountController {
 		.and(assetAccount.getProtocol()).notNull(RCode.ASSET_ACCOUNT_PROTOCOL_ISNULL)
 		.and(assetAccount.getAuthType()).notNull(RCode.ASSET_ACCOUNT_AUTHTYPE_ISNULL)
 		.and(assetAccount.getUsername()).notNull(RCode.ASSET_ACCOUNT_USERNAME_ISNULL)
-		.and(assetAccount.getPassword()).notNull(RCode.ASSET_ACCOUNT_PASSWORD_ISNULL)
+		.and(assetAccount.getPin()).notNull(RCode.ASSET_ACCOUNT_PASSWORD_ISNULL)
 		.and(assetAccount.getPriKey()).notNull(RCode.ASSET_ACCOUNT_PRIKEY_ISNULL)
 		.and(assetAccount.getWeight()).notNull(RCode.ASSET_ACCOUNT_WEIGHT_ISNULL)
 		.and(assetAccount.getState()).notNull(RCode.ASSET_ACCOUNT_STATE_ISNULL);
 		
 		if(assetAccount.getProtocol().equals(2)) {
 			ValidateUtils.is(assetAccount.getUserTip()).notNull(RCode.ASSET_ACCOUNT_USERTIP_ISNULL)
-			.and(assetAccount.getPasswordTip()).notNull(RCode.ASSET_ACCOUNT_PASSWORDTIP_ISNULL);
+			.and(assetAccount.getPinTip()).notNull(RCode.ASSET_ACCOUNT_PASSWORDTIP_ISNULL);
 		}
 		
 		assetAccountService.saveOrUpdateAssetAccount(assetAccount);

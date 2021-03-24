@@ -337,7 +337,7 @@ public class TerminalClient {
         if (ToolUtil.isEmpty(params)) {
             params = new HashMap<>();
         }
-        String password = params.get("password");
+        String pin = params.get(Constant.PIN);
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -461,8 +461,8 @@ public class TerminalClient {
                                 } else if (message.matches("Password:.*") && StringUtils.isBlank(user)) {
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
-                                } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-                                	String s = StringUtils.str(Base64.getDecoder().decode(password));
+                                } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(pin)) {
+                                	String s = StringUtils.str(Base64.getDecoder().decode(pin));
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                     write(s + "\r");

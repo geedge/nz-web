@@ -120,7 +120,7 @@ public class MailUtil {
 	 * @param txt         邮件内容
 	 * @return
 	 */
-	public void sendHTML(String smtpHost, Properties prop, String smtpAccount, String sendAccount, String password, String to, String subject, String txt) {
+	public void sendHTML(String smtpHost, Properties prop, String smtpAccount, String sendAccount, String pin, String to, String subject, String txt) {
 		session = Session.getInstance(prop);
 		session.setDebug(true);
 
@@ -156,7 +156,7 @@ public class MailUtil {
 			// 发送邮件
 			ts = session.getTransport();
 			// 连接服务器的邮箱
-			ts.connect(smtpHost, smtpAccount, password);
+			ts.connect(smtpHost, smtpAccount, pin);
 			// 把邮件发送出去
 			ts.sendMessage(message, message.getAllRecipients());
 		} catch (AuthenticationFailedException e) {

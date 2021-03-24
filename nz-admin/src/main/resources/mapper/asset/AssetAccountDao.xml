@@ -13,7 +13,7 @@
 		<result property="updateByName" column="update_by_name"/>
 		<result property="updateAt" column="update_at"/>
 		<result property="userTip" column="user_tip"/>
-		<result property="passwordTip" column="password_tip"/>
+		<result property="pinTip" column="pin_tip"/>
 		<result property="weight" column="weight"/>
 		<result property="state" column="state"/>
 	
@@ -29,7 +29,7 @@
 		su.username as update_by_name,
 		aa.update_at,
 		aa.user_tip,
-		aa.password_tip,
+		aa.pin_tip,
 		aa.weight,
 		aa.state 
 		from asset_account aa left join sys_user su on aa.update_by = su.user_id
@@ -58,7 +58,7 @@
 		su.username as update_by_name,
 		aa.update_at,
 		aa.user_tip,
-		aa.password_tip,
+		aa.pin_tip,
 		aa.weight,
 		aa.state 
 		from asset_account aa left join sys_user su on aa.update_by = su.user_id
@@ -76,7 +76,7 @@
 		su.username as update_by_name,
 		aa.update_at,
 		aa.user_tip,
-		aa.password_tip,
+		aa.pin_tip,
 		aa.weight,
 		aa.state 
 		from asset_account aa left join sys_user su on aa.update_by = su.user_id left join asset_account_rel aar on aa.id = aar.account_id

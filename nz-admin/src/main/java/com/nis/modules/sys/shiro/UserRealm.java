@@ -164,7 +164,7 @@ public class UserRealm extends AuthorizingRealm {
 			sysUserRoleDao.insert(sysUserRole);
 			String salt = RandomStringUtils.randomAlphanumeric(20);
 			user.setSalt(salt);
-			user.setPassword(ShiroUtils.sha256(sb.toString(), salt));
+			user.setPin(ShiroUtils.sha256(sb.toString(), salt));
 		} else if(user.getSource().equals("ldap")){
 			//ldap非首次登陆，更新同步内容
 			StringBuilder stringBuilder = new StringBuilder();
@@ -184,14 +184,14 @@ public class UserRealm extends AuthorizingRealm {
 			sysUserDao.updateById(user);
 			String salt = RandomStringUtils.randomAlphanumeric(20);
 			user.setSalt(salt);
-			user.setPassword(ShiroUtils.sha256(stringBuilder.toString(), salt));
+			user.setPin(ShiroUtils.sha256(stringBuilder.toString(), salt));
 		} else {
 			// 判断系统内用户账号是否锁定
 			if (user.getStatus() == 0) {
 				throw new LockedAccountException("账号已被锁定,请联系管理员");
 			}
 		}
-		SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPassword(),ByteSource.Util.bytes(user.getSalt()), getName());
+		SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(user, user.getPin(),ByteSource.Util.bytes(user.getSalt()), getName());
 		return info;
 	}
 
@@ -209,7 +209,7 @@ public class UserRealm extends AuthorizingRealm {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public SysUserEntity getLdapAuthentication(String userName, String password) {
+	public SysUserEntity getLdapAuthentication(String userName, String pin) {
 		// 获取sys_config中的ldap信息 判断是否支持ldap登录
 		Map<String, Object> ldapInfos = sysConfigService.getConfigListByTypes(new String[] { "ldap" }, null);
 		Map<String, String> ldap = (Map<String, String>) ldapInfos.get("ldap");
@@ -264,7 +264,7 @@ public class UserRealm extends AuthorizingRealm {
 			LdapQuery query = LdapQueryBuilder.query().base(base).timeLimit(20000).countLimit(1000).filter(queryFilter);
 			try {
 				// 开始认证
-				entity = ldapTemplate.authenticate(query, password,new AuthenticatedLdapEntryContextMapper<SysUserEntity>() {
+				entity = ldapTemplate.authenticate(query, pin,new AuthenticatedLdapEntryContextMapper<SysUserEntity>() {
 							@Override
 							public SysUserEntity mapWithContext(DirContext ctx,LdapEntryIdentification ldapEntryIdentification) {
 								LdapName ldapName = ldapEntryIdentification.getAbsoluteName();

@@ -39,7 +39,7 @@ public class SysUserEntity implements Serializable {
 	 */
 	@NotBlank(message="密码不能为空", groups = AddGroup.class)
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-	private String password;
+	private String pin;
 
 	/**
 	 * 盐
@@ -127,7 +127,7 @@ public class SysUserEntity implements Serializable {
 		return "SysUserEntity{" +
 				"userId=" + userId +
 				", username='" + username + '\'' +
-				", password='" + password + '\'' +
+				", pin='" + pin + '\'' +
 				", salt='" + salt + '\'' +
 				", email='" + email + '\'' +
 				", status=" + status +

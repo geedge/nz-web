@@ -30,8 +30,8 @@ public class ShiroUtils {
 	// redis 中 shiro key 前缀
 	public final static String REDIS_KEYPREFIX = "shiro_redis_session:";
 
-	public static String sha256(String password, String salt) {
-		return new SimpleHash(hashAlgorithmName, password, salt, hashIterations).toString();
+	public static String sha256(String pin, String salt) {
+		return new SimpleHash(hashAlgorithmName, pin, salt, hashIterations).toString();
 	}
 
 	public static Session getSession() {

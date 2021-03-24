@@ -11,7 +11,7 @@ public class DatabaseEntity implements Serializable {
     private Integer port = 3306;
     private String name = "nz";
     private String username;
-    private String password;
+    private String pin;
 
     public String getUrl(){
         return "jdbc:mysql://"+this.getHost()+":"+this.getPort()+"/"+this.getName()+"?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false";

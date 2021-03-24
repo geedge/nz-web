@@ -171,7 +171,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String password = StrUtil.str((String)authInfo.get("password"));
+            String pin = StrUtil.str((String)authInfo.get(Constant.PIN));
 
             String privPassword = (String) authInfo.get("priv_password");
             String privProtocol = (String) authInfo.get("priv_protocol");
@@ -187,7 +187,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                     throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
                 }
 
-                if (StringUtils.isEmpty(password)) {
+                if (StringUtils.isEmpty(pin)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
                 // 不为 null 则进行枚举校验
@@ -195,7 +195,7 @@ public class ModuleServiceImpl  extends ServiceImpl<ModuleDao, Module> implement
                     throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
                 }
             } else if (securityLevel.equals("authNoPriv")) { // 认证不加密
-                if (StringUtils.isEmpty(password)) {
+                if (StringUtils.isEmpty(pin)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
                 // 不为 null 则进行枚举校验

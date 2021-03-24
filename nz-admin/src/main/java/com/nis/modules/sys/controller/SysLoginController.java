@@ -74,7 +74,7 @@ public class SysLoginController extends AbstractController {
 	@SysLog(operation = OperationEnum.LOGIN,type = TypeEnum.SYSTEM)
 	public R login(@RequestBody SysUserEntity sysUser) {
 		String username = sysUser.getUsername();
-		String password = StrUtil.str(sysUser.getPassword());
+		String mima = StrUtil.str(sysUser.getPin());
 	//public R login( String username, String password, String captcha) {
 		/*String kaptcha = ShiroUtils.getKaptcha(Constants.KAPTCHA_SESSION_KEY);
 		if(!captcha.equalsIgnoreCase(kaptcha)){
@@ -82,7 +82,7 @@ public class SysLoginController extends AbstractController {
 		}*/
 		try{
 			Subject subject = ShiroUtils.getSubject();
-			UsernamePasswordToken token = new UsernamePasswordToken(username, password);
+			UsernamePasswordToken token = new UsernamePasswordToken(username, mima);
 			subject.login(token); //登录
 			String loginToken=CommonUtils.uuid();
 			subject.getSession().setAttribute("token",loginToken);

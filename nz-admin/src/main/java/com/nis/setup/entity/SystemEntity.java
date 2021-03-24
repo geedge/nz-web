@@ -12,5 +12,5 @@ public class SystemEntity implements Serializable {
     private Integer haMode = 1;
     private String haVip;
     private String username;
-    private String password;
+    private String pin;
 }

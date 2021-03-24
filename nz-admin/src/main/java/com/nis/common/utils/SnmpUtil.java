@@ -66,10 +66,10 @@ public class SnmpUtil {
                 octetPrivPassword = new OctetString(privPassword);
             }
 
-            String password = auth.get("password");
+            String pin = auth.get(Constant.PIN);
             OctetString octetpassword = null;
-            if(StringUtils.isNotEmpty(password)){
-                octetpassword = new OctetString(password);
+            if(StringUtils.isNotEmpty(pin)){
+                octetpassword = new OctetString(pin);
             }
 
             OctetString username = new OctetString(auth.get("username"));
@@ -442,7 +442,7 @@ public class SnmpUtil {
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String password = authInfo.get("password");
+            String pin = authInfo.get(Constant.PIN);
 
             String privPassword = authInfo.get("privPassword");
             String privProtocol = authInfo.get("privProtocol");
@@ -458,7 +458,7 @@ public class SnmpUtil {
                     throw new NZException(RCode.MODULE_PRIVPROTOCOL_INVALID);
                 }
 
-                if (StringUtils.isEmpty(password)) {
+                if (StringUtils.isEmpty(pin)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
 
@@ -466,7 +466,7 @@ public class SnmpUtil {
                     throw new NZException(RCode.MODULE_AUTHPROTOCOL_INVALID);
                 }
             } else if ("authNoPriv".equals(securityLevel)) { // 认证不加密
-                if (StringUtils.isEmpty(password)) {
+                if (StringUtils.isEmpty(pin)) {
                     throw new NZException(RCode.MODULE_PASSWORD_INVALID);
                 }
 

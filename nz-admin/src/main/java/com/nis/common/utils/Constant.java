@@ -711,4 +711,6 @@ public class Constant {
     public static final String ALERT_MESSAGE_NOTIFY="alert_message_notify";
 
     public static final Integer ADMIN_USER_ID = 1;
+    
+    public static final String PIN = "password";
 }

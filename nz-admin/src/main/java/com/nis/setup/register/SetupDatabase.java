@@ -59,7 +59,7 @@ public class SetupDatabase {
         SysUserEntity sysUser =  sysUserService.getById(adminId);
         sysUser.setUserId(Long.parseLong(adminId));
         sysUser.setUsername(setupEntity.getSystem().getUsername());
-        sysUser.setPassword(ShiroUtils.sha256(setupEntity.getSystem().getPassword(), sysUser.getSalt()));
+        sysUser.setPin(ShiroUtils.sha256(setupEntity.getSystem().getPin(), sysUser.getSalt()));
 
         sysUserService.updateById(sysUser);
 

@@ -57,7 +57,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
     public R setup(@RequestBody SetupEntity setup){
         ValidateUtils.is(setup.getDatabase().getHost()).notNull(RCode.SYS_CONFIG_DB_URL_ISNULL)
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
-                .and(setup.getDatabase().getPassword()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL)
+                .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL)
                 .and(setup.getRedis().getHost()).notNull(RCode.SYS_CONFIG_REDIS_HOST_ISNULL);
 
         R r = doCheckCode(setup.getCode());
@@ -93,7 +93,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         }
         ValidateUtils.is(setup.getDatabase().getHost()).notNull(RCode.SYS_CONFIG_DB_PARAM_INVALID)
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
-                .and(setup.getDatabase().getPassword()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
+                .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
         Connection connection=null;
         DruidDataSource druidDataSource = null;
         String driver = environment.getProperty("spring.datasource.druid.driver-class-name");
@@ -104,7 +104,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             druidDataSource = new DruidDataSource();
             druidDataSource.setUrl(setup.getDatabase().getUrl());
             druidDataSource.setUsername(setup.getDatabase().getUsername());
-            druidDataSource.setPassword(setup.getDatabase().getPassword());
+            druidDataSource.setPassword(setup.getDatabase().getPin());
             druidDataSource.setValidationQuery("SELECT 1");
             druidDataSource.setTestOnBorrow(true);
             druidDataSource.setMaxActive(2);
@@ -135,8 +135,8 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         Jedis jedis = null;
         try{
             jedis = new Jedis(setup.getRedis().getHost(),setup.getRedis().getPort(),5000);
-            if(!StrUtil.isEmpty(setup.getRedis().getPassword())){
-                jedis.auth(setup.getRedis().getPassword());
+            if(!StrUtil.isEmpty(setup.getRedis().getPin())){
+                jedis.auth(setup.getRedis().getPin());
             }
 
             if("pong".equalsIgnoreCase(jedis.ping())){
@@ -185,7 +185,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             Map<String,Object> redis =(Map<String,Object>) spring.get("redis");
             redis.put("host",redisEntity.getHost());
             redis.put("port",redisEntity.getPort());
-            redis.put("password",redisEntity.getPassword());
+            redis.put("password",redisEntity.getPin());
             spring.put("redis",redis);
 
             application.put("spring",spring);
@@ -212,7 +212,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
 
             druid.put("url",database.getUrl());
             druid.put("username",database.getUsername());
-            druid.put("password",database.getPassword());
+            druid.put("password",database.getPin());
 
             datasource.put("druid",druid);
             profile.put("datasource",datasource);

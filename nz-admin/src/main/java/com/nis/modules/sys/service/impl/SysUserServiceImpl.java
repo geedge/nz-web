@@ -172,7 +172,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		//sha256加密
 		String salt = RandomStringUtils.randomAlphanumeric(20);
 		user.setSalt(salt);
-		user.setPassword(ShiroUtils.sha256(user.getPassword(), user.getSalt()));
+		user.setPin(ShiroUtils.sha256(user.getPin(), user.getSalt()));
 		this.save(user);
 
 		// 关联 script 不为空则保存
@@ -196,8 +196,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
 
-		if (StringUtils.isBlank(user.getPassword())) {
-			user.setPassword(null);
+		if (StringUtils.isBlank(user.getPin())) {
+			user.setPin(null);
 		} else {
 			// 如果不是本人更改 自己密码的话，删除 redis 中用户session
 			Long loginUserId = ShiroUtils.getUserId();
@@ -206,7 +206,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 				this.removeUserInfoInRedis(user.getUserId());
 			}
 			SysUserEntity userEntity = this.getById(user.getUserId());
-			user.setPassword(ShiroUtils.sha256(user.getPassword(), userEntity.getSalt()));
+			user.setPin(ShiroUtils.sha256(user.getPin(), userEntity.getSalt()));
 		}
 
 		this.updateById(user);
@@ -275,13 +275,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 
 	@Override
-	public boolean updatePassword(Long userId, String password, String newPassword) {
+	public boolean updatePassword(Long userId, String mima, String newPassword) {
         SysUserEntity userEntity = new SysUserEntity();
-        userEntity.setPassword(newPassword);
+        userEntity.setPin(newPassword);
         return this.update(userEntity,
         	new LambdaUpdateWrapper<SysUserEntity>()
 					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getUserId, userId)
-					.eq(ToolUtil.isNotEmpty(password),SysUserEntity::getPassword, password));
+					.eq(ToolUtil.isNotEmpty(mima),SysUserEntity::getPin, mima));
     }
 
 	@Override

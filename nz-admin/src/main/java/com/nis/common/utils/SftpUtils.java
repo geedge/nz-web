@@ -38,7 +38,7 @@ public class SftpUtils {
      * @param privateKey 密钥文件
      * @throws Exception
      */
-    public void loginIn(String server, Integer port, String username, Integer authType, String password, String privateKey, String keyPassword) throws NZException  {
+    public void loginIn(String server, Integer port, String username, Integer authType, String pin, String privateKey, String keyPassword) throws NZException  {
         OutputStream out = null;
         File file = null;
         try {
@@ -48,7 +48,7 @@ public class SftpUtils {
 
             // 密码登录
             if (Constant.AUTH_PASSWORD.equals(authType)) {
-                session.setPassword(password);
+                session.setPassword(pin);
             } else if (Constant.AUTH_CERTIFICATE.equals(authType)) {
 
                 // 私钥文件登录
