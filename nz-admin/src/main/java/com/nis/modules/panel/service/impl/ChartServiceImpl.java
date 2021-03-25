@@ -887,7 +887,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
         } catch (IOException e) {
-            log.error("解析导入图表文件格式有误",e);
+            log.error("解析导入图表文件格式有误"+e);
             throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {

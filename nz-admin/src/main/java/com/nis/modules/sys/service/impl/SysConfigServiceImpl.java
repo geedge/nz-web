@@ -327,10 +327,10 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetConfig(Map<String, Object> param) throws IOException,RuntimeException{
-        String mima = StrUtil.str(param.get(Constant.PIN).toString());
+        String pin = StrUtil.str(param.get(Constant.PIN).toString());
         List<String> types = (List<String>)param.get("type");
         try {
-            if(ToolUtil.isEmpty(mima)||ToolUtil.isEmpty(types)){
+            if(ToolUtil.isEmpty(pin)||ToolUtil.isEmpty(types)){
                 throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
             }
             // 当前登录用户
@@ -340,7 +340,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             // 加密盐值
             String salt = userEntity.getSalt();
             // 现加密密码
-            String currentPassword = ShiroUtils.sha256(mima,salt);
+            String currentPassword = ShiroUtils.sha256(pin,salt);
             if(!StrUtil.equals(oriPassword,currentPassword)){
                 // 密码不对，禁止重置
                 throw new NZException(RCode.SYS_CONFIG_PASSWORD_ERROR);
@@ -689,9 +689,9 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
         try {
             String receicer = map.get("email_test_reciver");
-            String mima = StrUtil.str(map.get("email_smtp_password"));
+            String pin = StrUtil.str(map.get("email_smtp_password"));
 
-            mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, mima, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
+            mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, pin, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
         } catch (IOException e) {
             logger.error("获取测试发送邮件模板失败",e);
             throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND);
@@ -707,13 +707,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * @param password
      * @param address
      */
-    public R testConnectionLdapConfig(String dn, String mima, String address, String ou) {
+    public R testConnectionLdapConfig(String dn, String pin, String address, String ou) {
         InitialDirContext initialDirContext = null;
         try {
             Hashtable<String, String> environment = new Hashtable<>();
             environment.put(Context.SECURITY_AUTHENTICATION, "simple");
             environment.put(Context.SECURITY_PRINCIPAL, dn);
-            environment.put(Context.SECURITY_CREDENTIALS, mima);
+            environment.put(Context.SECURITY_CREDENTIALS, pin);
             environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
             // 当连接ldaps时候  会发生异常 无法进行连接 
 //            environment.put("com.sun.jndi.ldap.connect.timeout", "3000");

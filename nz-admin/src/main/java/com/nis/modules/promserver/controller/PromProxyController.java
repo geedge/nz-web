@@ -1,6 +1,7 @@
 package com.nis.modules.promserver.controller;
 
 import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.http.HttpConnection;
 import cn.hutool.log.Log;
@@ -158,8 +159,9 @@ public class PromProxyController {
 //				response.addHeader(XssUtil.stripXSS(key), XssUtil.stripXSS(StringUtils.join(value, "; ")));
 				ReflectUtil.invoke(response,"addHeader",key,StringUtils.join(value, "; "));
 			}
-			response.setStatus(responseCode, responseMessage);
-
+//			response.setStatus(responseCode, responseMessage);
+			response.setStatus(responseCode);
+			
 			String promPath = request.getServletPath().substring(5);
 			String nullType = request.getParameter("nullType");
 			if ("/api/v1/query_range".equals(promPath) && responseCode < 400) {
@@ -189,7 +191,9 @@ public class PromProxyController {
 			logger.error("request error : ",e);
 		}finally {
 			IOUtils.closeQuietly(reqInputStream,resOutputStream,connOutputStream,connInputStream);
-			conn.disconnect();
+			if(ObjectUtil.isNotEmpty(conn)) {
+				conn.disconnect();
+			}
 		}
 	}
 

@@ -75,6 +75,7 @@ public class EndpointStateJob extends QuartzJobBean {
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
         if (promserver == null) {
             log.debug("Endpoint 状态定时任务不执行,当前暂无可用 prometheus");
+            return;
         }
 
         try {

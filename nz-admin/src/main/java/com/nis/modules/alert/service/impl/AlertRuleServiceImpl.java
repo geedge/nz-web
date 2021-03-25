@@ -365,7 +365,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
         } catch (IOException e) {
-            log.error("解析导入告警规则文件格式有误",e);
+            log.error("解析导入告警规则文件格式有误"+e);
             throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
         } finally {
             if (work != null) {

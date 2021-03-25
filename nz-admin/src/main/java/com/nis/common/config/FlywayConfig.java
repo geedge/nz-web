@@ -59,7 +59,7 @@ public class FlywayConfig {
             flyway.migrate();
         } catch (FlywayException e) {
             flyway.repair();
-            log.error("flyway执行脚本失败，错误信息是：" + e.getMessage(), e);
+            log.error("flyway执行脚本失败，错误信息是："+ e);
         }
     }
 }

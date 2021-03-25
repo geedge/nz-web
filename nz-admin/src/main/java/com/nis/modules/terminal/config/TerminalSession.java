@@ -182,7 +182,7 @@ public class TerminalSession implements Serializable {
     
     public static void setTerminalMessage(String uuid,String message,Integer cursorIndex) {
     	String string = terminalMessageInfo.get(uuid);
-        if (string != null && string != "") {
+        if (StrUtil.isNotBlank(string)) {
     		// 根据光标位置来追加字符出现的位置
     		if(cursorIndex==null||cursorIndex==string.length()) {
     			string=string+message;

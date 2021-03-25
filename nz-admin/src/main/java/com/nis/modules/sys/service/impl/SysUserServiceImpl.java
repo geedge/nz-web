@@ -275,13 +275,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 
 	@Override
-	public boolean updatePassword(Long userId, String mima, String newPassword) {
+	public boolean updatePassword(Long userId, String pin, String newPin) {
         SysUserEntity userEntity = new SysUserEntity();
-        userEntity.setPin(newPassword);
+        userEntity.setPin(newPin);
         return this.update(userEntity,
         	new LambdaUpdateWrapper<SysUserEntity>()
 					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getUserId, userId)
-					.eq(ToolUtil.isNotEmpty(mima),SysUserEntity::getPin, mima));
+					.eq(ToolUtil.isNotEmpty(pin),SysUserEntity::getPin, pin));
     }
 
 	@Override

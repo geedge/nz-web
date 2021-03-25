@@ -47,16 +47,16 @@ public class SysUserController extends AbstractController {
 	 * 修改登录用户密码
 	 */
 	@RequestMapping("/password")
-	public R password(String mima, String newPassword){
-		Assert.isBlank(newPassword, "新密码不为能空");
+	public R password(String pin, String newPin){
+		Assert.isBlank(newPin, "新密码不为能空");
 
 		//原密码
-		mima = ShiroUtils.sha256(mima, getUser().getSalt());
+		pin = ShiroUtils.sha256(pin, getUser().getSalt());
 		//新密码
-		newPassword = ShiroUtils.sha256(newPassword, getUser().getSalt());
+		newPin = ShiroUtils.sha256(newPin, getUser().getSalt());
 
 		//更新密码
-		boolean flag = sysUserService.updatePassword(getUserId(), mima, newPassword);
+		boolean flag = sysUserService.updatePassword(getUserId(), pin, newPin);
 		if(!flag){
 			throw new NZException(RCode.SYS_USER_OLDPWD);
 		}
