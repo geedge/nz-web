@@ -267,7 +267,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
                 type = mvs.getType().getName();
                 if (StringUtils.isNotEmpty(type) && StringUtils.isEmpty(mo.getType())) {
-                    if (type.toUpperCase().contains(Constant.MIB_IDENTIFIER_TYPE)) {
+                	String upperCase = type.toUpperCase();                	
+                    if (StrUtil.contains(upperCase, Constant.MIB_IDENTIFIER_TYPE)) {
                         mo.setType(Constant.MIB_IDENTIFIER_TYPE);
                     } else {
                         mo.setType(Constant.MIB_OBJECT_TYPE);

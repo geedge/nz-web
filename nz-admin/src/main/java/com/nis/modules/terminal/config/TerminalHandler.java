@@ -250,7 +250,8 @@ public class TerminalHandler extends TextWebSocketHandler {
             } catch (Exception e) {
             	logger.error("error info :",e);
             	logger.error(e);
-            	if (e.getMessage().toLowerCase().contains("auth fail")) {
+            	String lowerCase = e.getMessage().toLowerCase();
+            	if (StrUtil.contains(lowerCase, "auth fail")) {
             		session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
                 } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
                     session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. \r\n"));

@@ -1,5 +1,6 @@
 package com.nis.modules.project.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -69,7 +70,8 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         byte[] bytes = Base64.getDecoder().decode(icon.getBytes());
 
         try (OutputStream os = new BufferedOutputStream(response.getOutputStream());) {
-            String contentType = "jpg".equals(icon.getType().toLowerCase()) ? "jpeg" : icon.getType().toLowerCase();
+//            String contentType = "jpg".equals(icon.getType().toLowerCase()) ? "jpeg" : icon.getType().toLowerCase();
+            String contentType = StrUtil.equals("jpg", icon.getType()) ? "jpeg" : icon.getType().toLowerCase();
             response.setContentType("image/" + contentType);
             response.setHeader("Content-Disposition", "inline");
             os.write(bytes);
@@ -86,16 +88,22 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
             throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
         }
 
-        String fileType = filename.substring(filename.lastIndexOf(".") + 1);
-        fileType = fileType.toLowerCase();
-        switch (fileType){
-            case "jpg":break;
-            case "jpeg":break;
-            case "png":break;
-            case "gif":break;
-            default:
-                throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
+//        String fileType = filename.substring(filename.lastIndexOf(".") + 1);
+//        fileType = fileType.toLowerCase();
+        String fileType = StrUtil.sub(filename, StrUtil.lastIndexOf(filename, ".", filename.length(), false)+1,filename.length());
+        if(!StrUtil.equals(fileType, "jpg",true) || !StrUtil.equals(fileType, "jpeg",true) ||
+        		!StrUtil.equals(fileType, "png",true) ||
+        		!StrUtil.equals(fileType, "gif",true)) {
+        	throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
         }
+		/*switch (fileType){
+		    case "jpg":break;
+		    case "jpeg":break;
+		    case "png":break;
+		    case "gif":break;
+		    default:
+		        throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
+		}*/
     }
 
 	@Override

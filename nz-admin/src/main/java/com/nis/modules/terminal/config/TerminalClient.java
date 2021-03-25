@@ -51,11 +51,14 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.nis.common.utils.CommonUtils.notEmpty;
 
 public class TerminalClient {
 	private static final Log logger = Log.get();
+	private static final ExecutorService executorService = Executors.newCachedThreadPool();
     private String clientId;//每次生成的唯一值token
     private String httpSessionId;//打开该终端的SessionId
     private WebSocketSession webSocketSession;
@@ -164,7 +167,8 @@ public class TerminalClient {
         sb.append("Login success，use user " + params.get("username") + " \r\n");
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
         
-        new Thread(new Runnable() {
+    	
+    	executorService.execute((new Runnable() {
             @Override
             public void run() {
                 TerminalCmdService terminalCmdService = (TerminalCmdService) TerminalSession.clientAttributeInfo.get("terminalCmdService");
@@ -269,7 +273,7 @@ public class TerminalClient {
                 }
 
             }
-        }).start();
+        }));
 
     }
 
@@ -338,7 +342,7 @@ public class TerminalClient {
             params = new HashMap<>();
         }
         String pin = params.get(Constant.PIN);
-        new Thread(new Runnable() {
+        executorService.execute(new Runnable() {
             @Override
             public void run() {
             	TerminalLogService terminalLogService = (TerminalLogService) TerminalSession.clientAttributeInfo.get("terminalLogService");
@@ -540,7 +544,7 @@ public class TerminalClient {
                 }
 
             }
-        }).start();
+        });
     }
     
     /**
@@ -842,7 +846,7 @@ public class TerminalClient {
 			    sendTempCmd = true;
 			    write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
 			    //等待获取返回的路径...
-			    Thread.sleep(100);
+//			    Thread.sleep(100);
 			    sendTempCmd = false;
 			    if (pwd == null) {
 			        throw new RuntimeException("Sftp upload file target path error!");
@@ -854,7 +858,7 @@ public class TerminalClient {
 			}
 			channelSftp.put(file, dst, new SftpMonitor(fileSize));
 			
-		} catch (InterruptedException | JSchException | SftpException | IOException e) {
+		} catch (JSchException | SftpException | IOException e) {
 			throw e;
 		} finally {
 			//exit
@@ -885,7 +889,7 @@ public class TerminalClient {
 			    sendTempCmd = true;
 			    write(String.format("echo %s$(pwd)\r", this.sendTempCmdId));
 			    //等待获取返回的路径...
-			    Thread.sleep(100);
+//			    Thread.sleep(100);
 			    sendTempCmd = false;
 			    if (pwd == null) {
 			        throw new RuntimeException("Sftp upload file target path error!");
@@ -915,7 +919,7 @@ public class TerminalClient {
 			    outputStream.flush();
 			    i = is.read(buff);
 			}
-		} catch (InterruptedException | JSchException | SftpException | IOException e) {
+		} catch (JSchException | SftpException | IOException e) {
 			throw e;
 		}  finally {
 			if(outputStream!=null) {

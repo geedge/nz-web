@@ -1,5 +1,6 @@
 package com.nis.modules.promserver.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.exception.NZException;
@@ -49,20 +50,29 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     	try {
     		client = HttpClientBuilder.create().build();
         	HttpRequestBase request = null;
-        	switch (method.toUpperCase()) {
-    		case "GET":
-    			request = new HttpGet(promUrl);
-    			break;
-    		case "POST":
-    			request = new HttpPost(promUrl);
-    		case "PUT":
-    			request = new HttpPut(promUrl);
-    		case "DELETE":
-    			request = new HttpDelete(promUrl);
-    		default:
-    			request = new HttpPost(promUrl);
-    			break;
-    		}
+        	if(StrUtil.equals(method, "GET",true)) {
+        		request = new HttpGet(promUrl);
+        	}else if(StrUtil.equals(method, "PUT",true)) {
+        		request = new HttpPut(promUrl);
+        	}else if(StrUtil.equals(method, "DELETE",true)) {
+        		request = new HttpDelete(promUrl);
+        	}else {
+        		request = new HttpPost(promUrl);
+        	}
+			/*switch (method) {
+			case "GET":
+				request = new HttpGet(promUrl);
+				break;
+			case "POST":
+				request = new HttpPost(promUrl);
+			case "PUT":
+				request = new HttpPut(promUrl);
+			case "DELETE":
+				request = new HttpDelete(promUrl);
+			default:
+				request = new HttpPost(promUrl);
+				break;
+			}*/
         	if(!"GET".equalsIgnoreCase(method)&& !"DELETE".equalsIgnoreCase(method)) {
         		String queryString = genQueryString(params);
         		 StringEntity entity = new StringEntity(queryString,"utf-8");
