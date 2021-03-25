@@ -57,9 +57,12 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
 		
-		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key));
-		if(ObjectUtil.isNotEmpty(list)) {
-			throw new NZException(RCode.ASSET_FIELD_META_KEY_DUPLICATE);
+		// 针对新增操作验证type是否重复
+		if(ObjectUtil.isEmpty(assetFieldMeta.getId())) {
+			List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key));
+			if(ObjectUtil.isNotEmpty(list)) {
+				throw new NZException(RCode.ASSET_FIELD_META_KEY_DUPLICATE);
+			}
 		}
 		
 		if(ObjectUtil.isEmpty(assetFieldMeta.getParam())){
