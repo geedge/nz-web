@@ -671,7 +671,12 @@ public class TerminalHandler extends TextWebSocketHandler {
 			terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
 			terminalRecord.setContent(Files.readAllBytes(path));
 			terminalRecordService.save(terminalRecord);
-			file.delete();
+			boolean delete = file.delete();
+			if(delete) {
+				logger.debug("文件删除成功");
+			}else {
+				logger.debug("文件删除失败");
+			}
 		} catch (IOException e) {
 			logger.error(String.format("terminal record 文件入库失败，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
 		}

@@ -182,7 +182,12 @@ public class AssetPingJob extends QuartzJobBean {
                         result.close();
                     }
                     // 删除临时文件
-                    file.delete();
+                    boolean delete = file.delete();
+                    if(delete) {
+                    	logger.debug("asset ping file deleted");
+                    }else {
+                    	logger.debug("asset ping file can not be deleted , please check");
+                    }
                 }
             }
         } else {

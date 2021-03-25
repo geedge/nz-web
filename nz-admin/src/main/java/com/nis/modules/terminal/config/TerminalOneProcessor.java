@@ -92,11 +92,21 @@ public class TerminalOneProcessor {
         	return R.error(RCode.TERMINAL_TELNET_TRANSFER);
         }
         if (!file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
+            boolean mkdirs = file.getParentFile().mkdirs();
+            if(mkdirs) {
+            	logger.debug("批量文件创建成功");
+            }else {
+            	logger.debug("批量文件创建失败");
+            }
         }
         try {
             if (!file.exists()) {
-                file.createNewFile();
+                boolean createNewFile = file.createNewFile();
+                if(createNewFile) {
+                	logger.debug("文件创建成功");
+                }else {
+                	logger.debug("文件创建失败");
+                }
             }
             if (terminalClient != null) {
                 terminalClient.upload(file.getAbsolutePath(), name, size);

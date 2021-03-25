@@ -228,7 +228,12 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
     public void writeTmpFile(SetupEntity setup) throws IOException{
         File file = FileUtil.file(this.tmpDir,"setup.obj");
         if (FileUtil.exist(file)){
-            file.delete();
+            boolean delete = file.delete();
+            if(delete) {
+            	log.debug("文件删除成功");
+            }else {
+            	log.debug("文件删除失败");
+            }
         }
         IoUtil.writeObj(FileUtil.getOutputStream(file),true,setup);
     }

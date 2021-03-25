@@ -238,7 +238,12 @@ public class TerminalClient {
                                     terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
                                     terminalRecordService.save(terminalRecord);
 
-                                    file.delete();
+                                    boolean delete = file.delete();
+                                    if(delete) {
+                                    	logger.debug("文件删除成功");
+                                    }else {
+                                    	logger.debug("文件删除失败");
+                                    }
                                 } catch (IOException e) {
                                     logger.error(String.format("SSH 连接已关闭，terminal record 结尾临时文件入库失，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
                                 }
@@ -307,7 +312,12 @@ public class TerminalClient {
                 terminalRecord.setContent(Files.readAllBytes(path));
                 terminalRecordService.save(terminalRecord);
                 // 清空文件内容
-                file.delete();
+                boolean delete = file.delete();
+                if(delete) {
+                	logger.debug("文件删除成功");
+                }else {
+                	logger.debug("文件删除失败");
+                }
             } catch (IOException e) {
                 logger.error(String.format("terminal record 文件入库失败，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
             }
@@ -424,7 +434,12 @@ public class TerminalClient {
                                     terminalRecord.setEndTime((int) (System.currentTimeMillis() - terminalSessionStartTime));
                                     terminalRecordService.save(terminalRecord);
 
-                                    file.delete();
+                                    boolean delete = file.delete();
+                                    if(delete) {
+                                    	logger.debug("文件删除成功");
+                                    }else {
+                                    	logger.debug("文件删除失败");
+                                    }
                                 } catch (IOException e) {
                                     logger.error(String.format("Telnet 连接已关闭，terminal record 结尾临时文件入库失，文件路径是: %s，错误信息是: %s", path.toString(), e.getMessage()), e);
                                 }

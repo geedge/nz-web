@@ -60,7 +60,12 @@ public class YamlUtil {
 		
 		//校验结束后若文件存在则删除文件
 		if (file.isFile()) {
-			file.delete();
+			boolean delete = file.delete();
+			if(delete) {
+				logger.debug("rule 临时文件删除成功");
+			}else {
+				logger.debug("rule 临时文件删除失败");
+			}
 		}
 		IOUtils.closeQuietly(reader);
 		return success;

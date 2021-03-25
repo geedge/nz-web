@@ -1,13 +1,10 @@
 package com.nis.modules.asset.service.impl;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -57,12 +54,10 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
 		
-		// 针对新增操作验证type是否重复
-		if(ObjectUtil.isEmpty(assetFieldMeta.getId())) {
-			List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key));
-			if(ObjectUtil.isNotEmpty(list)) {
-				throw new NZException(RCode.ASSET_FIELD_META_KEY_DUPLICATE);
-			}
+		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key).ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId()));
+		
+		if(ObjectUtil.isNotEmpty(list)) {
+			throw new NZException(RCode.ASSET_FIELD_META_KEY_DUPLICATE);
 		}
 		
 		if(ObjectUtil.isEmpty(assetFieldMeta.getParam())){

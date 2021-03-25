@@ -89,11 +89,26 @@ public class TerminalHandlerController {
         String tmpPath=rootPath+configUploadPath;
         File uploadDir=FileUtil.file(tmpPath);
         if(!uploadDir.exists()){
-            uploadDir.mkdirs();
+            boolean mkdirs = uploadDir.mkdirs();
+            if(mkdirs) {
+            	logger.debug("批量创建成功");
+            }else {
+            	logger.debug("批量创建失败");
+            }
         }else{//存在同名文件/文件夹
             if(!uploadDir.isDirectory()){//是一个同名文件
-                uploadDir.delete();
-                uploadDir.mkdirs();
+                boolean delete = uploadDir.delete();
+                if(delete) {
+                	logger.debug("文件夹删除成功");
+                }else {
+                	logger.debug("文件夹删除失败");
+                }
+                boolean mkdirs = uploadDir.mkdirs();
+                if(mkdirs) {
+                	logger.debug("批量创建成功");
+                }else {
+                	logger.debug("批量创建失败");
+                }
             }
         }
 
