@@ -119,7 +119,7 @@ public class SysLoginController extends AbstractController {
 		}
 		try {
 			redisTemplate.delete(requestToken);
-		}catch (Exception e){
+		}catch (RuntimeException e){
 				logger.debug("登出操作删除redis信息失败，失败key：{}",requestToken);
 		}
 

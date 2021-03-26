@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -118,7 +119,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
             sb.append("\u001B[01;31m\u001B[K Administrator disconnected \u001B[m\u001B[K  \r\n");
             sb.append("$: ");
             session.sendMessage(new TextMessage(sb.toString()));
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error(String.format("terminal session kill failed,uuid = %s,错误信息 = %s", uuid, e.getMessage()), e);
         }
 

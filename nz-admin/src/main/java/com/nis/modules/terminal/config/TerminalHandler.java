@@ -28,6 +28,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.jcraft.jsch.JSchException;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
@@ -247,7 +248,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 
                 terminalLogService.save(terminalLog);
 	            terminalSessionService.save(sessionEntity);
-            } catch (Exception e) {
+            } catch (IOException e) {
             	logger.error("error info :",e);
             	logger.error(e);
             	String lowerCase = e.getMessage().toLowerCase();
@@ -550,7 +551,7 @@ public class TerminalHandler extends TextWebSocketHandler {
             		TerminalSession.setTerminalAttributeInfo(uuid, "cursorIndex", cursorIndex);
             	}
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
         	// 出现异常将光标信息重置防止下一次无法正常执行命令
         	logger.error("error info :",e);
         	TerminalLog terminalLog = (TerminalLog) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalLog");
@@ -707,7 +708,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 //        terminalClusterProcessor.unregistry(terminalToken);
     }
 
-    public void nezhaMessageHandle(WebSocketSession session, String message) throws Exception {
+    public void nezhaMessageHandle(WebSocketSession session, String message) throws JSchException, IOException {
     	TerminalLog terminalLog = new TerminalLog();
     	terminalLog.setUuid(uuid);
     	terminalLog.setUserId((Long)TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
@@ -801,7 +802,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 				// 连接之后 session 状态为 connecting
 			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
 			    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-			} catch (Exception e) {
+			} catch (IOException e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 				terminalLog.setStatus(0);
 				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
@@ -890,7 +891,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     	}
     }
 
-	public static void unloginUserHandle(WebSocketSession session) throws Exception {
+	public static void unloginUserHandle(WebSocketSession session) throws IOException {
     	StringBuilder sb=new StringBuilder();
         sb.append("Welcome to Nezha Terminal! \r\n");
     	sb.append("Type `help' to learn how to use Nezha Terminal prompt. \r\n");
@@ -898,7 +899,7 @@ public class TerminalHandler extends TextWebSocketHandler {
     	session.sendMessage(new TextMessage(sb.toString()));		
     }
     
-    public void sshLoginHandle(WebSocketSession session,String message,boolean sshLogin) throws Exception{
+    public void sshLoginHandle(WebSocketSession session,String message,boolean sshLogin) throws IOException{
     	// 清空之前缓存的ssh登录系信息
     	TerminalSession.removeTerminalMessage(uuid+"user");
     	TerminalSession.removeTerminalMessage(uuid+"ip");
@@ -951,7 +952,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 		TerminalSession.setTerminalAttributeInfo(uuid, "sshLogin", sshLogin);
     }
     
-    public void telnetLoginHandle(WebSocketSession session,String message) throws Exception{
+    public void telnetLoginHandle(WebSocketSession session,String message) throws IOException{
     	// 清空之前缓存的telnet登录系信息
     	TerminalSession.removeTerminalMessage(uuid+"telip");
     	TerminalSession.removeTerminalMessage(uuid+"telport");
@@ -1044,7 +1045,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 			TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 		    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
 		    TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
-		} catch (Exception e) {
+		} catch (IOException e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
 			terminalLog.setStatus(0);
 			terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());

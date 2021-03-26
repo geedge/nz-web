@@ -11,6 +11,7 @@ package com.nis.modules.sys.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -424,7 +425,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 			// 删除redis中key=reset的数据
 			redisTemplate.delete("reset");
 			logger.info("nezha reset success");
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			logger.error("nezha reset fail",e);
 			throw new NZException(RCode.SYS_CONFIG_RESET_FAIL);
 		}
@@ -633,7 +634,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             String ldapMapping = saveMap.get("ldap_mapping");
             try {
 				JSONObject.parseObject(ldapMapping);
-			} catch (Exception e) {
+			} catch (JSONException e) {
 				throw new NZException(RCode.SYS_CONFIG_LDAPMAPPING_FORMAT_ERROR);
 			}
             return true;
@@ -752,7 +753,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
             // 连接类异常 造成原因 1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
             logger.error("ldap service config connection failed",e);
             return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             logger.error("ldap service config connection failed",e);
             return R.error(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
         } finally {

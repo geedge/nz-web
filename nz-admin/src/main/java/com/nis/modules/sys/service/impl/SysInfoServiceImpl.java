@@ -133,7 +133,7 @@ public class SysInfoServiceImpl implements SysInfoService {
                 return sortMap;
             }
         } catch (IOException e) {
-            log.error("读取 git.properties 文件信息失败，错误信息是：" + e.getMessage(), e);
+            log.error("读取 git.properties 文件信息失败，错误信息是：" + e);
         }
         return Collections.emptyMap();
     }
