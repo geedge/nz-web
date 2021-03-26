@@ -82,4 +82,15 @@
 		from asset_account aa left join sys_user su on aa.update_by = su.user_id left join asset_account_rel aar on aa.id = aar.account_id
 		where aar.asset_id = #{assetId}
     </select>
+
+	<select id="selectAccountsByAssetId" resultType="com.nis.modules.asset.entity.AssetAccount">
+		SELECT
+			acc.*
+		FROM
+			asset_account_rel aar
+			LEFT JOIN asset_asset ass ON aar.asset_id = ass.id
+			LEFT JOIN asset_account acc ON aar.account_id = acc.id
+		WHERE
+			ass.id = #{assetId}
+	</select>
 </mapper>

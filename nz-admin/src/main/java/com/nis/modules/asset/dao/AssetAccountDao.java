@@ -20,4 +20,6 @@ public interface AssetAccountDao extends BaseMapper<AssetAccount>{
 	AssetAccount selectAssetAccountById(Integer id);
 	
 	List<AssetAccount> selectAssetAccountsByAssetId(IPage<AssetAccount> page,@Param("assetId")Integer assetId);
+
+	List<AssetAccount> selectAccountsByAssetId(@Param("assetId")Integer assetId);
 }

@@ -91,4 +91,9 @@ public class AssetAccountServiceImpl extends ServiceImpl<AssetAccountDao,AssetAc
         assetAccount.setUpdateBy(currentLoginUser.getUserId());
 		this.saveOrUpdate(assetAccount);
 	}
+
+	@Override
+	public List<AssetAccount> queryAccountsByAssetId(Integer assetId) {
+		return assetAccountDao.selectAccountsByAssetId(assetId);
+	}
 }

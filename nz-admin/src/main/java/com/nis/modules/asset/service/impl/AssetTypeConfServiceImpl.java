@@ -9,9 +9,9 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetTypeConfDao;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTypeConf;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, AssetTypeConf> implements AssetTypeConfService {
 
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetService;
 
     @Override
     public AssetTypeConf queryConfInfo(Integer id) {
@@ -152,8 +152,8 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
         }
 
         // 3. 已被 asset 表引用的 类型不允许删除
-        List<Asset> assetList = assetService.list();
-        List<Integer> typeIdList = assetList.stream().map(Asset::getTypeId).distinct().collect(Collectors.toList());
+        List<AssetAsset> assetList = assetService.list();
+        List<Integer> typeIdList = assetList.stream().map(AssetAsset::getTypeId).distinct().collect(Collectors.toList());
         typeIdList.retainAll(Arrays.asList(ids));
         if (CollectionUtils.isNotEmpty(typeIdList)) {
             throw new NZException("These configurations have been used by assets and cannot be deleted. Details: " + typeIdList.toString(), RCode.TYPECONF_BEUSED_CAN_NOT_REMOVE.getCode());

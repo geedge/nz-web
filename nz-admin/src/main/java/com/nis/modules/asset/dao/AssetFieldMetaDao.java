@@ -18,4 +18,7 @@ public interface AssetFieldMetaDao extends BaseMapper<AssetFieldMeta>{
 	AssetFieldMeta selectAssetFieldMeta(Integer id);
 	
 	List<AssetFieldMeta> selectAssetFieldMetaList(@Param("page")IPage<AssetFieldMeta> page,@Param("params")Map<String,Object> params);
+
+	// 包含 group \ value \ meta 信息
+	List<AssetFieldMeta> selectMateInfoListByAssetId(@Param("assetId") Integer assetId);
 }

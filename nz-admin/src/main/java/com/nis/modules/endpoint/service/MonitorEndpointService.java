@@ -29,4 +29,8 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
     Map importEndpoint(MultipartFile excelFile, String language);
 
     void export(HttpServletResponse response, Map<String, Object> params);
+
+    List<Integer> getSuspendedEndpointIdList(Integer assetId);
+
+
 }

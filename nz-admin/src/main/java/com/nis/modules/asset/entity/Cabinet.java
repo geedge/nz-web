@@ -80,6 +80,12 @@ public class Cabinet implements Serializable {
     @TableField(exist = false)
     private List<Asset> assetList;
 
+    /**
+     * 当前cabinet包含的asset asset集合
+     */
+    @TableField(exist = false)
+    private List<AssetAsset> assets;
+
     // 解决lombok自动生成方法命名问题
     public Integer getuSize() {
         return uSize;

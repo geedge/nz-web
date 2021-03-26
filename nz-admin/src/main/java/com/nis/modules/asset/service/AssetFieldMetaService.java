@@ -14,4 +14,6 @@ public interface AssetFieldMetaService extends IService<AssetFieldMeta>{
 	PageUtils queryList(Map<String,Object> map);
 	
 	Integer saveOrModify(AssetFieldMeta assetFieldMeta);
+
+	List<AssetFieldMeta> getAssetFieldMetaListByAssetId(Integer assetId);
 }

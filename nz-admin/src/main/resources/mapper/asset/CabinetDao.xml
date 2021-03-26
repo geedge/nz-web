@@ -17,6 +17,20 @@
         </collection>
     </resultMap>
 
+    <resultMap id="cabinetWithAssetPosition" type="com.nis.modules.asset.entity.Cabinet">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="uSize" column="u_size"/>
+        <result property="idcId" column="idc_id"/>
+
+        <collection property="assets" ofType="com.nis.modules.asset.entity.AssetAsset" columnPrefix="as_">
+            <result column="id" property="id"/>
+            <result column="cabinetId" property="cabinetId"/>
+            <result column="cabinetStart" property="cabinetStart"/>
+            <result column="cabinetEnd" property="cabinetEnd"/>
+        </collection>
+    </resultMap>
+
     <select id="queryPage" resultType="com.nis.modules.asset.entity.Cabinet">
         SELECT
             cab.id,
@@ -75,5 +89,13 @@
         FROM
             cabinet cab
             LEFT JOIN asset ass ON cab.id = ass.cabinet_id
+    </select>
+
+    <select id="getCabinetWithAssetPositionInfo" resultMap="cabinetWithAssetPosition">
+        SELECT
+	        cab.id,cab.name,cab.u_size,cab.idc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
+        FROM
+            cabinet cab
+            LEFT JOIN asset_asset ass ON cab.id = ass.cabinet_id
     </select>
 </mapper>

@@ -9,12 +9,12 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetBrandDao;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.asset.service.AssetService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand> implements AssetBrandService {
 
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetService;
 
     @Autowired
     private AssetModelService modelService;
@@ -100,8 +100,8 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
         }
 
         // 2. 已被 asset 引用的品牌信息不允许删除
-        List<Asset> assetList = assetService.list();
-        List<Integer> assetUseBrandIdList = assetList.stream().map(Asset::getBrandId).distinct().collect(Collectors.toList());
+        List<AssetAsset> assetList = assetService.list();
+        List<Integer> assetUseBrandIdList = assetList.stream().map(AssetAsset::getBrandId).distinct().collect(Collectors.toList());
         assetUseBrandIdList.retainAll(Arrays.asList(ids));
         if (CollectionUtils.isNotEmpty(assetUseBrandIdList)) {
             throw new NZException("These brands have been used by assets and cannot be deleted. Details: " + assetUseBrandIdList.toString(), RCode.ASSET_BRAND_BEUSED_CAN_NOT_REMOVE.getCode());

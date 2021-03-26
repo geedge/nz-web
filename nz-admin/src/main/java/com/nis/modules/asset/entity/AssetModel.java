@@ -46,6 +46,11 @@ public class AssetModel implements Serializable {
      */
     private String seq;
 
+    /**
+     * u位大小
+     */
+    private Integer usize;
+
     @TableField(exist = false)
     private AssetBrand brand;
 }

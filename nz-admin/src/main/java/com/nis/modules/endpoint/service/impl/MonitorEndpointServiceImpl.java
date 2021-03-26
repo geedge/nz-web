@@ -13,10 +13,11 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
@@ -52,7 +53,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private static Log log = Log.get();
 
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetService;
 
     @Autowired
     private SysConfigDao sysConfigDao;
@@ -72,6 +73,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Autowired
     private ExpreTmplService expreTmplService;
 
+    @Autowired
+    private EndpointStateService endpointStateService;
+
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
         MonitorEndpoint endpoint = this.getById(id);
@@ -82,7 +86,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         endpoint.setModule(module);
         MonitorProject project = monitorProjectService.getById(module.getProjectId());
         endpoint.setProject(project);
-        Asset asset = assetService.getById(endpoint.getAssetId());
+        AssetAsset asset = assetService.getById(endpoint.getAssetId());
         endpoint.setAsset(asset);
 
         List<AlertMessageEntity> alerts = alertMessageDao.getAlertsStatColumn();
@@ -167,8 +171,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<MonitorModule> moduleList = monitorModuleService.list();
         List<Integer> moduleIdList = moduleList.stream().map(MonitorModule::getId).collect(Collectors.toList());
 
-        List<Asset> assetList = assetService.list();
-        List<Integer> assetIdList = assetList.stream().map(Asset::getId).collect(Collectors.toList());
+        List<AssetAsset> assetList = assetService.list();
+        List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
 
         List<Integer> enabledList = Arrays.asList(new Integer[]{1, 0});
         //String name;
@@ -226,8 +230,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<MonitorModule> moduleList = monitorModuleService.list();
         Map<Integer, MonitorModule> moduleIdAndModuleInfoMap = moduleList.stream().collect(Collectors.toMap(MonitorModule::getId, Function.identity()));
 
-        List<Asset> assetList = assetService.list();
-        Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+        List<AssetAsset> assetList = assetService.list();
+        Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, AssetAsset::getManageIp));
 
         List<MonitorEndpoint> endpoints = this.list();
         Map<Integer, List<MonitorEndpoint>> moduleIdAndEndpointsMap = new HashMap<>();
@@ -282,6 +286,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     public void deleteEndpointByIds(List<Integer> ids) {
         // 删除 endpoint
         this.removeByIds(ids);
+
+        // 删除 endpoint state
+        endpointStateService.removeByIds(ids);
+
+        // 删除 alert
+        alertMessageDao.deleteByEndpointIds(ids);
     }
 
     @Override
@@ -378,7 +388,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 MonitorProject project = endpoint.getProject();
                 MonitorModule module = endpoint.getModule();
-                Asset asset = endpoint.getAsset();
+                AssetAsset asset = endpoint.getAsset();
 
                 // project name
                 row1.createCell(0).setCellValue(project.getName());
@@ -417,6 +427,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
     }
 
+    @Override
+    public List<Integer> getSuspendedEndpointIdList(Integer assetId) {
+        return monitorEndpointDao.getSuspendedEndpointIdList(assetId);
+    }
+
     private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<MonitorProject> projectList = monitorProjectService.list();
         Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(MonitorProject::getName, MonitorProject::getId));
@@ -431,10 +446,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             moduleIdAndEndpointNamesMap.put(module.getId(), ToolUtil.isEmpty(endpointNames) ? new ArrayList<>() : endpointNames);
         }
 
-        List<Asset> assets = assetService.list();
-        Map<String, Integer> assetHostAndIdMap = assets.stream().collect(Collectors.toMap(Asset::getHost, Asset::getId));
-        Map<String, Integer> assetNameAndIdMap = assets.stream().collect(Collectors.toMap(Asset::getName, Asset::getId));
-        Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
+        List<AssetAsset> assets = assetService.list();
+        Map<String, Integer> assetHostAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getManageIp, AssetAsset::getId));
+        Map<String, Integer> assetNameAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
+        Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(AssetAsset::getId, AssetAsset::getManageIp));
 
 
         int successNum = 0;

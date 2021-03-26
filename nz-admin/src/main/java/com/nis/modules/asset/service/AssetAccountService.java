@@ -1,11 +1,11 @@
 package com.nis.modules.asset.service;
 
-import java.util.List;
-import java.util.Map;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetAccount;
+
+import java.util.List;
+import java.util.Map;
 
 public interface AssetAccountService extends IService<AssetAccount>{
 	
@@ -20,4 +20,6 @@ public interface AssetAccountService extends IService<AssetAccount>{
 	PageUtils queryPageByAssetId(Integer assetId);
 	
 	void saveOrUpdateAssetAccount(AssetAccount assetAccount);
+
+	List<AssetAccount> queryAccountsByAssetId(Integer assetId);
 }

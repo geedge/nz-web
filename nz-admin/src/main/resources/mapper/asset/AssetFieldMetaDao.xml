@@ -12,6 +12,8 @@
 		<result property="type" column="type" />
 		<result property="param" column="param" />
 		<result property="remark" column="remark" />
+		<result property="value" column="value" />
+		<result property="assetId" column="asset_id" />
 		<association columnPrefix="afg_" property="group" javaType="com.nis.modules.asset.entity.AssetFieldGroup">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
@@ -66,5 +68,24 @@
     		and afm.display = #{params.display}
     	</if>
     </select>
+
+	<select id="selectMateInfoListByAssetId" resultMap="assetFieldMeta">
+			SELECT
+				me.*,
+				va.value,
+				va.asset_id,
+				mg.id as afg_id,
+				mg.name as afg_name
+			FROM
+				asset_field_value va
+				LEFT JOIN asset_field_meta me ON va.meta_id = me.id
+				LEFT JOIN asset_field_group mg ON me.group_id = mg.id
+
+			<where>
+				<if test="assetId != null and assetId != ''">
+					va.asset_id =  #{assetId}
+				</if>
+			</where>
+	</select>
 	
 </mapper>

@@ -29,14 +29,13 @@
 	    	<result column="name" property="name"/>
 	    </association>
 
-	    <association columnPrefix="a_" property="asset" javaType="com.nis.modules.asset.entity.Asset">
+	    <association columnPrefix="a_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
 	    	<id column="id" property="id"/>
-	    	<result column="host" property="host"/>
+	    	<result column="manage_ip" property="manageIp"/>
 	    	<result column="sn" property="sn"/>
 	    	<result column="cabinet_id" property="cabinetId"/>
-	    	<result column="state" property="state"/>
 	    	<result column="purchase_date" property="purchaseDate"/>
-	    	<result column="idc_id" property="idcId"/>
+	    	<result column="dc_id" property="dcId"/>
 	    	<result column="model_id" property="modelId"/>
 	    	<result column="name" property="name"/>
 	    </association>
@@ -48,11 +47,10 @@
        m.name AS m_name,
 
        a.id AS a_id,
-       a.host AS a_host,
+       a.manage_ip AS a_manage_ip,
        a.sn AS a_sn,
-       a.state AS a_state,
        a.purchase_date AS a_purchase_date,
-       a.idc_id AS a_idc_id,
+       a.dc_id AS a_dc_id,
        a.model_id AS a_model_id,
        a.cabinet_id AS a_cabinet_id,
        a.name AS a_name,
@@ -66,7 +64,7 @@
        FROM monitor_endpoint e
        left join monitor_module m on e.module_id=m.id
        left join monitor_project p on m.project_id=p.id
-       left join asset a on e.asset_id=a.id
+       left join asset_asset a on e.asset_id=a.id
        left join endpoint_state es on e.id = es.endpoint_id
        <where>
            <if test="params.id != null and params.id != ''">
@@ -97,5 +95,21 @@
                AND es.state = #{params.state}
            </if>
        </where>
+    </select>
+
+    <select id="getSuspendedEndpointIdList" resultType="java.lang.Integer">
+        SELECT DISTINCT
+            me.id
+        FROM
+            monitor_endpoint me
+            LEFT JOIN asset_asset ass ON me.asset_id = ass.id
+            LEFT JOIN asset_state_conf state ON ass.state_id = state.id
+        WHERE
+            state.monitor = 0
+            OR me.enabled = 0
+
+            <if test="assetId != null and assetId != ''">
+                AND ass.id = #{assetId}
+            </if>
     </select>
 </mapper>

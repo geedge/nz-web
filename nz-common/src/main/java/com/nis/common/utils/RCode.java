@@ -247,6 +247,24 @@ public enum RCode {
     ASSET_EXPORT_HEADER_TEMPLATE_ERROR(314042,"The header row of the excel import template is inconsistent with the system template"),
     ASSET_TYPE_VALUE_DUPLICATE(312043,"Asset type vlaue is duplicate"),
     ASSET_VENDOR_VALUE_DUPLICATE(312044,"Asset vendor vlaue is duplicate"),
+    ASSET_NAME_ISNULL(311045, "Asset name can not be empty"),
+    ASSET_MANAGEIP_ISNULL(311046, "Asset manage ip can not be empty"),
+    ASSET_MODEL_ID_ISNULL(311047, "Asset model id can not be empty"),
+    ASSET_DC_ID_ISNULL(311048, "Asset dc id can not be empty"),
+    ASSET_STATE_ID_ISNULL(311049, "Asset state id can not be empty"),
+    ASSET_TYPE_ID_ISNULL(311050, "Asset type id can not be empty"),
+    ASSET_NAME_DUPLICATE(312051, "Asset name duplicate"),
+    ASSET_NUMBER_DUPLICATE(312052, "Asset number duplicate"),
+    ASSET_MANAGEIP_DUPLICATE(312053, "Asset manage ip duplicate"),
+    ASSET_SSH_PORT_ERROR(315054, "Asset ssh port is incorrect"),
+    ASSET_TELNET_PORT_ERROR(315055, "Asset telnet port is incorrect"),
+    ASSET_NOT_SELECT_PARENT(311056, "Asset must select the asset host"),
+    ASSET_NOT_SUPPORT_MOUNTING(313057, "Asset does not support mounting"),
+    ASSET_NOT_UPDATE(313058, "It is currently a virtual machine host and cannot be modified as a virtual machine"),
+    ASSET_MANAGEIP_FORMAT(313059, "Asset manage IP address format is incorrect"),
+    ASSET_SSHPORT_MORE(312060, "Assets can only fill in one ssh port"),
+    ASSET_TELNET_MORE(312061, "Assets can only fill in one telnet port"),
+    ASSET_PARENT_NOT_EXIST(316062, "Asset parent does not exist"),
 
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
@@ -298,7 +316,8 @@ public enum RCode {
     ASSET_ACCOUNT_PASSWORDTIP_ISNULL(331009,"asset account password tip can not be null when auth type is telnet"),
     ASSET_ACCOUNT_WEIGHT_ISNULL(331010,"asset account id can not be null"),
     ASSET_ACCOUNT_STATE_ISNULL(331011,"asset account id can not be null"),
-    
+    ASSET_ACCOUNT_NOT_FOUND(336012, "Asset account not found"),
+
     STATECONF_NAME_ISNULL(341000,"Asset state conf name is null"),
     STATECONF_PING_ISNULL(341001,"Asset state conf ping is null"),
     STATECONF_MONITOR_ISNULL(341002,"Asset state conf monitor is null"),
@@ -336,6 +355,7 @@ public enum RCode {
     ASSET_BRAND_ID_ISNULL(361002, "Asset brand id is null"),
     ASSET_BRAND_NAME_DUPLICATE(362003, "Asset brand name is duplicate"),
     ASSET_BRAND_BEUSED_CAN_NOT_REMOVE(367004, "This brand is already used and cannot be deleted"),
+    ASSET_BRAND_NOT_CONTAIN_MODEL(366005, "This model is not included under this brand"),
 
     ASSET_FIELD_GROUP_ID_ISNULL(361001,"Asset field group id can not be empty"),
     ASSET_FIELD_GROUP_NAME_ISNULL(361002,"Asset field group name can not be empty"),
@@ -351,6 +371,8 @@ public enum RCode {
     ASSET_FIELD_META_TYPE_ERROR(375008,"Asset field type value out of range"),
     ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
     ASSET_FIELD_META_KEY_DUPLICATE(372010,"Asset field key value duplicate"),
+    ASSET_FIELD_META_NOT_FOUND(376011, "Asset field meta not found"),
+
     /**
      * alerts菜单栏相关
      */

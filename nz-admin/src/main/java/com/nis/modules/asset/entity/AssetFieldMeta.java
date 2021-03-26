@@ -33,4 +33,19 @@ public class AssetFieldMeta {
 	
 	@TableField(exist = false)
 	private AssetFieldGroup group;
+
+	@TableField(exist = false)
+	private String key;
+
+	/**
+	 * field value value
+	 */
+	@TableField(exist = false)
+	private String value;
+
+	/**
+	 * field value assetId
+	 */
+	@TableField(exist = false)
+	private Integer assetId;
 }

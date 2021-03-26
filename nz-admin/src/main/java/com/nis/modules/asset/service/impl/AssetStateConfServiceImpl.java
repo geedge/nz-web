@@ -10,9 +10,9 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetStateConfDao;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetStateConf;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetStateConfService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +33,13 @@ import java.util.stream.Collectors;
 public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, AssetStateConf> implements AssetStateConfService {
 
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetService;
 
     @Override
     public AssetStateConf queryConfInfo(Integer id) {
         AssetStateConf conf = this.getById(id);
         if (ToolUtil.isNotEmpty(conf)) {
-            int assetCount = assetService.count(new LambdaQueryWrapper<Asset>().eq(Asset::getStateId, conf.getId()));
+            int assetCount = assetService.count(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getStateId, conf.getId()));
             conf.setAssetStat(assetCount);
         } else {
             throw new NZException(RCode.STATECONF_NOT_FOUND);
@@ -56,7 +56,7 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
 
         List<AssetStateConf> data = page.getRecords();
         if (CollectionUtils.isNotEmpty(data)) {
-            List<Asset> list = assetService.list();
+            List<AssetAsset> list = assetService.list();
             for (AssetStateConf conf : data) {
                 long count = list.stream().filter(asset -> conf.getId().equals(asset.getStateId())).count();
                 conf.setAssetStat((int) count);
@@ -128,8 +128,8 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
         }
 
         // 2. 已被 asset 表引用的 状态不允许删除
-        List<Asset> assetList = assetService.list();
-        List<Integer> stateIdList = assetList.stream().map(Asset::getStateId).distinct().collect(Collectors.toList());
+        List<AssetAsset> assetList = assetService.list();
+        List<Integer> stateIdList = assetList.stream().map(AssetAsset::getStateId).distinct().collect(Collectors.toList());
         for (AssetStateConf pojo : list) {
             if (stateIdList.contains(pojo.getId())) {
                 throw new NZException(RCode.STATECONF_CAN_NOT_REMOVE);

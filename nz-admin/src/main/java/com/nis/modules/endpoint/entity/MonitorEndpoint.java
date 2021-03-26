@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
 import lombok.Data;
@@ -74,7 +74,7 @@ public class MonitorEndpoint implements Serializable {
 	private MonitorModule module;
 
 	@TableField(exist = false)
-	private Asset asset;
+	private AssetAsset asset;
 
 	@TableField(exist = false)
 	private MonitorProject project;

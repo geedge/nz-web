@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.AssetAssetDao">
+
+    <resultMap type="com.nis.modules.asset.entity.AssetAsset" id="assetMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="sn" column="sn"/>
+        <result property="number" column="number"/>
+        <result property="pid" column="pid"/>
+        <result property="sshPort" column="ssh_port"/>
+        <result property="telnetPort" column="telnet_port"/>
+        <result property="cabinetStart" column="cabinet_start"/>
+        <result property="cabinetEnd" column="cabinet_end"/>
+        <result property="manageIp" column="manage_ip"/>
+        <result property="purchaseDate" column="purchase_date"/>
+        <result property="createAt" column="create_at"/>
+        <result property="updateAt" column="update_at"/>
+
+        <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Idc">
+            <id property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+
+        <association property="cabinet" columnPrefix="c_" javaType="com.nis.modules.asset.entity.Cabinet">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+
+        <association property="type" columnPrefix="t_" javaType="com.nis.modules.asset.entity.AssetTypeConf">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="vm" column="vm"/>
+            <result property="vmh" column="vmh"/>
+            <result property="ssh" column="ssh"/>
+            <result property="telnet" column="telnet"/>
+        </association>
+
+        <association property="state" columnPrefix="s_" javaType="com.nis.modules.asset.entity.AssetStateConf">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+
+        <association property="brand" columnPrefix="b_" javaType="com.nis.modules.asset.entity.AssetBrand">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+
+        <association property="model" columnPrefix="m_" javaType="com.nis.modules.asset.entity.AssetModel">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="remark" column="remark"/>
+        </association>
+
+    </resultMap>
+
+    <select id="queryAssetList" resultMap="assetMap">
+        SELECT
+            asset.*,
+            type.id AS t_id,
+            type.NAME AS t_name,
+            type.vm AS t_vm,
+            type.vmh AS t_vmh,
+            type.ssh AS t_ssh,
+            type.telnet AS t_telnet,
+
+            state.id AS s_id,
+            state.NAME AS s_name,
+
+            brand.id AS b_id,
+            brand.NAME AS b_name,
+
+            idc.id AS d_id,
+            idc.NAME AS d_name,
+
+            cab.id AS c_id,
+            cab.NAME AS c_name,
+
+            model.id AS m_id,
+	        model.NAME AS m_name
+        FROM
+            asset_asset asset
+            LEFT JOIN asset_state_conf state ON asset.state_id = state.id
+            LEFT JOIN asset_type_conf type ON asset.type_id = type.id
+            LEFT JOIN asset_brand brand ON asset.brand_id = brand.id
+            LEFT JOIN asset_model model ON asset.model_id = model.id
+            LEFT JOIN idc idc ON asset.dc_id = idc.id
+            LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
+            LEFT JOIN asset_ping assp ON asset.manage_ip = assp.host
+
+        <where>
+
+             <if test="params.id != null and params.id != ''">
+                 asset.id = #{params.id}
+             </if>
+
+             <if test="params.sn != null and params.sn != ''">
+                 AND asset.sn like CONCAT('%', #{params.sn}, '%')
+             </if>
+
+             <if test="params.name != null and params.name != ''">
+                 AND asset.name like CONCAT('%', #{params.name}, '%')
+             </if>
+
+             <if test="params.manageIp != null and params.manageIp != ''">
+                 AND asset.manage_ip like CONCAT('%', #{params.manageIp}, '%')
+             </if>
+
+             <if test="params.brandIds != null and params.brandIds.size > 0">
+                 AND asset.brand_id IN
+                 <foreach collection="params.brandIds" item="brandId" index="no" open="(" separator="," close=")">
+                     #{brandId}
+                 </foreach>
+             </if>
+
+             <if test="params.modelIds != null and params.modelIds.size > 0">
+                 AND asset.model_id IN
+                 <foreach collection="params.modelIds" item="modelId" index="no" open="(" separator="," close=")">
+                     #{modelId}
+                 </foreach>
+             </if>
+
+             <if test="params.dcIds != null and params.dcIds.size > 0">
+                 AND asset.dc_id IN
+                 <foreach collection="params.dcIds" item="dcId" index="no" open="(" separator="," close=")">
+                     #{dcId}
+                 </foreach>
+             </if>
+
+             <if test="params.cabinetIds != null and params.cabinetIds.size > 0">
+                 AND asset.cabinet_id IN
+                 <foreach collection="params.cabinetIds" item="cabId" index="no" open="(" separator="," close=")">
+                     #{cabId}
+                 </foreach>
+             </if>
+
+             <if test="params.typeIds != null and params.typeIds.size > 0">
+                 AND asset.type_id IN
+                 <foreach collection="params.typeIds" item="typeId" index="no" open="(" separator="," close=")">
+                     #{typeId}
+                 </foreach>
+             </if>
+
+             <if test="params.stateIds != null and params.stateIds.size > 0">
+                 AND asset.state_id IN
+                 <foreach collection="params.stateIds" item="stateId" index="no" open="(" separator="," close=")">
+                     #{stateId}
+                 </foreach>
+             </if>
+
+             <if test="params.innerAssetIdsByFields != null and params.innerAssetIdsByFields.size > 0">
+                 AND asset.id IN
+                 <foreach collection="params.innerAssetIdsByFields" item="tmplId" index="no" open="(" separator="," close=")">
+                     #{tmplId}
+                 </foreach>
+             </if>
+
+            <if test="params.ping != null and params.ping != ''">
+                AND assp.status = #{params.ping}
+            </if>
+
+         </where>
+
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY asset.id
+        </if>
+    </select>
+</mapper>

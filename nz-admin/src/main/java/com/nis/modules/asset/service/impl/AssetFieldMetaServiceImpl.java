@@ -67,5 +67,14 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		
 		return assetFieldMeta.getId();
 	}
-	
+
+	@Override
+	public List<AssetFieldMeta> getAssetFieldMetaListByAssetId(Integer assetId) {
+		List<AssetFieldMeta> metaList = assetFieldMetaDao.selectMateInfoListByAssetId(assetId);
+		for (AssetFieldMeta meta : metaList) {
+			meta.setKey(meta.getMetaKey());
+		}
+		return metaList;
+	}
+
 }

@@ -578,6 +578,8 @@ public class Constant {
     // asset 导入表头
     public static final String SYSCONFIG_KEY_ASSET_EXPORT_HEADER = "asset_export_header";
 
+    public static final String SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER = "asset_asset_export_header";
+
     // alert rule 导入表头
     public static final String SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER = "rule_export_header";
 

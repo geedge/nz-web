@@ -27,4 +27,7 @@ public interface CabinetDao extends BaseMapper<Cabinet> {
 
     // 返回机柜信息中包含所属的资产集合
     List<Cabinet> getCabinetWithAssets();
+
+    // 返回机柜信息中包含所属的资产 起始位置 数据
+    List<Cabinet> getCabinetWithAssetPositionInfo();
 }

@@ -1,0 +1,207 @@
+package com.nis.modules.asset.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import com.nis.modules.sys.entity.SysUserEntity;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
+
+/**
+ * 资产实体
+ *
+ * @author shizhendong
+ * @date 2019-11-21
+ */
+@Data
+@TableName("asset_asset")
+public class AssetAsset implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 主键
+     */
+    @TableId(type = IdType.AUTO)
+    private Integer id;
+
+    /**
+     * 资产名称 唯一
+     */
+    private String name;
+
+    /**
+     * 资产编号	 不重复
+     */
+    private String number;
+
+    /**
+     * 资产序列化 (唯一)
+     */
+    private String sn;
+
+    /**
+     * 默认：-1 只有type vm = 1可以且必须填写此字段，且 pid.type vmh = 1
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private Integer pid;
+
+    /**
+     * 资产状态
+     */
+    private Integer stateId;
+
+    /**
+     * 资产类型
+     */
+    private Integer typeId;
+
+    /**
+     * ssh 端口
+     */
+    private Integer sshPort;
+
+    /**
+     * telnet 端口
+     */
+    private Integer telnetPort;
+
+    /**
+     * 品牌
+     */
+    private Integer brandId;
+
+    /**
+     * 产品型号ID 与model表关联
+     */
+    private Integer modelId;
+
+    /**
+     * 数据中心id
+     */
+    private Integer dcId;
+
+    /**
+     * 机柜编号
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private Integer cabinetId;
+
+    /**
+     * 机柜开始位置
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private Integer cabinetStart;
+
+    /**
+     * 机柜结束位置
+     */
+    @TableField(strategy = FieldStrategy.IGNORED)
+    private Integer cabinetEnd;
+
+    /**
+     * 管理ip
+     */
+    private String manageIp;
+
+    /**
+     * 购买日期
+     */
+    private String purchaseDate;
+
+    /**
+     * 添加日期
+     */
+    private Date createAt;
+
+    /**
+     * 更新日期
+     */
+    private Date updateAt;
+
+
+    /**
+     * 添加人 user表关联
+     */
+    private Long createBy;
+
+    /**
+     * 更新人
+     */
+    private Long updateBy;
+
+    /**
+     * 用于撤销具体某次批量导入的uuid
+     */
+    private String seq;
+
+
+    /**
+     * 关联 asset type 对象
+     */
+    @TableField(exist = false)
+    private AssetTypeConf type;
+
+    /**
+     * 关联 asset state 对象
+     */
+    @TableField(exist = false)
+    private AssetStateConf state;
+
+    /**
+     * 品牌
+     */
+    @TableField(exist = false)
+    private AssetBrand brand;
+
+    /**
+     * 数据中心
+     */
+    @TableField(exist = false)
+    private Idc dc;
+
+    /**
+     * 创建人
+     */
+    @TableField(exist = false)
+    private SysUserEntity createUser;
+
+    /**
+     * 更新人
+     */
+    @TableField(exist = false)
+    private SysUserEntity updateUser;
+
+
+    /**
+     * 资产型号
+     */
+    @TableField(exist = false)
+    private AssetModel model;
+
+    /**
+     * asset field 信息
+     */
+    @TableField(exist = false)
+    private List<AssetFieldMeta> fields;
+
+    /**
+     * 机柜
+     */
+    @TableField(exist = false)
+    private Cabinet cabinet;
+
+    /**
+     * 虚拟机宿主
+     */
+    @TableField(exist = false)
+    private AssetAsset parent;
+
+    /**
+     * 账号信息 ids
+     */
+    @TableField(exist = false)
+    private List<Integer> accounts;
+
+}
