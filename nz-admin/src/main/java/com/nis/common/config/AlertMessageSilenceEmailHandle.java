@@ -48,6 +48,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import javax.mail.MessagingException;
@@ -357,7 +358,10 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		                    // 通知脚本信息不为空
 		                    if (CollectionUtils.isNotEmpty(userNotifications)) {
 		                        log.info("邮件进行脚本通知");
-		                        executorService.submit(() -> this.notifiScript(userNotifications, scriptIdAndFilePathMap, messageEntity));
+		                        Future<?> submit = executorService.submit(() -> this.notifiScript(userNotifications, scriptIdAndFilePathMap, messageEntity));
+		                        if(submit.isDone()) {
+		                        	log.info("邮件脚本通知已完成");
+		                        }
 		                    } else {
 		                        log.info("邮件没有关联用户脚本，不进行脚本通知");
 		                    }

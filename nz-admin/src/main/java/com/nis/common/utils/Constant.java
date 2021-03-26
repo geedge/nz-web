@@ -197,7 +197,12 @@ public class Constant {
 		
 		File tempPath = FileUtil.file(TEMP_PATH);
 		if (!tempPath.isDirectory()) {
-			tempPath.mkdir();
+			boolean mkdir = tempPath.mkdir();
+			if(mkdir) {
+				logger.debug("临时目录tmp创建成功");
+			}else {
+				logger.debug("临时目录tmp创建失败");
+			}
 		}
 		
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();

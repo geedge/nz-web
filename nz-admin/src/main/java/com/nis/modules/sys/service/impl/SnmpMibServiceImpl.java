@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
@@ -207,7 +208,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         }
 
         // 经过解析后 mib 为空  解析失败
-        if(mib == null){
+        if(ObjectUtil.isEmpty(mib)){
             throw new NZException(RCode.SNMP_MIB_PARSING_FAILED);
         }
         // 设置mib文件名称

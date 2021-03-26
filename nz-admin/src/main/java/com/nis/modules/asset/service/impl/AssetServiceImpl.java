@@ -1071,8 +1071,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 // ssh account 必备选项 如果三者则认为填写ssh账号
                 accountForUploadExporter = null;
                 if (StringUtils.isNotEmpty(sshPort) && StringUtils.isNotEmpty(sshMethod) && StringUtils.isNotEmpty(sshUserName)) {
-                    if (!"key".equals(sshMethod.toLowerCase()) && !"password".equals(sshMethod.toLowerCase())) {
-                        saveFlag = false;
+//                    if (!"key".equals(sshMethod.toLowerCase()) && !"password".equals(sshMethod.toLowerCase())) {
+                	if ((!StrUtil.equals("key", sshMethod, false)) && !StrUtil.equals("password", sshMethod, false)) {
+                		saveFlag = false;
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ACCOUNT_SSH_METHOD_INCORRECT.getMsg());
                     }
                     if (!CommonUtils.checkPort(sshPort)) {
@@ -2566,7 +2567,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 	public void getSystemOsInfo(Session session,HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,Integer assetId) throws JSchException,IOException {
 		String value="";
 		String osInfo = RuntimeUtil.sshCommondResult(session, "echo `cat /etc/system-release` `uname -p`");
-		if(osInfo.toLowerCase().contains("centos")) {
+		/*if(osInfo.toLowerCase().contains("centos")) {*/
+		if(StrUtil.containsAnyIgnoreCase(osInfo, "centos")) {
         	value=JSON.toJSONString(osInfo.replaceAll("\r\n", ""));
         }else {
         	osInfo = RuntimeUtil.sshCommondResult(session, "echo `cat /etc/os-release | grep -w NAME | awk -F '=' '{print $2}' |sed 's/\\\"//g'` `cat /etc/os-release | grep -w VERSION | awk -F '=' '{print $2}' |sed 's/\\\"//g'` `uname -p`");
