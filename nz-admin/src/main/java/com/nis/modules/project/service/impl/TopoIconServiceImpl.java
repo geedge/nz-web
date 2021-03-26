@@ -91,8 +91,8 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
 //        String fileType = filename.substring(filename.lastIndexOf(".") + 1);
 //        fileType = fileType.toLowerCase();
         String fileType = StrUtil.sub(filename, StrUtil.lastIndexOf(filename, ".", filename.length(), false)+1,filename.length());
-        if(!StrUtil.equals(fileType, "jpg",true) || !StrUtil.equals(fileType, "jpeg",true) ||
-        		!StrUtil.equals(fileType, "png",true) ||
+        if(!StrUtil.equals(fileType, "jpg",true) && !StrUtil.equals(fileType, "jpeg",true) &&
+        		!StrUtil.equals(fileType, "png",true) &&
         		!StrUtil.equals(fileType, "gif",true)) {
         	throw new NZException(RCode.PROJECT_TOPOICON_FILETYPE_ERROR);
         }
