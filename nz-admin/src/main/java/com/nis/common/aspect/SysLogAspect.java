@@ -131,14 +131,22 @@ public class SysLogAspect {
         // 处理参数记录
         String paramResult = this.handleArgs(syslog, args, ShiroUtils.getUserEntity());
         paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
+        if (paramResult.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH){
+            paramResult = StringUtils.cutString(paramResult, Constant.MYSQL_TEXT_MAXLENGTH);
+        }
         sysLog.setParams(paramResult);
 
         // 登录出现异常时
         if ("login".equals(operationType)) {
             sysLog.setUserId(null);
             Map map = gson.fromJson(gson.toJson(params.get(0)), Map.class);
-            map.remove("password");
-            sysLog.setParams(gson.toJson(map));
+            map.remove("pin");
+            String logParams = gson.toJson(map);
+            logParams = ToolUtil.isEmpty(logParams) ? "" : logParams;
+            if (logParams.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH){
+                logParams = StringUtils.cutString(logParams, Constant.MYSQL_TEXT_MAXLENGTH);
+            }
+            sysLog.setParams(logParams);
         } else {
             Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
             sysLog.setUserId(userId == null ? null : userId.intValue());
@@ -207,6 +215,9 @@ public class SysLogAspect {
 
         // 处理 参数信息
         paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
+        if (paramResult.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH){
+            paramResult = StringUtils.cutString(paramResult, Constant.MYSQL_TEXT_MAXLENGTH);
+        }
         sysLog.setParams(paramResult);
 
         Long userId = null;
@@ -387,7 +398,7 @@ public class SysLogAspect {
         } else if ("login".equals(operationType)) {
             String params = gson.toJson(list.get(0));
             Map map = gson.fromJson(params, Map.class);
-            map.remove("password");
+            map.remove("pin");
             result = gson.toJson(map);
         } else {
             if (ToolUtil.isNotEmpty(list)) {

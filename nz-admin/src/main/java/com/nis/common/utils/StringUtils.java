@@ -803,5 +803,47 @@ public abstract class StringUtils {
         return stringBuffer.toString();
     }
 
+    /**
+     * 按指定的字节数截取字符串（一个中文字符占3个字节，一个英文字符或数字占1个字节）
+     *
+     * @param sourceString 源字符串
+     * @param cutBytes     要截取的字节数
+     * @return
+     */
+    public static String cutString(String sourceString, int cutBytes) {
+        if (sourceString == null || "".equals(sourceString.trim())) {
+            return "";
+        }
+
+        int lastIndex = 0;
+        boolean stopFlag = false;
+
+        int totalBytes = 0;
+        for (int i = 0; i < sourceString.length(); i++) {
+            String s = Integer.toBinaryString(sourceString.charAt(i));
+            if (s.length() > 8) {
+                totalBytes += 3; // 汉字
+            } else {
+                totalBytes += 1;
+            }
+
+            if (!stopFlag) {
+                if (totalBytes == cutBytes) {
+                    lastIndex = i;
+                    stopFlag = true;
+                } else if (totalBytes > cutBytes) {
+                    lastIndex = i - 1;
+                    stopFlag = true;
+                }
+            }
+        }
+
+        if (!stopFlag) {
+            return sourceString;
+        } else {
+            return sourceString.substring(0, lastIndex + 1);
+        }
+    }
+
 }
 

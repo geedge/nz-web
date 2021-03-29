@@ -55,6 +55,11 @@ public class Constant {
      */
     public static final String ASC = "asc";
 
+    /**
+     * mysql text 最大长度 65535
+     */
+    public static final Integer MYSQL_TEXT_MAXLENGTH = 65535;
+
 	/**
 	 * 菜单类型
 	 */
