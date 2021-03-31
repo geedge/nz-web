@@ -1,35 +1,45 @@
 package com.nis.modules.promserver.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.service.IdcService;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
 
+	@Autowired
+	private IdcService idcService;
+
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String id = (String)params.get("id");
-		String idcId = (String)params.get("idcId");
+		String idcId = (String)params.get("dcId");
 		String host = (String)params.get("host");
 		String type = (String)params.get("type");
 		String port = (String)params.get("port");
 		String status = (String)params.get("status");
+		String token = (String) params.get("token");
 		IPage<Promserver> page = this.page(
 			new Query<Promserver>().getPage(params),
 			new QueryWrapper<Promserver>().lambda()
@@ -39,8 +49,25 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				.eq(StringUtils.isNotBlank(idcId), Promserver::getIdcId,idcId)
 				.eq(StringUtils.isNotBlank(port), Promserver::getPort,port)
 				.eq(StringUtils.isNotBlank(status),Promserver::getStatus,status)
+					.like(StringUtils.isNotEmpty(token), Promserver::getToken, token)
 		);
+
+		List<Promserver> promserverList = page.getRecords();
+		if (CollectionUtils.isNotEmpty(promserverList)) {
+			promserverList = this.handleResultViewData(promserverList);
+		}
+		page.setRecords(promserverList);
 		return new PageUtils(page);
+	}
+
+	private List<Promserver> handleResultViewData(List<Promserver> promserverList) {
+		List<Idc> idcList = idcService.list();
+		Map<Integer, Idc> dcIdAndEntityMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Function.identity()));
+
+		for (Promserver pojo : promserverList) {
+			pojo.setDc(dcIdAndEntityMap.get(pojo.getIdcId()));
+		}
+		return promserverList;
 	}
 
 	public void validateParam(Promserver promserverEntity,boolean modify) {
@@ -58,7 +85,8 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL)
 				.and(host).notNull(RCode.PROMSERVER_HOST_ISNULL)
 				.and(type).notNull(RCode.PROMSERVER_TYPE_ISNULL)
-				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL);
+				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL)
+				.and(promserverEntity.getToken()).notNull(RCode.PROMSERVER_TOKEN_ISNULL);
 
 		// 校验ip是否合法
 		boolean ipFlag = CommonUtils.checkIp(host);
@@ -70,6 +98,10 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		if (!portFlag) {
 			throw new NZException(RCode.PROMSERVER_PORT_ERROR);
 		}
+
+		// dc 存在校验
+		Idc dc = idcService.getById(promserverEntity.getIdcId());
+		ValidateUtils.is(dc).notNull(RCode.IDC_NOT_EXISTS);
 
 		// 校验 type 合法性
 		Constant.PromserverType[] values = Constant.PromserverType.values();
@@ -99,16 +131,38 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public void saveOrUpdatePromserver(Promserver promserverEntity,boolean modify) {
+	public Integer saveOrUpdatePromserver(Promserver promserverEntity, boolean modify) {
         // 校验
 		this.validateParam(promserverEntity,modify);
 
+		// 添加设置默认值
+		if(!modify){
+			promserverEntity.setStatus(1);
+			promserverEntity.setStatusInfo(JSONObject.toJSONString(new HashMap<>()));
+		}
+
 		// 保存/修改
 		this.saveOrUpdate(promserverEntity);
+		return promserverEntity.getId();
 	}
 
 	@Override
 	public void updateStatus(List<Promserver> promservers) {
 		this.baseMapper.updateStatus(promservers);
+	}
+
+	/**
+	 * 详情
+	 * @param id
+	 * @return
+	 */
+	@Override
+	public Promserver queryPromServerDetails(Integer id) {
+		Promserver promserver = this.getById(id);
+		ValidateUtils.is(promserver).notNull(RCode.PROMSERVER_NOTEXSITS);
+
+		Idc dc = idcService.getById(promserver.getIdcId());
+		promserver.setDc(dc);
+		return promserver;
 	}
 }

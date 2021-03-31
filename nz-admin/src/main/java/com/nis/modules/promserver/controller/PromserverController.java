@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -19,6 +20,16 @@ public class PromserverController extends AbstractController {
 	
 	@Autowired
 	private PromserverService promserverService;
+
+	/**
+	 * 详情
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/{id}")
+	public R promServerDetails(@PathVariable("id") Integer id) {
+		return R.ok(promserverService.queryPromServerDetails(id));
+	}
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROMSERVER)
@@ -33,8 +44,9 @@ public class PromserverController extends AbstractController {
 	@RequiresPermissions({"promserver:save"})
 	public R save(@RequestBody Promserver promserverEntity) {
 
-		promserverService.saveOrUpdatePromserver(promserverEntity,false);
-		return R.ok();
+		Map map = new HashMap(2);
+		map.put("id", promserverService.saveOrUpdatePromserver(promserverEntity, false));
+		return R.ok(map);
 	}
 	
 	@PutMapping
@@ -43,8 +55,9 @@ public class PromserverController extends AbstractController {
 	public R modify(@RequestBody Promserver promserverEntity) {
 		ValidateUtils.is(promserverEntity.getId()).notNull(RCode.PROMSERVER_ID_ISNULL);
 
-		promserverService.saveOrUpdatePromserver(promserverEntity,true);
-		return R.ok();
+		Map map = new HashMap(2);
+		map.put("id", promserverService.saveOrUpdatePromserver(promserverEntity, true));
+		return R.ok(map);
 	}
 	
 	@DeleteMapping
