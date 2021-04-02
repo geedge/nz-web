@@ -1,6 +1,10 @@
 package com.nis.common.utils;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.nis.common.exception.NZException;
 
 /**
  * 返回数据
@@ -58,6 +62,26 @@ public class R extends HashMap<String, Object> {
 	@Override
 	public R put(String key, Object value) {
 		super.put(key, value);
+		return this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public R putData(String key,Object value) {
+		Object data = super.getOrDefault("data", new LinkedHashMap<String, Object>());
+		if( !(data instanceof Map)) {
+			throw new NZException("data put error");
+		}
+		((Map<String, Object>)data).put(key, value);
+		return this;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public R putDataAll(Map<String,Object> dataAll) {
+		Object data = super.getOrDefault("data", new LinkedHashMap<String, Object>());
+		if( !(data instanceof Map)) {
+			throw new NZException("data putAll error");
+		}
+		((Map<String, Object>)data).putAll(dataAll);;
 		return this;
 	}
 }
