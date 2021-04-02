@@ -10,6 +10,7 @@ import com.alibaba.druid.pool.DruidDataSource;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.setup.entity.DatabaseEntity;
 import com.nis.setup.entity.RedisEntity;
 import com.nis.setup.entity.SetupEntity;
@@ -161,10 +162,8 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         if(!FileUtil.exist(codeFile)){
             return R.error(RCode.SYS_CONFIG_CODE_FILE_ISNULL);
         }
-        BufferedReader reader = FileUtil.getReader(codeFile, CharsetUtil.UTF_8);
-        List<String> codes = new ArrayList<String>(1);
-        codes=IoUtil.readLines(reader,new ArrayList<String>());
-        String readCode = codes.get(0);
+
+        String readCode = Tool.FileUtil.readUtf8String(codeFile);
         if(StrUtil.isEmpty(readCode) || !readCode.equals(code)){
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
@@ -239,8 +238,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
     }
 
     public void restart(){
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.indexOf("linux") != -1){
+        if (Tool.SystemUtil.getOsInfo().isLinux()){
             RuntimeUtil.exec("systemctl restart nzweb.service");
         }
     }

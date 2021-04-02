@@ -6,10 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.MailUtil;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertNotifiScriptDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNotificationScript;
@@ -423,16 +420,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		
 		    private Template getTemplate() throws TemplateNotFoundException, MalformedTemplateNameException, ParseException, IOException {
 		        String templateString = configService.getValue("email_template");
-		        // 创建配置类
-		        Configuration configuration = new Configuration(Configuration.getVersion());
-		        //创建模板加载器
-		        StringTemplateLoader templateLoader = new StringTemplateLoader();
-		        // 存入模板
-		        templateLoader.putTemplate("template", templateString);  //template  = 虚拟名称, 用来当作获取静态文件的key
-		        //加载模板加载器
-		        configuration.setTemplateLoader(templateLoader);
-		        //得到模板
-		        Template template = configuration.getTemplate("template", "utf-8");
+				template = TemplateUtil.stringToTemplate(templateString,"emailTemplate");
 		        return template;
 		    }
 		}); 

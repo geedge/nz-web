@@ -690,7 +690,10 @@ public enum RCode {
     TERMINAL_TELNET_TRANSFER(610005,"Telnet does not allow upload and download"),
     TERMINAL_QUERYSIZE_INVALIDED(613006, "Terminal query size cannot be less than 1"),
 
-
+    /**
+     * agent相关
+     */
+    AGENT_INSTALL_PARAM_MISS(711000,"Parameter of this API is missed"),
     /**
      * 导入相关
      */
