@@ -11,6 +11,12 @@ TYPE=${type}
 
 REMOTE_IP=${remoteIP}
 
+REMOTE_PORT=${remotePort}
+
+if [ ! -z "$REMOTE_PORT" ];then
+  REMOTE_IP=$REMOTE_IP:$REMOTE_PORT
+fi
+
 ROOT_PATH=${rootPath}
 
 LOCALHOST=${localhost}
