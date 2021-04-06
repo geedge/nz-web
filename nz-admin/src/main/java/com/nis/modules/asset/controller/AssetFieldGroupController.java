@@ -59,8 +59,8 @@ public class AssetFieldGroupController {
 		ValidateUtils.is(assetFieldGroup.getId()).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL)
 		.and(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL);
 		
-		assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
-		return R.ok();
+		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
+		return R.ok().putData("data", id);
 	}
 	
 	@PostMapping
@@ -72,9 +72,7 @@ public class AssetFieldGroupController {
 		
 		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
 		
-		Map<String,Integer> map = new HashMap<String,Integer>();
-		map.put("data", id);
-		return R.ok(map);
+		return R.ok().putData("data", id);
 	}
 	
 	@DeleteMapping
@@ -83,7 +81,7 @@ public class AssetFieldGroupController {
 	public R removeAssetFieldGroup(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL);
 		
-		assetFieldGroupService.removeByIds(Arrays.asList(ids.split(",")));
+		assetFieldGroupService.removeAssetFieldGroups(Arrays.asList(ids.split(",")));
 		
 		return R.ok();
 	}

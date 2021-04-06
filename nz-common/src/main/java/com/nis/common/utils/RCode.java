@@ -97,7 +97,8 @@ public enum RCode {
     PANEL_PID_ISNULL(121058,"Panel pid can not be empty"),
     PANEL_WEIGHT_ISNULL(121059,"Panel weight not be empty"),
     PANEL_NAME_FORMAT_ERROR(123060,"Panel name format error, can not include '/'"),
-
+    CHART_GROUPID_ISNULL(121061,"Chart group id can not be empty"),
+    
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
     EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.panel.dao.VisualPanelDao">
+    
+    <resultMap id="visualPanelResult" type="com.nis.modules.panel.entity.VisualPanel">
+        <result property="id" column="id"></result>
+        <result property="name" column="name"></result>
+        <result property="type" column="type"></result>
+        <result property="link" column="link"></result>
+        <result property="buildIn" column="build_in"></result>
+        <result property="createBy" column="create_by"></result>
+        <result property="pid" column="pid"></result>
+        <result property="weight" column="weight"></result>
+        <result property="seq" column="seq"></result>
+        <result property="chartNum" column="chart_num"></result>
+        <association property="parent" columnPrefix="parent_" javaType="com.nis.modules.panel.entity.VisualPanel">
+            <result property="id" column="id" />
+            <result property="name" column="name"></result>
+        </association>
+        <collection property="children" columnPrefix="children_" javaType="com.nis.modules.panel.entity.VisualPanel">
+        </collection>
+    </resultMap>
+    
+    <select id="queryInfo" resultMap="visualPanelResult">
+    	select childPanel.*,
+    	fatherPanel.id as parent_id,
+    	fatherPanel.name as parent_name
+    	from visual_panel childPanel left join visual_panel fatherPanel on childPanel.pid = fatherPanel.id
+		where childPanel.id = #{id}
+    </select>
+    
+    <select id="queryList" resultMap="visualPanelResult">
+        SELECT
+        pan.*,
+        fatherPanel.id as parent_id,
+    	fatherPanel.name as parent_name,
+    	childrenPanel.*
+        FROM
+        visual_panel pan left join visual_panel fatherPanel on pan.pid = fatherPanel.id
+        left join visual_panel childrenPanel on pan.id = childrenPanel.pid 
+        <where> 1=1 
+            <if test="params.ids != null and params.ids != ''">
+                and pan.id in (${params.ids})
+            </if>
+
+            <if test="params.type != null and params.type != ''">
+                and pan.type=#{params.type}
+            </if>
+
+            <if test="params.link != null and params.link != ''">
+                and pan.link=#{params.link}
+            </if>
+        </where>
+
+        /** 按照 weight 排序 */
+        ORDER BY pan.weight,pan.id
+    </select>
+
+
+    <select id="queryListByType" resultMap="visualPanelResult">
+        SELECT
+        pan.*,
+        su.user_id AS su_userId,
+        su.username AS su_username
+        FROM
+        visual_panel pan
+        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        where pan.type = #{type}
+    </select>
+
+    <update id="updateWeightBatch">
+        <foreach item="panel" collection="panels" separator=";">
+            UPDATE visual_panel
+            <set>
+                weight = #{panel.weight},
+                pid = #{panel.pid}
+            </set>
+            WHERE
+            id = #{panel.id}
+        </foreach>
+    </update>
+</mapper>
