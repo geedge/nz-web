@@ -72,6 +72,7 @@ public class R extends HashMap<String, Object> {
 			throw new NZException("data put error");
 		}
 		((Map<String, Object>)data).put(key, value);
+		super.put("data", data);
 		return this;
 	}
 	
@@ -82,6 +83,7 @@ public class R extends HashMap<String, Object> {
 			throw new NZException("data putAll error");
 		}
 		((Map<String, Object>)data).putAll(dataAll);;
+		super.put("data", data);
 		return this;
 	}
 }
