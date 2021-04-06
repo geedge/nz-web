@@ -8,9 +8,9 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.IdcTrafficDao;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.entity.IdcTraffic;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.asset.service.IdcTrafficService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ import java.util.Map;
 public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic> implements IdcTrafficService {
 
     @Autowired
-    private IdcService idcService;
+    private DcService dcService;
 
     @Autowired
     private IdcTrafficDao idcTrafficDao;
@@ -43,7 +43,7 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
         // 校验 direction 是否在可选值内
         String direction = (String) params.get("direction");
         if (StringUtils.isNotEmpty(direction) && !Constant.TRAFFIC_DIRECTIONS.contains(direction)) {
-            throw new NZException(RCode.IDC_TRAFFIC_DIRECTIONS_INVALIDE);
+            throw new NZException(RCode.DC_TRAFFIC_DIRECTIONS_INVALIDE);
         }
         List<IdcTraffic> traffics = idcTrafficDao.queryTrafficSetting(page, params);
 
@@ -61,12 +61,12 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
 
     @Override
     public void validateTrafficInfo(Integer idcId, List<IdcTraffic> setting) {
-        ValidateUtils.is(idcId).notNull(RCode.IDC_IDCID_ISNULL)
-                .and(setting).notNull(RCode.IDC_TRAFFIC_SETTING_ISNULL);
+        ValidateUtils.is(idcId).notNull(RCode.DC_ID_ISNULL)
+                .and(setting).notNull(RCode.DC_TRAFFIC_SETTING_ISNULL);
 
-        Idc idc = idcService.getById(idcId);
-        if (ToolUtil.isEmpty(idc)) {
-            throw new NZException(RCode.IDC_NOT_EXISTS);
+        Dc dc = dcService.getById(idcId);
+        if (ToolUtil.isEmpty(dc)) {
+            throw new NZException(RCode.DC_NOT_EXISTS);
         }
 
         String host, direction;
@@ -77,20 +77,20 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             version = traffic.getVersion();
             direction = traffic.getDirection();
 
-            ValidateUtils.is(host).notNull(RCode.IDC_TRAFFIC_HOST_ISNULL)
-                    .and(port).notNull(RCode.IDC_TRAFFIC_PORT_ISNULL)
-                    .and(version).notNull(RCode.IDC_TRAFFIC_VERSION_ISNULL)
-                    .and(direction).notNull(RCode.IDC_TRAFFIC_DIRECTIONS_ISNULL)
-                    .and(traffic.getIfindex()).notNull(RCode.IDC_TRAFFIC_IFINDEX_ISNULL);
+            ValidateUtils.is(host).notNull(RCode.DC_TRAFFIC_HOST_ISNULL)
+                    .and(port).notNull(RCode.DC_TRAFFIC_PORT_ISNULL)
+                    .and(version).notNull(RCode.DC_TRAFFIC_VERSION_ISNULL)
+                    .and(direction).notNull(RCode.DC_TRAFFIC_DIRECTIONS_ISNULL)
+                    .and(traffic.getIfindex()).notNull(RCode.DC_TRAFFIC_IFINDEX_ISNULL);
 
             // host
             if (!CommonUtils.checkUrl(host)) {
-                throw new NZException(RCode.IDC_TRAFFIC_HOST_FORMAT);
+                throw new NZException(RCode.DC_TRAFFIC_HOST_FORMAT);
             }
 
             // PORT
             if (!CommonUtils.checkPort(port.toString())) {
-                throw new NZException(RCode.IDC_TRAFFIC_PORT_INVALIDE);
+                throw new NZException(RCode.DC_TRAFFIC_PORT_INVALIDE);
             }
 
             // version
@@ -106,7 +106,7 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             String[] split = direction.split(",");
             Arrays.asList(split).stream().forEach(s -> {
                 if (!Constant.TRAFFIC_DIRECTIONS.contains(s)) {
-                    throw new NZException(RCode.IDC_TRAFFIC_DIRECTIONS_INVALIDE);
+                    throw new NZException(RCode.DC_TRAFFIC_DIRECTIONS_INVALIDE);
                 }
             });
 
@@ -124,7 +124,7 @@ public class IdcTrafficServiceImpl extends ServiceImpl<IdcTrafficDao, IdcTraffic
             if (ToolUtil.isNotEmpty(tags)) {
                 tags.keySet().stream().forEach(key -> {
                     if (!Constant.PROMETHEUS_LABELSKEY_PATTERN.matcher(key.toString()).matches()) {
-                        throw new NZException("tags's key " + key + " format is incorrect", RCode.IDC_TRAFFIC_TAGSKEY_FORMAT.getCode());
+                        throw new NZException("tags's key " + key + " format is incorrect", RCode.DC_TRAFFIC_TAGSKEY_FORMAT.getCode());
                     }
                 });
             }

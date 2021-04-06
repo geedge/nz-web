@@ -209,7 +209,7 @@ public enum RCode {
     ASSET_MAINTENANCEID_ISNULL(311004, "Asset maintenance id can not be empty"),// 资产维修记录ID不能为空
     ASSET_NOT_EXIST(316005, "Asset does not exist"),                     // 资产不存在
     ASSET_MAINTENANCE_CONTENT_ISNULL(311006, "Asset maintenance content can not be empty"),// 资产维修记录内容不能为空
-    ASSET_IDC_NOTFOUND(316007, "Asset idc not found"),                   // 数据中心未找到
+    ASSET_DC_NOTFOUND(316007, "Asset dc not found"),                   // 数据中心未找到
     ASSET_CABINET_NOTFOUND(336008, "Asset cabinet not found"),           // 机柜未找到
     ASSET_HOST_DUPLICATE(312009, "Asset host duplicate"),                // 资产主机地址重复
     ASSET_SN_DUPLICATE(312010, "Asset serial number duplicate"),         // 资产序列号重复
@@ -481,7 +481,7 @@ public enum RCode {
 
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
-    PROMSERVER_IDCID_ISNULL(521001, "Idc id can not be empty"),
+    PROMSERVER_DCID_ISNULL(521001, "Dc id can not be empty"),
     PROMSERVER_TYPE_ISNULL(521002, "PromServer type can not be empty"),
     PROMSERVER_HOST_ISNULL(521003, "PromServer host can not be empty"),
     PROMSERVER_PORT_ISNULL(521004, "PromServer port can not be empty"),
@@ -501,49 +501,50 @@ public enum RCode {
     PROMSERVER_TOKEN_ISNULL(521018, "PromServer token info can not be empty"),
 
 
-    IDC_IDCNAME_ISNULL(531000, "Idc name can not be empty"),              // 数据中心name不能为空
-    IDC_IDCID_ISNULL(531001, "Idc id can not be empty"),                  // 数据中心id不能为空
-    IDC_IDCPHONE_FORMAT(533002, "Idc phone format error , format such as 18201436079"), // 数据中心电话格式错误
-    IDC_PRINCIPAL_NOT_EXISTS(536003, "Idc principal does not exist"),     // 数据中心负责人不存在
-    IDC_NAME_DUPLICATE(532004, "Idc name duplicate"),                      // 数据中心名称重复
-    IDC_CABINETS_EXISTS(533005, "These idc contain cabinets and cannot be deleted"),         // 数据中心内含有机柜
-    IDC_ASSETS_EXISTS(533006, "These idc contain assets and cannot be deleted"),             // 数据中心内含有资产
-    IDC_NOT_EXISTS(536007, "Idc does not exist"),                          // 数据中心不存在
-    IDC_NOTHAS_CABINET(536008, "There is no this cabinet in the idc"),   // 数据中心中没有该机柜
-    IDC_ID_FORMAT(533009, "Id format error , type should be integer"),  // ID类型错误
-    IDC_CABINETNAME_ISNULL(531010, "Cabinet name can not be empty"),     // 机柜名称不能为空
-    IDC_CABINETID_ISNULL(531011, "Cabinet id can not be empty"),         // 机柜id不能为空
-    IDC_CABINETNAME_DUPLICATE(532012, "Cabinet name duplicate"),         // 机柜名称重复
-    IDC_CABINETUSIZE_MINIMUM(535013, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
-    IDC_CABINET_ASSETS_EXISTS(533014, "These cabinets contain assets and cannot be deleted"),// 机柜中有资产
-    IDC_CABINET_MAXU(535015, "The maximum U of current cabinet is 47"),  // 当前机柜最大U为47
-    IDC_Y_MINIMUM(535016,"Idc y is a minimum of 1"),                       // 数据中心行数最少为1
-    IDC_X_MINIMUM(535017,"Idc x is a minimum of 1"),                       // 数据中心列数最少为1
-    IDC_Y_ALREADYINUSE(535018,"Idc y is already in use"),                  // 数据中心行已经被使用
-    IDC_X_ALREADYINUSE(535019,"Idc x is already in use"),                  // 数据中心列已经被使用
+    DC_NAME_ISNULL(531000, "Dc name can not be empty"),              // 数据中心name不能为空
+    DC_ID_ISNULL(531001, "Dc id can not be empty"),                  // 数据中心id不能为空
+    DC_PHONE_FORMAT(533002, "Dc phone format error"),
+    DC_PRINCIPAL_NOT_EXISTS(536003, "Dc principal does not exist"),     // 数据中心负责人不存在
+    DC_NAME_DUPLICATE(532004, "Dc name duplicate"),                      // 数据中心名称重复
+    DC_CABINETS_EXISTS(533005, "These Dc contain cabinets and cannot be deleted"),         // 数据中心内含有机柜
+    DC_ASSETS_EXISTS(533006, "These Dc contain assets and cannot be deleted"),             // 数据中心内含有资产
+    DC_NOT_EXISTS(536007, "Dc does not exist"),                          // 数据中心不存在
+    DC_NOTHAS_CABINET(536008, "There is no this cabinet in the dc"),   // 数据中心中没有该机柜
+    DC_ID_FORMAT(533009, "Id format error , type should be integer"),  // ID类型错误
+    DC_CABINETNAME_ISNULL(531010, "Cabinet name can not be empty"),     // 机柜名称不能为空
+    DC_CABINETID_ISNULL(531011, "Cabinet id can not be empty"),         // 机柜id不能为空
+    DC_CABINETNAME_DUPLICATE(532012, "Cabinet name duplicate"),         // 机柜名称重复
+    DC_CABINETUSIZE_MINIMUM(535013, "Cabinet u size is a minimum of 1"),// 机柜U位大小最小为1
+    DC_CABINET_ASSETS_EXISTS(533014, "These cabinets contain assets and cannot be deleted"),// 机柜中有资产
+    DC_CABINET_MAXU(535015, "The maximum U of current cabinet is 47"),  // 当前机柜最大U为47
+    DC_Y_MINIMUM(535016,"Dc y is a minimum of 1"),                       // 数据中心行数最少为1
+    DC_X_MINIMUM(535017,"Dc x is a minimum of 1"),                       // 数据中心列数最少为1
+    DC_Y_ALREADYINUSE(535018,"Dc y is already in use"),                  // 数据中心行已经被使用
+    DC_X_ALREADYINUSE(535019,"Dc x is already in use"),                  // 数据中心列已经被使用
     CABINET_Y_MINIMUM(535020,"Cabinet y is a minimum of 1"),               // 机柜所在行至少为1
     CABINET_X_MINIMUM(535021,"Cabinet x is a minimum of 1"),               // 机柜所在列至少为1
-    CABINET_Y_INCORRECT(535022,"Cabinet y is not in this idc"),            // 机柜所选行不在idc范围内
-    CABINET_X_INCORRECT(535023,"Cabinet x is not in this idc"),            // 机柜所选列不在idc范围内
+    CABINET_Y_INCORRECT(535022,"Cabinet y is not in this dc"),            // 机柜所选行不在dc范围内
+    CABINET_X_INCORRECT(535023,"Cabinet x is not in this dc"),            // 机柜所选列不在dc范围内
     CABINET_POSITION_OCCUPIED(535024,"Cabinet position is occupied"),     // 机柜所选位置已被占用
-    IDC_PROMSERVER_EXISTS(533025, "There are promservers in the idc"),
-    IDC_TRAFFIC_DIRECTIONS_INVALIDE(533026, "Idc traffic direction must be rx or tx"),
-    IDC_TRAFFIC_SETTING_ISNULL(531027, "Idc traffic setting can not be empty"),
-    IDC_TRAFFIC_DIRECTIONS_ISNULL(531028, "Idc traffic direction can not be empty"),
-    IDC_TRAFFIC_IFINDEX_ISNULL(531029, "Idc traffic Ifindex can not be empty"),
-    IDC_TRAFFIC_IFDESCR_ISNULL(531030, "Idc traffic ifdescr can not be empty"),
-    IDC_NOT_INCLUDED_ASSET(533031,"Current asset is not included under the data center"),
-    IDC_TRAFFIC_HOST_FORMAT(533032,"Idc traffic host must be in IP format"),
-    IDC_TRAFFIC_HOST_ISNULL(531033,"Idc traffic host can not be empty"),
-    IDC_TRAFFIC_PORT_ISNULL(531034,"Idc traffic port can not be empty"),
-    IDC_TRAFFIC_VERSION_ISNULL(531035,"Idc traffic version can not be empty"),
-    IDC_TRAFFIC_PORT_INVALIDE(535036,"Idc traffic port is invalide"),
-    IDC_TRAFFIC_TAGSKEY_FORMAT(533037,"Idc traffic tags key format is incorrect"),
-    IDC_PROMSERVERS_EXISTS(533038, "These idc contain prometheus servers and cannot be deleted"),
-    IDC_STATE_ISNULL(531039, "Idc state can not be empty"),
-    IDC_STATE_ERROR(534040, "Idc state must be ON or OFF"),
-    IDC_LONGITUDE_ERROR(535041, "Idc longitude range is -180 to +180"),
-    IDC_LATITUDE_ERROR(535042, "Idc latitude range is -90 to +90"),
+    DC_PROMSERVER_EXISTS(533025, "There are promservers in the dc"),
+    DC_TRAFFIC_DIRECTIONS_INVALIDE(533026, "Dc traffic direction must be rx or tx"),
+    DC_TRAFFIC_SETTING_ISNULL(531027, "Dc traffic setting can not be empty"),
+    DC_TRAFFIC_DIRECTIONS_ISNULL(531028, "Dc traffic direction can not be empty"),
+    DC_TRAFFIC_IFINDEX_ISNULL(531029, "Dc traffic Ifindex can not be empty"),
+    DC_TRAFFIC_IFDESCR_ISNULL(531030, "Dc traffic ifdescr can not be empty"),
+    DC_NOT_INCLUDED_ASSET(533031,"Current asset is not included under the data center"),
+    DC_TRAFFIC_HOST_FORMAT(533032,"Dc traffic host must be in IP format"),
+    DC_TRAFFIC_HOST_ISNULL(531033,"Dc traffic host can not be empty"),
+    DC_TRAFFIC_PORT_ISNULL(531034,"Dc traffic port can not be empty"),
+    DC_TRAFFIC_VERSION_ISNULL(531035,"Dc traffic version can not be empty"),
+    DC_TRAFFIC_PORT_INVALIDE(535036,"Dc traffic port is invalide"),
+    DC_TRAFFIC_TAGSKEY_FORMAT(533037,"Dc traffic tags key format is incorrect"),
+    DC_PROMSERVERS_EXISTS(533038, "These dc contain prometheus servers and cannot be deleted"),
+    DC_STATE_ISNULL(531039, "Dc state can not be empty"),
+    DC_STATE_ERROR(534040, "Dc state must be ON or OFF"),
+    DC_LONGITUDE_ERROR(535041, "Dc longitude range is -180 to +180"),
+    DC_LATITUDE_ERROR(535042, "Dc latitude range is -90 to +90"),
+    CABINET_NOT_EXISTS(536043, "Cabinet does not exist"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang

@@ -159,7 +159,7 @@ public class AssetAsset implements Serializable {
      * 数据中心
      */
     @TableField(exist = false)
-    private Idc dc;
+    private Dc dc;
 
     /**
      * 创建人

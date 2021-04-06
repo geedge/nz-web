@@ -64,8 +64,8 @@
 		from asset_account aa left join sys_user su on aa.update_by = su.user_id
 		where 1=1 and aa.id =#{id}
 	</select>
-    
-    
+
+
     <select id="selectAssetAccountsByAssetId" resultMap="assetAccount">
     	select aa.id,
 		aa.name,

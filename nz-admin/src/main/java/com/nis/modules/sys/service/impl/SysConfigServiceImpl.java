@@ -526,7 +526,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         if (CommonUtils.toInt(defaultCabUIntValue) == null) {
             throw new NZException(RCode.SYS_CONFIG_DEFAULTCABINETUSIZE_INVALIDE);
         }
-        ValidateUtils.is(defaultCabUIntValue).min(1, RCode.IDC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
+        ValidateUtils.is(defaultCabUIntValue).min(1, RCode.DC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.DC_CABINET_MAXU);
 
         Integer queryMaxSeriesIntValue = CommonUtils.toInt(queryMaxSeries);
         if (queryMaxSeriesIntValue == null) {

@@ -8,9 +8,9 @@ import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.metric.dto.NezhaMetrics;
 import com.nis.modules.module.service.ModuleService;
@@ -51,7 +51,7 @@ public class MetricsController extends AbstractController {
     private EndpointService endpointService;
 
     @Autowired
-    private IdcService idcService;
+    private DcService dcService;
 
     @Autowired
     private AssetService assetService;
@@ -89,7 +89,7 @@ public class MetricsController extends AbstractController {
         // 3. endpoint总数
         resultMap.put("endpoint", endpointService.count());
         // 4. dc总数
-        resultMap.put("dc", idcService.count());
+        resultMap.put("dc", dcService.count());
         // 5. asset 在库总数
         resultMap.put("asset", assetService.count(new QueryWrapper<Asset>().eq("state", 1)));
         // 6. pending alert message 数量
@@ -111,12 +111,12 @@ public class MetricsController extends AbstractController {
             perDc.put(name, "available");
         }
 
-        List<Idc> idcList = idcService.list();
+        List<Dc> idcList = dcService.list();
         if (CollectionUtils.isNotEmpty(idcNames) && idcNames.size() < idcList.size()) {
-            for (Idc idc : idcList) {
+            for (Dc dc : idcList) {
                 // 如果没有包含补充默认值 证明该dc下没有符合条件的per prometheus
-                if (!idcNames.contains(idc.getName())) {
-                    perDc.put(idc.getName(), "unavailable");
+                if (!idcNames.contains(dc.getName())) {
+                    perDc.put(dc.getName(), "unavailable");
                 }
             }
         }

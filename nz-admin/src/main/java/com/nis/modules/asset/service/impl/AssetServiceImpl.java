@@ -56,7 +56,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -428,7 +427,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         // 5. 数据中心校验
         Idc idc = idcService.getById(asset.getIdcId());
-        ValidateUtils.is(idc).notNull(RCode.ASSET_IDC_NOTFOUND);
+        ValidateUtils.is(idc).notNull(RCode.ASSET_DC_NOTFOUND);
 
         // 6. 机柜及资产起始位置校验
         Integer cabinetId = asset.getCabinetId();
@@ -437,9 +436,9 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (cabinetId != null) {
             Cabinet cabinet = cabinetService.getById(cabinetId);
             ValidateUtils.is(cabinet).notNull(RCode.ASSET_CABINET_NOTFOUND);
-            if (!idc.getId().equals(cabinet.getIdcId())) {
+            if (!idc.getId().equals(cabinet.getDcId())) {
                 // 数据中心与机柜不符  当前数据中心没有含有所选机柜
-                throw new NZException(RCode.IDC_NOTHAS_CABINET);
+                throw new NZException(RCode.DC_NOTHAS_CABINET);
             }
             // 选择了机柜再进行处理 usize 相关数据
             if (start != null && end != null) {
@@ -918,7 +917,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 dcName = ExcelUtils.getCellValue(row.getCell(4));
                 if (StringUtils.isEmpty(dcName)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.IDC_IDCNAME_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.DC_NAME_ISNULL.getMsg());
                 } else {
                     idcId = this.checkIdc(dcName, idcMap, seqUUID, saveEntitys);
                     // idcId 可能为null,入库之后返回
@@ -1439,7 +1438,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         if (idc != null) {
             idcService.save(idc);
             if (cabinet != null) {
-                cabinet.setIdcId(idc.getId());
+                cabinet.setDcId(idc.getId());
                 cabinetService.save(cabinet);
                 updateMap.put("cabinet", cabinet);
             }
@@ -2096,7 +2095,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         for (Cabinet entity : cabinetList) {
             // 如果该机房下有该机柜
 //            if (cabinetName.equals(entity.getName()) && idcId.equals(entity.getIdcId())) {
-            if (StrUtil.equals(cabinetName,entity.getName())&&idcId.equals(entity.getIdcId())) {
+            if (StrUtil.equals(cabinetName,entity.getName())&&idcId.equals(entity.getDcId())) {
                 cabinet = entity;
                 flag = true;
                 break;
@@ -2105,7 +2104,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         // 找不到机柜
         if (!flag) {
             cabinet.setName(cabinetName);
-            cabinet.setIdcId(idcId);
+            cabinet.setDcId(idcId);
             cabinet.setuSize(defaultCabinetUsize);
             cabinet.setSeq(seqUUID);
             saveEntitys.put("cabinet", cabinet);

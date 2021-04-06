@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.entity.Project;
@@ -89,7 +89,7 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	private Integer assetId;
 	/**
-	 * 关联idc
+	 * 关联dc
 	 */
 	private  Integer dcId;
 
@@ -131,8 +131,8 @@ public class AlertMessageEntity implements Serializable {
 	private Endpoint endpoint;
 
 	/**
-	 * idc
+	 * dc
 	 */
 	@TableField(exist = false)
-	private Idc dc;
+	private Dc dc;
 }

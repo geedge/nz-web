@@ -1,19 +1,9 @@
 package com.nis.modules.alert.service.impl;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.DateUtil;
@@ -28,18 +18,24 @@ import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.service.AlertSilenceService;
 import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.dao.IdcDao;
+import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.module.dao.ModuleDao;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.Project;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.log.Log;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Service("alertSilenceService")
 public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSilenceConf> implements AlertSilenceService{
@@ -50,7 +46,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	private AlertSilenceDao alertSilenceDao;
 	
 	@Autowired
-	private IdcDao idcDao;
+	private DcDao dcDao;
 	
 	@Autowired
 	private AssetDao assetDao;
@@ -176,8 +172,8 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			if(ObjectUtil.isNotEmpty(alertSilenceConf.getType())) {
 				switch(alertSilenceConf.getType()) {
 					case "datacenter":
-						Idc idc = idcDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setDatacenter(idc);
+						Dc dc = dcDao.selectById(alertSilenceConf.getLinkId());
+						alertSilenceConf.setDatacenter(dc);
 						break;
 					case "project":
 						Project project = projectDao.selectById(alertSilenceConf.getLinkId());
