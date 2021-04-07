@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -62,7 +63,7 @@ public class AgentController {
 		ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type)
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 		// 读取sh脚本内容
-		File shFile = Tool.FileUtil.file(installFilePath, "install.sh.template");
+		String shFile = Tool.FileUtil.file(installFilePath, "install.sh.template").getPath();
 		// 组织变量内容
 		String scriptContent = Tool.FileUtil.readUtf8String(shFile);
 		String localhost = request.getLocalAddr(); // web component ip
@@ -115,6 +116,7 @@ public class AgentController {
 	 * @Date 2021/4/2
 	 */
 	@PostMapping("/register")
+	@RequiresPermissions({"promserver:save"})
 	public R autoRegister(HttpServletRequest request, @RequestBody Promserver promserver) {
 		if (Tool.StrUtil.isEmpty(promserver.getHost())) {
 			promserver.setHost(request.getRemoteAddr());
