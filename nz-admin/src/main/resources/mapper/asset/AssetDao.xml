@@ -132,7 +132,7 @@
         LEFT JOIN model mo ON ass.model_id = mo.id
         LEFT JOIN sys_dict sdt ON sdt.code = mo.vendor AND sdt.type = 'vendor'
         LEFT JOIN sys_dict sdtt ON sdtt.code = mo.type AND sdtt.type = 'assetType'
-        LEFT JOIN sys_user su ON idc.principal = su.user_id
+        LEFT JOIN sys_user su ON idc.principal = su.id
         <where>
 
             <if test="params.id != null and params.id != ''">

@@ -27,9 +27,9 @@
        l.prev AS prev,
        l.next AS next,
        l.build_in AS build_in,
-       u.user_id AS u_userId,
+       u.id AS u_userId,
        u.username AS u_userName
-       from link l left join sys_user u on l.create_by=u.user_id
+       from link l left join sys_user u on l.create_by=u.id
        where 1=1
        <if test="params.id != null and params.id != ''">
            AND l.id = #{params.id}

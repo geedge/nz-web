@@ -60,11 +60,11 @@
     <select id="queryListByType" resultMap="visualPanelResult">
         SELECT
         pan.*,
-        su.user_id AS su_userId,
+        su.id AS su_userId,
         su.username AS su_username
         FROM
         visual_panel pan
-        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        LEFT JOIN sys_user su ON pan.create_by = su.id
         where pan.type = #{type}
     </select>
 

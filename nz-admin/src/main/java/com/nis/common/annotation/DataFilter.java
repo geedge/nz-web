@@ -26,6 +26,6 @@ public @interface DataFilter {
     boolean user() default true;
 
     /**  用户ID */
-    String userId() default "user_id";
+    String userId() default "id";
 }
 

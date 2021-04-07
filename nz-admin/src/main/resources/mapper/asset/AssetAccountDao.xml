@@ -32,7 +32,7 @@
 		aa.pin_tip,
 		aa.weight,
 		aa.state 
-		from asset_account aa left join sys_user su on aa.update_by = su.user_id
+		from asset_account aa left join sys_user su on aa.update_by = su.id
 		where 1=1 
 		<if test="params.id!=null and params.id!=''">
 			and aa.id = #{params.id}
@@ -61,7 +61,7 @@
 		aa.pin_tip,
 		aa.weight,
 		aa.state 
-		from asset_account aa left join sys_user su on aa.update_by = su.user_id
+		from asset_account aa left join sys_user su on aa.update_by = su.id
 		where 1=1 and aa.id =#{id}
 	</select>
 
@@ -79,7 +79,7 @@
 		aa.pin_tip,
 		aa.weight,
 		aa.state 
-		from asset_account aa left join sys_user su on aa.update_by = su.user_id left join asset_account_rel aar on aa.id = aar.account_id
+		from asset_account aa left join sys_user su on aa.update_by = su.id left join asset_account_rel aar on aa.id = aar.account_id
 		where aar.asset_id = #{assetId}
     </select>
 

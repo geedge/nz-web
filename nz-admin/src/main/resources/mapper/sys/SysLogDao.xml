@@ -8,7 +8,7 @@
                     su.username AS username
                 FROM
                     sys_log sl
-                    LEFT JOIN sys_user su ON sl.user_id = su.user_id
+                    LEFT JOIN sys_user su ON sl.user_id = su.id
                     <where>
                         <if test="params.operation != null and params.operation != ''">
                                 AND sl.operation like CONCAT('%', #{params.operation}, '%')

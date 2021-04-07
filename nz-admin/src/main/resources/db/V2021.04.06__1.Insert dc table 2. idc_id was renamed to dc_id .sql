@@ -95,6 +95,7 @@ CREATE TABLE `visual_panel`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 INSERT INTO `sys_dict`(`name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES ('图表类型', 'chartType', 10, 'group', '', 10, '组', 0, 0, '2021-04-06 14:30:18', NULL);
+INSERT INTO `sys_config`(`param_key`, `param_value`, `status`, `remark`) VALUES ('confagent_name', '{\"centos\":\"confagent-v2.0-x86.rpm\",\"ubuntu\":\"confagent-v2.0-x86.zip\"}', 1, 'confagent 下载文件名称');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

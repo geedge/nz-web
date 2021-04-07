@@ -22,11 +22,11 @@
     <select id="queryList" resultMap="panelResult">
         SELECT
         pan.*,
-        su.user_id AS su_userId,
+        su.id AS su_userId,
         su.username AS su_username
         FROM
         panel pan
-        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        LEFT JOIN sys_user su ON pan.create_by = su.id
         <where>
             <if test="params.id != null and params.id != ''">
                 pan.id = #{params.id}
@@ -53,11 +53,11 @@
     <select id="queryListByType" resultMap="panelResult">
         SELECT
         pan.*,
-        su.user_id AS su_userId,
+        su.id AS su_userId,
         su.username AS su_username
         FROM
         panel pan
-        LEFT JOIN sys_user su ON pan.create_by = su.user_id
+        LEFT JOIN sys_user su ON pan.create_by = su.id
         where pan.type = #{type}
     </select>
 

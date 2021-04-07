@@ -15,7 +15,7 @@
         <result property="asset.sn" column="assetSn"/>
 
         <!--用户-->
-        <result property="createByUser.userId" column="su_user_id"/>
+        <result property="createByUser.userId" column="su_id"/>
         <result property="createByUser.username" column="su_username"/>
         <result property="createByUser.password" column="su_password"/>
         <result property="createByUser.salt" column="su_salt"/>
@@ -24,7 +24,7 @@
         <result property="createByUser.createTime" column="su_createTime"/>
 
 
-        <result property="updateByUser.userId" column="su1_user_id"/>
+        <result property="updateByUser.userId" column="su1_id"/>
         <result property="updateByUser.username" column="su1_username"/>
         <result property="updateByUser.password" column="su1_password"/>
         <result property="updateByUser.salt" column="su1_salt"/>
@@ -46,7 +46,7 @@
             ass.sn AS assetSn,
 
             /*用户*/
-           su.user_id AS su_user_id,
+           su.id AS su_id,
            su.username AS su_username,
            su.password AS su_password,
            su.salt AS su_salt,
@@ -54,7 +54,7 @@
            su.status AS su_status,
            su.create_time AS su_createTime,
 
-           su1.user_id AS su1_user_id,
+           su1.id AS su1_id,
            su1.username AS su1_username,
            su1.password AS su1_password,
            su1.salt AS su1_salt,
@@ -70,8 +70,8 @@
         FROM maintenance_record mr
 
         LEFT JOIN asset ass ON mr.asset_id = ass.id
-        LEFT JOIN sys_user su ON mr.create_by = su.user_id
-        LEFT JOIN sys_user su1 ON mr.update_by = su1.user_id
+        LEFT JOIN sys_user su ON mr.create_by = su.id
+        LEFT JOIN sys_user su1 ON mr.update_by = su1.id
 
         <where>
             <if test="params.id != null and params.id != ''">

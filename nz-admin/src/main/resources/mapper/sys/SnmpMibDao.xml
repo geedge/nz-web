@@ -13,7 +13,7 @@
         <result property="updateAt" column="update_at"/>
 
         <association property="updateUser" javaType="com.nis.modules.sys.entity.SysUserEntity">
-            <id property="id" column="user_id"/>
+            <id property="id" column="id"/>
             <result property="name" column="username"/>
         </association>
     </resultMap>
@@ -27,7 +27,7 @@
 		sm.models,
 		sm.remark,
 		sm.update_at,
-		su.user_id,
+		su.id,
 		su.username
 	</sql>
 
@@ -35,7 +35,7 @@
         SELECT
         <include refid="snmpmib_info_columns"/>
         FROM snmp_mib sm
-        LEFT JOIN sys_user su ON sm.update_by = su.user_id
+        LEFT JOIN sys_user su ON sm.update_by = su.id
 
         WHERE 1=1
 

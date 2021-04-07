@@ -56,7 +56,7 @@
 	</select>
 
 	<select id="queryUserById" resultType="com.nis.modules.sys.entity.SysUserEntity">
-		select user_id,username from sys_user where user_id=#{id} and status=1
+		select id,username from sys_user where id=#{id} and status=1
 	</select>
 
 	<select id="getMaxTypeCode" resultType="Integer">

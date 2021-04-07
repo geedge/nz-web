@@ -7,7 +7,7 @@
             ts.*,su.username
         FROM
             terminal_session ts
-        LEFT JOIN sys_user su ON ts.user_id = su.user_id
+        LEFT JOIN sys_user su ON ts.user_id = su.id
 
         <where>
             <if test="params.protocol != null and params.protocol != ''">
