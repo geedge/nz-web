@@ -35,7 +35,7 @@ public class Cabinet implements Serializable {
     /**
      * 数据中心id
      */
-    private Integer idcId;
+    private Integer dcId;
 
     /**
      * u位容量
@@ -61,6 +61,24 @@ public class Cabinet implements Serializable {
      * 在机房的那一行
      */
     private Integer y;
+
+    /**
+     * dc
+     */
+    @TableField(exist = false)
+    private Dc dc;
+
+    /**
+     * 资产计数
+     */
+    @TableField(exist = false)
+    private Integer assetNum;
+
+    /**
+     * alert计数
+     */
+    @TableField(exist = false)
+    private Integer alertNum;
 
     /**
      * 资产统计

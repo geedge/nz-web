@@ -64,8 +64,8 @@ public class AssetFieldMetaController {
 		.and(assetFieldMeta.getDisplay()).notNull(RCode.ASSET_FIELD_META_DISPLAY_ISNULL)
 		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL);
 		
-		assetFieldMetaService.saveOrModify(assetFieldMeta);
-		return R.ok();
+		Integer id = assetFieldMetaService.saveOrModify(assetFieldMeta);
+		return R.ok().putData("id",id);
 	}
 	
 	@PostMapping
@@ -80,9 +80,7 @@ public class AssetFieldMetaController {
 		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL);
 		
 		Integer id = assetFieldMetaService.saveOrModify(assetFieldMeta);
-		Map<String,Integer> map = new HashMap<String,Integer>();
-		map.put("data", id);
-		return R.ok(id);
+		return R.ok().putData("id",id);
 	}
 	
 	@DeleteMapping
@@ -91,7 +89,7 @@ public class AssetFieldMetaController {
 	public R removeAssetFieldMeta(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
 		
-		assetFieldMetaService.removeByIds(Arrays.asList(ids.split(",")));
+		assetFieldMetaService.removeAssetFieldMetas(Arrays.asList(ids.split(",")));
 		return R.ok();
 	}
 	

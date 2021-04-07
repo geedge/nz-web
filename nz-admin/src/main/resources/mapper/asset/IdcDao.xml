@@ -21,7 +21,7 @@
        select i.*,
        count(DISTINCT c.id) cabinetNum
        from idc i
-       left join cabinet c on i.id=c.idc_id
+       left join cabinet c on i.id=c.dc_id
 
        <where>
            <if test="params.id != null and params.id != ''">

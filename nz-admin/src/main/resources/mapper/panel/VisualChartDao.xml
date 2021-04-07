@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.panel.dao.VisualChartDao">
+    
+    <resultMap id="visualChartResult" type="com.nis.modules.panel.entity.VisualChart">
+        <result property="id" column="id"></result>
+        <result property="name" column="name"></result>
+        <result property="panelId" column="panel_id"></result>
+        <result property="groupId" column="group_id"></result>
+        <result property="span" column="span"></result>
+        <result property="height" column="height"></result>
+        <result property="updateAt" column="update_at"></result>
+        <result property="updateBy" column="update_by"></result>
+        <result property="type" column="type"></result>
+        <result property="unit" column="unit"></result>
+        <result property="weight" column="weight"></result>
+        <result property="param" column="param"></result>
+        <result property="pid" column="pid"></result>
+        <result property="buildIn" column="build_in"></result>
+        <result property="remark" column="remark"></result>
+        <result property="seq" column="seq"></result>
+        <result property="chartNums" column="chartNums"></result>
+        <association property="panel" javaType="com.nis.modules.panel.entity.VisualPanel" columnPrefix="panel_">
+        	<id property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+        <association property="group" javaType="com.nis.modules.panel.entity.VisualChart" columnPrefix="group_">
+        	<id property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+        <collection property="elements" ofType="com.nis.modules.panel.entity.ChartElement" columnPrefix="vce_">
+            <id property="id" column="id"/>
+            <result property="expression" column="expression"></result>
+            <result property="type" column="type"></result>
+            <result property="legend" column="legend"></result>
+        </collection>
+        <collection property="children" ofType="com.nis.modules.panel.entity.VisualChart" columnPrefix="children_">
+        </collection>
+    </resultMap>
+
+	<select id="queryInfo" resultMap="visualChartResult">
+        SELECT
+            vch.*,
+            gvch.id as group_id,
+            gvch.name as group_name,
+            vce.id AS vce_id,
+            vce.expression AS vce_expression,
+            vce.type AS vce_type,
+            vce.legend AS vce_legend
+        FROM visual_chart vch
+        LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
+        left join visual_chart gvch on vch.group_id = gvch.id
+        WHERE vch.id = #{id}
+    </select>
+	
+    <select id="queryList" resultMap="visualChartResult">
+        SELECT
+            vch.*,
+            vce.id AS vce_id,
+            vce.expression AS vce_expression,
+            vce.type AS vce_type,
+            vce.legend AS vce_legend,
+            vcg.id as group_id,
+            vcg.name as group_name,
+            vcc.id as children_id,
+            vcc.name as children_name 
+        FROM visual_chart vch
+        LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
+        left join visual_chart vcg on vch.group_id = vcg.id
+		left join visual_panel vp on vch.panel_id = vp.id
+		left join visual_chart vcc on vch.id = vcc.group_id
+        WHERE 1=1
+		<if test="params.ids != null and params.ids != ''">
+            and vch.id in (${params.ids})
+        </if>
+		
+        <if test="params.panelId != null">
+            AND vch.panel_id = #{params.panelId}
+        </if>
+
+        <if test="params.name != null and params.name != ''">
+            AND vch.name LIKE CONCAT('%', #{params.name}, '%')
+        </if>
+
+		<if test="params.type != null and params.type != ''">
+            AND vch.type = #{params.type}
+        </if>
+
+        /** 按照 weight 排序 */
+        ORDER BY vch.weight,vch.id
+    </select>
+
+
+	<update id="updateSizeById">
+        UPDATE visual_chart
+            <set>
+               span = #{chart.span},
+               height = #{chart.height}
+            </set>
+        WHERE
+                id = #{chart.id}
+    </update>
+    
+    <update id="updateWeightBatch">
+        <foreach item="chart" collection="charts" separator=";">
+            UPDATE visual_chart set
+                weight = #{chart.weight},
+                <if test="chart.groupId !=null">
+                	group_id = #{chart.groupId},
+                </if>
+                panel_id = #{panelId}
+            WHERE
+            id = #{chart.id}
+        </foreach>
+    </update>
+    
+    <select id="selectChartNum" resultMap="visualChartResult">
+    	select panel_id id,count(*) chartNums
+		from visual_chart group by panel_id
+    </select>
+</mapper>

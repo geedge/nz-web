@@ -19,9 +19,9 @@ import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.EndpointState;
@@ -77,7 +77,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Autowired
 	private EndpointService endpointService;
 	@Autowired
-	private IdcService idcService;
+	private DcService dcService;
 	@Autowired
 	private RedisTemplate<String, Object> redisTemplate;
 	@Autowired
@@ -134,10 +134,10 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			return;
 		}
 
-		List<Idc> idcList = idcService.list();
-		Map<Integer,Idc> idcMap = new HashMap<>();
-		for (Idc dc:idcList) {
-			idcMap.put(dc.getId(), dc);
+		List<Dc> dcList = dcService.list();
+		Map<Integer,Dc> dcMap = new HashMap<>();
+		for (Dc dc:dcList) {
+			dcMap.put(dc.getId(), dc);
 		}
 
 		List<Endpoint> endpointList = endpointService.list();
@@ -154,7 +154,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			}
 			dcId = entity.getDcId();
 			if(dcId != null){
-				entity.setDc(idcMap.get(dcId));
+				entity.setDc(dcMap.get(dcId));
 			}
 		}
 	}
@@ -357,7 +357,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 	}
 
-	private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto, Map<Integer, Endpoint> endpointMap, Map<Integer, Asset> assetIdAndEntityMap, Map<String, Asset> assetHostAndEntityMap, Map<String, Integer> projectNameAndIdMap, Map<String, Integer> idcNameAndIdMap, Map<Integer, Module> moduleIdAndEntityMap, Map<String, Module> moduleNameAndEntityMap) {
+	private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto, Map<Integer, Endpoint> endpointMap, Map<Integer, Asset> assetIdAndEntityMap, Map<String, Asset> assetHostAndEntityMap, Map<String, Integer> projectNameAndIdMap, Map<String, Integer> dcNameAndIdMap, Map<Integer, Module> moduleIdAndEntityMap, Map<String, Module> moduleNameAndEntityMap) {
 		Map receiveLabels = dto.getLabels();
 		Map labelIds = new HashMap();
 		Integer assertId = null, moduleId = null, projectId = null, endpointId = null, dcId = null;
@@ -386,7 +386,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				dcId = asset.getIdcId();
 			}
 			if (ToolUtil.isNotEmpty(receiveLabels.get("datacenter")) && ToolUtil.isEmpty(receiveLabels.get("asset"))) {
-				dcId = idcNameAndIdMap.get(receiveLabels.get("datacenter").toString());
+				dcId = dcNameAndIdMap.get(receiveLabels.get("datacenter").toString());
 			}
 		}
 		labelIds.put("endpoint", endpointId);
@@ -541,7 +541,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
             r = sheet.createRow(++rowNum);
             AlertRuleEntity alertRule = entity.getAlertRule();
             String ruleName = alertRule == null ? "" : alertRule.getAlertName();
-            Idc dc = entity.getDc();
+            Dc dc = entity.getDc();
             String dcName = dc == null ? "" : dc.getName();
             Project project = entity.getProject();
             String projectName = project == null ? "" : project.getName();
@@ -618,8 +618,8 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    List<Project> projectList = projectService.list();
 	    Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(Project::getName, Project::getId));
 
-	    List<Idc> idcList = idcService.list();
-	    Map<String, Integer> idcNameAndIdMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Idc::getId));
+	    List<Dc> dcList = dcService.list();
+	    Map<String, Integer> dcNameAndIdMap = dcList.stream().collect(Collectors.toMap(Dc::getName, Dc::getId));
 
 	    AlertMessageEntity entity;
 	    List<AlertMessageEntity> entities =new ArrayList<AlertMessageEntity>();
@@ -627,7 +627,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	    
 	    for (AlertMessageReceiveDTO dto : receiveData) {
 		    try {
-			    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, idcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
+			    getReceiveLabels(dto, endpointMap, assetIdAndEntityMap, assetHostAndEntityMap, projectNameAndIdMap, dcNameAndIdMap, moduleIdAndEntityMap, moduleNameAndEntityMap);
 			    entity = AlertMessageReceiveDTO.toAlertMessageEntity(dto, buildRuleId);
 			    entities.add(entity);
 			    

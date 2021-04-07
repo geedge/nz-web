@@ -77,7 +77,7 @@ public class OverviewServiceImpl implements OverviewService {
     private AssetPingDao assetPingDao;
 
     @Autowired
-    private IdcDao idcDao;
+    private DcDao dcDao;
 
     @Autowired
     private ModelDao modelDao;
@@ -140,7 +140,7 @@ public class OverviewServiceImpl implements OverviewService {
             assetPingList = assetPingDao.selectList(null);
         }
 
-        // 过滤掉没有 asset 的 idc
+        // 过滤掉没有 asset 的 dc
         List<AssetStat> assetStatByDc = this.getAssetStatByDc(assetList, assetPingList, alertList);
         assetStatByDc = assetStatByDc.stream().filter(assetStat -> ToolUtil.isNotEmpty(assetStat.getTotal()) && assetStat.getTotal() > 0).collect(Collectors.toList());
 
@@ -244,24 +244,24 @@ public class OverviewServiceImpl implements OverviewService {
 
     @Override
     public List<AssetStat> getAssetStatByDc(List<Asset> assetList, List<AssetPing> assetPingList, List<AlertMessageEntity> alertList) {
-        List<Idc> idcList = idcDao.selectList(null);
-        Map<Integer, List<Asset>> idcIdAndAssetListMap = assetList.stream().collect(Collectors.groupingBy(Asset::getIdcId));
+        List<Dc> dcList = dcDao.selectList(null);
+        Map<Integer, List<Asset>> dcIdAndAssetListMap = assetList.stream().collect(Collectors.groupingBy(Asset::getIdcId));
         List<AlertMessageEntity> alertListByDc = alertList.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getDcId())).collect(Collectors.toList());
         List<AssetStat> dcStats = new ArrayList<>();
         AssetStat assetStat;
         List<Asset> tempAssets;
         List<AssetPing> tempAssetPing;
         List<AlertMessageEntity> tempAlertList;
-        for (Idc idc : idcList) {
-            tempAssets = idcIdAndAssetListMap.get(idc.getId());
+        for (Dc dc : dcList) {
+            tempAssets = dcIdAndAssetListMap.get(dc.getId());
             tempAssets = CollectionUtils.isEmpty(tempAssets) ? Collections.emptyList() : tempAssets;
 
-            tempAlertList = alertListByDc.stream().filter(alert -> idc.getId().equals(alert.getDcId())).collect(Collectors.toList());
+            tempAlertList = alertListByDc.stream().filter(alert -> dc.getId().equals(alert.getDcId())).collect(Collectors.toList());
             tempAssetPing = this.getAssetPingByAsset(tempAssets, assetPingList);
 
             assetStat = this.getAssetStat(tempAssets, tempAssetPing, tempAlertList);
-            assetStat.setId(idc.getId());
-            assetStat.setName(idc.getName());
+            assetStat.setId(dc.getId());
+            assetStat.setName(dc.getName());
 
             dcStats.add(assetStat);
         }
@@ -355,7 +355,7 @@ public class OverviewServiceImpl implements OverviewService {
         List<EndpointStat> endpointInfoByDc = overviewDao.getEndpointInfoByDc();
 
         // 补充 endpointTotal endpointUp endpointDown 信息
-        Map<String, List<Integer>> idcNameWithEndpointIdsMap = this.getDcNameWithEndpointInfo();
+        Map<String, List<Integer>> dcNameWithEndpointIdsMap = this.getDcNameWithEndpointInfo();
 
         // 根据 asset 停用状态 获取对应 endpoint ids
         List<Integer> suspendedEndpointList = endpointDao.getSuspendedEndpointIdsByAssetState();
@@ -368,7 +368,7 @@ public class OverviewServiceImpl implements OverviewService {
         Set<Integer> endpointUpIds = this.getUpStatusEndpointIds(suspendedEndpointList);
 
         for (EndpointStat stat : endpointInfoByDc) {
-            List<Integer> list = idcNameWithEndpointIdsMap.get(stat.getName());
+            List<Integer> list = dcNameWithEndpointIdsMap.get(stat.getName());
             int endpointUp = 0;
             int endpointSuspended = 0;
             int total = list.size();
@@ -400,21 +400,21 @@ public class OverviewServiceImpl implements OverviewService {
     }
 
     private Map<String, List<Integer>> getDcNameWithEndpointInfo() {
-        List<Idc> idcList = idcDao.selectList(null);
+        List<Dc> dcList = dcDao.selectList(null);
         List<Asset> assetList = assetDao.getAssetsStatColumn();
         List<Endpoint> endpointList = endpointService.list();
 
-        Map<Integer, List<Asset>> idcIdAndAssetListMap = assetList.stream().collect(Collectors.groupingBy(Asset::getIdcId));
+        Map<Integer, List<Asset>> dcIdAndAssetListMap = assetList.stream().collect(Collectors.groupingBy(Asset::getIdcId));
         Map<Integer, List<Endpoint>> assetIdAndEndpointListMap = endpointList.stream().collect(Collectors.groupingBy(Endpoint::getAssetId));
 
-        Map<String, List<Integer>> idcNameWithEndpointIdsMap = new HashMap<>();
+        Map<String, List<Integer>> dcNameWithEndpointIdsMap = new HashMap<>();
         List<Asset> tempAssets;
         List<Endpoint> tempEndpoints;
         List<Integer> endpointIdsByDc;
-        for (Idc idc : idcList) {
-            tempAssets = idcIdAndAssetListMap.get(idc.getId());
+        for (Dc dc : dcList) {
+            tempAssets = dcIdAndAssetListMap.get(dc.getId());
             if (CollectionUtils.isEmpty(tempAssets)) {
-                idcNameWithEndpointIdsMap.put(idc.getName(), Collections.emptyList());
+                dcNameWithEndpointIdsMap.put(dc.getName(), Collections.emptyList());
                 continue;
             }
 
@@ -426,9 +426,9 @@ public class OverviewServiceImpl implements OverviewService {
                 endpointIdsByDc.addAll(tempEndpoints.stream().map(Endpoint::getId).collect(Collectors.toList()));
             }
 
-            idcNameWithEndpointIdsMap.put(idc.getName(), endpointIdsByDc);
+            dcNameWithEndpointIdsMap.put(dc.getName(), endpointIdsByDc);
         }
-        return idcNameWithEndpointIdsMap;
+        return dcNameWithEndpointIdsMap;
     }
 
     @Override

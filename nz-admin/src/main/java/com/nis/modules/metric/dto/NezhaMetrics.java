@@ -7,10 +7,10 @@ import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetPingDao;
-import com.nis.modules.asset.dao.IdcDao;
+import com.nis.modules.asset.dao.DcDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetPing;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.promserver.entity.Promserver;
@@ -45,7 +45,7 @@ public class NezhaMetrics implements MeterBinder {
     private AlertRuleDao alertRuleDao;
 
     @Autowired
-    private IdcDao idcDao;
+    private DcDao dcDao;
 
     @Autowired
     private AssetPingDao assetPingDao;
@@ -214,8 +214,8 @@ public class NezhaMetrics implements MeterBinder {
             Map<String, Double> assetHostAndRttMap = onLineAssetPingList.stream().collect(Collectors.toMap(AssetPing::getHost, AssetPing::getRtt));
             if (ToolUtil.isNotEmpty(assetHostAndRttMap)) {
 
-                List<Idc> idcList = idcDao.selectList(null);
-                Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+                List<Dc> dcList = dcDao.selectList(null);
+                Map<Integer, String> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
                 String assetHost;
                 Asset asset;
                 int i = 0;
@@ -227,7 +227,7 @@ public class NezhaMetrics implements MeterBinder {
 
                     map.put(key, entry.getValue());
                     Gauge.builder("nz_asset_ping", map, x -> x.get(key))
-                            .tags("sn", asset.getSn(), "host", assetHost, "datacenter", idcIdAndNameMap.get(asset.getIdcId()))
+                            .tags("sn", asset.getSn(), "host", assetHost, "datacenter", dcIdAndNameMap.get(asset.getIdcId()) == null ? "" : dcIdAndNameMap.get(asset.getIdcId()))
                             .description("Asset ping statistics info")
                             .register(meterRegistry);
                 }
@@ -241,8 +241,8 @@ public class NezhaMetrics implements MeterBinder {
         this.cleanMeterInRegistryByName(meterRegistry, "nz_prometheus_status");
         List<Promserver> promserverList = promserverService.list();
         if (CollectionUtils.isNotEmpty(promserverList)) {
-            List<Idc> idcList = idcDao.selectList(null);
-            Map<Integer, String> idcIdAndNameMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Idc::getName));
+            List<Dc> dcList = dcDao.selectList(null);
+            Map<Integer, String> idcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
 
             Promserver promserver;
             for (int i = 0; i < promserverList.size(); i++) {
@@ -250,7 +250,7 @@ public class NezhaMetrics implements MeterBinder {
                 String key = "nz_prometheus_status" + i;
                 map.put(key, promserver.getStatus().doubleValue());
                 Gauge.builder("nz_prometheus_status", map, x -> x.get(key))
-                        .tags("datacenter", idcIdAndNameMap.get(promserver.getIdcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
+                        .tags("datacenter", idcIdAndNameMap.get(promserver.getDcId()) == null ? "" : idcIdAndNameMap.get(promserver.getDcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
                         .description("Prometheus status")
                         .register(meterRegistry);
             }

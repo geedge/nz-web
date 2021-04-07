@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.Idc;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -29,27 +29,24 @@ import java.util.stream.Collectors;
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
 
 	@Autowired
-	private IdcService idcService;
+	private DcService dcService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		String id = (String)params.get("id");
-		String idcId = (String)params.get("dcId");
 		String host = (String)params.get("host");
 		String type = (String)params.get("type");
 		String port = (String)params.get("port");
-		String status = (String)params.get("status");
 		String token = (String) params.get("token");
 		IPage<Promserver> page = this.page(
-			new Query<Promserver>().getPage(params),
-			new QueryWrapper<Promserver>().lambda()
-				.eq(StringUtils.isNotBlank(id),Promserver::getId, id)
-				.like(StringUtils.isNotBlank(host),Promserver::getHost, host)
-				.eq(StringUtils.isNotBlank(type), Promserver::getType,type)
-				.eq(StringUtils.isNotBlank(idcId), Promserver::getIdcId,idcId)
-				.eq(StringUtils.isNotBlank(port), Promserver::getPort,port)
-				.eq(StringUtils.isNotBlank(status),Promserver::getStatus,status)
-					.like(StringUtils.isNotEmpty(token), Promserver::getToken, token)
+				new Query<Promserver>().getPage(params),
+				new QueryWrapper<Promserver>().lambda()
+						.in(ToolUtil.isNotEmpty(params.get("ids")), Promserver::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
+						.in(ToolUtil.isNotEmpty(params.get("dcIds")), Promserver::getDcId, ToolUtil.isNotEmpty(params.get("dcIds")) ? Arrays.asList(params.get("dcIds").toString().split(",")) : null)
+						.in(ToolUtil.isNotEmpty(params.get("statuss")), Promserver::getStatus, ToolUtil.isNotEmpty(params.get("statuss")) ? Arrays.asList(params.get("statuss").toString().split(",")) : null)
+						.like(StringUtils.isNotBlank(host), Promserver::getHost, host)
+						.eq(StringUtils.isNotBlank(type), Promserver::getType, type)
+						.eq(StringUtils.isNotBlank(port), Promserver::getPort, port)
+						.like(StringUtils.isNotEmpty(token), Promserver::getToken, token)
 		);
 
 		List<Promserver> promserverList = page.getRecords();
@@ -61,11 +58,11 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	private List<Promserver> handleResultViewData(List<Promserver> promserverList) {
-		List<Idc> idcList = idcService.list();
-		Map<Integer, Idc> dcIdAndEntityMap = idcList.stream().collect(Collectors.toMap(Idc::getId, Function.identity()));
+		List<Dc> dcList = dcService.list();
+		Map<Integer, Dc> dcIdAndEntityMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
 		for (Promserver pojo : promserverList) {
-			pojo.setDc(dcIdAndEntityMap.get(pojo.getIdcId()));
+			pojo.setDc(dcIdAndEntityMap.get(pojo.getDcId()));
 		}
 		return promserverList;
 	}
@@ -82,7 +79,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		Integer type = promserverEntity.getType();
 		String host = promserverEntity.getHost();
 		Integer port = promserverEntity.getPort();
-		ValidateUtils.is(promserverEntity.getIdcId()).notNull(RCode.PROMSERVER_IDCID_ISNULL)
+		ValidateUtils.is(promserverEntity.getDcId()).notNull(RCode.PROMSERVER_DCID_ISNULL)
 				.and(host).notNull(RCode.PROMSERVER_HOST_ISNULL)
 				.and(type).notNull(RCode.PROMSERVER_TYPE_ISNULL)
 				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL)
@@ -100,8 +97,8 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		}
 
 		// dc 存在校验
-		Idc dc = idcService.getById(promserverEntity.getIdcId());
-		ValidateUtils.is(dc).notNull(RCode.IDC_NOT_EXISTS);
+		Dc dc = dcService.getById(promserverEntity.getDcId());
+		ValidateUtils.is(dc).notNull(RCode.DC_NOT_EXISTS);
 
 		// 校验 type 合法性
 		Constant.PromserverType[] values = Constant.PromserverType.values();
@@ -118,7 +115,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				.eq(true, Promserver::getStatus, 1)
 				.eq(promId!=null, Promserver::getId, promId)
 				.eq(promId==null&&type!=null, Promserver::getType, type)
-				.eq(promId==null&&idcId != null, Promserver::getIdcId, idcId));
+				.eq(promId==null&&idcId != null, Promserver::getDcId, idcId));
 		// 校验是否有可用 prometheus server
 		// ValidateUtils.is(list).notNull(RCode.PROMSERVER_HOST_ISNULL);
 		// Promserver server = list.get(RandomUtils.nextInt(0, list.size()));
@@ -161,7 +158,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		Promserver promserver = this.getById(id);
 		ValidateUtils.is(promserver).notNull(RCode.PROMSERVER_NOTEXSITS);
 
-		Idc dc = idcService.getById(promserver.getIdcId());
+		Dc dc = dcService.getById(promserver.getDcId());
 		promserver.setDc(dc);
 		return promserver;
 	}

@@ -49,8 +49,8 @@ public class CabinetController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:save"})
     public R save(@RequestBody Cabinet cabinet) {
-        ValidateUtils.is(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
-                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+        ValidateUtils.is(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
+                .and(cabinet.getDcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
 
@@ -68,9 +68,9 @@ public class CabinetController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:update"})
     public R update(@RequestBody Cabinet cabinet) {
-        ValidateUtils.is(cabinet.getId()).notNull(RCode.IDC_CABINETID_ISNULL)
-                .and(cabinet.getName()).notNull(RCode.IDC_CABINETNAME_ISNULL)
-                .and(cabinet.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+        ValidateUtils.is(cabinet.getId()).notNull(RCode.DC_CABINETID_ISNULL)
+                .and(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
+                .and(cabinet.getDcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
 
@@ -88,7 +88,7 @@ public class CabinetController {
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:delete"})
     public R delete(@RequestParam Integer ... ids) {
-        ValidateUtils.is(ids).notNull(RCode.IDC_CABINETID_ISNULL);
+        ValidateUtils.is(ids).notNull(RCode.DC_CABINETID_ISNULL);
 
         cabinetService.delete(ids);
         return R.ok();
@@ -103,7 +103,7 @@ public class CabinetController {
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:u:info"})
     public R getUInfo(Integer id) {
-        ValidateUtils.is(id).notNull(RCode.IDC_CABINETID_ISNULL);
+        ValidateUtils.is(id).notNull(RCode.DC_CABINETID_ISNULL);
 
         Map uInfo = cabinetService.getUInfo(id);
         return R.ok(uInfo);

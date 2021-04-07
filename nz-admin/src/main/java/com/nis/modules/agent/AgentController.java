@@ -46,7 +46,10 @@ public class AgentController {
 
         String scriptContent = Tool.FileUtil.readUtf8String(scriptPath);
 
-        String localhost = request.getLocalAddr();
+        String localhost = request.getLocalAddr(); //web component ip
+        Integer localPort = request.getLocalPort();
+
+        String remoteHost = request.getRemoteHost(); // agent component ip
 
         String webToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
 
@@ -54,7 +57,9 @@ public class AgentController {
 
         Map<String,String> map = new HashMap<>();
 
-        map.put("remoteIP",localhost);
+        map.put("remoteIP",localhost); // to install.shis remote
+        map.put("remotePort",localPort+"");
+        map.put("localhost",remoteHost); // to install.sh is local
         map.put("webToken",webToken);
         map.put("rootPath",rootPath);
         map.put("datacenterID",dcId+"");
@@ -118,7 +123,7 @@ public class AgentController {
 
     private String getScriptPath(){
         String rootPath = getRootPath();
-        return rootPath+File.separator+"install"+ File.separator+"install.sh";
+        return rootPath+File.separator+"install"+ File.separator+"install.sh.template";
     }
 
     private String getRootPath(){

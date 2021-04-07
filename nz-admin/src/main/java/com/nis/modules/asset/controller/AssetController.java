@@ -307,7 +307,7 @@ public class AssetController {
     public R save(@RequestBody Asset asset) {
         ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+                .and(asset.getIdcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
         List<Account> accounts = asset.getAccounts();
@@ -361,7 +361,7 @@ public class AssetController {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(asset.getIdcId()).notNull(RCode.IDC_IDCID_ISNULL)
+                .and(asset.getIdcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
 
 

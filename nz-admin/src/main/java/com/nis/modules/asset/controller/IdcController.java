@@ -57,9 +57,9 @@ public class IdcController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:save"})
     public R save(@RequestBody Idc idc) {
-        ValidateUtils.is(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
-                .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
-                .and(idc.getX()).min(1, RCode.IDC_X_MINIMUM);
+        ValidateUtils.is(idc.getName()).notNull(RCode.DC_NAME_ISNULL)
+                .and(idc.getY()).min(1, RCode.DC_Y_MINIMUM)
+                .and(idc.getX()).min(1, RCode.DC_X_MINIMUM);
 
         idcService.saveOrUpdateIdc(idc);
         return R.ok();
@@ -75,10 +75,10 @@ public class IdcController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:update"})
     public R update(@RequestBody Idc idc) {
-        ValidateUtils.is(idc.getId()).notNull(RCode.IDC_IDCID_ISNULL)
-                .and(idc.getName()).notNull(RCode.IDC_IDCNAME_ISNULL)
-                .and(idc.getY()).min(1, RCode.IDC_Y_MINIMUM)
-                .and(idc.getX()).min(1, RCode.IDC_X_MINIMUM);
+        ValidateUtils.is(idc.getId()).notNull(RCode.DC_ID_ISNULL)
+                .and(idc.getName()).notNull(RCode.DC_NAME_ISNULL)
+                .and(idc.getY()).min(1, RCode.DC_Y_MINIMUM)
+                .and(idc.getX()).min(1, RCode.DC_X_MINIMUM);
 
         idcService.saveOrUpdateIdc(idc);
         return R.ok();
@@ -95,7 +95,7 @@ public class IdcController {
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:delete"})
     public R delete(@RequestParam Integer ... ids) {
-        ValidateUtils.is(ids).notNull(RCode.IDC_IDCID_ISNULL);
+        ValidateUtils.is(ids).notNull(RCode.DC_ID_ISNULL);
 
         idcService.delete(ids);
         return R.ok();

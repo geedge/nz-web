@@ -16,4 +16,6 @@ public interface AssetFieldMetaService extends IService<AssetFieldMeta>{
 	Integer saveOrModify(AssetFieldMeta assetFieldMeta);
 
 	List<AssetFieldMeta> getAssetFieldMetaListByAssetId(Integer assetId);
+	
+	void removeAssetFieldMetas(List<String> assetFieldMetaIds);
 }

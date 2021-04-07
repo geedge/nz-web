@@ -1,0 +1,141 @@
+#!/bin/bash
+{ # this ensures the entire script is downloaded #
+
+#auto replace parameter start
+
+WEB_TOKEN=${webToken}
+
+DATACENTER_ID=${datacenterID}
+
+TYPE=${type}
+
+REMOTE_IP=${remoteIP}
+
+REMOTE_PORT=${remotePort}
+
+if [ ! -z "$REMOTE_PORT" ];then
+  REMOTE_IP=$REMOTE_IP:$REMOTE_PORT
+fi
+
+ROOT_PATH=${rootPath}
+
+LOCALHOST=${localhost}
+
+AGENT_TOKEN=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
+
+INSTALL_PATH=$(echo $ROOT_PATH |awk -F '/nz-web' '{print $1}')
+
+WORK_PATH=/tmp/.nezha/confagent
+
+rm -rf $WORK_PATH&&mkdir -p $WORK_PATH
+
+function osInfo() {
+  if [ -e /etc/centos-release ];then
+      echo 'centos'
+  elif [ -e /etc/debian_version ]; then
+      echo 'debian'
+  elif [ -e /etc/lsb_release ]; then
+      echo 'ubuntu'
+  else
+      echo 'centos';
+  fi
+}
+CURRENT_OS=$(osInfo)
+function log() {
+  case $1 in
+    "red")
+      echo -e "\e[1;31m$2\e[0m"
+      ;;
+    "yellow")
+      echo -e "\e[1;33m$2\e[0m"
+      ;;
+    "green")
+      echo -e "\e[1;32m$2\e[0m"
+      ;;
+    *)
+      echo $2
+      ;;
+  esac
+}
+
+function isInstall() {
+  case $CURRENT_OS in
+  'centos')
+    if [ $(rpm -aq |grep confagent|wc -l) -lt 1 ];then
+      echo 0
+    else
+      echo 1;
+    fi
+    ;;
+  esac
+}
+
+function getPackageName() {
+  case $CURRENT_OS in
+  'centos')
+    echo "confagent.rpm"
+    ;;
+  esac
+}
+PACKAGE_NAME=$(getPackageName $CURRENT_OS)
+
+function downloadPackaget() {
+  cd $WORK_PATH;
+
+  #command -v wget >/dev/null 2>&1 || { echo >&2 "I require wget but it's not installed.  Aborting."; exit 1; }
+  if command -v wget >/dev/null 2>&1;then
+    wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    return 0
+  elif command -v curl >/dev/null 2>&1;then
+    curl -o $PACKAGE_NAME -H "Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    return 0
+  else
+    log red "The wget/curl command is required"
+    exit 1
+  fi
+}
+
+function installPackage() {
+  case $CURRENT_OS in
+  'centos')
+    rpm -ivh $WORK_PATH/$PACKAGE_NAME && mkdir -p $INSTALL_PATH/config; echo $AGENT_TOKEN > $INSTALL_PATH/config/auth.token
+    ;;
+  esac
+
+  if [ 0 -eq $? ];then
+    cat > $WORK_PATH/param.tmp <<EOF
+    {
+      "idcId":$DATACENTER_ID,
+      "host":"$LOCALHOST",
+      "type":$TYPE,
+      "port":9090,
+      "token":"$AGENT_TOKEN"
+    }
+EOF
+    log yellow 'now regist agent to system with infomation :'
+    cat $WORK_PATH/param.tmp
+    local msg=`curl -s -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "http://$REMOTE_IP/agent/register"`
+    local code=`echo $msg |grep -E -o '"code":[0-9]+'|grep -E -o '[0-9]+'`
+    rm -rf $WORK_PATH/param.tmp
+    if [ 200 -eq $code ];then
+      log green 'regist agent success!'
+    else
+      log red 'regist agent failed,cause:'
+      echo $msg
+      exit 1
+    fi
+  else
+    log red "install confagent package may be has some error please try again or install by yourself"
+    exit 1
+  fi
+}
+
+if [ 1 -eq $(isInstall) ];then
+  log yellow "The confagent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
+else
+  downloadPackaget && installPackage
+  log green "The confagent install finish,you can check agent info in WEB gui"
+fi
+
+
+} # this ensures the entire script is downloaded #

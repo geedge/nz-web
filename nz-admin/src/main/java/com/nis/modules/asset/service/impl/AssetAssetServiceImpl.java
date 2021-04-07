@@ -74,7 +74,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private AssetFieldMetaDao assetFieldMetaDao;
 
     @Autowired
-    private IdcService idcService;
+    private DcService dcService;
 
     @Autowired
     private CabinetService cabinetService;
@@ -148,8 +148,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         AssetModel model = modelService.getById(asset.getModelId());
         asset.setModel(model);
 
-        Idc idc = idcService.getById(asset.getDcId());
-        asset.setDc(idc);
+        Dc dc = dcService.getById(asset.getDcId());
+        asset.setDc(dc);
 
         if (asset.getCabinetId() != null) {
             Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
@@ -373,8 +373,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 不是虚拟机进行 dc cabinet 校验，虚拟机直接集成 宿主机 dc cabinet 信息
         if (typeConf.getVm().equals(0)) {
             // dc
-            Idc idc = idcService.getById(asset.getDcId());
-            ValidateUtils.is(idc).notNull(RCode.ASSET_IDC_NOTFOUND);
+            Dc dc = dcService.getById(asset.getDcId());
+            ValidateUtils.is(dc).notNull(RCode.ASSET_DC_NOTFOUND);
 
             // cab
             if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
@@ -382,8 +382,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 ValidateUtils.is(cabinet).notNull(RCode.ASSET_CABINET_NOTFOUND);
 
                 // cabinet dc 不匹配
-                if (!idc.getId().equals(cabinet.getIdcId())) {
-                    throw new NZException(RCode.IDC_NOTHAS_CABINET);
+                if (!dc.getId().equals(cabinet.getDcId())) {
+                    throw new NZException(RCode.DC_NOTHAS_CABINET);
                 }
 
                 // 校验机柜可用位置
@@ -972,22 +972,22 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private List<Map> getDcStatByAsset(List<AssetAsset> assetList) {
-        List<Idc> idcList = idcService.list();
+        List<Dc> dcList = dcService.list();
         List<Cabinet> cabinetList = cabinetService.list();
 
         Map<Integer, List<AssetAsset>> dcIdAndAssetListMap = assetList.stream().collect(Collectors.groupingBy(AssetAsset::getDcId));
         Map<Integer, List<AssetAsset>> cabIdAndAssetListMap = assetList.stream().filter(assetAsset -> ToolUtil.isNotEmpty(assetAsset.getCabinetId())).collect(Collectors.groupingBy(AssetAsset::getCabinetId));
 
         List<Map> dcStats = new ArrayList<>();
-        for (Idc idc : idcList) {
-            List<AssetAsset> dcAssetList = dcIdAndAssetListMap.get(idc.getId());
+        for (Dc dc : dcList) {
+            List<AssetAsset> dcAssetList = dcIdAndAssetListMap.get(dc.getId());
             if (CollectionUtils.isEmpty(dcAssetList)) {
                 continue;
             }
             List<Map> dcBabyCab = new ArrayList();
             for (Cabinet cabinet : cabinetList) {
                 List<AssetAsset> cabAssetList = cabIdAndAssetListMap.get(cabinet.getId());
-                if (cabinet.getIdcId().equals(idc.getId()) && CollectionUtils.isNotEmpty(cabAssetList)) {
+                if (cabinet.getDcId().equals(dc.getId()) && CollectionUtils.isNotEmpty(cabAssetList)) {
                     Map cabStat = new HashMap(4);
                     cabStat.put("id", cabinet.getId());
                     cabStat.put("name", cabinet.getName());
@@ -996,8 +996,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
             Map statByDc = new HashMap(8);
-            statByDc.put("id", idc.getId());
-            statByDc.put("name", idc.getName());
+            statByDc.put("id", dc.getId());
+            statByDc.put("name", dc.getName());
             statByDc.put("total", dcAssetList.size());
             statByDc.put("children", dcBabyCab);
             dcStats.add(statByDc);
@@ -1093,8 +1093,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // asset
             this.remove(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getSeq, seq));
 
-            // idc
-            idcService.remove(new QueryWrapper<Idc>().lambda().eq(Idc::getSeq, seq));
+            // dc
+            dcService.remove(new QueryWrapper<Dc>().lambda().eq(Dc::getSeq, seq));
 
             // cabinet
             cabinetService.remove(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getSeq, seq));
@@ -1112,8 +1112,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<String> assetSnList = assetList.stream().map(AssetAsset::getSn).collect(Collectors.toList());
         List<String> assetIpList = assetList.stream().map(AssetAsset::getManageIp).collect(Collectors.toList());
 
-        List<Idc> idcList = idcService.list();
-        Map<String, Idc> idcNameAndEntityMap = idcList.stream().collect(Collectors.toMap(Idc::getName, Function.identity()));
+        List<Dc> dcList = dcService.list();
+        Map<String, Dc> dcNameAndEntityMap = dcList.stream().collect(Collectors.toMap(Dc::getName, Function.identity()));
 
         List<Cabinet> cabinetList = cabinetDao.getCabinetWithAssetPositionInfo();
 
@@ -1289,9 +1289,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 String dcName = ExcelUtils.getCellValue(row.getCell(6));
                 if (StringUtils.isEmpty(dcName)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.IDC_IDCNAME_ISNULL.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_NAME_ISNULL.getMsg());
                 } else {
-                    dcId = this.validateIdc(dcName, idcNameAndEntityMap, seqUUID, saveEntitys);
+                    dcId = this.validateDc(dcName, dcNameAndEntityMap, seqUUID, saveEntitys);
                 }
 
                 // 虚拟机 vm info 校验 / 虚拟机必须选择宿主
@@ -1319,7 +1319,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     Integer modelUsize = modelIdAndUsizeMap.get(modelId);
                     modelUsize = ToolUtil.isEmpty(modelUsize) ? 1 : modelUsize;
                     boolean posttionFlag = start != null && end != null;
-                    if (dcId != null) { // idc已存在，不需要添加
+                    if (dcId != null) { // dc已存在，不需要添加
                         Cabinet cabinet = this.validateCabinet(cabinetName, dcId, cabinetList, seqUUID, saveEntitys, defaultCabinetUsize);
                         cabinetId = cabinet.getId();
                         boolean cabinetExitFlag = cabinet.getId() != null;
@@ -1342,7 +1342,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                                 }
                             }
                         }
-                    } else { // idc不存在
+                    } else { // dc不存在
                         this.saveEntityAddCabEntity(saveEntitys, cabinetName, defaultCabinetUsize, seqUUID);
                         if (posttionFlag) {
                             end = end + 1;
@@ -1406,7 +1406,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     // 调用入库方法
                     Map updateMap = this.saveRowData(saveEntitys);
                     dataSourceTransactionManager.commit(transactionStatus);
-                    this.updateImportAssetRelatedInfo(updateMap, assetNameAndEntityMap, assetSnList, assetIpList, idcNameAndEntityMap, brandNameAndEntityMap, brandIdAndModelListMap, cabinetList);
+                    this.updateImportAssetRelatedInfo(updateMap, assetNameAndEntityMap, assetSnList, assetIpList, dcNameAndEntityMap, brandNameAndEntityMap, brandIdAndModelListMap, cabinetList);
                     successNum++;
                 } catch (TransactionException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
@@ -1458,7 +1458,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         boolean flag = false;
         for (Cabinet entity : cabinetList) {
             // 如果该机房下有该机柜
-            if (StrUtil.equals(cabinetName, entity.getName()) && dcId.equals(entity.getIdcId())) {
+            if (StrUtil.equals(cabinetName, entity.getName()) && dcId.equals(entity.getDcId())) {
                 cabinet = entity;
                 flag = true;
                 break;
@@ -1467,7 +1467,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 找不到机柜
         if (!flag) {
             cabinet.setName(cabinetName);
-            cabinet.setIdcId(dcId);
+            cabinet.setDcId(dcId);
             cabinet.setuSize(defaultCabinetUsize);
             cabinet.setSeq(seqUUID);
             saveEntitys.put("cabinet", cabinet);
@@ -1483,10 +1483,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
-    private void updateImportAssetRelatedInfo(Map updateMap, Map<String, AssetAsset> assetNameAndEntityMap, List<String> assetSnList, List<String> assetIpList, Map<String, Idc> idcNameAndEntityMap, Map<String, AssetBrand> brandNameAndEntityMap, Map<Integer, List<AssetModel>> brandIdAndModelListMap, List<Cabinet> cabinetList) {
-        Idc updateIdc = (Idc) updateMap.get("idc");
+    private void updateImportAssetRelatedInfo(Map updateMap, Map<String, AssetAsset> assetNameAndEntityMap, List<String> assetSnList, List<String> assetIpList, Map<String, Dc> dcNameAndEntityMap, Map<String, AssetBrand> brandNameAndEntityMap, Map<Integer, List<AssetModel>> brandIdAndModelListMap, List<Cabinet> cabinetList) {
+        Dc updateIdc = (Dc) updateMap.get("dc");
         if (updateIdc != null) {
-            idcNameAndEntityMap.put(updateIdc.getName(), updateIdc);
+            dcNameAndEntityMap.put(updateIdc.getName(), updateIdc);
         }
 
         AssetBrand updateBrand = (AssetBrand) updateMap.get("brand");
@@ -1530,21 +1530,21 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public Map saveRowData(Map saveEntitys) {
         Map updateMap = new HashMap();
         // DC
-        Idc idc = (Idc) saveEntitys.get("idc");
+        Dc dc = (Dc) saveEntitys.get("dc");
         // Cabinet
         Cabinet cabinet = (Cabinet) saveEntitys.get("cabinet");
-        if (idc == null && cabinet != null) {
+        if (dc == null && cabinet != null) {
             cabinetService.save(cabinet);
             updateMap.put("cabinet", cabinet);
         }
-        if (idc != null) {
-            idcService.save(idc);
+        if (dc != null) {
+            dcService.save(dc);
             if (cabinet != null) {
-                cabinet.setIdcId(idc.getId());
+                cabinet.setDcId(dc.getId());
                 cabinetService.save(cabinet);
                 updateMap.put("cabinet", cabinet);
             }
-            updateMap.put("idc", idc);
+            updateMap.put("dc", dc);
         }
 
         // brand
@@ -1576,8 +1576,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getModelId() == null && model != null) {
             asset.setModelId(model.getId());
         }
-        if (asset.getDcId() == null && idc != null) {
-            asset.setDcId(idc.getId());
+        if (asset.getDcId() == null && dc != null) {
+            asset.setDcId(dc.getId());
         }
         if (asset.getCabinetId() == null && cabinet != null) {
             asset.setCabinetId(cabinet.getId());
@@ -1616,16 +1616,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
 
-    private Integer validateIdc(String dcName, Map<String, Idc> idcNameAndEntityMap, String seqUUID, Map saveEntitys) {
-        Idc idc = idcNameAndEntityMap.get(dcName);
-        if (idc == null) {
-            idc = new Idc();
-            idc.setName(dcName);
-            idc.setState(Constant.SWITCH_OPEN.toUpperCase());
-            idc.setSeq(seqUUID);
-            saveEntitys.put("idc", idc);
+    private Integer validateDc(String dcName, Map<String, Dc> dcNameAndEntityMap, String seqUUID, Map saveEntitys) {
+        Dc dc = dcNameAndEntityMap.get(dcName);
+        if (dc == null) {
+            dc = new Dc();
+            dc.setName(dcName);
+            dc.setState(Constant.SWITCH_OPEN.toUpperCase());
+            dc.setSeq(seqUUID);
+            saveEntitys.put("dc", dc);
         }
-        return idc.getId();
+        return dc.getId();
     }
 
     private List<String> getPortListByPattern(String portStr, Pattern portPattern) {

@@ -112,7 +112,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         if (idc.getPrincipal() != null) {
             SysUserEntity principal = sysUserService.getById(idc.getPrincipal());
             if (principal == null) {
-                throw new NZException(RCode.IDC_PRINCIPAL_NOT_EXISTS);
+                throw new NZException(RCode.DC_PRINCIPAL_NOT_EXISTS);
             }
         }
 
@@ -126,7 +126,7 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         }
 
         if (!flag) {
-            throw new NZException(RCode.IDC_NAME_DUPLICATE);
+            throw new NZException(RCode.DC_NAME_DUPLICATE);
         }
 
         // 3.修改行列时校验行列值是否正确
@@ -141,14 +141,14 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
                 Integer maxY = cabinetMaxXY.get("y");
                 if (y != null && maxY != null) {
                     if (y < maxY) {
-                        throw new NZException(RCode.IDC_Y_ALREADYINUSE);
+                        throw new NZException(RCode.DC_Y_ALREADYINUSE);
                     }
                 }
                 // 列 不为 null ，校验列
                 Integer maxX = cabinetMaxXY.get("x");
                 if (x != null && maxX != null) {
                     if (x < maxX) {
-                        throw new NZException(RCode.IDC_X_ALREADYINUSE);
+                        throw new NZException(RCode.DC_X_ALREADYINUSE);
                     }
                 }
             }
@@ -157,24 +157,24 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         // 4. 校验 State 是否合法
         String state = idc.getState();
         if (StringUtils.isEmpty(state)) {
-            throw new NZException(RCode.IDC_STATE_ISNULL);
+            throw new NZException(RCode.DC_STATE_ISNULL);
         }
 
         if(!StrUtil.equals(Constant.SWITCH_OPEN.toUpperCase(),state) && !StrUtil.equals(Constant.SWITCH_CLOSE.toUpperCase(),state)) {
-            throw new NZException(RCode.IDC_STATE_ERROR);
+            throw new NZException(RCode.DC_STATE_ERROR);
         }
 
         // 5. 经纬度校验
         Double longitude = idc.getLongitude();
         if (longitude != null) {
             if (longitude > 180 || longitude < -180) {
-                throw new NZException(RCode.IDC_LONGITUDE_ERROR);
+                throw new NZException(RCode.DC_LONGITUDE_ERROR);
             }
         }
         Double latitude = idc.getLatitude();
         if (latitude != null) {
             if (latitude > 90 || latitude < -90) {
-                throw new NZException(RCode.IDC_LATITUDE_ERROR);
+                throw new NZException(RCode.DC_LATITUDE_ERROR);
             }
         }
     }
@@ -206,13 +206,13 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
     public void delete(Integer... ids) {
         // 1. 校验是否包含 cabinet
         List<Cabinet> cabinets = cabinetDao.selectList(null);
-        Set<Integer> cabinetUsedIdcIds = cabinets.stream().map(Cabinet::getIdcId).collect(Collectors.toSet());
+        Set<Integer> cabinetUsedIdcIds = cabinets.stream().map(Cabinet::getDcId).collect(Collectors.toSet());
 
         List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
         idList.retainAll(cabinetUsedIdcIds);
         if (CollectionUtils.isNotEmpty(idList)) {
             List<String> idcNames = this.listByIds(idList).stream().map(Idc::getName).collect(Collectors.toList());
-            throw new NZException("These idc contain cabinets and cannot be deleted, idcs info: " + idcNames.toString(), RCode.IDC_CABINETS_EXISTS.getCode());
+            throw new NZException("These idc contain cabinets and cannot be deleted, idcs info: " + idcNames.toString(), RCode.DC_CABINETS_EXISTS.getCode());
         }
 
         // 2. 校验是否包含 asset
@@ -223,18 +223,18 @@ public class IdcServiceImpl extends ServiceImpl<IdcDao, Idc> implements IdcServi
         idList.retainAll(assetUsedIdcIds);
         if (CollectionUtils.isNotEmpty(idList)) {
             List<String> idcNames = this.listByIds(idList).stream().map(Idc::getName).collect(Collectors.toList());
-            throw new NZException("These idc contain assets and cannot be deleted, idcs info: " + idcNames.toString(), RCode.IDC_ASSETS_EXISTS.getCode());
+            throw new NZException("These idc contain assets and cannot be deleted, idcs info: " + idcNames.toString(), RCode.DC_ASSETS_EXISTS.getCode());
         }
 
         // 3. 校验是否包含 promeserver
         List<Promserver> promservers = promserverDao.selectList(null);
-        Set<Integer> promserverUsedIdcIds = promservers.stream().map(Promserver::getIdcId).collect(Collectors.toSet());
+        Set<Integer> promserverUsedIdcIds = promservers.stream().map(Promserver::getDcId).collect(Collectors.toSet());
 
         idList = Arrays.stream(ids).collect(Collectors.toList());
         idList.retainAll(promserverUsedIdcIds);
         if (CollectionUtils.isNotEmpty(idList)) {
             List<String> idcNames = this.listByIds(idList).stream().map(Idc::getName).collect(Collectors.toList());
-            throw new NZException("These idc contain prometheus servers and cannot be deleted, idcs info: " + idcNames.toString(), RCode.IDC_CABINETS_EXISTS.getCode());
+            throw new NZException("These idc contain prometheus servers and cannot be deleted, idcs info: " + idcNames.toString(), RCode.DC_CABINETS_EXISTS.getCode());
         }
 
         // 4. 删除

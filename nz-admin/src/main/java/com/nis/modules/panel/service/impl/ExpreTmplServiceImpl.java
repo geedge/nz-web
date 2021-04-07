@@ -12,9 +12,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
@@ -61,7 +61,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     private SysConfigService sysConfigService;
 
     @Autowired
-    private IdcService idcService;
+    private DcService dcService;
 
     @Autowired
     private AssetService assetService;
@@ -204,7 +204,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
             Integer endpointId = var.startsWith("endpoint.") ? Integer.parseInt(varsVal.get(var).toString()) : null;
 
             Asset asset = ToolUtil.isNotEmpty(assetId) ? assetService.getById(assetId) : null;
-            Idc dc = ToolUtil.isNotEmpty(dcId) ? idcService.getById(dcId) : null;
+            Dc dc = ToolUtil.isNotEmpty(dcId) ? dcService.getById(dcId) : null;
             MonitorProject project = ToolUtil.isNotEmpty(projectId) ? projectService.getById(projectId) : null;
             MonitorModule module = ToolUtil.isNotEmpty(moduleId) ? moduleService.getById(moduleId) : null;
             MonitorEndpoint endpoint = ToolUtil.isNotEmpty(endpointId) ? endpointService.getById(endpointId) : null;

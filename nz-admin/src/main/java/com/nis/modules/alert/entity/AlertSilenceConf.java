@@ -1,17 +1,16 @@
 package com.nis.modules.alert.entity;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.project.entity.Project;
-
 import lombok.Data;
+
+import java.util.Date;
 
 @Data
 @TableName("alert_silence_conf")
@@ -39,7 +38,7 @@ public class AlertSilenceConf {
 	private String seq;
 	
 	@TableField(exist = false)
-	private Idc datacenter;
+	private Dc datacenter;
 	
 	@TableField(exist = false)
 	private Project project;

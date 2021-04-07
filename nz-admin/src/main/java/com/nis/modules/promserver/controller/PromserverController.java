@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/promServer")
+@RequestMapping("/agent")
 public class PromserverController extends AbstractController {
 	
 	@Autowired

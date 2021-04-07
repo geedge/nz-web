@@ -18,6 +18,8 @@ public enum TypeEnum {
     ALERTMESSAGE("alert message"),
     PANEL("panel"),
     CHART("chart"),
+    VISUALPANEL("visual panel"),
+    VISUALCHART("visual chart"),
     DATACENTER("datacenter"),
     CABINET("cabinet"),
     UNKNOWN("unknown"),

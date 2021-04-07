@@ -18,7 +18,7 @@
         <result property="createAt" column="create_at"/>
         <result property="updateAt" column="update_at"/>
 
-        <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Idc">
+        <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
             <id property="id" column="id"/>
             <result property="name" column="name"/>
         </association>
@@ -71,8 +71,8 @@
             brand.id AS b_id,
             brand.NAME AS b_name,
 
-            idc.id AS d_id,
-            idc.NAME AS d_name,
+            dc.id AS d_id,
+            dc.NAME AS d_name,
 
             cab.id AS c_id,
             cab.NAME AS c_name,
@@ -85,7 +85,7 @@
             LEFT JOIN asset_type_conf type ON asset.type_id = type.id
             LEFT JOIN asset_brand brand ON asset.brand_id = brand.id
             LEFT JOIN asset_model model ON asset.model_id = model.id
-            LEFT JOIN idc idc ON asset.dc_id = idc.id
+            LEFT JOIN dc dc ON asset.dc_id = dc.id
             LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
             LEFT JOIN asset_ping assp ON asset.manage_ip = assp.host
 

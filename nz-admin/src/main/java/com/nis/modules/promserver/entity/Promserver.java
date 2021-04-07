@@ -3,7 +3,7 @@ package com.nis.modules.promserver.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -15,7 +15,7 @@ public class Promserver {
 	@TableId
 	private Integer id;
 	@NotBlank(message="参数名不能为空")
-	private Integer idcId;
+	private Integer dcId;
 	@NotBlank(message="参数名不能为空")
 	private String host;
 	@NotBlank(message="参数名不能为空")
@@ -47,5 +47,5 @@ public class Promserver {
 	private String token;
 
 	@TableField(exist = false)
-	private Idc dc;
+	private Dc dc;
 }

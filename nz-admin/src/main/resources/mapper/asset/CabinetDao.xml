@@ -7,7 +7,7 @@
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="uSize" column="u_size"/>
-        <result property="idcId" column="idc_id"/>
+        <result property="dcId" column="dc_id"/>
 
         <collection property="assetList" ofType="com.nis.modules.asset.entity.Asset" columnPrefix="as_">
             <result column="id" property="id"/>
@@ -21,7 +21,7 @@
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="uSize" column="u_size"/>
-        <result property="idcId" column="idc_id"/>
+        <result property="dcId" column="dc_id"/>
 
         <collection property="assets" ofType="com.nis.modules.asset.entity.AssetAsset" columnPrefix="as_">
             <result column="id" property="id"/>
@@ -35,7 +35,7 @@
         SELECT
             cab.id,
             cab.name,
-            cab.idc_id,
+            cab.dc_id,
             cab.u_size,
             cab.remark,
             cab.x,
@@ -51,8 +51,8 @@
                 AND cab.name LIKE CONCAT('%', #{params.name}, '%')
             </if>
 
-            <if test="params.idcId != null and params.idcId != ''">
-                AND cab.idc_id = #{params.idcId}
+            <if test="params.dcId != null and params.dcId != ''">
+                AND cab.dc_id = #{params.dcId}
             </if>
 
             <if test="params.uSize != null and params.uSize != ''">
@@ -80,12 +80,12 @@
         FROM
             cabinet cab
         WHERE
-            cab.idc_id = #{id}
+            cab.dc_id = #{id}
     </select>
 
     <select id="getCabinetWithAssets" resultMap="cabinetWithAssets">
         SELECT
-	        cab.id,cab.name,cab.u_size,cab.idc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
+	        cab.id,cab.name,cab.u_size,cab.dc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
         FROM
             cabinet cab
             LEFT JOIN asset ass ON cab.id = ass.cabinet_id
@@ -93,7 +93,7 @@
 
     <select id="getCabinetWithAssetPositionInfo" resultMap="cabinetWithAssetPosition">
         SELECT
-	        cab.id,cab.name,cab.u_size,cab.idc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
+	        cab.id,cab.name,cab.u_size,cab.dc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
         FROM
             cabinet cab
             LEFT JOIN asset_asset ass ON cab.id = ass.cabinet_id

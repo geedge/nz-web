@@ -31,7 +31,7 @@
         <association property="cabinet" columnPrefix="cab_" javaType="com.nis.modules.asset.entity.Cabinet">
             <result property="id" column="id"/>
             <result property="name" column="name"/>
-            <result property="idcId" column="idcId"/>
+            <result property="dcId" column="dcId"/>
             <result property="uSize" column="uSize"/>
             <result property="remark" column="remark"/>
         </association>
@@ -95,7 +95,7 @@
        /*机柜*/
        cab.id AS cab_id,
        cab.name AS cab_name,
-       cab.idc_id AS cab_idcId,
+       cab.dc_id AS cab_dcId,
        cab.u_size AS cab_uSize,
        cab.remark AS cab_remark,
 

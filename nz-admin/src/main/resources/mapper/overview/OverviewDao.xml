@@ -5,7 +5,7 @@
 
     <select id="getIdcNameByPerPromeServer" resultType="java.lang.String">
         SELECT idc.name AS dc FROM idc
-        LEFT JOIN prom_server ps ON idc.id = ps.idc_id
+        LEFT JOIN prom_server ps ON idc.id = ps.dc_id
         WHERE ps.type = 2 AND ps.status = 1
         GROUP BY idc.id
     </select>
@@ -19,7 +19,7 @@
             COUNT( CASE WHEN ps.STATUS = '0' or ps.STATUS = '-2' THEN 0 END ) AS promDown
         FROM
             idc idc
-            LEFT JOIN prom_server ps ON idc.id = ps.idc_id
+            LEFT JOIN prom_server ps ON idc.id = ps.dc_id
         GROUP BY
             idc.id
     </select>

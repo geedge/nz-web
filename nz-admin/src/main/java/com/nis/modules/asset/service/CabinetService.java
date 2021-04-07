@@ -21,5 +21,46 @@ public interface CabinetService extends IService<Cabinet> {
     void delete(Integer ... ids);
 
     Map getUInfo(Integer id);
+
+    /**
+     * 详情
+     * @param id
+     * @return
+     */
+    Cabinet queryCabinetDetails(Integer id);
+
+    /**
+     * 分页列表
+     * @param params
+     * @return
+     */
+    PageUtils queryCabinetPage(Map<String, Object> params);
+
+    /**
+     * 保存
+     * @param cabinet
+     * @return
+     */
+    Integer saveCabinet(Cabinet cabinet);
+
+    /**
+     * 修改
+     * @param cabinet
+     * @return
+     */
+    Integer updateCabinet(Cabinet cabinet);
+
+    /**
+     * 删除
+     * @param ids
+     */
+    void deleteByIds(Integer... ids);
+
+    /**
+     * 机柜u位查询
+     * @param id
+     * @return
+     */
+    Map getCabinetUsizeDetails(Integer id);
 }
 

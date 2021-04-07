@@ -1,28 +1,34 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Cabinet;
-import com.nis.modules.asset.entity.Idc;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.CabinetService;
-import com.nis.modules.asset.service.IdcService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.overview.entity.AssetStat;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -32,11 +38,9 @@ import java.util.stream.Collectors;
  * @date 2019-11-21
  */
 @Service("cabinetService")
-@Slf4j
 public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> implements CabinetService {
 
-    @Autowired
-    private IdcService idcService;
+    private static Log log = Log.get();
 
     @Autowired
     private AssetService assetService;
@@ -49,6 +53,15 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
 
     @Autowired
     private SysConfigService sysConfigService;
+
+    @Autowired
+    private DcService dcService;
+
+    @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
+    private AlertMessageDao alertMessageDao;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -127,13 +140,13 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
      */
     private void validateCabinetInfo(Cabinet cabinet) {
         // 1. 校验机房是否存在
-        Idc idc = idcService.getById(cabinet.getIdcId());
-        if (idc == null) {
-            throw new NZException(RCode.IDC_NOT_EXISTS);
+        Dc dc = dcService.getById(cabinet.getDcId());
+        if (dc == null) {
+            throw new NZException(RCode.DC_NOT_EXISTS);
         }
 
         // 2. 校验机柜名称唯一
-        List<Cabinet> list = this.list(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getName, cabinet.getName()).eq(Cabinet::getIdcId, idc.getId()));
+        List<Cabinet> list = this.list(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getName, cabinet.getName()).eq(Cabinet::getDcId, dc.getId()));
 
         boolean flag = false;
 
@@ -142,12 +155,12 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         }
 
         if(!flag){
-            throw new NZException(RCode.IDC_CABINETNAME_DUPLICATE);
+            throw new NZException(RCode.DC_CABINETNAME_DUPLICATE);
         }
 
         // 3.校验 usize 最小最大值
         if(cabinet.getuSize() != null){
-            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.IDC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.IDC_CABINET_MAXU);
+            ValidateUtils.is(cabinet.getuSize()).min(1, RCode.DC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.DC_CABINET_MAXU);
         }
 
         // 4. 校验行列值
@@ -159,29 +172,29 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
      * @param cabinet
      */
     private void validateXY(Cabinet cabinet) {
-        Idc idc = idcService.getById(cabinet.getIdcId());
+        Dc dc = dcService.getById(cabinet.getDcId());
 
         Integer y = cabinet.getY();
         Integer x = cabinet.getX();
 
 
         if (y != null) {
-            Integer idcY = idc.getY();
-            if (idcY != null) {
-                ValidateUtils.is(cabinet.getY()).max(idcY, RCode.CABINET_Y_INCORRECT);
+            Integer dcY = dc.getY();
+            if (dcY != null) {
+                ValidateUtils.is(cabinet.getY()).max(dcY, RCode.CABINET_Y_INCORRECT);
             }
         }
 
         if (x != null) {
-            Integer idcX = idc.getX();
-            if (idcX != null) {
-                ValidateUtils.is(cabinet.getX()).max(idcX, RCode.CABINET_X_INCORRECT);
+            Integer dcX = dc.getX();
+            if (dcX != null) {
+                ValidateUtils.is(cabinet.getX()).max(dcX, RCode.CABINET_X_INCORRECT);
             }
         }
 
         // 当行列都不为空时 校验位置是否被占用 如果只单独填写了行或列的话 暂时不做具体位置校验
         if (y != null && x != null) {
-            Cabinet entity = this.getOne(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getIdcId, cabinet.getIdcId()).eq(Cabinet::getY, y).eq(Cabinet::getX, x));
+            Cabinet entity = this.getOne(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getDcId, cabinet.getDcId()).eq(Cabinet::getY, y).eq(Cabinet::getX, x));
             if (entity != null) {
                 Integer id = cabinet.getId();
                 if (id == null) {
@@ -213,7 +226,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         // 1. 如果删除的机柜包含资产 不可删除
         if (CollectionUtils.isNotEmpty(idList)) {
             List<String> cabNames = this.listByIds(idList).stream().map(Cabinet::getName).collect(Collectors.toList());
-            throw new NZException("These cabinets contain assets and cannot be deleted, cabinets info: " + cabNames.toString(), RCode.IDC_CABINET_ASSETS_EXISTS.getCode());
+            throw new NZException("These cabinets contain assets and cannot be deleted, cabinets info: " + cabNames.toString(), RCode.DC_CABINET_ASSETS_EXISTS.getCode());
         }
 
         // 2.删除
@@ -258,6 +271,156 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         Collections.sort(occupyList);
         resuleData.put("occupy", occupyList);
         resuleData.put("available", size - occupyList.size());
+        return resuleData;
+    }
+
+    @Override
+    public Cabinet queryCabinetDetails(Integer id) {
+        Cabinet cabinet = this.getById(id);
+        if (ToolUtil.isEmpty(cabinet)) {
+            throw new NZException(RCode.CABINET_NOT_EXISTS);
+        }
+
+        Dc dc = dcService.getById(cabinet.getDcId());
+        cabinet.setDc(dc);
+
+        List<AssetAsset> assetList = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getCabinetId, cabinet.getId()));
+        cabinet.setAssetNum(assetList.size());
+        if(CollectionUtils.isNotEmpty(assetList)){
+            // 包含 asset 则统计 alert
+            List<Integer> cabinetAssetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
+            List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+            long alertNum = alertList.stream().filter(alert -> cabinetAssetIdList.contains(alert.getAssetId())).count();
+            cabinet.setAlertNum((int) alertNum);
+        }else{
+            cabinet.setAlertNum(0);
+        }
+        return cabinet;
+    }
+
+    @Override
+    public PageUtils queryCabinetPage(Map<String, Object> params) {
+        IPage<Cabinet> page = this.page(new Query<Cabinet>().getPage(params), new LambdaQueryWrapper<Cabinet>()
+                .in(ToolUtil.isNotEmpty(params.get("ids")), Cabinet::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
+                .like(ToolUtil.isNotEmpty(params.get("name")), Cabinet::getName, params.get("name"))
+                .in(ToolUtil.isNotEmpty(params.get("dcIds")), Cabinet::getDcId, ToolUtil.isNotEmpty(params.get("dcIds")) ? Arrays.asList(params.get("dcIds").toString().split(",")) : null));
+
+        List<Cabinet> cabinetList = page.getRecords();
+        if(CollectionUtils.isNotEmpty(cabinetList)){
+            // 处理返回结果
+            this.handleResuleList(cabinetList);
+        }
+        page.setRecords(cabinetList);
+        return new PageUtils(page);
+    }
+
+    private void handleResuleList(List<Cabinet> cabinetList) {
+        List<Dc> dcList = dcService.list();
+        Map<Integer, Dc> dcIdAndEntityMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
+
+        List<AssetAsset> assetList = assetAssetService.list();
+        assetList = assetList.stream().filter(asset -> asset.getCabinetId() != null).collect(Collectors.toList());
+
+        List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+        alertList = alertList.stream().filter(alertMessageEntity -> alertMessageEntity.getAssetId() != null).collect(Collectors.toList());
+
+        for (Cabinet cabinet : cabinetList) {
+            cabinet.setDc(dcIdAndEntityMap.get(cabinet.getDcId()));
+
+            List<Integer> cabinetAssetIdList = assetList.stream().filter(asset -> cabinet.getId().equals(asset.getCabinetId())).map(AssetAsset::getId).collect(Collectors.toList());
+            cabinet.setAssetNum(cabinetAssetIdList.size());
+
+            long alertNum = alertList.stream().filter(alert -> cabinetAssetIdList.contains(alert.getAssetId())).count();
+            cabinet.setAlertNum((int) alertNum);
+        }
+    }
+
+    @Override
+    public Integer saveCabinet(Cabinet cabinet) {
+        // 校验
+        this.validateCabinetInfo(cabinet);
+
+        // Usize 为空 则从配置表中取出 cabinet u位默认值
+        if (cabinet.getuSize() == null) {
+            SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq(SysConfigEntity::getStatus, 1));
+            cabinet.setuSize(Integer.valueOf(configEntity.getParamKey()));
+        }
+
+        // 保存
+        this.save(cabinet);
+        return cabinet.getId();
+    }
+
+    @Override
+    public Integer updateCabinet(Cabinet cabinet) {
+        // 校验
+        this.validateCabinetInfo(cabinet);
+
+        // 保存
+        this.updateById(cabinet);
+        return cabinet.getId();
+    }
+
+    @Override
+    public void deleteByIds(Integer... ids) {
+        List<AssetAsset> assets = assetAssetService.list();
+
+        // asset 使用的 cabinet
+        Set<Integer> assetUsedCabinetIds = assets.stream().filter(asset -> {
+            if (ToolUtil.isNotEmpty(asset.getCabinetId())) {
+                return true;
+            }
+            return false;
+        }).map(AssetAsset::getCabinetId).collect(Collectors.toSet());
+
+        List<Integer> idList = Arrays.stream(ids).collect(Collectors.toList());
+        idList.retainAll(assetUsedCabinetIds);
+        if (CollectionUtils.isNotEmpty(idList)) {
+            List<String> cabNames = this.listByIds(idList).stream().map(Cabinet::getName).collect(Collectors.toList());
+            throw new NZException("These cabinets contain assets and cannot be deleted, Details: " + cabNames.toString(), RCode.DC_CABINET_ASSETS_EXISTS.getCode());
+        }
+
+        // 删除
+        this.removeByIds(Arrays.asList(ids));
+    }
+
+    @Override
+    public Map getCabinetUsizeDetails(Integer id) {
+        // 获取当前机柜
+        Cabinet cabinet = this.getById(id);
+        if (cabinet == null) {
+            throw new NZException(RCode.ASSET_CABINET_NOTFOUND);
+        }
+
+        Map resuleData = new HashMap();
+        Integer size = cabinet.getuSize();
+        // 如果机柜没有大小 返回信息
+        if (size == null) {
+            resuleData.put("total", 0);
+            resuleData.put("available", 0);
+            resuleData.put("occupy", new ArrayList<>());
+            return resuleData;
+        }
+
+        resuleData.put("total", size);
+
+        //  查询当前机柜下资产
+        List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getCabinetId, cabinet.getId()));
+        assets = assets.stream().filter(asset -> asset.getCabinetStart() != null && asset.getCabinetEnd() != null).collect(Collectors.toList());
+
+        // 已经被占用位置
+        Set<Integer> occupyList = new TreeSet<>();
+        for (AssetAsset asset : assets) {
+            for (int i = asset.getCabinetStart(); i < asset.getCabinetEnd(); i++) {
+                occupyList.add(i);
+            }
+        }
+
+        // 对占用位置结果集排序
+        List<Integer> tempList = new ArrayList<>(occupyList);
+        Collections.sort(tempList);
+        resuleData.put("occupy", tempList);
+        resuleData.put("available", size - tempList.size());
         return resuleData;
     }
 }

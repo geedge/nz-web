@@ -63,7 +63,7 @@
 									  left join project p on asic.link_id=p.id 
 									  left join module m on asic.link_id=m.id 
 									  left join asset aa on asic.link_id = aa.id 
-									  left join idc i on asic.link_id=i.id
+									  left join dc i on asic.link_id=i.id
          where 1=1 
          <if test="params.id != null and params.id !='' ">
          	and asic.id = #{params.id}
