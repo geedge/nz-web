@@ -32,8 +32,6 @@ ALTER TABLE `cabinet` CHANGE COLUMN `idc_id` `dc_id` int(11) NOT NULL COMMENT '�
 ALTER TABLE `prom_server` CHANGE COLUMN `idc_id` `dc_id` int(11) NOT NULL COMMENT '数据中心id';
 
 
-rename table expression_tmpl to visual_expression_tmpl;
-
 DROP TABLE IF EXISTS `visual_chart`;
 CREATE TABLE `visual_chart`  (
   `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键',

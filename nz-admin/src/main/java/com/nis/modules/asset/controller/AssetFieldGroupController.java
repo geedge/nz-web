@@ -60,7 +60,7 @@ public class AssetFieldGroupController {
 		.and(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL);
 		
 		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
-		return R.ok().putData("data", id);
+		return R.ok().putData("id", id);
 	}
 	
 	@PostMapping
@@ -72,7 +72,7 @@ public class AssetFieldGroupController {
 		
 		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
 		
-		return R.ok().putData("data", id);
+		return R.ok().putData("id", id);
 	}
 	
 	@DeleteMapping
