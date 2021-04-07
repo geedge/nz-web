@@ -26,14 +26,14 @@ public class SysUserEntity implements Serializable {
 	 * 用户ID
 	 */
 	@TableId
-	private Long userId;
+	private Long id;
 
 	/**
 	 * 用户名
 	 */
-	@NotBlank(message="用户名不能为空", groups = {AddGroup.class, UpdateGroup.class})
+	@NotBlank(message="登录用户名不能为空", groups = {AddGroup.class, UpdateGroup.class})
 	private String username;
-
+	
 	/**
 	 * 密码
 	 */
@@ -75,17 +75,15 @@ public class SysUserEntity implements Serializable {
 	@TableField(exist=false)
 	private List<Long> usergroupIds;
 	
-
+	private String mobile;
+	
 	/**
 	 * 创建时间
 	 */
-	private Date createTime;
+	private Date createAt;
+	
+	private Integer createBy;
 
-
-	@TableField(exist=false)
-	private Integer id;
-
-	@TableField(exist=false)
 	private String name;
 	
 	/**
@@ -93,6 +91,10 @@ public class SysUserEntity implements Serializable {
 	 */
 	private String source;
 
+	private String lastLoginIp;
+	
+	private Date lastLoginTime;
+	
 	/**
 	 * 用户关联角色列表
 	 */
@@ -105,42 +107,4 @@ public class SysUserEntity implements Serializable {
 	@TableField(exist = false)
 	private List<SysUserNotification> notifications;
 
-	public String getUserName() {
-		return userName;
-	}
-
-	public void setUserName(String userName) {
-		this.userName = userName;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-
-	@Override
-	public String toString() {
-		return "SysUserEntity{" +
-				"userId=" + userId +
-				", username='" + username + '\'' +
-				", pin='" + pin + '\'' +
-				", salt='" + salt + '\'' +
-				", email='" + email + '\'' +
-				", status=" + status +
-				", lang='" + lang + '\'' +
-				", roleIds=" + roleIds +
-				", usergroupIds=" + usergroupIds +
-				", createTime=" + createTime +
-				", id=" + id +
-				", name='" + name + '\'' +
-				", source='" + source + '\'' +
-				", roles=" + roles +
-				", userName='" + userName + '\'' +
-				", notifications=" + notifications +
-				'}';
-	}
 }

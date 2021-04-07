@@ -260,7 +260,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     private void handleResuleList(List<AssetAsset> assetList) {
         List<SysUserEntity> userList = sysUserDao.selectList(null);
-        Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, Function.identity()));
+        Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
 
         List<AssetAsset> list = this.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = list.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));

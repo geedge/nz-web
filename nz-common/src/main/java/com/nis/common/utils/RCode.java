@@ -460,7 +460,7 @@ public enum RCode {
     SYS_USER_CANNOTDEL(517013, "The currently logged in user cannot be deleted"),          //当前登录用户不能删除
     SYS_USER_DUPLICATENAME(517014, "user name duplicate error"), //业务系统选择错误
     SYS_USER_NOT_EXIST(516015, "System user does not exist"),    //系统用户不存在
-    SYS_USER_USERNAME_ISNULL(511016, "System user name can not be empty"),
+    SYS_USER_USERNAME_ISNULL(511016, "System user login name can not be empty"),
     SYS_USER_STATUS_ISNULL(511017, "System user status can not be empty"),
     SYS_USER_PASSWORD_ISNULL(511018, "System user password can not be empty"),
     SYS_USER_ID_ISNULL(511019, "System user id can not be empty"),
@@ -479,8 +479,9 @@ public enum RCode {
     SYS_MENU_BUTTON_PARENTID_ISNULL(511032,"Button must have a parent id"),
     SYS_MENU_BUTTON_PARENTTYPE_INVALIDE(513033,"Button cannot be used as a parent menu"),
     SYS_TOKEN_ISNULL(511034,"Cannot get token information from request header"),
-
-
+    SYS_USER_NAME_ISNULL(511035, "System user name can not be empty"),
+    SYS_USER_NAME_DUPLICATE(511036, "System user name duplicate"),
+    
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
     PROMSERVER_DCID_ISNULL(521001, "Dc id can not be empty"),
     PROMSERVER_TYPE_ISNULL(521002, "PromServer type can not be empty"),

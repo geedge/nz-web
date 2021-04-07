@@ -80,7 +80,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         // 查询结果不为空时处理返回结果
         if (CollectionUtils.isNotEmpty(sessionEntityList)) {
             List<SysUserEntity> userList = sysUserService.list();
-            Map<Long, String> userIdAndNameMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+            Map<Long, String> userIdAndNameMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
             for (TerminalSessionEntity sessionEntity : sessionEntityList) {
                 sessionEntity.setKillUserName(userIdAndNameMap.get(sessionEntity.getKillUserId()));
             }

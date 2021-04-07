@@ -23,18 +23,20 @@ import java.util.Map;
 
  */
 public interface SysUserService extends IService<SysUserEntity> {
+	
+	SysUserEntity queryUserInfo(Long userId);
 
 	PageUtils queryPage(Map<String, Object> params);
 	
 	/**
 	 * 保存用户
 	 */
-	void saveUser(SysUserEntity user);
+	Integer saveUser(SysUserEntity user);
 	
 	/**
 	 * 修改用户
 	 */
-	void update(SysUserEntity user);
+	Integer update(SysUserEntity user);
 
 	/**
 	 * 修改密码

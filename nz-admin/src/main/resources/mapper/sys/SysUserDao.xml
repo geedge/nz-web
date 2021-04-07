@@ -7,26 +7,30 @@
 	<select id="queryAllMenuId" resultType="long">
 		select distinct rm.menu_id from sys_user_role ur 
 			LEFT JOIN sys_role_menu rm on ur.role_id = rm.role_id 
-		where ur.user_id = #{userId}
+		where ur.id = #{userId}
 	</select>
 
 	<select id="queryList" resultType="com.nis.modules.sys.entity.SysUserEntity">
 		SELECT
-			su.user_id,
+			su.id,
 			su.username,
 			su.status,
 			su.email,
-			su.create_time,
-			su.source
+			su.create_at,
+			su.source,
+			su.name,
+			su.mobile,
+			su.last_login_time,
+			su.last_login_ip
 		FROM
 			sys_user su
 		<where>
-			<if test="params.userId != null and params.userId != ''">
-				su.user_id = #{params.userId}
+			<if test="params.ids != null and params.ids != ''">
+				su.id in (${params.ids})
 			</if>
 
-			<if test="params.username != null and params.username != ''">
-				AND su.username like CONCAT('%', #{params.username}, '%')
+			<if test="params.name != null and params.name != ''">
+				AND (su.username like CONCAT('%', #{params.name}, '%') or su.name like CONCAT('%', #{params.name}, '%'))
 			</if>
 		</where>
 	</select>
@@ -36,7 +40,7 @@
 			su.*
 		FROM
 			sys_user_role sur
-			LEFT JOIN sys_user su ON sur.user_id = su.user_id
+			LEFT JOIN sys_user su ON sur.user_id = su.id
 		WHERE
 			sur.role_id = #{roleId}
 	</select>

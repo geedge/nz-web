@@ -95,7 +95,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 获取所有用户
         List<SysUserEntity> userList = sysUserService.list();
-        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
 
         ruleEntityList.stream().forEach(alertRule -> {
             String receiver = alertRule.getReceiver();
@@ -103,8 +103,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 List<SysUserEntity> list = new ArrayList<>();
                 Arrays.asList(receiver.split(",")).stream().forEach(id -> {
                     SysUserEntity userEntity = new SysUserEntity();
-                    userEntity.setUserId(Long.valueOf(id));
-                    userEntity.setUserName(userIdAndName.get(Long.valueOf(id)));
+                    userEntity.setId(Long.valueOf(id));
+                    userEntity.setName(userIdAndName.get(Long.valueOf(id)));
                     list.add(userEntity);
                 });
                 alertRule.setReceivers(list);
@@ -143,7 +143,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     public void validateReceiver(String receiver) {
 
         List<SysUserEntity> userEntityList = sysUserService.list();
-        Map<Long, String> userIdAndName = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+        Map<Long, String> userIdAndName = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
 
         Arrays.asList(receiver.split(",")).stream().forEach(id -> {
             try {
@@ -540,7 +540,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private String getUserIdsByUserNames(String receiver, List<SysUserEntity> userList) {
-        Map<String, Long> userNameAndIdMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getUsername, SysUserEntity::getUserId));
+        Map<String, Long> userNameAndIdMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getName, SysUserEntity::getId));
         List<String> list = Arrays.asList(receiver.split(","));
         String receiverIds = "";
         for (String s : list) {
@@ -553,7 +553,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     private List<String> getNonExistentUsers(String receiver, List<SysUserEntity> userList) {
-        List<String> usernames = userList.stream().map(SysUserEntity::getUsername).collect(Collectors.toList());
+        List<String> usernames = userList.stream().map(SysUserEntity::getName).collect(Collectors.toList());
         List<String> list = new ArrayList<>(Arrays.asList(receiver.split(",")));
         Iterator<String> iterator = list.iterator();
         String next;
@@ -629,7 +629,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     private void fillData(List<AlertRuleEntity> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
         List<SysUserEntity> sysUserList = sysUserService.list();
-        Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+        Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
         Row row;
         String receiveIds, receiveNames;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
@@ -712,15 +712,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 		if(ObjectUtil.isNotEmpty(alertRule)) {
 			// 获取所有用户
 	        List<SysUserEntity> userList = sysUserService.list();
-	        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getUsername));
+	        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
 			
 	        String receiver = alertRule.getReceiver();
 	        if (StringUtils.isNotEmpty(receiver)) {
 	            List<SysUserEntity> list = new ArrayList<>();
 	            Arrays.asList(receiver.split(",")).stream().forEach(userId -> {
 	                SysUserEntity userEntity = new SysUserEntity();
-	                userEntity.setUserId(Long.valueOf(userId));
-	                userEntity.setUserName(userIdAndName.get(Long.valueOf(userId)));
+	                userEntity.setId(Long.valueOf(userId));
+	                userEntity.setName(userIdAndName.get(Long.valueOf(userId)));
 	                list.add(userEntity);
 	            });
 	            alertRule.setReceivers(list);

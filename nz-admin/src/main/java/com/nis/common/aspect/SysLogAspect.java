@@ -148,7 +148,7 @@ public class SysLogAspect {
             }
             sysLog.setParams(logParams);
         } else {
-            Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
+            Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getId();
             sysLog.setUserId(userId == null ? null : userId.intValue());
         }
 
@@ -222,9 +222,9 @@ public class SysLogAspect {
 
         Long userId = null;
         if (ToolUtil.isEmpty(currentLoginUser)) {
-            userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getUserId();
+            userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getId();
         } else {
-            userId = currentLoginUser.getUserId();
+            userId = currentLoginUser.getId();
         }
         sysLog.setUserId(userId == null ? null : userId.intValue());
 
@@ -393,7 +393,7 @@ public class SysLogAspect {
         if ("logout".equals(operationType)) {
             // 补全 params 为 当前退出者
             Map map = new HashMap();
-            map.put("username", currentLoginUser.getUsername());
+            map.put("username", currentLoginUser.getName());
             result = gson.toJson(map);
         } else if ("login".equals(operationType)) {
             String params = gson.toJson(list.get(0));

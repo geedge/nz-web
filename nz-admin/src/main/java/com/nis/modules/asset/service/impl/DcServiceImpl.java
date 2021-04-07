@@ -101,7 +101,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     private void handleResuleList(List<Dc> dcList) {
         List<SysUserEntity> userEntityList = sysUserService.list();
-        Map<Long, SysUserEntity> userIdAndEntityMap = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getUserId, Function.identity()));
+        Map<Long, SysUserEntity> userIdAndEntityMap = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
 
         List<Cabinet> cabinetList = cabinetDao.selectList(null);
         List<AlertMessageEntity> alertMessageList = alertMessageDao.getAlertsStatColumn();

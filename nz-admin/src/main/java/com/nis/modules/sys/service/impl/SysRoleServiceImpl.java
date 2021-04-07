@@ -167,7 +167,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         if (CollectionUtils.isEmpty(userList))
             return;
 
-        List<Long> userIds = userList.stream().map(SysUserEntity::getUserId).distinct().collect(Collectors.toList());
+        List<Long> userIds = userList.stream().map(SysUserEntity::getId).distinct().collect(Collectors.toList());
 
         // 删除 redis 中的 token
         List<String> removeKeys = new ArrayList<>();
@@ -175,7 +175,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
             Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
             for (Map.Entry<String, SysUserEntity> entry : shiroSessionInfoMap.entrySet()) {
                 SysUserEntity userEntity = entry.getValue();
-                if (userIds.contains(userEntity.getUserId())) {
+                if (userIds.contains(userEntity.getId())) {
                     removeKeys.add(entry.getKey());
                 }
             }

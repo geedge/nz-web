@@ -277,7 +277,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		
 		            // 用户及邮箱信息
 		            List<SysUserEntity> userList = sysUserService.list();
-		            Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getUserId, SysUserEntity::getEmail));
+		            Map<Long, String> userIdAndEmail = userList.stream().filter(sysUserEntity -> ToolUtil.isNotEmpty(sysUserEntity.getEmail())).collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getEmail));
 		
 		            // 用户和关联脚本信息
 		            List<SysUserNotification> userNotificationList = userNotificationDao.selectSysUserNotificationInfo();

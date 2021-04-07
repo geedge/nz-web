@@ -57,7 +57,7 @@ public class SetupDatabase {
         sysConfigService.updateValueByKey("ha_vip",setupEntity.getSystem().getHaVip());
 
         SysUserEntity sysUser =  sysUserService.getById(adminId);
-        sysUser.setUserId(Long.parseLong(adminId));
+        sysUser.setId(Long.parseLong(adminId));
         sysUser.setUsername(setupEntity.getSystem().getUsername());
         sysUser.setPin(ShiroUtils.sha256(setupEntity.getSystem().getPin(), sysUser.getSalt()));
 

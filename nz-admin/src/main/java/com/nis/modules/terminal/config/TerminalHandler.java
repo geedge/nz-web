@@ -140,7 +140,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	    SimpleSession simpleSession = (SimpleSession) obj;
 	    SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) simpleSession.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
 	    SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
-        userId = userEntity.getUserId();
+        userId = userEntity.getId();
         
         // 创建登录服务器日志记录相关内容
 	    terminalLogService = (TerminalLogService) applicationContext.getBean("terminalLogService");

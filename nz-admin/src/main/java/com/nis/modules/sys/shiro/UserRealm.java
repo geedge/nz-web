@@ -87,7 +87,7 @@ public class UserRealm extends AuthorizingRealm {
 		SysUserEntity user = (SysUserEntity) principals.getPrimaryPrincipal();
 
 		// 查看用户所有角色
-		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getUserId().intValue());
+		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getId().intValue());
 
 		List<String> permsList;
 		if (CollectionUtils.isEmpty(rolesByUesr)) {
@@ -159,7 +159,7 @@ public class UserRealm extends AuthorizingRealm {
 
 			// ldap 登录用户默认分配 common 角色
 			SysUserRoleEntity sysUserRole = new SysUserRoleEntity();
-			sysUserRole.setUserId(user.getUserId().intValue());
+			sysUserRole.setUserId(user.getId().intValue());
 			sysUserRole.setRoleId(Constant.SYSTEM_COMMON_ROLE);
 			sysUserRoleDao.insert(sysUserRole);
 			String salt = RandomStringUtils.randomAlphanumeric(20);

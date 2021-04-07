@@ -177,6 +177,10 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	        case Constant.CHART_ALERTLIST_TYPE:{
 	            break;
 	        }
+	        // group 类型不需要校验 elements
+	        case Constant.CHART_GROUP_TYPE:{
+	            break;
+	        }
 	        case Constant.CHART_TEXT_TYPE: {
 	            ValidateUtils.is(param).notNull(RCode.CHART_TEXTPARAM_ISNULL);
 	            Object text = param.get(Constant.CHART_TEXT_TYPE);

@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,7 +29,7 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 所有用户列表
 	 */
-	@RequestMapping("/list")
+	@RequestMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
     @RequiresPermissions("sys:user:list")
 	public R list(@RequestParam Map<String, Object> params){
@@ -46,17 +48,17 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 修改登录用户密码
 	 */
-	@RequestMapping("/password")
-	public R password(String pin, String newPin){
+	@RequestMapping("/pin")
+	public R password(String oldPin, String newPin){
 		Assert.isBlank(newPin, "新密码不为能空");
 
 		//原密码
-		pin = ShiroUtils.sha256(pin, getUser().getSalt());
+		oldPin = ShiroUtils.sha256(oldPin, getUser().getSalt());
 		//新密码
 		newPin = ShiroUtils.sha256(newPin, getUser().getSalt());
 
 		//更新密码
-		boolean flag = sysUserService.updatePassword(getUserId(), pin, newPin);
+		boolean flag = sysUserService.updatePassword(getUserId(), oldPin, newPin);
 		if(!flag){
 			throw new NZException(RCode.SYS_USER_OLDPWD);
 		}
@@ -66,51 +68,47 @@ public class SysUserController extends AbstractController {
 
 	/**
 	 * 用户信息
-	 */
-	@RequestMapping("/info/{userId}")
+	*/ 
+	@RequestMapping("/{id}")
 	@RequiresPermissions("sys:user:info")
-	public R info(@PathVariable("userId") Long userId){
-		SysUserEntity user = sysUserService.getById(userId);
-
-		//获取用户所属的角色列表
-//		List<Long> roleIdList = sysUserRoleService.queryRoleIdList(userId);
-//		user.setRoleIdList(roleIdList);
-
+	public R info(@PathVariable("id") Long id){
+		ValidateUtils.is(id).notNull(RCode.SYS_USER_ID_ISNULL);
+		SysUserEntity user = sysUserService.queryUserInfo(id);
 		return R.ok().put("user", user);
 	}
 
 	/**
 	 * 保存用户
 	 */
-	@PostMapping("/save")
+	@PostMapping
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ACCOUNT)
     @RequiresPermissions("sys:user:save")
 	public R save(@RequestBody SysUserEntity user){
-		sysUserService.saveUser(user);
-		return R.ok();
+		Integer id = sysUserService.saveUser(user);
+		return R.ok().putData("id", id);
 	}
 
 	/**
 	 * 修改用户
 	 */
-	@PutMapping("/update")
+	@PutMapping
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
     @RequiresPermissions("sys:user:update")
 	public R update(@RequestBody SysUserEntity user){
-		ValidateUtils.is(user.getUserId()).notNull(RCode.SYS_USER_ID_ISNULL);
+		ValidateUtils.is(user.getId()).notNull(RCode.SYS_USER_ID_ISNULL);
 
-		sysUserService.update(user);
-		return R.ok();
+		Integer id = sysUserService.update(user);
+		return R.ok().putData("id", id);
 	}
 
 	/**
 	 * 删除用户
 	 */
-	@DeleteMapping("/delete")
+	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ACCOUNT)
     @RequiresPermissions("sys:user:delete")
-	public R delete(String userIds) {
-		sysUserService.deleteUsers(userIds);
+	public R delete(String ids) {
+		sysUserService.deleteUsers(ids);
 		return R.ok();
 	}
 
@@ -127,7 +125,7 @@ public class SysUserController extends AbstractController {
 		SysUserEntity queryParam = new SysUserEntity();
 		Object object = params.get("id");
 		if (object != null && !StringUtils.isEmpty(object.toString())) {
-			queryParam.setUserId(Long.valueOf((String)object));
+			queryParam.setId(Long.valueOf((String)object));
 		}
 		queryParam.setUsername((String)params.get("name"));
 

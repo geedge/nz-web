@@ -11,6 +11,7 @@ import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
@@ -49,7 +50,9 @@ public class SysLoginController extends AbstractController {
 	private Integer loginExpiration;
 	@Autowired
 	private SysConfigService configService;
-
+	@Autowired
+	private SysUserService sysUserService;
+	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
         response.setHeader("Cache-Control", "no-store, no-cache");
@@ -75,11 +78,6 @@ public class SysLoginController extends AbstractController {
 	public R login(@RequestBody SysUserEntity sysUser) {
 		String username = sysUser.getUsername();
 		String pin = StrUtil.str(sysUser.getPin());
-	//public R login( String username, String password, String captcha) {
-		/*String kaptcha = ShiroUtils.getKaptcha(Constants.KAPTCHA_SESSION_KEY);
-		if(!captcha.equalsIgnoreCase(kaptcha)){
-			return R.error(RCode.SYS_LOGIN_CAPTCHA);
-		}*/
 		try{
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
@@ -92,7 +90,15 @@ public class SysLoginController extends AbstractController {
 			String[] paramkeys = {"system_name", "timezone", "default_cabinet_usize", "max_terminal_num", "asset_ping_switch", "unsaved_change"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
             configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
-			return R.ok(obj);
+			
+            // 获取request
+            HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
+            SysUserEntity userEntity = ShiroUtils.getUserEntity();
+            userEntity.setLastLoginTime(DateUtil.getUTCTimeByConfigTimeZone());
+            // 设置IP地址
+            userEntity.setLastLoginIp(IPUtils.getIpAddr(request));
+            sysUserService.updateById(userEntity);
+            return R.ok(obj);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
 		}catch (IncorrectCredentialsException e) {

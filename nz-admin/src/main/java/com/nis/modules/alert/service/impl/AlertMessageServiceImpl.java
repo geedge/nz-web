@@ -505,7 +505,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 		String remark = (String) params.get("remark");
 		//remark = formatDate + "  " + user.getUsername() + "  " + remark;
-		remark = user.getUsername() + "  " + remark;
+		remark = user.getName() + "  " + remark;
 		params.put("remark", remark);
 
 		String ids = (String) params.get("ids");

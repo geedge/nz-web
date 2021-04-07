@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -11,6 +12,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertNotifiScriptDao;
 import com.nis.modules.alert.entity.AlertNotificationScript;
+import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
@@ -88,9 +90,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			}
 
 			for (SysUserEntity userEntity : userList) {
-				userEntity.setNotifications(userIdAndScriptListMap.get(userEntity.getUserId().intValue()));
+				userEntity.setNotifications(userIdAndScriptListMap.get(userEntity.getId().intValue()));
 
-				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getUserId().intValue());
+				List<SysUserRoleEntity> userRoleEntities = userRoleMap.get(userEntity.getId().intValue());
 				if (CollectionUtils.isEmpty(userRoleEntities)) {
 					userEntity.setRoles(Collections.emptyList());
 				} else {
@@ -110,8 +112,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
     private void validateUserInfo(SysUserEntity user) {
 	    Integer status = user.getStatus();
         ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL)
-                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL);
+                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL).and(user.getName()).notNull(RCode.SYS_USER_NAME_ISNULL);
 
+        List<SysUserEntity> list = this.list(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getName, user.getName()).ne(ObjectUtil.isNotEmpty(user.getId()),SysUserEntity::getId, user.getId()));
+        if(ObjectUtil.isNotEmpty(list)) {
+        	throw new NZException(RCode.SYS_USER_NAME_DUPLICATE);
+        }
+        
 	    if(status != 0 && status != 1){
 	    	throw new NZException(RCode.SYS_USER_STATUS_INVALIDE);
 	    }
@@ -163,35 +170,38 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void saveUser(SysUserEntity user) {
+	public Integer saveUser(SysUserEntity user) {
 
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
 
-		user.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+		user.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
 		//sha256加密
 		String salt = RandomStringUtils.randomAlphanumeric(20);
 		user.setSalt(salt);
 		user.setPin(ShiroUtils.sha256(user.getPin(), user.getSalt()));
+		user.setCreateBy(ShiroUtils.getUserId().intValue());
 		this.save(user);
 
 		// 关联 script 不为空则保存
 		List<SysUserNotification> notifications = user.getNotifications();
 		if (CollectionUtils.isNotEmpty(notifications)) {
 			for (SysUserNotification notification : notifications) {
-				notification.setUserId(user.getUserId().intValue());
+				notification.setUserId(user.getId().intValue());
 			}
 			notificationService.saveBatch(notifications);
 		}
 
 		// 保存用户 和 角色 关联关系
-		sysUserRoleService.saveOrUpdate(user.getUserId(), user.getRoleIds());
+		sysUserRoleService.saveOrUpdate(user.getId(), user.getRoleIds());
+		
+		return user.getId().intValue();
 	}
 
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void update(SysUserEntity user) {
+	public Integer update(SysUserEntity user) {
 
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
@@ -201,29 +211,32 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		} else {
 			// 如果不是本人更改 自己密码的话，删除 redis 中用户session
 			Long loginUserId = ShiroUtils.getUserId();
-			if (!loginUserId.equals(user.getUserId())) {
+			if (!loginUserId.equals(user.getId())) {
 				// 通过 userId 删除 redis 中记录的 登录信息
-				this.removeUserInfoInRedis(user.getUserId());
+				this.removeUserInfoInRedis(user.getId());
 			}
-			SysUserEntity userEntity = this.getById(user.getUserId());
+			SysUserEntity userEntity = this.getById(user.getId());
 			user.setPin(ShiroUtils.sha256(user.getPin(), userEntity.getSalt()));
 		}
 
+		user.setCreateBy(ShiroUtils.getUserId().intValue());
 		this.updateById(user);
 
 		// 关联 script 不为空则保存
 		List<SysUserNotification> notifications = user.getNotifications();
 		if (CollectionUtils.isNotEmpty(notifications)) {
 			// 先删除
-			notificationService.remove(new QueryWrapper<SysUserNotification>().lambda().eq(SysUserNotification::getUserId,user.getUserId()));
+			notificationService.remove(new QueryWrapper<SysUserNotification>().lambda().eq(SysUserNotification::getUserId,user.getId()));
 			for (SysUserNotification notification : notifications) {
-				notification.setUserId(user.getUserId().intValue());
+				notification.setUserId(user.getId().intValue());
 			}
 			notificationService.saveBatch(notifications);
 		}
 
 		// 处理用户角色关系
-		this.handleUserRoleRelation(user.getUserId(), user.getRoleIds());
+		this.handleUserRoleRelation(user.getId(), user.getRoleIds());
+		
+		return user.getId().intValue();
 	}
 
 	/**
@@ -259,7 +272,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
 			for (Map.Entry<String, SysUserEntity> entry : shiroSessionInfoMap.entrySet()) {
 				SysUserEntity userEntity = entry.getValue();
-				if (userId.equals(userEntity.getUserId())) {
+				if (userId.equals(userEntity.getId())) {
 					removeKeys.add(entry.getKey());
 				}
 			}
@@ -280,7 +293,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         userEntity.setPin(newPin);
         return this.update(userEntity,
         	new LambdaUpdateWrapper<SysUserEntity>()
-					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getUserId, userId)
+					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getId, userId)
 					.eq(ToolUtil.isNotEmpty(pin),SysUserEntity::getPin, pin));
     }
 
@@ -293,7 +306,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		//当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
 		if ((list == null || list.size() == 0) ||
-					(list.size() == 1 && list.get(0).getUserId().longValue() == user.getUserId().longValue())) {
+					(list.size() == 1 && list.get(0).getId().longValue() == user.getId().longValue())) {
 			dumpFlag = false;
 		}
 		return dumpFlag;
@@ -309,7 +322,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		}
 
 		SysUserEntity userEntity = (SysUserEntity) SecurityUtils.getSubject().getPrincipal();
-		if (ArrayUtils.contains(split, userEntity.getUserId().toString())) {
+		if (ArrayUtils.contains(split, userEntity.getId().toString())) {
 			throw new NZException(RCode.SYS_USER_CANNOTDEL);
 		}
 
@@ -332,7 +345,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
 			for (Map.Entry<String, SysUserEntity> entry : shiroSessionInfoMap.entrySet()) {
 				SysUserEntity userInfo = entry.getValue();
-				if (userIdList.contains(userInfo.getUserId())) {
+				if (userIdList.contains(userInfo.getId())) {
 					removeKeys.add(entry.getKey());
 				}
 			}
@@ -370,12 +383,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
 		SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
 
-		SysUserEntity user = this.getById(userEntity.getUserId());
+		SysUserEntity user = this.getById(userEntity.getId());
 		if (user == null)
 			throw new NZException(RCode.SYS_USER_NOT_EXIST);
 
 		Map<String, Object> resultMap = new HashMap<>(4);
-		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getUserId().intValue());
+		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getId().intValue());
 		resultMap.put("roles", rolesByUesr);
 
 		List<Integer> roleIdList = rolesByUesr.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
@@ -389,5 +402,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public List<SysUserEntity> getUserListByRoleId(Integer roleId) {
 		List<SysUserEntity> userList = this.getBaseMapper().getUserListByRoleId(roleId);
 		return userList;
+	}
+
+	@Override
+	public SysUserEntity queryUserInfo(Long userId) {
+		SysUserEntity user = this.getById(userId);
+		//获取用户所属的角色列表
+		List<Integer> roleIdList = sysUserRoleService.queryRoleIdList(userId.intValue());
+		List<SysRoleEntity> roles = sysRoleService.list(new QueryWrapper<SysRoleEntity>().lambda().in(SysRoleEntity::getId, roleIdList));
+		user.setRoles(roles);
+		return user;
 	}
 }

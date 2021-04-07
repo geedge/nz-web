@@ -257,7 +257,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         List<SysUserEntity> users = sysUserDao.selectList(null);
         Map<Long, SysUserEntity> userIdAndEntityMap = new HashMap();
         for (SysUserEntity user : users) {
-            userIdAndEntityMap.put(user.getUserId(), user);
+            userIdAndEntityMap.put(user.getId(), user);
         }
         // account
         List<Account> accountList = accountService.list();
@@ -1612,8 +1612,8 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         Idc idc = idcService.getById(asset.getIdcId());
         if (ToolUtil.isNotEmpty(idc.getPrincipal())) {
-            SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUserId, idc.getPrincipal()));
-            basicInfo.put("principal", userEntity.getUsername());
+            SysUserEntity userEntity = sysUserDao.selectOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getId, idc.getPrincipal()));
+            basicInfo.put("principal", userEntity.getName());
         } else {
             basicInfo.put("principal", "");
         }

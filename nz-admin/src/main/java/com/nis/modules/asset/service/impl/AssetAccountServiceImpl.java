@@ -88,7 +88,7 @@ public class AssetAccountServiceImpl extends ServiceImpl<AssetAccountDao,AssetAc
 		assetAccount.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
 		// 当前登录用户
         SysUserEntity currentLoginUser = ShiroUtils.getUserEntity();
-        assetAccount.setUpdateBy(currentLoginUser.getUserId());
+        assetAccount.setUpdateBy(currentLoginUser.getId());
 		this.saveOrUpdate(assetAccount);
 	}
 

@@ -88,12 +88,13 @@ CREATE TABLE `visual_panel`  (
   `type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'dashboard' COMMENT '可选值：dashboard，asset，project，module，endpoint, model\r\n\r\n默认值：dashboard',
   `link` int(10) NULL DEFAULT NULL COMMENT '关联id',
   `pid` int(10) NOT NULL DEFAULT 0 COMMENT '父id 默认0',
-  `weight` int(10) NOT NULL COMMENT '排序 默认0',
+  `weight` int(10) NOT NULL DEFAULT 0 COMMENT '排序 默认0',
   `build_in` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '0' COMMENT '是否内置',
   `seq` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '默认：“”\r\n\r\n用于导入撤销',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
+INSERT INTO `sys_dict`(`name`, `type`, `code`, `value`, `i18n_code`, `order_num`, `remark`, `del_flag`, `operator`, `op_time`, `seq`) VALUES ('图表类型', 'chartType', 10, 'group', '', 10, '组', 0, 0, '2021-04-06 14:30:18', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
 

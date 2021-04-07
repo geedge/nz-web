@@ -69,7 +69,7 @@ public class TokenCheckFilter extends AccessControlFilter {
         Boolean exist = redisTemplate.hasKey(ShiroUtils.REDIS_KEYPREFIX + requestToken);
         if (exist) {
             // 重新查询数据库
-            SysUserEntity entity = this.sysUserDao.selectById(ShiroUtils.getUserEntity().getUserId());
+            SysUserEntity entity = this.sysUserDao.selectById(ShiroUtils.getUserEntity().getId());
             if (entity.getStatus() == 0) {
                 response.getWriter().write(JSON.toJSON(R.error(RCode.SYS_LOGIN_LOCK)).toString());
                 return false;
