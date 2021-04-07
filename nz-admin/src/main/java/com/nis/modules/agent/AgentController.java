@@ -3,11 +3,15 @@ package com.nis.modules.agent;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.http.HttpConnection;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +30,15 @@ import java.util.Map;
 @RequestMapping("/agent")
 public class AgentController {
     private Log log = Log.get();
-    @Value("${spring.profiles.active}")
-    private String profile;
+
+    @Value("${nezha.resourcePath:./}")
+    private String resourcePath;
 
     @Autowired
     private PromserverService promserverService;
 
+    @Autowired
+    private SysConfigService sysConfigService;
 
     /**
     * @Description 下载 install.sh脚本
@@ -42,7 +49,7 @@ public class AgentController {
     public String pushInstallScript(HttpServletRequest request, @PathVariable("dcId") Integer dcId, @PathVariable("type") Integer type){
         ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type).notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 
-        String scriptPath = getScriptPath();
+        String scriptPath = resourcePath+File.separator+"install"+ File.separator+"install.sh.template";
 
         String scriptContent = Tool.FileUtil.readUtf8String(scriptPath);
 
@@ -53,15 +60,12 @@ public class AgentController {
 
         String webToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
 
-        String rootPath = getRootPath();
-
         Map<String,String> map = new HashMap<>();
 
-        map.put("remoteIP",localhost); // to install.shis remote
+        map.put("remoteIP",localhost); // to install.sh is remote
         map.put("remotePort",localPort+"");
         map.put("localhost",remoteHost); // to install.sh is local
         map.put("webToken",webToken);
-        map.put("rootPath",rootPath);
         map.put("datacenterID",dcId+"");
         map.put("type",type+"");
 
@@ -79,11 +83,10 @@ public class AgentController {
     @GetMapping("/download")
     public void downloadAgent(HttpServletResponse response, @RequestParam(defaultValue = "centos",required = false) String os){
         log.info("download agent package to {}",os);
-        switch (os){
-            case "centos":
-                downloadAgentToCentOS(response);
-                break;
-        }
+        String json = sysConfigService.getValue("confagent_name");
+        JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
+        String confagentName = (String)confagentNames.get(os);
+        downloadAgentToOs(response,confagentName);
     }
 
     /**
@@ -97,9 +100,7 @@ public class AgentController {
             promserver.setHost(request.getRemoteAddr());
         }
 
-        Map map = new HashMap(2);
-        map.put("id", promserverService.saveOrUpdatePromserver(promserver, false));
-        return R.ok(map);
+        return R.ok().putData("id",promserverService.saveOrUpdatePromserver(promserver, false));
     }
 
 
@@ -121,18 +122,6 @@ public class AgentController {
         refreshToken(urlBuilder.build(),token,response);
     }
 
-    private String getScriptPath(){
-        String rootPath = getRootPath();
-        return rootPath+File.separator+"install"+ File.separator+"install.sh.template";
-    }
-
-    private String getRootPath(){
-        if(Tool.StrUtil.equals("prod",profile)){
-            return System.getProperty("user.dir");
-        }
-        return Tool.ClassUtil.getClassPath();
-    }
-
     private String replaceParamter(Map<String,String> keyValue,String content){
         if(Tool.MapUtil.isEmpty(keyValue)) return content;
 
@@ -147,9 +136,13 @@ public class AgentController {
         return content;
     }
 
-    private void downloadAgentToCentOS(HttpServletResponse response){
-        File file = Tool.FileUtil.file(getRootPath(),"install","confagent.rpm");
-        describeDownloadReponse(response,file);
+    private void downloadAgentToOs(HttpServletResponse response, String filename){
+        File file = Tool.FileUtil.file(resourcePath,"install",filename);
+        response.reset();
+        response.setContentType("application/octet-stream");
+        String fileName = Tool.URLUtil.encode(file.getName(), Tool.CharsetUtil.UTF_8);
+        response.addHeader("Content-Disposition", "attachment; filename=" +fileName );
+        response.addHeader("Content-Length", "" + file.length());
 
         try {
             Tool.FileUtil.writeToStream(file,new BufferedOutputStream(response.getOutputStream()));
@@ -158,30 +151,21 @@ public class AgentController {
         }
     }
 
-    private void describeDownloadReponse(HttpServletResponse response,File file){
-        response.reset();
-        response.setContentType("application/octet-stream");
-        String fileName = Tool.URLUtil.encode(file.getName(), Tool.CharsetUtil.UTF_8);
-        response.addHeader("Content-Disposition", "attachment; filename=" +fileName );
-        response.addHeader("Content-Length", "" + file.length());
-    }
-
     private void refreshToken(String url,String token,HttpServletResponse response){
-        HttpURLConnection conn = HttpConnection.create(url,null).getHttpURLConnection();
-        InputStream connInputStream = null;
         OutputStream responseOutputStream = null;
+        InputStream connInputStream = null;
         try{
-            ReflectUtil.invoke(conn,"addRequestProperty",Constant.AUTH_TOKEN_CODE,token);
-            responseOutputStream = response.getOutputStream();
-            log.info("connect to confagent with URL:{},Token:{}",url,token);
-            conn.connect();
-            int responseCode = conn.getResponseCode();
-            connInputStream = (responseCode < 400)? conn.getInputStream():conn.getErrorStream();
-            String responseMessage = conn.getResponseMessage();
-            response.setStatus(responseCode, responseMessage);
 
+            response.setContentType("application/json");
+            responseOutputStream = response.getOutputStream();
+
+            HttpRequest get = Tool.HttpUtil.createGet(url);
+            get.auth(token);
+            HttpResponse executeResponse = get.execute(false);
+            connInputStream = executeResponse.bodyStream();
             Tool.IoUtil.copy(connInputStream, responseOutputStream);
             responseOutputStream.flush();//flush 输出流
+
         }catch (Exception e){
             try {
                 response.sendError(500, "request error");
@@ -190,9 +174,8 @@ public class AgentController {
             }
             log.error("request error : ",e);
         }finally {
-            Tool.IoUtil.close(connInputStream);
             Tool.IoUtil.close(responseOutputStream);
-            conn.disconnect();
+            Tool.IoUtil.close(connInputStream);
         }
     }
 
