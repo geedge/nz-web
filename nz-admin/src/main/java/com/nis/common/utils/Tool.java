@@ -1057,5 +1057,10 @@ public class Tool {
 	 */
 	public static class JSONUtil extends com.nis.common.utils.JSONUtil {};
 	
-
+	/**
+	 * http response 工具类
+	 * @author ThinkPad
+	 *
+	 */
+	public static class ResponseUtil extends com.nis.common.utils.ResponseUtil{};
 }
