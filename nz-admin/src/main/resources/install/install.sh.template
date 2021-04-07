@@ -17,13 +17,13 @@ if [ ! -z "$REMOTE_PORT" ];then
   REMOTE_IP=$REMOTE_IP:$REMOTE_PORT
 fi
 
-ROOT_PATH=${rootPath}
-
 LOCALHOST=${localhost}
+#auto replace parameter end
+ROOT_PATH=/opt/nezha
 
 AGENT_TOKEN=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
 
-INSTALL_PATH=$(echo $ROOT_PATH |awk -F '/nz-web' '{print $1}')
+INSTALL_PATH=$ROOT_PATH/confagent
 
 WORK_PATH=/tmp/.nezha/confagent
 
@@ -82,7 +82,6 @@ PACKAGE_NAME=$(getPackageName $CURRENT_OS)
 function downloadPackaget() {
   cd $WORK_PATH;
 
-  #command -v wget >/dev/null 2>&1 || { echo >&2 "I require wget but it's not installed.  Aborting."; exit 1; }
   if command -v wget >/dev/null 2>&1;then
     wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
     return 0
@@ -112,7 +111,7 @@ function installPackage() {
       "token":"$AGENT_TOKEN"
     }
 EOF
-    log yellow 'now regist agent to system with infomation :'
+    log yellow 'now regist agent to system with information :'
     cat $WORK_PATH/param.tmp
     local msg=`curl -s -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "http://$REMOTE_IP/agent/register"`
     local code=`echo $msg |grep -E -o '"code":[0-9]+'|grep -E -o '[0-9]+'`
