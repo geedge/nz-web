@@ -58,10 +58,13 @@ public class VisualChartElementServiceImpl extends ServiceImpl<VisualChartElemen
         }
         // 1. 查询当前 chart 下所有的 chartElements
         List<VisualChartElement> list = this.list(new QueryWrapper<VisualChartElement>().lambda().eq(VisualChartElement::getChartId, chartId));
-
+        List<Integer> elementIds = list.stream().map(VisualChartElement::getId).collect(Collectors.toList());
+        
         List<VisualChartElement> saveList = new ArrayList<>();
         List<VisualChartElement> updateList = new ArrayList<>();
 
+        
+        
         // 2. 通过 id 判断是否 新增/修改
         for (VisualChartElement element : chartElements) {
             // 设置 关联 chart id
@@ -74,8 +77,8 @@ public class VisualChartElementServiceImpl extends ServiceImpl<VisualChartElemen
             }
 
             // 3. 数据库存在 element 列表中没有的 element，删除
-            if (list.contains(element)) {
-                list.remove(element);
+            if (elementIds.contains(element.getId())) {
+            	elementIds.remove(element.getId());
             }
         }
         if (saveList.size() > 0) {
@@ -84,8 +87,7 @@ public class VisualChartElementServiceImpl extends ServiceImpl<VisualChartElemen
         if (updateList.size() > 0) {
             this.updateBatchById(updateList);
         }
-        if (list.size() > 0) {
-            List<Integer> elementIds = list.stream().map(VisualChartElement::getId).collect(Collectors.toList());
+        if (elementIds.size() > 0) {
             this.removeByIds(elementIds);
         }
     }

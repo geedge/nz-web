@@ -32,6 +32,7 @@ import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
+import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.ChartService;
 import com.nis.modules.panel.service.PanelService;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -1939,15 +1940,15 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     }
 
     @Override
-    public List<Chart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
-        List<Chart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
+    public List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
+        List<VisualChart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
         if(CollectionUtils.isEmpty(chartIdWithAssetEntity)){
             return Collections.emptyList();
         }
         List<AssetTag> tags = assetTagService.list();
         Map<Integer, List<AssetTag>> assetIdAndTagsMap = tags.stream().collect(Collectors.groupingBy(AssetTag::getAssetId));
         Asset asset;
-        for (Chart chart : chartIdWithAssetEntity) {
+        for (VisualChart chart : chartIdWithAssetEntity) {
             asset = chart.getAsset();
             asset.setTags(assetIdAndTagsMap.get(asset.getId()));
         }

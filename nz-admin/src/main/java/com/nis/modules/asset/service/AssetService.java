@@ -6,6 +6,7 @@ import com.nis.common.utils.R;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.panel.entity.Chart;
+import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.terminal.entity.Account;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,7 +56,7 @@ public interface AssetService extends IService<Asset> {
 
     List<Asset> getAssetsWithTagsByModelId(Integer modelId);
 
-    List<Chart> getAssetsWithTagByChartIds(List<Integer> chartIds);
+    List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds);
 
     void updateBatchAccountAndTagByAssetIds(Map<String, Object> param);
 }

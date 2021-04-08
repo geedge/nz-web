@@ -6,6 +6,8 @@ import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetStat;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.panel.entity.Chart;
+import com.nis.modules.panel.entity.VisualChart;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
@@ -33,7 +35,7 @@ public interface AssetDao extends BaseMapper<Asset> {
     
     List<MetricsDto> selectAssetStatisticsByModelOnLine();
     
-    List<Chart> getAssetsByChartIds(@Param("ids") List<Integer> idList);
+    List<VisualChart> getAssetsByChartIds(@Param("ids") List<Integer> idList);
 
     List<Map> getStatByDc();
 

@@ -675,13 +675,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
     
-    private String handleChartElementForExport(List<ChartElement> chartElements) {
+    private String handleChartElementForExport(List<VisualChartElement> chartElements) {
         if (CollectionUtils.isEmpty(chartElements)) {
             return "";
         }
         List<Map> handleMaps = new ArrayList<>();
         Map tempMap;
-        for (ChartElement element : chartElements) {
+        for (VisualChartElement element : chartElements) {
             tempMap = new LinkedHashMap(4);
             tempMap.put("expression", element.getExpression());
             if(ToolUtil.isNotEmpty(element.getLegend())){

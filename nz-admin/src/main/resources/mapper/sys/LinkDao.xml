@@ -12,7 +12,7 @@
         <result property="buildIn" column="build_in"/>
         
         <association columnPrefix="u_" property="creator" javaType="com.nis.modules.sys.entity.SysUserEntity">
-	    	<result column="userId" property="userId"/>
+	    	<result column="id" property="id"/>
 	    	<result column="userName" property="userName"/>
 	    </association>
 	

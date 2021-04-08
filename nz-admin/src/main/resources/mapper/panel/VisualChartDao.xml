@@ -34,8 +34,6 @@
             <result property="type" column="type"></result>
             <result property="legend" column="legend"></result>
         </collection>
-        <collection property="children" ofType="com.nis.modules.panel.entity.VisualChart" columnPrefix="children_">
-        </collection>
     </resultMap>
 
 	<select id="queryInfo" resultMap="visualChartResult">
@@ -118,4 +116,5 @@
     	select panel_id id,count(*) chartNums
 		from visual_chart group by panel_id
     </select>
+
 </mapper>

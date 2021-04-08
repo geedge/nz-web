@@ -229,7 +229,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         chartElementService.delElementByChartIds(idList);
 
         // 3. 返回引用 chartId 和 对应的 asset 信息 ，准备做 变量替换所需
-        List<Chart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
+/*        List<Chart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
         Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(Chart::getId, Chart::getAsset));
 
         // 4. 处理更新
@@ -258,7 +258,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         }
 
         this.saveOrUpdateBatch(charts);
-        chartElementService.saveBatch(saveElements);
+        chartElementService.saveBatch(saveElements); */
     }
 
     /**

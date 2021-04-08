@@ -14,7 +14,7 @@
         <result property="pid" column="pid"></result>
         <result property="weight" column="weight"></result>
         <association property="creator" columnPrefix="su_" javaType="com.nis.modules.sys.entity.SysUserEntity">
-            <result property="userId" column="userId" />
+            <result property="id" column="id" />
             <result property="userName" column="username"></result>
         </association>
     </resultMap>

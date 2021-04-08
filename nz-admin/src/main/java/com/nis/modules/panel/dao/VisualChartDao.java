@@ -21,4 +21,5 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     List<VisualChart> selectChartNum();
     
     List<VisualChart> queryList(@Param("params") Map<String,Object> params);
+    
 }

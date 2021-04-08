@@ -1,10 +1,7 @@
 package com.nis.modules.panel.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,7 +10,6 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExcelUtils;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
@@ -22,50 +18,33 @@ import com.nis.modules.asset.entity.AssetTag;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.panel.dao.VisualChartDao;
 import com.nis.modules.panel.entity.Chart;
-import com.nis.modules.panel.entity.ChartElement;
+import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.ChartElementService;
+import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service("visualChartService")
 public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualChart> implements VisualChartService {
@@ -82,16 +61,51 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	private SysDictService sysDictService;
 	
 	@Autowired
-	private ChartElementService chartElementService;
+	private VisualChartElementService chartElementService;
 	
 	@Autowired
 	private AssetService assetService;
 	
 	@Override
 	public List<VisualChart> queryList(Map<String, Object> params) {
+		
 		List<VisualChart> result = this.baseMapper.queryList(params);
+
+		String param;
+        for (VisualChart chart : result) {
+            // param 格式处理
+            param = (String) chart.getParam();
+            if (StringUtils.isNotEmpty(param)) {
+                chart.setParam(JSONObject.parseObject(param, Map.class));
+            }
+        }
+        
+        result = this.getChartTreeList(result,0);
+        
+        //处理所有group下children
 		return result;
 	}
+	
+	/**
+     * 递归获取树结构
+     *
+     * @param chartList
+     * @param parentId
+     * @return
+     */
+    private List<VisualChart> getChartTreeList(List<VisualChart> chartList, Integer parentId) {
+        List<VisualChart> resultList = new ArrayList<>();
+        for (VisualChart chart : chartList) {
+            Integer id = chart.getId();
+            Integer groupId = chart.getGroupId();
+            if(parentId.equals(groupId)) {
+            	chart.setChildren(this.getChartTreeList(chartList, id));
+                resultList.add(chart);
+            }
+        }
+        return resultList;
+    }
+	
 	
 	@Override
 	public VisualChart queryInfo(Integer id) {
@@ -127,7 +141,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	
 	    // 3. 根据 type 校验 各项参数
 	    Map param = (Map) chart.getParam();
-	    List<ChartElement> elements = chart.getElements();
+	    List<VisualChartElement> elements = chart.getElements();
 	    switch (type) {
 	        // url类型
 	        case Constant.CHART_URL_TYPE: {
@@ -307,7 +321,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             targetChart.setParam(ToolUtil.isNotEmpty(targetChart.getParam()) ? this.replacAssetInfos(targetChart.getParam().toString(), asset) : null);
 
             if (CollectionUtils.isNotEmpty(targetChart.getElements())) {
-                for (ChartElement element : targetChart.getElements()) {
+                for (VisualChartElement element : targetChart.getElements()) {
                     element.setId(null);
                     element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? this.replacAssetInfos(element.getExpression(), asset) : null);
                 }
@@ -389,13 +403,13 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         chartElementService.delElementByChartIds(idList);
 
         // 3. 返回引用 chartId 和 对应的 asset 信息 ，准备做 变量替换所需
-        List<Chart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
-        Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(Chart::getId, Chart::getAsset));
+        List<VisualChart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
+        Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getAsset));
 
         // 4. 处理更新
-        List<ChartElement> elements = chart.getElements();
-        List<ChartElement> saveElements = new ArrayList<>();
-        ChartElement tempElement;
+        List<VisualChartElement> elements = chart.getElements();
+        List<VisualChartElement> saveElements = new ArrayList<>();
+        VisualChartElement tempElement;
         Asset asset;
         for (VisualChart entity : charts) {
             asset = chartIdAndAssetEntityMap.get(entity.getId());
@@ -406,8 +420,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             entity.setUnit(chart.getUnit());
             entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? this.replacAssetInfos(chart.getParam().toString(), asset) : null);
             if (CollectionUtils.isNotEmpty(elements)) {
-                for (ChartElement chartElement : elements) {
-                    tempElement = new ChartElement();
+                for (VisualChartElement chartElement : elements) {
+                    tempElement = new VisualChartElement();
                     BeanUtils.copyProperties(chartElement, tempElement);
                     tempElement.setChartId(entity.getId());
                     tempElement.setId(null);

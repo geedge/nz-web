@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.asset.entity.Asset;
 
 import lombok.Data;
 
@@ -45,7 +46,7 @@ public class VisualChart {
 	private String seq;
 	
 	@TableField(exist = false)
-    private List<ChartElement> elements;
+    private List<VisualChartElement> elements;
 
     /**
      * 同步标识
@@ -64,4 +65,7 @@ public class VisualChart {
     
     @TableField(exist = false)
     private Integer chartNums;
+    
+    @TableField(exist = false)
+    private Asset asset;
 }
