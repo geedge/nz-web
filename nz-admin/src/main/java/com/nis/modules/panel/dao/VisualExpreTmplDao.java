@@ -1,7 +1,8 @@
 package com.nis.modules.panel.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nis.modules.panel.entity.ExpressionTmpl;
+import com.nis.modules.panel.entity.VisualExpressionTmpl;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +14,5 @@ import org.springframework.stereotype.Repository;
  */
 @Mapper
 @Repository
-public interface ExpreTmplDao extends BaseMapper<ExpressionTmpl> {
+public interface VisualExpreTmplDao extends BaseMapper<VisualExpressionTmpl> {
 }

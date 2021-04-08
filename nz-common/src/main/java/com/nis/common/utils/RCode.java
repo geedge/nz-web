@@ -682,6 +682,12 @@ public enum RCode {
     LINK_PREV_ISNULL(581004,"link prev can not be null"),
 	LINK_NEXT_ISNULL(581005,"link next can not be null"),
 	LINK_BUILDIN_CAN_NOT_REMOVE(587006,"This link is built-in and cannot be deleted"),
+	
+	SNMP_CREDENTIAL_ID_ISNULL(591001,"Snmp credential id can not be null"),
+	SNMP_CREDENTIAL_TYPE_ISNULL(591001,"Snmp credential type can not be null"),
+	SNMP_CREDENTIAL_REMARK_ISNULL(591001,"Snmp credential remark can not be null"),
+	SNMP_CREDENTIAL_CONFIG_ISNULL(591001,"Snmp credential config can not be null"),
+	SNMP_CREDENTIAL_NAME_ISNULL(591001,"Snmp credential name can not be null"),
     /**
      * webshell相关
      */

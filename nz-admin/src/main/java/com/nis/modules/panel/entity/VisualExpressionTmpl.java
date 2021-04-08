@@ -16,8 +16,8 @@ import java.util.Map;
  * @date 2021-03-11
  */
 @Data
-@TableName("expression_tmpl")
-public class ExpressionTmpl implements Serializable {
+@TableName("visual_expression_tmpl")
+public class VisualExpressionTmpl implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**

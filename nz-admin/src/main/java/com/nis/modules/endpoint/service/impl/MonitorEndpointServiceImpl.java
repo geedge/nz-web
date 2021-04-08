@@ -21,7 +21,7 @@ import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.service.ExpreTmplService;
+import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
@@ -71,7 +71,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private MonitorProjectService monitorProjectService;
 
     @Autowired
-    private ExpreTmplService expreTmplService;
+    private VisualExpreTmplService expreTmplService;
 
     @Autowired
     private EndpointStateService endpointStateService;

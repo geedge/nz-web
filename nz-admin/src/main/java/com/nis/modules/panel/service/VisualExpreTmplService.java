@@ -2,7 +2,8 @@ package com.nis.modules.panel.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
-import com.nis.modules.panel.entity.ExpressionTmpl;
+import com.nis.modules.panel.entity.VisualExpressionTmpl;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -15,21 +16,21 @@ import java.util.Map;
  * @author shizhendong
  * @date 2021-03-11
  */
-public interface ExpreTmplService extends IService<ExpressionTmpl> {
+public interface VisualExpreTmplService extends IService<VisualExpressionTmpl> {
 
-    ExpressionTmpl queryTmplInfoById(Integer id);
+	VisualExpressionTmpl queryTmplInfoById(Integer id);
 
     PageUtils queryPage(Map<String, Object> params);
 
     List<String> queryTmplsByGname(String gname);
 
-    Integer saveTmpl(ExpressionTmpl tmpl);
+    Integer saveTmpl(VisualExpressionTmpl tmpl);
 
-    Integer updateTmpl(ExpressionTmpl tmpl);
+    Integer updateTmpl(VisualExpressionTmpl tmpl);
 
     void delete(Integer... ids);
 
-    String renderExpression(ExpressionTmpl tmpl);
+    String renderExpression(VisualExpressionTmpl tmpl);
 
     String renderExpression(String expression, Map varsVal);
 

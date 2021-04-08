@@ -19,9 +19,9 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.panel.dao.ExpreTmplDao;
-import com.nis.modules.panel.entity.ExpressionTmpl;
-import com.nis.modules.panel.service.ExpreTmplService;
+import com.nis.modules.panel.dao.VisualExpreTmplDao;
+import com.nis.modules.panel.entity.VisualExpressionTmpl;
+import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
  * @date 2021-03-11
  */
 @Service
-public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTmpl> implements ExpreTmplService {
+public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, VisualExpressionTmpl> implements VisualExpreTmplService {
 
     private static Log logger = Log.get();
 
@@ -76,8 +76,8 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     private MonitorEndpointService endpointService;
 
     @Override
-    public ExpressionTmpl queryTmplInfoById(Integer id) {
-        ExpressionTmpl tmpl = this.getById(id);
+    public VisualExpressionTmpl queryTmplInfoById(Integer id) {
+    	VisualExpressionTmpl tmpl = this.getById(id);
         if (ToolUtil.isEmpty(tmpl)) {
             throw new NZException(RCode.EXPRETMPL_NOT_FOUND);
         }
@@ -104,25 +104,25 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        LambdaQueryWrapper<ExpressionTmpl> queryWrapper = new LambdaQueryWrapper<ExpressionTmpl>()
-                .eq(ToolUtil.isNotEmpty(params.get("id")), ExpressionTmpl::getId, params.get("id"))
-                .like(ToolUtil.isNotEmpty(params.get("name")), ExpressionTmpl::getName, params.get("name"))
-                .eq(ToolUtil.isNotEmpty(params.get("gname")), ExpressionTmpl::getGname, params.get("gname"));
+        LambdaQueryWrapper<VisualExpressionTmpl> queryWrapper = new LambdaQueryWrapper<VisualExpressionTmpl>()
+                .eq(ToolUtil.isNotEmpty(params.get("id")), VisualExpressionTmpl::getId, params.get("id"))
+                .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, params.get("name"))
+                .eq(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
 
-        IPage<ExpressionTmpl> page = this.page(new Query<ExpressionTmpl>().getPage(params), queryWrapper);
+        IPage<VisualExpressionTmpl> page = this.page(new Query<VisualExpressionTmpl>().getPage(params), queryWrapper);
         return new PageUtils(page);
     }
 
     @Override
     public List<String> queryTmplsByGname(String gname) {
-        List<ExpressionTmpl> list = this.list(new LambdaQueryWrapper<ExpressionTmpl>().like(ToolUtil.isNotEmpty(gname), ExpressionTmpl::getGname, gname).orderByAsc(ExpressionTmpl::getGname));
-        List<String> gnameList = list.stream().map(ExpressionTmpl::getGname).distinct().collect(Collectors.toList());
+        List<VisualExpressionTmpl> list = this.list(new LambdaQueryWrapper<VisualExpressionTmpl>().like(ToolUtil.isNotEmpty(gname), VisualExpressionTmpl::getGname, gname).orderByAsc(VisualExpressionTmpl::getGname));
+        List<String> gnameList = list.stream().map(VisualExpressionTmpl::getGname).distinct().collect(Collectors.toList());
         return gnameList;
     }
 
-    private void validateExpressionTmplInfo(ExpressionTmpl tmpl) {
+    private void validateExpressionTmplInfo(VisualExpressionTmpl tmpl) {
         // 1. 名称重复
-        List<ExpressionTmpl> list = this.list(new LambdaQueryWrapper<ExpressionTmpl>().eq(ExpressionTmpl::getGname, ToolUtil.isEmpty(tmpl.getGname()) ? "default" : tmpl.getGname()).eq(ExpressionTmpl::getName, tmpl.getName()));
+        List<VisualExpressionTmpl> list = this.list(new LambdaQueryWrapper<VisualExpressionTmpl>().eq(VisualExpressionTmpl::getGname, ToolUtil.isEmpty(tmpl.getGname()) ? "default" : tmpl.getGname()).eq(VisualExpressionTmpl::getName, tmpl.getName()));
         boolean flag = false;
         // 当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
         if ((list == null || list.size() == 0) || (list != null && list.size() == 1 && list.get(0).getId().equals(tmpl.getId()))) {
@@ -141,7 +141,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     }
 
     @Override
-    public Integer saveTmpl(ExpressionTmpl tmpl) {
+    public Integer saveTmpl(VisualExpressionTmpl tmpl) {
         // 1. 校验
         this.validateExpressionTmplInfo(tmpl);
 
@@ -155,7 +155,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     }
 
     @Override
-    public Integer updateTmpl(ExpressionTmpl tmpl) {
+    public Integer updateTmpl(VisualExpressionTmpl tmpl) {
         // 1. 校验
         this.validateExpressionTmplInfo(tmpl);
 
@@ -170,10 +170,10 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
     @Override
     public void delete(Integer... ids) {
-        List<ExpressionTmpl> list = this.list();
+        List<VisualExpressionTmpl> list = this.list();
 
         // 1. 内置的 配置不允许删除
-        List<Integer> buildInIdList = list.stream().filter(assetTypeConf -> assetTypeConf.getBuildIn().equals(1)).map(ExpressionTmpl::getId).collect(Collectors.toList());
+        List<Integer> buildInIdList = list.stream().filter(assetTypeConf -> assetTypeConf.getBuildIn().equals(1)).map(VisualExpressionTmpl::getId).collect(Collectors.toList());
         buildInIdList.retainAll(Arrays.asList(ids));
         if (CollectionUtils.isNotEmpty(buildInIdList)) {
             throw new NZException("These expression templates are built-in and cannot be deleted. Details: " + buildInIdList.toString(), RCode.EXPRETMPL_BUILDIN_CAN_NOT_REMOVE.getCode());
@@ -191,7 +191,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
      * @return
      */
     @Override
-    public String renderExpression(ExpressionTmpl tmpl) {
+    public String renderExpression(VisualExpressionTmpl tmpl) {
         String expression = tmpl.getExpression();
         Map varsVal = tmpl.getVarsVal();
 
@@ -320,11 +320,11 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
     }
 
     private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
-        List<ExpressionTmpl> tmpls = this.list();
-        List<String> ganmes = tmpls.stream().map(ExpressionTmpl::getGname).distinct().collect(Collectors.toList());
+        List<VisualExpressionTmpl> tmpls = this.list();
+        List<String> ganmes = tmpls.stream().map(VisualExpressionTmpl::getGname).distinct().collect(Collectors.toList());
         Map<String, List<String>> gnameAndTmplNameMap = new HashMap();
         ganmes.stream().forEach(gname -> {
-            List<String> tmplNames = tmpls.stream().filter(tmpl -> tmpl.getGname().equals(gname)).map(ExpressionTmpl::getName).collect(Collectors.toList());
+            List<String> tmplNames = tmpls.stream().filter(tmpl -> tmpl.getGname().equals(gname)).map(VisualExpressionTmpl::getName).collect(Collectors.toList());
             gnameAndTmplNameMap.put(gname, tmplNames);
         });
 
@@ -358,7 +358,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
             }
             if (saveFlag) {
                 String remark = ExcelUtils.getCellValue(row.getCell(3));
-                ExpressionTmpl tmpl = new ExpressionTmpl();
+                VisualExpressionTmpl tmpl = new VisualExpressionTmpl();
                 tmpl.setName(name);
                 tmpl.setGname(gname);
                 tmpl.setExpression(expression);
@@ -393,7 +393,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
 
         PageUtils page = this.queryPage(params);
-        List<ExpressionTmpl> list = (List<ExpressionTmpl>) page.getList();
+        List<VisualExpressionTmpl> list = (List<VisualExpressionTmpl>) page.getList();
 
         SXSSFWorkbook workbook = null;
         try {
@@ -427,10 +427,10 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
         }
     }
 
-    private void fillData(List<ExpressionTmpl> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+    private void fillData(List<VisualExpressionTmpl> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
         Row row;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
-        for (ExpressionTmpl tmpl : list) {
+        for (VisualExpressionTmpl tmpl : list) {
             row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(tmpl.getName());
             row.createCell(1).setCellValue(tmpl.getGname());
@@ -444,7 +444,7 @@ public class ExpreTmplServiceImpl extends ServiceImpl<ExpreTmplDao, ExpressionTm
 
     @Override
     public void cancelImport(String seq) {
-        this.remove(new LambdaQueryWrapper<ExpressionTmpl>().eq(ExpressionTmpl::getSeq, seq));
+        this.remove(new LambdaQueryWrapper<VisualExpressionTmpl>().eq(VisualExpressionTmpl::getSeq, seq));
     }
 
 }

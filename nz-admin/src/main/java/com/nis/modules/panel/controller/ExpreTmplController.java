@@ -4,8 +4,9 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.panel.entity.ExpressionTmpl;
-import com.nis.modules.panel.service.ExpreTmplService;
+import com.nis.modules.panel.entity.VisualExpressionTmpl;
+import com.nis.modules.panel.service.VisualExpreTmplService;
+
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ import java.util.Map;
 public class ExpreTmplController {
 
     @Autowired
-    private ExpreTmplService expreTmplService;
+    private VisualExpreTmplService expreTmplService;
 
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
@@ -57,7 +58,7 @@ public class ExpreTmplController {
     @PostMapping
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:save"})
-    public R saveTmpl(@RequestBody ExpressionTmpl tmpl) {
+    public R saveTmpl(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
                 .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
 
@@ -69,7 +70,7 @@ public class ExpreTmplController {
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:update"})
-    public R editTmpl(@RequestBody ExpressionTmpl tmpl) {
+    public R editTmpl(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getId()).notNull(RCode.EXPRETMPL_ID_ISNULL)
                 .and(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
                 .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
@@ -92,7 +93,7 @@ public class ExpreTmplController {
     @PostMapping("/render")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:render"})
-    public R renderExpressionContent(@RequestBody ExpressionTmpl tmpl) {
+    public R renderExpressionContent(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL)
                 .and(tmpl.getVarsVal()).notNull(RCode.EXPRETMPL_RENDER_DATA_ISNULL);
 
