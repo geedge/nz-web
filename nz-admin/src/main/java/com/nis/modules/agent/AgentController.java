@@ -100,7 +100,9 @@ public class AgentController {
 		String json = sysConfigService.getValue("confagent_name");
 		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
 		String confagentName = (String) confagentNames.get(os);
-		File file = Tool.FileUtil.file(installFilePath, confagentName);
+		String packagePath = Tool.FileUtil.file(installFilePath, confagentName).getPath();
+		log.info("file path: {}",packagePath);
+		File file = Tool.FileUtil.file(packagePath);
 		log.info("file exist: {}", file.exists());
 		try {
 			Tool.ResponseUtil.downloadFile(response, file);
