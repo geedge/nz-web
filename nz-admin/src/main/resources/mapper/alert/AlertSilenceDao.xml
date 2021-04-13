@@ -29,7 +29,7 @@
 				asic.end_at,
 				asic.utime,
 				asic.state,
-				ar.alert_name as rule_name
+				ar.name as rule_name
 				<choose>
 				    <when test="params.type != null and params.type!='' and params.query!=null and params.query!=''">
 				      	<if test='params.type=="datacenter"'>

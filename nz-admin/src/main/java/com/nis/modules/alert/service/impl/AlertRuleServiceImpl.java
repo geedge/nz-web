@@ -117,7 +117,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     public boolean checkName(AlertRuleEntity alertRule) {
         List<AlertRuleEntity> list = this.list(new QueryWrapper<AlertRuleEntity>().lambda()
-                .eq(AlertRuleEntity::getAlertName, alertRule.getAlertName()));
+                .eq(AlertRuleEntity::getName, alertRule.getName()));
 
         //当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
         if ((list == null || list.size() == 0) ||
@@ -387,7 +387,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 预先查询出校验数据 避免循环查表
         List<AlertRuleEntity> alertList = this.list();
-        List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getAlertName).collect(Collectors.toList());
+        List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getName).collect(Collectors.toList());
         List<SysUserEntity> userList = sysUserService.list();
 
         List<Map> failDetails = new ArrayList<>();
@@ -505,7 +505,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
             if (saveFlag) {
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
-                ruleEntity.setAlertName(alertName);
+                ruleEntity.setName(alertName);
                 ruleEntity.setExpr(expr);
                 ruleEntity.setOperator(operator);
                 ruleEntity.setThreshold(Double.valueOf(threshold));
@@ -637,7 +637,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             // 内置告警不导出
             if (rule.getBuildIn() != null && rule.getBuildIn().equals(1)) continue;
             row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(rule.getAlertName());
+            row.createCell(0).setCellValue(rule.getName());
             row.createCell(1).setCellValue(rule.getExpr());
             row.createCell(2).setCellValue(rule.getOperator());
             row.createCell(3).setCellValue(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
@@ -683,7 +683,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private void validateParam(AlertRuleEntity alertRule) {
         String operator = alertRule.getOperator();
         Integer unit = alertRule.getUnit();
-        ValidateUtils.is(alertRule.getAlertName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
+        ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
                 .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
                 .and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)

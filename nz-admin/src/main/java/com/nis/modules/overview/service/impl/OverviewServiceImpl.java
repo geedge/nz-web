@@ -119,7 +119,7 @@ public class OverviewServiceImpl implements OverviewService {
 
             map = new HashMap();
             map.put("id", ruleEntity.getId());
-            map.put("alertName", ruleEntity.getAlertName());
+            map.put("alertName", ruleEntity.getName());
             map.put("level", ruleEntity.getSeverity());
             map.put("nums", entry.getValue());
 

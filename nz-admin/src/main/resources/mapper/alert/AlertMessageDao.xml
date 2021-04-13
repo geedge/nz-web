@@ -15,7 +15,7 @@
         <result property="state" column="state"/>
 		<result property="hashKey" column="hash_key"/>
 		<result property="alertRule.id" column="rule_id" />
-		<result property="alertRule.alertName" column="alert_name"/>
+		<result property="alertRule.name" column="name"/>
 		<result property="alertRule.expr" column="expr"/>
 		<result property="alertRule.operator" column="operator"/>
 		<result property="alertRule.threshold" column="threshold"/>
@@ -69,7 +69,7 @@
 	<select id="list" resultMap="alertMessageMap">
 		SELECT
 			am.*,
-			ar.alert_name,
+			ar.name,
 			ar.expr,
 			ar.operator,
 			ar.threshold,
@@ -113,7 +113,7 @@
 		LEFT JOIN asset ass on am.asset_id = ass.id
 		<where>
 			<if test="params.alertName != null and params.alertName != ''">
-				ar.alert_name like concat('%', #{params.alertName}, '%')
+				ar.name like concat('%', #{params.alertName}, '%')
 			</if>
 
 			<if test="params.severity != null and params.severity != ''">

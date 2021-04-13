@@ -29,7 +29,7 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 告警名称
 	 */
-	private String alertName;
+	private String name;
 
 	/**
 	 * 运算表达式

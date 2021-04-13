@@ -540,7 +540,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
         for (AlertMessageEntity entity : list) {
             r = sheet.createRow(++rowNum);
             AlertRuleEntity alertRule = entity.getAlertRule();
-            String ruleName = alertRule == null ? "" : alertRule.getAlertName();
+            String ruleName = alertRule == null ? "" : alertRule.getName();
             Dc dc = entity.getDc();
             String dcName = dc == null ? "" : dc.getName();
             Project project = entity.getProject();

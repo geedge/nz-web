@@ -6,7 +6,7 @@
     <!-- 可根据自己的需求，是否要使用 -->
     <resultMap type="com.nis.modules.alert.entity.AlertRuleEntity" id="alertRuleMap">
         <result property="id" column="id"/>
-        <result property="alertName" column="alert_name"/>
+        <result property="name" column="name"/>
         <result property="expr" column="expr"/>
         <result property="last" column="last"/>
         <result property="severity" column="severity"/>
@@ -18,7 +18,7 @@
     <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
         SELECT
         ar.id,
-        ar.alert_name AS alertName,
+        ar.name AS name,
         ar.expr,
         ar.operator,
         ar.threshold,
@@ -40,7 +40,7 @@
             </if>
 
             <if test="params.alertName != null and params.alertName != ''">
-                AND ar.alert_name LIKE CONCAT('%', #{params.alertName}, '%')
+                AND ar.name LIKE CONCAT('%', #{params.alertName}, '%')
             </if>
 
             <if test="params.expr != null and params.expr != ''">
@@ -148,7 +148,7 @@
     <select id="getAlertRulesStatColumn" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
         SELECT
             id,
-            alert_name,
+            name,
             severity
         FROM
             alert_rule
