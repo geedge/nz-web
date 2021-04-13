@@ -394,7 +394,7 @@ public enum RCode {
     ALERTRULE_LAST_ISNULL(421005, "Last is required"), //告警持续时间不能为空
     ALERTRULE_LAST_ISNOTPOSITIVE(425006, "Last must be a positive number"), //告警持续时间必须是正数
     ALERTRULE_SEVERITY_ISNULL(421007, "Severity is required"),               //告警级别不能为空
-    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity must be P1, P2 and P3"),
+    ALERTRULE_SEVERITY_INCORRECT(424008, "Severity is not exists"),
     ALERTRULE_LINK_OBJECT_ISNULL(426009, "Association object does not exist"),
     ALERTRULE_TYPE_ISNULL(421010, "Alarm type is empty"),
     ALERTRULE_TYPE_INVALIDE(424011, "Alarm type is invalide"),
@@ -439,7 +439,29 @@ public enum RCode {
     ALERTSILENCE_RULE_LINK_IS_NULL(441003,"AlertSilence ruleId or linkId can not be empty at the same time"),
     ALERTSILENCE_TYPE_LINKID_IS_NULL(441004,"LinkId is not empty, Type can not be empty"),
     ALERTSILENCE_TYPE_ERROR(445005,"AlertSilence type value error"),
-    
+
+
+    /**
+     *  告警级别
+     */
+    ALERTSEVERITY_NAME_ISNULL(451001,"Alert severity name can not be null"),
+    ALERTSEVERITY_COLOR_ISNULL(451002,"Alert severity color can not be null"),
+    ALERTSEVERITY_METHODS_ISNULL(451003,"Alert severity methods can not be null"),
+    ALERTSEVERITY_ID_ISNULL(451004,"Alert severity id can not be null"),
+    ALERTSEVERITY_REMARK_ISNULL(451005,"Alert severity remark can not be null"),
+    ALERTSEVERITY_WEIGHT_PARAM_ISNULL(451006,"Alert severity id or weight is null"),
+
+
+    /**
+     *  告警通知
+     */
+    ALERTNOTIFY_NOT_EXISTS(461001,"Alert notify method is not exists"),
+    ALERTNOTIFY_NAME_ISNULL(461002,"Alert notify method name can not be null"),
+    ALERTNOTIFY_FILE_NOTEXISTS(461003,"Alert notify method script file is not exsits"),
+    ALERTNOTIFY_ACCOUNT_ISNULL(461004,"Alert notify method account can not be null"),
+    ALERTNOTIFY_STATE_ISNULL(461005,"Alert notify method state can not be null"),
+    ALERTNOTIFY_ID_ISNULL(461006,"Alert notify method ID can not be null"),
+    ALERTNOTIFY_FILEPATH_ISNULL(461007,"Alert notify method file path can not be null"),
     /**
      * setting菜单项相关
      */

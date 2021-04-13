@@ -17,6 +17,7 @@ import com.nis.setup.entity.SetupEntity;
 import com.nis.setup.util.Utils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -39,6 +40,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/setup")
+@ConditionalOnProperty(prefix = "nezha",name = "inited",havingValue = "0")
 public class SetupController implements ApplicationContextAware, EnvironmentAware {
     private Log log = Log.get();
 

@@ -31,6 +31,8 @@ public enum TypeEnum {
 	LINK("link"),
     SCRIPT("notification script"),
 	ALERTSILENCE("alert silence"),
+    ALERTSEVERITY("alert severity"),
+    ALERTNOTIFYMETHOD("alert notify method"),
     ASSETSTATECONF("asset state conf"),
     ASSETTYPECONF("asset type conf"),
     EXPRESSIONTMPL("expression tmpl"),
