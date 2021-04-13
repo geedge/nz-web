@@ -43,7 +43,7 @@ CREATE TABLE `visual_chart`  (
   `update_by` int(10) NOT NULL COMMENT '更新人',
   `update_at` datetime(0) NOT NULL COMMENT '更新时间',
   `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '图表类型 line\r\nbar\r\ntable\r\nstackArea\r\nsingleStat\r\nurl\r\nassetInfo\r\nalertList\r\ngroup',
-  `unit` int(10) NOT NULL COMMENT '界面显示采用二级菜单',
+  `unit` int(10) NOT NULL DEFAULT 2 COMMENT '界面显示采用二级菜单',
   `weight` int(10) NOT NULL DEFAULT 0 COMMENT '默认为 0，用于chart排序',
   `param` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '参数 记录type的具体参数信息，数据格式为json对象\r\n\r\n当type = url时\r\n\r\n{\r\n\r\n    “url”:\"https://www.baidu.com\"\r\n\r\n}',
   `pid` int(10) NULL DEFAULT NULL COMMENT '模板id 图表通过模板创建时不能为空，便于后续模板修改同步修改',

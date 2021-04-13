@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.stat.dao.StatDao">
+    
+    <resultMap type="com.nis.modules.stat.entity.StatAnalysis" id="statAnalysis">
+    	<result column="id" property="id"/>
+    	<result column="name" property="name"/>
+    	<result column="type" property="type"/>
+    	<result column="num" property="num"/>
+    </resultMap>
+    
+    <select id="selectAssetTypeAnalysis" resultMap="statAnalysis">
+    	select atc.id as id,
+    	atc.name as name,
+    	count(distinct(aa.id)) as num
+    	from asset_asset aa left join asset_type_conf atc on aa.type_id = atc.id
+    	<if test="params.projectId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1 
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	group by aa.type_id
+    </select>
+    
+    
+    <select id="selectAssetStateAnalysis" resultMap="statAnalysis">
+    	select ascc.id as id,
+    	ascc.name as name,
+    	count(distinct(aa.id)) as num
+    	from asset_asset aa left join asset_state_conf ascc on aa.state_id = ascc.id
+    	<if test="params.projectId != null or params.moduleId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.modelId != null">
+    		and aa.model_id = #{params.modelId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and mm.id = #{params.moduleId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	group by aa.state_id
+    </select>
+    
+    <select id="selectAssetModelAnalysis" resultMap="statAnalysis">
+    	select am.id as id,
+    	am.name as name,
+    	count(distinct(aa.id)) as num
+    	from asset_asset aa left join asset_model am on aa.model_id = am.id
+    	<if test="params.projectId != null or params.moduleId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and mm.id = #{params.moduleId}
+    	</if>
+    	group by aa.model_id;
+    </select>
+    
+    <select id="selectAssetPingAnalysis" resultMap="statAnalysis">
+    	select ap.status,
+    	count(distinct(aa.id)) as num
+    	from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
+    	<if test="params.projectId != null or params.moduleId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	<if test="params.modelId != null">
+    		and aa.model_id = #{params.modelId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and mm.id = #{params.moduleId}
+    	</if>
+    	group by ap.status
+    </select>
+    
+    <select id="selectAssetFieldAnalysis" resultMap="statAnalysis">
+    	select afm.id as id,
+    	afm.name as name,
+    	afv.value as value,
+    	count(*) as num
+    	from asset_field_value afv left join asset_asset aa on afv.asset_id = aa.id
+    	left join asset_field_meta afm on afv.meta_id = afm.id
+    	<if test="params.projectId != null or params.moduleId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and mm.id = #{params.moduleId}
+    	</if>
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.modelId != null">
+    		and aa.model_id = #{params.modelId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	<if test="params.fieldId != null">
+    		and afm.id = #{params.fieldId}
+    	</if>
+    	group by afm.id
+    </select>
+    
+    <select id="selectEndpointTypeAnalysis" resultMap="statAnalysis">
+    	select 	mm.type as name,
+    	count(distinct (me.id))num
+    	from monitor_endpoint me left join monitor_module mm on me.module_id = mm.id
+    	<if test="params.state != null">
+    		left join endpoint_state es on me.id = es.endpoint_id
+    	</if>
+    	<if test="params.dcId != null">
+    		left join asset_asset aa on me.asset_id = aa.id 
+    	</if>
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and mm.project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and me.module_id = #{params.moduleId}
+    	</if>
+    	<if test="params.state != null">
+    		and es.state = #{params.state}
+    	</if>
+    	<if test="params.assetId != null">
+    		and me.asset_id = #{params.assetId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	group by mm.type
+    </select>
+    
+    <select id="selectEndpointStateAnalysis" resultMap="statAnalysis">
+    	select 	case when es.state =0 then 'down' when es.state=1 then 'up' else 'suspended' end as name,
+    	count(distinct (me.id))num
+    	from monitor_endpoint me left join endpoint_state es on me.id = es.endpoint_id
+    	<if test="params.projectId != null or params.type != null">
+    		left join monitor_module mm on me.module_id = mm.id	
+    	</if>
+    	<if test="params.dcId != null">
+    		left join asset_asset aa on me.asset_id = aa.id 
+    	</if>    		
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and mm.project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and me.module_id = #{params.projectId}
+    	</if>
+    	<if test="params.type != null">
+    		and mm.type = #{params.type}
+    	</if>
+    	<if test="params.assetId != null">
+    		and me.asset_id = #{params.assetId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	group by es.state
+    </select>
+    
+    <select id="selectAlertMessageStateAnalysis" resultMap="statAnalysis">
+    	select state,
+    	count(id) as num
+    	from alert_message
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and project_id = #{params.moduleId}
+    	</if>
+    	<if test="params.endpointId != null">
+    		and project_id = #{params.endpointId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and project_id = #{params.dcId}
+    	</if>
+    	<if test="params.assetId != null">
+    		and project_id = #{params.assetId}
+    	</if>
+    	<if test="params.ruleId != null">
+    		and project_id = #{params.ruleId}
+    	</if>
+    	group by state
+    </select>
+    
+    <select id="selectAlertMessageSeverityAnalysis" resultMap="statAnalysis">
+    select ascc.name as name,
+    	count(am.id) as num
+    	from alert_message am left join alert_severity_conf ascc on am.severity_id = ascc.id
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and project_id = #{params.moduleId}
+    	</if>
+    	<if test="params.endpointId != null">
+    		and project_id = #{params.endpointId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and project_id = #{params.dcId}
+    	</if>
+    	<if test="params.assetId != null">
+    		and project_id = #{params.assetId}
+    	</if>
+    	group by ascc.id
+    </select>
+    
+    <select id="selectAlertMessageTopNAnalysis" resultMap="statAnalysis">
+    	select t.id as id,
+    	t.name as name,
+    	count(*) as num
+    	from alert_message am
+    	<if test="params.dimension=='project'">
+    		left join monitor_project t on am.project_id = t.id
+    	</if>
+    	<if test="params.dimension=='module'">
+    		left join monitor_module t on am.module_id = t.id
+    	</if>
+    	<if test="params.dimension=='endpoint'">
+    		left join monitor_endpoint t on am.endpoint_id = t.id
+    	</if>
+    	<if test="params.dimension=='datacenter'">
+    		left join dc t on am.dc_id = t.id
+    	</if>
+    	<if test="params.dimension=='asset'">
+    		left join asset_asset t on am.asset_id = t.id
+    	</if>
+    	<if test="params.dimension=='alertRule'">
+    		left join alert_rule t on am.rule_id = t.id
+    	</if>
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and am.project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and am.module_id = #{params.moduleId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and am.dc_id = #{params.dcId}
+    	</if>
+    	order by num desc limit 0,#{params.size}
+    </select>
+    
+    <select id="selectDcStateAnalysis" resultMap="statAnalysis">
+    	select name, count(id) as num
+    	from dc
+    	group by state
+    </select>
+    
+    <select id="selectAgentStateAnalysis" resultMap="statAnalysis">
+    	select case when status =0 then 'down' when status=1 then 'up' end name,
+    	count(id) as num
+    	from prom_server
+    	where 1=1 
+    	<if test="params.dcId != null">
+    		and dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.type != null">
+    		and type = #{params.type}
+    	</if>
+    	group by status
+    </select>
+    
+    <select id="selectAgentTypeAnalysis" resultMap="statAnalysis">
+    	select case when type =1 then 'global' when type=2 then 'per_datacenter' end  name,
+    	count(id) as num
+    	from prom_server
+    	where 1=1 
+    	<if test="params.dcId != null">
+    		and dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.type != null">
+    		and state = #{params.state}
+    	</if>
+    	group by type
+    </select>
+    
+    <select id="selectAssetTotal" resultMap="statAnalysis">
+    	select count(*) as num
+    	from asset_asset aa 
+    	<if test="params.projectId != null or params.moduleId != null">
+    		left join monitor_endpoint me on aa.id = me.asset_id
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	where 1=1 
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and mm.id = #{params.moduleId}
+    	</if>
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.modelId != null">
+    		and aa.model_id = #{params.modelId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    </select>
+    
+    <select id="selectAssetDc" resultMap="statAnalysis">
+    	select dc.id as id,
+    	dc.name as name,
+    	count(*) as num 
+    	from asset_asset aa left join dc on aa.dc_id = dc.id
+    	where 1=1 
+    	<if test="params.typeId != null">
+    		and aa.type_id = #{params.typeId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	group by aa.dc_id
+    </select>
+    
+    <select id="selectAlertRuleTotal" resultMap="statAnalysis">
+    	select ascc.name as name,
+    	count(*) as num
+    	from alert_rule ar left join alert_severity_conf ascc on ar.severity_id = ascc.id
+    	where 1=1
+    	<if test="params.severityId != null">
+    		and ar.severity_id = #{params.severityId}
+    	</if>
+    	group by ar.severity_id
+    </select>
+    
+    <select id="selectAlertMessageTotal" resultMap="statAnalysis">
+    	select count(*) as num
+    	from alert_message am
+    	where 1=1 
+    	<if test="params.projectId != null">
+    		and am.project_id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and am.module_id = #{params.moduleId}
+    	</if>
+    	<if test="params.endpointId != null">
+    		and am.endpoint_id = #{params.endpointId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and am.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.assetId != null">
+    		and am.asset_id = #{params.assetId}
+    	</if>
+    	<if test="params.ruleId != null">
+    		and am.rule_id = #{params.ruleId}
+    	</if>
+    	<if test="params.severityId != null">
+    		and am.severity_id = #{params.severityId}
+    	</if>
+    </select>
+    
+    <select id="selectAgentTotal" resultMap="statAnalysis">
+    	select count(*) as num
+    	from prom_server ps 
+    	where 1=1 
+    	<if test="params.type != null">
+    		and ps.type = #{params.type}
+    	</if>
+    	<if test="params.dcId !=null">
+    		and ps.dc_id = #{params.dcId}
+    	</if>
+    </select>
+    
+    <select id="selectAssetTopN" resultMap="statAnalysis">
+    	select t.id as id,
+    	t.name as name,
+    	count(*) as num
+    	from asset_asset aa
+    	<if test="params.dimension == 'model'">
+    		left join asset_model t on aa.model_id = t.id
+    	</if>
+    	<if test="params.dimension == 'type'">
+    		left join asset_type_conf t on aa.type_id = t.id 
+    	</if>
+    	where 1=1
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.stateId != null">
+    		and aa.state_id = #{params.stateId}
+    	</if>
+    	order by num desc
+    	limit 0,#{params.size}
+    </select>
+    
+    <select id="selectModuleTopN" resultMap="statAnalysis">
+    	select mm.id as id,
+    	mm.name as name,
+    	count(DISTINCT me.id) as num
+    	from monitor_module mm left join monitor_endpoint me on mm.id = me.module_id 
+    	where 1=1
+    	<if test="params.projectId != null">
+    		and mm.project_id = #{params.project_id}
+    	</if>
+    	order by num desc
+    	limit 0,#{params.size}
+    </select>
+    
+    <select id="selectEndpointTotal" resultMap="statAnalysis">
+    	select count(*) as num
+    	from monitor_endpoint me 
+    	<if test="params.projectId != null">
+    		left join monitor_module mm on me.module_id = mm.id
+    		left join monitor_project mp on mm.project_id = mp.id
+    	</if>
+    	<if test="params.assetId != null or params.dcId != null">
+    		left join asset_asset aa on me.asset_id = aa.id
+    	</if>
+    	where 1=1
+    	<if test="params.assetId != null">
+    		and me.asset_id = #{params.assetId}
+    	</if>
+    	<if test="params.projectId != null">
+    		and mp.id = #{params.projectId}
+    	</if>
+    	<if test="params.moduleId != null">
+    		and me.module_id = #{params.moduleId}
+    	</if>
+    	<if test="params.dcId != null">
+    		and aa.dc_id = #{params.dcId}
+    	</if>
+    	<if test="params.state != null">
+    		and me.enabled = #{params.state}
+    	</if>
+    </select>
+</mapper>

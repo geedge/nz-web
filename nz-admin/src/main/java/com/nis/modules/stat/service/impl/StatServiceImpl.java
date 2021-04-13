@@ -1,0 +1,199 @@
+package com.nis.modules.stat.service.impl;
+
+
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.project.entity.MonitorProject;
+import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.stat.dao.StatDao;
+import com.nis.modules.stat.entity.StatAnalysis;
+import com.nis.modules.stat.service.StatService;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
+import cn.hutool.core.util.ObjectUtil;
+
+
+@Service
+public class StatServiceImpl implements StatService{
+
+	@Autowired
+	private StatDao statDao;
+
+	@Autowired
+	private SysUserService sysUserService;
+	
+	@Autowired
+	private MonitorProjectService monitorProjectService;
+	
+	@Autowired
+	private MonitorModuleService monitorModuleService;
+	
+	@Autowired
+	private DcService dcService;
+	
+	private Integer topNSize=10;
+	
+	@Override
+	public List<StatAnalysis> queryAssetType(Map<String, Object> params) {		
+		return statDao.selectAssetTypeAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetState(Map<String, Object> params) {
+		return statDao.selectAssetStateAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetModel(Map<String, Object> params) {
+		return statDao.selectAssetModelAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetPing(Map<String, Object> params) {
+		return statDao.selectAssetPingAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetField(Map<String, Object> params) {
+		return statDao.selectAssetFieldAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryEndpointType(Map<String, Object> params) {
+		return statDao.selectEndpointTypeAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryEndpointState(Map<String, Object> params) {
+		return statDao.selectEndpointStateAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAlertMessageState(Map<String, Object> params) {
+		return statDao.selectAlertMessageStateAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAlertMessageSeverity(Map<String, Object> params) {
+		return statDao.selectAlertMessageSeverityAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAlertMessageTopN(Map<String, Object> params) {
+		if(ObjectUtils.isEmpty(params.get("size"))) {
+			params.put("size", topNSize);
+		}
+		return statDao.selectAlertMessageTopNAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryDcState() {
+		return statDao.selectDcStateAnalysis();
+	}
+
+	@Override
+	public List<StatAnalysis> queryAgentState(Map<String, Object> params) {
+		return statDao.selectAgentStateAnalysis(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAgentType(Map<String, Object> params) {
+		return statDao.selectAgentTypeAnalysis(params);
+	}
+
+	@Override
+	public StatAnalysis queryUserTotal() {
+		List<SysUserEntity> total = sysUserService.list();
+		Map<String, SysUserEntity> tokens = ShiroUtils.getShiroSessionInfoMap();
+		Integer online = 0;
+		if(ObjectUtil.isNotEmpty(tokens)) {
+			online = tokens.size();
+		}
+		StatAnalysis result = new StatAnalysis();
+		result.setTotal(total.size());
+		result.setOnline(online);
+		return result;
+	}
+
+	@Override
+	public StatAnalysis queryAssetTotal(Map<String, Object> params) {
+		return statDao.selectAssetTotal(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetDc(Map<String, Object> params) {
+		return statDao.selectAssetDc(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAssetTopN(Map<String, Object> params) {
+		if(ObjectUtils.isEmpty(params.get("size"))) {
+			params.put("size", topNSize);
+		}
+		return statDao.selectAssetTopN(params);
+	}
+
+	@Override
+	public StatAnalysis queryProjectTotal() {
+		List<MonitorProject> list = monitorProjectService.list();
+		StatAnalysis result = new StatAnalysis();
+		result.setTotal(list.size());
+		return result;
+	}
+
+	@Override
+	public StatAnalysis queryModuleTotal(Map<String,Object> params) {
+		List<MonitorModule> list = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda().eq(ObjectUtil.isNotEmpty(params.get("projectId")),MonitorModule::getProjectId,params.get("projectId")));
+		StatAnalysis result = new StatAnalysis();
+		result.setTotal(list.size());
+		return result;
+	}
+
+	@Override
+	public List<StatAnalysis> queryModuleTopN(Map<String, Object> params) {
+		if(ObjectUtils.isEmpty(params.get("size"))) {
+			params.put("size", topNSize);
+		}
+		return statDao.selectModuleTopN(params);
+	}
+
+	@Override
+	public StatAnalysis queryEndpointTotal(Map<String, Object> params) {
+		return statDao.selectEndpointTotal(params);
+	}
+
+	@Override
+	public List<StatAnalysis> queryAlertRuleTotal(Map<String, Object> params) {
+		return statDao.selectAlertRuleTotal(params);
+	}
+
+	@Override
+	public StatAnalysis queryAlertMessageTotal(Map<String, Object> params) {
+		return statDao.selectAlertMessageTotal(params);
+	}
+
+	@Override
+	public StatAnalysis queryDcTotal() {
+		List<Dc> list = dcService.list();
+		StatAnalysis result = new StatAnalysis();
+		result.setTotal(list.size());
+		return result;
+	}
+
+	@Override
+	public StatAnalysis queryAgentTotal(Map<String, Object> params) {
+		return statDao.selectAgentTotal(params);
+	}
+}

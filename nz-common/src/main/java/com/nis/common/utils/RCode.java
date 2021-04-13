@@ -703,6 +703,11 @@ public enum RCode {
      * agent相关
      */
     AGENT_INSTALL_PARAM_MISS(711000,"Parameter of this API is missed"),
+    
+    /**
+     * stat相关
+     */
+    DIMENSION_IS_NULL(811001,"dimension param can not be null"),
     /**
      * 导入相关
      */
