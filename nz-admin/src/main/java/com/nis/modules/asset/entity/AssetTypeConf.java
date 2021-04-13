@@ -52,17 +52,32 @@ public class AssetTypeConf implements Serializable {
      * 名称
      */
     private String name;
-
+    
     /**
-     * ssh服务	 0：关闭 1：开启
+     * 认证协议
      */
-    private Integer ssh;
-
+    private Integer authProtocol;
+    
     /**
-     * telnet服务	 0：关闭 1：开启
+     * 是否支持snmp
      */
-    private Integer telnet;
-
+    private Integer snmpEnable;
+    
+    /**
+     * 是否开启snmp采集
+     */
+    private Integer snmpCollect;
+    
+    /**
+     * 是否开启ssh采集
+     */
+    private Integer sshCollect; 
+    
+    /**
+     * ssh自动化采集脚本路径
+     */
+    private String sshCollectScript;
+    
     /**
      * 描述
      */

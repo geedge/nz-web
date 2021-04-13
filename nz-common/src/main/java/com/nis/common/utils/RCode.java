@@ -266,7 +266,9 @@ public enum RCode {
     ASSET_SSHPORT_MORE(312060, "Assets can only fill in one ssh port"),
     ASSET_TELNET_MORE(312061, "Assets can only fill in one telnet port"),
     ASSET_PARENT_NOT_EXIST(316062, "Asset parent does not exist"),
-
+    ASSET_AUTHUSERNAME_ISNULL(311063, "Asset auth username can not be empty"),
+    ASSET_AUTHPIN_ISNULL(311064, "Asset auth pin can not be empty"),
+    ASSET_AUTHPRIKEY_ISNULL(311065, "Asset auth pri key can not be empty"),
 
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
     ASSET_MODELID_ISNULL(321001, "Asset model id can not be null"),      // 资产型号ID不能为空
@@ -350,7 +352,12 @@ public enum RCode {
     TYPECONF_BEUSED_CAN_NOT_REMOVE(357014, "This configurations is already used by the asset and cannot be deleted"),
     TYPECONF_PARENT_NOT_FOUND(356015, "Asset type parent config not found"),
     TYPECONF_CONTAIN_BABY_CAN_NOT_REMOVE(357016, "This configurations contain sub-configuration and cannot be deleted"),
-
+    TYPECONF_AUTHPROTOCOL_ISNULL(351017, "Asset type config auth protocol is null"),
+    TYPECONF_SNMPENABLE_ISNULL(351018, "Asset type config snmp enable is null"),
+    TYPECONF_SNMPCOLLECT_ISNULL(351019, "Asset type config snmp collect is null"),
+    TYPECONF_SSHCOLLECT_ISNULL(351020, "Asset type config ssh collect is null"),
+    TYPECONF_SSHCOLLECTSCRIPT_ISNULL(351021, "Asset type config ssh collect script is null"),
+    
     ASSET_BRAND_NOT_FOUND(366000, "Asset brand not found"),
     ASSET_BRAND_NAME_ISNULL(361001, "Asset brand name is null"),
     ASSET_BRAND_ID_ISNULL(361002, "Asset brand id is null"),
@@ -706,10 +713,11 @@ public enum RCode {
 	LINK_BUILDIN_CAN_NOT_REMOVE(587006,"This link is built-in and cannot be deleted"),
 	
 	SNMP_CREDENTIAL_ID_ISNULL(591001,"Snmp credential id can not be null"),
-	SNMP_CREDENTIAL_TYPE_ISNULL(591001,"Snmp credential type can not be null"),
-	SNMP_CREDENTIAL_REMARK_ISNULL(591001,"Snmp credential remark can not be null"),
-	SNMP_CREDENTIAL_CONFIG_ISNULL(591001,"Snmp credential config can not be null"),
-	SNMP_CREDENTIAL_NAME_ISNULL(591001,"Snmp credential name can not be null"),
+	SNMP_CREDENTIAL_TYPE_ISNULL(591002,"Snmp credential type can not be null"),
+	SNMP_CREDENTIAL_REMARK_ISNULL(591003,"Snmp credential remark can not be null"),
+	SNMP_CREDENTIAL_CONFIG_ISNULL(591004,"Snmp credential config can not be null"),
+	SNMP_CREDENTIAL_NAME_ISNULL(591005,"Snmp credential name can not be null"),
+	SNMP_CREDENTIAL_PORT_ISNULL(591006,"Snmp credential port can not be null"),
     /**
      * webshell相关
      */

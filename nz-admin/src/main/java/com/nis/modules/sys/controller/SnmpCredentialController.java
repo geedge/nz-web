@@ -58,7 +58,8 @@ public class SnmpCredentialController {
 		.and(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL)
 		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
 		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL);
+		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL)
+		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL);
 		snmpCredentialService.updateById(snmpCredential);
 		return R.ok().putData("id", snmpCredential.getId());
 	}
@@ -70,7 +71,8 @@ public class SnmpCredentialController {
 		ValidateUtils.is(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL)
 		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
 		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL);
+		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL)
+		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL);
 		snmpCredentialService.save(snmpCredential);
 		return R.ok().putData("id", snmpCredential.getId());
 	}

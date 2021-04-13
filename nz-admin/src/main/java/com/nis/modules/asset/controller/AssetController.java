@@ -12,6 +12,9 @@ import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.AssetStateConfService;
 import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.terminal.entity.Account;
+
+import cn.hutool.core.util.ObjectUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -87,7 +90,15 @@ public class AssetController {
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
                 .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
-
+        
+        if(ObjectUtil.equal(asset.getAuthType(), 1)) {
+        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
+        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+        }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
+        	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
+        }
+        
+        
         Map map = new HashMap(2);
         map.put("id", assetAssetService.saveAsset(asset));
         return R.ok(map);
@@ -112,6 +123,13 @@ public class AssetController {
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
                 .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
 
+        if(ObjectUtil.equal(asset.getAuthType(), 1)) {
+        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
+        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+        }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
+        	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
+        }
+        
         Map map = new HashMap(2);
         map.put("id", assetAssetService.updateAsset(asset));
         return R.ok(map);
@@ -605,9 +623,13 @@ public class AssetController {
         ValidateUtils.is(conf.getName()).notNull(RCode.TYPECONF_NAME_ISNULL)
                 .and(conf.getVm()).notNull(RCode.TYPECONF_VM_ISNULL)
                 .and(conf.getVmh()).notNull(RCode.TYPECONF_VMH_ISNULL)
-                .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
-                .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
-
+                .and(conf.getAuthProtocol()).notNull(RCode.TYPECONF_AUTHPROTOCOL_ISNULL)
+                .and(conf.getSnmpEnable()).notNull(RCode.TYPECONF_SNMPENABLE_ISNULL)
+                .and(conf.getSnmpCollect()).notNull(RCode.TYPECONF_SNMPCOLLECT_ISNULL)
+                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL);
+        if(ToolUtil.equals(conf.getSshCollect(), 1)) {
+        	ValidateUtils.is(conf.getSshCollectScript()).notNull(RCode.TYPECONF_SSHCOLLECTSCRIPT_ISNULL);
+        }
         Map map = new HashMap(2);
         map.put("id", typeConfService.saveConf(conf));
         return R.ok(map);
@@ -621,8 +643,13 @@ public class AssetController {
                 .and(conf.getName()).notNull(RCode.TYPECONF_NAME_ISNULL)
                 .and(conf.getVm()).notNull(RCode.TYPECONF_VM_ISNULL)
                 .and(conf.getVmh()).notNull(RCode.TYPECONF_VMH_ISNULL)
-                .and(conf.getSsh()).notNull(RCode.TYPECONF_SSH_ISNULL)
-                .and(conf.getTelnet()).notNull(RCode.TYPECONF_TELNET_ISNULL);
+                .and(conf.getAuthProtocol()).notNull(RCode.TYPECONF_AUTHPROTOCOL_ISNULL)
+                .and(conf.getSnmpEnable()).notNull(RCode.TYPECONF_SNMPENABLE_ISNULL)
+                .and(conf.getSnmpCollect()).notNull(RCode.TYPECONF_SNMPCOLLECT_ISNULL)
+                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL);
+        if(ToolUtil.equals(conf.getSshCollect(), 1)) {
+        	ValidateUtils.is(conf.getSshCollectScript()).notNull(RCode.TYPECONF_SSHCOLLECTSCRIPT_ISNULL);
+        }
 
         Map map = new HashMap(2);
         map.put("id", typeConfService.updateConf(conf));

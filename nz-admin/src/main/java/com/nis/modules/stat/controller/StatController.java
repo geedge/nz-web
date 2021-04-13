@@ -299,4 +299,15 @@ public class StatController extends AbstractController {
 		List<StatAnalysis> result = statService.queryAgentType(params);
 		return R.ok(result);
 	}
+	
+	/**
+	 * asset 健康状态统计接口
+	 * @param params
+	 * @return
+	 */
+	@GetMapping("/asset/healthy")
+	public R assetHealthy(@RequestParam Map<String,Object> params) {
+		StatAnalysis result = statService.queryAssetHealthy(params);
+		return R.ok(result);
+	}
 }

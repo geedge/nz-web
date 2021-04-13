@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
@@ -398,21 +399,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
         }
-
-        // ssh port
-        if (ToolUtil.isNotEmpty(asset.getSshPort())) {
-            if (!CommonUtils.checkPort(asset.getSshPort().toString())) {
-                throw new NZException(RCode.ASSET_SSH_PORT_ERROR);
-            }
-        }
-
-        // telnet port
-        if (ToolUtil.isNotEmpty(asset.getTelnetPort())) {
-            if (!CommonUtils.checkPort(asset.getTelnetPort().toString())) {
-                throw new NZException(RCode.ASSET_TELNET_PORT_ERROR);
-            }
-        }
-
+        
         // account
         List<Integer> accountIds = asset.getAccounts();
         if (CollectionUtils.isNotEmpty(accountIds)) {
@@ -1235,33 +1222,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
-            // port
-            String portStr = ExcelUtils.getCellValue(row.getCell(12));
-            Integer sshPort = -1, telnetPort = -1;
-            if (StringUtils.isNotEmpty(portStr)) {
-                List<String> sshPorts = this.getPortListByPattern(portStr, sshPortPattern);
-                if (CollectionUtils.isNotEmpty(sshPorts)) {
-                    String sshStr = sshPorts.get(sshPorts.size() - 1);
-                    sshStr = sshStr.replaceAll("ssh/", "");
-                    if (!CommonUtils.checkPort(sshStr)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ASSET_SSH_PORT_ERROR.getMsg());
-                    } else {
-                        sshPort = Integer.valueOf(sshStr);
-                    }
-                }
-                List<String> telnetPorts = this.getPortListByPattern(portStr, telnetPortPattern);
-                if (CollectionUtils.isNotEmpty(telnetPorts)) {
-                    String telnetStr = telnetPorts.get(telnetPorts.size() - 1);
-                    telnetStr = telnetStr.replaceAll("telnet/", "");
-                    if (!CommonUtils.checkPort(telnetStr)) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ASSET_TELNET_PORT_ERROR.getMsg());
-                    } else {
-                        telnetPort = Integer.valueOf(telnetStr);
-                    }
-                }
-            }
+            
 
             // 虚拟机宿主
             String parentName = ExcelUtils.getCellValue(row.getCell(2));
@@ -1358,18 +1319,44 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
-            String purchaseDate = ExcelUtils.getCellValue(row.getCell(13));
+            String purchaseDate = ExcelUtils.getCellValue(row.getCell(12));
             if (StringUtils.isNotEmpty(purchaseDate)) {
                 if (!DateUtil.isValidDate(purchaseDate, "yyyy-MM-dd")) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(13), RCode.ASSET_PURCHASEDATE_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.ASSET_PURCHASEDATE_FORMAT.getMsg());
                 }
             }
 
-            String fieldsStr = ExcelUtils.getCellValue(row.getCell(14));
+            String fieldsStr = ExcelUtils.getCellValue(row.getCell(13));
             if (StringUtils.isNotEmpty(fieldsStr)) {
                 saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, seqUUID));
             }
+            
+            
+            String authProtocolPort = ExcelUtils.getCellValue(row.getCell(14));
+            String authType = ExcelUtils.getCellValue(row.getCell(15));
+            String authUsername = ExcelUtils.getCellValue(row.getCell(16));
+            String authPin = ExcelUtils.getCellValue(row.getCell(17));
+            String authPriKey = ExcelUtils.getCellValue(row.getCell(18));
+            String authUserTip = ExcelUtils.getCellValue(row.getCell(19));
+            String authPinTip = ExcelUtils.getCellValue(row.getCell(20));
+            String snmpCredentialId = ExcelUtils.getCellValue(row.getCell(21));
+            if(ObjectUtil.equals(authType, "1")) {
+            	if(ObjectUtil.isEmpty(authUsername)) {
+            		saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ASSET_AUTHUSERNAME_ISNULL.getMsg());
+            	}else if(ObjectUtil.isEmpty(authPin)) {
+            		saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ASSET_AUTHPIN_ISNULL.getMsg());
+            	}
+            }else if(ObjectUtil.equals(authType, "2")) {
+            	if(ObjectUtil.isEmpty(authPriKey)) {
+            		saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ASSET_AUTHPRIKEY_ISNULL.getMsg());
+            	}
+            }
+            
+            
             // 前面没有报错
             if (saveFlag) {
                 AssetAsset asset = new AssetAsset();
@@ -1378,8 +1365,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setPid(parentAsset == null ? -1 : parentAsset.getId());
                 asset.setTypeId(typeConf.getId());
                 asset.setStateId(stateConf.getId());
-                asset.setSshPort(sshPort);
-                asset.setTelnetPort(telnetPort);
                 asset.setPurchaseDate(StringUtils.isEmpty(purchaseDate) ? null : purchaseDate);
                 asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
                 asset.setCreateBy(ShiroUtils.getUserId());
@@ -1391,6 +1376,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCabinetId(cabinetId);
                 asset.setCabinetStart(start);
                 asset.setCabinetEnd(end);
+                asset.setAuthProtocolPort(Integer.valueOf(authProtocolPort));
+                asset.setAuthType(Integer.valueOf(authType));
+                asset.setAuthUsername(authUsername);
+                asset.setAuthPin(authPinTip);
+                asset.setAuthPriKey(authPriKey);
+                asset.setAuthUserTip(authUserTip);
+                asset.setAuthPinTip(authPinTip);
+                asset.setSnmpCredentialId(Integer.valueOf(snmpCredentialId));
                 if (parentAsset == null) {
                     asset.setPid(-1);
                 } else {
@@ -1687,7 +1680,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         Row row;
         String fieldStr;
-        String portStr;
         for (AssetAsset asset : list) {
             row = sheet.createRow(rowNum++);
 
@@ -1704,25 +1696,27 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             row.createCell(10).setCellValue(asset.getState().getName());
             row.createCell(11).setCellValue(asset.getType().getName());
 
-            portStr = "";
-            if (asset.getSshPort() != -1) {
-                portStr += "ssh/" + asset.getSshPort();
-            }
-            if (asset.getTelnetPort() != -1) {
-                portStr = StringUtils.isNotEmpty(portStr) ? portStr += "," : portStr;
-                portStr += "telnet/" + asset.getTelnetPort();
-            }
-            row.createCell(12).setCellValue(portStr);
-            row.createCell(13).setCellValue(asset.getPurchaseDate());
+            
+            row.createCell(12).setCellValue(asset.getPurchaseDate());
             if (CollectionUtils.isNotEmpty(asset.getFields())) {
                 fieldStr = "";
                 for (AssetFieldMeta meta : asset.getFields()) {
                     fieldStr += meta.getMetaKey() + "=" + meta.getValue() + "\n";
                 }
-                row.createCell(14).setCellValue(fieldStr);
+                row.createCell(13).setCellValue(fieldStr);
             }
+            
+            row.createCell(14).setCellValue(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
+            row.createCell(15).setCellValue(ToolUtil.isEmpty(asset.getAuthType()) ? "" : String.valueOf(asset.getAuthType()));
+            row.createCell(16).setCellValue(ToolUtil.isEmpty(asset.getAuthUsername()) ? "" : asset.getAuthUsername());
+            row.createCell(17).setCellValue(ToolUtil.isEmpty(asset.getAuthPin()) ? "" : asset.getAuthPin());
+            row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
+            row.createCell(19).setCellValue(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
+            row.createCell(20).setCellValue(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
+            row.createCell(21).setCellValue(ToolUtil.isEmpty(asset.getSnmpCredentialId()) ? "" : String.valueOf(asset.getSnmpCredentialId()));
+            
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 14);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 21);
         }
     }
 

@@ -8,6 +8,8 @@
     	<result column="name" property="name"/>
     	<result column="type" property="type"/>
     	<result column="num" property="num"/>
+    	<result column="ok" property="ok"/>
+    	<result column="alarm" property="alarm"/>
     </resultMap>
     
     <select id="selectAssetTypeAnalysis" resultMap="statAnalysis">
@@ -492,5 +494,24 @@
     	<if test="params.state != null">
     		and me.enabled = #{params.state}
     	</if>
+    </select>
+    
+    <select id="selectAssetUnhealthy" resultMap="statAnalysis">
+    	select count(DISTINCT aa.id) alarm
+		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
+		left join alert_message am on aa.id = am.asset_id
+		where (ap.`status`=0 or ap.status is null or am.state=1)
+		<if test="params.dcId != null">
+			and aa.dc_id = #{params.dcId}
+		</if>
+		<if test="params.typeId != null">
+			and aa.type_id = #{params.typeId}
+		</if>
+		<if test="params.modelId != null">
+			and aa.model_id = #{params.modelId}
+		</if>
+		<if test="params.stateId != null">
+			and aa.state_id = #{params.stateId}
+		</if>
     </select>
 </mapper>

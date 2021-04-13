@@ -18,4 +18,6 @@ public class SnmpCredential {
 	
 	private String config;
 	
+	private Integer port;
+	
 }

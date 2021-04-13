@@ -58,16 +58,6 @@ public class AssetAsset implements Serializable {
     private Integer typeId;
 
     /**
-     * ssh 端口
-     */
-    private Integer sshPort;
-
-    /**
-     * telnet 端口
-     */
-    private Integer telnetPort;
-
-    /**
      * 品牌
      */
     private Integer brandId;
@@ -82,6 +72,46 @@ public class AssetAsset implements Serializable {
      */
     private Integer dcId;
 
+    /**
+     * 认证服务端口
+     */
+    private Integer authProtocolPort;
+    
+    /**
+     * 认证方式
+     */
+    private Integer authType;
+    
+    /**
+     * 用户名
+     */
+    private	String authUsername;
+    
+    /**
+     * 密码
+     */
+    private String authPin;
+    
+    /**
+     * 秘钥
+     */
+    private String authPriKey;
+    
+    /**
+     * 用户名提示
+     */
+    private String authUserTip;
+    
+    /**
+     * 密码提示
+     */
+    private String authPinTip;
+    
+    /**
+     * snmp凭证id
+     */
+    private Integer snmpCredentialId;
+    
     /**
      * 机柜编号
      */

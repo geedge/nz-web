@@ -9,14 +9,21 @@
         <result property="sn" column="sn"/>
         <result property="number" column="number"/>
         <result property="pid" column="pid"/>
-        <result property="sshPort" column="ssh_port"/>
-        <result property="telnetPort" column="telnet_port"/>
         <result property="cabinetStart" column="cabinet_start"/>
         <result property="cabinetEnd" column="cabinet_end"/>
         <result property="manageIp" column="manage_ip"/>
         <result property="purchaseDate" column="purchase_date"/>
         <result property="createAt" column="create_at"/>
         <result property="updateAt" column="update_at"/>
+        
+        <result property="authProtocolPort" column="auth_protocol_port"/>
+        <result property="authType" column="auth_type"/>
+        <result property="authUsername" column="auth_username"/>
+        <result property="authPin" column="auth_pin"/>
+        <result property="authPriKey" column="auth_pri_key"/>
+        <result property="authUserTip" column="auth_user_tip"/>
+        <result property="authPinTip" column="auth_pin_tip"/>
+        <result property="snmpCredentialId" column="snmp_credential_id"/>
 
         <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
             <id property="id" column="id"/>
@@ -33,8 +40,7 @@
             <result property="name" column="name"/>
             <result property="vm" column="vm"/>
             <result property="vmh" column="vmh"/>
-            <result property="ssh" column="ssh"/>
-            <result property="telnet" column="telnet"/>
+            
         </association>
 
         <association property="state" columnPrefix="s_" javaType="com.nis.modules.asset.entity.AssetStateConf">
@@ -62,8 +68,6 @@
             type.NAME AS t_name,
             type.vm AS t_vm,
             type.vmh AS t_vmh,
-            type.ssh AS t_ssh,
-            type.telnet AS t_telnet,
 
             state.id AS s_id,
             state.NAME AS s_name,
@@ -91,8 +95,8 @@
 
         <where>
 
-             <if test="params.id != null and params.id != ''">
-                 asset.id = #{params.id}
+             <if test="params.ids != null and params.ids != ''">
+                 asset.id in (${params.ids})
              </if>
 
              <if test="params.sn != null and params.sn != ''">

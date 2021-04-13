@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
@@ -42,6 +44,9 @@ public class StatServiceImpl implements StatService{
 	
 	@Autowired
 	private DcService dcService;
+	
+	@Autowired
+	private AssetAssetService assetAssetService;
 	
 	private Integer topNSize=10;
 	
@@ -195,5 +200,18 @@ public class StatServiceImpl implements StatService{
 	@Override
 	public StatAnalysis queryAgentTotal(Map<String, Object> params) {
 		return statDao.selectAgentTotal(params);
+	}
+
+	@Override
+	public StatAnalysis queryAssetHealthy(Map<String, Object> params) {
+		List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda()
+				.eq(ObjectUtil.isNotEmpty(params.get("dcId")),AssetAsset::getDcId,params.get("dcId"))
+				.eq(ObjectUtil.isNotEmpty(params.get("typeId")),AssetAsset::getTypeId,params.get("typeId"))
+				.eq(ObjectUtil.isNotEmpty(params.get("modelId")),AssetAsset::getModelId,params.get("modelId"))
+				.eq(ObjectUtil.isNotEmpty(params.get("stateId")),AssetAsset::getStateId,params.get("stateId")));
+		StatAnalysis statAnalysis = statDao.selectAssetUnhealthy(params);
+		statAnalysis.setTotal(assets.size());
+		statAnalysis.setOk(assets.size()-statAnalysis.getAlarm());
+		return statAnalysis;
 	}
 }

@@ -89,12 +89,6 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
         if (!switchList.contains(conf.getVmh())) {
             throw new NZException(RCode.TYPECONF_VMH_INCORRECT);
         }
-        if (!switchList.contains(conf.getSsh())) {
-            throw new NZException(RCode.TYPECONF_SSH_INCORRECT);
-        }
-        if (!switchList.contains(conf.getTelnet())) {
-            throw new NZException(RCode.TYPECONF_TELNET_INCORRECT);
-        }
         if (ToolUtil.isNotEmpty(conf.getBuildIn()) && !switchList.contains(conf.getBuildIn())) {
             throw new NZException(RCode.TYPECONF_BUILDIN_INCORRECT);
         }

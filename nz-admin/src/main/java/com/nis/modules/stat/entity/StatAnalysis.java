@@ -16,4 +16,8 @@ public class StatAnalysis {
 	private Integer total;
 	
 	private Integer online;
+	
+	private Integer ok;
+	
+	private Integer alarm;
 }
