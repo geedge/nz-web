@@ -6,7 +6,7 @@
 	<!-- 可根据自己的需求，是否要使用 -->
     <resultMap type="com.nis.modules.alert.entity.AlertMessageEntity" id="alertMessageMap">
         <result property="id" column="id"/>
-        <result property="severity" column="severity"/>
+        <result property="severityId" column="severity_id"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="labels" column="labels"/>
@@ -64,6 +64,15 @@
 			<result column="updateBy" property="updateBy"/>
 
 		</association>
+
+		<association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
+			<result property="id" column="id"/>
+			<result property="name" column="name"/>
+			<result property="color" column="color"/>
+			<result property="remark" column="remark"/>
+			<result property="methods" column="methods"/>
+		</association>
+
     </resultMap>
 
 	<select id="list" resultMap="alertMessageMap">
@@ -104,20 +113,30 @@
 			ass.create_at as ass_createAt,
 			ass.update_at as ass_updateAt,
 			ass.create_by as ass_createBy,
-			ass.update_by as ass_updateBy
+			ass.update_by as ass_updateBy,
+
+			alsc.id as alsc_id,
+			alsc.name as alsc_name,
+			alsc.color as alsc_color,
+			alsc.remark as alsc_remark,
+			alsc.methods as alsc_methods
 		FROM
 			alert_message am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN project p on am.project_id = p.id
 		LEFT JOIN module m on am.module_id = m.id
 		LEFT JOIN asset ass on am.asset_id = ass.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
 		<where>
-			<if test="params.alertName != null and params.alertName != ''">
-				ar.name like concat('%', #{params.alertName}, '%')
+			<if test="params.ruleName != null and params.ruleName != ''">
+				ar.name like concat('%', #{params.ruleName}, '%')
 			</if>
 
-			<if test="params.severity != null and params.severity != ''">
-				AND am.severity=#{params.severity}
+			<if test="params.severityIds != null and params.severity != ''">
+				AND am.severity_id in
+				<foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
 			<if test="params.summary != null and params.summary != ''">
@@ -128,8 +147,11 @@
 				AND am.description like concat('%', #{params.description}, '%')
 			</if>
 
-			<if test="params.id != null and params.id != ''">
-				AND am.id=#{params.id}
+			<if test="params.ids != null and params.ids != ''">
+				am.id in
+				<foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
             <if test="params.state != null and params.state != ''">
                 AND am.state=#{params.state}
@@ -141,28 +163,46 @@
 				AND am.start_at &lt;= #{params.endAt}
 			</if>
 
-			<if test="params.ruleId != null and params.ruleId != ''">
-				AND am.rule_id = #{params.ruleId}
+			<if test="params.ruleIds != null and params.ruleIds != ''">
+				AND am.rule_id in
+				<foreach collection="params.ruleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
-			<if test="params.projectId != null and params.projectId != ''">
-				AND am.project_id = #{params.projectId}
+			<if test="params.projectIds != null and params.projectIds != ''">
+				AND am.project_id in
+				<foreach collection="params.projectIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
-			<if test="params.moduleId != null and params.moduleId != ''">
-				AND am.module_id = #{params.moduleId}
+			<if test="params.moduleIds != null and params.moduleIds != ''">
+				AND am.module_id in
+				<foreach collection="params.moduleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
-			<if test="params.endpointId != null and params.endpointId != ''">
-				AND am.endpoint_id = #{params.endpointId}
+			<if test="params.endpointIds != null and params.endpointIds != ''">
+				AND am.endpoint_id in
+				<foreach collection="params.endpointIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
-			<if test="params.assetId != null and params.assetId != ''">
-				AND am.asset_id = #{params.assetId}
+			<if test="params.assetIds != null and params.assetIds != ''">
+				AND am.asset_id in
+				<foreach collection="params.assetIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
-			<if test="params.dcId != null and params.dcId != ''">
-				AND am.dc_id = #{params.dcId}
+			<if test="params.dcIds != null and params.dcIds != ''">
+				AND am.dc_id in
+				<foreach collection="params.dcIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
 			</if>
 
 			<if test="params.labels != null and params.labels != ''">

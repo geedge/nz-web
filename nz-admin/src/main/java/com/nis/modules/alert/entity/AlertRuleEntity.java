@@ -57,7 +57,7 @@ public class AlertRuleEntity implements Serializable {
 	/**
 	 * 告警级别
 	 */
-	private String severity;
+	private Integer severityId;
 	/**
 	 * 告警摘要
 	 */
@@ -93,5 +93,8 @@ public class AlertRuleEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private List<SysUserEntity> receivers;
+
+	@TableField(exist = false)
+	private AlertSeverityConf severity;
 
 }

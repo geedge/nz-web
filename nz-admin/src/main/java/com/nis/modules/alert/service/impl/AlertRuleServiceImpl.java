@@ -16,7 +16,9 @@ import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertRuleStat;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.dao.AssetDao;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.endpoint.dao.EndpointDao;
@@ -81,6 +83,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private SysConfigService sysConfigService;
+
+    private AlertSeverityService alertSeverityService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -407,6 +411,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     private int saveAlertDataFromSheet(Sheet sheet, List<String> alertNameList, List<Map> failDetails, List<SysUserEntity> userList, List<String> headerInfos, String seqUUID) {
         int successNum = 0;
+        List<AlertSeverityConf> severityConfs = alertSeverityService.list();
         Row row;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
             row = sheet.getRow(i);
@@ -475,11 +480,13 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
             String severity = ExcelUtils.getCellValue(row.getCell(6));
+            AlertSeverityConf alertSeverityConf=null;
             if (StringUtils.isEmpty(severity)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_ISNULL.getMsg());
             }else{
-                if(!StrUtil.equals(Constant.ALERT_SEVERITY_HIGH,severity) && !Constant.ALERT_SEVERITY_MEDIUM.equals(severity) && !Constant.ALERT_SEVERITY_LOW.equals(severity)){
+                alertSeverityConf = severityConfs.stream().filter(t -> Tool.StrUtil.equals(severity, t.getName())).findAny().orElse(null);
+                if(ToolUtil.isEmpty(alertSeverityConf)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
                 }
@@ -511,7 +518,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setThreshold(Double.valueOf(threshold));
                 ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                 ruleEntity.setLast(Double.valueOf(last).intValue());
-                ruleEntity.setSeverity(severity);
+                ruleEntity.setSeverityId(alertSeverityConf.getId());
                 ruleEntity.setSummary(summary);
                 ruleEntity.setDescription(description);
                 ruleEntity.setReceiver(receiver);
@@ -643,7 +650,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             row.createCell(3).setCellValue(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
             row.createCell(4).setCellValue(getUnitDescrByVal(rule.getUnit()));
             row.createCell(5).setCellValue(rule.getLast());
-            row.createCell(6).setCellValue(rule.getSeverity());
+            row.createCell(6).setCellValue(rule.getSeverity().getName());
             row.createCell(7).setCellValue(rule.getSummary());
             row.createCell(8).setCellValue(rule.getDescription());
             receiveIds = rule.getReceiver();

@@ -9,13 +9,22 @@
         <result property="name" column="name"/>
         <result property="expr" column="expr"/>
         <result property="last" column="last"/>
-        <result property="severity" column="severity"/>
+        <result property="severityId" column="severity_id"/>
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
+        <result property="buildIn" column="buildIn"/>
+        <result property="alertNum" column="alertNum"/>
+        <association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="color" column="color"/>
+            <result property="remark" column="remark"/>
+            <result property="methods" column="methods"/>
+        </association>
     </resultMap>
 
-    <select id="queryList" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
+    <select id="queryList" resultMap="alertRuleMap">
         SELECT
         ar.id,
         ar.name AS name,
@@ -24,19 +33,28 @@
         ar.threshold,
         ar.unit,
         ar.last,
-        ar.severity,
+        ar.severity_id,
         ar.summary,
         ar.description,
         ar.receiver,
+        alsc.id as alsc_id,
+        alsc.name as alsc_name,
+        alsc.color as alsc_color,
+        alsc.remark as alsc_remark,
+        alsc.methods as alsc_methods,
         ar.build_in AS buildIn,
         COUNT(am.id) AS alertNum
         FROM alert_rule ar
         LEFT JOIN alert_message am ON ar.id = am.rule_id AND am.state = 1
+        LEFT JOIN alert_severity_conf alsc on ar.severity_id = alsc.id
 
         <where>
 
-            <if test="params.id != null and params.id != ''">
-                ar.id = #{params.id}
+            <if test="params.ids != null and params.ids != ''">
+                ar.id in
+                <foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
 
             <if test="params.alertName != null and params.alertName != ''">
@@ -51,8 +69,11 @@
                 AND ar.last = #{params.last}
             </if>
 
-            <if test="params.severity != null and params.severity != ''">
-                AND ar.severity = #{params.severity}
+            <if test="params.severityIds != null and params.severityIds != ''">
+                AND ar.severity_id in
+                <foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
 
             <if test="params.summary != null and params.summary != ''">
@@ -145,11 +166,11 @@
             am.endpoint_id
     </select>
 
-    <select id="getAlertRulesStatColumn" resultType="com.nis.modules.alert.entity.AlertRuleEntity">
+    <select id="getAlertRulesStatColumn" resultMap="alertRuleMap">
         SELECT
             id,
             name,
-            severity
+            severity_id
         FROM
             alert_rule
     </select>

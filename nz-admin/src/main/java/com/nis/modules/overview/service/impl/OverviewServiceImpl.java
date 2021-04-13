@@ -485,14 +485,14 @@ public class OverviewServiceImpl implements OverviewService {
         List<AlertMessageEntity> alertMessageList = alertMessageDao.getAlertsStatColumn();
         Map<Integer, List<AlertMessageEntity>> ruleIdAndMessageList = alertMessageList.stream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId));
 
-        Map<String, List<AlertRuleEntity>> ruleLevelAndRulesMap = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverity));
+        Map<Integer, List<AlertRuleEntity>> ruleLevelAndRulesMap = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverityId));
 
         List<Map> resultMap = new ArrayList<>();
         Map map;
         List<AlertRuleEntity> rules;
         List<AlertMessageEntity> alerts;
 
-        for (Map.Entry<String, List<AlertRuleEntity>> entry : ruleLevelAndRulesMap.entrySet()) {
+        for (Map.Entry<Integer, List<AlertRuleEntity>> entry : ruleLevelAndRulesMap.entrySet()) {
             map = new HashMap();
             rules = entry.getValue();
             rules = CollectionUtils.isEmpty(rules) ? Collections.emptyList() : rules;

@@ -104,7 +104,7 @@ public class AlertMessageReceiveDTO implements Serializable {
         }
 
         entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
-        entity.setSeverity((String) receiveLabels.get("severity"));
+        entity.setSeverityId( Integer.parseInt(receiveLabels.get("severity_id").toString()));
         return entity;
     }
 

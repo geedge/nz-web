@@ -47,7 +47,7 @@ public class AlertMessageEntity implements Serializable {
 	/**
 	 * 告警级别
 	 */
-	private String severity;
+	private Integer severityId;
 	/**
 	 * 告警摘要
 	 */
@@ -135,4 +135,7 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Dc dc;
+
+	@TableField(exist = false)
+	private AlertSeverityConf severity;
 }

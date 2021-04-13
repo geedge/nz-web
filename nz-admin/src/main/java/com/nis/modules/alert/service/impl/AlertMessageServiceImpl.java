@@ -562,7 +562,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
             r.createCell(5).setCellValue(endpointId);
             r.createCell(6).setCellValue(assetHost);
             r.createCell(7).setCellValue(entity.getLabels());
-            r.createCell(8).setCellValue(entity.getSeverity());
+            r.createCell(8).setCellValue(entity.getSeverity().getName());
             r.createCell(9).setCellValue(entity.getSummary());
             r.createCell(10).setCellValue(entity.getDescription());
             r.createCell(11).setCellValue(startAt);
