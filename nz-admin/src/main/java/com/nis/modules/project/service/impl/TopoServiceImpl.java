@@ -11,9 +11,9 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.dao.TopoDao;
-import com.nis.modules.project.entity.Project;
+import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.entity.Topo;
-import com.nis.modules.project.service.ProjectService;
+import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoService {
 
     @Autowired
-    private ProjectService projectService;
+    private MonitorProjectService projectService;
 
     @Override
     public Map queryTopoByProjectId(Integer projectId) {
@@ -44,7 +44,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
     @Override
     public void updateProjectTopo(Integer projectId, String topoConfig) {
         // 校验是否存在改 project
-        Project project = projectService.getById(projectId);
+        MonitorProject project = projectService.getById(projectId);
         if (project == null) {
             throw new NZException(RCode.PROJECT_NOTFOUND);
         }

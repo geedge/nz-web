@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.dao.MonitorModuleDao;
@@ -25,6 +26,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
 import java.util.*;
@@ -52,6 +54,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private AlertMessageService alertMessageService;
 
 
     @Override
@@ -184,6 +189,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Integer updateModule(MonitorModule moduleEntity) {
         // 1. 内置 moduel 不允许修改
         MonitorModule oldModule = this.getById(moduleEntity.getId());
@@ -219,6 +225,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void removeModules(Integer... ids) {
         List<MonitorModule> list = this.list();
 
@@ -237,8 +244,18 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException("These modules have been used by endpoints and cannot be deleted. Details: " + userModuleIdList.toString(), RCode.MODULE_REMOVE_ERROR.getCode());
         }
 
+        // 删除 module 时 删除topo图中 节点和连线
+        List<MonitorModule> modules = this.list(new QueryWrapper<MonitorModule>().lambda().in(MonitorModule::getId, ids));
+        if (CollectionUtils.isEmpty(modules)) {
+            return;
+        }
+        topoService.removeTopoConfigNodeAndLineByModules(modules);
+
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        //删除alert相关信息
+        alertMessageService.removeByModuleIds(Arrays.asList(ids));
     }
 
     public String generateYmlFromSnmpParam(Map snmpParam, MonitorModule moduleEntity) {
