@@ -504,13 +504,14 @@ public enum RCode {
     SYS_MENU_TYPE_ISNULL(511028, "Menu type is required"),
     SYS_MENU_ORDERNUM_ISNULL(511029, "Menu order num is required"),
     SYS_MENU_CODE_DUPLICATE(512030, "Menu code duplicate"),
-    SYS_MENU_TYPE_INVALIDE(513031,"Menu type must be 1 or 2"),
+    SYS_MENU_TYPE_INVALIDE(513031,"Menu type not found"),
     SYS_MENU_BUTTON_PARENTID_ISNULL(511032,"Button must have a parent id"),
     SYS_MENU_BUTTON_PARENTTYPE_INVALIDE(513033,"Button cannot be used as a parent menu"),
     SYS_TOKEN_ISNULL(511034,"Cannot get token information from request header"),
     SYS_USER_NAME_ISNULL(511035, "System user name can not be empty"),
     SYS_USER_NAME_DUPLICATE(511036, "System user name duplicate"),
-    
+    SYS_MENU_TAB_PARENTTYPE_INVALIDE(513037,"Tab cannot be used as a parent menu"),
+
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
     PROMSERVER_DCID_ISNULL(521001, "Dc id can not be empty"),
     PROMSERVER_TYPE_ISNULL(521002, "PromServer type can not be empty"),

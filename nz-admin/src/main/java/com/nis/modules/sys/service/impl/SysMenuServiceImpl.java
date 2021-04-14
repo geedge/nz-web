@@ -67,7 +67,14 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 		}
 
 		// type 合法性校验
-		if (!menu.getType().equals(Constant.MenuType.MENU.getValue()) && !menu.getType().equals(Constant.MenuType.BUTTON.getValue())) {
+		boolean typeExist = false;
+		for (Constant.MenuType menuType : Constant.MenuType.values()) {
+			if(menu.getType().equals(menuType.getValue())){
+				typeExist = true;
+				break;
+			}
+		}
+		if(!typeExist){
 			throw new NZException(RCode.SYS_MENU_TYPE_INVALIDE);
 		}
 
@@ -80,6 +87,11 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 			// 校验 上级菜单类型是否是 菜单 ,按钮不可以做为上级菜单
 			if (parent.getType() == Constant.MenuType.BUTTON.getValue())
 				throw new NZException(RCode.SYS_MENU_BUTTON_PARENTTYPE_INVALIDE);
+
+			// 校验 上级菜单类型是否是 菜单 ,Tab 不可以做为上级菜单
+			if(parent.getType() == Constant.MenuType.TAB.getValue()){
+				throw new NZException(RCode.SYS_MENU_TAB_PARENTTYPE_INVALIDE);
+			}
 		}
 	}
 

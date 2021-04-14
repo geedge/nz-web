@@ -39,6 +39,11 @@ public class SysMenuEntity implements Serializable {
     // 排序 默认：1
     private Integer orderNum;
 
+    /**
+     * 图标
+     */
+    private String icon;
+
     @TableField(exist = false)
     private List<SysMenuEntity> children;
 }

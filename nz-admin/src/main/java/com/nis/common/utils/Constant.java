@@ -75,7 +75,12 @@ public class Constant {
         /**
          * 按钮
          */
-        BUTTON(2);
+        BUTTON(2),
+
+        /**
+         *  tab标签
+         */
+        TAB(3);
 
         private int value;
 

@@ -1,6 +1,7 @@
 /**
  * 1. insert monitor_conf_event table
- * 2. config 增加
+ * 2. config 增加 prometheus rule cmdline flt模板
+ * 3. sys_menu 表增加 icon 字段
  */
 
 SET NAMES utf8mb4;
@@ -34,5 +35,7 @@ INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) V
 
 DELETE from sys_config where param_key = "prom_rule_tmpl";
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'prom_rule_tmpl', '{\r\n	\"groups\": [{\r\n		\"name\": \"alertRule\",\r\n		\"rules\": [\r\n            <#if endpointAlert>\r\n            {\r\n				\"alert\": \"0\",\r\n				\"expr\": \"up{endpoint!=\'\'}>-1\",\r\n				\"for\": \"30s\",\r\n				\"annotations\": {\r\n					\"summary\": \"{{$value}}\"\r\n				}\r\n			}, \r\n             </#if>\r\n             <#list ruleList as rule>\r\n            {\r\n				\"alert\":  ${rule.id?c},\r\n				\"expr\": \"(${rule.expr})${rule.operator}${rule.threshold}\",\r\n				\"for\": \"${rule.last}s\",\r\n				\"labels\": {\r\n					\"severity\": \"${rule.severity_name}\",\r\n					\"severity_id\": ${rule.severity_id?c}\r\n				},\r\n				\"annotations\": {\r\n					\"summary\": <#if rule.summary?default(\"\")?trim?length gt 1>\r\n                                \"${rule.summary}\",\r\n                      <#else>\"\",</#if>\r\n					\"description\": <#if rule.description?default(\"\")?trim?length gt 1>\r\n                                \"${rule.description}\"\r\n                      <#else>\"\"</#if>\r\n					\r\n				}\r\n			}\r\n			<#sep>,</#sep>\r\n		</#list>]\r\n	}]\r\n}', 1, 'prometheus rule文件模板');
+
+ALTER TABLE sys_menu ADD COLUMN `icon` varchar(128) DEFAULT '' COMMENT 'nz-icon nz-alert-add';
 
 SET FOREIGN_KEY_CHECKS = 1;
