@@ -40,6 +40,47 @@
 	    	<result column="name" property="name"/>
 	    </association>
     </resultMap>
+
+
+    <resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpointInfoByAgent">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="moduleId" column="module_id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="host" column="host"/>
+        <result property="port" column="port"/>
+        <result property="hash" column="hash"/>
+        <result property="enabled" column="enabled"/>
+        <result property="configs" column="configs"/>
+
+        <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="project_id" property="projectId"/>
+            <result column="port" property="port"/>
+            <result column="configs" property="configs"/>
+            <result column="snmp_yml" property="snmpYml"/>
+            <result column="type" property="type"/>
+        </association>
+
+        <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+        </association>
+
+        <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <id column="id" property="id"/>
+            <result column="manage_ip" property="manageIp"/>
+            <result column="sn" property="sn"/>
+            <result column="name" property="name"/>
+            <result column="dc_id" property="dcId"/>
+        </association>
+
+        <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+        </association>
+    </resultMap>
 	
 	<select id="queryPage" resultMap="endpoint">
        SELECT e.*,
@@ -112,4 +153,38 @@
                 AND ass.id = #{assetId}
             </if>
     </select>
+
+    <select id="getEnableEndpointInfoList" resultMap="endpointInfoByAgent">
+        SELECT
+            e.*,
+
+            m.id AS m_id,
+            m.project_id AS m_project_id,
+            m.NAME AS m_name,
+            m.PORT AS m_port,
+            m.configs AS m_configs,
+            m.snmp_yml AS m_snmp_yml,
+            m.type AS m_type,
+
+            p.id AS p_id,
+            p.NAME AS p_name,
+
+            ass.id AS ass_id,
+            ass.sn AS ass_sn,
+            ass.NAME AS ass_name,
+            ass.manage_ip AS ass_manage_ip,
+            ass.dc_id AS ass_dc_id,
+
+            dc.id AS dc_id,
+            dc.NAME AS dc_name
+        FROM
+            monitor_endpoint e
+            LEFT JOIN monitor_module m ON e.module_id = m.id
+            LEFT JOIN monitor_project p ON m.project_id = p.id
+            LEFT JOIN asset_asset ass ON e.asset_id = ass.id
+            LEFT JOIN dc dc ON ass.dc_id = dc.id
+        WHERE
+            e.enabled = 1
+    </select>
+
 </mapper>

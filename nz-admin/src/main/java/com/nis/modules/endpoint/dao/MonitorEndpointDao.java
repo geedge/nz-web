@@ -15,4 +15,11 @@ public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
     List<MonitorEndpoint> queryPage(IPage<MonitorEndpoint> page, @Param("params") Map<String, Object> params);
 
     List<Integer> getSuspendedEndpointIdList(@Param("assetId")Integer assetId);
+
+    /**
+     * agent 组织配置文件所需要的 endpoint 信息,包含 asset module project dc 等
+     * 目前获取的是启用状态的 endpoint
+     * @return
+     */
+    List<MonitorEndpoint> getEnableEndpointInfoList();
 }

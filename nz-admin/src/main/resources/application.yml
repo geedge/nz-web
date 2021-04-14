@@ -61,6 +61,7 @@ nezha:
   assetPingJobCron: 0 0/3 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为3分钟
   assetFeatureJobCron: 0 0 1 * * ?   # asset采集信息 默认5分钟执行一次
   alertSilenceJobCron: 0/5 * * * * ?    # 每5秒检测一次静默配置
+  agentJobCron: 0/30 * * * * ?     # agent 定时任务 默认 30 s
   loginExpiration: 120 #登录token 过期时间，单位 分钟 ，不设置默认为30分钟
   corePoolSize: 20
   maxPoolSize: 100
@@ -68,6 +69,7 @@ nezha:
   alertNotifiTimeOut: 3 # alert  通知脚本等待超时时间 单位 s 秒‘
   shiroPermisSupport: false # shiro 注解支持 ， 控制 接口上 @RequiresPermissions 是否生效 ， 启用： true  不启用： false
   inited: 0  #系统初始化状态 0 未初始化，1 配置文件初始化完成 2 所有初始化完成
+  virtualAgentNum: 10 # agent 平均分配时，一致性 hash 虚节点数量
 logging:
   config: ./config/logback-spring.xml
 

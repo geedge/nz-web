@@ -48,4 +48,19 @@ public class Promserver {
 
 	@TableField(exist = false)
 	private Dc dc;
+
+	@Override
+	public String toString() {
+		return "Promserver{" +
+				"id=" + id +
+				", dcId=" + dcId +
+				", host='" + host + '\'' +
+				", type=" + type +
+				", port=" + port +
+				", status=" + status +
+				", checkTime=" + checkTime +
+				", statusInfo='" + statusInfo + '\'' +
+				", token='" + token + '\'' +
+				'}';
+	}
 }

@@ -120,6 +120,11 @@ public class Constant {
     public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
 
     /**
+     * 记录
+     */
+    public static final String REDIS_KEY_CONF_EVENT = "conf_event";
+
+    /**
      * 告警消息邮件通知
      */
     public static final String REDIS_KEY_EMAIL_ALERT_MESSAGE= "alert_message_list";
@@ -528,6 +533,27 @@ public class Constant {
 
     // 配置表中 刮取周期 key
     public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "scrape_interval";
+
+    // 配置表中 刮取超时时间
+    public static final String SYSCONFIG_KEY_SCRAPETIMEOUT = "scrape_timeout";
+
+    // 配置表中 prometheus yml 模板 key
+    public static final String SYSCONFIG_KEY_PROM_YML_TMPL = "prom_yml_tmpl";
+
+    // 配置表中 prometheus cmd 模板 Key
+    public static final String SYSCONFIG_KEY_PROM_CMD_TMPL = "prom_cmd_tmpl";
+
+    // 配置表中 prometheus rule.yml  模板 Key
+    public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
+
+    // 配置表中 prometheus 本地保存天数配置
+    public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";
+
+    // 配置表中 alert_api
+    public static final String SYSCONFIG_KEY_ALERT_API = "alert_api";
+
+    // 配置表中 alert_path_prefix
+    public static final String SYSCONFIG_KEY_ALERT_PATH_PREFIX = "alert_path_prefix";
 
     // endpoint state 定时任务执行间隔时间
     public static final String SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL = "endpoint_query_interval";

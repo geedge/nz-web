@@ -5,11 +5,13 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Map;
 
 @Data
 @TableName("monitor_endpoint")
@@ -53,6 +55,8 @@ public class MonitorEndpoint implements Serializable {
 	 */
 	private String configs;
 
+	@TableField(exist = false)
+	private Map config;
 	/**
 	 * 计算 moduleId + assetId + host + port + configs 的hash值，用于确保相同配置不重复
 	 */
@@ -75,6 +79,9 @@ public class MonitorEndpoint implements Serializable {
 
 	@TableField(exist = false)
 	private AssetAsset asset;
+
+	@TableField(exist = false)
+	private Dc dc;
 
 	@TableField(exist = false)
 	private MonitorProject project;

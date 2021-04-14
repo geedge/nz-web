@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.service.impl;
 
+import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -275,7 +276,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             moduleIdAndEndpointsMap.put(endpoint.getModuleId(), monitorEndpointList);
 
             String hash = endpoint.getModuleId() + endpoint.getAssetId() + endpoint.getHost() + endpoint.getPort() + endpoint.getConfigs();
-            endpoint.setHash(DigestUtils.md5DigestAsHex(hash.getBytes()));
+            endpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
 
             // 保存 endpoint
             this.saveOrUpdate(endpoint);
@@ -430,6 +431,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Override
     public List<Integer> getSuspendedEndpointIdList(Integer assetId) {
         return monitorEndpointDao.getSuspendedEndpointIdList(assetId);
+    }
+
+    @Override
+    public List<MonitorEndpoint> getEnableEndpointInfoList() {
+        return monitorEndpointDao.getEnableEndpointInfoList();
     }
 
     private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
@@ -602,7 +608,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 monitorEndpoint.setSeq(seqUUID);
 
                 String hash = module.getId() + monitorEndpoint.getAssetId() + monitorEndpoint.getHost() + monitorEndpoint.getPort() + monitorEndpoint.getConfigs();
-                monitorEndpoint.setHash(DigestUtils.md5DigestAsHex(hash.getBytes()));
+                monitorEndpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
 
                 try {
                     this.save(monitorEndpoint);
