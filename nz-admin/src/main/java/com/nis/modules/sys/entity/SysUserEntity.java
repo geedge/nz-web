@@ -106,5 +106,7 @@ public class SysUserEntity implements Serializable {
 
 	@TableField(exist = false)
 	private List<SysUserNotification> notifications;
-
+	
+	@TableField(exist = false)
+	private Integer apiKeyId;
 }

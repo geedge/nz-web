@@ -15,3 +15,18 @@ INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) V
 
 DELETE from sys_config where param_key = "monitor_endpoint_export_header";
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'monitor_endpoint_export_header', '{\"cn\":{\"*系统\":\"系统名称(必填) \\n示例: Nezha\",\"*组件\":\"组件名称(必填) \\n示例: node_exporter\",\"名称\":\"实例名称 \\n示例: node_exporter\",\"资产名称\":\"资产名称(非必填) 与 主机地址 不能同时为空 \\n示例: A0420200101\",\"配置\":\"实例配置，JSON格式， \\n示例: {\\\"key\\\":\\\"value\\\"}\",\"启用\":\"启用状态（非必填） 可选 0:停用 1:启用,为空时默认为1 \\n示例: 1\"},\"en\":{\"*Project Name\":\"Project Name(Required) \\nExample: Nezha\",\"*Module Name\":\"Module Name(Required) \\nExample: node_exporter\",\"Name\":\"Endpoint name \\nExample: node_exporter\",\"Asset Name\":\"Asset name(Not required) And host address cannot be empty at the same time \\n示例: A0420200101\",\"Configs\":\"Endpoint Configs，JSON format， \\nExample: {\\\"key\\\":\\\"value\\\"}\",\"Enabled\":\"Enable state (not required) Optional values 0: Disable 1: Enable, when empty, the default is 1 \\nExample: 1\"}}', 1, 'monitor endpoint 导入表头');
+
+ALTER TABLE `sys_log` 
+ADD COLUMN `api_key_id` int(10) NULL DEFAULT NULL COMMENT '关联 sys_api_key.id' AFTER `create_date`;
+
+DROP TABLE IF EXISTS `sys_api_key`;
+CREATE TABLE `sys_api_key`  (
+  `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '名称 唯一不重复',
+  `token` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '密钥 唯一不重复',
+  `role_id` int(10) NOT NULL COMMENT '角色id',
+  `create_by` int(10) NOT NULL COMMENT '创建用户',
+  `create_at` datetime(0) NOT NULL COMMENT '创建时间',
+  `expire_at` datetime(0) NULL DEFAULT NULL COMMENT '失效时间 为空不失效',
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;

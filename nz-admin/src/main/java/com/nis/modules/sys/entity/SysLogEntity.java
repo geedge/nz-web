@@ -77,5 +77,9 @@ public class SysLogEntity implements Serializable {
 	 * 创建时间
 	 */
 	private Date createDate;
+	
+	@TableField(exist = false)
+	private SysApiKey apiKey;
 
+	private Integer apiKeyId;
 }

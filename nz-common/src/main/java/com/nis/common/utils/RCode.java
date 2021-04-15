@@ -98,6 +98,10 @@ public enum RCode {
     PANEL_WEIGHT_ISNULL(121059,"Panel weight not be empty"),
     PANEL_NAME_FORMAT_ERROR(123060,"Panel name format error, can not include '/'"),
     CHART_GROUPID_ISNULL(121061,"Chart group id can not be empty"),
+    CHART_VARTYPE_ISNULL(121062,"Chart var type can not be empty when panel id is empty"),
+    CHART_PID_ISNULL(121063,"pid can not be empty"),
+    CHART_VARID_ISNULL(121064,"varid can not be empty"),
+    CHART_SYNCTMPL_ERROR(121065,"Chart sync param can not be null"),
     
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
@@ -742,6 +746,10 @@ public enum RCode {
      * stat相关
      */
     DIMENSION_IS_NULL(811001,"dimension param can not be null"),
+    SYSAPIKEY_NAME_ISNULL(811002,"sys api key name can not be empty"),
+    SYSAPIKEY_ROLEID_ISNULL(811003,"sys api key role id can not be empty"),
+    SYSAPIKEY_ID_ISNULL(811004,"sys api key id can not be empty"),
+    SYSAPIKEY_NAME_DUPLICATE(811005,"sys api key name is duplicate"),
     /**
      * 导入相关
      */

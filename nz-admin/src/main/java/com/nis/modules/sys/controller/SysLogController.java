@@ -36,7 +36,7 @@ public class SysLogController {
 	/**
 	 * 列表
 	 */
-	@GetMapping("/list")
+	@GetMapping
 	@RequiresPermissions("sys:log:list")
 	public R list(@RequestParam Map<String, Object> params){
 		params = XssUtil.filterParameters(params);

@@ -2,6 +2,7 @@ package com.nis.common.config;
 
 import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.StringUtils;
+import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.shiro.MySessionManager;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -69,6 +70,8 @@ public class ShiroConfig {
     @Autowired
     private SysUserDao sysUserDao;
 
+    @Autowired
+    private SysApiKeyDao sysApiKeyDao;
     /**
      * 单机环境，session交给shiro管理
      */
@@ -140,11 +143,11 @@ public class ShiroConfig {
 //        filterMap.put("/**", "authc");
         filterMap.put("/**", "tokenCheckFilter");
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
-        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao);
+        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
         cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
         shiroFilter.setFilters(cumstomFilterMap);
         shiroFilter.setFilterChainDefinitionMap(filterMap);
-
+        
 
 
         return shiroFilter;
