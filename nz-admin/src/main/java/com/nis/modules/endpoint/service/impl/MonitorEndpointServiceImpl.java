@@ -22,11 +22,15 @@ import com.nis.modules.endpoint.service.EndpointStateService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualExpreTmplService;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -77,6 +81,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Autowired
     private EndpointStateService endpointStateService;
 
+    @Autowired
+    private VisualPanelService visualPanelService;
+    
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
         MonitorEndpoint endpoint = this.getById(id);
@@ -278,8 +285,26 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             String hash = endpoint.getModuleId() + endpoint.getAssetId() + endpoint.getHost() + endpoint.getPort() + endpoint.getConfigs();
             endpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
 
+            // 判断当前操作是新增还是修改标识
+            boolean addEndpoint = false;
+            if(ToolUtil.isEmpty(endpoint.getId())) {
+            	addEndpoint = true;
+            }
+            
             // 保存 endpoint
             this.saveOrUpdate(endpoint);
+            
+            if(addEndpoint) {
+	            // 保存panel信息
+	 			VisualPanel panel = new VisualPanel();
+	 			panel.setName(Constant.PanelType.ENDPOINT.getValue()+"_panel_"+endpoint.getId());
+	 			panel.setType(Constant.PanelType.ENDPOINT.getValue());
+	 			panel.setPid(0);
+	 			panel.setLink(endpoint.getId());
+	 			panel.setWeight(0);
+	 			panel.setCreateBy(ShiroUtils.getUserId().intValue());
+	 			visualPanelService.save(panel);
+            }
         }
     }
 
@@ -293,6 +318,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 删除 alert
         alertMessageDao.deleteByEndpointIds(ids);
+        
+        // 删除 panel
+        visualPanelService.remove(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue())
+        		.in(VisualPanel::getLink, ids));
     }
 
     @Override
