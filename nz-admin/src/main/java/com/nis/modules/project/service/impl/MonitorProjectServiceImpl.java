@@ -11,7 +11,9 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.endpoint.dao.EndpointDao;
 import com.nis.modules.endpoint.entity.Endpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.EndpointService;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.ModuleService;
@@ -39,6 +41,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     private MonitorModuleService monitorModuleService;
 
     @Autowired
+    private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
     private ProjectDao projectDao;
 
     @Autowired
@@ -59,18 +64,61 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         if (ToolUtil.isEmpty(project)) {
             throw new NZException(RCode.PROJECT_NOTFOUND);
         }
+
+        List<MonitorModule> moduleList = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getProjectId, project.getId()));
+        project.setModuleNum(moduleList.size());
+
+        List<Integer> moduleIdList = moduleList.stream().map(MonitorModule::getId).collect(Collectors.toList());
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
+        endpointList = endpointList.stream().filter(endpoint -> moduleIdList.contains(endpoint.getModuleId())).collect(Collectors.toList());
+        project.setEndpointNum(endpointList.size());
+
+        long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
+        project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
+
+        int alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()).eq(AlertMessageEntity::getState, 1));
+        project.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+
         return project;
     }
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         LambdaQueryWrapper<MonitorProject> queryWrapper = new LambdaQueryWrapper<MonitorProject>()
-                .eq(ToolUtil.isNotEmpty(params.get("id")), MonitorProject::getId, params.get("id"))
+                .in(ToolUtil.isNotEmpty(params.get("ids")), MonitorProject::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
                 .like(ToolUtil.isNotEmpty(params.get("name")), MonitorProject::getName, params.get("name"))
                 .like(ToolUtil.isNotEmpty(params.get("remark")), MonitorProject::getRemark, params.get("remark"));
 
         IPage<MonitorProject> page = this.page(new Query<MonitorProject>().getPage(params), queryWrapper);
+
+        List<MonitorProject> projectList = page.getRecords();
+        if(CollectionUtils.isNotEmpty(projectList)){
+            // 处理返回结果
+            this.handleResuleList(projectList);
+        }
+        page.setRecords(projectList);
         return new PageUtils(page);
+    }
+
+    private void handleResuleList(List<MonitorProject> projectList) {
+        List<MonitorModule> moduleList = monitorModuleService.list();
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
+        List<AlertMessageEntity> alertList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getState, 1));
+
+        for (MonitorProject project : projectList) {
+            List<MonitorModule> modules = moduleList.stream().filter(module -> module.getProjectId().equals(project.getId())).collect(Collectors.toList());
+            project.setModuleNum(modules.size());
+
+            List<Integer> moduleIdList = modules.stream().map(MonitorModule::getId).collect(Collectors.toList());
+            List<MonitorEndpoint> endpoints = endpointList.stream().filter(endpoint -> moduleIdList.contains(endpoint.getModuleId())).collect(Collectors.toList());
+            project.setEndpointNum(endpoints.size());
+
+            long assetNum = endpoints.stream().map(MonitorEndpoint::getAssetId).distinct().count();
+            project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
+
+            long alertNum = alertList.stream().filter(alertMessageEntity -> project.getId().equals(alertMessageEntity.getProjectId())).count();
+            project.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+        }
     }
 
     private void validateProjectInfo(MonitorProject project) {

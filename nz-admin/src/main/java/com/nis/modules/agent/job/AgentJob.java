@@ -28,6 +28,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.apache.commons.lang3.time.StopWatch;
+import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
  * @author shizhendong
  * @date 2021-04-06
  */
+@DisallowConcurrentExecution
 public class AgentJob extends QuartzJobBean {
 
     private static Log log = Log.get();

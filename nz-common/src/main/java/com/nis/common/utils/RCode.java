@@ -167,6 +167,8 @@ public enum RCode {
     MODULE_ENDPOINTNAMETMPL_ISNULL(221027, "Module endpoint name template can not be empty"),
     MODULE_CONFIGS_ISNULL(221028, "Module configs can not be empty"),
     MODULE_CONFIGS_FORMAT(223029,"Module configs must be JSON format"),
+    MODULE_SNMP_WALK_ISNULL(221030,"Snmp type module walk oids cannot be empty"),
+    MODULE_SNMP_WALK_FORMAT(223031,"Module walk oids format error"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),
@@ -719,6 +721,7 @@ public enum RCode {
 	SNMP_CREDENTIAL_CONFIG_ISNULL(591004,"Snmp credential config can not be null"),
 	SNMP_CREDENTIAL_NAME_ISNULL(591005,"Snmp credential name can not be null"),
 	SNMP_CREDENTIAL_PORT_ISNULL(591006,"Snmp credential port can not be null"),
+	SNMP_CREDENTIAL_NOT_FOUND(596007,"Snmp credential not found"),
     /**
      * webshell相关
      */

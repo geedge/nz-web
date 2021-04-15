@@ -2,15 +2,19 @@ package com.nis.modules.module.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -20,7 +24,9 @@ import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
+import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
@@ -58,6 +64,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     @Autowired
     private AlertMessageService alertMessageService;
 
+    @Autowired
+    private SnmpCredentialService snmpCredentialService;
+
 
     @Override
     public MonitorModule queryModuleEntity(Integer id) {
@@ -67,15 +76,65 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         }
         MonitorProject project = monitorProjectService.getById(module.getProjectId());
         module.setProject(project);
+
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
+        endpointList = endpointList.stream().filter(endpoint -> module.getId().equals(endpoint.getModuleId())).collect(Collectors.toList());
+        module.setEndpointNum(endpointList.size());
+
+        long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
+        module.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
+
+        int alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getModuleId, module.getId()).eq(AlertMessageEntity::getState, 1));
+        module.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
         return module;
+    }
+
+    /**
+     * 处理请求参数
+     * @param params
+     */
+    private void handleQueryParam(Map<String, Object> params) {
+        // ids
+        if (ToolUtil.isNotEmpty(params.get("ids"))) {
+            params.put("ids", String.valueOf(params.get("ids")).split(StringPool.COMMA));
+        }
+        // projectIds
+        if (ToolUtil.isNotEmpty(params.get("projectIds"))) {
+            params.put("projectIds", String.valueOf(params.get("projectIds")).split(StringPool.COMMA));
+        }
     }
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        // 处理请求参数
+        this.handleQueryParam(params);
+
         IPage<MonitorModule> page = new Query<MonitorModule>().getPage(params);
         List<MonitorModule> datas = monitorModuleDao.queryPage(page, params);
+
+        if (CollectionUtils.isNotEmpty(datas)) {
+            // 处理返回结果
+            this.handleResuleList(datas);
+        }
+
         page.setRecords(datas);
         return new PageUtils(page);
+    }
+
+    private void handleResuleList(List<MonitorModule> moduleList) {
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
+        List<AlertMessageEntity> alertList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getState, 1));
+
+        for (MonitorModule module : moduleList) {
+            List<MonitorEndpoint> endpoints = endpointList.stream().filter(endpoint -> module.getId().equals(endpoint.getModuleId())).collect(Collectors.toList());
+            module.setEndpointNum(endpoints.size());
+
+            long assetNum = endpoints.stream().map(MonitorEndpoint::getAssetId).distinct().count();
+            module.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
+
+            long alertNum = alertList.stream().filter(alertMessageEntity -> module.getId().equals(alertMessageEntity.getModuleId())).count();
+            module.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+        }
     }
 
     @Override
@@ -127,15 +186,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_TYPE_INVALID);
         }
 
-        // 4. 端口校验
-        if (module.getPort() != null) {
-            flag = CommonUtils.checkPort(module.getPort().toString());
-            if (!flag) {
-                throw new NZException(RCode.MODULE_PORT_ERROR);
-            }
-        }
-
-        // 5. config 格式校验
+        // 4. config 格式校验
         Map configMap;
         try {
             configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
@@ -143,19 +194,31 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_CONFIGS_FORMAT);
         }
 
+        // 5. 端口校验
+        Object port = configMap.get("port");
+        if (ToolUtil.isNotEmpty(port)) {
+            flag = CommonUtils.checkPort(port.toString());
+            if (!flag) {
+                throw new NZException(RCode.MODULE_PORT_ERROR);
+            }
+        }
+
         // snmp 类型校验 config
         if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, type)) {
-            // 注： snmp version 实际版本 为 1，2，3 ，此处只做 2，3 版本限制
-            Integer version = (Integer) configMap.get("version");
-            if (version != null) {
-                if (version < 2 || version > 3) {
-                    // 版本不在可选范围内
-                    throw new NZException(RCode.MODULE_SNMPVERSION_INVALID);
-                }
+            // snmpCredentialsId 必须存在
+            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+            ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
 
-                if (version.equals(3)) {
-                    SnmpUtil.ValidateAuthForSnmpV3((Map<String, String>) configMap.get("auth"));
-                }
+            SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+            ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
+
+            Object walk = configMap.get("walk");
+            ValidateUtils.is(walk).notNull(RCode.MODULE_SNMP_WALK_ISNULL);
+
+            try {
+                JSONArray.parseArray(JSONObject.toJSONString(walk));
+            } catch (Exception e) {
+                throw new NZException(RCode.MODULE_SNMP_WALK_FORMAT);
             }
         }
     }
@@ -168,14 +231,27 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 2. snmp 类型处理
         if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, module.getType())) {
             // port  缺省值
-            if (ToolUtil.isEmpty(module.getPort())) {
-                module.setPort(Constant.SNMP_DEFAULT_PORT);
+            Map configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
+            Object port = configMap.get("port");
+
+            if (ToolUtil.isEmpty(port)) {
+                configMap.put("port", Constant.SNMP_DEFAULT_PORT);
+                module.setConfigs(JSONObject.toJSONString(configMap));
             }
 
             // 处理snmYml字段
-            String configs = module.getConfigs();
-            String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(configs, Map.class), module);
+            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+            String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), module);
             module.setSnmpYml(snmpYml);
+        } else {
+            // http port 缺省值设置
+            Map configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
+            Object port = configMap.get("port");
+
+            if (ToolUtil.isEmpty(port)) {
+                configMap.put("port", 9100);
+                module.setConfigs(JSONObject.toJSONString(configMap));
+            }
         }
 
         // 3. endpointNameTmpl
@@ -206,7 +282,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         // 3. snmp 类型 ， 处理 snmpYml 字段 , 如果 module 名称发生改动
         if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, moduleEntity.getType())) {
-            String snmpYml = this.generateYmlFromSnmpParam(JSONObject.parseObject(moduleEntity.getConfigs(), Map.class), moduleEntity);
+            Map configMap = JSONObject.parseObject(moduleEntity.getConfigs(), Map.class);
+            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+            String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), moduleEntity);
             moduleEntity.setSnmpYml(snmpYml);
         }else{
             moduleEntity.setSnmpYml("{}");
@@ -258,7 +336,42 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         alertMessageService.removeByModuleIds(Arrays.asList(ids));
     }
 
-    public String generateYmlFromSnmpParam(Map snmpParam, MonitorModule moduleEntity) {
+    private Map handleGenerateParam(String snmpCredentialsId, String moduleConfigs) {
+        SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId);
+        Map moduleConfigMap = JSONObject.parseObject(moduleConfigs, Map.class);
+
+        Map gengrateParams = new HashMap(4);
+        gengrateParams.put("walk", moduleConfigMap.get("walk"));
+        Integer type = snmpCredential.getType();
+        gengrateParams.put("version", type);
+
+        String snmpCredentialConfig = snmpCredential.getConfig();
+        Map<String, Object> snmpCredentialConfigMap = JSONObject.parseObject(snmpCredentialConfig, Map.class);
+
+        Map<String, Object> camelToUnderlineMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : snmpCredentialConfigMap.entrySet()) {
+            // 驼峰转下划线
+            String underlineKey = com.baomidou.mybatisplus.core.toolkit.StringUtils.camelToUnderline(entry.getKey());
+            camelToUnderlineMap.put(underlineKey, entry.getValue());
+        }
+
+        if (Constant.SNMPV3.equals(type)) {
+            if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("auth_pin"))) {
+                camelToUnderlineMap.put("password", camelToUnderlineMap.get("auth_pin"));
+            }
+            if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("priv_pin"))) {
+                camelToUnderlineMap.put("priv_password", camelToUnderlineMap.get("priv_pin"));
+            }
+        }
+        // 删除多余的 keys
+        camelToUnderlineMap.remove("auth_pin");
+        camelToUnderlineMap.remove("priv_pin");
+
+        gengrateParams.put("auth", camelToUnderlineMap);
+        return gengrateParams;
+    }
+
+    public String generateYmlFromSnmpParam(String snmpCredentialsId, MonitorModule moduleEntity) {
         // 取出generator路径
         SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_GENERATOR_PATH));
         String generatorPath = entity.getParamValue();
@@ -266,7 +379,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         Map modules = new HashMap();
 
         Map module = new HashMap();
-        module.put(moduleEntity.getName(), snmpParam);
+        module.put(moduleEntity.getName(), this.handleGenerateParam(snmpCredentialsId, moduleEntity.getConfigs()));
 
         modules.put("modules", module);
 

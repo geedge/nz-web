@@ -48,4 +48,28 @@ public class MonitorProject implements Serializable {
     @TableField(exist = false)
     private List<MonitorModule> children;
 
+    /**
+     * module数量
+     */
+    @TableField(exist = false)
+    private Integer moduleNum;
+
+    /**
+     * endpoint数量
+     */
+    @TableField(exist = false)
+    private Integer endpointNum;
+
+    /**
+     * asset数量
+     */
+    @TableField(exist = false)
+    private Integer assetNum;
+
+    /**
+     * alert数量
+     */
+    @TableField(exist = false)
+    private Integer alertNum;
+
 }

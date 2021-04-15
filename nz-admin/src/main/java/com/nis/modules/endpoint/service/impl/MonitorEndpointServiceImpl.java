@@ -8,6 +8,7 @@ import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -30,7 +31,6 @@ import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -42,7 +42,6 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -130,6 +129,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        // 处理请求参数
+        this.handleQueryParam(params);
+
         IPage<MonitorEndpoint> page = new Query<MonitorEndpoint>().getPage(params);
         List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
 
@@ -138,6 +140,26 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         page.setRecords(datas);
         return new PageUtils(page);
+    }
+
+    private void handleQueryParam(Map<String, Object> params) {
+        // ids
+        if (ToolUtil.isNotEmpty(params.get("ids"))) {
+            params.put("ids", String.valueOf(params.get("ids")).split(StringPool.COMMA));
+        }
+        // projectIds
+        if (ToolUtil.isNotEmpty(params.get("projectIds"))) {
+            params.put("projectIds", String.valueOf(params.get("projectIds")).split(StringPool.COMMA));
+        }
+        // moduleIds
+        if (ToolUtil.isNotEmpty(params.get("moduleIds"))) {
+            params.put("moduleIds", String.valueOf(params.get("moduleIds")).split(StringPool.COMMA));
+        }
+        // states
+        if (ToolUtil.isNotEmpty(params.get("states"))) {
+            params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
+        }
+
     }
 
     @Override
@@ -191,8 +213,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
             // 1. 非空校验
             ValidateUtils.is(moduleId).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
-                    .and(assetId).notNull(RCode.ENDPOINT_ASSETID_ISNULL)
-                    .and(endpoint.getPort()).notNull(RCode.ENDPOINT_PORT_ISNULL);
+                    .and(assetId).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
 
             // 2. module 是否存在
             if (!moduleIdList.contains(moduleId)) {
@@ -210,21 +231,22 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
             }
 
-            // 5. port 校验
-            if (endpoint.getPort() != null) {
-                boolean flag = CommonUtils.checkPort(endpoint.getPort().toString());
-                if (!flag) {
-                    throw new NZException(RCode.ENDPOINT_PORT_ERROR);
-                }
-            }
-
-            // 6. configs 校验
+            // 5. configs 校验
+            Map configMap = new HashMap();
             if (endpoint.getConfigs() != null) {
                 try {
-                    JSONObject.parseObject(endpoint.getConfigs(), Map.class);
+                    configMap  = JSONObject.parseObject(endpoint.getConfigs(), Map.class);
                 } catch (JSONException e) {
                     throw new NZException(RCode.ENDPOINT_CONFIGS_FORMAT);
                 }
+            }
+
+            // 6. port 校验
+            Object port = configMap.get("port");
+            ValidateUtils.is(port).notNull(RCode.ENDPOINT_PORT_ISNULL);
+            boolean flag = CommonUtils.checkPort(port.toString());
+            if (!flag) {
+                throw new NZException(RCode.ENDPOINT_PORT_ERROR);
             }
         }
     }
@@ -251,18 +273,25 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         MonitorModule module;
         for (MonitorEndpoint endpoint : endpointList) {
             module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
-            if (ToolUtil.isEmpty(endpoint.getPort())) {
-                endpoint.setPort(module.getPort());
-            }
-            if (ToolUtil.isEmpty(endpoint.getHost())) {
-                endpoint.setHost(assetIdAndHostMap.get(endpoint.getAssetId()));
-            }
             if (ToolUtil.isEmpty(endpoint.getEnabled())) {
                 endpoint.setEnabled(1);
             }
             if (ToolUtil.isEmpty(endpoint.getConfigs())) {
                 endpoint.setConfigs(module.getConfigs());
             }
+
+            String configs = endpoint.getConfigs();
+            Map endpointConfigMap = JSONObject.parseObject(configs, Map.class);
+            if (ToolUtil.isEmpty(endpointConfigMap.get("port"))) {
+                Map moduleConfigMap = JSONObject.parseObject(module.getConfigs(), Map.class);
+                endpointConfigMap.put("port", moduleConfigMap.get("port"));
+                endpoint.setConfigs(JSONObject.toJSONString(endpointConfigMap));
+            }
+            if (ToolUtil.isEmpty(endpointConfigMap.get("host"))) {
+                endpointConfigMap.put("host", assetIdAndHostMap.get(endpoint.getAssetId()));
+                endpoint.setConfigs(JSONObject.toJSONString(endpointConfigMap));
+            }
+
             // 名称为空 则按照 module endpoint 名称模板生成对应名称
             if (ToolUtil.isEmpty(endpoint.getName())) {
                 String endpointNameTmpl = module.getEndpointNameTmpl();
@@ -282,7 +311,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             monitorEndpointList.add(endpoint);
             moduleIdAndEndpointsMap.put(endpoint.getModuleId(), monitorEndpointList);
 
-            String hash = endpoint.getModuleId() + endpoint.getAssetId() + endpoint.getHost() + endpoint.getPort() + endpoint.getConfigs();
+            String hash = endpoint.getModuleId() + endpoint.getAssetId() + endpoint.getConfigs();
             endpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
 
             // 判断当前操作是新增还是修改标识
@@ -428,17 +457,13 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 row1.createCell(2).setCellValue(endpoint.getName());
                 // asset name
                 row1.createCell(3).setCellValue(asset.getName());
-                // port
-                row1.createCell(4).setCellValue(endpoint.getPort());
                 // config
-                row1.createCell(5).setCellValue(endpoint.getConfigs());
-                // host
-                row1.createCell(6).setCellValue(endpoint.getHost());
+                row1.createCell(4).setCellValue(endpoint.getConfigs());
                 // enabled
-                row1.createCell(7).setCellValue(endpoint.getEnabled());
+                row1.createCell(5).setCellValue(endpoint.getEnabled());
 
                 // 设置单元格样式
-                ExcelUtils.setDataCellStyle(dataStyle, row1, 7);
+                ExcelUtils.setDataCellStyle(dataStyle, row1, 5);
             }
 
             // 响应为流
@@ -527,84 +552,70 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             }
 
             String assetName = ExcelUtils.getCellValue(row.getCell(3));
-            String host = ExcelUtils.getCellValue(row.getCell(6));
-            // asset name \ host 不可同时为空
-            if (StringUtils.isEmpty(assetName) && StringUtils.isEmpty(host)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ENDPOINT_ASSET_NAME_HOST_ISNULL.getMsg());
-            } else if (StringUtils.isNotEmpty(assetName) && StringUtils.isNotEmpty(host)) {
-                // 都不为空 校验 name 是否可以找到 asset , host 格式是否正确
-                if (!CommonUtils.checkIp(host)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_HOST_FORMAT.getMsg());
-                }
+            if (StringUtils.isNotEmpty(assetName)) {
                 if (ToolUtil.isEmpty(assetNameAndIdMap.get(assetName))) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
-                }
-            } else if (StringUtils.isNotEmpty(assetName) && StringUtils.isEmpty(host)) {
-                if (ToolUtil.isEmpty(assetNameAndIdMap.get(assetName))) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
-                }
-            } else if (StringUtils.isEmpty(assetName) && StringUtils.isNotEmpty(host)) {
-                if (!CommonUtils.checkIp(host)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_HOST_FORMAT.getMsg());
-                }
-                if (ToolUtil.isEmpty(assetHostAndIdMap.get(host))) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ASSET_NOT_EXIST.getMsg());
                 }
             }
 
-            String port = ExcelUtils.getCellValue(row.getCell(4));
-            if (StringUtils.isNotEmpty(port)) {
-                try {
-                    Double aDouble = Double.valueOf(port);
-                    if (!CommonUtils.checkPort(String.valueOf(aDouble.intValue()))) {
-                        saveFlag = false;
-                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
-                    }
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
-                }
-            }
-            String configs = ExcelUtils.getCellValue(row.getCell(5));
+            String configs = ExcelUtils.getCellValue(row.getCell(4));
+            Map<String, Object> configMap = new HashMap();
             if (StringUtils.isNotEmpty(configs)) {
                 try {
-                    JSONObject.parseObject(configs, Map.class);
+                    configMap = JSONObject.parseObject(configs, Map.class);
+                    // port 校验
+                    Object port = configMap.get("port");
+                    if(ToolUtil.isNotEmpty(port)){
+                        if (!CommonUtils.checkPort(port.toString())) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
+                        }
+                    }
+                    // host 校验
+                    Object host = configMap.get("host");
+                    if(ToolUtil.isNotEmpty(host)){
+                        if (!CommonUtils.checkIp(host.toString())) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_HOST_FORMAT.getMsg());
+                        }
+                    }
                 } catch (JSONException e) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_CONFIGS_FORMAT.getMsg());
                 }
             }
 
-            String enabled = ExcelUtils.getCellValue(row.getCell(7));
+            String enabled = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isNotEmpty(enabled)) {
                 if (!"1".equals(enabled) && !"0".equals(enabled)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ENDPOINT_ENABLED_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ENDPOINT_ENABLED_INVALIDE.getMsg());
                 }
             }
 
             if (saveFlag) {
                 Integer assetIdByName = assetNameAndIdMap.get(assetName);
-                Integer assetIdByHost = assetHostAndIdMap.get(host);
+                Integer assetIdByHost;
+                Object host = configMap.get("host");
+                if (ToolUtil.isEmpty(host)) {
+                    assetIdByHost = null;
+                } else {
+                    assetIdByHost = assetHostAndIdMap.get(String.valueOf(host));
+                }
+
+                // 通过 asset name  , configs hsot 都没有找到 asset
+                if (assetIdByName == null && assetIdByHost == null) {
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
+                    continue;
+                }
 
                 MonitorEndpoint monitorEndpoint = new MonitorEndpoint();
-
-                // endpoint asset_id endpoint_host
-                if (StringUtils.isNotEmpty(assetName) && StringUtils.isNotEmpty(host)) {
+                // endpoint asset_id
+                if (StringUtils.isNotEmpty(assetName)) {
                     monitorEndpoint.setAssetId(assetIdByName);
-                    monitorEndpoint.setHost(host);
-                } else if (StringUtils.isNotEmpty(assetName) && StringUtils.isEmpty(host)) {
-                    monitorEndpoint.setAssetId(assetIdByName);
-                    monitorEndpoint.setHost(assetIdAndHostMap.get(assetIdByName));
-                } else if (StringUtils.isEmpty(assetName) && StringUtils.isNotEmpty(host)) {
+                } else if (ToolUtil.isNotEmpty(host)) {
                     monitorEndpoint.setAssetId(assetIdByHost);
-                    monitorEndpoint.setHost(assetIdAndHostMap.get(assetIdByHost));
                 }
 
                 String name = ExcelUtils.getCellValue(row.getCell(2));
@@ -625,18 +636,33 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
 
 
+                // config 如果为空 则设置 module configs
                 if (StringUtils.isEmpty(configs)) {
                     configs = module.getConfigs();
+                    monitorEndpoint.setConfigs(configs);
+                }else{
+                    monitorEndpoint.setConfigs(configs);
                 }
 
+                // 设置 host
+                Map map = JSONObject.parseObject(monitorEndpoint.getConfigs(), Map.class);
+                if(ToolUtil.isEmpty(map.get("host"))){
+                    map.put("host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
+                }
+
+                // 设置 port
+                Map moduleConfigMap = JSONObject.parseObject(module.getConfigs(), Map.class);
+                if(ToolUtil.isEmpty(map.get("port"))){
+                    map.put("port", moduleConfigMap.get("port"));
+                }
+                monitorEndpoint.setConfigs(JSONObject.toJSONString(map));
+
                 monitorEndpoint.setName(name);
-                monitorEndpoint.setConfigs(configs);
                 monitorEndpoint.setModuleId(module.getId());
-                monitorEndpoint.setPort(ToolUtil.isEmpty(port) ? module.getPort() : Double.valueOf(port).intValue());
                 monitorEndpoint.setEnabled(ToolUtil.isEmpty(enabled) ? 1 : Double.valueOf(enabled).intValue());
                 monitorEndpoint.setSeq(seqUUID);
 
-                String hash = module.getId() + monitorEndpoint.getAssetId() + monitorEndpoint.getHost() + monitorEndpoint.getPort() + monitorEndpoint.getConfigs();
+                String hash = module.getId() + monitorEndpoint.getAssetId() + monitorEndpoint.getConfigs();
                 monitorEndpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
 
                 try {
