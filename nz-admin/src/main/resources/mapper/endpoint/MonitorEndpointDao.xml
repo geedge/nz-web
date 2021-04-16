@@ -7,8 +7,6 @@
         <result property="name" column="name"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
-        <result property="host" column="host"/>
-        <result property="port" column="port"/>
         <result property="hash" column="hash"/>
         <result property="enabled" column="enabled"/>
         <result property="configs" column="configs"/>
@@ -47,8 +45,6 @@
         <result property="name" column="name"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
-        <result property="host" column="host"/>
-        <result property="port" column="port"/>
         <result property="hash" column="hash"/>
         <result property="enabled" column="enabled"/>
         <result property="configs" column="configs"/>
@@ -57,7 +53,6 @@
             <id column="id" property="id"/>
             <result column="name" property="name"/>
             <result column="project_id" property="projectId"/>
-            <result column="port" property="port"/>
             <result column="configs" property="configs"/>
             <result column="snmp_yml" property="snmpYml"/>
             <result column="type" property="type"/>
@@ -108,33 +103,44 @@
        left join asset_asset a on e.asset_id=a.id
        left join endpoint_state es on e.id = es.endpoint_id
        <where>
-           <if test="params.id != null and params.id != ''">
-                e.id = #{params.id}
+
+           <if test="params.ids != null and params.ids.length > 0">
+               e.id IN
+               <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+                   #{id}
+               </foreach>
+           </if>
+
+           <if test="params.projectIds != null and params.projectIds.length > 0">
+               AND p.id IN
+               <foreach collection="params.projectIds" item="projectId" index="no" open="(" separator="," close=")">
+                   #{projectId}
+               </foreach>
+           </if>
+
+           <if test="params.moduleIds != null and params.moduleIds.length > 0">
+               AND e.module_id IN
+               <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator="," close=")">
+                   #{moduleId}
+               </foreach>
+           </if>
+
+           <if test="params.states != null and params.states.length > 0">
+               AND es.state IN
+               <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
+                   #{state}
+               </foreach>
            </if>
 
            <if test="params.name != null and params.name != ''">
                AND e.name like CONCAT('%', #{params.name}, '%')
            </if>
 
-           <if test="params.host != null and params.host != ''">
-               AND e.host like CONCAT('%', #{params.host}, '%')
+
+           <if test="params.assetName != null and params.assetName != ''">
+               AND a.name like CONCAT('%', #{params.assetName}, '%')
            </if>
 
-           <if test="params.projectId != null and params.projectId != ''">
-               AND p.id = #{params.projectId}
-           </if>
-
-           <if test="params.assetId != null and params.assetId != ''">
-               AND e.asset_id = #{params.assetId}
-           </if>
-
-           <if test="params.moduleId != null and params.moduleId != ''">
-               AND e.module_id = #{params.moduleId}
-           </if>
-
-           <if test="params.state != null and params.state != ''">
-               AND es.state = #{params.state}
-           </if>
        </where>
     </select>
 
@@ -161,7 +167,6 @@
             m.id AS m_id,
             m.project_id AS m_project_id,
             m.NAME AS m_name,
-            m.PORT AS m_port,
             m.configs AS m_configs,
             m.snmp_yml AS m_snmp_yml,
             m.type AS m_type,

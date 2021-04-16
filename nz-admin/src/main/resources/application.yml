@@ -5,7 +5,7 @@ server:
     max-threads: 1000
     min-spare-threads: 30
     basedir: /opt/nezha/nz-web/tmp
-  port: 80
+  port: 8088
 
 spring:
   main:
@@ -14,9 +14,9 @@ spring:
     active: dev
   autoconfigure:
     exclude: #未初始化时，启动需排除
-      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+#      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+#      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+#      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -57,10 +57,10 @@ nezha:
   promtoolPath: ./promtool
   uploadTempPath: /upload/temp
   alertMessageJobCron: 0 0/1 * * * ? *   # 告警同步程序采集频率 1分钟执行一次  0/10 * * * * ?
-  promserverJobCron: 0/15 * * * * ?
-  assetPingJobCron: 0 0/3 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为3分钟
+  promserverJobCron: 0 0/10 * * * ?
+  assetPingJobCron: 0 0/10 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为3分钟
   assetFeatureJobCron: 0 0 1 * * ?   # asset采集信息 默认5分钟执行一次
-  alertSilenceJobCron: 0/5 * * * * ?    # 每5秒检测一次静默配置
+  alertSilenceJobCron: 0 0/10 * * * ?    # 每5秒检测一次静默配置
   agentJobCron: 0/30 * * * * ?     # agent 定时任务 默认 30 s
   loginExpiration: 120 #登录token 过期时间，单位 分钟 ，不设置默认为30分钟
   corePoolSize: 20
@@ -68,7 +68,7 @@ nezha:
   queueCapacity: 500
   alertNotifiTimeOut: 3 # alert  通知脚本等待超时时间 单位 s 秒‘
   shiroPermisSupport: false # shiro 注解支持 ， 控制 接口上 @RequiresPermissions 是否生效 ， 启用： true  不启用： false
-  inited: 0  #系统初始化状态 0 未初始化，1 配置文件初始化完成 2 所有初始化完成
+  inited: 2  #系统初始化状态 0 未初始化，1 配置文件初始化完成 2 所有初始化完成
   virtualAgentNum: 10 # agent 平均分配时，一致性 hash 虚节点数量
 logging:
   config: ./config/logback-spring.xml

@@ -46,12 +46,6 @@ public class MonitorModule implements Serializable {
     private String endpointNameTmpl;
 
     /**
-     * 端口
-     */
-    private Integer port;
-
-
-    /**
      * 描述
      */
     private String remark;
@@ -82,4 +76,22 @@ public class MonitorModule implements Serializable {
      */
     @TableField(exist = false)
     private List<MonitorEndpoint> children;
+
+    /**
+     * endpoint数量
+     */
+    @TableField(exist = false)
+    private Integer endpointNum;
+
+    /**
+     * asset数量
+     */
+    @TableField(exist = false)
+    private Integer assetNum;
+
+    /**
+     * alert数量
+     */
+    @TableField(exist = false)
+    private Integer alertNum;
 }

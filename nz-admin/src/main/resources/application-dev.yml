@@ -1,3 +1,5 @@
+logging:
+  config: C:/Users/ThinkPad/git/nz-web/nz-admin/src/main/resources/logback-spring.xml
 spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource

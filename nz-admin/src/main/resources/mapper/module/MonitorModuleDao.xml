@@ -7,7 +7,6 @@
         <result property="projectId" column="project_id"/>
         <result property="name" column="name"/>
         <result property="endpointNameTmpl" column="endpoint_name_tmpl"/>
-        <result property="port" column="port"/>
         <result property="type" column="type"/>
         <result property="remark" column="remark"/>
         <result property="buildIn" column="build_in"/>
@@ -30,12 +29,19 @@
             monitor_module m
             LEFT JOIN monitor_project p ON m.project_id = p.id
         <where>
-            <if test="params.id != null and params.id != ''">
-                m.id = #{params.id}
+
+            <if test="params.ids != null and params.ids.length > 0">
+                m.id IN
+                <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
             </if>
 
-            <if test="params.projectId != null and params.projectId != ''">
-                AND m.project_id = #{params.projectId}
+            <if test="params.projectIds != null and params.projectIds.length > 0">
+                AND m.project_id IN
+                <foreach collection="params.projectIds" item="projectId" index="no" open="(" separator="," close=")">
+                    #{projectId}
+                </foreach>
             </if>
 
             <if test="params.name != null and params.name != ''">
@@ -44,10 +50,6 @@
 
             <if test="params.type != null and params.type != ''">
                 AND m.type = #{params.type}
-            </if>
-
-            <if test="params.port != null and params.port != ''">
-                AND m.port = #{params.port}
             </if>
         </where>
     </select>

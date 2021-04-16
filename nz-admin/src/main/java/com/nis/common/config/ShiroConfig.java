@@ -7,6 +7,13 @@ import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.StringUtils;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -64,6 +71,10 @@ public class ShiroConfig {
     @Autowired
     private SysUserDao sysUserDao;
 
+
+    @Autowired
+	private SysApiKeyDao sysApiKeyDao;
+
     @Bean("shiroFilter")
     public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
         ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -101,11 +112,11 @@ public class ShiroConfig {
         filterMap.put("/**", "tokenCheckFilter");
         
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
-        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao);
+        TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
         cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
         shiroFilter.setFilters(cumstomFilterMap);
         shiroFilter.setFilterChainDefinitionMap(filterMap);
-
+        
 
 
         return shiroFilter;

@@ -27,7 +27,7 @@ public class LinkController extends AbstractController{
 	@RequiresPermissions({"sys:link:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		List<Link> result = linkService.queryList(params);
-		return R.ok(result);
+		return R.ok().putData("list",result);
 	}
 	
 	@PostMapping

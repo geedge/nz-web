@@ -39,17 +39,6 @@ public class MonitorEndpoint implements Serializable {
 	 */
 	private Integer assetId;
 
-
-	/**
-	 * exporter地址
-	 */
-	private String host;
-
-	/**
-	 * export端口
-	 */
-	private Integer port;
-
 	/**
 	 * 配置参数 当type=HTTP,默认为 module.configs
 	 */
