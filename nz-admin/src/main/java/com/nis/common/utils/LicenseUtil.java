@@ -62,9 +62,9 @@ public class LicenseUtil {
 			Sign sign = SecureUtil.sign(SignAlgorithm.valueOf(signAlgorithm));
 			sign.setPublicKey(pk);
 			try {
-				boolean verify = sign.verify(digestValue.getBytes(Constant.DEFAULT_CHARTSET_NAME),
-						signatureValue.getBytes(Constant.DEFAULT_CHARTSET_NAME));
-				return verify;
+				//hex解码
+				byte[] signData = Tool.HexUtil.decodeHex(signatureValue);
+				return sign.verify(digestValue.getBytes(Constant.DEFAULT_CHARTSET_NAME),signData);
 			} catch (UnsupportedEncodingException e) {
 			}
 		}
@@ -106,7 +106,7 @@ public class LicenseUtil {
 	public static LicenseEntity xmlToLicenseBean(String licenseXml) {
 		if (Tool.StrUtil.isNotBlank(licenseXml)) {
 			Map<String, Object> map = Tool.XmlUtil.xmlToMap(licenseXml);
-			return Tool.BeanUtil.toBean(map, LicenseEntity.class);
+			return Tool.BeanUtil.toBeanIgnoreError(map, LicenseEntity.class);
 		}
 		return null;
 	}

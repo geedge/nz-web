@@ -166,12 +166,13 @@ public class SysLogAspect {
 			if (principal != null) {
 				Long userId = ((SysUserEntity) principal).getId();
 				sysLog.setUserId(userId == null ? null : userId.intValue());
+				sysLog.setApiKeyId(((SysUserEntity) principal).getApiKeyId());
 			}
 		}
 
 		sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
 		sysLog.setState("fail");
-		sysLog.setApiKeyId(((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getApiKeyId());
+
 
 		sysLogService.save(sysLog);
 	}
