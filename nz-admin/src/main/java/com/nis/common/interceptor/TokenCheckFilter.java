@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.PrincipalCollection;
@@ -29,6 +30,7 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.apache.shiro.util.ByteSource;
+import org.apache.shiro.util.ThreadContext;
 import org.apache.shiro.web.filter.AccessControlFilter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -147,14 +149,19 @@ public class TokenCheckFilter extends AccessControlFilter {
     			SimplePrincipalCollection primaryPrincipal =new SimplePrincipalCollection(user,"");
     			session.setAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY, primaryPrincipal);
     			session.setId(apiKey.getToken());
-        		
-        		if(!ToolUtil.isEmpty(expireAt)){
+
+    			if(!ToolUtil.isEmpty(expireAt)){
         			long seconds = DateUtil.between(now, expireAt, DateUnit.SECOND);
             		redisTemplate.opsForValue().set(ShiroUtils.REDIS_KEYPREFIX + requestToken, session,seconds,TimeUnit.SECONDS);
         		}else{
         			redisTemplate.opsForValue().set(ShiroUtils.REDIS_KEYPREFIX + requestToken, session);
         		}
     			
+    			DefaultSubjectContext context =new DefaultSubjectContext();
+    			context.setSession(session);
+    			SecurityManager securityManager = SecurityUtils.getSecurityManager();
+    			Subject subject = securityManager.createSubject(context);
+    			ThreadContext.bind(subject);
     			return true;
         	}
         }
