@@ -20,6 +20,7 @@
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
+	    	<result column="type" property="type"/>
 	    </association>
 
 	    <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
@@ -81,6 +82,7 @@
        SELECT e.*,
        m.id AS m_id,
        m.name AS m_name,
+       m.type AS m_type,
 
        a.id AS a_id,
        a.manage_ip AS a_manage_ip,
