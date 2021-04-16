@@ -222,10 +222,13 @@ public class SysLogAspect {
         sysLog.setParams(paramResult);
 
         Long userId = null;
+        Integer apiKeyId = null;
         if (ToolUtil.isEmpty(currentLoginUser)) {
             userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getId();
+            apiKeyId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getApiKeyId();
         } else {
             userId = currentLoginUser.getId();
+            apiKeyId = currentLoginUser.getApiKeyId();
         }
         sysLog.setUserId(userId == null ? null : userId.intValue());
 
@@ -235,7 +238,7 @@ public class SysLogAspect {
         sysLog.setTime(time);
         sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
         
-        sysLog.setApiKeyId(currentLoginUser.getApiKeyId());
+        sysLog.setApiKeyId(apiKeyId);
         // 保存系统日志   注： 查询操作若无异常不记录操作日志
         if (!"query".equals(operationType)) {
             sysLogService.save(sysLog);
