@@ -59,6 +59,11 @@ public class Constant {
      * mysql text 最大长度 65535
      */
     public static final Integer MYSQL_TEXT_MAXLENGTH = 65535;
+    
+    /**
+     * 统一utf-8字符编码
+     */
+    public static final String DEFAULT_CHARTSET_NAME = "UTF-8";
 
 	/**
 	 * 菜单类型

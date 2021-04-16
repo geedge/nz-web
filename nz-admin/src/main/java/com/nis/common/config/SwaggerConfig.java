@@ -43,10 +43,10 @@ public class SwaggerConfig{
 
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-            .title("人人开源")
-            .description("nezha-admin文档")
-            .termsOfServiceUrl("https://www.nezha.io")
-            .version("4.0.0")
+            .title("NEZHA")
+            .description("NEZHA")
+            .termsOfServiceUrl("https://www.geedgenetworks.com")
+            .version("2.0")
             .build();
     }
 

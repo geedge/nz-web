@@ -1,9 +1,12 @@
 package com.nis.common.utils;
 
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import java.awt.*;
-import java.lang.ref.*;
+import java.awt.Graphics;
+import java.awt.Robot;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -14,6 +17,9 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
+
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
 
 public class Tool {
 
@@ -1063,4 +1069,12 @@ public class Tool {
 	 *
 	 */
 	public static class ResponseUtil extends com.nis.common.utils.ResponseUtil{};
+	
+	/**
+	 * license 授权处理工具类
+	 * @author ThinkPad
+	 *
+	 */
+	public static class LicenseUtil extends com.nis.common.utils.LicenseUtil{};
+	
 }

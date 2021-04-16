@@ -8,6 +8,7 @@
 
 package com.nis.common.config;
 
+import com.nis.common.interceptor.LicenseInterceptor;
 import com.nis.common.interceptor.SysMenuInterceptor;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.SQLUtils;
@@ -71,8 +72,20 @@ public class WebConfig implements WebMvcConfigurer {
         }
     }
 
+    /**
+     * license校验拦截器
+     * @return
+     */
+    @Bean
+    LicenseInterceptor licenseInterceptor() {
+        return new LicenseInterceptor();
+    }
+    
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+    	//添加license 拦截器，排除 license 接口
+    	registry.addInterceptor(licenseInterceptor()).excludePathPatterns("/sys/license/**");
+    	
         SysConfigService sysConfigService = (SysConfigService) SpringContextUtils.getBean("sysConfigService");
         registry.addInterceptor(new SysMenuInterceptor(sysConfigService)).addPathPatterns("/sys/menu/**");
     }

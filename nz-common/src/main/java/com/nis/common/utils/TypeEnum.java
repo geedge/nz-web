@@ -37,7 +37,10 @@ public enum TypeEnum {
     ASSETTYPECONF("asset type conf"),
     EXPRESSIONTMPL("expression tmpl"),
     ASSETBRAND("asset brand"),
+    LICENSE("license"),
 	SNMPCREDENTIAL("snmp credential");
+
+
     private String value;
 
     public String getValue(){

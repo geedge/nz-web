@@ -1,11 +1,12 @@
 package com.nis.common.config;
 
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.StringUtils;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.Filter;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -15,28 +16,22 @@ import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisManager;
 import org.crazycake.shiro.RedisSessionDAO;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
-import javax.servlet.Filter;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.StringUtils;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
 
 /**
  * Shiro的配置文件
@@ -69,47 +64,11 @@ public class ShiroConfig {
     @Autowired
     private SysUserDao sysUserDao;
 
-    /**
-     * 单机环境，session交给shiro管理
-     */
-    /*@Bean
-    @ConditionalOnProperty(prefix = "nezha", name = "cluster", havingValue = "false")
-    public DefaultWebSessionManager sessionManager(@Value("${nezha.globalSessionTimeout:3600}") long globalSessionTimeout){
-        DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
-        sessionManager.setSessionValidationSchedulerEnabled(true);
-        sessionManager.setSessionIdUrlRewritingEnabled(false);
-        sessionManager.setSessionValidationInterval(globalSessionTimeout * 1000);
-        sessionManager.setGlobalSessionTimeout(globalSessionTimeout * 1000);
-
-        return sessionManager;
-    }
-
-    *//**
-     * 集群环境，session交给spring-session管理
-     *//*
-    @Bean
-    @ConditionalOnProperty(prefix = "nezha", name = "cluster", havingValue = "true")
-    public ServletContainerSessionManager servletContainerSessionManager() {
-        return new ServletContainerSessionManager();
-    }
-
-    @Bean("securityManager")
-    public SecurityManager securityManager(UserRealm userRealm, SessionManager sessionManager) {
-        DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-        securityManager.setRealm(userRealm);
-        securityManager.setSessionManager(sessionManager);
-        securityManager.setRememberMeManager(null);
-
-        return securityManager;
-    }*/
-
-
     @Bean("shiroFilter")
     public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
         ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
         shiroFilter.setSecurityManager(securityManager);
         shiroFilter.setLoginUrl("/sys/login");
-//        shiroFilter.setLoginUrl("/login.html");
         shiroFilter.setUnauthorizedUrl("/");
 
         Map<String, String> filterMap = new LinkedHashMap<>();
@@ -137,8 +96,10 @@ public class ShiroConfig {
         filterMap.put("/api/**", "anon");
         filterMap.put("/terminal.ws","anon");
         filterMap.put("/terminal/monitor.ws","anon");
+        filterMap.put("/sys/license/**","anon");//license 相关接口
 //        filterMap.put("/**", "authc");
         filterMap.put("/**", "tokenCheckFilter");
+        
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
         TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao);
         cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
@@ -149,11 +110,6 @@ public class ShiroConfig {
 
         return shiroFilter;
     }
-    //将这个bean移到单独的配置类中，不然无法自动注入bean
-//    @Bean("lifecycleBeanPostProcessor")
-//    public LifecycleBeanPostProcessor lifecycleBeanPostProcessor() {
-//        return new LifecycleBeanPostProcessor();
-//    }
 
     @Bean
     @ConditionalOnExpression("${nezha.shiroPermisSupport:true}")

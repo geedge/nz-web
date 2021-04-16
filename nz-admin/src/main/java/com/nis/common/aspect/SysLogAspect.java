@@ -1,19 +1,19 @@
 package com.nis.common.aspect;
 
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.google.gson.Gson;
-import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
-import com.nis.modules.sys.entity.SysLogEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysLogService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import lombok.extern.slf4j.Slf4j;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -25,19 +25,33 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.google.gson.Gson;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.HttpContextUtils;
+import com.nis.common.utils.IPUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.SysLogEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysLogService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.log.Log;
 
 /**
  * 系统日志，切面处理类
  */
 @Aspect
 @Component
-@Slf4j
 public class SysLogAspect {
     private static final Log logger = Log.get();
     @Autowired
@@ -105,7 +119,7 @@ public class SysLogAspect {
         sysLog.setOperation(operationType);
         sysLog.setType(syslog.type().getValue());
         sysLog.setResponse(JSON.toJSONString(r));
-        sysLog.setException(r.get("msg").toString());
+        sysLog.setException(Tool.StrUtil.utf8Str(r.get("msg")));
         sysLog.setTime(0L);
 
         // 获取request
@@ -148,8 +162,11 @@ public class SysLogAspect {
             }
             sysLog.setParams(logParams);
         } else {
-            Long userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getId();
-            sysLog.setUserId(userId == null ? null : userId.intValue());
+        	Object principal = SecurityUtils.getSubject().getPrincipal();
+        	if(principal != null) {
+        		Long userId = ((SysUserEntity) principal).getId();
+                sysLog.setUserId(userId == null ? null : userId.intValue());
+        	}
         }
 
         sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
@@ -222,7 +239,10 @@ public class SysLogAspect {
 
         Long userId = null;
         if (ToolUtil.isEmpty(currentLoginUser)) {
-            userId = ((SysUserEntity) SecurityUtils.getSubject().getPrincipal()).getId();
+        	Object principal = SecurityUtils.getSubject().getPrincipal();
+        	if(principal != null) {
+        		userId = ((SysUserEntity) principal).getId();
+        	}
         } else {
             userId = currentLoginUser.getId();
         }
