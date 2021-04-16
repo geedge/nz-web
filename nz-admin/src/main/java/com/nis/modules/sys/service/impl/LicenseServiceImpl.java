@@ -248,19 +248,21 @@ public class LicenseServiceImpl implements LicenseService {
 	 * 
 	 * @return @throws IOException @throws
 	 */
+	@Override
 	public PublicKey getPublicKey() {
-		File file = Tool.FileUtil.newFile(publicKeyPath);
-		log.debug("pubk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
 		PublicKey cache = LicenseServiceImpl.publickeyCache;
 		if (cache == null) {
+			File file = Tool.FileUtil.newFile(publicKeyPath);
+			log.debug("pubk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
 			// 通过 getResourceAsStream 确保jar包中也能够读取
-			try (InputStream is = file.exists() ? Tool.FileUtil.getInputStream(publicKeyPath)
+			try (InputStream is = file.exists() ? Tool.FileUtil.getInputStream(file)
 					: this.getClass().getResourceAsStream(publicKeyPath)) {
 				cache = Tool.PemUtil.readPemPublicKey(is);
 				log.info("license public key load success");
 				if (log.isDebugEnabled()) {
 					log.debug("public key content: {}", cache);
 				}
+				LicenseServiceImpl.publickeyCache = cache;
 			} catch (IOException e) {
 				throw new NZException("license public key load error", 999);
 			}

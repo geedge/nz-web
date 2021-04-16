@@ -1,6 +1,5 @@
 package com.nis.modules.sys.controller;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -108,6 +107,10 @@ public class SysLicenseController extends AbstractController {
 		ValidateUtils.is(licenseEntity).notNull(RCode.LICENSE_FILE_IS_EMPTY)
 			.and(licenseEntity.getSignature()).notNull(RCode.LICENSE_FILE_INVALID)
 			.and(licenseEntity.getSignature().getSignatureValue()).notNull(RCode.LICENSE_FILE_INVALID);
+		boolean verifyLicense = Tool.LicenseUtil.verifyLicenseSign(licenseEntity, licenseService.getPublicKey(), licenseService.getSignAlgorithm());
+		if(!verifyLicense) {
+			throw new NZException(RCode.LICENSE_FILE_INVALID);
+		}
 		//校验证书是否有效
 		licenseService.verify(licenseEntity);
 		//更新证书
@@ -142,7 +145,7 @@ public class SysLicenseController extends AbstractController {
 		//计算摘要和签名
 		File file = Tool.FileUtil.newFile(prikeyPath);
 		log.debug("pk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
-		try (InputStream inputStream = file.exists() ? Tool.FileUtil.getInputStream(prikeyPath)
+		try (InputStream inputStream = file.exists() ? Tool.FileUtil.getInputStream(file)
 				: this.getClass().getResourceAsStream(prikeyPath)) {
 			DateTime now = Tool.DateUtil.date().setTimeZone(TimeZone.getTimeZone("UTC"));
 			license.setGenDate(Tool.DateUtil.format(now, DatePattern.UTC_PATTERN));

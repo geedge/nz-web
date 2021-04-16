@@ -1,6 +1,7 @@
 package com.nis.modules.sys.service;
 
 import java.io.IOException;
+import java.security.PublicKey;
 
 import com.nis.modules.sys.entity.LicenseEntity;
 
@@ -49,5 +50,7 @@ public interface LicenseService {
 	LicenseEntity getAndSetLicenseCache();
 
 	String getSignAlgorithm();
+
+	PublicKey getPublicKey();
 
 }

@@ -54,14 +54,13 @@ public class LicenseUtil {
 				&& Tool.StrUtil.isAllNotBlank(signature.getDigestValue(), signature.getSignatureValue())) {
 			String genLicenseDigest = license.genLicenseDigest();// 计算摘要
 			String digestValue = signature.getDigestValue();// 上传证书摘要
-			if (Tool.StrUtil.equals(digestValue, genLicenseDigest)) {
+			if (!Tool.StrUtil.equals(digestValue, genLicenseDigest)) {//摘要不一致说明license 不合法
 				return false;
 			}
 			// 验证摘要签名是否正确
 			String signatureValue = signature.getSignatureValue();
 			Sign sign = SecureUtil.sign(SignAlgorithm.valueOf(signAlgorithm));
 			sign.setPublicKey(pk);
-
 			try {
 				boolean verify = sign.verify(digestValue.getBytes(Constant.DEFAULT_CHARTSET_NAME),
 						signatureValue.getBytes(Constant.DEFAULT_CHARTSET_NAME));
