@@ -13,7 +13,7 @@
         
         <association columnPrefix="u_" property="creator" javaType="com.nis.modules.sys.entity.SysUserEntity">
 	    	<result column="id" property="id"/>
-	    	<result column="userName" property="userName"/>
+	    	<result column="name" property="name"/>
 	    </association>
 	
     </resultMap>
@@ -27,8 +27,8 @@
        l.prev AS prev,
        l.next AS next,
        l.build_in AS build_in,
-       u.id AS u_userId,
-       u.username AS u_userName
+       u.id AS u_id,
+       u.name AS u_name
        from link l left join sys_user u on l.create_by=u.id
        where 1=1
        <if test="params.id != null and params.id != ''">

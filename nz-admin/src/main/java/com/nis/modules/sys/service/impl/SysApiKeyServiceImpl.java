@@ -1,6 +1,5 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -27,13 +26,10 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		String ids = (String) params.get("ids");
-		String name = (String) params.get("name");
+		IPage<SysApiKey> result = new Query<SysApiKey>().getPage(params);
 		
-		IPage<SysApiKey> result = this.page(new Query<SysApiKey>().getPage(params), new QueryWrapper<SysApiKey>().lambda()
-				.in(ToolUtil.isNotEmpty(ids), SysApiKey::getId, ToolUtil.isNotEmpty(ids) ? Arrays.asList(ids.toString().split(",")) : null)
-				.like(ToolUtil.isNotEmpty(name), SysApiKey::getName, name));
-		
+		List<SysApiKey> rows = this.baseMapper.queryList(result, params);
+		result.setRecords(rows);
 		return new PageUtils(result);
 	}
 

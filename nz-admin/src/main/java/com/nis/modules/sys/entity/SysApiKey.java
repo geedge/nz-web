@@ -2,6 +2,7 @@ package com.nis.modules.sys.entity;
 
 import java.util.Date;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
@@ -23,4 +24,10 @@ public class SysApiKey {
 	private Date createAt;
 	
 	private Date expireAt;
+	
+	@TableField(exist = false)
+	private SysUserEntity createUser;
+	
+	@TableField(exist = false)
+	private SysRoleEntity role;
 }
