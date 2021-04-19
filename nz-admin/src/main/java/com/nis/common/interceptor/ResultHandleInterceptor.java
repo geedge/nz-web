@@ -21,10 +21,13 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.ToolUtil;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @ControllerAdvice
 public class ResultHandleInterceptor implements ResponseBodyAdvice {
 
+	private Log log =Log.get();
+	
 	private static final String INCLUDE = "include";
 	
 	private static final String EXCLUDE = "exclude";
@@ -33,7 +36,7 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
     public Object beforeBodyWrite(Object body, MethodParameter arg1,
                                   MediaType arg2, Class arg3, ServerHttpRequest req,
                                   ServerHttpResponse resp) {
-        System.out.println("后端响应的数据信息为"+JSON.toJSONString(body));
+    	log.debug("后端响应的数据信息为"+JSON.toJSONString(body));
         //如果响应值为空则无需过滤
         R result = (R)body;
         Object object = result.get("data");
@@ -53,10 +56,10 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
 			Object handleResponseData = handleResponseData(body,map);
 			return handleResponseData;
 		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
+			log.error(e);
 			return body;
 		} catch (SecurityException e) {
-			e.printStackTrace();
+			log.error(e);
 			return body;
 		}
     }
@@ -91,7 +94,7 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
     }
     
     public Object handleResponseData(Object obj,Map<String,List<String>> map) throws NoSuchFieldException, SecurityException {
-    	System.out.println("handleResponseData 处理中");
+    	log.debug("handleResponseData 处理中");
     	R r = (R)obj;
     	Object object = r.get("data");
     	if(object instanceof PageUtils) {
@@ -104,6 +107,15 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
     			result.add(res);
     		}
         	data.setList(result);
+    	}else if(object instanceof Map){
+    		List<?> list = (List<?>) ((Map) object).get("list");
+    		Class c = list.get(0).getClass();
+    		List<Object> result = new ArrayList<Object>();
+    		for(Object param : list) {
+    			Object res = filterFieldsJson(param,c,map);
+    			result.add(res);
+    		}
+    		((Map) object).put("list", result);
     	}else {
     		Class c = object.getClass();
     		Object res = filterFieldsJson(object,c,map);
