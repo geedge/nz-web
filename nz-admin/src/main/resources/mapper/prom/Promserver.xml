@@ -3,10 +3,7 @@
 
 <mapper namespace="com.nis.modules.promserver.dao.PromserverDao">
 
-	<update id="updateStatus">
-		<foreach item="promserver" collection="promservers" separator=";">
-			update prom_server set status=#{promserver.status},check_time=#{promserver.checkTime}
-			where id=#{promserver.id}
-		</foreach>
+	<update id="updateStatusInfo">
+		update prom_server set status=#{promserver.status},check_time=#{promserver.checkTime},status_info=#{promserver.statusInfo} where id=#{promserver.id}
 	</update>
 </mapper>

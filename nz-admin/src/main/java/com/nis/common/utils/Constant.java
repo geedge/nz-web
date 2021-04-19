@@ -130,6 +130,11 @@ public class Constant {
     public static final String REDIS_KEY_ENDPOINT_PROM = "endpoint_prom";
 
     /**
+     * 支持告警的 promserver id
+     */
+    public static final String REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID = "support_alert_promserver_id";
+
+    /**
      * 记录
      */
     public static final String REDIS_KEY_CONF_EVENT = "conf_event";
@@ -397,6 +402,7 @@ public class Constant {
 
     public static final String AUTH_TOKEN_CODE="Authorization";
 
+    public static final Integer SNMPV1 = 1;
     public static final Integer SNMPV2 = 2;
     public static final Integer SNMPV3 = 3;
     // snmp默认团体名

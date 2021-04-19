@@ -144,8 +144,8 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public void updateStatus(List<Promserver> promservers) {
-		this.baseMapper.updateStatus(promservers);
+	public void updateStatusInfo(Promserver promserver) {
+		this.baseMapper.updateStatusInfo(promserver);
 	}
 
 	/**

@@ -1,11 +1,6 @@
 package com.nis.modules.promserver.job;
 
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.service.SysConfigService;
@@ -14,9 +9,6 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-
-import java.net.URL;
-import java.util.List;
 
 @DisallowConcurrentExecution
 public class PromserverJob extends QuartzJobBean {
@@ -35,7 +27,7 @@ public class PromserverJob extends QuartzJobBean {
 	@Override
 	protected void executeInternal(JobExecutionContext context) {
 		// 检查 haMode
-		boolean haMode = sysConfigService.checkHaMode();
+		/*boolean haMode = sysConfigService.checkHaMode();
 		if (!haMode) return;
 
 		//查询内置confagent配置信息
@@ -73,7 +65,7 @@ public class PromserverJob extends QuartzJobBean {
 				}
 			}
 			promserverService.updateStatus(promservers);
-		}
+		}*/
 	}
 
 	public Integer requestPromAPI(String url){

@@ -355,6 +355,14 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             camelToUnderlineMap.put(underlineKey, entry.getValue());
         }
 
+        if(Constant.SNMPV1.equals(type) || Constant.SNMPV2.equals(type)){
+            if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("read_community"))) {
+                camelToUnderlineMap.put("community", camelToUnderlineMap.get("read_community"));
+            }else{
+                camelToUnderlineMap.put("community", Constant.SNMP_DEFAULT_COMMUNITY);
+            }
+        }
+
         if (Constant.SNMPV3.equals(type)) {
             if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("auth_pin"))) {
                 camelToUnderlineMap.put("password", camelToUnderlineMap.get("auth_pin"));
@@ -366,6 +374,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 删除多余的 keys
         camelToUnderlineMap.remove("auth_pin");
         camelToUnderlineMap.remove("priv_pin");
+        camelToUnderlineMap.remove("read_community");
+        camelToUnderlineMap.remove("write_community");
 
         gengrateParams.put("auth", camelToUnderlineMap);
         return gengrateParams;

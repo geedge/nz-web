@@ -10,5 +10,5 @@ import java.util.List;
 @Mapper
 public interface PromserverDao extends BaseMapper<Promserver>{
 	
-	void updateStatus(@Param("promservers") List<Promserver> promservers);
+    void updateStatusInfo(@Param("promserver")Promserver promserver);
 }

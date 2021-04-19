@@ -8,8 +8,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
-import com.nis.modules.agent.dao.MonitorConfEventDao;
-import com.nis.modules.agent.entity.MonitorConfEvent;
+import com.nis.modules.agent.dao.MonitorEventLogDao;
+import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertSeverityConf;
@@ -40,6 +40,7 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -69,7 +70,7 @@ public class AgentJob extends QuartzJobBean {
     private RedisTemplate redisTemplate;
 
     @Autowired
-    private MonitorConfEventDao confEventDao;
+    private MonitorEventLogDao confEventDao;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -79,6 +80,8 @@ public class AgentJob extends QuartzJobBean {
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
+
+    private static ExecutorService exec = Executors.newCachedThreadPool();
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -101,7 +104,7 @@ public class AgentJob extends QuartzJobBean {
 
     public void setUpAgentConfig() {
         // 对比数据变化
-        boolean changeFlag = this.compareDataChanges("cmd", "global", "per-datacenter");
+        boolean changeFlag = this.compareDataChanges("prometheus");
         log.debug(String.format("conf_event 数据%s发生变化", changeFlag ? "" : "没有"));
 
         if (changeFlag) {
@@ -140,6 +143,7 @@ public class AgentJob extends QuartzJobBean {
         // 按照 id 升序，方便 alert 设置
         globalPromServers = globalPromServers.stream().sorted(Comparator.comparing(Promserver::getId)).collect(Collectors.toList());
 
+        boolean ruleChange = this.compareDataChanges("rule");
         // global config 配置文件处理 联邦 告警 rule.yml 等，
         for (int i = 0; i < globalPromServers.size(); i++) {
             Promserver promserver = globalPromServers.get(i);
@@ -154,9 +158,14 @@ public class AgentJob extends QuartzJobBean {
             Map gloablAgentYmlMap = this.generateGlobalYml(isAlert, promserver, globalPromServers, perDataCenterPromServers, configMap);
             globalConfigBody.put("config", gloablAgentYmlMap);
             if (isAlert) {
-                // 生成告警配置文件
-                Map alertYmlMap = this.generateRuleYml(configMap);
-                globalConfigBody.put("rule", alertYmlMap);
+                Object supportAlertPromId = redisTemplate.opsForValue().get(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID);
+                supportAlertPromId = ToolUtil.isEmpty(supportAlertPromId) ? "" : supportAlertPromId;
+                if (!promserver.getId().toString().equals(supportAlertPromId.toString()) && ruleChange) {
+                    // 告警发生变更,生成告警配置文件
+                    Map alertYmlMap = this.generateRuleYml(configMap);
+                    globalConfigBody.put("rule", alertYmlMap);
+                }
+                redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID, promserver.getId().toString());
             }
 
             boolean cmdFlag = this.compareCmdLineChanges(promserver, sysCmdLineMap, configMap);
@@ -665,11 +674,11 @@ public class AgentJob extends QuartzJobBean {
         // 第一次时 为true 全量更新
         if (!hasKey) {
             flag = true;
-            List<MonitorConfEvent> eventList = confEventDao.selectList();
+            List<MonitorEventLog> eventList = confEventDao.selectList(null);
             if (ToolUtil.isNotEmpty(filterKeys)) {
-                eventList = eventList.stream().filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getTable())).collect(Collectors.toList());
+                eventList = eventList.stream().filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getEvent())).collect(Collectors.toList());
             }
-            Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorConfEvent::getTable, monitorConfEvent -> String.valueOf(monitorConfEvent.getValue())));
+            Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorEventLog::getEvent, monitorConfEvent -> String.valueOf(monitorConfEvent.getCounter())));
             redisTemplate.opsForHash().putAll(Constant.REDIS_KEY_CONF_EVENT, map);
             return flag;
         }
@@ -677,17 +686,17 @@ public class AgentJob extends QuartzJobBean {
         HashOperations opsForHash = redisTemplate.opsForHash();
         Map<String, String> confEvent = opsForHash.entries(Constant.REDIS_KEY_CONF_EVENT);
 
-        List<MonitorConfEvent> eventList = confEventDao.selectList();
+        List<MonitorEventLog> eventList = confEventDao.selectList(null);
         if (ToolUtil.isNotEmpty(filterKeys)) {
-            eventList = eventList.stream().filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getTable())).collect(Collectors.toList());
+            eventList = eventList.stream().filter(monitorConfEvent -> Arrays.asList(filterKeys).contains(monitorConfEvent.getEvent())).collect(Collectors.toList());
         }
-        for (MonitorConfEvent data : eventList) {
-            if (ToolUtil.isEmpty(confEvent.get(data.getTable())) || !data.getValue().equals(Integer.valueOf(confEvent.get(data.getTable())))) {
+        for (MonitorEventLog data : eventList) {
+            if (ToolUtil.isEmpty(confEvent.get(data.getEvent())) || !data.getCounter().equals(Integer.valueOf(confEvent.get(data.getEvent())))) {
                 flag = true;
             }
         }
         // 更新 redis 中 conf_event 数据
-        Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorConfEvent::getTable, monitorConfEvent -> String.valueOf(monitorConfEvent.getValue())));
+        Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorEventLog::getEvent, monitorConfEvent -> String.valueOf(monitorConfEvent.getCounter())));
         opsForHash.delete(Constant.REDIS_KEY_CONF_EVENT, map.keySet().toArray());
         opsForHash.putAll(Constant.REDIS_KEY_CONF_EVENT, map);
         return flag;
@@ -695,37 +704,96 @@ public class AgentJob extends QuartzJobBean {
 
     /**
      * 获取健康的 promservers
-     *
      * @param allPromServers
      * @param configMap
      * @return
      */
     private List<Promserver> getHealthyPromServers(List<Promserver> allPromServers, Map<String, String> configMap) {
-        List<Promserver> healthyPromServers = new ArrayList<>();
-        for (Promserver promServer : allPromServers) {
-            UrlBuilder urlBuilder = UrlBuilder.create();
-            urlBuilder.setScheme("http").setHost(promServer.getHost()).setPort(promServer.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("healthy");
-            //  调用 healthy 接口
-            String result = null;
-            try {
-                result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(promServer.getToken()).execute().body();
-            } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
-            }
+        List<Callable<Promserver>> tasks = new ArrayList<>();
+        allPromServers.stream().forEach(promServer -> {
+            Callable<Promserver> task = new Callable<Promserver>() {
+                @Override
+                public Promserver call() throws Exception {
+                    UrlBuilder urlBuilder = UrlBuilder.create();
+                    urlBuilder.setScheme("http").setHost(promServer.getHost()).setPort(promServer.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("healthy");
+                    String result = null;
+                    try {
+                        result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(promServer.getToken()).execute().body();
+                    } catch (RuntimeException e) {
+                        log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+                    }
+                    // 接口请求失败
+                    if (result == null) {
+                        promServer.setStatus(0);
+                        promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+                    } else {
+                        try {
+                            R resultObj = JSONObject.parseObject(result, R.class);
+                            if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
+                                Map<String, Object> data = (Map) resultObj.get("data");
 
-            if (result == null) continue;
-            R resultObj = JSONObject.parseObject(result, R.class);
-            if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
-                Map<String, Object> data = (Map) resultObj.get("data");
-                String prometheusState = (String) data.get("prometheus");
-                String confagentState = (String) data.get("confagent");
-                String authState = (String) data.get("auth");
-                if ("UP".equals(prometheusState) && "UP".equals(confagentState) && "TRUE".equals(authState)) {
-                    healthyPromServers.add(promServer);
+                                String prometheusState = (String) data.get("prometheus");
+                                String confagentState = (String) data.get("confagent");
+                                String snmpExporterState = (String) data.get("snmp_exporter");
+                                String authState = (String) data.get("auth");
+                                if ("UP".equals(prometheusState) && "UP".equals(confagentState) && "UP".equals(snmpExporterState) && "TRUE".equals(authState)) {
+                                    // 服务正常  认证成功
+                                    promServer.setStatus(1);
+                                } else if ("UP".equals(prometheusState) && "UP".equals(confagentState) && "UP".equals(snmpExporterState) && "FALSE".equals(authState)) {
+                                    // 服务正常  认证失败
+                                    promServer.setStatus(-1);
+                                } else {
+                                    // 异常
+                                    promServer.setStatus(0);
+                                }
+                                data.remove("auth");
+                                promServer.setStatusInfo(JSONObject.toJSONString(data));
+                            } else {
+                                promServer.setStatus(0);
+                                promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+                            }
+                        } catch (Exception e) {
+                            log.error(String.format("%s 接口相应内容有误", urlBuilder.toString()), e);
+                            promServer.setStatus(0);
+                            promServer.setStatusInfo(getPromStatusInfoErrorMsg());
+                        }
+                    }
+                    promServer.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
+                    return promServer;
+                }
+            };
+            tasks.add(task);
+        });
+
+        List<Promserver> healthyPromServers = new ArrayList<>();
+        try {
+            List<Future<Promserver>> futures = exec.invokeAll(tasks);
+            for (Future<Promserver> future : futures) {
+                if (!future.isCancelled()) {
+                    Promserver promserver = future.get();
+                    if (promserver.getStatus().equals(1)) {
+                        healthyPromServers.add(promserver);
+                    }
+                    promService.updateStatusInfo(promserver);
                 }
             }
+        } catch (InterruptedException | ExecutionException e) {
+            log.error(e);
         }
         return healthyPromServers;
+    }
+
+
+    /**
+     * 请求接口异常时,status info 信息
+     * @return
+     */
+    private static String getPromStatusInfoErrorMsg() {
+        Map errorData = new HashMap(4);
+        errorData.put("prometheus", "DOWN");
+        errorData.put("confagent", "DOWN");
+        errorData.put("snmp_exporter", "DOWN");
+        return JSONObject.toJSONString(errorData);
     }
 
     /**
@@ -749,8 +817,7 @@ public class AgentJob extends QuartzJobBean {
      */
     private void updatePromServerStatus(Promserver promserver, Integer status) {
         promserver.setStatus(status);
-        // 暂时不处理
-        //promserver.setStatusInfo("{}");
+        promserver.setStatusInfo(getPromStatusInfoErrorMsg());
         promserver.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
         promService.updateById(promserver);
     }

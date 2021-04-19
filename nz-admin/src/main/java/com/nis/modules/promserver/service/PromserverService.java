@@ -22,7 +22,7 @@ public interface PromserverService extends IService<Promserver> {
 
 	Integer saveOrUpdatePromserver(Promserver promserverEntity, boolean modify);
 	
-	void updateStatus(List<Promserver> promservers);
+	void updateStatusInfo(Promserver promserver);
 
 	/**
 	 * 详情
