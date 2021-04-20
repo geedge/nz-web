@@ -48,5 +48,5 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     void cancelImport(String seq);
 
-
+    void bulkEdit(Map<String,Object> params);
 }

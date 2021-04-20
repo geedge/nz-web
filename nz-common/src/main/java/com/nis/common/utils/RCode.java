@@ -276,7 +276,8 @@ public enum RCode {
     ASSET_AUTHUSERNAME_ISNULL(311063, "Asset auth username can not be empty"),
     ASSET_AUTHPIN_ISNULL(311064, "Asset auth pin can not be empty"),
     ASSET_AUTHPRIKEY_ISNULL(311065, "Asset auth pri key can not be empty"),
-
+    ASSET_EDITTYPE_ISNULL(311066,"Asset edit type can not be empty"),
+    
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
     ASSET_MODELID_ISNULL(321001, "Asset model id can not be null"),      // 资产型号ID不能为空
     ASSET_MODELNAME_DUPLICATE(322002, "Asset model name duplicate"),     // 资产型号名称重复

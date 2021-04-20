@@ -163,6 +163,10 @@
             <if test="params.ping != null and params.ping != ''">
                 AND assp.status = #{params.ping}
             </if>
+            
+            <if test="params.authProtocol != null">
+                AND type.auth_protocol = #{params.authProtocol}
+            </if>
 
          </where>
 
@@ -170,4 +174,41 @@
             ORDER BY asset.id
         </if>
     </select>
+    
+    <update id="updateAssetStateBatch">
+    	update asset_asset
+    	<set>
+	    	<if test="params.stateId != null">
+	    		state_id = #{params.stateId},
+	    	</if>
+	    	<if test="params.snmpCredentialId != null">
+	    		snmp_credential_id = #{params.snmpCredentialId},
+	    	</if>
+	    	<if test="params.authType != null">
+	    		auth_type = #{params.authType},
+	    	</if>
+	    	<if test="params.authProtocolPort != null">
+	    		auth_protocol_port = #{params.authProtocolPort},
+	    	</if>
+	    	<if test="params.authUsername != null and params.authUsername !='' ">
+	    		auth_username = #{params.authUsername},
+	    	</if>
+	    	<if test="params.authPin != null and params.authPin !='' ">
+	    		auth_pin = #{params.authPin},
+	    	</if>
+	    	<if test="params.authPriKey != null and params.authPriKey !='' ">
+	    		auth_pri_key = #{params.authPriKey},
+	    	</if>
+	    	<if test="params.authUserTip != null and params.authUserTip !='' ">
+	    		auth_user_tip = #{params.authUserTip},
+	    	</if>
+	    	<if test="params.authPinTip != null and params.authPinTip !='' ">
+	    		auth_pin_tip = #{params.authPinTip},
+	    	</if>
+    	</set>
+    	where id in
+    	<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+       		#{id}
+	    </foreach>
+    </update>
 </mapper>

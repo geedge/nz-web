@@ -279,7 +279,16 @@ public class AssetController {
         }
     }
 
-
+    /**
+     * asset资产批量修改
+     */
+    @PutMapping("/asset/bulkEdit")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    public R bulkEdit(@RequestBody Map<String,Object> params) {
+    	assetAssetService.bulkEdit(params);
+        return R.ok();
+    }
+    
 
 
 

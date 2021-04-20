@@ -1720,4 +1720,85 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
+	@Override
+	public void bulkEdit(Map<String, Object> params) {
+		
+		ValidateUtils.is(params.get("editType")).notNull(RCode.ASSET_EDITTYPE_ISNULL)
+		.and(params.get("ids")).notNull(RCode.ASSET_ID_ISNULL);
+		Integer editType = (Integer) params.get("editType");
+		List<Integer> ids = (List<Integer>) params.get("ids");
+		
+		switch(editType) {
+			// 1 account 2 label 3 state 4 snmp credentials
+			case 1:
+				Integer authType = (Integer) params.get("authType");
+				String authUsername	= (String) params.get("authUsername");
+				String authPin	= (String) params.get("authPin");
+				String authPriKey	= (String) params.get("authPriKey");
+				if(ObjectUtil.equal(authType, 1)) {
+		        	ValidateUtils.is(authUsername).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
+		        	.and(authPin).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+		        }else if(ObjectUtil.equal(authType, 2)){
+		        	ValidateUtils.is(authPriKey).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
+		        }
+				this.baseMapper.updateAssetStateBatch(ids, params);
+				break;
+			case 2:
+				List<Map<String,Object>> object = (List<Map<String, Object>>) params.get("fields");
+				if(ToolUtil.isEmpty(object)) {
+					break;
+				}
+				// 将标签操作区分 批量删除还是批量新增或者更新
+				List<Integer> removeFieldIds = new ArrayList<Integer>();
+				List<AssetFieldValue> addOrUpdateFields = new ArrayList<AssetFieldValue>();
+				for(Map<String,Object> map : object) {
+					Integer action = (Integer) map.get("action");
+					if(ToolUtil.equals(action, 1)) {
+						removeFieldIds.add((Integer)map.get("id"));
+					}else {
+						List<AssetFieldValue> assetFieldValues = assetFieldValueService.list(new QueryWrapper<AssetFieldValue>().lambda()
+								.eq(AssetFieldValue::getMetaId, map.get("id"))
+								.in(AssetFieldValue::getAssetId,ids));
+						// 分拣出更新数据和新增数据
+						List<Integer> assetIds = assetFieldValues.stream().map(AssetFieldValue::getAssetId).collect(Collectors.toList());
+						List<Integer> addIds = ids.stream().filter(item -> !assetIds.contains(item)).collect(Collectors.toList());
+						
+						for(AssetFieldValue assetFieldValue : assetFieldValues) {
+							assetFieldValue.setValue((String)map.get("value"));
+							addOrUpdateFields.add(assetFieldValue);
+						}
+						
+						for(Integer id : addIds) {
+							AssetFieldValue data  = new AssetFieldValue();
+							data.setAssetId(id);
+							data.setMetaId((Integer)map.get("id"));
+							data.setValue((String)map.get("value"));
+							addOrUpdateFields.add(data);
+						}
+					}
+				}
+				
+				if(ToolUtil.isNotEmpty(removeFieldIds)) {
+					assetFieldValueService.remove(new QueryWrapper<AssetFieldValue>()
+							.lambda().in(AssetFieldValue::getMetaId, removeFieldIds)
+							.in(AssetFieldValue::getAssetId, ids));
+				}
+				
+				if(ToolUtil.isNotEmpty(addOrUpdateFields)) {
+					assetFieldValueService.saveOrUpdateBatch(addOrUpdateFields);
+				}
+				break;
+			case 3:
+				ValidateUtils.is(params.get("stateId")).notNull(RCode.ASSET_STATE_ID_ISNULL);
+				this.baseMapper.updateAssetStateBatch(ids, params);
+				break;
+			case 4:
+				ValidateUtils.is(params.get("snmpCredentialId")).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+				this.baseMapper.updateAssetStateBatch(ids, params);
+				break;
+			default:
+				break;
+		}
+	}
+
 }
