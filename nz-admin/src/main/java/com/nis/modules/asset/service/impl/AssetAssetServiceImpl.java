@@ -336,17 +336,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         AssetTypeConf typeConf = typeConfService.getById(asset.getTypeId());
         ValidateUtils.is(typeConf).notNull(RCode.TYPECONF_NOT_FOUND);
 
-        // 修改时，如果本身为宿主机，切包含虚拟机，则不能修改为虚拟机
-        if (asset.getId() != null) {
-            List<AssetAsset> babyAsset = this.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getPid, asset.getId()));
-            // 包含虚拟机
-            if (CollectionUtils.isNotEmpty(babyAsset)) {
-                if (typeConf.getVm().equals(1)) {
-                    throw new NZException(RCode.ASSET_NOT_UPDATE);
-                }
-            }
-        }
-
         // 虚拟机 vm info 校验
         if (typeConf.getVm().equals(1)) {
             if (asset.getPid() == null) {
@@ -358,9 +347,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             AssetAsset parentAsset = this.getById(asset.getPid());
             ValidateUtils.is(parentAsset).notNull(RCode.ASSET_PARENT_NOT_EXIST);
 
-            // 宿主机是否是不是虚拟机、是否支持挂载
+            // 宿主机是否支持挂载
             AssetTypeConf parentAssetTypeConf = typeConfService.getById(parentAsset.getTypeId());
-            if (!parentAssetTypeConf.getVmh().equals(1) || !parentAssetTypeConf.getVm().equals(0)) {
+            if (!parentAssetTypeConf.getVmh().equals(1)) {
                 // 只有宿主机，才能支持挂载虚拟机
                 throw new NZException(RCode.ASSET_NOT_SUPPORT_MOUNTING);
             }
@@ -1254,9 +1243,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_PARENT_NOT_EXIST.getMsg());
                 } else {
-                    // 校验是否可以挂载虚拟机 选择宿主机是虚拟机或者不支持挂载
+                    // 校验是否宿主机支持挂载
                     AssetTypeConf parentAssetTypeConf = typeIdAndEntityMap.get(parentAsset.getTypeId());
-                    if (parentAssetTypeConf.getVm().equals(1) || parentAssetTypeConf.getVmh().equals(0)) {
+                    if (parentAssetTypeConf.getVmh().equals(0)) {
                         saveFlag = false;
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SUPPORT_MOUNTING.getMsg());
                     }

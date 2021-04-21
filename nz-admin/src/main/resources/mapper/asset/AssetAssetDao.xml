@@ -168,6 +168,14 @@
                 AND type.auth_protocol = #{params.authProtocol}
             </if>
 
+            <if test="params.vmh != null and params.vmh != ''">
+                AND type.vmh = #{params.vmh}
+            </if>
+
+            <if test="params.vm != null and params.vm != ''">
+                AND type.vm = #{params.vm}
+            </if>
+
          </where>
 
         <if test="params.orderBy == null or params.orderBy == ''">
