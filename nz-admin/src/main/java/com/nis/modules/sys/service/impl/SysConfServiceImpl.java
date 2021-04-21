@@ -56,21 +56,15 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port"};
 
-    public static final String[][] BASIC_DEPEND={};
+    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port"};
 
-    public static final String[][] BASIC_DEFAULT={
-            {"default_scrape_interval","60s"},
-            {"default_scrape_timeout","30s"},
-            {"storage_local_retention","30"},
-            {"query_max_series","100"},
-            {"asset_ping_interval","300"},
-            {"default_cabinet_usize","40"},
-            {"snmp_trap_listen_port","162"}
-    };
+    public static final String[][] BASIC_DEPEND={};
 
     public static final String[] EMAIL_KEYS={"email_test","email_enable","email_host","email_port","email_timeout","email_auth_account","email_auth_password","email_send_account","email_test_account","email_security_type"};
 
     public static final String[] EMAIL_REQUIRED={"email_enable","email_host","email_port","email_timeout","email_security_type"};
+
+    public static final String[] EMAIL_INTEGER={"email_port","email_timeout"};
 
     public static final String[][] EMAIL_DEPEND={{"email_test_account","email_test","true"}};
 
@@ -81,6 +75,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     public static final String[] TERMINAL_KEYS={"terminal_timeout","terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
 
     public static final String[] TERMINAL_REQUIRED={"terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
+
+    public static final String[] TERMINAL_INTEGER={"terminal_timeout","terminal_record_local_retention"};
 
     public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout"};
 
@@ -130,7 +126,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     public void saveTerminal(Map<String, String> params) {
         Map<String, String> result = this.validateKeys(TERMINAL_KEYS, params);
         this.validateRequired(result,TERMINAL_REQUIRED,null);
-
+        //校验integer类型
+        this.validateInteger(TERMINAL_INTEGER,result);
         this.saveOrUpdateConfsBatch(result);
     }
 
@@ -138,7 +135,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     public void saveEmail(Map<String, String> params) {
         Map<String, String> result = this.validateKeys(EMAIL_KEYS, params);
         this.validateRequired(result,EMAIL_REQUIRED,EMAIL_DEPEND);
-
+        //校验integer类型
+        this.validateInteger(EMAIL_INTEGER,result);
         String enable = params.get("email_enable");
         if(!Arrays.asList(SWITCH_TYPES).contains(enable)){
             throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
@@ -157,6 +155,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             if(Tool.StrUtil.isNotEmpty(sendAccount)){
                 ValidateUtils.is(sendAccount).email(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT);
             }
+            int emailPort = CommonUtils.toInt(params.get("email_port"));
+            ValidateUtils.is(emailPort).min(1,RCode.SYS_CONFIG_PORT_INVALID).max(65535,RCode.SYS_CONFIG_PORT_INVALID);
             //校验邮箱合法性
             this.testMailServer(params);
         }
@@ -175,9 +175,22 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         Map<String, String> result = this.validateKeys(BASIC_KEYS, params);
         //校验是否缺少必填项
         this.validateRequired(result,BASIC_REQUIRED,BASIC_DEPEND);
+        //校验integer类型
+        this.validateInteger(BASIC_INTEGER,result);
         //校验开关值是否合法
         if(!Arrays.asList(SWITCH_TYPES).contains(params.get("unsaved_change"))){
             throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
+        }
+
+        int snmpTrapPort = CommonUtils.toInt(params.get("snmp_trap_listen_port"));
+        ValidateUtils.is(snmpTrapPort).min(1,RCode.SYS_CONFIG_PORT_INVALID).max(65535,RCode.SYS_CONFIG_PORT_INVALID);
+
+        Integer defaultCabUIntValue = CommonUtils.toInt(params.get("default_cabinet_usize"));
+        ValidateUtils.is(defaultCabUIntValue).min(1, RCode.DC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.DC_CABINET_MAXU);
+
+        Integer queryMaxSeriesIntValue = CommonUtils.toInt(params.get("query_max_series"));
+        if (queryMaxSeriesIntValue < -1 || queryMaxSeriesIntValue > 1000) {
+            throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INTERVAL);
         }
 
         //设置默认值
@@ -376,6 +389,17 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
     }
 
+    private void validateInteger(String[] intKeys,Map<String,String> params){
+        List<String> keyList = Arrays.asList(intKeys);
+
+        for (String key : keyList){
+            if(CommonUtils.toInt(params.get(key) )== null){
+                throw new NZException(String.format("%s should be an integer", Tool.StrUtil.replace(key,"_"," ")),573012);
+            }
+
+        }
+    }
+
     private void setDefaultValue(Map<String,String> params,String[][] defaultValus){
         for (String[] defalt:defaultValus){
             String key = defalt[0];
@@ -571,5 +595,6 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             }
         }
     }
+
 
 }

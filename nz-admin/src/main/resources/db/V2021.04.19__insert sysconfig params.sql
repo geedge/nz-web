@@ -1,10 +1,10 @@
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'system_logo', '', 1, NULL);
-INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'default_scrape_interval', '60s', 1, '默认60s');
-INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'default_scrape_timeout', '30s', 1, '默认30s');
+INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'default_scrape_interval', '60', 1, '默认60s');
+INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'default_scrape_timeout', '30', 1, '默认30s');
 
 DELETE from `sys_config` where `param_key` = 'max_terminal_num';
 
-INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'terminal_timeout', '30s', 1, '默认：30，单位：minute');
+INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'terminal_timeout', '30', 1, '默认：30，单位：minute');
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'terminal_telnet_user_tip', 'ogin:', 1, '默认：ogin:');
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'terminal_telnet_pin_tip', 'assword:', 1, '默认：assword:');
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'terminal_record_local_retention', '365', 1, '默认：365，单位：天,record数据保留天数');
@@ -39,3 +39,8 @@ INSERT INTO `sys_timezone` VALUES (3, 'UTC', 0);
 
 ALTER TABLE `sys_config`
 MODIFY COLUMN `param_value` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL AFTER `param_key`;
+
+ALTER TABLE `link`
+DROP COLUMN `prev`,
+DROP COLUMN `next`,
+ADD COLUMN `weight` int(10) NOT NULL AFTER `build_in`;
