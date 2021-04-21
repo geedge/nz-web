@@ -44,3 +44,7 @@ ALTER TABLE `link`
 DROP COLUMN `prev`,
 DROP COLUMN `next`,
 ADD COLUMN `weight` int(10) NOT NULL AFTER `build_in`;
+
+ALTER TABLE `visual_chart` 
+ADD COLUMN `var_type` int(1) NULL COMMENT '模板或使用模板创建有效，pid != null | panel_id == 0 时不能为空\r\n\r\n1: asset\r\n\r\n2: endpoint' AFTER `seq`,
+ADD COLUMN `var_id` int(10) NULL COMMENT 'pid != null 时不能为空\r\n\r\n根据var_type 分别对应 asset.id, endpoint.id，用于 表达式变量替换' AFTER `var_type`;

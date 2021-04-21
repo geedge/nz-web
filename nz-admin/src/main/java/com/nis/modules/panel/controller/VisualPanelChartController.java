@@ -1,11 +1,7 @@
 package com.nis.modules.panel.controller;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,25 +13,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
 import com.nis.common.utils.TypeEnum;
-import com.nis.modules.panel.entity.Chart;
-import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
-
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.json.JSONUtil;
 
 
 @RestController
@@ -57,8 +46,8 @@ public class VisualPanelChartController {
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUALCHART)
     @RequiresPermissions({"visualchart:info"})
     public R chartList(@RequestParam Map<String,Object> params){
-		List<VisualChart> visualCharts = visualChartService.queryList(params);
-        return R.ok().putData("list", visualCharts);
+		PageUtils page = visualChartService.queryPage(params);
+        return R.ok(page);
     }
 	
     @PostMapping
@@ -134,4 +123,25 @@ public class VisualPanelChartController {
         return R.ok();
     }
     
+    /**
+     * charts 通过模板添加
+     */
+    @PostMapping(value = {"/fromTmpl"})
+    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.VISUALCHART)
+    @RequiresPermissions({"visualchart:fromTmpl"})
+    public R fromTmpl(@RequestBody Map<String,Object> params) {
+    	Integer total = visualChartService.fromTmpl(params);
+    	return R.ok().putData("total", total);
+    }
+    
+    /**
+     * charts 通过模板添加
+     */
+    @PostMapping(value = {"/syncTmpl"})
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.VISUALCHART)
+    @RequiresPermissions({"visualchart:syncTmpl"})
+    public R syncTmpl(@RequestBody Map<String,Object> params) {
+    	Integer total = visualChartService.syncTmpl(params);
+    	return R.ok().putData("total", total);
+    }
 }

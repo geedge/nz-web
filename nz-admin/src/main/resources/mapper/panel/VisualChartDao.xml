@@ -19,6 +19,9 @@
         <result property="buildIn" column="build_in"></result>
         <result property="remark" column="remark"></result>
         <result property="seq" column="seq"></result>
+        <result property="varType" column="var_type"/>
+        <result property="varId" column="var_id"/>
+        <result property="varName" column="var_name"/>
         <result property="chartNums" column="chartNums"></result>
         <association property="panel" javaType="com.nis.modules.panel.entity.VisualPanel" columnPrefix="panel_">
         	<id property="id" column="id"/>
@@ -28,7 +31,7 @@
         	<id property="id" column="id"/>
             <result property="name" column="name"/>
         </association>
-        <collection property="elements" ofType="com.nis.modules.panel.entity.ChartElement" columnPrefix="vce_">
+        <collection property="elements" ofType="com.nis.modules.panel.entity.VisualChartElement" columnPrefix="vce_">
             <id property="id" column="id"/>
             <result property="expression" column="expression"></result>
             <result property="type" column="type"></result>
@@ -44,14 +47,17 @@
             vce.id AS vce_id,
             vce.expression AS vce_expression,
             vce.type AS vce_type,
-            vce.legend AS vce_legend
+            vce.legend AS vce_legend,
+            case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
         LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
         left join visual_chart gvch on vch.group_id = gvch.id
+        left join asset_asset aa on vch.var_id = aa.id 
+		left join monitor_endpoint me on vch.var_id = me.id 
         WHERE vch.id = #{id}
     </select>
 	
-    <select id="queryList" resultMap="visualChartResult">
+    <select id="queryPage" resultMap="visualChartResult">
         SELECT
             vch.*,
             vce.id AS vce_id,
@@ -67,6 +73,8 @@
         left join visual_chart vcg on vch.group_id = vcg.id
 		left join visual_panel vp on vch.panel_id = vp.id
 		left join visual_chart vcc on vch.id = vcc.group_id
+		left join asset_asset aa on vch.var_id = aa.id 
+		left join monitor_endpoint me on vch.var_id = me.id 
         WHERE 1=1
 		<if test="params.ids != null and params.ids != ''">
             and vch.id in (${params.ids})
@@ -82,6 +90,14 @@
 
 		<if test="params.type != null and params.type != ''">
             AND vch.type = #{params.type}
+        </if>
+        
+        <if test="params.pids != null and params.pids != ''">
+            AND vch.pid in (${params.pids})
+        </if>
+
+		<if test="params.varType != null and params.varType != ''">
+            AND vch.var_type = #{params.varType}
         </if>
 
         /** 按照 weight 排序 */
@@ -117,4 +133,38 @@
 		from visual_chart group by panel_id
     </select>
 
+
+	<select id="selectTmplCharts" resultMap="visualChartResult">
+		select vch.*
+		from visual_chart vch 
+		<if test="params.models != null and (params.models).size > 0">
+			left join asset_asset aa on vch.var_id = aa.id
+		</if>
+		<if test="params.modules != null  and (params.modules).size > 0">
+			left join monitor_endpoint me on vch.var_id = me.id 
+		</if>
+		where vch.pid is not null 
+		<if test="params.panelId != null">
+			and vch.panel_id = #{params.panelId} 
+		</if>
+		<if test="params.pid != null">
+			and vch.pid = #{params.pid}
+		</if>
+		<if test="params.models != null and (params.models).size > 0">
+			and aa.model_id in 
+			<foreach item="modelId" collection="params.models" separator="," open="(" close=")" index="">
+	       		#{modelId}
+		     </foreach>
+		</if>
+		<if test="params.modules != null  and (params.modules).size > 0">
+			and me.module_id in 
+			<foreach item="moduleId" collection="params.modules" separator="," open="(" close=")" index="">
+	       		#{moduleId}
+		     </foreach>
+		</if>
+		and vch.id in
+		<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+       		#{id}
+	     </foreach>
+	</select>
 </mapper>

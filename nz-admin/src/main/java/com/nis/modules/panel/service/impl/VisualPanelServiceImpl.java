@@ -17,6 +17,7 @@ import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
@@ -1269,8 +1270,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     	Map<String,Object> params =new HashMap<String,Object>();
     	params.put("panelId", panelId);
     	params.put("ids", chartId);
-        List<VisualChart> allCharts = visualChartService.queryList(params);
-        return allCharts;
+        PageUtils queryPage = visualChartService.queryPage(params);
+        List<VisualChart> result = (List<VisualChart>) queryPage.getList();
+        return result;
     }
 
 }

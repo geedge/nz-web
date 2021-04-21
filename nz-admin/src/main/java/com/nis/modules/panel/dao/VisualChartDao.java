@@ -1,6 +1,7 @@
 package com.nis.modules.panel.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.panel.entity.VisualChart;
 
 import java.util.List;
@@ -20,6 +21,9 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     
     List<VisualChart> selectChartNum();
     
-    List<VisualChart> queryList(@Param("params") Map<String,Object> params);
+    List<VisualChart> selectTmplCharts(@Param("params") Map<String,Object> params);
     
+	List<VisualChart> queryPage(IPage<VisualChart> page,@Param("params") Map<String, Object> params);
+
+	List<VisualChart> queryPage(@Param("params") Map<String, Object> params);
 }

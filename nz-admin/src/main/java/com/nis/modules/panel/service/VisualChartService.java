@@ -2,18 +2,13 @@ package com.nis.modules.panel.service;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.multipart.MultipartFile;
-
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.modules.panel.entity.Chart;
+import com.nis.common.utils.PageUtils;
 import com.nis.modules.panel.entity.VisualChart;
 
 public interface VisualChartService extends IService<VisualChart> {
 	
-	List<VisualChart> queryList(Map<String,Object> params);
+	PageUtils queryPage(Map<String,Object> params);
 	
 	VisualChart queryInfo(Integer id);
 	
@@ -32,4 +27,8 @@ public interface VisualChartService extends IService<VisualChart> {
     void delVisualChartsByPanelId(Integer... panelId);
     
     Map<Integer,Integer> queryChartNum();
+    
+    Integer fromTmpl(Map<String,Object> params);
+    
+    Integer syncTmpl(Map<String,Object> params);
 }

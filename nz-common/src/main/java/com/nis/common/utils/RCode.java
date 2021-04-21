@@ -103,7 +103,8 @@ public enum RCode {
     CHART_PID_ISNULL(121063,"pid can not be empty"),
     CHART_VARID_ISNULL(121064,"varid can not be empty"),
     CHART_SYNCTMPL_ERROR(121065,"Chart sync param can not be null"),
-    
+    CHART_VARID_ERROR(121066,"varid param error"),
+
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
     EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),

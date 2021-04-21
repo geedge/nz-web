@@ -68,4 +68,11 @@ public class VisualChart {
     
     @TableField(exist = false)
     private Asset asset;
+    
+    private Integer varType;
+    
+    private Integer varId;
+    
+    @TableField(exist = false)
+    private String varName;
 }

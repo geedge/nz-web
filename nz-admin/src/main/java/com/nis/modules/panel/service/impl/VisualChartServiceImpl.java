@@ -4,18 +4,28 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ExpressionUtil;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTag;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.endpoint.dao.MonitorEndpointDao;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.dao.VisualChartDao;
 import com.nis.modules.panel.entity.Chart;
 import com.nis.modules.panel.entity.Panel;
@@ -28,6 +38,9 @@ import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import java.util.ArrayList;
@@ -66,10 +79,17 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	@Autowired
 	private AssetService assetService;
 	
+	@Autowired
+	private AssetAssetService assetAssetService;
+	
+	@Autowired
+	private MonitorEndpointService monitorEndpointService;
+	
 	@Override
-	public List<VisualChart> queryList(Map<String, Object> params) {
+	public PageUtils queryPage(Map<String, Object> params) {
 		
-		List<VisualChart> result = this.baseMapper.queryList(params);
+		IPage<VisualChart> page = new Query<VisualChart>().getPage(params);
+		List<VisualChart> result = this.baseMapper.queryPage(page,params);
 
 		String param;
         for (VisualChart chart : result) {
@@ -82,8 +102,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         
         result = this.getChartTreeList(result,0);
         
+        page.setRecords(result);
         //处理所有group下children
-		return result;
+		return new PageUtils(page);
 	}
 	
 	/**
@@ -130,6 +151,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	    // 1. panel 是否存在
 	    this.validatePanel(panelId);
 	
+	    // 校验vartype
+	    if(panelId==0) {
+	    	ValidateUtils.is(chart.getVarType()).notNull(RCode.CHART_VARTYPE_ISNULL);
+	    }
+	    
 	    String type = chart.getType();
 	    ValidateUtils.is(chart.getName()).notNull(RCode.CHART_TITLE_ISNULL)
 	            .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
@@ -552,5 +578,249 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			collect = result.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getChartNums));
 		}
 		return collect;
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Integer fromTmpl(Map<String, Object> params) {
+		// 校验参数合法
+		Integer pid = (Integer) params.get("pid");
+		List<Integer> varIds = (List<Integer>) params.get("varIds");
+		ValidateUtils.is(pid).notNull(RCode.CHART_PID_ISNULL)
+		.and(varIds).notNull(RCode.CHART_VARID_ISNULL);
+		
+		String ids = org.apache.commons.lang3.StringUtils.join(varIds,StrUtil.COMMA);
+		params.put("ids", ids);
+		params.put("pageSize", "-1");
+		List<VisualChart> tmplCharts = new ArrayList<VisualChart>();
+		List<VisualChartElement> tmplChartElements = new ArrayList<VisualChartElement>();
+		/*
+		 * 当panelId 不为空时，是向一个panel添加多个 chart
+		 * 当panelId 为空时，则向多个panel (varIds) 添加一个chart
+		 */
+		Integer panelId = (Integer) params.get("panelId");
+				
+		// 查询模板添加的chart信息
+		VisualChart chart = this.baseMapper.queryInfo(pid);
+		chart.setId(null);
+		
+		Map<Integer,Object> objs =new HashMap<Integer,Object>();
+		// 查询所有varId对应数据信息
+		if(chart.getVarType().equals(1)) {
+			PageUtils assetPage = assetAssetService.queryAssetPage(params);
+			List<AssetAsset> assets = (List<AssetAsset>) assetPage.getList();
+			for(AssetAsset asset : assets) {
+				objs.put(asset.getId(), asset);
+			}
+		}else if(chart.getVarType().equals(2)) {
+			PageUtils endpointPage = monitorEndpointService.queryPage(params);
+			List<MonitorEndpoint> endpoints = (List<MonitorEndpoint>) endpointPage.getList();
+			for(MonitorEndpoint endpoint : endpoints) {
+				objs.put(endpoint.getId(), endpoint);
+			}
+		}
+		
+		if(ToolUtil.isEmpty(objs) || !ToolUtil.equals(objs.size(), varIds.size())) {
+			throw new NZException(RCode.CHART_VARID_ERROR);
+		}
+		
+		if(ObjectUtil.isNotEmpty(panelId)) {	
+			for(Integer id : varIds) {
+				VisualChart visualChart = new VisualChart();
+				BeanUtil.copyProperties(chart, visualChart);
+				visualChart.setPid(chart.getId());
+				visualChart.setVarId(id);
+				visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+				visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+				visualChart.setPanelId(panelId);
+				visualChart.setName(ExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
+				visualChart.setRemark(ExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
+				List<VisualChartElement> elements = visualChart.getElements();
+				List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
+				//将表达式进行替换
+				for(VisualChartElement element : elements) {
+					VisualChartElement vce = new VisualChartElement();
+					BeanUtil.copyProperties(element, vce);
+					String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
+					vce.setExpression(renderExpression);
+					copyElements.add(vce);
+				}
+				visualChart.setElements(copyElements);
+				tmplCharts.add(visualChart);
+			}
+		}else {
+			Integer varType = chart.getVarType();
+			List<VisualPanel> panels = null;
+			if(ToolUtil.equals(varType, 1)) {
+				panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ASSET));
+			}else if(ToolUtil.equals(varType, 2)) {
+				panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT));
+			}
+			if(ToolUtil.isEmpty(panels)) {
+				return 0;
+			}
+			for(VisualPanel panel : panels) {
+				for(Integer id : varIds) {
+					VisualChart visualChart = new VisualChart();
+					BeanUtil.copyProperties(chart, visualChart);
+					visualChart.setVarId(id);
+					visualChart.setPanelId(panel.getId());
+					visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+					visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+					visualChart.setName(ExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
+					visualChart.setRemark(ExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
+					visualChart.setPid(chart.getId());
+					List<VisualChartElement> elements = visualChart.getElements();
+					List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
+					//将表达式进行替换
+					for(VisualChartElement element : elements) {
+						VisualChartElement vce = new VisualChartElement();
+						BeanUtil.copyProperties(element, vce);
+						String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
+						vce.setExpression(renderExpression);
+						copyElements.add(vce);
+					}
+					visualChart.setElements(copyElements);
+					tmplCharts.add(visualChart);
+				}
+			}
+		}
+		
+		// 保存
+		this.saveBatch(tmplCharts);
+		
+		for(VisualChart tmplChart : tmplCharts) {
+			List<VisualChartElement> elements = tmplChart.getElements();
+			for(VisualChartElement element : elements) {
+				element.setChartId(tmplChart.getId());
+				tmplChartElements.add(element);
+			}
+		}
+		chartElementService.saveBatch(tmplChartElements);
+		return tmplCharts.size();
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public Integer syncTmpl(Map<String, Object> params) {
+		// 校验参数合法
+		Integer pid = (Integer) params.get("pid");
+		List<Integer> ids = (List<Integer>) params.get("ids");
+		Integer panelId = (Integer) params.get("panelId");
+		// 三个参数不能同时为空
+		if(ObjectUtils.isEmpty(pid) && ObjectUtils.isEmpty(ids) && ObjectUtils.isEmpty(panelId)) {
+			throw new NZException(RCode.CHART_SYNCTMPL_ERROR);
+		}
+		
+		List<VisualChart> result =new ArrayList<VisualChart>();
+		List<VisualChart> charts = this.baseMapper.selectTmplCharts(params);
+		List<Integer> pids = charts.stream().map(VisualChart::getPid).collect(Collectors.toList());
+		String tempIds = org.apache.commons.lang3.StringUtils.join(pids,StrUtil.COMMA);
+		Map<String,Object> tempMap =new HashMap<String,Object>();
+		tempMap.put("ids", tempIds);
+		tempMap.put("pageSize", "-1");
+		List<VisualChart> templateCharts = this.baseMapper.queryPage(tempMap);
+		Map<Integer,VisualChart> map = new HashMap<Integer,VisualChart>(); 
+		for(VisualChart vc : templateCharts) {
+			map.put(vc.getId(), vc);
+		}
+		
+		// 记录同步的chartId统一删除
+		List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
+		// 获取对应实体的数据信息 asset
+		Map<Integer, Integer> chartIdAndAssetId = charts.stream().filter(item-> ToolUtil.equals(item.getVarType(), 1)).collect(Collectors.toMap(VisualChart::getId,VisualChart::getVarId));
+		List<Integer> assetIds = charts.stream().filter(item-> ToolUtil.equals(item.getVarType(), 1)).map(VisualChart::getVarId).collect(Collectors.toList());
+		// 获取对应实体的数据信息 endpoint
+		Map<Integer, Integer> chartIdAndEndpointId = charts.stream().filter(item-> ToolUtil.equals(item.getVarType(), 2)).collect(Collectors.toMap(VisualChart::getId,VisualChart::getVarId));
+		List<Integer> endpointIds = charts.stream().filter(item-> ToolUtil.equals(item.getVarType(), 2)).map(VisualChart::getVarId).collect(Collectors.toList());
+		// 记录保存表达式数据
+		List<VisualChartElement> tmplChartElements = new ArrayList<VisualChartElement>();
+		
+		Map<Integer,AssetAsset>  assetEntites = new HashMap<Integer,AssetAsset>();
+		Map<Integer,MonitorEndpoint>  endpointEntites = new HashMap<Integer,MonitorEndpoint>();
+		
+		Map<Integer,Integer> assetPanelIds = new HashMap<Integer,Integer>();
+		Map<Integer,Integer> endpointPanelIds = new HashMap<Integer,Integer>();
+		
+		if(ToolUtil.isNotEmpty(endpointIds)) {
+			String endpointids = org.apache.commons.lang3.StringUtils.join(endpointIds,StrUtil.COMMA);
+			Map<String,Object> param = new HashMap<String,Object>();
+			param.put("pageSize", "-1");
+			param.put("ids", endpointids);
+			PageUtils endpointPage = monitorEndpointService.queryPage(param);
+			List<MonitorEndpoint> endpoints = (List<MonitorEndpoint>) endpointPage.getList();
+			for(MonitorEndpoint endpoint : endpoints) {
+				endpointEntites.put(endpoint.getId(), endpoint);
+			}
+			
+			List<VisualPanel> panelIds = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq
+					(VisualPanel::getType,Constant.PanelType.ENDPOINT).in(VisualPanel::getLink,endpointIds));
+			endpointPanelIds = panelIds.stream().collect(Collectors.toMap(VisualPanel::getLink, VisualPanel::getId));
+		}
+		
+		if(ToolUtil.isNotEmpty(assetIds)) {
+			String assetids = org.apache.commons.lang3.StringUtils.join(assetIds,StrUtil.COMMA);
+			Map<String,Object> param = new HashMap<String,Object>();
+			param.put("pageSize", "-1");
+			param.put("ids", assetids);
+			PageUtils assetPage = assetAssetService.queryAssetPage(param);
+			List<AssetAsset> assets = (List<AssetAsset>) assetPage.getList();
+			for(AssetAsset asset : assets) {
+				assetEntites.put(asset.getId(), asset);
+			}
+			
+			List<VisualPanel> panelIds = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq
+					(VisualPanel::getType,Constant.PanelType.ASSET).in(VisualPanel::getLink,assetIds));
+			assetPanelIds = panelIds.stream().collect(Collectors.toMap(VisualPanel::getLink, VisualPanel::getId));
+		}
+		// 找出自身父类模板信息
+		for(VisualChart chart : charts) {
+			VisualChart syncChart =new VisualChart();
+			VisualChart temp = map.get(chart.getPid());
+			BeanUtils.copyProperties(temp, syncChart);
+			syncChart.setPid(temp.getId());
+			syncChart.setVarId(chart.getVarId());
+			syncChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+			syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+			Object obj = ToolUtil.isEmpty(chartIdAndAssetId.get(chart.getId())) ? 
+						endpointEntites.get((chartIdAndEndpointId.get(chart.getId()))) :
+						assetEntites.get((chartIdAndAssetId.get(chart.getId()))) ;		
+			syncChart.setName(ExpressionUtil.renderExpression(temp.getName(),obj));
+			syncChart.setRemark(ExpressionUtil.renderExpression(temp.getRemark(),obj));
+			Integer panelid = ToolUtil.isEmpty(endpointPanelIds) ? 
+					assetPanelIds.get(chart.getVarId()) :
+						endpointPanelIds.get(chart.getVarId());
+			syncChart.setPanelId(panelid);
+			List<VisualChartElement> elements = temp.getElements();
+			List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
+			//将表达式进行替换
+			for(VisualChartElement element : elements) {
+				VisualChartElement vce = new VisualChartElement();
+				BeanUtil.copyProperties(element, vce);
+				String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), obj);
+				vce.setExpression(renderExpression);
+				copyElements.add(vce);
+			}
+			syncChart.setElements(copyElements);
+			result.add(syncChart);
+		}
+		
+		// 批量删除chart 重新同步chart
+		this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
+		
+		// 保存
+		
+		this.saveBatch(result);
+		
+		for(VisualChart chart : result) {
+			List<VisualChartElement> elements = chart.getElements();
+			for(VisualChartElement element : elements) {
+				element.setChartId(chart.getId());
+				tmplChartElements.add(element);
+			}
+		}
+		chartElementService.saveBatch(tmplChartElements);
+		
+		return result.size();
 	}
 }
