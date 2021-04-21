@@ -234,4 +234,10 @@ public class AssetAsset implements Serializable {
     @TableField(exist = false)
     private List<Integer> accounts;
 
+    /**
+     * promserver ip
+     */
+    @TableField(exist = false)
+    private String sourceIp;
+
 }

@@ -29,6 +29,7 @@ public class AssetJobConfig {
 
     private String assetPingJobName = "ASSETPING_JOB";
     private String assetFeatureJobName = "ASSETFEATURE_JOB";
+    private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
 
     @Bean
     public JobDetail assetPingCronJobDetail() {
@@ -40,6 +41,11 @@ public class AssetJobConfig {
         return JobBuilder.newJob(AssetFeatureJob.class).withIdentity(ScheduleUtils.JOB_NAME + assetFeatureJobName).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail assetPingStatusCronJobDetail() {
+        return JobBuilder.newJob(AssetPingStatusJob.class).withIdentity(ScheduleUtils.JOB_NAME + assetPingStatusJobName).storeDurably().build();
+    }
+
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
@@ -49,6 +55,7 @@ public class AssetJobConfig {
             assetPingJobCron = "0 0/3 * * * ? *";
         }
         ScheduleUtils.createCronScheduleJob(assetPingJobName, assetPingCronJobDetail(), assetPingJobCron, scheduler);
+        ScheduleUtils.createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), assetPingJobCron, scheduler);
 
 
         // 如果配置文件没有配置定时周期 默认为5分钟执行一次

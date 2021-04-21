@@ -562,6 +562,9 @@ public class Constant {
     // 配置表中 prometheus rule.yml  模板 Key
     public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
 
+    // 配置表中 blackbox 源， on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
+    public static final String SYSCONFIG_KEY_PING_SOURCE_IPADDRESS = "ping_source_ip_address";
+
     // 配置表中 prometheus 本地保存天数配置
     public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";
 

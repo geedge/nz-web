@@ -1,15 +1,24 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
 
 @Data
 @TableName("asset_ping")
+@AllArgsConstructor
+@NoArgsConstructor
 public class AssetPing implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    /**
+     * asset id
+     */
+    private Integer assetId;
 
     /**
      * 主机地址 ip
@@ -31,13 +40,4 @@ public class AssetPing implements Serializable {
      */
     private Date lastUpdate;
 
-    public AssetPing() {
-    }
-
-    public AssetPing(String host, Integer status, Double rtt, Date lastUpdate) {
-        this.host = host;
-        this.status = status;
-        this.rtt = rtt;
-        this.lastUpdate = lastUpdate;
-    }
 }
