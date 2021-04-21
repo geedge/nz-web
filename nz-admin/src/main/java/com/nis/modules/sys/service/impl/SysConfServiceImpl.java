@@ -37,6 +37,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
+import javax.naming.AuthenticationException;
+import javax.naming.Context;
+import javax.naming.NamingException;
+import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -115,6 +119,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             if(!Arrays.asList(SWITCH_TYPES).contains(params.get("ldap_enable"))){
                 throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
             }
+
+            this.testConnectionLdapConfig(params);
         }
 
         this.saveOrUpdateConfsBatch(result);
@@ -493,4 +499,77 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
         return false;
     }
+    /**
+     *测试连接是否可用 ldap
+     */
+    public void testConnectionLdapConfig(Map<String,String> params) {
+        String ldapTest = params.get("ldap_test");
+        params.remove("ldap_test");
+        if (!Tool.StrUtil.equals(ldapTest,"true")){
+            return ;
+        }
+        String dn = params.get("ldap_dn");
+        String pin = params.get("ldap_password");
+        String ou = params.get("ldap_ou");
+        String address = params.get("ldap_address");
+        String timeout = params.get("ldap_timeout");
+
+        InitialDirContext initialDirContext = null;
+        try {
+            Hashtable<String, String> environment = new Hashtable<>();
+            environment.put(Context.SECURITY_AUTHENTICATION, "simple");
+            environment.put(Context.SECURITY_PRINCIPAL, dn);
+            environment.put(Context.SECURITY_CREDENTIALS, pin);
+            environment.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+            // 当连接ldaps时候  会发生异常 无法进行连接
+            environment.put("com.sun.jndi.ldap.connect.timeout", timeout+"000");
+            environment.put(Context.PROVIDER_URL, address);
+            initialDirContext = new InitialDirContext(environment);
+
+
+            /*// 校验ou属性  该方法有问题  先注释 优先测试能够登陆ldap服务器功能
+            if (StringUtils.isNotBlank(ou)) {
+                String[] split = dn.split(",");
+                String base = split[split.length - 2] + "," + split[split.length - 1];
+                base = "ou=" + ou + "," + base;
+
+                boolean ouFlag = true;
+                Attributes attributes = initialDirContext.getAttributes(base);
+                NamingEnumeration<String> nEnum = attributes.getIDs();
+                for (; nEnum.hasMore(); ) {
+                    String attrID = nEnum.next();
+                    Attribute attribute = attributes.get(attrID);
+                    if (attribute.toString().startsWith("ou:")) {
+                        if (attribute.toString().contains(ou)) {
+                            ouFlag = false;
+                        }
+                    }
+                }
+                if (ouFlag) {
+                    return R.error(RCode.SYS_CONFIG_LDAP_OU_NOT_EXIST);
+                }
+            }*/
+
+        } catch (AuthenticationException e) {
+            // 账户类异常 造成原因： 用户名或者密码错误 也就是 dn和password
+            logger.error("ldap service config connection failed : username/password wrong",e);
+            throw new NZException(RCode.SYS_CONFIG_LDAP_AUTHENTICATIONFAIL);
+        } catch (NamingException e) {
+            // 连接类异常 造成原因 1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
+            logger.error("ldap service config connection failed",e);
+            throw new NZException(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
+        } catch (RuntimeException e) {
+            logger.error("ldap service config connection failed",e);
+            throw new NZException(RCode.SYS_CONFIG_LDAP_CONNECTIONFAILED);
+        } finally {
+            if (initialDirContext != null) {
+                try {
+                    initialDirContext.close();
+                } catch (NamingException e) {
+                    logger.error("关闭ldapContext失败",e);
+                }
+            }
+        }
+    }
+
 }
