@@ -49,7 +49,7 @@ public class AssetPingJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 检查 haMode
-        boolean haMode = sysConfigService.checkHaMode();
+        /*boolean haMode = sysConfigService.checkHaMode();
         if (!haMode) return;
 
         StopWatch sw = new StopWatch();
@@ -62,12 +62,12 @@ public class AssetPingJob extends QuartzJobBean {
         } finally {
             sw.stop();
         }
-        logger.info("asset ping Run Time: {}", sw.toString());
+        logger.info("asset ping Run Time: {}", sw.toString());*/
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void execAssetPing() {
-        List<SysConfigEntity> configs = sysConfigService.list();
+        /*List<SysConfigEntity> configs = sysConfigService.list();
 
         Map<String, String> configMap = new HashMap();
         for (SysConfigEntity configEntity : configs) {
@@ -192,7 +192,7 @@ public class AssetPingJob extends QuartzJobBean {
             }
         } else {
             logger.info("asset ping 开关关闭");
-        }
+        }*/
     }
 
     private File getIpsFile(List<Asset> assets, File file) {

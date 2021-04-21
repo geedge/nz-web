@@ -1093,6 +1093,26 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
+    @Override
+    public List<AssetAsset> getBlackboxAssetInfoList() {
+        List<AssetAsset> assetList = this.list();
+
+        // 支持 ping 的 state_conf
+        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing,1));
+        List<Integer> enablePingStateConfIdList = stateConfList.stream().map(AssetStateConf::getId).collect(Collectors.toList());
+
+        // 支持 ping 的 asset
+        assetList = assetList.stream().filter(asset -> enablePingStateConfIdList.contains(asset.getStateId())).collect(Collectors.toList());
+
+        List<Dc> dcList = dcService.list();
+        Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
+
+        for (AssetAsset entity : assetList) {
+            entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
+        }
+        return assetList;
+    }
+
     private int saveAssetsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<AssetAsset> assetList = this.list();
         Map<String, AssetAsset> assetNameAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getName, Function.identity()));
