@@ -36,6 +36,9 @@ public class ResultHandleInterceptor implements ResponseBodyAdvice {
     public Object beforeBodyWrite(Object body, MethodParameter arg1,
                                   MediaType arg2, Class arg3, ServerHttpRequest req,
                                   ServerHttpResponse resp) {
+    	if(!(body instanceof R)) {
+    		return body;
+    	}
     	log.debug("后端响应的数据信息为"+JSON.toJSONString(body));
         //如果响应值为空则无需过滤
         R result = (R)body;
