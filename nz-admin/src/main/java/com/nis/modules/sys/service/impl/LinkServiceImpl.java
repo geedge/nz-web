@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.service.NodeService;
@@ -133,7 +134,17 @@ public class LinkServiceImpl extends ServiceImpl<LinkDao, Link> implements LinkS
 		
 	}
 
-	private List<Link> getSequentialLinkList(List<Link> links) {
+    @Override
+    public void saveWeights(List<Link> links) {
+        Link link = links.stream().filter(t -> ToolUtil.isEmpty(t.id) || ToolUtil.isEmpty(t.getWeight())).findAny().orElse(null);
+        if(ToolUtil.isNotEmpty(link)){
+            throw  new NZException(RCode.LINK_WEIGHT_PARAM_INVALID);
+        }
+
+        this.saveOrUpdateBatch(links);
+    }
+
+    private List<Link> getSequentialLinkList(List<Link> links) {
         List<Link> resultList = new ArrayList<>();
 
         // 按照prev升序排序
@@ -183,7 +194,6 @@ public class LinkServiceImpl extends ServiceImpl<LinkDao, Link> implements LinkS
     /**
      * 处理删除之后的位置信息
      *
-     * @param sequentialChartList 有序集合列表
      * @param deleteIds           删除的charts ids
      */
     private void handlePositionAfterDelete(List<Link> sequentialLinkList, List<String> deleteIds) {

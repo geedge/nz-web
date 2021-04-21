@@ -114,7 +114,7 @@ public class MailUtil {
 	 * @param prop        配置信息
 	 * @param smtpAccount 登录邮箱账号
 	 * @param sendAccount 发送邮箱
-	 * @param password    密码
+	 * @param pin    密码
 	 * @param to          接收邮箱
 	 * @param subject     主题
 	 * @param txt         邮件内容
@@ -157,6 +157,7 @@ public class MailUtil {
 			ts = session.getTransport();
 			// 连接服务器的邮箱
 			ts.connect(smtpHost, smtpAccount, pin);
+
 			// 把邮件发送出去
 			ts.sendMessage(message, message.getAllRecipients());
 		} catch (AuthenticationFailedException e) {
@@ -185,4 +186,37 @@ public class MailUtil {
 		}
 	}
 
+	public void testMailServer(Properties prop, String smtpAccount, String smtpPin) {
+		if(Tool.StrUtil.isNotEmpty(smtpAccount)&& Tool.StrUtil.isNotEmpty(smtpPin)){
+			prop.setProperty("mail.smtp.auth", "true");
+		}
+		session = Session.getInstance(prop);
+		session.setDebug(true);
+		Transport ts = null;
+		try{
+			ts = session.getTransport();
+			if(Tool.StrUtil.isNotEmpty(smtpAccount)&& Tool.StrUtil.isNotEmpty(smtpPin)){
+				ts.connect(smtpAccount,smtpPin);
+			}else{
+				ts.connect();
+			}
+		}catch (AuthenticationFailedException e) {
+			// for authentication failures
+			logger.error("Authentication failed to connect to SMTP server",e);
+			throw new NZException(RCode.SYS_CONFIG_EMAIL_AUTHENTICATIONFAIL);
+		} catch (MailConnectException e) {
+			// 连接smtp服务异常 造成此类问题的原因：  1. 服务未开启 2. 服务器防火墙等其他原因造成无法连接到服务器
+			logger.error("Failed to connect to SMTP server",e);
+			throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
+		} catch (MessagingException e) {
+			// 其他关于登陆的错误 比如 连接超时
+			logger.error("Failed to connect to SMTP server",e);
+			throw new NZException(RCode.SYS_CONFIG_EMAIL_OTHERFAILURES);
+		} catch (RuntimeException e) {
+			logger.error("Failed to connect to SMTP server",e);
+			throw new NZException(RCode.SYS_CONFIG_EMAIL_CONNECTFAIL);
+		} finally {
+			Tool.IoUtil.close(ts);
+		}
+	}
 }

@@ -650,6 +650,7 @@ public enum RCode {
     SYS_CONFIG_EMAILTLSFLAG_FORMAT(571022,"System config email tls flag can not be empty"),         // email_tls_flag 不能为空
     SYS_CONFIG_EMAILSSLFLAG_INVALIDE(573023,"System config email ssl flag is invalide"),            // email_ssl_flag 参数与要求不符合
     SYS_CONFIG_EMAILTLSFLAG_INVALIDE(573024,"System config email tls flag is invalide"),            // email_tls_flag 参数与要求不符合
+    SYS_CONFIG_EMAILPROTOCOL_INVALIDE(573025,"System config email security type is invalide"),            // email_tls_flag 参数与要求不符合
     SYS_CONFIG_LDAPENABLE_ISNULL(571025,"System config ldap enable can not be empty"),              // ldap_enable 不能为空
     SYS_CONFIG_LDAPADDRESS_ISNULL(571026,"System config ldap address can not be empty"),            // ldap_address 不能为空
     SYS_CONFIG_LDAPDN_ISNULL(571027,"System config ldap dn can not be empty"),                      // ldap_dn 不能为空
@@ -720,7 +721,8 @@ public enum RCode {
     LINK_PREV_ISNULL(581004,"link prev can not be null"),
 	LINK_NEXT_ISNULL(581005,"link next can not be null"),
 	LINK_BUILDIN_CAN_NOT_REMOVE(587006,"This link is built-in and cannot be deleted"),
-	
+	LINK_WEIGHT_PARAM_INVALID(587007,"link weight param is invalid"),
+
 	SNMP_CREDENTIAL_ID_ISNULL(591001,"Snmp credential id can not be null"),
 	SNMP_CREDENTIAL_TYPE_ISNULL(591002,"Snmp credential type can not be null"),
 	SNMP_CREDENTIAL_REMARK_ISNULL(591003,"Snmp credential remark can not be null"),

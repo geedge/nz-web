@@ -14,6 +14,7 @@ public class Link extends Node implements Serializable{
 	private Long createBy;
 	private String url;
 	private Integer buildIn;
+	private Integer weight;
 	
 	@TableField(exist = false)
 	private SysUserEntity creator;

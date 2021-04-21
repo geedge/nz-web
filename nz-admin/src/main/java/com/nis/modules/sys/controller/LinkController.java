@@ -61,14 +61,12 @@ public class LinkController extends AbstractController{
 		return R.ok();
 	}
 	
-	@PutMapping("/modify")
+	@PutMapping("/weights")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.LINK)
 		@RequiresPermissions({"sys:link:modify"})
-	public R modify(@RequestBody Link link){
-		ValidateUtils.is(link.getId()).notNull(RCode.LINK_ID_ISNULL);
-		ValidateUtils.is(link.getPrev()).notNull(RCode.LINK_PREV_ISNULL);
-		ValidateUtils.is(link.getNext()).notNull(RCode.LINK_NEXT_ISNULL);
-		linkService.modifyOrder(link);
+	public R modify(@RequestBody List<Link> links){
+
+		linkService.saveWeights(links);
 		return R.ok();
 	}
 }

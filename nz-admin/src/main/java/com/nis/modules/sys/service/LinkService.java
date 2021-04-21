@@ -15,5 +15,6 @@ public interface LinkService extends IService<Link>{
 	void saveLink(Link link);
 	
 	void removeLinks(List<String> ids);
-	
+
+	void saveWeights(List<Link> links);
 }

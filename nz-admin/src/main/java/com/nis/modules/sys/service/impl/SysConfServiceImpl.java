@@ -1,0 +1,496 @@
+package com.nis.modules.sys.service.impl;
+
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.utils.HttpClientUtils;
+import com.nis.modules.sys.dao.SysConfDao;
+import com.nis.modules.sys.dao.SysDictDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.redis.SysConfigRedis;
+import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import freemarker.cache.StringTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+@Service("sysConfServiceImpl")
+public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
+
+    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port"};
+
+    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port"};
+
+    public static final String[][] BASIC_DEPEND={};
+
+    public static final String[][] BASIC_DEFAULT={
+            {"default_scrape_interval","60s"},
+            {"default_scrape_timeout","30s"},
+            {"storage_local_retention","30"},
+            {"query_max_series","100"},
+            {"asset_ping_interval","300"},
+            {"default_cabinet_usize","40"},
+            {"snmp_trap_listen_port","162"}
+    };
+
+    public static final String[] EMAIL_KEYS={"email_test","email_enable","email_host","email_port","email_timeout","email_auth_account","email_auth_password","email_send_account","email_test_account","email_security_type"};
+
+    public static final String[] EMAIL_REQUIRED={"email_enable","email_host","email_port","email_timeout","email_security_type"};
+
+    public static final String[][] EMAIL_DEPEND={{"email_test_account","email_test","true"}};
+
+    public static final String[] SECURITY_TYPES={"NONE","SSL","TLS"};
+
+    public static final String[] SWITCH_TYPES={"on","off"};
+
+    public static final String[] TERMINAL_KEYS={"terminal_timeout","terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
+
+    public static final String[] TERMINAL_REQUIRED={"terminal_telnet_user_tip","terminal_telnet_pin_tip","terminal_record_local_retention"};
+
+    public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout"};
+
+    public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
+
+    private static Log logger = Log.get();
+
+    @Autowired
+    private SysConfigRedis sysConfigRedis;
+    @Autowired
+    private PromserverService promserverService;
+    @Autowired
+    private AlertMessageService alertMessageService;
+    @Autowired
+    private RedisTemplate<String,String> redisTemplate;
+    @Value("${nezha.userId.expire}")
+    private int expire;
+
+    @Autowired
+    private MailUtil mailUtil;
+    @Autowired
+    private SysConfDao sysConfDao;
+
+    @Override
+    public void saveLdap(Map<String, String> params) {
+        Map<String, String> result = this.validateKeys(LDAP_KEYS, params);
+
+        String enable = params.get("ldap_enable");
+        if(StrUtil.isEmpty(enable)){
+            throw new NZException(String.format("%s can not be null","ldap_enable"),573011);
+        }
+        //过滤非法的key
+        if(StrUtil.equals(enable,"true")){
+            this.validateRequired(result,LDAP_REQUIRED,null);
+            //校验开关值是否合法
+            if(!Arrays.asList(SWITCH_TYPES).contains(params.get("ldap_enable"))){
+                throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
+            }
+        }
+
+        this.saveOrUpdateConfsBatch(result);
+    }
+
+    @Override
+    public void saveTerminal(Map<String, String> params) {
+        Map<String, String> result = this.validateKeys(TERMINAL_KEYS, params);
+        this.validateRequired(result,TERMINAL_REQUIRED,null);
+
+        this.saveOrUpdateConfsBatch(result);
+    }
+
+    @Override
+    public void saveEmail(Map<String, String> params) {
+        Map<String, String> result = this.validateKeys(EMAIL_KEYS, params);
+        this.validateRequired(result,EMAIL_REQUIRED,EMAIL_DEPEND);
+
+        String enable = params.get("email_enable");
+        if(!Arrays.asList(SWITCH_TYPES).contains(enable)){
+            throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
+        }
+        if(StrUtil.equals(enable,Constant.SWITCH_OPEN)){
+            this.validateRequired(result,EMAIL_REQUIRED,EMAIL_DEPEND);
+            if(!Arrays.asList(SECURITY_TYPES).contains(params.get("email_security_type"))){
+                throw new NZException(RCode.SYS_CONFIG_EMAILPROTOCOL_INVALIDE);
+            }
+
+            String testAccount = params.get("email_test_account");
+            if(Tool.StrUtil.equals(params.get("email_test"),"true") && Tool.StrUtil.isNotEmpty(testAccount)){
+                ValidateUtils.is(testAccount).notNull(RCode.SYS_CONFIG_EMAILTESTRECIVER_ISNULL).email(RCode.SYS_CONFIG_EMAILTESTRECIVER_FORMAT);
+            }
+            String sendAccount = params.get("email_send_account");
+            if(Tool.StrUtil.isNotEmpty(sendAccount)){
+                ValidateUtils.is(sendAccount).email(RCode.SYS_CONFIG_EMAILSMTPACCOUNT_FORMAT);
+            }
+            //校验邮箱合法性
+            this.testMailServer(params);
+        }
+
+        this.saveOrUpdateConfsBatch(result);
+    }
+
+
+    @Override
+    public void saveBasic(Map<String, String> params) {
+        final String SNMP_TRAP_KEY = "snmp_trap_listen_port";
+
+        SysConfigEntity snmpTrapConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SNMP_TRAP_KEY));
+
+        //过滤非法的key
+        Map<String, String> result = this.validateKeys(BASIC_KEYS, params);
+        //校验是否缺少必填项
+        this.validateRequired(result,BASIC_REQUIRED,BASIC_DEPEND);
+        //校验开关值是否合法
+        if(!Arrays.asList(SWITCH_TYPES).contains(params.get("unsaved_change"))){
+            throw new NZException(RCode.SYS_CONFIG_SWITCHVAUE_INVALIDE);
+        }
+
+        //设置默认值
+//        this.setDefaultValue(result,BASIC_DEFAULT);
+        //保存
+        this.saveOrUpdateConfsBatch(result);
+
+        //更新 缓存中的query_max_series
+        String num = params.get("query_max_series");
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
+
+        if(!StrUtil.equals(num,queryMaxSeries)) {
+            valueOperations.set(Constant.QUERY_MAX_SERIES, num, 30, TimeUnit.MINUTES);
+            logger.info("Prometheus query_range 查询最大条数限制更改为 " + num);
+        }
+
+        //发布 snmp trap监听端口
+        if(ToolUtil.isEmpty(snmpTrapConf)||!StrUtil.equals(snmpTrapConf.getParamValue(),params.get(SNMP_TRAP_KEY))){
+            redisTemplate.convertAndSend(SNMP_TRAP_KEY,params.get(SNMP_TRAP_KEY));
+        }
+
+    }
+
+    /**
+     * 系统设置重置
+     * @param param
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetConfig(Map<String, Object> param) throws IOException,RuntimeException{
+        String pin = StrUtil.str(param.get(Constant.PIN).toString());
+        List<String> types = (List<String>)param.get("type");
+        try {
+            if(ToolUtil.isEmpty(pin)||ToolUtil.isEmpty(types)){
+                throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
+            }
+            // 当前登录用户
+            SysUserEntity userEntity = ShiroUtils.getUserEntity();
+            // 原加密密码
+            String oriPassword = userEntity.getPin();
+            // 加密盐值
+            String salt = userEntity.getSalt();
+            // 现加密密码
+            String currentPassword = ShiroUtils.sha256(pin,salt);
+            if(!StrUtil.equals(oriPassword,currentPassword)){
+                // 密码不对，禁止重置
+                throw new NZException(RCode.SYS_CONFIG_PASSWORD_ERROR);
+            }
+            for (String type: types){
+                if(!ArrayUtils.contains(Constant.SYSCONFIG_RESET_TYPE,type)){
+                    throw new NZException(RCode.SYS_CONFIG_PASSWORDORTYPE_INVALID);
+                }
+                if("metric".equals(type)){
+                    resetMetric();
+                }else if("alert".equals(type)){
+                    resetAlert();
+                }else {
+                    resetEnterData();
+                }
+            }
+        }catch (IOException | RuntimeException e){
+            throw e;
+        }
+    }
+    /**
+     * 重置metric
+     */
+    private void resetMetric() throws IOException{
+        String seriesUri = "/api/v1/admin/tsdb/delete_series";
+        String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
+        // 获取正常的监控服务列表
+        List<Promserver> promserverList = promserverService.list(
+                new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus,1));
+        if(ToolUtil.isNotEmpty(promserverList)){
+            final String key= URLEncoder.encode("{__name__=~'.+'}","UTF-8");
+            promserverList.forEach(promserver -> {
+                try{
+                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),seriesUri).toString(),"match[]="+key);
+                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),tombstonesUri).toString(),"");
+                }catch (IOException e){
+                    logger.error(e);
+                }
+
+            });
+        }
+    }
+
+    /**
+     * 重置alert
+     */
+    private void resetAlert() throws RuntimeException{
+        alertMessageService.remove(new LambdaQueryWrapper<AlertMessageEntity>());
+    }
+
+    /**
+     * 清除用户输入数据
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void resetEnterData() {
+        try {
+            // redis写入当前用户id
+            Long userId = ShiroUtils.getUserId();
+            redisTemplate.opsForValue().set("reset",String.valueOf(userId),expire, TimeUnit.SECONDS);
+            // 删除用户输入的数据
+            String jsonTables = this.getValue(Constant.RESET_TABLE_INFOS);
+            if(StringUtils.isNotEmpty(jsonTables)) {
+                List<String> tables = (List<String>) JSONArray.parse(jsonTables);
+                Arrays.stream(tables.toArray()).forEach(table->{
+                    this.baseMapper.clearData((String)table);
+                });
+            }
+            // 删除redis中key=reset的数据
+            redisTemplate.delete("reset");
+            logger.info("nezha reset success");
+        } catch (RuntimeException e) {
+            logger.error("nezha reset fail",e);
+            throw new NZException(RCode.SYS_CONFIG_RESET_FAIL);
+        }
+    }
+
+    @Override
+    public String getValue(String key) {
+        SysConfigEntity config = sysConfigRedis.get(key);
+        if(config == null){
+            config = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,key));
+            sysConfigRedis.saveOrUpdate(config);
+        }
+
+        return config == null ? null : config.getParamValue();
+    }
+    /**
+    * @Description 查询返回 所有的key 对应的value
+    * @Author  rui
+    * @Date   2021/4/19
+    */
+    public Map<String,String> batchQuery(String ... keys){
+
+        List<SysConfigEntity> list = this.list(new QueryWrapper<SysConfigEntity>().lambda().in(ToolUtil.isNotEmpty(keys) && keys.length > 0, SysConfigEntity::getParamKey, keys));
+
+        Map<String,String> result = new HashMap<>();
+        for (SysConfigEntity conf : list){
+            result.put(conf.getParamKey(),conf.getParamValue());
+        }
+
+        return result;
+    }
+
+
+    /**
+    * @Description 校验参数是否存在，并返回过滤后的map
+    * @Date   2021/4/19
+    */
+    private Map<String,String> validateKeys(String[] keys,Map<String,String> params){
+        List<String> keyList = Arrays.asList(keys);
+        Map<String,String> result = new HashMap<>();
+        for (String key : params.keySet()){
+            if(keyList.contains(key)){
+               result.put(key,params.get(key));
+            }
+        }
+        return result;
+    }
+
+    /**
+    * @Description 校验必填项
+    * @Date   2021/4/19
+    */
+    private void validateRequired(Map<String,String> params,String[] requiredKeys,String [][] dependKeys){
+        List<String> keyList = Arrays.asList(requiredKeys);
+
+        for (String key : keyList){
+            if(Tool.StrUtil.isEmpty(params.get(key))){
+                throw new NZException(String.format("%s can not be null",Tool.StrUtil.replace(key,"_"," ")),573011);
+            }
+        }
+
+        if(dependKeys!=null && dependKeys.length>0){
+            for (String[] depend : dependKeys){
+                String key = depend[0];
+                String[] dependKey = Tool.StrUtil.split(depend[1],","); //多个依赖用逗号隔开
+                String[] values = Tool.StrUtil.split(depend[2],",");//多个value用逗号隔开
+                boolean isDepend = true;
+                for (int i=0;i<dependKey.length-1;i++){
+                    String dk = dependKey[i]; //
+                    String value = values[i];
+                    if(!(params.containsKey(dk) && Tool.StrUtil.equals(params.get(dk),value))){ //如果不存在依赖的key 或者依赖的key对应的value 不符合，说明不需要依赖
+                        isDepend = false;
+                        break;
+                    }
+                }
+                if(isDepend&& Tool.StrUtil.isEmpty(params.get(key))){
+                    throw new NZException(String.format("%s can not be null", Tool.StrUtil.replace(key,"_"," ")),573011);
+                }
+            }
+        }
+    }
+
+    private void setDefaultValue(Map<String,String> params,String[][] defaultValus){
+        for (String[] defalt:defaultValus){
+            String key = defalt[0];
+            String value = defalt[1];
+
+            if(!params.containsKey(key)||StrUtil.isEmpty(params.get(key))){
+                params.put(key,value);
+            }
+
+        }
+    }
+
+    public Map<String,SysConfigEntity> saveOrUpdateConfsBatch(Map<String,String> params){
+
+        List<SysConfigEntity> exists = this.list(new QueryWrapper<SysConfigEntity>().lambda().in(SysConfigEntity::getParamKey,params.keySet()));
+
+        Map<String,SysConfigEntity> map = new HashMap<>();
+
+        for (SysConfigEntity conf : exists){
+            map.put(conf.getParamKey(),conf);
+        }
+
+        for (String key : params.keySet()){
+            if(map.containsKey(key)){
+                map.get(key).setParamValue(params.get(key));
+            }else{
+                SysConfigEntity sysConfigEntity = new SysConfigEntity();
+                sysConfigEntity.setParamKey(key);
+                sysConfigEntity.setParamValue(params.get(key));
+                map.put(key,sysConfigEntity);
+            }
+        }
+
+        this.saveOrUpdateBatch(map.values());
+
+        return map;
+    }
+
+    private void testMailServer(Map<String, String> map) {
+        String emailTest = map.get("email_test");
+        map.remove("email_test");
+        if (!Tool.StrUtil.equals(emailTest,"true")){
+            return ;
+        }
+        String smtpHost = map.get("email_host");
+        String smtpPort = map.get("email_port");
+        String smtpTimeout = map.get("email_timeout");
+        String securityType = map.get("email_security_type");
+
+        // 登录账户
+        String smtpAccount = map.get("email_auth_account");
+        String smtpPin = StrUtil.str(map.get("email_auth_password"));
+
+        //测试用收件人
+        String receicer = map.get("email_test_account");
+
+        // 发件人
+        String sendAccount = map.get("email_send_account");
+
+
+        //组织properties
+        Properties prop = new Properties();
+        prop.setProperty("mail.snmp.host", smtpHost);
+        prop.setProperty("mail.smtp.port", smtpPort);
+        prop.setProperty("mail.transport.protocol", "smtp");
+//        prop.setProperty("mail.smtp.auth", "true");
+        // 设置超时时间为10秒
+        prop.setProperty("mail.smtp.timeout", Tool.StrUtil.isBlank(smtpTimeout)?Constant.CONNECTION_SMTP_TIMEOUT:smtpTimeout.trim()+"000");
+
+        if(Tool.StrUtil.isNotBlank(securityType)){
+            prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            prop.put("mail.smtp.socketFactory.fallback", "false");
+            prop.put("mail.smtp.starttls.enable", "true");
+        }
+
+        if (Tool.StrUtil.equals(securityType,"SSL")) {
+            prop.put("mail.smtp.socketFactory.port", smtpPort);
+            prop.remove("mail.smtp.port");
+        }
+
+        if (Tool.StrUtil.equals(securityType,"TLS")) {
+            prop.put("mail.smtp.starttls.enable", "true");
+            prop.put("mail.smtp.port", smtpPort);
+        }
+
+        //emailTest on 只测试，需要给测试邮箱发邮件
+        try {
+            mailUtil.sendHTML(smtpHost, prop, smtpAccount, sendAccount, smtpPin, receicer, Constant.TESTEMAIL_SEND_TITLE, this.getSendMailContent(sendAccount));
+        } catch (IOException e) {
+            logger.error("获取测试发送邮件模板失败",e);
+            throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_NOTFOUND);
+        } catch (TemplateException e) {
+            logger.error("静态化模板内容失败",e);
+            throw new NZException(RCode.SYS_CONFIG_TESTEMAIL_TEMPLATE_FAILED);
+        }
+
+    }
+    // 获取发送邮件内容
+    public String getSendMailContent(String sendEmail) throws IOException, TemplateException {
+        // 加载模板文件
+        String templateString = this.getValue(Constant.SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE);
+        //得到模板
+        Template template = TemplateUtil.stringToTemplate(templateString,"testMail");
+        //创建模型数据
+       /* Map<String, Object> modelMap = new HashMap<String, Object>();
+        modelMap.put("sendEmail", sendEmail);*/
+        //执行静态化 方式1  获取静态化内容
+        String content = FreeMarkerTemplateUtils.processTemplateIntoString(template, null);
+        //静态化内容;
+        return content;
+    }
+
+    @Override
+    public boolean checkHaMode() {
+        List<SysConfigEntity> configList = this.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, new String[]{"ha_mode", "ha_vip"}));
+        Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        if ("2".equals(configMap.get("ha_mode"))) {
+            if (!CommonUtils.getInetIpAddress().contains(configMap.get("ha_vip"))) {
+                return false;
+            }
+        }
+        return false;
+    }
+}
