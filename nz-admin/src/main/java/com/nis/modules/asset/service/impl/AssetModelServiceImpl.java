@@ -1,6 +1,7 @@
 package com.nis.modules.asset.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -10,16 +11,24 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.service.VisualChartService;
+
+import cn.hutool.core.util.StrUtil;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,13 +43,16 @@ import java.util.stream.Collectors;
 public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel> implements AssetModelService {
 
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetAssetService;
 
     @Autowired
     private AssetBrandService brandService;
 
     @Autowired
     private AssetModelDao assetModelDao;
+    
+    @Autowired
+    private VisualChartService visualChartService;
 
     @Override
     public AssetModel queryModelInfo(Integer id) {
@@ -49,6 +61,14 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             throw new NZException(RCode.ASSET_MODEL_NOTFOUND);
         }
         AssetBrand brand = brandService.getById(model.getBrandId());
+        String chartIds = model.getChartIds();
+    	if(!StrUtil.isBlank(chartIds)) {
+    		List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
+        	model.setCharts(charts);
+    	}
+    	//获取资产数量
+    	List<AssetAsset> list = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getModelId, model.getId()));
+    	model.setAssetNum(list.size());
         model.setBrand(brand);
         return model;
     }
@@ -56,7 +76,27 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<AssetModel> page = new Query<AssetModel>().getPage(params);
+        String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
+        String brandIds = (String) params.get("brandIds");
+        if(StrUtil.isNotBlank(brandIds)) {
+        	List<String> brandListIds = Arrays.asList(brandIds.split(","));
+        	params.put("brandIds",brandListIds);
+        }
         List<AssetModel> modelList = assetModelDao.queryList(page, params);
+        for(AssetModel model : modelList) {
+        	String chartIds = model.getChartIds();
+        	if(!StrUtil.isBlank(chartIds)) {
+        		List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
+            	model.setCharts(charts);
+        	}
+        	//获取资产数量
+        	List<AssetAsset> list = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getModelId, model.getId()));
+        	model.setAssetNum(list.size());
+        }
         page.setRecords(modelList);
         return new PageUtils(page);
     }
@@ -78,6 +118,16 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
         if (!flag) {
             throw new NZException(RCode.ASSET_MODELNAME_DUPLICATE);
+        }
+        
+        // 3. 校验chart是否为模板且存在
+        String chartIds = model.getChartIds();
+        if(StrUtil.isNotBlank(chartIds)) {
+        	List<String> chartids = Arrays.asList(chartIds.split(","));
+        	List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, chartids));
+        	if(!ToolUtil.equals(charts.size(), chartids.size())) {
+        		throw new NZException(RCode.ASSET_MODEL_CHART_ERROR);
+        	}
         }
     }
 
@@ -103,8 +153,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     @Override
     public void delete(Integer... ids) {
         // 1. 已被 asset 引用的型号信息不允许删除
-        List<Asset> assetList = assetService.list();
-        List<Integer> assetUseModelIdList = assetList.stream().map(Asset::getModelId).distinct().collect(Collectors.toList());
+        List<AssetAsset> assetList = assetAssetService.list();
+        List<Integer> assetUseModelIdList = assetList.stream().map(AssetAsset::getModelId).distinct().collect(Collectors.toList());
 
         assetUseModelIdList.retainAll(Arrays.asList(ids));
         if (CollectionUtils.isNotEmpty(assetUseModelIdList)) {

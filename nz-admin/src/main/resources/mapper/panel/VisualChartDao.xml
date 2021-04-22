@@ -76,8 +76,11 @@
 		left join asset_asset aa on vch.var_id = aa.id 
 		left join monitor_endpoint me on vch.var_id = me.id 
         WHERE 1=1
-		<if test="params.ids != null and params.ids != ''">
-            and vch.id in (${params.ids})
+		<if test="params.ids != null">
+            and vch.id in 
+			<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+	       		#{id}
+		     </foreach>
         </if>
 		
         <if test="params.panelId != null">
@@ -92,8 +95,11 @@
             AND vch.type = #{params.type}
         </if>
         
-        <if test="params.pids != null and params.pids != ''">
-            AND vch.pid in (${params.pids})
+        <if test="params.pids != null">
+            AND vch.pid in 
+				<foreach item="pid" collection="params.pids" separator="," open="(" close=")" index="">
+		       		#{pid}
+			     </foreach>
         </if>
 
 		<if test="params.varType != null and params.varType != ''">

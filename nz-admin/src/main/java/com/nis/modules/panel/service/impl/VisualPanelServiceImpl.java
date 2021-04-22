@@ -85,6 +85,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     
     @Override
     public List<VisualPanel> queryList(Map<String, Object> params) {
+    	String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
         // 1. 查询时 type 为空则默认 dashboard 类型
         String type = (String) params.get("type");
         if (StringUtils.isEmpty(type)) {

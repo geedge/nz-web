@@ -4,9 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.panel.entity.VisualChart;
+
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 
 /**
@@ -53,4 +56,12 @@ public class AssetModel implements Serializable {
 
     @TableField(exist = false)
     private AssetBrand brand;
+    
+    private String chartIds;
+    
+    @TableField(exist = false)
+    private List<VisualChart> charts;
+    
+    @TableField(exist = false)
+    private Integer assetNum;
 }

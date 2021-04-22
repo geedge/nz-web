@@ -32,8 +32,11 @@
       	from sys_api_key sak left join sys_user su on sak.create_by = su.id
       	left join sys_role sr on sak.role_id = sr.id
       	where 1=1 
-      	<if test="params.ids != null and params.ids != ''">
-      		and sak.id in (${params.ids})
+      	<if test="params.ids != null">
+      		and sak.id in 
+      		<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+	       		#{id}
+		    </foreach>
       	</if>
 		<if test="params.name !=null and params.name != ''">
 			and sak.name like CONCAT('%', #{params.name}, '%')

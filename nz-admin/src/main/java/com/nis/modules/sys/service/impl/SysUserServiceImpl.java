@@ -1,6 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -73,6 +74,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
+		String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
 		IPage<SysUserEntity> page = new Query<SysUserEntity>().getPage(params);
 		List<SysUserEntity> userList = baseMapper.queryList(page, params);
 

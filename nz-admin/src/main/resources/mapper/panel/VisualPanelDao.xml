@@ -37,8 +37,11 @@
         visual_panel pan left join visual_panel fatherPanel on pan.pid = fatherPanel.id
         left join visual_panel childrenPanel on pan.id = childrenPanel.pid 
         <where> 1=1 
-            <if test="params.ids != null and params.ids != ''">
-                and pan.id in (${params.ids})
+            <if test="params.ids != null">
+                and pan.id in 
+                <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+		       		#{id}
+			     </foreach>
             </if>
 
             <if test="params.type != null and params.type != ''">

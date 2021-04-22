@@ -178,6 +178,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private void handleQueryAssetParam(Map<String, Object> params) {
+    	String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
         if (ToolUtil.isNotEmpty(params.get("brandIds"))) {
             params.put("brandIds", Arrays.asList(String.valueOf(params.get("brandIds")).split(StringPool.COMMA)));
         }

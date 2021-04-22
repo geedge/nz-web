@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,7 @@ import com.nis.modules.sys.service.SysApiKeyService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.StrUtil;
 
 @Service
 public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> implements SysApiKeyService{
@@ -27,7 +29,11 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		IPage<SysApiKey> result = new Query<SysApiKey>().getPage(params);
-		
+		String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
 		List<SysApiKey> rows = this.baseMapper.queryList(result, params);
 		result.setRecords(rows);
 		return new PageUtils(result);

@@ -19,10 +19,13 @@ import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysLogService;
 import com.nis.modules.sys.service.SysUserService;
+
+import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,6 +50,11 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogDao, SysLogEntity> impl
             params.put("userIds", userIds);
         }
 
+        String ids = (String) params.get("operaId");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("operaId",listIds);
+        }
         IPage<SysLogEntity> page = new Query<SysLogEntity>().getPage(params);
         List<SysLogEntity> sysLogEntities = sysLogDao.queryList(page, params);
 

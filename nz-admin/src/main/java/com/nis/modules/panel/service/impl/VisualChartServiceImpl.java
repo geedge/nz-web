@@ -87,7 +87,16 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		
+		String ids = (String) params.get("ids");
+        if(StrUtil.isNotBlank(ids)) {
+        	List<String> listIds = Arrays.asList(ids.split(","));
+        	params.put("ids",listIds);
+        }
+        String pid = (String) params.get("pid");
+        if(StrUtil.isNotBlank(pid)) {
+        	List<String> listIds = Arrays.asList(pid.split(","));
+        	params.put("pid",listIds);
+        }
 		IPage<VisualChart> page = new Query<VisualChart>().getPage(params);
 		List<VisualChart> result = this.baseMapper.queryPage(page,params);
 

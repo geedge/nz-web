@@ -57,8 +57,11 @@
                         <if test="params.ip != null and params.ip != ''">
                                 AND sl.ip = #{params.ip}
                         </if>
-                        <if test="params.operaId != null and params.operaId != ''">
-                        	AND sl.opera_id in (${params.operaId})
+                        <if test="params.operaId != null">
+                        	AND sl.opera_id in
+                        	<foreach item="id" collection="params.operaId" separator="," open="(" close=")" index="">
+					       		#{id}
+						    </foreach>
                         </if>
                         <if test="params.params != null and params.params != ''">
                         	AND sl.params = #{params.params}

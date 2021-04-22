@@ -95,8 +95,11 @@
 
         <where>
 
-             <if test="params.ids != null and params.ids != ''">
-                 asset.id in (${params.ids})
+             <if test="params.ids != null">
+                 asset.id in 
+					<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+			       		#{id}
+				     </foreach>
              </if>
 
              <if test="params.sn != null and params.sn != ''">

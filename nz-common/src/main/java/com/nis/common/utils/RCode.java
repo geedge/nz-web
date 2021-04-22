@@ -293,7 +293,7 @@ public enum RCode {
     ASSET_IPMITYPE_ERROR(323011,"Asset type must be a server can save ipmi information"),
     ASSET_MODELRELATED_MIBS(323012, "These models contain mibs and cannot be deleted"),
     ASSET_MODEL_BRANDID_ISNULL(321013, "Asset model brand id can not be null"),
-
+    ASSET_MODEL_CHART_ERROR(321014,"Asset model chart template not exist"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),
