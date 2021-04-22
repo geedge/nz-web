@@ -598,6 +598,14 @@ public class AgentJob extends QuartzJobBean {
             Dc dc = endpoint.getDc();
             dc.setName(ToolUtil.string2Json(dc.getName()));
             endpoint.setDc(dc);
+
+            // asset name 处理
+            AssetAsset asset = endpoint.getAsset();
+            asset.setName(ToolUtil.string2Json(asset.getName()));
+            endpoint.setAsset(asset);
+
+            // endpoint name 处理
+            endpoint.setName(ToolUtil.string2Json(endpoint.getName()));
         }
 
         params.put("endpointList", endpointList);

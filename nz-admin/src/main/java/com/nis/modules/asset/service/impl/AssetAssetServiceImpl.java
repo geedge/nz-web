@@ -1101,8 +1101,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<Dc> dcList = dcService.list();
         Map<Integer, Dc> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
 
+        SysConfigEntity assetPingIntervalConfig = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL));
         for (AssetAsset entity : assetList) {
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
+            entity.setAssetPingInterval(assetPingIntervalConfig.getParamValue());
         }
         return assetList;
     }

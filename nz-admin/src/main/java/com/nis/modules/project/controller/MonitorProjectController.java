@@ -9,6 +9,7 @@ import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoIconService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.controller.AbstractController;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,6 +41,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:info"})
     public R queryProjectEntity(@PathVariable("id") Integer id) {
         return R.ok(monitorProjectService.queryProjectEntity(id));
     }
@@ -52,6 +54,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:list"})
     public R queryProjectPage(@RequestParam Map<String, Object> params) {
         PageUtils page = monitorProjectService.queryPage(params);
         return R.ok(page);
@@ -65,6 +68,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @PostMapping("/project")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:save"})
     public R saveProject(@RequestBody MonitorProject project) {
         ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
 
@@ -81,6 +85,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @PutMapping("/project")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:update"})
     public R editProject(@RequestBody MonitorProject project) {
         ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL)
                 .and(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
@@ -97,6 +102,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @DeleteMapping("/project")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:delete"})
     public R deleteProjects(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -111,6 +117,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/info")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:info"})
     public R queryProjectInfo(@RequestParam Integer id) {
         ValidateUtils.is(id).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -124,6 +131,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo/iconUnit")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @RequiresPermissions({"project:topo:icon:list"})
     public R queryTopoUnit(String name) {
         List<String> result = topoIconService.queryTopoIconUnitName(name);
         return R.ok(result);
@@ -137,6 +145,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @DeleteMapping("/project/topo/iconUnit")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @RequiresPermissions({"project:topo:icon:delete"})
     public R deleteTopoUnit(String unit) {
         ValidateUtils.is(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL);
 
@@ -153,6 +162,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo/icon")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:topo:icon:list"})
     public R queryIconList(@RequestParam Map<String, Object> params) {
         Map result = new HashMap(2);
         List<TopoIcon> topoIcons = topoIconService.queryIconList(params);
@@ -169,6 +179,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @PostMapping("/project/topo/icon")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:topo:icon:save"})
     public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file, String unit) {
         ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
                 .and(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
@@ -195,6 +206,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @DeleteMapping("/project/topo/icon")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.PROJECT)
+    @RequiresPermissions({"project:topo:icon:delete"})
     public R removeIcons(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -209,6 +221,7 @@ public class MonitorProjectController extends AbstractController {
      * @param response
      */
     @GetMapping("/project/topo/icon/{id}")
+    @RequiresPermissions({"project:topo:icon:info"})
     public void downloadIconFile(@PathVariable("id") Integer id, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
 
@@ -223,6 +236,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
+    @RequiresPermissions({"project:topo:list"})
     public R queryTopo(Integer projectId) {
         ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
 
@@ -239,6 +253,7 @@ public class MonitorProjectController extends AbstractController {
      */
     @PutMapping("/project/topo")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.TOPO)
+    @RequiresPermissions({"project:topo:update"})
     public R updateProjectTopo(@RequestBody Map<String, Object> params) {
         Integer projectId = (Integer) params.get("projectId");
         String topoConfig = (String) params.get("topo");

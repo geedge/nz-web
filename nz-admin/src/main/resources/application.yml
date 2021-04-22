@@ -58,7 +58,7 @@ nezha:
   uploadTempPath: /upload/temp
   alertMessageJobCron: 0 0/1 * * * ? *   # 告警同步程序采集频率 1分钟执行一次  0/10 * * * * ?
   promserverJobCron: 0 0/10 * * * ?
-  assetPingJobCron: 0 0/10 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为3分钟
+  assetPingJobCron: 0 0/1 * * * ? *      # asset ping job 同步程序执行频率 不设置默认情况为1分钟
   assetFeatureJobCron: 0 0 1 * * ?   # asset采集信息 默认5分钟执行一次
   alertSilenceJobCron: 0 0/10 * * * ?    # 每5秒检测一次静默配置
   agentJobCron: 0/30 * * * * ?     # agent 定时任务 默认 30 s

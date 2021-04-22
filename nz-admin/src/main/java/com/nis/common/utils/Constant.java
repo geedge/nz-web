@@ -548,10 +548,13 @@ public class Constant {
     public static final String SYSCONFIG_KEY_ALERTINTERVAL = "alert_interval";
 
     // 配置表中 刮取周期 key
-    public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "scrape_interval";
+    public static final String SYSCONFIG_KEY_SCRAPEINTERVAL = "default_scrape_interval";
 
     // 配置表中 刮取超时时间
-    public static final String SYSCONFIG_KEY_SCRAPETIMEOUT = "scrape_timeout";
+    public static final String SYSCONFIG_KEY_SCRAPETIMEOUT = "default_scrape_timeout";
+
+    // 配置表中 blackbox job scrape_interval 刮取周期  key
+    public static final String SYSCONFIG_KEY_ASSET_PING_INTERVAL = "asset_ping_interval";
 
     // 配置表中 prometheus yml 模板 key
     public static final String SYSCONFIG_KEY_PROM_YML_TMPL = "prom_yml_tmpl";

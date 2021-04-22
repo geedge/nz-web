@@ -240,4 +240,10 @@ public class AssetAsset implements Serializable {
     @TableField(exist = false)
     private String sourceIp;
 
+    /**
+     * blackbox job scrape_interval
+     */
+    @TableField(exist = false)
+    private String assetPingInterval;
+
 }

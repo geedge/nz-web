@@ -50,9 +50,9 @@ public class AssetJobConfig {
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
-        // 如果配置文件没有配置定时周期  默认为3分钟执行一次
+        // 如果配置文件没有配置定时周期  默认为1分钟执行一次
         if (assetPingJobCron.isEmpty()) {
-            assetPingJobCron = "0 0/3 * * * ? *";
+            assetPingJobCron = "0 0/1 * * * ? *";
         }
         ScheduleUtils.createCronScheduleJob(assetPingJobName, assetPingCronJobDetail(), assetPingJobCron, scheduler);
         ScheduleUtils.createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), assetPingJobCron, scheduler);

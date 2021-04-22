@@ -5,6 +5,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class MonitorModuleController {
      */
     @GetMapping("/module/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:info"})
     public R queryModuleEntity(@PathVariable("id") Integer id) {
         return R.ok(monitorModuleService.queryModuleEntity(id));
     }
@@ -38,6 +40,7 @@ public class MonitorModuleController {
      */
     @GetMapping("/module")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:list"})
     public R queryModulePage(@RequestParam Map<String, Object> params) {
         PageUtils page = monitorModuleService.queryPage(params);
         return R.ok(page);
@@ -51,6 +54,7 @@ public class MonitorModuleController {
      */
     @GetMapping("/module/tree")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:list"})
     public R queryModuleTree(String name) {
         Map map = new HashMap(2);
         map.put("list", monitorModuleService.queryModuleTree(name));
@@ -59,6 +63,7 @@ public class MonitorModuleController {
 
     @PostMapping("/module")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:save"})
     public R saveModule(@RequestBody MonitorModule module) {
         ValidateUtils.is(module.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
                 .and(module.getName()).notNull(RCode.MODULE_NAME_ISNULL)
@@ -73,6 +78,7 @@ public class MonitorModuleController {
 
     @PutMapping("/module")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:update"})
     public R editModule(@RequestBody MonitorModule module) {
         ValidateUtils.is(module.getId()).notNull(RCode.MODULE_ID_ISNULL)
                 .and(module.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
@@ -89,6 +95,7 @@ public class MonitorModuleController {
 
     @DeleteMapping("/module")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODULE)
+    @RequiresPermissions({"module:delete"})
     public R remove(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.MODULE_ID_ISNULL);
         monitorModuleService.removeModules(ids);
