@@ -1,8 +1,12 @@
 package com.nis.modules.stat.service.impl;
 
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -124,7 +128,13 @@ public class StatServiceImpl implements StatService{
 		Map<String, SysUserEntity> tokens = ShiroUtils.getShiroSessionInfoMap();
 		Integer online = 0;
 		if(ObjectUtil.isNotEmpty(tokens)) {
-			online = tokens.size();
+			// 防止一个用户多token情况
+			Set<Long> userIds = new HashSet<Long>();
+			Collection<SysUserEntity> users = tokens.values();
+			for(SysUserEntity user : users) {
+				userIds.add(user.getId());
+			}
+			online = userIds.size();
 		}
 		StatAnalysis result = new StatAnalysis();
 		result.setTotal(total.size());
