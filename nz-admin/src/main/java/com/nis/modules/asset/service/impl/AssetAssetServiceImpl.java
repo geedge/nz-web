@@ -152,6 +152,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Dc dc = dcService.getById(asset.getDcId());
         asset.setDc(dc);
 
+        AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
+        asset.setPingInfo(assetPing);
+        
         if (asset.getCabinetId() != null) {
             Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
             asset.setCabinet(cabinet);

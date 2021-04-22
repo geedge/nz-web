@@ -245,5 +245,8 @@ public class AssetAsset implements Serializable {
      */
     @TableField(exist = false)
     private String assetPingInterval;
+    
+    @TableField(exist = false)
+    private AssetPing pingInfo;
 
 }

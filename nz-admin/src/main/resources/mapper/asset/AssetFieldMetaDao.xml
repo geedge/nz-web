@@ -58,8 +58,8 @@
     	<if test="params.key!=null and params.key !=''">
     		and afm.key like CONCAT('%', #{params.key}, '%')
     	</if>
-    	<if test="params.groupId!=null">
-    		and afm.group_id = #{params.groupId}
+    	<if test="params.groupIds!=null">
+    		and afm.group_id = #{params.groupIds}
     	</if>
     	<if test="params.search!=null">
     		and afm.search = #{params.search}
