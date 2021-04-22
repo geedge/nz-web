@@ -11,4 +11,6 @@ public interface SysApiKeyService extends IService<SysApiKey>{
 	PageUtils queryPage(Map<String,Object> params);
 	
 	Integer addSysApiKey(SysApiKey sysApiKey);
+	
+	void removeSysApiKeys(String ids);
 }

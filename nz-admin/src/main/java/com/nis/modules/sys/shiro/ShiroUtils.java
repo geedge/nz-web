@@ -1,5 +1,6 @@
 package com.nis.modules.sys.shiro;
 
+import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -102,5 +103,16 @@ public class ShiroUtils {
 			resultMap.put(entry.getKey(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
 		}
 		return resultMap;
+	}
+	
+	public static void removeRedisCacheByToken(List<String> tokens) {
+		RedisConnectionFactory factory = SpringContextUtils.getBean("redisConnectionFactory", RedisConnectionFactory.class);
+		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
+		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		redisTemplate.setConnectionFactory(factory);
+
+		redisTemplate.afterPropertiesSet();
+		redisTemplate.delete(tokens);
 	}
 }

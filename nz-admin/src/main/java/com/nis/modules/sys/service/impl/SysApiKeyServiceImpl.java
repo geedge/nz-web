@@ -1,9 +1,13 @@
 package com.nis.modules.sys.service.impl;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -25,7 +29,7 @@ import cn.hutool.core.util.StrUtil;
 
 @Service
 public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> implements SysApiKeyService{
-
+	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		IPage<SysApiKey> result = new Query<SysApiKey>().getPage(params);
@@ -55,6 +59,17 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 		sysApiKey.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
 		this.save(sysApiKey);
 		return sysApiKey.getId();
+	}
+
+	@Override
+	public void removeSysApiKeys(String ids) {
+		List<SysApiKey> sysApiKeys = this.list(new QueryWrapper<SysApiKey>().lambda().in(SysApiKey::getId, Arrays.asList(ids.split(","))));
+		List<String> tokens = new ArrayList<String>();
+		for(SysApiKey sysApiKey : sysApiKeys) {
+			tokens.add(StrUtil.str(ShiroUtils.REDIS_KEYPREFIX+sysApiKey.getToken()));
+		}
+		ShiroUtils.removeRedisCacheByToken(tokens);
+		this.removeByIds(Arrays.asList(ids.split(",")));
 	}
 
 }

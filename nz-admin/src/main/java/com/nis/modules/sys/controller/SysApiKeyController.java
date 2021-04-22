@@ -55,7 +55,7 @@ public class SysApiKeyController {
 	public R removeSysApiKey(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SYSAPIKEY_ID_ISNULL);
 		
-		sysApiKeyService.removeByIds(Arrays.asList(ids.split(",")));
+		sysApiKeyService.removeSysApiKeys(ids);
 		return R.ok();
 	}
 	
