@@ -7,8 +7,7 @@
         <result property="name" column="name"/>
         <result property="createBy" column="create_by"/>
         <result property="url" column="url"/>
-        <result property="prev" column="prev"/>
-        <result property="next" column="next"/>
+        <result property="weight" column="weight"/>
         <result property="buildIn" column="build_in"/>
         
         <association columnPrefix="u_" property="creator" javaType="com.nis.modules.sys.entity.SysUserEntity">
@@ -24,8 +23,7 @@
        l.`name` AS name,
        l.create_by AS create_by,
        l.url AS url,
-       l.prev AS prev,
-       l.next AS next,
+       l.weight AS weight,
        l.build_in AS build_in,
        u.id AS u_id,
        u.name AS u_name
@@ -42,7 +40,7 @@
        <if test="params.createBy != null and params.createBy != ''">
            AND l.create_by = #{params.createBy}
        </if>
-
+        order by l.weight
     </select>
 
 </mapper>

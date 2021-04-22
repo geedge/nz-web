@@ -10,8 +10,7 @@ public interface LinkService extends IService<Link>{
 	
 	List<Link> queryList(Map<String, Object> params);
 	
-	void modifyOrder(Link link);
-	
+
 	void saveLink(Link link);
 	
 	void removeLinks(List<String> ids);
