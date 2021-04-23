@@ -18,6 +18,18 @@
                 AND ts.login_user like CONCAT('%', #{params.loginUser}, '%')
             </if>
 
+            <if test="params.state != null ">
+                AND ts.status = #{params.state}
+            </if>
+
+            <if test="params.uuid != null ">
+                AND ts.uuid = #{params.uuid}
+            </if>
+
+            <if test="params.remoteAddr != null and params.remoteAddr != ''">
+                AND ts.remote_addr like CONCAT('%', #{params.remoteAddr}, '%')
+            </if>
+
             <if test="params.host != null and params.host != ''">
                 AND ts.host like CONCAT('%', #{params.host}, '%')
             </if>

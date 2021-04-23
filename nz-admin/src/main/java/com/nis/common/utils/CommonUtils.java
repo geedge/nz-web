@@ -1,9 +1,11 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.io.resource.Resource;
 import cn.hutool.core.net.NetUtil;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.io.File;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -162,6 +164,19 @@ public class CommonUtils {
     }
 
 
+    /**
+    * @Description 根据相对路径获取根目录下的文件
+    * @Date   2021/4/23
+    */
+    public static File getResourceFile(String path){
+        File file = Tool.FileUtil.newFile(path);
+        if(file.exists()){
+            return file;
+        }else{
+            URL resource = CommonUtils.class.getClassLoader().getResource(path);
+            return resource == null?null: Tool.FileUtil.newFile(resource.getFile());
+        }
+    }
 
     public static boolean isLinux(){
         return OS.indexOf("linux")>=0;

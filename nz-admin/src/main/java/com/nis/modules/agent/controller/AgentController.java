@@ -8,6 +8,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.*;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,11 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.TemplateUtil;
-import com.nis.common.utils.Tool;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -43,8 +40,8 @@ import freemarker.template.TemplateException;
 public class AgentController {
 	private Log log = Log.get();
 
-	@Value("${nezha.installFilePath:./install}")
-	private String installFilePath;
+	@Value("${nezha.installPath:install/}")
+	private String installPath;
 
 	@Autowired
 	private PromserverService promserverService;
@@ -63,29 +60,33 @@ public class AgentController {
 		ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type)
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 		// 读取sh脚本内容
-		String shFile = Tool.FileUtil.file(installFilePath, "install.sh.template").getPath();
-		// 组织变量内容
-		String scriptContent = Tool.FileUtil.readUtf8String(shFile);
-		String localhost = request.getLocalAddr(); // web component ip
-		Integer localPort = request.getLocalPort();
-		String remoteHost = request.getRemoteHost(); // agent component ip
-		String webToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
-		Map<String, String> map = new HashMap<>();
-		map.put("remoteIP", localhost); // to install.sh is remote
-		map.put("remotePort", String.valueOf(localPort));
-		map.put("localhost", remoteHost); // to install.sh is local
-		map.put("webToken", webToken);
-		map.put("datacenterID",String.valueOf(dcId));
-		map.put("type", String.valueOf(type));
-		try {
-			// 根据模板文件生成 sh文件
-			Template template = TemplateUtil.stringToTemplate(scriptContent, "installTemplate");
-			scriptContent = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);
-		} catch (IOException | TemplateException e) {
-			log.error("install template parse error", e);
-			return "echo 'Internal server error'";
+		File shFile = CommonUtils.getResourceFile(installPath+"install.sh.template");
+		if(shFile != null &&shFile.exists()){
+			// 组织变量内容
+			String scriptContent = Tool.FileUtil.readUtf8String(shFile);
+			String localhost = request.getLocalAddr(); // web component ip
+			Integer localPort = request.getLocalPort();
+			String remoteHost = request.getRemoteHost(); // agent component ip
+			String webToken = request.getHeader(Constant.AUTH_TOKEN_CODE);
+			Map<String, String> map = new HashMap<>();
+			map.put("remoteIP", localhost); // to install.sh is remote
+			map.put("remotePort", String.valueOf(localPort));
+			map.put("localhost", remoteHost); // to install.sh is local
+			map.put("webToken", webToken);
+			map.put("datacenterID",String.valueOf(dcId));
+			map.put("type", String.valueOf(type));
+			try {
+				// 根据模板文件生成 sh文件
+				Template template = TemplateUtil.stringToTemplate(scriptContent, "installTemplate");
+				scriptContent = FreeMarkerTemplateUtils.processTemplateIntoString(template, map);
+			} catch (IOException | TemplateException e) {
+				log.error("install template parse error", e);
+				return "echo 'Internal server error'";
+			}
+			return scriptContent;
+		}else{
+			return "load script failed !";
 		}
-		return scriptContent;
 	}
 
 	/**
@@ -100,9 +101,7 @@ public class AgentController {
 		String json = sysConfigService.getValue("confagent_name");
 		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
 		String confagentName = (String) confagentNames.get(os);
-		String packagePath = Tool.FileUtil.file(installFilePath, confagentName).getPath();
-		log.info("file path: {}",packagePath);
-		File file = Tool.FileUtil.file(packagePath);
+		File file = CommonUtils.getResourceFile(installPath+confagentName);
 		log.info("file exist: {}", file.exists());
 		try {
 			Tool.ResponseUtil.downloadFile(response, file);

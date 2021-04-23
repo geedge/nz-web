@@ -2,19 +2,18 @@ package com.nis.setup.controller;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.setup.entity.DatabaseEntity;
 import com.nis.setup.entity.RedisEntity;
 import com.nis.setup.entity.SetupEntity;
-import com.nis.setup.util.Utils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,19 +22,16 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.*;
 import org.yaml.snakeyaml.Yaml;
 import redis.clients.jedis.Jedis;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -44,13 +40,14 @@ import java.util.Map;
 public class SetupController implements ApplicationContextAware, EnvironmentAware {
     private Log log = Log.get();
 
-
-    @Value("${spring.profiles.active}")
-    private String profile;
-
     @Value("${server.tomcat.basedir}")
     private String tmpDir;
 
+    @Value("${nezha.resource.db:config/application-prod.yml}")
+    private String dbConfPath;
+
+    @Value("${nezha.resource.main:config/application.yml}")
+    private String mainConfPath;
 
     private Environment environment;
 
@@ -68,11 +65,10 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
         try{
-            Resource applicationResource = Utils.getResource(profile,null);
-            modifyApplication(applicationResource, setup.getRedis());
-
-            Resource applicationProfileResource = Utils.getResource(profile,profile);
-            modifyApplicationProfile(applicationProfileResource,setup.getDatabase());
+            File mainConf = CommonUtils.getResourceFile(mainConfPath);
+            modifyApplication(mainConf, setup.getRedis());
+            File dbConf = CommonUtils.getResourceFile(dbConfPath);
+            modifyApplicationProfile(dbConf,setup.getDatabase());
 
             writeTmpFile(setup);
 
@@ -172,59 +168,49 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         return R.ok();
     }
 
-    private void modifyApplication(Resource resource,RedisEntity redisEntity) throws IOException{
+    private void modifyApplication(File file, RedisEntity redisEntity){
 
-        try{
-            Yaml yaml = new Yaml();
-            Map<String,Object> application = yaml.load(resource.getInputStream());
-            Map<String,Object> spring =(Map<String,Object>) application.get("spring");
+        Yaml yaml = new Yaml();
+        Map<String,Object> application = yaml.load(Tool.FileUtil.getInputStream(file));
+        Map<String,Object> spring =(Map<String,Object>) application.get("spring");
 
-            Map<String,Object> autoconfigure =(Map<String,Object>) spring.get("autoconfigure");
-            autoconfigure.put("exclude",new Class[]{});
-            spring.put("autoconfigure",autoconfigure);
+        Map<String,Object> autoconfigure =(Map<String,Object>) spring.get("autoconfigure");
+        autoconfigure.put("exclude",new Class[]{});
+        spring.put("autoconfigure",autoconfigure);
 
-            Map<String,Object> redis =(Map<String,Object>) spring.get("redis");
-            redis.put("host",redisEntity.getHost());
-            redis.put("port",redisEntity.getPort());
-            redis.put("password",redisEntity.getPin());
-            spring.put("redis",redis);
+        Map<String,Object> redis =(Map<String,Object>) spring.get("redis");
+        redis.put("host",redisEntity.getHost());
+        redis.put("port",redisEntity.getPort());
+        redis.put("password",redisEntity.getPin());
+        spring.put("redis",redis);
 
-            application.put("spring",spring);
+        application.put("spring",spring);
 
-            Map<String,Object> nezha =(Map<String,Object>) application.get("nezha");
-            nezha.put("inited",1);
+        Map<String,Object> nezha =(Map<String,Object>) application.get("nezha");
+        nezha.put("inited",1);
 
-            BufferedOutputStream outputStream = FileUtil.getOutputStream(resource.getURL().toString());
-            IoUtil.write(outputStream,true,yaml.dumpAsMap(application).getBytes());
-        }catch (IOException e){
-            log.error(e);
-            throw e;
-        }
+        BufferedOutputStream outputStream = FileUtil.getOutputStream(file);
+        IoUtil.write(outputStream,true,yaml.dumpAsMap(application).getBytes());
     }
 
-    private void modifyApplicationProfile(Resource resource, DatabaseEntity database) throws IOException {
-        try{
-            Yaml yaml = new Yaml();
-            Map<String,Object> profile = yaml.load(resource.getInputStream());
-            Map<String,Object> spring =(Map<String,Object>) profile.get("spring");
+    private void modifyApplicationProfile(File file, DatabaseEntity database)  {
+        Yaml yaml = new Yaml();
+        Map<String,Object> profile = yaml.load(Tool.FileUtil.getInputStream(file));
+        Map<String,Object> spring =(Map<String,Object>) profile.get("spring");
 
-            Map<String,Object> datasource = (Map<String,Object>) spring.get("datasource");
-            Map<String,Object> druid = (Map<String,Object>) datasource.get("druid");
+        Map<String,Object> datasource = (Map<String,Object>) spring.get("datasource");
+        Map<String,Object> druid = (Map<String,Object>) datasource.get("druid");
 
-            druid.put("url",database.getUrl());
-            druid.put("username",database.getUsername());
-            druid.put("password",database.getPin());
+        druid.put("url",database.getUrl());
+        druid.put("username",database.getUsername());
+        druid.put("password",database.getPin());
 
-            datasource.put("druid",druid);
-            profile.put("datasource",datasource);
+        datasource.put("druid",druid);
+        profile.put("datasource",datasource);
 
-            BufferedOutputStream outputStream = FileUtil.getOutputStream(resource.getURL().toString());
-            IoUtil.write(outputStream,true,yaml.dumpAsMap(profile).getBytes());
+        BufferedOutputStream outputStream = FileUtil.getOutputStream(file);
+        IoUtil.write(outputStream,true,yaml.dumpAsMap(profile).getBytes());
 
-        }catch (IOException e){
-            log.error(e);
-            throw e;
-        }
     }
     public void writeTmpFile(SetupEntity setup) throws IOException{
         File file = FileUtil.file(this.tmpDir,"setup.obj");

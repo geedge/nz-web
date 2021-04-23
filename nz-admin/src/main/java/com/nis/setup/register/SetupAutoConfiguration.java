@@ -1,19 +1,12 @@
 package com.nis.setup.register;
 
 import cn.hutool.core.util.StrUtil;
-import com.nis.setup.util.Utils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
 import org.springframework.core.type.AnnotationMetadata;
-
-import java.io.File;
-import java.util.Properties;
 
 public class SetupAutoConfiguration implements ImportBeanDefinitionRegistrar , EnvironmentAware {
     private Environment environment;
