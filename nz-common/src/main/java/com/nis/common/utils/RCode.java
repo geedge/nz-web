@@ -706,6 +706,7 @@ public enum RCode {
     SYS_CONFIG_REDIS_HOST_ISNULL(574010,"The redis host is null"),
     SYS_CONFIG_REDIS_PORT_ISNULL(574011,"The redis host is null"),
     SYS_CONFIG_HAD_CONFIG(574012,"Someone has started to configure the system"),
+    SYS_CONFIG_SESSION_TIMEOUT_INVALID(573013,"Session timeout is not less than 15"),
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
     SYS_ROLE_ISNULL(586001, "Role is not exsits"),

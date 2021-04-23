@@ -20,6 +20,7 @@ INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'email_send_account', '', 1, '');
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'email_test_account', '', 1, '');
 INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'email_security_type', 'NONE', 1, 'NONE SSL TLS');
+INSERT INTO `sys_config`( `param_key`, `param_value`, `status`, `remark`) VALUES ( 'session_timeout', '30', 1, '默认：30，不小于 15 单位：minute');
 
 DROP TABLE IF EXISTS `sys_timezone`;
 CREATE TABLE `sys_timezone` (

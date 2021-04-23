@@ -52,11 +52,11 @@ import java.util.stream.Collectors;
 @Service("sysConfServiceImpl")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
 
-    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port"};
+    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout"};
 
-    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port"};
+    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout"};
 
-    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port"};
+    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port","session_timeout"};
 
     public static final String[][] BASIC_DEPEND={};
 
@@ -187,6 +187,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
         Integer defaultCabUIntValue = CommonUtils.toInt(params.get("default_cabinet_usize"));
         ValidateUtils.is(defaultCabUIntValue).min(1, RCode.DC_CABINETUSIZE_MINIMUM).max(Constant.CURRENT_CABINET_MAXU, RCode.DC_CABINET_MAXU);
+
+        Integer sessionTimeoutIntValue = CommonUtils.toInt(params.get("session_timeout"));
+        ValidateUtils.is(sessionTimeoutIntValue).min(15, RCode.SYS_CONFIG_SESSION_TIMEOUT_INVALID);
 
         Integer queryMaxSeriesIntValue = CommonUtils.toInt(params.get("query_max_series"));
         if (queryMaxSeriesIntValue < -1 || queryMaxSeriesIntValue > 1000) {
