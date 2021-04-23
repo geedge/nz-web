@@ -109,7 +109,12 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             }
         }
         
-        result = this.getChartTreeList(result,0);
+        String returnChildren = (String) params.get("returnChildren");
+        returnChildren = ToolUtil.isEmpty(returnChildren) ? "1" : returnChildren;
+        if(ToolUtil.equals(returnChildren, "1")) {
+        	result = this.getChartTreeList(result,0);
+        }
+        
         
         page.setRecords(result);
         //处理所有group下children

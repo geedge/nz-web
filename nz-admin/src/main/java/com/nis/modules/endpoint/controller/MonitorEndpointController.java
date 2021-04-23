@@ -143,15 +143,15 @@ public class MonitorEndpointController {
      * @param params
      * @return
      */
-    @PostMapping("/monitor/endpoint/render")
-	public R render(@RequestBody Map<String,Object> params) {
+    @PostMapping("/endpoint/render")
+	public R render(@RequestBody List<Map<String,Object>> params) {
 		
     	List<Map<String, Object>> result = monitorEndpointService.render(params);
 		return R.ok().putData("list", result);
 	}
     
     @PutMapping("/endpoint/render")
-	public R renderPutMethod(@RequestBody Map<String,Object> params) {
+	public R renderPutMethod(@RequestBody List<Map<String,Object>> params) {
 		
     	List<Map<String, Object>> result = monitorEndpointService.render(params);
 		return R.ok().putData("list", result);
