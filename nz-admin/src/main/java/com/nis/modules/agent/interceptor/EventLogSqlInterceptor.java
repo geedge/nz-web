@@ -11,6 +11,8 @@ import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.ibatis.executor.Executor;
@@ -50,6 +52,10 @@ public class EventLogSqlInterceptor implements Interceptor {
     @Autowired
     private MonitorModuleService monitorModuleService;
 
+    @Lazy
+    @Autowired
+    private PromserverService promserverService;
+
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         Object[] args = invocation.getArgs();
@@ -71,8 +77,10 @@ public class EventLogSqlInterceptor implements Interceptor {
                     break;
                 case "dc":
                 case "monitor_endpoint":
-                case "prom_server":
                     eventLogService.increment("prometheus");
+                    break;
+                case "prom_server":
+                    this.handlePromServerChange(operationalType.toString(), parameterObject);
                     break;
                 case "asset_asset":
                     eventLogService.increment("prometheus", "blackbox");
@@ -112,6 +120,48 @@ public class EventLogSqlInterceptor implements Interceptor {
         }
         return invocation.proceed();
     }
+
+    /**
+     * 处理 promserver , 只有在  dcid  type host port status 改变时才会记录 event log
+     * @param type
+     * @param parameterObject
+     */
+    private void handlePromServerChange(String type, Object parameterObject) {
+        // 修改时 ， 判断
+        if ("Update".equals(type)) {
+            if (parameterObject instanceof Promserver) {
+                this.comparePromserverDataChange((Promserver) parameterObject);
+            }
+
+            if (parameterObject instanceof Map) {
+                for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
+                    Object value = map.getValue();
+                    if (value instanceof Promserver) {
+                        this.comparePromserverDataChange((Promserver) value);
+                    }
+                }
+            }
+        } else {
+            // insert delete
+            eventLogService.increment("prometheus");
+        }
+    }
+
+    private void comparePromserverDataChange(Promserver updateEntity) {
+        Promserver oldEntity = updateEntity.getId() == null ? null : promserverService.getById(updateEntity.getId());
+        if (oldEntity != null) {
+            boolean flag = false;
+            if (!oldEntity.getDcId().equals(updateEntity.getDcId())) flag = true;
+            if (!oldEntity.getHost().equals(updateEntity.getHost())) flag = true;
+            if (!oldEntity.getPort().equals(updateEntity.getPort())) flag = true;
+            if (!oldEntity.getType().equals(updateEntity.getType())) flag = true;
+            if (!oldEntity.getStatus().equals(updateEntity.getStatus())) flag = true;
+            if (flag) {
+                eventLogService.increment("prometheus");
+            }
+        }
+    }
+
 
     /**
      * 处理 module snmp 变化

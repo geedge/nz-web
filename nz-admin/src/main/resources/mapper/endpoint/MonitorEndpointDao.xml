@@ -189,9 +189,10 @@
             LEFT JOIN monitor_module m ON e.module_id = m.id
             LEFT JOIN monitor_project p ON m.project_id = p.id
             LEFT JOIN asset_asset ass ON e.asset_id = ass.id
+            LEFT JOIN asset_state_conf state ON ass.state_id = state.id
             LEFT JOIN dc dc ON ass.dc_id = dc.id
         WHERE
-            e.enabled = 1
+            e.enabled = 1 AND state.monitor = 1
     </select>
 
 </mapper>

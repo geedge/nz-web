@@ -1,3 +1,4 @@
+/*
 package com.nis.modules.alert.job;
 
 import com.nis.modules.alert.dao.AlertMessageDao;
@@ -11,10 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+*/
 /**
  * alert message
  * 根据redis中的alertMessage 数据endtime和当前时间与alertrule表中持续时间比对
- * 失效则修改alert_message state为2 并删除redis中对应内容*/
+ * 失效则修改alert_message state为2 并删除redis中对应内容*//*
+
 
 
 @Slf4j
@@ -35,7 +38,8 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        /*log.debug("告警消息过期状态任务开始");
+        */
+/*log.debug("告警消息过期状态任务开始");
         long start, end;
         start = System.currentTimeMillis();
 
@@ -43,8 +47,10 @@ public class AlertMessageExpirStatusJob extends QuartzJobBean {
 
         end = System.currentTimeMillis();
         log.debug("告警消息过期状态任务 start time:" + start + "; end time:" + end + "; Run Time:" + (end - start) + "(ms)");
-        log.debug("告警消息过期状态任务结束");*/
+        log.debug("告警消息过期状态任务结束");*//*
+
     }
 
 
 }
+*/
