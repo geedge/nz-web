@@ -212,26 +212,19 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         if (ToolUtil.isNotEmpty(params.get("fields"))) {
             Map<String, List<String>> fieldsParams = JSONObject.parseObject(params.get("fields").toString(), Map.class);
-            // 包含 field value 信息
-            List<AssetFieldMeta> metaList = assetFieldMetaDao.selectMateInfoListByAssetId(null);
-            Map<String, List<AssetFieldMeta>> metaKeyAndMetaInfoMap = metaList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getMetaKey));
-
+            List<AssetFieldValue> fieldValues = assetFieldValueService.list();
             List<List<Integer>> assetIdList = new ArrayList<>();
-            List<String> paramValues;
-            List<AssetFieldMeta> metaListByKey, metaListByValue;
             for (Map.Entry<String, List<String>> entry : fieldsParams.entrySet()) {
-                // 查询 values
-                paramValues = entry.getValue();
-                // 当前 key 包含的 meta 集合
-                metaListByKey = metaKeyAndMetaInfoMap.get(entry.getKey());
-                if (metaListByKey == null) {
-                    continue;
-                }
-                metaListByValue = new ArrayList<>();
-                for (String val : paramValues) {
-                    metaListByValue.addAll(metaListByKey.stream().filter(meta -> meta.getValue().equals(val)).collect(Collectors.toList()));
-                }
-                assetIdList.add(metaListByValue.stream().map(AssetFieldMeta::getAssetId).distinct().collect(Collectors.toList()));
+                String metaId = entry.getKey();
+                List<String> paramValues = entry.getValue();
+
+                List<Integer> idList = fieldValues.stream().filter(assetFieldValue -> {
+                    if (assetFieldValue.getMetaId().equals(Integer.valueOf(metaId)) && paramValues.contains(assetFieldValue.getValue())) {
+                        return true;
+                    }
+                    return false;
+                }).map(AssetFieldValue::getAssetId).distinct().collect(Collectors.toList());
+                assetIdList.add(idList);
             }
 
             List<Integer> assetIds = assetIdList.stream().flatMap(Collection::stream).collect(Collectors.toList());

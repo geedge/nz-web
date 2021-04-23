@@ -116,6 +116,8 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
             String[] values = parameters.get(key);
             for (int i = 0; i < values.length; i++) {
                 values[i] = xssEncode(values[i]);
+                // htmlfilter会将引号处理 导致json解析异常
+                values[i] = values[i].replaceAll("&quot;","\"");
             }
             map.put(key, values);
         }
