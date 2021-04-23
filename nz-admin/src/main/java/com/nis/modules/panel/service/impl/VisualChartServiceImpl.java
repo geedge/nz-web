@@ -11,11 +11,11 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExpressionUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool.NzExpressionUtil;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.entity.Asset;
@@ -642,15 +642,15 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
 				visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 				visualChart.setPanelId(panelId);
-				visualChart.setName(ExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
-				visualChart.setRemark(ExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
+				visualChart.setName(NzExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
+				visualChart.setRemark(NzExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
 				List<VisualChartElement> elements = visualChart.getElements();
 				List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
 				//将表达式进行替换
 				for(VisualChartElement element : elements) {
 					VisualChartElement vce = new VisualChartElement();
 					BeanUtil.copyProperties(element, vce);
-					String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
+					String renderExpression = NzExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
 					vce.setExpression(renderExpression);
 					copyElements.add(vce);
 				}
@@ -676,8 +676,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					visualChart.setPanelId(panel.getId());
 					visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
 					visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
-					visualChart.setName(ExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
-					visualChart.setRemark(ExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
+					visualChart.setName(NzExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
+					visualChart.setRemark(NzExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
 					visualChart.setPid(chart.getId());
 					List<VisualChartElement> elements = visualChart.getElements();
 					List<VisualChartElement> copyElements = new ArrayList<VisualChartElement>();
@@ -685,7 +685,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					for(VisualChartElement element : elements) {
 						VisualChartElement vce = new VisualChartElement();
 						BeanUtil.copyProperties(element, vce);
-						String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
+						String renderExpression = NzExpressionUtil.renderExpression(vce.getExpression(), objs.get(id));
 						vce.setExpression(renderExpression);
 						copyElements.add(vce);
 					}
@@ -794,8 +794,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			Object obj = ToolUtil.isEmpty(chartIdAndAssetId.get(chart.getId())) ? 
 						endpointEntites.get((chartIdAndEndpointId.get(chart.getId()))) :
 						assetEntites.get((chartIdAndAssetId.get(chart.getId()))) ;		
-			syncChart.setName(ExpressionUtil.renderExpression(temp.getName(),obj));
-			syncChart.setRemark(ExpressionUtil.renderExpression(temp.getRemark(),obj));
+			syncChart.setName(NzExpressionUtil.renderExpression(temp.getName(),obj));
+			syncChart.setRemark(NzExpressionUtil.renderExpression(temp.getRemark(),obj));
 			Integer panelid = ToolUtil.isEmpty(endpointPanelIds) ? 
 					assetPanelIds.get(chart.getVarId()) :
 						endpointPanelIds.get(chart.getVarId());
@@ -806,7 +806,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			for(VisualChartElement element : elements) {
 				VisualChartElement vce = new VisualChartElement();
 				BeanUtil.copyProperties(element, vce);
-				String renderExpression = ExpressionUtil.renderExpression(vce.getExpression(), obj);
+				String renderExpression = NzExpressionUtil.renderExpression(vce.getExpression(), obj);
 				vce.setExpression(renderExpression);
 				copyElements.add(vce);
 			}

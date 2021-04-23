@@ -59,7 +59,10 @@
     		and afm.key like CONCAT('%', #{params.key}, '%')
     	</if>
     	<if test="params.groupIds!=null">
-    		and afm.group_id = #{params.groupIds}
+    		and afm.group_id in 
+    		<foreach collection="params.groupIds" item="groupId" index="no" open="(" separator="," close=")">
+                #{groupId}
+            </foreach>
     	</if>
     	<if test="params.search!=null">
     		and afm.search = #{params.search}

@@ -1,8 +1,10 @@
 package com.nis.common.utils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -10,12 +12,13 @@ import java.util.stream.Collectors;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.module.entity.MonitorModule;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 
 
-public class ExpressionUtil {
+public class NzExpressionUtil {
 	 
 	/**
 	 * 获取表达式中的所有变量名
@@ -26,16 +29,13 @@ public class ExpressionUtil {
         Pattern pattern = Pattern.compile("(\\{\\{)(.+?)(\\}\\})");
         Matcher matcher = pattern.matcher(expre);
 
-        List<String> list = new ArrayList<>();
+        Set<String> set = new HashSet<>();
         while (matcher.find()) {
             String group = matcher.group();
-            group = group.replaceAll("(\\{\\{)|(\\}\\})", "");
-            list.add(group);
+            group = group.replaceAll("(\\{\\{)|(\\}\\})", "").trim();
+            set.add(group);
         }
-        String[] vars = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            vars[i] = list.get(i);
-        }
+        String[] vars = set.toArray(new String[] {});
         return vars;
     }
 	

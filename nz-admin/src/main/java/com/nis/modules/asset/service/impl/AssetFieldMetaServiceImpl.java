@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.nis.modules.asset.entity.AssetFieldValue;
 import com.nis.modules.asset.service.AssetFieldMetaService;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 
 @Service("assetFieldMetaService")
 public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,AssetFieldMeta> implements AssetFieldMetaService{
@@ -44,6 +46,11 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 	@Override
 	public PageUtils queryList(Map<String, Object> params) {
 		IPage<AssetFieldMeta> page = new Query<AssetFieldMeta>().getPage(params);
+		String groupIds = (String) params.get("groupIds");
+        if(StrUtil.isNotBlank(groupIds)) {
+        	List<String> listIds = Arrays.asList(groupIds.split(","));
+        	params.put("groupIds",listIds);
+        }
 		List<AssetFieldMeta> assetFieldMetas =assetFieldMetaDao.selectAssetFieldMetaList(page,params);
 		page.setRecords(assetFieldMetas);
 		return new PageUtils(page);

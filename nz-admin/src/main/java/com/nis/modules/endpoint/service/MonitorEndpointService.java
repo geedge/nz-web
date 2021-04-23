@@ -40,5 +40,6 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      */
     List<MonitorEndpoint> getEnableEndpointInfoList();
 
+    List<Map<String,Object>> render(Map<String,Object> params);
 
 }

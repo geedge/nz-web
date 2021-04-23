@@ -138,5 +138,23 @@ public class MonitorEndpointController {
         monitorEndpointService.export(response, params);
     }
 
+    /**
+     * 配置变量内容替换
+     * @param params
+     * @return
+     */
+    @PostMapping("/monitor/endpoint/render")
+	public R render(@RequestBody Map<String,Object> params) {
+		
+    	List<Map<String, Object>> result = monitorEndpointService.render(params);
+		return R.ok().putData("list", result);
+	}
+    
+    @PutMapping("/endpoint/render")
+	public R renderPutMethod(@RequestBody Map<String,Object> params) {
+		
+    	List<Map<String, Object>> result = monitorEndpointService.render(params);
+		return R.ok().putData("list", result);
+	}
 }
 

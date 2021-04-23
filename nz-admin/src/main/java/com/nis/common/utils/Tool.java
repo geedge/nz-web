@@ -1077,4 +1077,10 @@ public class Tool {
 	 */
 	public static class LicenseUtil extends com.nis.common.utils.LicenseUtil{};
 	
+	/**
+	 * NzExpression nezha项目表达式
+	 * @author admin
+	 *
+	 */
+	public static class NzExpressionUtil extends com.nis.common.utils.NzExpressionUtil{};
 }
