@@ -143,7 +143,7 @@ public class TokenCheckFilter extends AccessControlFilter {
         		
         		SimpleSession session = new SimpleSession();
     			SysUserEntity user = new SysUserEntity();
-    			user.setApiKeyId(1);
+    			user.setApiKeyId(apiKey.getId());
     			user.setId(0L);
     			user.setName(apiKey.getName());
     			SimplePrincipalCollection primaryPrincipal =new SimplePrincipalCollection(user,"");

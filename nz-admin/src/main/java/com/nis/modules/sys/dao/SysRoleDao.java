@@ -11,4 +11,6 @@ import java.util.List;
 public interface SysRoleDao extends BaseMapper<SysRoleEntity> {
 
     List<SysRoleEntity> getRolesByUesrId(@Param("userId") Integer userId);
+    
+    List<SysRoleEntity> getRolesBySysApiKeyId(@Param("sysApiKeyId") Integer sysApiKeyId);
 }

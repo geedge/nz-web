@@ -709,29 +709,24 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 				throw new NZException(RCode.ASSET_ID_ISNULL);
 			}
 			
-			MonitorModule module = monitorModuleService.getById(moduleId);
+			MonitorModule module = monitorModuleService.queryModuleEntity(moduleId);
 			String configs = (String) param.get("configs");
 			if(ToolUtil.isEmpty(configs)) {
 				configs = module.getConfigs();
 			}
 			
-			AssetAsset asset = assetService.getById(assetId);
+			AssetAsset asset = assetService.queryAssetInfo(assetId);
+			Map<String,Object> map = new HashMap<String,Object>();
 			
-			List<MonitorEndpoint> endpoints = this.list(new QueryWrapper<MonitorEndpoint>().lambda().eq(MonitorEndpoint::getModuleId, moduleId)
-					.eq(MonitorEndpoint::getAssetId, assetId));
-			
-			for(MonitorEndpoint endpoint : endpoints) {
-				Map<String,Object> map = new HashMap<String,Object>();
-				endpoint.setAsset(asset);
-				endpoint.setModule(module);
-				
-				map.put("name", Tool.NzExpressionUtil.renderExpression(name, endpoint));
-				map.put("moduleId", moduleId);
-				map.put("assetId", assetId);
-				map.put("configs", Tool.NzExpressionUtil.renderExpression(configs, endpoint));
-				map.put("enabled", enabled);
-				result.add(map);
-			}
+			MonitorEndpoint endpoint = new MonitorEndpoint();
+			endpoint.setAsset(asset);
+			endpoint.setModule(module);
+			map.put("name", Tool.NzExpressionUtil.renderExpression(name, endpoint));
+			map.put("moduleId", moduleId);
+			map.put("assetId", assetId);
+			map.put("configs", Tool.NzExpressionUtil.renderExpression(configs, endpoint));
+			map.put("enabled", enabled);
+			result.add(map);
 		}
 		return result;
 	}

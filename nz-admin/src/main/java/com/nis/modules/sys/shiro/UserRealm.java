@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysRoleMenuDao;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -87,7 +88,13 @@ public class UserRealm extends AuthorizingRealm {
 		SysUserEntity user = (SysUserEntity) principals.getPrimaryPrincipal();
 
 		// 查看用户所有角色
-		List<SysRoleEntity> rolesByUesr = sysRoleDao.getRolesByUesrId(user.getId().intValue());
+		List<SysRoleEntity> rolesByUesr = null;
+		
+		if(ToolUtil.isNotEmpty(user.getApiKeyId())) {
+			rolesByUesr = sysRoleDao.getRolesBySysApiKeyId(user.getApiKeyId());
+		}else {
+			rolesByUesr = sysRoleDao.getRolesByUesrId(user.getId().intValue());
+		}
 
 		List<String> permsList;
 		if (CollectionUtils.isEmpty(rolesByUesr)) {

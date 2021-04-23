@@ -423,6 +423,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
         }
 
+        // auth_pin 密码加密处理
+        String authPin = asset.getAuthPin();
+        if(StrUtil.isNotBlank(authPin)) {
+        	asset.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
+        }
     }
 
     public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {
@@ -566,7 +571,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         } else {
             asset.setPid(-1);
         }
-
+        
         // 保存
         this.save(asset);
 

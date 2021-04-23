@@ -58,7 +58,7 @@ public class NzExpressionUtil {
 			if (renderValue == null) {
 	            continue;
 	        }
-	        expression = expression.replaceAll("\\{\\{" + expre + "\\}\\}", renderValue == null ? "" : renderValue.toString());	    
+	        expression = expression.replaceAll("\\{\\{" + expre + "\\}\\}", renderValue == null ? "\\{\\{" + expre + "\\}\\}" : renderValue.toString());	    
 		}
 		return expression;
 	}

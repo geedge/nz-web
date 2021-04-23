@@ -13,4 +13,14 @@
             sur.user_id = #{userId}
     </select>
 
+	<select id="getRolesBySysApiKeyId" resultType="com.nis.modules.sys.entity.SysRoleEntity">
+       select 
+       		sr.*
+       from 
+       		sys_api_key sak
+       		left join sys_role sr ON sak.role_id = sr.id
+       	where 
+       		sak.id = #{sysApiKeyId}
+    </select>
+    
 </mapper>

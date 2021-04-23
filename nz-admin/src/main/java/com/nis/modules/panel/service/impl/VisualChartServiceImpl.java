@@ -274,6 +274,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
      * @param panelId
      */
     public void validatePanel(Integer panelId) {
+    	if(panelId.equals(0)) {
+    		return;
+    	}
         VisualPanel panel = visualPanelService.getById(panelId);
         if (panel == null) {
             throw new NZException(RCode.CHART_PANEL_ISNULL);

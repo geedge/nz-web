@@ -85,26 +85,31 @@ public class AssetAsset implements Serializable {
     /**
      * 用户名
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private	String authUsername;
     
     /**
      * 密码
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String authPin;
     
     /**
      * 秘钥
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String authPriKey;
     
     /**
      * 用户名提示
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String authUserTip;
     
     /**
      * 密码提示
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private String authPinTip;
     
     /**
