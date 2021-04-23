@@ -10,8 +10,10 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
@@ -52,6 +54,9 @@ public class SysLoginController extends AbstractController {
 	private SysConfigService configService;
 	@Autowired
 	private SysUserService sysUserService;
+
+	@Autowired
+	private TimezoneService timezoneService;
 	
 	@RequestMapping("captcha.jpg")
 	public void captcha(HttpServletResponse response)throws IOException {
@@ -84,13 +89,19 @@ public class SysLoginController extends AbstractController {
 			subject.login(token); //登录
 			String loginToken=CommonUtils.uuid();
 			subject.getSession().setAttribute("token",loginToken);
-			Map<String, String> obj = new HashMap<>();
+			Map<String, Object> obj = new HashMap<>();
 			obj.put("token", subject.getSession().getId().toString());
 			// 查询系统配置信息
-			String[] paramkeys = {"system_name", "timezone", "default_cabinet_usize", "max_terminal_num", "asset_ping_switch", "unsaved_change"};
-			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey,paramkeys));
-            configEntityList.forEach(configEntity -> obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()),configEntity.getParamValue()));
-			
+			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change"};
+			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
+			for (SysConfigEntity configEntity : configEntityList) {
+				if ("timezone".equals(configEntity.getParamKey())) {
+					Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, configEntity.getParamValue()));
+					obj.put("offset", timezoneEntity.getOffset());
+				}
+				obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+			}
+
             // 获取request
             HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
             SysUserEntity userEntity = ShiroUtils.getUserEntity();
