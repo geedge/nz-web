@@ -328,14 +328,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
 
         // brand
-        AssetBrand brand = brandService.getById(asset.getBrandId());
-        ValidateUtils.is(brand).notNull(RCode.ASSET_BRAND_NOT_FOUND);
+        AssetBrand brand = null;
+        if (asset.getBrandId() != null) {
+            brand = brandService.getById(asset.getBrandId());
+            ValidateUtils.is(brand).notNull(RCode.ASSET_BRAND_NOT_FOUND);
+        }
 
         // model
         AssetModel model = modelService.getById(asset.getModelId());
         ValidateUtils.is(model).notNull(RCode.ASSET_MODEL_NOTFOUND);
 
-        if (!model.getBrandId().equals(brand.getId())) {
+        if (brand != null && !model.getBrandId().equals(brand.getId())) {
             throw new NZException(RCode.ASSET_BRAND_NOT_CONTAIN_MODEL);
         }
 
@@ -573,6 +576,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(parent.getCabinetEnd());
         } else {
             asset.setPid(-1);
+        }
+
+        if (asset.getBrandId() == null) {
+            AssetModel model = modelService.getById(asset.getModelId());
+            asset.setBrandId(model.getBrandId());
         }
         
         // 保存

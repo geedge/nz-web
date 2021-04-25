@@ -85,7 +85,6 @@ public class AssetController {
         ValidateUtils.is(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
                 .and(asset.getManageIp()).notNull(RCode.ASSET_MANAGEIP_ISNULL).ip(RCode.ASSET_MANAGEIP_FORMAT)
-                .and(asset.getBrandId()).notNull(RCode.ASSET_BRAND_ID_ISNULL)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODEL_ID_ISNULL)
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
