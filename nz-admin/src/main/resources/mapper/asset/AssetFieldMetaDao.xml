@@ -12,13 +12,15 @@
 		<result property="type" column="type" />
 		<result property="param" column="param" />
 		<result property="remark" column="remark" />
-		<result property="value" column="value" />
 		<result property="assetId" column="asset_id" />
 		<association columnPrefix="afg_" property="group" javaType="com.nis.modules.asset.entity.AssetFieldGroup">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
 	    	<result column="remark" property="remark"/>
 	    </association>
+	    <collection property="value" ofType="java.lang.String" javaType="java.util.List">
+			<result column="value" property="values" />
+		</collection>
 	</resultMap>
     
     <select id="selectAssetFieldMeta" resultMap="assetFieldMeta">

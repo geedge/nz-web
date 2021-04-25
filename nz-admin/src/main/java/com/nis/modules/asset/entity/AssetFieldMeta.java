@@ -1,5 +1,7 @@
 package com.nis.modules.asset.entity;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -41,7 +43,7 @@ public class AssetFieldMeta {
 	 * field value value
 	 */
 	@TableField(exist = false)
-	private String value;
+	private List<String> value;
 
 	/**
 	 * field value assetId

@@ -267,7 +267,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetAsset> list = this.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = list.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
 
-        List<AssetFieldMeta> metaInfoList = assetFieldMetaDao.selectMateInfoListByAssetId(null);
+        List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
         for (AssetAsset asset : assetList) {
@@ -642,14 +642,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetFieldMeta> fields = asset.getFields();
         if (CollectionUtils.isNotEmpty(fields)) {
             // 需要保存的 meta id
-            List<AssetFieldValue> values = new ArrayList<>(fields.size());
-            AssetFieldValue temp;
+            List<AssetFieldValue> values = new ArrayList<AssetFieldValue>();
             for (AssetFieldMeta fieldMeta : fields) {
-                temp = new AssetFieldValue();
-                temp.setAssetId(asset.getId());
-                temp.setMetaId(fieldMeta.getId());
-                temp.setValue(fieldMeta.getValue());
-                values.add(temp);
+            	for(String value: fieldMeta.getValue()) {
+            		AssetFieldValue temp = new AssetFieldValue();
+                    temp.setAssetId(asset.getId());
+                    temp.setMetaId(fieldMeta.getId());
+                    temp.setValue(value);
+                    values.add(temp);
+            	}
             }
             assetFieldValueService.saveBatch(values);
         }
@@ -836,30 +837,58 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 
     private List<Map> getFieldStatByAsset() {
-        List<AssetFieldMeta> allMetas = assetFieldMetaDao.selectList(new LambdaQueryWrapper<AssetFieldMeta>());
-        Map<Integer, AssetFieldMeta> metaIdAndEntityMap = allMetas.stream().collect(Collectors.toMap(AssetFieldMeta::getId, Function.identity()));
-
-        List<AssetFieldMeta> metaInfoList = assetFieldMetaDao.selectMateInfoListByAssetId(null);
-        Map<Integer, List<AssetFieldMeta>> metaIdAndListMap = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getId));
-
-        List<Map> fieldStat = new ArrayList<>(metaInfoList.size());
+        List<AssetFieldMeta> allMetas = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
+        List<Map> fieldStat = new ArrayList<>();
         Map metaStatMap, childrenMap;
-        for (Map.Entry<Integer, List<AssetFieldMeta>> entry : metaIdAndListMap.entrySet()) {
-            AssetFieldMeta fieldMeta = metaIdAndEntityMap.get(entry.getKey());
-            List<AssetFieldMeta> values = entry.getValue();
-            Map<String, List<AssetFieldMeta>> statByValue = values.stream().collect(Collectors.groupingBy(AssetFieldMeta::getValue));
-            List children = new ArrayList();
-            for (Map.Entry<String, List<AssetFieldMeta>> valueEntry : statByValue.entrySet()) {
-                childrenMap = new HashMap(4);
-                childrenMap.put("value", valueEntry.getKey());
-                childrenMap.put("total", CollectionUtils.isEmpty(valueEntry.getValue()) ? 0 : valueEntry.getValue().size());
-                children.add(childrenMap);
-            }
-
+        
+        // 创建一个key为field value  值为使用当前field的资产id集合
+        Map<String,Set<Integer>> fieldIdAndAssetIdsMap = new HashMap<String,Set<Integer>>();
+        Map<Integer,List<AssetFieldMeta>> fieldIdAndfields = new HashMap<Integer,List<AssetFieldMeta>>();
+        for(AssetFieldMeta fieldMeta: allMetas) {
+        	
+        	List<AssetFieldMeta> fields = fieldIdAndfields.get(fieldMeta.getId());
+        	if(ToolUtil.isEmpty(fields)) {
+        		fields = new ArrayList<AssetFieldMeta>();
+        		fields.add(fieldMeta);
+        		fieldIdAndfields.put(fieldMeta.getId(), fields);
+        	}else {
+        		fields.add(fieldMeta);
+        	}
+        	
+        	List<String> values = fieldMeta.getValue();
+        	for(String value : values) {
+        		Set<Integer> assetIds = fieldIdAndAssetIdsMap.get(value);
+        		if(ToolUtil.isEmpty(assetIds)) {
+        			assetIds = new HashSet<Integer>();
+        			assetIds.add(fieldMeta.getAssetId());
+        			fieldIdAndAssetIdsMap.put(value, assetIds);
+        		}else {
+        			assetIds.add(fieldMeta.getAssetId());
+        		}
+        	}
+        }
+        
+        for(Map.Entry<Integer, List<AssetFieldMeta>> entry : fieldIdAndfields.entrySet()) {
+        	List<AssetFieldMeta> fields = fieldIdAndfields.get(entry.getKey());
+        	List children = new ArrayList();
+        	for(AssetFieldMeta fieldMeta : fields) {
+        		List<String> values = fieldMeta.getValue();
+    			for (String valueEntry : values) {
+    				if(ToolUtil.isEmpty(fieldIdAndAssetIdsMap.get(valueEntry))) {
+    			    	continue;
+    			    }
+    			    childrenMap = new HashMap(4);
+    			    childrenMap.put("value", valueEntry);
+    			    childrenMap.put("total", fieldIdAndAssetIdsMap.get(valueEntry).size());
+    			    children.add(childrenMap);
+    			    fieldIdAndAssetIdsMap.remove(valueEntry);
+    			}
+        	}
+                        
             metaStatMap = new HashMap(8);
-            metaStatMap.put("id", fieldMeta.getId());
-            metaStatMap.put("name", fieldMeta.getName());
-            metaStatMap.put("key", fieldMeta.getMetaKey());
+            metaStatMap.put("id", fields.get(0).getId());
+            metaStatMap.put("name", fields.get(0).getName());
+            metaStatMap.put("key", fields.get(0).getMetaKey());
             metaStatMap.put("children", children);
             fieldStat.add(metaStatMap);
         }

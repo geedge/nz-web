@@ -77,7 +77,7 @@ public class NzExpressionUtil {
 				// 针对用户输入的变量为field时  特殊处理
 				List<AssetFieldMeta> fields = BeanUtil.getProperty(obj, "fields");
 				if(ToolUtil.isNotEmpty(fields)) {
-					Map<String, String> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
+					Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
 					if(expre.contains(StrUtil.DOT)) {
 						expre = StrUtil.split(expre, StrUtil.DOT)[1];
 					}
