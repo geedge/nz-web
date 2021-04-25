@@ -28,9 +28,8 @@ public class HaJob extends QuartzJobBean {
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
 		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
 		if(StrUtil.isBlank(serverId)) {
-			Boolean lock = redisTemplate.opsForValue().setIfAbsent(Constant.SYS_HA_LOCK, Constant.SERVER_ID);
+			Boolean lock = redisTemplate.opsForValue().setIfAbsent(Constant.SYS_HA_LOCK, Constant.SERVER_ID,10, TimeUnit.SECONDS);
 			if(lock) {
-				redisTemplate.expire(Constant.SYS_HA_LOCK, 10, TimeUnit.SECONDS);
 				log.debug("HA job set lock");
 			}
 		}else if(StrUtil.equals(serverId, Constant.SERVER_ID)){
