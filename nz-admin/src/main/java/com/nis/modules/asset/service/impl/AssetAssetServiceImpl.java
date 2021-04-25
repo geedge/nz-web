@@ -177,6 +177,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         List<AssetFieldMeta> metaList = assetFieldMetaService.getAssetFieldMetaListByAssetId(asset.getId());
         asset.setFields(metaList);
+
+        // cabinetEnd 存值的时候会+1 在此减一返回前台
+        if (ToolUtil.isNotEmpty(asset.getCabinetEnd())) {
+            asset.setCabinetEnd(asset.getCabinetEnd() - 1);
+        }
         return asset;
     }
 
@@ -281,6 +286,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setParent(assetIdAndEntityMap.get(asset.getPid()));
             }
             asset.setFields(assetIdAndMetaInfoList.get(asset.getId()));
+
+            // cabinetEnd 存值的时候会+1 在此减一返回前台
+            if (ToolUtil.isNotEmpty(asset.getCabinetEnd())) {
+                asset.setCabinetEnd(asset.getCabinetEnd() - 1);
+            }
         }
     }
 
@@ -355,8 +365,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 throw new NZException(RCode.ASSET_NOT_SUPPORT_MOUNTING);
             }
         } else {
-            // 本身不是虚拟机，不能选择宿主机
-            if (asset.getPid() != null) {
+            // 宿主机，不能选择宿主机
+            if (asset.getPid() != null && !asset.equals(-1)) {
                 throw new NZException(RCode.ASSET_NOT_SUPPORT_MOUNTING);
             }
         }
@@ -502,7 +512,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         for (AssetAsset nodeInfo : assets) {
             // 修改的情况下 不记录当前占用位置
-            if (updateFlag && nodeInfo.getId().equals(assetId)) {
+            if (updateFlag && (nodeInfo.getId().equals(assetId) || nodeInfo.getPid().equals(assetId))) {
                 continue;
             }
             if (nodeInfo.getCabinetStart() != null && nodeInfo.getCabinetEnd() != null) {
