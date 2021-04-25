@@ -4,18 +4,18 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.jcraft.jsch.JSchException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.EndpointState;
-import com.nis.modules.endpoint.service.EndpointStateService;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
@@ -24,27 +24,30 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @DisallowConcurrentExecution
 public class EndpointStateJob extends QuartzJobBean {
-    private Log logger = Log.get();
-    @Autowired
-    private SysConfigService sysConfigService;
+
+    private Log log = Log.get();
 
     @Autowired
-    private EndpointDao endpointDao;
+    private SysConfigService sysConfigService;
 
     @Autowired
     private PromserverService promserverService;
 
     @Autowired
-    private EndpointStateService endpointStateService;
+    private MonitorEndpointService endpointService;
+
+    @Autowired
+    private MonitorEndpointStateDao endpointStateDao;
+
+    @Autowired
+    private MonitorEndpointStateService endpointStateService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -58,33 +61,144 @@ public class EndpointStateJob extends QuartzJobBean {
         StopWatch sw = new StopWatch();
         sw.start();
         try {
-            this.getEndpointStatusFromPrometheus();
+            this.updateEndpointStatus();
         } catch (RuntimeException e) {
-            logger.error(e);
+            log.error(e);
         } finally {
             sw.stop();
         }
         log.info("Endpoint 状态定时任务执行时长: {}", sw.toString());
     }
 
-    private void getEndpointStatusFromPrometheus() {
-        SysConfigEntity endpointStateSwitchConfig = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
-        String endpointStateSwitch = endpointStateSwitchConfig.getParamValue();
-        if (!"2".equals(endpointStateSwitch)) {
-            log.debug("Endpoint 状态定时任务关闭");
-            return;
-        }
-        log.debug("Endpoint 状态定时任务开启");
-
+    /**
+     * 更新 endpoint 状态
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void updateEndpointStatus() {
         // 随机获取一个 Global Prometheus
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
         if (promserver == null) {
-            log.debug("Endpoint 状态定时任务不执行,当前暂无可用 prometheus");
+            log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 promserver");
+            this.allEndpointStateDown();
             return;
         }
 
+        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
+        String confagentPath = configEntity.getParamValue();
+        String urlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=up";
+
+        Map<Integer, String> endpointIdAndState = getEndpointIdAndStateMapByPath(promserver, urlPath);
+
+        List<MonitorEndpointState> upEndpointStateList = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : endpointIdAndState.entrySet()) {
+            Integer endpointId = entry.getKey();
+            String stateStr = entry.getValue();
+            if ("1".equals(stateStr)) {
+                upEndpointStateList.add(new MonitorEndpointState(endpointId, 1, new Date()));
+            }
+        }
+
+        // 所有的 endpoint
+        List<MonitorEndpoint> allEndpointList = endpointService.endpointDetailList();
+        // down 掉的 endpoint
+        List<Integer> upIdList = upEndpointStateList.stream().map(MonitorEndpointState::getEndpointId).distinct().collect(Collectors.toList());
+        List<MonitorEndpoint> downEndpointList = allEndpointList.stream().filter(entity -> !upIdList.contains(entity.getId())).collect(Collectors.toList());
+        List<Promserver> upPromserverList = promserverService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
+        Map<Integer, List<Promserver>> dcIdAndPromserverList = upPromserverList.stream().collect(Collectors.groupingBy(Promserver::getDcId));
+        for (MonitorEndpoint endpoint : downEndpointList) {
+            Dc dc = endpoint.getDc();
+            List<Promserver> promserverList = dcIdAndPromserverList.get(dc.getId());
+            dc.setUpPromNum(CollectionUtils.isEmpty(promserverList) ? 0 : promserverList.size());
+            endpoint.setDc(dc);
+        }
+
+        // 设置 down state
+        List<MonitorEndpointState> downEndpointStateList = new ArrayList<>();
+        for (MonitorEndpoint endpoint : downEndpointList) {
+            Integer state = 0;
+            // 0：关闭 1：开启
+            Integer monitor = endpoint.getAsset().getState().getMonitor();
+            // 0：停用 1：启用
+            Integer enabled = endpoint.getEnabled();
+            // 开启：ON, 关闭：OFF
+            String dcStateStr = endpoint.getDc().getState();
+            boolean dcState = dcStateStr.equals("ON") ? true : false;
+            // Dc 下 up prom_server 数量
+            Integer dcUpPromNum = endpoint.getDc().getUpPromNum();
+            boolean upPromState = (dcUpPromNum != null && dcUpPromNum > 0) ? true : false;
+            if (!dcState && monitor.equals(0) && enabled.equals(0) && upPromState) {
+                state = 2;
+            } else if (!dcState && monitor.equals(0) && enabled.equals(1) && !upPromState) {
+                state = 4;
+            } else if (!dcState && monitor.equals(1) && enabled.equals(0) && !upPromState) {
+                state = 8;
+            } else if (dcState && monitor.equals(0) && enabled.equals(0) && !upPromState) {
+                state = 16;
+            } else if (!dcState && monitor.equals(0) && enabled.equals(1) && upPromState) {
+                state = 6;
+            } else if (!dcState && monitor.equals(1) && enabled.equals(0) && upPromState) {
+                state = 10;
+            } else if (dcState && monitor.equals(0) && enabled.equals(0) && upPromState) {
+                state = 18;
+            } else if (!dcState && monitor.equals(1) && enabled.equals(1) && !upPromState) {
+                state = 12;
+            } else if (dcState && monitor.equals(0) && enabled.equals(1) && !upPromState) {
+                state = 20;
+            } else if (dcState && monitor.equals(1) && enabled.equals(0) && !upPromState) {
+                state = 24;
+            } else if (!dcState && monitor.equals(1) && enabled.equals(1) && upPromState) {
+                state = 14;
+            } else if (dcState && monitor.equals(0) && enabled.equals(1) && upPromState) {
+                state = 22;
+            } else if (dcState && monitor.equals(1) && enabled.equals(1) & !upPromState) {
+                state = 28;
+            }
+            downEndpointStateList.add(new MonitorEndpointState(endpoint.getId(), state, new Date()));
+        }
+
+        upEndpointStateList.addAll(downEndpointStateList);
+
+        // 保存
+        endpointStateDao.deleteAll();
+        endpointStateService.saveBatch(upEndpointStateList);
+    }
+
+    /**
+     * 全部 endpoint 状态为 down
+     */
+    private void allEndpointStateDown() {
+        endpointStateDao.deleteAll();
+        List<MonitorEndpoint> endpointList = endpointService.list();
+        List<MonitorEndpointState> stateList = new ArrayList<>(endpointList.size());
+        endpointList.forEach(endpoint -> stateList.add(new MonitorEndpointState(endpoint.getId(), 0, DateUtil.getUTCTimeByConfigTimeZone())));
+        endpointStateService.saveBatch(stateList);
+    }
+
+    /**
+     * 根据 url 请求带理接口并返回 endpoint_id / state 数据
+     *
+     * @param promserver
+     * @param urlPath
+     * @return
+     */
+    private Map<Integer, String> getEndpointIdAndStateMapByPath(Promserver promserver, String urlPath) {
+        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath);
+        Map dataMap = (Map) jsonObject.get("data");
+        List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
+
+        Map<Integer, String> map = new HashMap<>();
+        for (Map pojo : resultList) {
+            Map metricMap = (Map) pojo.get("metric");
+            Object endpointId = metricMap.get("endpoint_id");
+            if (endpointId == null) continue;
+            List<String> timeAndData = (List<String>) pojo.get("value");
+            map.put(Integer.valueOf(endpointId.toString()), timeAndData.get(1));
+        }
+        return map;
+    }
+
+    /*private void getEndpointStatusFromPrometheus() {
         try {
-            URL url = new URL("http", promserver.getHost(), promserver.getPort(), "/api/v1/query?query=up");
             JSONObject jsonObject = HttpClientUtils.httpGet(url.toString());
 
             if (jsonObject == null) {
@@ -160,5 +274,5 @@ public class EndpointStateJob extends QuartzJobBean {
         } catch (IOException e) {
             logger.error(e);
         }
-    }
+    }*/
 }

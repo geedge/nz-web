@@ -103,4 +103,10 @@ public class Dc implements Serializable {
     @TableField(exist = false)
     private Integer alertNum;
 
+    /**
+     * up prom_server 数量
+     */
+    @TableField(exist = false)
+    private Integer upPromNum;
+
 }

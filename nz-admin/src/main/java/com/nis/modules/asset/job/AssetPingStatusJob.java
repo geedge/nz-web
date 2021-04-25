@@ -6,7 +6,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetPingDao;
@@ -27,8 +26,6 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,7 +145,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
      * @return
      */
     private Map<String, String> getMetricsDatabByPath(Promserver promserver, String urlPath) {
-        JSONObject jsonObject = requestAgent(promserver, urlPath);
+        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 
@@ -161,25 +158,5 @@ public class AssetPingStatusJob extends QuartzJobBean {
             map.put(assethost.toString(), timeAndData.get(1));
         }
         return map;
-    }
-
-
-    /**
-     * 请求并返回结果
-     *
-     * @param promServer
-     * @param urlPath
-     * @return
-     */
-    private JSONObject requestAgent(Promserver promServer, String urlPath) {
-        URL url = null;
-        try {
-            url = new URL("http", promServer.getHost(), promServer.getPort(), urlPath);
-        } catch (MalformedURLException e) {
-            log.error(e);
-        }
-        String result = Tool.HttpUtil.createGet(url.toString()).auth(promServer.getToken()).execute().body();
-        if (log.isDebugEnabled()) log.debug(String.format("请求 %s 接口，相应内容为 %s", url.toString(), result));
-        return JSONObject.parseObject(result);
     }
 }

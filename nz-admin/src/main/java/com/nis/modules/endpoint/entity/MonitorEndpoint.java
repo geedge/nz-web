@@ -79,8 +79,5 @@ public class MonitorEndpoint implements Serializable {
 	private StateInfo stateInfo;
 
 	@TableField(exist = false)
-	private EndpointState endpointState;
-
-	@TableField(exist = false)
 	private Integer alertNum;
 }
