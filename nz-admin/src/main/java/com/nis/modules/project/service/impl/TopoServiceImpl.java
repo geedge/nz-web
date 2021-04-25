@@ -52,7 +52,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
         Topo topo = this.getOne(new QueryWrapper<Topo>().lambda().eq(Topo::getProjectId, projectId));
         topo = ToolUtil.isEmpty(topo) ? new Topo() : topo;
         topo.setProjectId(projectId);
-        topo.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        topo.setUpdateAt(new Date());
         topo.setUpdateBy(ShiroUtils.getUserId().intValue());
         topo.setTopo(topoConfig);
         this.saveOrUpdate(topo);
@@ -85,7 +85,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
             topoProjectIdAndConfigMap.put(entry.getKey(), JSONObject.toJSONString(configMap));
         }
 
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         Integer userId = ShiroUtils.getUserId().intValue();
         for (Topo topo : topos) {
             topo.setTopo(topoProjectIdAndConfigMap.get(topo.getProjectId()).toString());
@@ -122,7 +122,7 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
             topoProjectIdAndConfigMap.put(entry.getKey(), JSONObject.toJSONString(configMap));
         }
 
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         Integer userId = ShiroUtils.getUserId().intValue();
         for (Topo topo : topos) {
             topo.setTopo(topoProjectIdAndConfigMap.get(topo.getProjectId()).toString());

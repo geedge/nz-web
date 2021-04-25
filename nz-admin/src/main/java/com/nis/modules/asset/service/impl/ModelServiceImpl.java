@@ -314,7 +314,7 @@ public class ModelServiceImpl extends ServiceImpl<ModelDao, Model> implements Mo
         BeanUtils.copyProperties(chartConfig, target);
         // 暂时以model name作为chart title
         target.setTitle(ToolUtil.isEmpty(target.getTitle()) ? model.getName() + " Chart" : target.getTitle());
-        target.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        target.setCreateAt(new Date());
         target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
         chartService.saveChart(panel.getId(), target);
     }

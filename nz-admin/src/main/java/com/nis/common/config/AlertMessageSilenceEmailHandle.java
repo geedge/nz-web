@@ -1,12 +1,18 @@
 package com.nis.common.config;
 
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RuntimeUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.MailUtil;
+import com.nis.common.utils.TemplateUtil;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertNotifiScriptDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNotificationScript;
@@ -21,35 +27,11 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserNotification;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
-
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.RuntimeUtil;
-import cn.hutool.log.Log;
-import freemarker.cache.StringTemplateLoader;
 import freemarker.core.ParseException;
-import freemarker.template.Configuration;
 import freemarker.template.MalformedTemplateNameException;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateNotFoundException;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import javax.mail.MessagingException;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +40,14 @@ import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+
+import javax.mail.MessagingException;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 @Component
 public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
@@ -133,7 +123,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 				    }
 					
 					// 接收告警的当前时间
-				    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+				    Date currentTime = new Date();
 					//获取内置告警规则
 					AlertRuleEntity buildRule = alertRuleService.getOne(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getBuildIn, 1));
 				    Integer buildRuleId = buildRule.getId();
@@ -313,7 +303,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
 		                        alertNotifyLog.setMessageState(messageEntity.getState());
 		                        alertNotifyLog.setMethod(email);
 		                        alertNotifyLog.setUserId(Long.valueOf(receiverId));
-		                        alertNotifyLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+		                        alertNotifyLog.setTime(new Date());
 		                        alertNotifyLogs.add(alertNotifyLog);
 		                        alertNotifyLogMap.put(messageEntity.getId(), alertNotifyLogs);
 		                        
@@ -387,7 +377,7 @@ public class AlertMessageSilenceEmailHandle implements CommandLineRunner {
                     alertNotifyLog.setMessageState(alertMsg.getState());
                     alertNotifyLog.setMethod(userNotification.getScriptName());
                     alertNotifyLog.setUserId(Long.valueOf(userNotification.getUserId()));
-                    alertNotifyLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                    alertNotifyLog.setTime(new Date());
                     
 		            filePath = scriptIdAndFilePathMap.get(userNotification.getScriptId());
 		            account = userNotification.getAccount();

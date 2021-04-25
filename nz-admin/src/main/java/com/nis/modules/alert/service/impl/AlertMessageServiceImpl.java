@@ -164,7 +164,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		    logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
 	
 		    // 接收告警的当前时间
-		    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+		    Date currentTime = new Date();
 	
 		    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
 		    if (CollectionUtils.isEmpty(receiveData)) return;
@@ -288,7 +288,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 						endpointState = new EndpointState();
 						endpointState.setId(endpointId);
 						endpointState.setEndpointId(endpointId);
-						endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+						endpointState.setCreateTime(new Date());
 						endpointState.setState(Integer.parseInt((String) receiveAnnotations.get("summary")));
 						endpointStates.add(endpointState);
 
@@ -311,7 +311,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			if (CollectionUtils.isNotEmpty(suspendedEndpointIds)) {
 				endpointStateService.remove(new LambdaQueryWrapper<EndpointState>().eq(EndpointState::getState, 2));
 				endpointStates = new HashSet<>();
-				Date now = DateUtil.getUTCTimeByConfigTimeZone();
+				Date now = new Date();
 				for (Integer endpointId : suspendedEndpointIds) {
 					endpointState = new EndpointState(endpointId, endpointId, now, 2);
 					endpointStates.add(endpointState);
@@ -497,7 +497,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	@Override
 	public void updateAlertStateByIds(Map<String, Object> params) {
 		// 当前时间
-		Date date = DateUtil.getUTCTimeByConfigTimeZone();
+		Date date = new Date();
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String formatDate = df.format(date);
 		// 当前用户
@@ -578,7 +578,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		logger.debug(request.getRemoteAddr() + " 推送过来的 promethues 告警消息是 {}", receiveStr);
 
 	    // 接收告警的当前时间
-	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+	    Date currentTime = new Date();
 
 	    List<AlertMessageReceiveDTO> receiveData = JSONObject.parseArray(receiveStr, AlertMessageReceiveDTO.class);
 	    if (CollectionUtils.isEmpty(receiveData)) return;

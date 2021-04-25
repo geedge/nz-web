@@ -94,7 +94,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		SysConfigEntity config = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.ENDPOINT_ALERT_PUSH));
 		String endpointStateAlertSwitch = config.getParamValue();
 		//获取当前时间
-		Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
+		Date nowTime = new Date();
 		long time = nowTime.getTime();
 		//获取配置文件里的配置时间信息
 		Integer alertTime=60000;
@@ -551,7 +551,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 					Integer endpointState = 0;
 					// endpoint 停用状态
 					if (endpoint.getEnabled() == 0) endpointState = 2;
-					EndpointState state = new EndpointState(endpoint.getId(), endpoint.getId(), DateUtil.getUTCTimeByConfigTimeZone(), endpointState);
+					EndpointState state = new EndpointState(endpoint.getId(), endpoint.getId(), new Date(), endpointState);
 					endpointStateService.save(state);
 
 					dataSourceTransactionManager.commit(transactionStatus);
@@ -746,7 +746,7 @@ public class EndpointServiceImpl  extends ServiceImpl<EndpointDao, Endpoint> imp
 		// endpoint 状态
 		List<EndpointState> endpointStateList = new ArrayList<>();
 		Module module;
-		Date now = DateUtil.getUTCTimeByConfigTimeZone();
+		Date now = new Date();
 		for (Endpoint endpoint : endpointList) {
 			module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
 			if (ToolUtil.isEmpty(endpoint.getPort())) {

@@ -58,7 +58,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
             throw new NZException(RCode.ASSET_NOT_EXIST);
         }
 
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         Long userId = ShiroUtils.getUserId();
 
         // 2. 添加的时候维护创建人

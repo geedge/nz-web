@@ -205,7 +205,7 @@ public class DateUtil {
 	 *
 	 * @return
 	 */
-	public static TimeZone getConfigTimeZone(int configTimeZone) {
+	/*public static TimeZone getConfigTimeZone(int configTimeZone) {
 		int newTime = configTimeZone * 60 * 60 * 1000;
 		TimeZone timeZone;
 		String[] ids = TimeZone.getAvailableIDs(newTime);
@@ -215,14 +215,14 @@ public class DateUtil {
 			timeZone = new SimpleTimeZone(newTime, ids[0]);
 		}
 		return timeZone;
-	}
+	}*/
 
 	/**
 	 * 根据sysConfig表中配置的时区获取当前UTC时间
 	 *
 	 * @return
 	 */
-	public static Date getUTCTimeByConfigTimeZone() {
+	/*public static Date getUTCTimeByConfigTimeZone() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		sdf.setTimeZone(DateUtil.getConfigTimeZone(0));
 		String format = sdf.format(new Date());
@@ -234,5 +234,5 @@ public class DateUtil {
 			logger.error(e);
 		}
 		return parse;
-	}
+	}*/
 }

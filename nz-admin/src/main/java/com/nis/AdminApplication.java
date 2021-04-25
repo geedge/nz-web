@@ -16,11 +16,15 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.TimeZone;
+
 
 @SpringBootApplication(scanBasePackages = {"com.nis.setup"})
 @Import(SetupAutoConfiguration.class)
 public class AdminApplication{
 	public static void main(String[] args) {
+		// 默认为 UTC 时区
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 		ConfigurableApplicationContext run = SpringApplication.run(AdminApplication.class, args);
 		TerminalHandler.setApplicationContext(run);
 	}

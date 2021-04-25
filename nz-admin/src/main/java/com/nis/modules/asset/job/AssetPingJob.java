@@ -150,7 +150,7 @@ public class AssetPingJob extends QuartzJobBean {
                             unCallAssetPings.add(new AssetPing(host, 0, null, null));
                         } else {
                             // 可达
-                            callAssetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), DateUtil.getUTCTimeByConfigTimeZone()));
+                            callAssetPings.add(new AssetPing(host, 1, Double.valueOf(getRrt(statusInfo)), new Date()));
                         }
                     }
 

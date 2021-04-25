@@ -1,9 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +53,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 		
 		sysApiKey.setToken(uuid);
 		sysApiKey.setCreateBy(ShiroUtils.getUserId().intValue());
-		sysApiKey.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+		sysApiKey.setCreateAt(new Date());
 		this.save(sysApiKey);
 		return sysApiKey.getId();
 	}

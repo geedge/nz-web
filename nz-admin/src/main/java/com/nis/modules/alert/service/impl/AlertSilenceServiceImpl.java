@@ -108,7 +108,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		}
 		
 		// 根据传入的时间判断静默的状态
-	    Date currentTime = DateUtil.getUTCTimeByConfigTimeZone();
+	    Date currentTime = new Date();
 	    /**
 	     *  判断当前时间与静默设置时间的对比 
 	     *  如果当前时间小于开始时间 状态为active
@@ -124,7 +124,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		}
 	    
 		//更新时间
-		alertSilenceConf.setUtime(DateUtil.getUTCTimeByConfigTimeZone());
+		alertSilenceConf.setUtime(new Date());
 		
 		if(ObjectUtil.isNotEmpty(alertSilenceConf.getId())) {
 			alertSilenceDao.updateById(alertSilenceConf);
@@ -148,14 +148,14 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		List<AlertSilenceConf> alertSilenceConfs = alertSilenceDao.selectBatchIds(ids);
 		for(AlertSilenceConf alertSilenceConf : alertSilenceConfs) {
 			if(alertSilenceConf.getState().equals(1)) {
-				alertSilenceConf.setEndAt(DateUtil.getUTCTimeByConfigTimeZone());
+				alertSilenceConf.setEndAt(new Date());
 				alertSilenceConf.setState(3);
 			}else if(alertSilenceConf.getState().equals(2)) {
-				alertSilenceConf.setStartAt(DateUtil.getUTCTimeByConfigTimeZone());
-				alertSilenceConf.setEndAt(DateUtil.getUTCTimeByConfigTimeZone());
+				alertSilenceConf.setStartAt(new Date());
+				alertSilenceConf.setEndAt(new Date());
 				alertSilenceConf.setState(3);
 			}
-			alertSilenceConf.setUtime(DateUtil.getUTCTimeByConfigTimeZone());
+			alertSilenceConf.setUtime(new Date());
 		}
 		this.saveOrUpdateBatch(alertSilenceConfs);
 	}
@@ -259,7 +259,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Override
 	public void modifySilenceState() {
 		
-		alertSilenceDao.updateSilenceState();
+		alertSilenceDao.updateSilenceState(new Date());
 		
 	}
 	

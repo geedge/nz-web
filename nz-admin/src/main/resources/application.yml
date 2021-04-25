@@ -19,7 +19,7 @@ spring:
 #      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
+    time-zone: UTC
   servlet:
     multipart:
       max-file-size: 100MB

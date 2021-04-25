@@ -26,10 +26,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -114,7 +111,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
                 BigDecimal bd = BigDecimal.valueOf(Double.valueOf(assetHostAndRttMap.get(host)));
                 bd = bd.multiply(BigDecimal.valueOf(1000));
                 Double d = bd.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-                upAssetPings.add(new AssetPing(assetId, host, 1, d, DateUtil.getUTCTimeByConfigTimeZone()));
+                upAssetPings.add(new AssetPing(assetId, host, 1, d, new Date()));
             } else {
                 // down
                 downAssetPings.add(new AssetPing(assetId, host, 0, null, null));

@@ -1,5 +1,6 @@
 package com.nis.modules.alert.dao;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -16,5 +17,5 @@ public interface AlertSilenceDao extends BaseMapper<AlertSilenceConf>{
 
 	List<AlertSilenceConf> selectAlertSilenceConfs(IPage<AlertSilenceConf> page,@Param("params")Map<String,Object> params);
 
-	void updateSilenceState();
+	void updateSilenceState( @Param("nowDate") Date date);
 }

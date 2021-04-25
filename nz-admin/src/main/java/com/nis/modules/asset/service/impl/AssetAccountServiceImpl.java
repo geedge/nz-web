@@ -1,9 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -85,7 +82,7 @@ public class AssetAccountServiceImpl extends ServiceImpl<AssetAccountDao,AssetAc
 
 	@Override
 	public void saveOrUpdateAssetAccount(AssetAccount assetAccount) {
-		assetAccount.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+		assetAccount.setUpdateAt(new Date());
 		// 当前登录用户
         SysUserEntity currentLoginUser = ShiroUtils.getUserEntity();
         assetAccount.setUpdateBy(currentLoginUser.getId());

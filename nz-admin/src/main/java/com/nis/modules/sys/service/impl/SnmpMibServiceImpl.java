@@ -85,7 +85,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
     @Override
     public void saveOrUpdateSnmpMib(SnmpMib snmpMib, MultipartFile multipartFile) {
         snmpMib.setUpdateBy(ShiroUtils.getUserId());
-        snmpMib.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        snmpMib.setUpdateAt(new Date());
 
         if (snmpMib.getId() == null) {
             // 添加

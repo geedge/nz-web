@@ -96,7 +96,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
     @Transactional(rollbackFor = Exception.class)
     public void saveChart(Integer panelId, Chart chart) {
         // 1. 新增 chart 自动追加至末尾
-        chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        chart.setCreateAt(new Date());
         chart.setPanelId(panelId);
         Object param = chart.getParam();
         if (param != null && param instanceof HashMap) {
@@ -1057,7 +1057,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
-                    chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    chart.setCreateAt(new Date());
                     // 查询当前 panel 下的 charts
                     List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1203,7 +1203,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
-                    chart.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    chart.setCreateAt(new Date());
                     // 查询当前 panel 下的 charts
                     List<Chart> chartList = this.list(new QueryWrapper<Chart>().lambda().eq(Chart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1565,7 +1565,7 @@ public class ChartServiceImpl extends ServiceImpl<ChartDao, Chart> implements Ch
         Map<Integer, List<ChartElement>> chartIdAndElementsMap = chartElements.stream().collect(Collectors.groupingBy(ChartElement::getChartId));
 
 
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         Map<Integer, List<ChartElement>> saveElements = new HashMap<>();
         List<ChartElement> elementList;
 

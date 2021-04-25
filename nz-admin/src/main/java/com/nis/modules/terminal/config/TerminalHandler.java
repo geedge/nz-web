@@ -220,13 +220,13 @@ public class TerminalHandler extends TextWebSocketHandler {
                 terminalLog.setCmd("Login");
 	            terminalLog.setUser(params.get("username"));
                 terminalLog.setStatus(1);
-                terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                terminalLog.setTime(new Date());
                 TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
 
 		        // terminal session 信息
 		        sessionEntity.setLoginUser(params.get("username"));
 		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
-		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setStartTime(new Date());
 		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
 		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
 		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
@@ -260,16 +260,16 @@ public class TerminalHandler extends TextWebSocketHandler {
                     session.sendMessage(new TextMessage("Sorry! Operation error, please try again. \r\n"));
                 }
             	terminalLog.setStatus(0);
-                terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                terminalLog.setTime(new Date());
 	            terminalLog.setUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
                 terminalLogService.save(terminalLog);
 
 		        // 连接异常，关闭session 记录，更改状态为 连接失败
-		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setEndTime(new Date());
 		        sessionEntity.setLoginUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
 		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
-		        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-		        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+		        sessionEntity.setStartTime(new Date());
+		        sessionEntity.setEndTime(new Date());
 		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
 		        terminalSessionService.save(sessionEntity);
 
@@ -558,7 +558,7 @@ public class TerminalHandler extends TextWebSocketHandler {
         	terminalLog.setUuid(uuid);
         	terminalLog.setUserId((Long)TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
         	terminalLog.setStatus(0);
-        	terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+        	terminalLog.setTime(new Date());
         	terminalLog.setCmd("Terminal due to abnormal disconnection");
         	terminalLogService.save(terminalLog);
 
@@ -576,8 +576,8 @@ public class TerminalHandler extends TextWebSocketHandler {
 	        sessionEntity.setUuid(uuid);
 	        sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
 	        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
-	        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-	        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+	        sessionEntity.setStartTime(new Date());
+	        sessionEntity.setEndTime(new Date());
 	        terminalSessionService.save(sessionEntity);
 
 	        TerminalSession.removeTerminalAttributeInfo(uuid);
@@ -630,7 +630,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 	private void handleSessionAfterClientClose(String uuid) {
 		TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
 		if (sessionEntity != null) {
-			sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+			sessionEntity.setEndTime(new Date());
 
 			// 正常连接状态 关闭窗口，将状态改为 已结束，其他不做处理
 			if (Constants.SessionStatus.CONNECTING.getValue() == sessionEntity.getStatus()) {
@@ -797,19 +797,19 @@ public class TerminalHandler extends TextWebSocketHandler {
 
 				terminalClient.openTerminal(cols, rows, width, height);
 				terminalLog.setStatus(1);
-				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+				terminalLog.setTime(new Date());
 
 				// 连接之后 session 状态为 connecting
 			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-			    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+			    sessionEntity.setStartTime(new Date());
 			} catch (IOException e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 				terminalLog.setStatus(0);
-				terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+				terminalLog.setTime(new Date());
 
 			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
-			    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-			    sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+			    sessionEntity.setStartTime(new Date());
+			    sessionEntity.setEndTime(new Date());
 
 			    sshLogin=false;
 				TerminalSession.remove(session);
@@ -1048,13 +1048,13 @@ public class TerminalHandler extends TextWebSocketHandler {
 		} catch (IOException e) {
 			// 如果出现异常连接失败 则将session中client信息清空 
 			terminalLog.setStatus(0);
-			terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+			terminalLog.setTime(new Date());
 			terminalLogService.save(terminalLog);
 
 			// 连接失败 更改 terminal session 状态
 		    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
-		    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
-		    sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+		    sessionEntity.setStartTime(new Date());
+		    sessionEntity.setEndTime(new Date());
 
 		    terminalSessionService.save(sessionEntity);
 			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"telip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"telport")+"): Connection failed."+"\r\n$: "));

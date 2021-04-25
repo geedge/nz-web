@@ -1,19 +1,18 @@
 package com.nis.common.aspect;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.google.gson.Gson;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.SysLogEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysLogService;
+import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.shiro.SecurityUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -25,27 +24,12 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.google.gson.Gson;
-import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.HttpContextUtils;
-import com.nis.common.utils.IPUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.entity.SysLogEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysLogService;
-import com.nis.modules.sys.shiro.ShiroUtils;
-
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.log.Log;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.*;
 
 /**
  * 系统日志，切面处理类
@@ -170,7 +154,7 @@ public class SysLogAspect {
 			}
 		}
 
-		sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
+		sysLog.setCreateDate(new Date());
 		sysLog.setState("fail");
 
 
@@ -257,7 +241,7 @@ public class SysLogAspect {
 		sysLog.setIp(IPUtils.getIpAddr(request));
 
 		sysLog.setTime(time);
-		sysLog.setCreateDate(DateUtil.getUTCTimeByConfigTimeZone());
+		sysLog.setCreateDate(new Date());
 
 		sysLog.setApiKeyId(apiKeyId);
 		// 保存系统日志 注： 查询操作若无异常不记录操作日志

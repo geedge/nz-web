@@ -448,7 +448,7 @@ public class TerminalClient {
                             	if(message.contains("Last login")) {
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(1);
-                            		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                            		terminalLog.setTime(new Date());
                             		terminalLog.setUser(user);
                             		terminalLogService.save(terminalLog);
 
@@ -461,7 +461,7 @@ public class TerminalClient {
 
                                     // session 信息
                                     sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-                                    sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+                                    sessionEntity.setStartTime(new Date());
                                     terminalSessionService.saveOrUpdate(sessionEntity);
 
                             		telnetConnect=false;
@@ -490,7 +490,7 @@ public class TerminalClient {
                             		// 连接超时
                             		terminalLog.setCmd("Login");
                             		terminalLog.setStatus(0);
-                            		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                            		terminalLog.setTime(new Date());
                             		terminalLog.setUser(user);
                             		terminalLogService.save(terminalLog);
                             		TerminalSession.remove(webSocketSession);
@@ -505,7 +505,7 @@ public class TerminalClient {
                             			// 连接错误达到限制 关闭连接 连接失败
                             			terminalLog.setCmd("Login");
                                 		terminalLog.setStatus(0);
-                                		terminalLog.setTime(DateUtil.getUTCTimeByConfigTimeZone());
+                                		terminalLog.setTime(new Date());
                                 		terminalLog.setUser(user);
                                 		terminalLogService.save(terminalLog);
 
@@ -519,7 +519,7 @@ public class TerminalClient {
                                         // session 信息
                                         sessionEntity.setLoginUser(user);
                                         sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-                                        sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+                                        sessionEntity.setStartTime(new Date());
                                         terminalSessionService.saveOrUpdate(sessionEntity);
 
                                         // 强制退出 错误达到限制
@@ -1022,10 +1022,10 @@ public class TerminalClient {
          */
         TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
         if (sessionEntity.getStartTime() == null) {
-            sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+            sessionEntity.setStartTime(new Date());
         }
         sessionEntity.setStatus(status);
-        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+        sessionEntity.setEndTime(new Date());
         TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.clientAttributeInfo.get("terminalSessionService");
         terminalSessionService.saveOrUpdate(sessionEntity);
 

@@ -43,13 +43,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
@@ -287,7 +282,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
     @Transactional(rollbackFor = Exception.class)
 	public Integer saveChart(VisualChart chart) {
     	// 1. 新增 chart 自动追加至末尾
-        chart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        chart.setUpdateAt(new Date());
         Object param = chart.getParam();
         if (param != null && param instanceof HashMap) {
             chart.setParam(JSONObject.toJSONString(param));
@@ -647,7 +642,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				BeanUtil.copyProperties(chart, visualChart);
 				visualChart.setPid(chart.getId());
 				visualChart.setVarId(id);
-				visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+				visualChart.setUpdateAt(new Date());
 				visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 				visualChart.setPanelId(panelId);
 				visualChart.setName(NzExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
@@ -682,7 +677,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					BeanUtil.copyProperties(chart, visualChart);
 					visualChart.setVarId(id);
 					visualChart.setPanelId(panel.getId());
-					visualChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+					visualChart.setUpdateAt(new Date());
 					visualChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 					visualChart.setName(NzExpressionUtil.renderExpression(visualChart.getName(), objs.get(id)));
 					visualChart.setRemark(NzExpressionUtil.renderExpression(visualChart.getRemark(), objs.get(id)));
@@ -797,7 +792,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			BeanUtils.copyProperties(temp, syncChart);
 			syncChart.setPid(temp.getId());
 			syncChart.setVarId(chart.getVarId());
-			syncChart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+			syncChart.setUpdateAt(new Date());
 			syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 			Object obj = ToolUtil.isEmpty(chartIdAndAssetId.get(chart.getId())) ? 
 						endpointEntites.get((chartIdAndEndpointId.get(chart.getId()))) :

@@ -16,10 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -73,7 +70,7 @@ public class SysI18nController {
 			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
     		sysI18n.setOperator(ShiroUtils.getUserId());
-    		sysI18n.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
+    		sysI18n.setOpTime(new Date());
     		sysI18nService.save(sysI18n);
     		//刷新缓存
     		i18nConfig.reload();
@@ -98,7 +95,7 @@ public class SysI18nController {
 			throw new NZException(RCode.SYS_I18N_DUPLICATE);
     	} else {
 	    	sysI18n.setOperator(ShiroUtils.getUserId());
-	    	sysI18n.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
+	    	sysI18n.setOpTime(new Date());
 			sysI18nService.updateById(sysI18n);
 			//刷新缓存
 			i18nConfig.reload();

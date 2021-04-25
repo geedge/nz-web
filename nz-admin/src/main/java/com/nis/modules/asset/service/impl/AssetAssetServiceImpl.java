@@ -557,7 +557,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         this.validateAssetInfo(asset);
 
         // 设置属性值
-        asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        asset.setCreateAt(new Date());
         asset.setCreateBy(ShiroUtils.getUserId());
         // cabinet end 处理
         if (asset.getCabinetEnd() != null && asset.getCabinetStart() != null) {
@@ -590,7 +590,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         this.validateAssetInfo(asset);
 
         // 设置属性值
-        asset.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+        asset.setUpdateAt(new Date());
         asset.setUpdateBy(ShiroUtils.getUserId());
         // cabinet end 处理
         if (asset.getCabinetEnd() != null && asset.getCabinetStart() != null) {
@@ -1422,7 +1422,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setTypeId(typeConf.getId());
                 asset.setStateId(stateConf.getId());
                 asset.setPurchaseDate(StringUtils.isEmpty(purchaseDate) ? null : purchaseDate);
-                asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                asset.setCreateAt(new Date());
                 asset.setCreateBy(ShiroUtils.getUserId());
                 asset.setManageIp(host);
                 asset.setSeq(seqUUID);

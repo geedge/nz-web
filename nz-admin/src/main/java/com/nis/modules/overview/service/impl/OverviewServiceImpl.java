@@ -814,7 +814,7 @@ public class OverviewServiceImpl implements OverviewService {
                 // 开关为 1 或者 2时,采用查库方式获取存活数据
                 List<EndpointState> endpointStates = endpointStateService.list(new QueryWrapper<EndpointState>().lambda().eq(EndpointState::getState, 1));
                 //获取当前时间
-                Date nowTime = DateUtil.getUTCTimeByConfigTimeZone();
+                Date nowTime = new Date();
                 long time = nowTime.getTime();
                 //获取配置文件里的配置时间信息
                 Integer alertTime = 60000;

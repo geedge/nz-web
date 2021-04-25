@@ -105,6 +105,6 @@
 
 	<update id="updateSilenceState">
 		UPDATE alert_silence_conf 
-		SET state = ( CASE WHEN now() &lt; start_at THEN 1 WHEN ( now() &gt;= start_at AND now() &lt;= end_at ) THEN 2 ELSE 3 END);
+		SET state = ( CASE WHEN #{nowDate} &lt; start_at THEN 1 WHEN ( #{nowDate} &gt;= start_at AND #{nowDate} &lt;= end_at ) THEN 2 ELSE 3 END);
 	</update>
 </mapper>

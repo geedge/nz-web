@@ -102,10 +102,10 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
          */
         TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(uuid).get("terminalSessionEntity");
         if (sessionEntity.getStartTime() == null) {
-            sessionEntity.setStartTime(DateUtil.getUTCTimeByConfigTimeZone());
+            sessionEntity.setStartTime(new Date());
         }
 
-        sessionEntity.setEndTime(DateUtil.getUTCTimeByConfigTimeZone());
+        sessionEntity.setEndTime(new Date());
         sessionEntity.setKillUserId(ShiroUtils.getUserId());
         sessionEntity.setStatus(Constants.SessionStatus.FORCE_QUIT.getValue());
         TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.clientAttributeInfo.get("terminalSessionService");

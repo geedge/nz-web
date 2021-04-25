@@ -181,7 +181,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
 
-		user.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+		user.setCreateAt(new Date());
 		//sha256加密
 		String salt = RandomStringUtils.randomAlphanumeric(20);
 		user.setSalt(salt);

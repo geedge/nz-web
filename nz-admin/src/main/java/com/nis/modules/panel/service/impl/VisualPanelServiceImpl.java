@@ -848,7 +848,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
-                    chart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    chart.setUpdateAt(new Date());
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1165,7 +1165,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
-                    chart.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    chart.setUpdateAt(new Date());
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {

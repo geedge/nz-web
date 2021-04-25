@@ -234,7 +234,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 
 		Long userId = ShiroUtils.getUserId();
 		dict.setOperator(userId);
-		dict.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
+		dict.setOpTime(new Date());
 		this.save(dict);
 	}
 

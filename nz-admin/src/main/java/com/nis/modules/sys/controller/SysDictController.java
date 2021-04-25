@@ -21,6 +21,7 @@ import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,7 @@ public class SysDictController extends AbstractController {
             dict.setName(dict.getValue());
         }
         dict.setOperator(getUserId());
-        dict.setOpTime(DateUtil.getUTCTimeByConfigTimeZone());
+        dict.setOpTime(new Date());
         
         sysDictService.update(dict);
 

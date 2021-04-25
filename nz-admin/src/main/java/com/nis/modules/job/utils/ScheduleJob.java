@@ -20,6 +20,8 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import java.util.Date;
+
 
 /**
  * 定时任务
@@ -42,7 +44,7 @@ public class ScheduleJob extends QuartzJobBean {
         log.setJobId(scheduleJob.getJobId());
         log.setBeanName(scheduleJob.getBeanName());
         log.setParams(scheduleJob.getParams());
-        log.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+        log.setCreateTime(new Date());
         
         //任务开始时间
         long startTime = System.currentTimeMillis();

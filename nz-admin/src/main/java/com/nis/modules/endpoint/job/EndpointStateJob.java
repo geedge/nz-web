@@ -170,7 +170,7 @@ public class EndpointStateJob extends QuartzJobBean {
         endpointStateDao.deleteAll();
         List<MonitorEndpoint> endpointList = endpointService.list();
         List<MonitorEndpointState> stateList = new ArrayList<>(endpointList.size());
-        endpointList.forEach(endpoint -> stateList.add(new MonitorEndpointState(endpoint.getId(), 0, DateUtil.getUTCTimeByConfigTimeZone())));
+        endpointList.forEach(endpoint -> stateList.add(new MonitorEndpointState(endpoint.getId(), 0, new Date())));
         endpointStateService.saveBatch(stateList);
     }
 
@@ -233,7 +233,7 @@ public class EndpointStateJob extends QuartzJobBean {
                         // endpoint 未重复 并且 不是停用状态
                         if (!tempEndpointIds.contains(endpointId) && !suspendedEndpointIds.contains(endpointId)) {
                             endpointState = new EndpointState();
-                            endpointState.setCreateTime(DateUtil.getUTCTimeByConfigTimeZone());
+                            endpointState.setCreateTime(new Date());
 
                             timeAndState = (List<String>) pojo.get("value");
                             endpointState.setState(Integer.valueOf(timeAndState.get(1)));
@@ -248,7 +248,7 @@ public class EndpointStateJob extends QuartzJobBean {
 
                     // 停用状态 endpoint
                     for (Integer suspendedEndpointId : suspendedEndpointIds) {
-                        endpointState = new EndpointState(suspendedEndpointId, suspendedEndpointId, DateUtil.getUTCTimeByConfigTimeZone(), 2);
+                        endpointState = new EndpointState(suspendedEndpointId, suspendedEndpointId, new Date(), 2);
                         saveEndpointStateList.add(endpointState);
                     }
 

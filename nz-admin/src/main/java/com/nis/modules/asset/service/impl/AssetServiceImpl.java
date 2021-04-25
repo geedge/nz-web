@@ -489,7 +489,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
             asset.setState(1);
         }
 
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         Long userId = ShiroUtils.getUserId();
         asset.setUpdateAt(now);
         asset.setUpdateBy(userId);
@@ -551,7 +551,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 
         List<EndpointState> endpointStateList = new ArrayList<>();
         EndpointState endpointState;
-        Date now = DateUtil.getUTCTimeByConfigTimeZone();
+        Date now = new Date();
         for (Endpoint endpoint : endpointList) {
             endpointState = new EndpointState(endpoint.getId(), endpoint.getId(), now, 2);
             endpointStateList.add(endpointState);
@@ -610,7 +610,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
         Integer endpointState = 0;
         // asset 新增为停用状态 endpoint state 为2
         if (asset.getState() == 3) endpointState = 2;
-        EndpointState endpointStateEntity = new EndpointState(endpoint.getId(), endpoint.getId(), DateUtil.getUTCTimeByConfigTimeZone(), endpointState);
+        EndpointState endpointStateEntity = new EndpointState(endpoint.getId(), endpoint.getId(), new Date(), endpointState);
         endpointStateService.save(endpointStateEntity);
     }
 
@@ -1139,7 +1139,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
                 if (saveFlag) {
                     asset.setState(Integer.parseInt(state));
                     asset.setSeq(seqUUID);
-                    asset.setCreateAt(DateUtil.getUTCTimeByConfigTimeZone());
+                    asset.setCreateAt(new Date());
                     asset.setCreateBy(userId);
                     asset.setUpdateBy(userId);
                     saveEntitys.put("asset", asset);
@@ -2532,7 +2532,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 				result.setValue(value);
 			}
 			result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
-			result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+			result.setUpdateAt(new Date());
 			results.add(result);
         }
 	}
@@ -2559,7 +2559,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     	result.setAssetId(assetId);
 		result.setItem("interface");
 		result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
-		result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+		result.setUpdateAt(new Date());
         result.setValue(JSON.toJSONString(interfaceInfos));
         results.add(result);
 	}
@@ -2581,7 +2581,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
     	result.setAssetId(assetId);
 		result.setItem("os");
 		result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
-		result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+		result.setUpdateAt(new Date());
 		
 		result.setValue(value.replace("\"", ""));
         results.add(result);
@@ -2632,7 +2632,7 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 				result.setItem(key);
 				result.setValue(JSON.toJSONString(l));
 				result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
-				result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+				result.setUpdateAt(new Date());
 				results.add(result);
 			}else {
 				for(Map snmpResult : snmpResults) {
@@ -2648,13 +2648,13 @@ public class AssetServiceImpl extends ServiceImpl<AssetDao, Asset> implements As
 						TimeTicks t =new TimeTicks();
 						t.setValue(value);
 						long milliseconds = t.toMilliseconds();
-						//result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime()-milliseconds))));
-                        result.setValue(DateUtil.getTime(new Date(DateUtil.getUTCTimeByConfigTimeZone().getTime() - milliseconds)));
+						//result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(new Date().getTime()-milliseconds))));
+                        result.setValue(DateUtil.getTime(new Date(new Date().getTime() - milliseconds)));
 					}else {
 						result.setValue(value);
 					}
 					result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
-					result.setUpdateAt(DateUtil.getUTCTimeByConfigTimeZone());
+					result.setUpdateAt(new Date());
 					results.add(result);
 				}
 			}

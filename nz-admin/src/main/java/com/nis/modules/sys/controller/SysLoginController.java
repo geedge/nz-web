@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +106,7 @@ public class SysLoginController extends AbstractController {
             // 获取request
             HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
             SysUserEntity userEntity = ShiroUtils.getUserEntity();
-            userEntity.setLastLoginTime(DateUtil.getUTCTimeByConfigTimeZone());
+            userEntity.setLastLoginTime(new Date());
             // 设置IP地址
             userEntity.setLastLoginIp(IPUtils.getIpAddr(request));
             sysUserService.updateById(userEntity);

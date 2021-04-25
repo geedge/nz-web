@@ -870,7 +870,7 @@ public class AgentJob extends QuartzJobBean {
                             promServer.setStatusInfo(getPromStatusInfoErrorMsg());
                         }
                     }
-                    promServer.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
+                    promServer.setCheckTime(new Date());
                     return promServer;
                 }
             };
@@ -930,7 +930,7 @@ public class AgentJob extends QuartzJobBean {
     private void updatePromServerStatus(Promserver promserver, Integer status) {
         promserver.setStatus(status);
         promserver.setStatusInfo(getPromStatusInfoErrorMsg());
-        promserver.setCheckTime(DateUtil.getUTCTimeByConfigTimeZone());
+        promserver.setCheckTime(new Date());
         promService.updateById(promserver);
     }
 }
