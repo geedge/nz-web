@@ -2,6 +2,7 @@ package com.nis.modules.asset.job;
 
 import cn.hutool.log.Log;
 import com.nis.common.utils.DateUtil;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -13,7 +14,7 @@ public class AssetConcurrent {
 	private Log logger = Log.get();
 	
 	@Autowired
-	private AssetService assetService;
+	private AssetAssetService assetService;
 	
 	@Async
 	public void execute(Integer assetId) {

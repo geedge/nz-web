@@ -11,6 +11,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
@@ -25,8 +27,10 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -36,6 +40,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -130,6 +135,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private TransactionDefinition transactionDefinition;
+
+	@Autowired
+	private SnmpCredentialService snmpCredentialService;
 
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -850,8 +858,160 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void collectData(Integer assetId) {
-
+    	AssetAsset asset = this.getById(assetId);
+    	// 根据当前资产获取state设置是否进行采集
+    	AssetTypeConf assetType = typeConfService.getById(asset.getTypeId());
+    	if(ToolUtil.isEmpty(assetType)) {
+    		return;
+    	}
+    	Integer sshCollect = assetType.getSshCollect();
+    	Integer snmpCollect = assetType.getSnmpCollect();
+    	Integer authProtocol = assetType.getAuthProtocol();
+    	List<AssetFeature> results = new ArrayList<AssetFeature>();
+    	// 查询该资产下是否有之前收集的信息  防止频繁查询数据库
+		List<AssetFeature> assetFeatures = assetFeatureService.list(new QueryWrapper<AssetFeature>().lambda().eq(AssetFeature::getAssetId, assetId));
+		HashMap<String,AssetFeature> assetFeatureMap = new HashMap<String,AssetFeature>();
+		if(ToolUtil.isNotEmpty(assetFeatures)) {
+			for(AssetFeature data : assetFeatures) {
+				// 将数据以key为资产id 查询的信息名称 以及查询方式组合
+				assetFeatureMap.put(data.getAssetId()+data.getItem()+data.getSource(), data);
+			}
+		}
+    	
+    	if(ToolUtil.equals(sshCollect, 1) && ToolUtil.equals(authProtocol, 1) ) {
+    		// 进行ssh采集
+    		String sshCollectScript = assetType.getSshCollectScript();
+    		if(StrUtil.isBlank(sshCollectScript)) {
+    			logger.debug("asset sshCollectScript is empty asset info : %s",JSON.toJSON(asset));
+    			return;
+    		}
+    		
+    		Session session =null;
+			try {
+				// 进行ssh连接
+				session=SshUtil.getSshConnection(asset);
+				String sshCommondResult = RuntimeUtil.sshCommondResult(session," /bin/bash "+sshCollectScript);
+				this.getSshInfo(assetFeatureMap, results, sshCommondResult,asset);
+				
+			} catch (JSchException | IOException e) {
+				logger.error(e);
+				logger.error("asset feature get data error,assetId : {} info : {}",assetId,e);
+				throw new NZException(e.getMessage());
+			} finally {
+				SshUtil.close(session);
+			}
+    		
+    	}
+    	if(ToolUtil.equals(snmpCollect, 1)) {
+    		// 进行snmp数据采集
+    		try {
+    			SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
+    			if(ToolUtil.isEmpty(snmpCredential)) {
+    				logger.debug("asset snmpCredential is empty asset info : %s",JSON.toJSON(asset));
+    				return;
+    			}
+				this.getSystemInfoBySnmp(assetFeatureMap,results,asset,snmpCredential);
+			} catch (IOException e) {
+				logger.error("asset snmp collect error asset info : %s",JSON.toJSON(asset));
+				logger.error(e);
+			}
+    	}
+    	// 存入db 无则新增 有则修改
+		if(results!=null&&results.size()>0) {
+			assetFeatureService.saveOrUpdateBatch(results);
+		}
     }
+
+    public void getSshInfo(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,String sshCommondResult,AssetAsset asset) {
+    	Map<String,String> sshResult = JSONObject.parseObject(sshCommondResult, Map.class);
+    	for(Map.Entry<String, String> entrySet: sshResult.entrySet()) {
+    		//查询数据库是否已经存在数据
+        	AssetFeature result = assetFeatureMap.get(asset.getId()+entrySet.getKey()+Constant.ACCOUNT_SSH_PROTOCOL);;
+        	if(ToolUtil.isEmpty(result)) {
+        		result = new AssetFeature();
+        	}
+    		result.setAssetId(asset.getId());
+    		result.setItem(entrySet.getKey());
+    		result.setValue(sshResult.get(entrySet.getKey()));
+    		result.setSource(Constant.ACCOUNT_SSH_PROTOCOL);
+    		result.setUpdateAt(new Date());
+    		results.add(result);
+    	}
+    }
+    
+    public void getSystemInfoBySnmp(HashMap<String,AssetFeature> assetFeatureMap,List<AssetFeature> results,AssetAsset asset,SnmpCredential snmpCredential) throws IOException {
+    	Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
+    	Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
+		for(String key:keySet) {
+			List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), (Integer)snmpInfos.get("version"), (String)snmpInfos.get("community"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
+			if("ifEntry".equals(key)) {
+				List l =new LinkedList();
+				if (CollectionUtils.isNotEmpty(snmpResults)) {
+					Map<String,LinkedHashMap> handleMap =new LinkedHashMap<String,LinkedHashMap>();
+		            String resultOid;
+		            String name;
+		            for (Map map : snmpResults) {
+		            	//截取最后一位oid数  
+		            	resultOid = map.get("oid").toString();
+		            	//去掉最后一位oid剩下值
+		            	String first = resultOid.substring(0, resultOid.lastIndexOf("."));
+		            	//最后一位oid数
+		                String last = resultOid.substring(resultOid.lastIndexOf(".")+1,resultOid.length());
+		                name = Constant.SNMP_IFENTRY_MAP.get(first);
+		                if(ToolUtil.isEmpty(name)) {
+		                	continue;
+		                }
+		                Map map2 = handleMap.get(last);
+		                if(ToolUtil.isEmpty(map2)) {
+		                	Map map3 =new LinkedHashMap();
+		                	handleMap.put(last, (LinkedHashMap) map3);
+		                	map3.put(name,map.get("value"));
+		                }else {
+		                	map2.put(name,map.get("value"));
+		                }
+		            }
+		            
+		            for(String k:handleMap.keySet()) {
+		            	l.add(handleMap.get(k));
+		            }
+		        }
+				//查询数据库是否已经存在数据
+				AssetFeature result = assetFeatureMap.get(asset.getId()+key+Constant.ACCOUNT_SNMP_PROTOCOL);
+				if(ToolUtil.isEmpty(result)) {
+	        		result = new AssetFeature();
+	        	}
+				result.setAssetId(asset.getId());
+				result.setItem(key);
+				result.setValue(JSON.toJSONString(l));
+				result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+				result.setUpdateAt(new Date());
+				results.add(result);
+			}else {
+				for(Map snmpResult : snmpResults) {
+					String value = (String) snmpResult.get("value");
+					//查询数据库是否已经存在数据
+					AssetFeature result = assetFeatureMap.get(asset.getId()+key+Constant.ACCOUNT_SNMP_PROTOCOL);
+					if(ToolUtil.isEmpty(result)) {
+		        		result = new AssetFeature();
+		        	}
+					result.setAssetId(asset.getId());
+					result.setItem(key);
+					if("sysUpTime".equals(key)) {
+						TimeTicks t =new TimeTicks();
+						t.setValue(value);
+						long milliseconds = t.toMilliseconds();
+						//result.setValue(DateUtil.getTime(DateUtil.getUTCTimeByConfigTimeZone(new Date(new Date().getTime()-milliseconds))));
+                        result.setValue(DateUtil.getTime(new Date(new Date().getTime() - milliseconds)));
+					}else {
+						result.setValue(value);
+					}
+					result.setSource(Constant.ACCOUNT_SNMP_PROTOCOL);
+					result.setUpdateAt(new Date());
+					results.add(result);
+				}
+			}
+		}
+	}
 
 
     private List<Map> getFieldStatByAsset() {
