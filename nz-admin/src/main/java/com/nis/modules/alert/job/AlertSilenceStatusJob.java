@@ -16,6 +16,7 @@ import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.service.AlertSilenceService;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 
 @DisallowConcurrentExecution
@@ -31,6 +32,11 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 	
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		
+		// 检查 haMode
+    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+		
 		log.debug("静默状态定时任务开始");
 		
 		Integer[] states= {1,2};

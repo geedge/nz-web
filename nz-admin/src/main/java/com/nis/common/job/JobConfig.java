@@ -49,6 +49,9 @@ public class JobConfig {
     @Value("${nezha.assetFeatureJobCron}")
     private String assetFeatureJobCron;
 
+    @Value("${nezha.haJobCron}")
+    private String haJobCron;
+    
     @Autowired
     private SysConfigDao sysConfigDao;
 
@@ -61,7 +64,8 @@ public class JobConfig {
     private String assetFeatureJobName = "ASSETFEATURE_JOB";
     private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
-
+    private String haJobName = "HA_JOB";
+    
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AgentJob.class).withIdentity(ScheduleUtils.JOB_NAME + agentJobName).storeDurably().build();
@@ -86,6 +90,11 @@ public class JobConfig {
     public JobDetail endpointStateJobDetail() {
         return JobBuilder.newJob(EndpointStateJob.class).withIdentity(ScheduleUtils.JOB_NAME + endpointStateJobName).storeDurably().build();
     }
+    
+    @Bean
+    public JobDetail haJobDetail() {
+        return JobBuilder.newJob(HaJob.class).withIdentity(ScheduleUtils.JOB_NAME + haJobName).storeDurably().build();
+    }
 
 
     @PostConstruct
@@ -104,6 +113,10 @@ public class JobConfig {
         // asset pingJob 如果配置文件没有配置定时周期  默认为1分钟执行一次
         ScheduleUtils.createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron, scheduler);
 
+        // HA Job 如果配置文件没有配置定时周期  默认为5s执行一次
+        ScheduleUtils.createCronScheduleJob(haJobName, haJobDetail(), StringUtils.isEmpty(haJobCron) ? "0/5 * * * * ?" : haJobCron, scheduler);
+
+        
         // 查询 endpoint job执行周期
         SysConfigEntity scrapeIntervalConfig = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL));
         // 为空设置默认周期为 prometheus 刮取周期

@@ -775,4 +775,16 @@ public class Constant {
     public static final Integer ADMIN_USER_ID = 1;
     
     public static final String PIN = "password";
+    
+    // 高可用
+    public static final String SERVER_ID=Tool.IdUtil.fastUUID();
+    public static final String SYS_HA_LOCK = "sys_ha_lock";
+    
+    public static final String NEZHA_ROOT_PATH = StrUtil.subBefore(System.getProperty("user.dir"), StrUtil.C_SLASH, true);
+    public static final String NZWEB_ROOT_PATH= NEZHA_ROOT_PATH+"/nz-web";
+    public static final String AGENT_ROOT_PATH= NEZHA_ROOT_PATH+"/nz-agent";
+    public static final String TMP_ROOT_PATH= NEZHA_ROOT_PATH+"/nz-web/tmp";
+    public static final String GUI_ROOT_PATH= NEZHA_ROOT_PATH+ "/nz-web/webRoot";
+    public static final String RESOURCE_ROOT_PATH= NEZHA_ROOT_PATH+ "/nz-web/resource";//nzagent.rpm,install.sh.template,
+    public static final String BIN_ROOT_PATH = NEZHA_ROOT_PATH+ "/nz-web/bin";//promtool,generator
 }

@@ -1,13 +1,16 @@
 package com.nis.modules.asset.job;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
+import com.nis.common.utils.Constant;
 import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.List;
@@ -24,12 +27,15 @@ public class AssetFeatureJob extends QuartzJobBean {
 	@Autowired
 	private SysConfigService sysConfigService;
 	
+	@Autowired
+	private RedisTemplate redisTemplate;
+	
 	@Override
 	protected void executeInternal(JobExecutionContext context)  {
 
 		// 检查 haMode
-		boolean haMode = sysConfigService.checkHaMode();
-		if (!haMode) return;
+    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
 		
 		logger.info("--------------------AssetFeatureJob starting--------------------");
 		// 查询所有asset信息列表

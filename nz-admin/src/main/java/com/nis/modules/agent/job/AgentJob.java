@@ -82,7 +82,7 @@ public class AgentJob extends QuartzJobBean {
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
-
+    
     @Autowired
     private AssetAssetService assetService;
 
@@ -91,8 +91,8 @@ public class AgentJob extends QuartzJobBean {
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         // 检查 haMode
-        boolean haMode = sysConfigService.checkHaMode();
-        if (!haMode) return;
+    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
 
         StopWatch sw = new StopWatch();
         sw.start();

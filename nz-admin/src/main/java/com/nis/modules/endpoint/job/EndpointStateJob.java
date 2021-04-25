@@ -1,5 +1,6 @@
 package com.nis.modules.endpoint.job;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -21,6 +22,7 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.io.IOException;
@@ -44,11 +46,14 @@ public class EndpointStateJob extends QuartzJobBean {
     @Autowired
     private EndpointStateService endpointStateService;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+    
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
-        // 检查 haMode
-        boolean haMode = sysConfigService.checkHaMode();
-        if (!haMode) return;
+    	// 检查 haMode
+    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
 
         StopWatch sw = new StopWatch();
         sw.start();
