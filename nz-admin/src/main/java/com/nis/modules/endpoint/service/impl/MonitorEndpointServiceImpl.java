@@ -19,8 +19,9 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.endpoint.service.EndpointStateService;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualPanel;
@@ -78,7 +79,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private VisualExpreTmplService expreTmplService;
 
     @Autowired
-    private EndpointStateService endpointStateService;
+    private MonitorEndpointStateService monitorEndpointStateService;
 
     @Autowired
     private VisualPanelService visualPanelService;
@@ -106,6 +107,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         } else {
             endpoint.setAlertNum(tempAlert.size());
         }
+
+        // state
+        MonitorEndpointState endpointState = monitorEndpointStateService.getById(endpoint.getId());
+        endpoint.setState((endpointState == null) ? 0 : endpointState.getState());
         return endpoint;
     }
 
@@ -343,7 +348,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         this.removeByIds(ids);
 
         // 删除 endpoint state
-        endpointStateService.removeByIds(ids);
+        monitorEndpointStateService.removeByIds(ids);
 
         // 删除 alert
         alertMessageDao.deleteByEndpointIds(ids);
@@ -730,4 +735,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 		}
 		return result;
 	}
+
+    @Override
+    public List<MonitorEndpoint> endpointDetailList() {
+        return monitorEndpointDao.endpointDetailList();
+    }
 }

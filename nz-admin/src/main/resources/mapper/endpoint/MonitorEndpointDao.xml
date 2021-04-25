@@ -11,11 +11,7 @@
         <result property="enabled" column="enabled"/>
         <result property="configs" column="configs"/>
 
-        <association columnPrefix="es_" property="endpointState" javaType="com.nis.modules.endpoint.entity.EndpointState">
-	    	<id column="endpoint_id" property="endpointId"/>
-	    	<result column="create_time" property="createTime"/>
-	    	<result column="state" property="state"/>
-	    </association>
+        <result column="es_state" property="state"/>
 
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
 	    	<id column="id" property="id"/>
@@ -77,6 +73,36 @@
             <result column="name" property="name"/>
         </association>
     </resultMap>
+
+    <resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpointDetail">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="moduleId" column="module_id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="hash" column="hash"/>
+        <result property="enabled" column="enabled"/>
+        <result property="configs" column="configs"/>
+
+        <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <id column="id" property="id"/>
+            <result column="manage_ip" property="manageIp"/>
+            <result column="sn" property="sn"/>
+            <result column="name" property="name"/>
+            <result column="dc_id" property="dcId"/>
+
+            <!--state conf monitor-->
+            <result property="state.id" column="state_id"/>
+            <result property="state.name" column="state_name"/>
+            <result property="state.monitor" column="state_monitor"/>
+        </association>
+
+        <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="state" property="state"/>
+        </association>
+    </resultMap>
+
 	
 	<select id="queryPage" resultMap="endpoint">
        SELECT e.*,
@@ -96,14 +122,12 @@
        p.id AS p_id,
        p.name AS p_name,
 
-       es.state AS es_state,
-       es.create_time AS es_create_time,
-       es.endpoint_id AS es_endpoint_id
+       es.state AS es_state
        FROM monitor_endpoint e
        left join monitor_module m on e.module_id=m.id
        left join monitor_project p on m.project_id=p.id
        left join asset_asset a on e.asset_id=a.id
-       left join endpoint_state es on e.id = es.endpoint_id
+       left join monitor_endpoint_state es on e.id = es.endpoint_id
        <where>
 
            <if test="params.ids != null and params.ids.length > 0">
@@ -192,7 +216,32 @@
             LEFT JOIN asset_state_conf state ON ass.state_id = state.id
             LEFT JOIN dc dc ON ass.dc_id = dc.id
         WHERE
-            e.enabled = 1 AND state.monitor = 1
+            e.enabled = 1 AND state.monitor = 1 AND dc.state = 'ON'
+    </select>
+
+
+    <select id="endpointDetailList" resultMap="endpointDetail">
+        SELECT
+            e.*,
+
+            ass.id AS ass_id,
+            ass.sn AS ass_sn,
+            ass.NAME AS ass_name,
+            ass.manage_ip AS ass_manage_ip,
+            ass.dc_id AS ass_dc_id,
+
+            state.id as ass_state_id,
+            state.name as ass_state_name,
+            state.monitor as ass_state_monitor,
+
+            dc.id AS dc_id,
+            dc.NAME AS dc_name,
+            dc.state as dc_state
+        FROM
+            monitor_endpoint e
+            LEFT JOIN asset_asset ass ON e.asset_id = ass.id
+            LEFT JOIN asset_state_conf state ON ass.state_id = state.id
+            LEFT JOIN dc dc ON ass.dc_id = dc.id
     </select>
 
 </mapper>

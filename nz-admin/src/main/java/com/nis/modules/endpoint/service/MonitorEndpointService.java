@@ -42,4 +42,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     List<Map<String,Object>> render(List<Map<String,Object>> params);
 
+    // endpoint 列表，包含 asset dc prom_server 数据
+    List<MonitorEndpoint> endpointDetailList();
+
 }

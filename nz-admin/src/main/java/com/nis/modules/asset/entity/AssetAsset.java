@@ -2,6 +2,7 @@ package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.terminal.config.Constants;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -75,11 +76,13 @@ public class AssetAsset implements Serializable {
     /**
      * 认证服务端口
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer authProtocolPort;
     
     /**
      * 认证方式
      */
+    @TableField(strategy = FieldStrategy.IGNORED)
     private Integer authType;
     
     /**
@@ -111,6 +114,12 @@ public class AssetAsset implements Serializable {
      */
     @TableField(strategy = FieldStrategy.IGNORED)
     private String authPinTip;
+
+    /**
+     * 协议 SSH / TELNET
+     */
+    @TableField(exist = false)
+    private String protocol;
     
     /**
      * snmp凭证id
@@ -253,5 +262,12 @@ public class AssetAsset implements Serializable {
     
     @TableField(exist = false)
     private AssetPing pingInfo;
+
+    public String getPrivateKeyPath() {
+        if (this.authType != null && this.authUsername != null) {
+            return Constants.NZ_USER_HOME.concat("/").concat(this.manageIp).concat("@").concat(this.authUsername).concat("_id_rsa");
+        }
+        return null;
+    }
 
 }

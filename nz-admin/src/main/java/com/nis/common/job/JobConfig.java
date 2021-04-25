@@ -1,17 +1,12 @@
 package com.nis.common.job;
 
 import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.job.AgentJob;
 import com.nis.modules.alert.job.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.job.utils.ScheduleUtils;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
@@ -49,8 +44,8 @@ public class JobConfig {
     @Value("${nezha.assetFeatureJobCron}")
     private String assetFeatureJobCron;
 
-    @Autowired
-    private SysConfigDao sysConfigDao;
+    @Value("${nezha.endpointStateJobCron}")
+    private String endpointStateJobCron;
 
     @Autowired
     @Qualifier("costomSchedulerFactoryBean")
@@ -104,21 +99,8 @@ public class JobConfig {
         // asset pingJob 如果配置文件没有配置定时周期  默认为1分钟执行一次
         ScheduleUtils.createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron, scheduler);
 
-        // 查询 endpoint job执行周期
-        SysConfigEntity scrapeIntervalConfig = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL));
-        // 为空设置默认周期为 prometheus 刮取周期
-        String scrapeInterval;
-        if (scrapeIntervalConfig == null || ToolUtil.isEmpty(scrapeIntervalConfig.getParamValue())) {
-            SysConfigEntity prometheusScrapeIntervalConfig = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
-            scrapeInterval = prometheusScrapeIntervalConfig.getParamValue();
-        } else {
-            scrapeInterval = scrapeIntervalConfig.getParamValue();
-        }
+        // endpoint state job 如果配置文件没有配置定时周期  默认为1分钟执行一次
+        ScheduleUtils.createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 * * * ? *" : endpointStateJobCron, scheduler);
 
-        try {
-            ScheduleUtils.createSimpleScheduleJob(endpointStateJobName, endpointStateJobDetail(), Integer.parseInt(scrapeInterval), scheduler);
-        } catch (NumberFormatException | SchedulerException e) {
-            log.error(e);
-        }
     }
 }

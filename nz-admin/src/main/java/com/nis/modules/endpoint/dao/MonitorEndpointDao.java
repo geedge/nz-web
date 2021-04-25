@@ -22,4 +22,6 @@ public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
      * @return
      */
     List<MonitorEndpoint> getEnableEndpointInfoList();
+
+    List<MonitorEndpoint> endpointDetailList();
 }

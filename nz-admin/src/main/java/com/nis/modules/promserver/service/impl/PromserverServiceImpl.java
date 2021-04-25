@@ -1,5 +1,6 @@
 package com.nis.modules.promserver.service.impl;
 
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -18,6 +19,8 @@ import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +30,8 @@ import java.util.stream.Collectors;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
+
+	private Log log = Log.get();
 
 	@Autowired
 	private DcService dcService;
@@ -161,5 +166,18 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		Dc dc = dcService.getById(promserver.getDcId());
 		promserver.setDc(dc);
 		return promserver;
+	}
+
+	@Override
+	public JSONObject requestAgent(Promserver promServer, String urlPath) {
+		URL url = null;
+		try {
+			url = new URL("http", promServer.getHost(), promServer.getPort(), urlPath);
+		} catch (MalformedURLException e) {
+			log.error(e);
+		}
+		String result = Tool.HttpUtil.createGet(url.toString()).auth(promServer.getToken()).execute().body();
+		if (log.isDebugEnabled()) log.debug(String.format("请求 %s 接口，相应内容为 %s", url.toString(), result));
+		return JSONObject.parseObject(result);
 	}
 }
