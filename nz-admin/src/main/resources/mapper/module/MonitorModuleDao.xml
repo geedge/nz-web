@@ -11,6 +11,9 @@
         <result property="remark" column="remark"/>
         <result property="buildIn" column="build_in"/>
         <result property="configs" column="configs"/>
+        <result property="endpointNum" column="endpointNum"/>
+        <result property="assetNum" column="assetNum"/>
+        <result property="alertNum" column="alertNum"/>
 
         <association property="project" columnPrefix="p_" javaType="com.nis.modules.project.entity.MonitorProject">
             <id column="id" property="id"/>
@@ -23,11 +26,16 @@
         SELECT
             m.*,
             p.id AS p_id,
-            p.name AS p_name,
-            p.remark AS p_remark
+            p.NAME AS p_name,
+            p.remark AS p_remark,
+            count( DISTINCT me.id ) AS endpointNum,
+            count( DISTINCT me.asset_id ) AS assetNum,
+            count( DISTINCT msg.id ) AS alertNum
         FROM
             monitor_module m
-            LEFT JOIN monitor_project p ON m.project_id = p.id
+        LEFT JOIN monitor_project p ON m.project_id = p.id
+        LEFT JOIN monitor_endpoint me ON m.id = me.module_id
+        LEFT JOIN alert_message msg ON m.id = msg.module_id AND msg.state = 1
         <where>
 
             <if test="params.ids != null and params.ids.length > 0">
@@ -52,6 +60,9 @@
                 AND m.type = #{params.type}
             </if>
         </where>
+
+        GROUP BY
+            m.id
     </select>
 
 

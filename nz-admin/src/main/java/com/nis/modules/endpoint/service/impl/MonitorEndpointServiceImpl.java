@@ -114,24 +114,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return endpoint;
     }
 
-    private void handleEndpointsAlertNum(List<MonitorEndpoint> endpointList) {
-        if (CollectionUtils.isEmpty(endpointList)) return;
-
-        List<AlertMessageEntity> alerts = alertMessageDao.getAlertsStatColumn();
-        alerts = alerts.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getEndpointId())).collect(Collectors.toList());
-        Map<Integer, List<AlertMessageEntity>> endpointIdAndAlersMap = alerts.stream().collect(Collectors.groupingBy(AlertMessageEntity::getEndpointId));
-
-        List<AlertMessageEntity> tempAlert;
-        for (MonitorEndpoint endpoint : endpointList) {
-            tempAlert = endpointIdAndAlersMap.get(endpoint.getId());
-            if (CollectionUtils.isEmpty(tempAlert)) {
-                endpoint.setAlertNum(0);
-            } else {
-                endpoint.setAlertNum(tempAlert.size());
-            }
-        }
-    }
-
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         // 处理请求参数
@@ -139,9 +121,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         IPage<MonitorEndpoint> page = new Query<MonitorEndpoint>().getPage(params);
         List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
-
-        // endpoint 告警数量
-        this.handleEndpointsAlertNum(datas);
 
         page.setRecords(datas);
         return new PageUtils(page);

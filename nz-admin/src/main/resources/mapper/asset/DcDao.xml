@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.asset.dao.DcDao">
+
+    <resultMap type="com.nis.modules.asset.entity.Dc" id="dcDetail">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="location" column="location"/>
+        <result property="longitude" column="longitude"/>
+        <result property="latitude" column="latitude"/>
+        <result property="cabinetNum" column="cabinetNum"/>
+        <result property="assetNum" column="assetNum"/>
+        <result property="alertNum" column="alertNum"/>
+        <result property="x" column="x"/>
+        <result property="y" column="y"/>
+        <result property="state" column="state"/>
+    </resultMap>
+
+    <select id="queryDcList" resultMap="dcDetail">
+        SELECT
+            dc.*,
+            count( DISTINCT cab.id ) AS cabinetNum,
+            count( DISTINCT asset.id ) AS assetNum,
+            count( DISTINCT msg.id ) AS alertNum
+        FROM
+            dc dc
+            LEFT JOIN cabinet cab ON cab.dc_id = dc.id
+            LEFT JOIN asset_asset asset ON asset.dc_id = dc.id
+            LEFT JOIN alert_message msg ON dc.id = msg.dc_id
+            AND msg.state = 1
+
+        <where>
+            <if test="params.ids != null">
+                dc.id in
+                <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.name != null and params.name != ''">
+                AND dc.name like CONCAT('%', #{params.name}, '%')
+            </if>
+
+            <if test="params.location != null and params.location != ''">
+                AND dc.location like CONCAT('%', #{params.location}, '%')
+            </if>
+
+            <if test="params.tel != null and params.tel != ''">
+                AND dc.tel like CONCAT('%', #{params.tel}, '%')
+            </if>
+
+            <if test="params.state != null and params.state != ''">
+                AND dc.state like CONCAT('%', #{params.state}, '%')
+            </if>
+
+            <if test="params.principal != null and params.principal != ''">
+                AND dc.principal = #{params.principal}
+            </if>
+        </where>
+
+        GROUP BY
+            dc.id
+    </select>
+
+</mapper>

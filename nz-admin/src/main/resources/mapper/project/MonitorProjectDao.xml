@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">    
+<mapper namespace="com.nis.modules.project.dao.MonitorProjectDao">
+
+
+    <resultMap type="com.nis.modules.project.entity.MonitorProject" id="project">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="remark" column="remark"/>
+        <result property="buildIn" column="build_in"/>
+        <result property="moduleNum" column="moduleNum"/>
+        <result property="endpointNum" column="endpointNum"/>
+        <result property="alertNum" column="alertNum"/>
+    </resultMap>
+
+
+	<select id="queryProjectList" resultMap="project">
+        SELECT
+            mp.*,
+            count( DISTINCT mm.id ) AS moduleNum,
+            count( DISTINCT me.id ) AS endpointNum,
+            count( DISTINCT me.asset_id ) AS assetNum,
+            count( DISTINCT msg.id ) AS alertNum
+        FROM
+            monitor_project mp
+            LEFT JOIN monitor_module mm ON mp.id = mm.project_id
+            LEFT JOIN monitor_endpoint me ON mm.id = me.module_id
+            LEFT JOIN alert_message msg ON mp.id = msg.project_id
+            AND msg.state = 1
+        <where>
+            <if test="params.ids != null">
+                mp.id in
+                <foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.name != null and params.name != ''">
+                AND mp.name like CONCAT('%', #{params.name}, '%')
+            </if>
+        </where>
+
+        GROUP BY
+            mp.id
+    </select>
+	
+</mapper>

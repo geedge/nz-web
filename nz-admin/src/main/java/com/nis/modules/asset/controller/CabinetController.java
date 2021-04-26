@@ -1,3 +1,4 @@
+/*
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
@@ -12,12 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 
+*/
 /**
  * 机柜  controller
  *
  * @author shizhendong
  * @date 2019-11-21
- */
+ *//*
+
 @RestController
 @RequestMapping("/cabinet")
 public class CabinetController {
@@ -25,12 +28,14 @@ public class CabinetController {
     @Autowired
     private CabinetService cabinetService;
 
-    /**
+    */
+/**
      * 机柜请求列表
      *
      * @param params
      * @return
-     */
+     *//*
+
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:list"})
@@ -39,12 +44,14 @@ public class CabinetController {
         return R.ok(page);
     }
 
-    /**
+    */
+/**
      * 保存
      *
      * @param cabinet
      * @return
-     */
+     *//*
+
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:save"})
@@ -58,12 +65,14 @@ public class CabinetController {
         return R.ok();
     }
 
-    /**
+    */
+/**
      * 修改
      *
      * @param cabinet
      * @return
-     */
+     *//*
+
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:update"})
@@ -78,12 +87,14 @@ public class CabinetController {
         return R.ok();
     }
 
-    /**
+    */
+/**
      * 删除
      *
      * @param ids
      * @return
-     */
+     *//*
+
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:delete"})
@@ -94,11 +105,13 @@ public class CabinetController {
         return R.ok();
     }
 
-    /**
+    */
+/**
      * 机柜u位查询
      * @param id
      * @return
-     */
+     *//*
+
     @GetMapping("/u")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:u:info"})
@@ -109,3 +122,4 @@ public class CabinetController {
         return R.ok(uInfo);
     }
 }
+*/

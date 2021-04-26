@@ -17,6 +17,4 @@ public interface MonitorProjectService extends IService<MonitorProject> {
     Integer updateProject(MonitorProject project);
 
     void delete(Integer... ids);
-
-    Map<String, Object> queryProjectInfo(Integer id);
 }

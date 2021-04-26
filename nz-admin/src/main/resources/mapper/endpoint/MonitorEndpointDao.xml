@@ -10,6 +10,7 @@
         <result property="hash" column="hash"/>
         <result property="enabled" column="enabled"/>
         <result property="configs" column="configs"/>
+        <result property="alertNum" column="alertNum"/>
 
         <result column="es_state" property="state"/>
 
@@ -105,30 +106,32 @@
 
 	
 	<select id="queryPage" resultMap="endpoint">
-       SELECT e.*,
-       m.id AS m_id,
-       m.name AS m_name,
-       m.type AS m_type,
+        SELECT
+        e.*,
+        m.id AS m_id,
+        m.name AS m_name,
+        m.type AS m_type,
+        a.id AS a_id,
+        a.manage_ip AS a_manage_ip,
+        a.sn AS a_sn,
+        a.purchase_date AS a_purchase_date,
+        a.dc_id AS a_dc_id,
+        a.model_id AS a_model_id,
+        a.cabinet_id AS a_cabinet_id,
+        a.NAME AS a_name,
+        p.id AS p_id,
+        p.NAME AS p_name,
+        es.state AS es_state,
+        count( DISTINCT msg.id ) AS alertNum
+        FROM
+        monitor_endpoint e
+        LEFT JOIN monitor_module m ON e.module_id = m.id
+        LEFT JOIN monitor_project p ON m.project_id = p.id
+        LEFT JOIN asset_asset a ON e.asset_id = a.id
+        LEFT JOIN monitor_endpoint_state es ON e.id = es.endpoint_id
+        LEFT JOIN alert_message msg ON e.id = msg.endpoint_id	AND msg.state = 1
 
-       a.id AS a_id,
-       a.manage_ip AS a_manage_ip,
-       a.sn AS a_sn,
-       a.purchase_date AS a_purchase_date,
-       a.dc_id AS a_dc_id,
-       a.model_id AS a_model_id,
-       a.cabinet_id AS a_cabinet_id,
-       a.name AS a_name,
-
-       p.id AS p_id,
-       p.name AS p_name,
-
-       es.state AS es_state
-       FROM monitor_endpoint e
-       left join monitor_module m on e.module_id=m.id
-       left join monitor_project p on m.project_id=p.id
-       left join asset_asset a on e.asset_id=a.id
-       left join monitor_endpoint_state es on e.id = es.endpoint_id
-       <where>
+        <where>
 
            <if test="params.ids != null and params.ids.length > 0">
                e.id IN
@@ -168,6 +171,9 @@
            </if>
 
        </where>
+
+        GROUP BY
+            e.id
     </select>
 
     <select id="getSuspendedEndpointIdList" resultType="java.lang.Integer">

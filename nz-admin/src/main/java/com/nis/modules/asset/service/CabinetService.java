@@ -14,14 +14,6 @@ import java.util.Map;
  */
 public interface CabinetService extends IService<Cabinet> {
 
-    PageUtils queryPage(Map<String, Object> params);
-
-    void saveOrUpdateCabinet(Cabinet cabinet);
-
-    void delete(Integer ... ids);
-
-    Map getUInfo(Integer id);
-
     /**
      * 详情
      * @param id

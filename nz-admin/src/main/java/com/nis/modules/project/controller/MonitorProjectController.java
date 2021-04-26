@@ -111,22 +111,6 @@ public class MonitorProjectController extends AbstractController {
     }
 
     /**
-     * project 详情，包含统计数据
-     * @param id
-     * @return
-     */
-    @GetMapping("/project/info")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
-    @RequiresPermissions({"project:info"})
-    public R queryProjectInfo(@RequestParam Integer id) {
-        ValidateUtils.is(id).notNull(RCode.PROJECT_ID_ISNULL);
-
-        Map<String, Object> result = monitorProjectService.queryProjectInfo(id);
-        return R.ok(result);
-    }
-
-
-    /**
      * icon unit 查询
      */
     @GetMapping("/project/topo/iconUnit")

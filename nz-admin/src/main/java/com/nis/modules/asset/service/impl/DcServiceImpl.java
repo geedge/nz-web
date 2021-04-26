@@ -54,6 +54,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     @Autowired
     private SysUserService sysUserService;
 
+    @Autowired
+    private DcDao dcDao;
+
 
     @Override
     public Dc queryDcDetails(Integer id) {
@@ -70,7 +73,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Integer cabinetNum = cabinetDao.selectCount(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
         dc.setCabinetNum(cabinetNum);
 
-        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
+        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()).eq(AlertMessageEntity::getState, 1));
         dc.setAlertNum(alertNum);
 
         Integer assetNum = assetDao.selectCount(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
@@ -81,16 +84,15 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+        String ids = (String) params.get("ids");
+        if (StrUtil.isNotBlank(ids)) {
+            List<String> listIds = Arrays.asList(ids.split(","));
+            params.put("ids", listIds);
+        }
 
-        IPage<Dc> page = this.page(new Query<Dc>().getPage(params), new LambdaQueryWrapper<Dc>()
-                .in(ToolUtil.isNotEmpty(params.get("ids")), Dc::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
-                .eq(ToolUtil.isNotEmpty(params.get("principal")), Dc::getPrincipal, params.get("principal"))
-                .eq(ToolUtil.isNotEmpty(params.get("state")), Dc::getState, params.get("state"))
-                .like(ToolUtil.isNotEmpty(params.get("name")), Dc::getName, params.get("name"))
-                .like(ToolUtil.isNotEmpty(params.get("location")), Dc::getLocation, params.get("location"))
-                .like(ToolUtil.isNotEmpty(params.get("tel")), Dc::getTel, params.get("tel")));
+        IPage<Dc> page = new Query<Dc>().getPage(params);
+        List<Dc> dcList = dcDao.queryDcList(page, params);
 
-        List<Dc> dcList = page.getRecords();
         if(CollectionUtils.isNotEmpty(dcList)){
             // 处理返回结果
             this.handleResuleList(dcList);
@@ -103,23 +105,10 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         List<SysUserEntity> userEntityList = sysUserService.list();
         Map<Long, SysUserEntity> userIdAndEntityMap = userEntityList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
 
-        List<Cabinet> cabinetList = cabinetDao.selectList(null);
-        List<AlertMessageEntity> alertMessageList = alertMessageDao.getAlertsStatColumn();
-        List<AssetAsset> assetList = assetDao.selectList(null);
-
         for (Dc dc : dcList) {
             if (ToolUtil.isNotEmpty(dc.getPrincipal())) {
                 dc.setAdminUser(userIdAndEntityMap.get(dc.getPrincipal().longValue()));
             }
-
-            long cabinetNum = cabinetList.stream().filter(cabinet -> dc.getId().equals(cabinet.getDcId())).count();
-            dc.setCabinetNum((int) cabinetNum);
-
-            long alertCount = alertMessageList.stream().filter(alert -> dc.getId().equals(alert.getDcId())).count();
-            dc.setAlertNum((int) alertCount);
-
-            long assetCount = assetList.stream().filter(asset -> dc.getId().equals(asset.getDcId())).count();
-            dc.setAssetNum((int) assetCount);
         }
     }
 

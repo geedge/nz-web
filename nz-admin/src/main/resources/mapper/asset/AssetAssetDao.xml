@@ -15,7 +15,9 @@
         <result property="purchaseDate" column="purchase_date"/>
         <result property="createAt" column="create_at"/>
         <result property="updateAt" column="update_at"/>
-        
+        <result property="endpointNum" column="endpointNum"/>
+        <result property="alertNum" column="alertNum"/>
+
         <result property="authProtocolPort" column="auth_protocol_port"/>
         <result property="authType" column="auth_type"/>
         <result property="authUsername" column="auth_username"/>
@@ -92,7 +94,11 @@
 	        
 	        assp.status AS assp_status,
 	        assp.rtt AS assp_rtt,
-	        assp.last_update AS assp_lastUpdate
+	        assp.last_update AS assp_lastUpdate,
+
+            COUNT( DISTINCT me.id ) AS endpointNum,
+            COUNT( DISTINCT msg.id ) AS alertNum
+
         FROM
             asset_asset asset
             LEFT JOIN asset_state_conf state ON asset.state_id = state.id
@@ -102,6 +108,8 @@
             LEFT JOIN dc dc ON asset.dc_id = dc.id
             LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
             LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
+            LEFT JOIN monitor_endpoint me ON asset.id = me.asset_id
+            LEFT JOIN alert_message msg ON asset.id = msg.asset_id	AND msg.state = 1
 
         <where>
 
@@ -190,6 +198,8 @@
             </if>
 
          </where>
+
+        GROUP BY asset.id
 
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY asset.id

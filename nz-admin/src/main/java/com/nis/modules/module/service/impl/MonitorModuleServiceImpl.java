@@ -112,29 +112,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         IPage<MonitorModule> page = new Query<MonitorModule>().getPage(params);
         List<MonitorModule> datas = monitorModuleDao.queryPage(page, params);
 
-        if (CollectionUtils.isNotEmpty(datas)) {
-            // 处理返回结果
-            this.handleResuleList(datas);
-        }
-
         page.setRecords(datas);
         return new PageUtils(page);
-    }
-
-    private void handleResuleList(List<MonitorModule> moduleList) {
-        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
-        List<AlertMessageEntity> alertList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getState, 1));
-
-        for (MonitorModule module : moduleList) {
-            List<MonitorEndpoint> endpoints = endpointList.stream().filter(endpoint -> module.getId().equals(endpoint.getModuleId())).collect(Collectors.toList());
-            module.setEndpointNum(endpoints.size());
-
-            long assetNum = endpoints.stream().map(MonitorEndpoint::getAssetId).distinct().count();
-            module.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
-
-            long alertNum = alertList.stream().filter(alertMessageEntity -> module.getId().equals(alertMessageEntity.getModuleId())).count();
-            module.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
-        }
     }
 
     @Override

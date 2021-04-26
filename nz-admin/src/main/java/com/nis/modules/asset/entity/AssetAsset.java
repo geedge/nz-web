@@ -263,6 +263,12 @@ public class AssetAsset implements Serializable {
     @TableField(exist = false)
     private AssetPing pingInfo;
 
+    @TableField(exist = false)
+    private Integer endpointNum;
+
+    @TableField(exist = false)
+    private Integer alertNum;
+
     public String getPrivateKeyPath() {
         if (this.authType != null && this.authUsername != null) {
             return Constants.NZ_USER_HOME.concat("/").concat(this.manageIp).concat("@").concat(this.authUsername).concat("_id_rsa");

@@ -1,3 +1,4 @@
+/*
 package com.nis.modules.asset.controller;
 
 import com.alibaba.fastjson.JSON;
@@ -17,12 +18,14 @@ import java.util.List;
 import java.util.Map;
 
 
+*/
 /**
  * 数据中心  controller
  *
  * @author shizhendong
  * @date 2019-11-21
- */
+ *//*
+
 @RestController
 @RequestMapping("/idc")
 public class IdcController {
@@ -33,12 +36,14 @@ public class IdcController {
     @Autowired
     private IdcTrafficService idcTrafficService;
 
-    /**
+    */
+/**
      * 数据中心请求列表
      *
      * @param params
      * @return
-     */
+     *//*
+
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:list"})
@@ -47,12 +52,14 @@ public class IdcController {
         return R.ok(page);
     }
 
-    /**
+    */
+/**
      * 保存
      *
      * @param idc
      * @return
-     */
+     *//*
+
     @PostMapping
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:save"})
@@ -65,12 +72,14 @@ public class IdcController {
         return R.ok();
     }
 
-    /**
+    */
+/**
      * 修改
      *
      * @param idc
      * @return
-     */
+     *//*
+
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:update"})
@@ -85,12 +94,14 @@ public class IdcController {
     }
 
 
-    /**
+    */
+/**
      * 删除
      *
      * @param ids
      * @return
-     */
+     *//*
+
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
     @RequiresPermissions({"idc:delete"})
@@ -123,3 +134,4 @@ public class IdcController {
         return R.ok();
     }
 }
+*/

@@ -1,34 +1,30 @@
 package com.nis.modules.project.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.Endpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.endpoint.service.EndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.entity.MonitorModule;
-import com.nis.modules.module.service.ModuleService;
 import com.nis.modules.module.service.MonitorModuleService;
-import com.nis.modules.overview.service.OverviewService;
 import com.nis.modules.project.dao.MonitorProjectDao;
-import com.nis.modules.project.dao.ProjectDao;
 import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.project.entity.Project;
 import com.nis.modules.project.service.MonitorProjectService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,19 +40,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     private MonitorEndpointService monitorEndpointService;
 
     @Autowired
-    private ProjectDao projectDao;
-
-    @Autowired
-    private ModuleService moduleService;
-
-    @Autowired
-    private OverviewService overviewService;
-
-    @Autowired
-    private EndpointService endpointService;
-
-    @Autowired
-    private EndpointDao endpointDao;
+    private MonitorProjectDao monitorProjectDao;
 
     @Override
     public MonitorProject queryProjectEntity(Integer id) {
@@ -84,41 +68,17 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        LambdaQueryWrapper<MonitorProject> queryWrapper = new LambdaQueryWrapper<MonitorProject>()
-                .in(ToolUtil.isNotEmpty(params.get("ids")), MonitorProject::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
-                .like(ToolUtil.isNotEmpty(params.get("name")), MonitorProject::getName, params.get("name"))
-                .like(ToolUtil.isNotEmpty(params.get("remark")), MonitorProject::getRemark, params.get("remark"));
-
-        IPage<MonitorProject> page = this.page(new Query<MonitorProject>().getPage(params), queryWrapper);
-
-        List<MonitorProject> projectList = page.getRecords();
-        if(CollectionUtils.isNotEmpty(projectList)){
-            // 处理返回结果
-            this.handleResuleList(projectList);
+        String ids = (String) params.get("ids");
+        if (StrUtil.isNotBlank(ids)) {
+            List<String> listIds = Arrays.asList(ids.split(","));
+            params.put("ids", listIds);
         }
+
+        IPage<MonitorProject> page = new Query<MonitorProject>().getPage(params);
+        List<MonitorProject> projectList = monitorProjectDao.queryProjectList(page, params);
+
         page.setRecords(projectList);
         return new PageUtils(page);
-    }
-
-    private void handleResuleList(List<MonitorProject> projectList) {
-        List<MonitorModule> moduleList = monitorModuleService.list();
-        List<MonitorEndpoint> endpointList = monitorEndpointService.list();
-        List<AlertMessageEntity> alertList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getState, 1));
-
-        for (MonitorProject project : projectList) {
-            List<MonitorModule> modules = moduleList.stream().filter(module -> module.getProjectId().equals(project.getId())).collect(Collectors.toList());
-            project.setModuleNum(modules.size());
-
-            List<Integer> moduleIdList = modules.stream().map(MonitorModule::getId).collect(Collectors.toList());
-            List<MonitorEndpoint> endpoints = endpointList.stream().filter(endpoint -> moduleIdList.contains(endpoint.getModuleId())).collect(Collectors.toList());
-            project.setEndpointNum(endpoints.size());
-
-            long assetNum = endpoints.stream().map(MonitorEndpoint::getAssetId).distinct().count();
-            project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
-
-            long alertNum = alertList.stream().filter(alertMessageEntity -> project.getId().equals(alertMessageEntity.getProjectId())).count();
-            project.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
-        }
     }
 
     private void validateProjectInfo(MonitorProject project) {
@@ -183,72 +143,5 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         // 删除
         this.removeByIds(Arrays.asList(ids));
     }
-
-    @Override
-    public Map<String,Object> queryProjectInfo(Integer id) {
-            Map<String,Object> result = new HashMap<String,Object>();
-            Project project = projectDao.selectById(id);
-            if(ObjectUtils.isNotEmpty(project)) {
-
-                // project高中低alert message数据
-                List<Map<String, Object>> maps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("project_id", id).eq("state",1).groupBy("severity").select("severity","count(*) as count"));
-                Map projectAlertMessageInfos =new HashMap();
-                List<Integer> alertStat = project.getAlertStat();
-                for(Map<String,Object> map:maps) {
-                    projectAlertMessageInfos.put(map.get("severity"),((Long)map.get("count")).intValue());
-                }
-
-                alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH));
-                alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM));
-                alertStat.add(ObjectUtils.isEmpty(projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW))?0:(int) projectAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW));
-
-                List<Module> modules = moduleService.list(new LambdaQueryWrapper<Module>().eq(Module::getProjectId, id));
-                if(ObjectUtils.isEmpty(modules)) {
-                    modules=new ArrayList<Module>();
-                }
-                // 根据 asset 停用状态 获取对应 endpoint ids
-                List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
-                // 停用的 endpoint ids
-                List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
-                suspendedEndpointIds.addAll(disabledEndpointIds);
-                suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
-
-                Set<Integer> endpointUpIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIds);
-
-                for(Module module : modules) {
-                    //module高中低alert message数据
-                    List<Map<String, Object>> moduleMaps = alertMessageService.listMaps(new QueryWrapper<AlertMessageEntity>().eq("module_id", module.getId()).eq("state",1).groupBy("severity").select("severity","count(*) as count"));
-                    Map moduleAlertMessageInfos = new HashMap();
-                    for(Map<String,Object> moduleMap : moduleMaps) {
-                        moduleAlertMessageInfos.put(moduleMap.get("severity"),((Long)moduleMap.get("count")).intValue());
-                    }
-                    List<Integer> moduleAlertStat = module.getAlertStat();
-                    moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_HIGH));
-                    moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_MEDIUM));
-                    moduleAlertStat.add(ObjectUtils.isEmpty(moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW))?0:(int) moduleAlertMessageInfos.get(Constant.ALERT_SEVERITY_LOW));
-                    //组件endpoint up down统计
-                    if(ObjectUtils.isNotEmpty(endpointUpIds)) {
-                        List<Integer> endpointStat = module.getEndpointStat();
-                        // 初始化endpoint up down suspended 状态
-                        endpointStat.add(0);
-                        endpointStat.add(0);
-                        endpointStat.add(0);
-                        List<Endpoint> endpoints = endpointService.list(new QueryWrapper<Endpoint>().eq("module_id", module.getId()));
-                        for(Endpoint endpoint : endpoints) {
-                            if (endpointUpIds.contains(endpoint.getId())) {
-                                endpointStat.set(0, (endpointStat.get(0) + 1));
-                            } else if (suspendedEndpointIds.contains(endpoint.getId())) {
-                                endpointStat.set(2, (endpointStat.get(2) + 1));
-                            } else {
-                                endpointStat.set(1, (endpointStat.get(1) + 1));
-                            }
-                        }
-                    }
-                }
-                result.put("basic", project);
-                result.put("module", modules);
-            }
-            return result;
-        }
 
 }
