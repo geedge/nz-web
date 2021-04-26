@@ -23,6 +23,7 @@ import com.nis.modules.alert.job.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
+import com.nis.modules.sys.job.SessionTimeOutJob;
 
 import cn.hutool.log.Log;
 
@@ -54,9 +55,11 @@ public class JobConfig {
 
     @Value("${nezha.endpointStateJobCron}")
     private String endpointStateJobCron;
+    
+	@Value("${nezha.sessionTimeOutJobCron}")
+	private String sessionTimeOutJobCron;
 
     @Autowired
-    @Qualifier("costomSchedulerFactoryBean")
     private SchedulerFactoryBean schedulerFactoryBean;
     private static final String JOB_NAME = "NZJOB";
     private String agentJobName = "AGENT_JOB";
@@ -65,6 +68,7 @@ public class JobConfig {
     private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
     private String haJobName = "HA_JOB";
+    private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
     
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -96,7 +100,11 @@ public class JobConfig {
         return JobBuilder.newJob(HaJob.class).withIdentity(JOB_NAME + haJobName).storeDurably().build();
     }
 
-
+	@Bean
+	public JobDetail sessionTimeOutJobDetail() {
+	    return JobBuilder.newJob(SessionTimeOutJob.class).withIdentity(JOB_NAME + sessionTimeOutJobName).storeDurably().build();
+	}
+    
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
@@ -119,6 +127,8 @@ public class JobConfig {
         // endpoint state job 如果配置文件没有配置定时周期  默认为1分钟执行一次
         createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 * * * ? *" : endpointStateJobCron, scheduler);
 
+        // session time out job 如果配置文件没有配置定时周期  默认为5分钟执行一次
+        createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron, scheduler);
     }
     
     /**

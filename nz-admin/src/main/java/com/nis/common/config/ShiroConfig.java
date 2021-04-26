@@ -7,13 +7,21 @@ import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.MySessionManager;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.sys.shiro.UserRealm;
+
+import cn.hutool.core.util.StrUtil;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -47,8 +55,8 @@ import com.nis.modules.sys.shiro.UserRealm;
 @Configuration
 public class ShiroConfig {
 
-    @Value("${nezha.loginExpiration:30}")
-    private Integer loginExpiration;
+	/*@Value("${nezha.loginExpiration:30}")
+	private Integer loginExpiration;*/
 
     @Value("${spring.redis.host}")
     private String redisHost;
@@ -71,10 +79,12 @@ public class ShiroConfig {
     @Autowired
     private SysUserDao sysUserDao;
 
+    @Autowired
+    private SysConfigService sysconfigService;
 
     @Autowired
 	private SysApiKeyDao sysApiKeyDao;
-
+    
     @Bean("shiroFilter")
     public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
         ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -111,14 +121,13 @@ public class ShiroConfig {
 //        filterMap.put("/**", "authc");
         filterMap.put("/**", "tokenCheckFilter");
         
+        Integer loginExpiration = getTimeOutData();
         Map<String, Filter> cumstomFilterMap=new LinkedHashMap<String,Filter>();
         TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
         cumstomFilterMap.put("tokenCheckFilter",tokenCheckFilter);
         shiroFilter.setFilters(cumstomFilterMap);
         shiroFilter.setFilterChainDefinitionMap(filterMap);
         
-
-
         return shiroFilter;
     }
 
@@ -176,6 +185,7 @@ public class ShiroConfig {
      */
     @Bean
     public RedisCacheManager cacheManager() {
+    	Integer loginExpiration = getTimeOutData();
         RedisCacheManager redisCacheManager = new RedisCacheManager();
         redisCacheManager.setRedisManager(redisManager());
         // 配置缓存过期时间
@@ -192,6 +202,7 @@ public class ShiroConfig {
      */
     @Bean
     public RedisSessionDAO redisSessionDAO() {
+    	Integer loginExpiration = getTimeOutData();
         RedisSessionDAO redisSessionDAO = new RedisSessionDAO();
         redisSessionDAO.setRedisManager(redisManager());
         redisSessionDAO.setExpire(loginExpiration * 60);
@@ -234,5 +245,14 @@ public class ShiroConfig {
         // 自定义session管理 使用redis
         securityManager.setSessionManager(sessionManager());
         return securityManager;
+    }
+    
+    private Integer getTimeOutData() {
+    	SysConfigEntity configEntity = sysconfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
+        Integer loginExpiration = 30;
+        if(ToolUtil.isNotEmpty(configEntity)) {
+        	loginExpiration = StrUtil.isNotBlank(configEntity.getParamValue()) ? Integer.valueOf(configEntity.getParamValue()) : loginExpiration;
+        }
+        return loginExpiration;
     }
 }

@@ -49,8 +49,6 @@ public class SysLoginController extends AbstractController {
 	private Producer producer;
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
-	@Value(value="${nezha.loginExpiration:30}")
-	private Integer loginExpiration;
 	@Autowired
 	private SysConfigService configService;
 	@Autowired

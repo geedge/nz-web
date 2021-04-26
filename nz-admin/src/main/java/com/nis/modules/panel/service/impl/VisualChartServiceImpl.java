@@ -104,9 +104,8 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             }
         }
         
-        String returnChildren = (String) params.get("returnChildren");
-        returnChildren = ToolUtil.isEmpty(returnChildren) ? "1" : returnChildren;
-        if(ToolUtil.equals(returnChildren, "1")) {
+        String groupId = (String) params.get("groupId");
+        if(!ToolUtil.equals(groupId, "0") || ToolUtil.isEmpty(groupId)) {
         	result = this.getChartTreeList(result,0);
         }
         

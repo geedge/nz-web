@@ -105,7 +105,10 @@
 		<if test="params.varType != null and params.varType != ''">
             AND vch.var_type = #{params.varType}
         </if>
-
+	
+		<if test="params.groupId != null">
+			AND vch.group_id = #{params.groupId}
+		</if>
         /** 按照 weight 排序 */
         ORDER BY vch.weight,vch.id
     </select>

@@ -787,4 +787,11 @@ public class Constant {
     public static final String GUI_ROOT_PATH= NEZHA_ROOT_PATH+ "/nz-web/webRoot";
     public static final String RESOURCE_ROOT_PATH= NEZHA_ROOT_PATH+ "/nz-web/resource";//nzagent.rpm,install.sh.template,
     public static final String BIN_ROOT_PATH = NEZHA_ROOT_PATH+ "/nz-web/bin";//promtool,generator
+
+    public static final String ALERT_API="alert_api";
+    public static final String ALERT_PATH_PREFIX="alert_path_prefix";
+    
+    public static final String SYSCONFIG_SNMP_PORT_KEY="snmp_trap_listen_port";
+    public static final String SYSCONFIG_SESSION_TIMEOUT_KEY="session_timeout";
+    
 }
