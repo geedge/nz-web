@@ -624,6 +624,7 @@ public enum RCode {
     SNMP_MIB_TYPE_ISNULL(561021,"Snmp value type cannot be empty when operation is set"),
     SNMP_MIB_TYPE_INVALIDE(563022,"Snmp value type is invalide"),
     SNMP_MIB_NOTWRITABLE(560023,"The variable's value cannot be modified"),
+    SNMP_MIB_CONFIG_ISNULL(561024,"Snmp Credential Id and config cannot be empty at the same time"),
 
 
     SYS_CONFIG_TYPE_ISNULL(571000,"System config type can not be null"), // sysConfig 查询type参数不能为空

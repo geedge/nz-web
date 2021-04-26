@@ -60,13 +60,13 @@ public class SnmpUtil {
                 privProtocolOid = PrivAES128.ID;
             }
 
-            String privPassword = auth.get("privPassword");
+            String privPassword = auth.get("privPin");
             OctetString octetPrivPassword = null;
             if(StringUtils.isNotEmpty(privPassword)){
                 octetPrivPassword = new OctetString(privPassword);
             }
 
-            String pin = auth.get(Constant.PIN);
+            String pin = auth.get("authPin");
             OctetString octetpassword = null;
             if(StringUtils.isNotEmpty(pin)){
                 octetpassword = new OctetString(pin);
@@ -442,9 +442,9 @@ public class SnmpUtil {
 
         // 不为 null 时校验参数是否正确
         if (StringUtils.isNotEmpty(securityLevel)) {
-            String pin = authInfo.get(Constant.PIN);
+            String pin = authInfo.get("authPin");
 
-            String privPassword = authInfo.get("privPassword");
+            String privPassword = authInfo.get("privPin");
             String privProtocol = authInfo.get("privProtocol");
             String authProtocol = authInfo.get("authProtocol");
 

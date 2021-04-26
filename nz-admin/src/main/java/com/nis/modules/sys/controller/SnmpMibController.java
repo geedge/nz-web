@@ -1,11 +1,14 @@
 package com.nis.modules.sys.controller;
 
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SnmpMib;
+import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SnmpMibService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
@@ -37,6 +40,9 @@ public class SnmpMibController extends AbstractController {
 
     @Autowired
     private SnmpMibService snmpMibService;
+
+    @Autowired
+    private SnmpCredentialService snmpCredentialService;
 
     /**
      * mib文件查询
@@ -205,29 +211,38 @@ public class SnmpMibController extends AbstractController {
             }
         }
 
-        String community = (String) params.get("community");
+        // snmpCredentialId 和 config 不能同时为空
+        Integer snmpCredentialId = (Integer) params.get("snmpCredentialId");
+        Map<String, String> authConfig = (Map) params.get("config");
+        if (ToolUtil.isEmpty(snmpCredentialId) && ToolUtil.isEmpty(authConfig)) {
+            throw new NZException(RCode.SNMP_MIB_CONFIG_ISNULL);
+        }
 
-        Map<String, String> auth = (Map) params.get("auth");
+        SnmpCredential snmpCredential = ToolUtil.isNotEmpty(snmpCredentialId) ? snmpCredentialService.getById(snmpCredentialId) : null;
+        authConfig = snmpCredential != null ? JSONObject.parseObject(snmpCredential.getConfig(), Map.class) : authConfig;
+
         // v3时需要的用户信息
         if (Constant.SNMPV3.equals(version)) {
             // 校验参数是否正确
-            if (ToolUtil.isEmpty(auth)) {
+            if (ToolUtil.isEmpty(authConfig)) {
                 throw new NZException(RCode.SNMP_MIB_AUTH_ISNULL);
             } else {
-                SnmpUtil.ValidateAuthForSnmpV3(auth);
+                SnmpUtil.ValidateAuthForSnmpV3(authConfig);
             }
         }
+
+        String community = authConfig.get("readCommunity");
 
         List<Map> resultData = null;
         try {
             if(StrUtil.equals(Constant.SnmpOperationType.GET.getValue(),operation)) {
-                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
+                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, authConfig, operation);
             } else if(StrUtil.equals(Constant.SnmpOperationType.GETNEXT.getValue(),operation)) {
-                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, auth, operation);
+                resultData = SnmpUtil.snmpGetOrGetNext(host, port, version, community, oid, authConfig, operation);
             } else if(StrUtil.equals(Constant.SnmpOperationType.WALK.getValue(),operation)) {
-                resultData = SnmpUtil.snmpWalk(host, port, version, community, oid, auth);
+                resultData = SnmpUtil.snmpWalk(host, port, version, community, oid, authConfig);
             } else if(StrUtil.equals(Constant.SnmpOperationType.SET.getValue(),operation)) {
-                R r = SnmpUtil.setPDU(host, port, version, community, oid, auth, value);
+                R r = SnmpUtil.setPDU(host, port, version, community, oid, authConfig, value);
                 return r;
             }
         } catch (IOException e) {

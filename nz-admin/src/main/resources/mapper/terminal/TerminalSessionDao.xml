@@ -45,6 +45,18 @@
             <if test="params.username != null and params.username != ''">
                 AND su.username like CONCAT('%', #{params.username}, '%')
             </if>
+
+            <if test="params.remoteAddr != null and params.remoteAddr != ''">
+                AND ts.remote_addr like CONCAT('%', #{params.remoteAddr}, '%')
+            </if>
+
+            <if test="params.uuid != null and params.uuid != ''">
+                AND ts.uuid = #{params.uuid}
+            </if>
+
+            <if test="params.state != null and params.state != ''">
+                AND ts.status = #{params.state}
+            </if>
         </where>
 
         <if test="params.orderBy == null or params.orderBy == ''">
