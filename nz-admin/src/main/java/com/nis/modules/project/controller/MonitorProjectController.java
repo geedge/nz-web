@@ -157,21 +157,21 @@ public class MonitorProjectController extends AbstractController {
     /**
      * topo icon新增
      *
-     * @param name
+     * @param icon
      * @param file
      * @return
      */
     @PostMapping("/project/topo/icon")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
     @RequiresPermissions({"project:topo:icon:save"})
-    public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file, String unit) {
-        ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
-                .and(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
+    public R save(TopoIcon icon, @RequestParam(value = "file", required = false) MultipartFile file) {
+        ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
+                .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
                 .and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
 
         try {
-            Integer iconId = topoIconService.saveTopoIcon(name, file, unit);
+            Integer iconId = topoIconService.saveTopoIcon(icon, file);
             Map result = new HashMap(2);
             result.put("id", iconId);
             return R.ok(result);
@@ -202,14 +202,15 @@ public class MonitorProjectController extends AbstractController {
      * icon图标预览
      *
      * @param id
+     * @param base64    1: base64格式  0：非base64格式
      * @param response
      */
-    @GetMapping("/project/topo/icon/{id}")
+    @GetMapping("/project/topo/icon/{id}/{base64}")
     @RequiresPermissions({"project:topo:icon:info"})
-    public void downloadIconFile(@PathVariable("id") Integer id, HttpServletResponse response) {
+    public void downloadIconFile(@PathVariable("id") Integer id, @PathVariable("base64") Integer base64, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
 
-        topoIconService.downloadIconFileById(id, response);
+        topoIconService.downloadIconFileById(id, base64,response);
     }
 
 

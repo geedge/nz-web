@@ -566,7 +566,10 @@ public class Constant {
     public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
 
     // 配置表中 blackbox 源， on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
-    public static final String SYSCONFIG_KEY_PING_SOURCE_IPADDRESS = "ping_source_ip_address";
+    public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
+
+    // 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint 配置信息 hash 分布到 global prometheus）
+    public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED  = "prometheus_federation_enabled";
 
     // 配置表中 prometheus 本地保存天数配置
     public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";

@@ -138,8 +138,7 @@ public class AgentJob extends QuartzJobBean {
 
     /**
      * global 处理
-     *
-     * @param globalPromServers
+     *  @param globalPromServers
      * @param perDataCenterPromServers
      * @param configMap
      * @param sysCmdLineMap
@@ -148,12 +147,12 @@ public class AgentJob extends QuartzJobBean {
         // 按照 id 升序，方便 alert 设置
         globalPromServers = globalPromServers.stream().sorted(Comparator.comparing(Promserver::getId)).collect(Collectors.toList());
 
-        // blackbox job 开关，on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
-        String pingSourIpaddSwicth = configMap.get(Constant.SYSCONFIG_KEY_PING_SOURCE_IPADDRESS);
+        // blackbox job  1: global   2: per-datacenter
+        String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
         // blackbox 所需 asset 信息
         List<AssetAsset> blackboxAssetInfoList = assetService.getBlackboxAssetInfoList();
         // asset id 和 promerver id 对应 map
-        Map<Integer, Integer> assetIdAndPromIdMap = Constant.SWITCH_OPEN.equals(pingSourIpaddSwicth) ? this.hashAllocationAsset(globalPromServers, blackboxAssetInfoList):new HashMap<>(2);
+        Map<Integer, Integer> assetIdAndPromIdMap = "1".equals(assetPingFrom) ? this.hashAllocationAsset(globalPromServers, blackboxAssetInfoList):new HashMap<>(2);
 
         boolean ruleChange = this.compareDataChanges("rule");
         // global config 配置文件处理 联邦 告警 rule.yml 等，
@@ -169,7 +168,7 @@ public class AgentJob extends QuartzJobBean {
 
             List<Integer> assetIdListByPromServer = assetIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetList = blackboxAssetInfoList.stream().filter(asset -> assetIdListByPromServer.contains(asset.getId())).collect(Collectors.toList());
-            assetList.stream().forEach(asset -> asset.setSourceIp(promserver.getHost()));
+            assetList.stream().forEach(asset -> asset.setPromserver(promserver));
 
             Map gloablAgentYmlMap = this.generateGlobalYml(isAlert, promserver, globalPromServers, perDataCenterPromServers, assetList, configMap);
             globalConfigBody.put("config", gloablAgentYmlMap);
@@ -222,6 +221,11 @@ public class AgentJob extends QuartzJobBean {
      * @return
      */
     private Map generateGlobalYml(Boolean isAlert, Promserver promserver, List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers, List<AssetAsset> assetList, Map<String, String> configMap) {
+        String promFedeEnabledStr = configMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
+        boolean promFedeEnabled = promFedeEnabledStr.equals("1");
+        // 关闭联邦 不启用 per-datecenter
+        if (!promFedeEnabled) perDataCenterPromServers = new ArrayList<>();
+
         List<Dc> dcList = dcService.list();
         Map<Integer, String> dcIdAndNameMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
 
@@ -229,13 +233,15 @@ public class AgentJob extends QuartzJobBean {
         allPromserverList.addAll(globalPromServers);
         allPromserverList.addAll(perDataCenterPromServers);
 
+        // agent 代理接口前缀
+        String proxyPath = configMap.get(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
         // federate
         List<Map> federateMapList = new ArrayList<>();
-        // blackbox job 开关，on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
-        String pingSourIpaddSwicth = configMap.get(Constant.SYSCONFIG_KEY_PING_SOURCE_IPADDRESS);
+        // blackbox job  1: global   2: per-datacenter
+        String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
         for (Promserver server : allPromserverList) {
             // global 做 ping 检测
-            if (Constant.SWITCH_OPEN.equals(pingSourIpaddSwicth)) {
+            if ("1".equals(assetPingFrom)) {
                 // 联邦排除自己
                 if (server.getId().equals(promserver.getId())) continue;
             } else {
@@ -244,10 +250,10 @@ public class AgentJob extends QuartzJobBean {
             }
             Map federateMap = new LinkedHashMap();
             federateMap.put("job_name", "federate_" + server.getId());
-            federateMap.put("metrics_path", "/federate");
+            federateMap.put("metrics_path", proxyPath + "/federate");
             federateMap.put("isFederate", true);
             // global 做 ping 检测，且 当前角色为 global
-            if (Constant.SWITCH_OPEN.equals(pingSourIpaddSwicth) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
+            if ("1".equals(assetPingFrom) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
                 federateMap.put("scrapePing", true);
             } else {
                 federateMap.put("scrapePing", false);
@@ -256,6 +262,7 @@ public class AgentJob extends QuartzJobBean {
             // 该标签为直接取值，不作为判断条件，所以布尔值用字符串表示
             federateMap.put("honor_labels", "true");
             federateMap.put("token", server.getToken());
+            federateMap.put("excludeAgentId",promserver.getId());
 
             List federateStaticConfigList = new ArrayList();
             Map federateStaticConfig = new LinkedHashMap(2);
@@ -270,7 +277,7 @@ public class AgentJob extends QuartzJobBean {
         // prometheus_metric
         Map promMetricsMap = new LinkedHashMap();
         promMetricsMap.put("job_name", "prometheus_metric");
-        promMetricsMap.put("metrics_path", "/metrics");
+        promMetricsMap.put("metrics_path", proxyPath + "/metrics");
         promMetricsMap.put("isFederate", false);
         promMetricsMap.put("instanceRelabel", false);
 
@@ -448,12 +455,14 @@ public class AgentJob extends QuartzJobBean {
 
     /**
      * 处理 per-datacenter 角色 配置
-     *
      * @param perDataCenterPromServers
      * @param configMap
      * @param sysCmdLineMap
      */
     private void handlePerDatacenter(List<Promserver> perDataCenterPromServers, Map<String, String> configMap, Map<String, String> sysCmdLineMap) {
+        String promFedeEnabledStr = configMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
+        // 联邦关闭 禁用所有 per-datacenter 角色配置
+        if (promFedeEnabledStr.equals("0")) return;
         // 按照 dc 分组
         Map<Integer, List<Promserver>> dcIdAndPromservers = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Promserver::getDcId));
 
@@ -478,8 +487,8 @@ public class AgentJob extends QuartzJobBean {
 
             List<AssetAsset> assetListByDc = blackboxAssetInfoList.stream().filter(asset -> dcId.equals(asset.getDcId())).collect(Collectors.toList());
             // asset id 和 promerver id 对应 map
-            String pingSourIpaddSwicth = configMap.get(Constant.SYSCONFIG_KEY_PING_SOURCE_IPADDRESS);
-            Map<Integer, Integer> assetIdAndPromIdMap = Constant.SWITCH_CLOSE.equals(pingSourIpaddSwicth) ? this.hashAllocationAsset(promserverListByDc, assetListByDc) : new HashMap<>(2);
+            String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
+            Map<Integer, Integer> assetIdAndPromIdMap = "2".equals(assetPingFrom) ? this.hashAllocationAsset(promserverListByDc, assetListByDc) : new HashMap<>(2);
 
             // 组装 per-datacenter 配置信息,并下发配置
             this.reloadPerDatacenterYml(promserverListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap, configMap, sysCmdLineMap, snmpChangeFlag);
@@ -513,12 +522,12 @@ public class AgentJob extends QuartzJobBean {
 
             List<Integer> assetIdListByPromServer = assetIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<AssetAsset> assetList = assetListByDc.stream().filter(asset -> assetIdListByPromServer.contains(asset.getId())).collect(Collectors.toList());
-            assetList.stream().forEach(asset -> asset.setSourceIp(promserver.getHost()));
+            assetList.stream().forEach(asset -> asset.setPromserver(promserver));
 
             Map<String, Object> perDatacenterConfigBody = new LinkedHashMap(4);
 
             // 生成配置模板
-            Map perdatacenterYmlMap = this.generatePerdatacenterYml(endpointListByPromServer, assetList, configMap);
+            Map perdatacenterYmlMap = this.generatePerdatacenterYml(promserver,endpointListByPromServer, assetList, configMap);
             perDatacenterConfigBody.put("config", perdatacenterYmlMap);
 
             boolean cmdFlag = this.compareCmdLineChanges(promserver, sysCmdLineMap, configMap);
@@ -569,7 +578,7 @@ public class AgentJob extends QuartzJobBean {
         }
     }
 
-    private Map generatePerdatacenterYml(List<MonitorEndpoint> endpointList, List<AssetAsset> assetList, Map<String, String> configMap) {
+    private Map generatePerdatacenterYml(Promserver promserver, List<MonitorEndpoint> endpointList, List<AssetAsset> assetList, Map<String, String> configMap) {
         Map<String, Object> params = new LinkedHashMap();
         params.put("scrape_interval", configMap.get(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
         params.put("scrape_timeout", configMap.get(Constant.SYSCONFIG_KEY_SCRAPETIMEOUT));
@@ -606,6 +615,9 @@ public class AgentJob extends QuartzJobBean {
 
             // endpoint name 处理
             endpoint.setName(ToolUtil.string2Json(endpoint.getName()));
+
+            // nz_agent_id，对应 promserver id
+            endpoint.setPromserver(promserver);
         }
 
         params.put("endpointList", endpointList);

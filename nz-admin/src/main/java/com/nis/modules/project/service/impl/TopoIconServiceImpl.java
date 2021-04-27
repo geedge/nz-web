@@ -2,6 +2,7 @@ package com.nis.modules.project.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletResponse;
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,17 +42,31 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
-    public Integer saveTopoIcon(String name, MultipartFile file,String unit) throws IOException {
+    public Integer saveTopoIcon(TopoIcon icon, MultipartFile file) throws IOException {
         // 校验文件类型
         this.validateIconFileType(file);
         String filename = file.getOriginalFilename();
         String fileType = filename.substring(filename.lastIndexOf(".") + 1);
 
+        Integer width = icon.getWidth();
+        Integer height = icon.getHeight();
+        if (width == null || height == null) {
+            try {
+                BufferedImage read = ImageIO.read(file.getInputStream());
+                width = read.getWidth();
+                height = read.getHeight();
+            } catch (IOException e) {
+                log.error("获取图片宽高信息失败" + JSONObject.toJSONString(icon), e);
+            }
+        }
+
         TopoIcon topoIcon = new TopoIcon();
-        topoIcon.setName(name);
+        topoIcon.setName(icon.getName());
         topoIcon.setType(fileType);
-        topoIcon.setUnit(unit);
+        topoIcon.setUnit(icon.getUnit());
         topoIcon.setBytes(Base64.getEncoder().encodeToString(file.getBytes()));
+        topoIcon.setWidth(width == null ? -1 : width);
+        topoIcon.setHeight(height == null ? -1 : height);
         this.save(topoIcon);
         return topoIcon.getId();
     }
@@ -61,19 +78,29 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
-    public void downloadIconFileById(Integer id, HttpServletResponse response) {
+    public void downloadIconFileById(Integer id, Integer base64, HttpServletResponse response) {
         TopoIcon icon = this.getById(id);
         if (ToolUtil.isEmpty(icon)) {
             throw new NZException(RCode.PROJECT_ICON_NOTFOUND);
         }
 
-        byte[] bytes = Base64.getDecoder().decode(icon.getBytes());
+        base64 = base64 == null ? 0 : base64;
+        if (base64 != 0 && base64 != 1) {
+            throw new NZException(RCode.PROJECT_ICON_BASE64_VALUEERROR);
+        }
+        // 1: base64格式  0：非base64格式
+        byte[] bytes = base64 == 0 ? Base64.getDecoder().decode(icon.getBytes()) : icon.getBytes().getBytes();
 
         try (OutputStream os = new BufferedOutputStream(response.getOutputStream());) {
-//            String contentType = "jpg".equals(icon.getType().toLowerCase()) ? "jpeg" : icon.getType().toLowerCase();
-            String contentType = StrUtil.equals("jpg", icon.getType()) ? "jpeg" : icon.getType().toLowerCase();
-            response.setContentType("image/" + contentType);
+            if (base64 == 0) {
+                String contentType = StrUtil.equals("jpg", icon.getType()) ? "jpeg" : icon.getType().toLowerCase();
+                response.setContentType("image/" + contentType);
+            } else if (base64 == 1) {
+                response.setContentType("text/plain");
+            }
             response.setHeader("Content-Disposition", "inline");
+            response.setHeader("width", String.valueOf(icon.getWidth()));
+            response.setHeader("height", String.valueOf(icon.getHeight()));
             os.write(bytes);
             os.flush();
         } catch (IOException e) {

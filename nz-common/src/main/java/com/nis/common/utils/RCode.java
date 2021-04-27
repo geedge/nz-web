@@ -142,6 +142,7 @@ public enum RCode {
     PROJECT_NOTFOUND(216013, "Project not found"),
     PROJECT_TOPOICON_UNIT_ISNULL(211014,"Topo icon unit is null"),
     PROJECT_BUILDIN_CAN_NOT_EDIT(217015, "The built-in project does not allow editing"),
+    PROJECT_ICON_BASE64_VALUEERROR(214016, "The base64 value must be 0 and 1"),
 
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),
@@ -708,6 +709,8 @@ public enum RCode {
     SYS_CONFIG_REDIS_PORT_ISNULL(574011,"The redis host is null"),
     SYS_CONFIG_HAD_CONFIG(574012,"Someone has started to configure the system"),
     SYS_CONFIG_SESSION_TIMEOUT_INVALID(573013,"Session timeout is not less than 15"),
+    SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT(574014, "Prometheus federation enabled must be 0 or 1"),
+    SYS_CONFIGI_ASSETPINGFROM_NCORRECT(574015, "Asset ping from must be 1 or 2"),
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
     SYS_ROLE_ISNULL(586001, "Role is not exsits"),

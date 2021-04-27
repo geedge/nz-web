@@ -8,7 +8,9 @@
             pti.id,
             pti.NAME,
             pti.type,
-            pti.unit
+            pti.unit,
+            pti.width,
+            pti.height
         FROM
             project_topo_icon pti
         <where>

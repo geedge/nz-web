@@ -103,33 +103,6 @@ public class ProjectController extends AbstractController {
 		return R.ok(result);
 	}
 
-	/**
-	 * topo icon新增
-	 *
-	 * @param name
-	 * @param file
-	 * 
-	 * @return
-	 */
-	@PostMapping("/topo/icon")
-	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
-	@RequiresPermissions({"project:topo:icon:save"})
-	public R save(String name, @RequestParam(value = "file", required = false) MultipartFile file,String unit) {
-		ValidateUtils.is(name).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
-		.and(unit).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
-		.and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
-
-		
-		try {
-			Integer iconId = topoIconService.saveTopoIcon(name, file,unit);
-			Map result = new HashMap(2);
-			result.put("id", iconId);
-			return R.ok(result);
-		} catch (IOException e) {
-			logger.error("拓朴图图标保存失败，错误信息是：" + e);
-			return R.error(RCode.ERROR);
-		}
-	}
 
 	/**
 	 * topo icon删除
@@ -147,20 +120,6 @@ public class ProjectController extends AbstractController {
 		return R.ok();
 	}
 
-
-	/**
-	 * icon图标预览
-	 *
-	 * @param id
-	 * @param response
-	 */
-	@GetMapping(value = "/topo/icon/{id}")
-	@RequiresPermissions({"project:topo:icon:info"})
-	public void downloadIconFile(@PathVariable("id") Integer id, HttpServletResponse response) {
-		ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
-
-		topoIconService.downloadIconFileById(id, response);
-	}
 
 	/**
 	 * 系统topo查询

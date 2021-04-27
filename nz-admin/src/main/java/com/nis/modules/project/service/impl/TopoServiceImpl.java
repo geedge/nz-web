@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.module.entity.Module;
@@ -16,7 +15,6 @@ import com.nis.modules.project.entity.Topo;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +23,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-@Slf4j
 @Service("topoService")
 public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoService {
 

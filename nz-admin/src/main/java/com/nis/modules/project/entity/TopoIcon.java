@@ -23,4 +23,8 @@ public class TopoIcon {
 	private String type;
 	
 	private String unit;
+
+	private Integer width;
+
+	private Integer height;
 }
