@@ -599,12 +599,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 } else if (ToolUtil.isNotEmpty(host)) {
                     monitorEndpoint.setAssetId(assetIdByHost);
                 }
-
+                AssetAsset assetInfo = assetService.queryAssetInfo(monitorEndpoint.getAssetId());
                 String name = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(name)) {
-                    AssetAsset asset = assetService.queryAssetInfo(monitorEndpoint.getAssetId());
                     MonitorModule module1 = monitorModuleService.queryModuleInfo(module.getId());
-                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
+                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), assetInfo, module1);
                 }
 
                 List<String> monitorEndpointNameList = moduleIdAndEndpointNamesMap.get(module.getId());
@@ -625,8 +624,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 // 设置 host
                 Map map = JSONObject.parseObject(monitorEndpoint.getConfigs(), Map.class);
-                if(ToolUtil.isEmpty(map.get("host"))){
+                if (ToolUtil.isEmpty(map.get("host"))) {
                     map.put("host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
+                } else {
+                    // 对 host 字段进行渲染重新赋值
+                    String hostStr = (String) map.get("host");
+                    map.put("host", Tool.NzExpressionUtil.renderExpression(hostStr, assetInfo));
                 }
 
                 // 设置 port
