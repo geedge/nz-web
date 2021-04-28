@@ -92,24 +92,32 @@ public class EventLogSqlInterceptor implements Interceptor {
                     break;
                 case "sys_config":
                     // cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
-                    List<SysConfigEntity> sysConfigList = sysConfigService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION));
+                    List<SysConfigEntity> sysConfigList = sysConfigService.list();
                     Map<String, String> configMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
                     // Insert / Update
                     if (parameterObject instanceof SysConfigEntity) {
-                        boolean b = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) parameterObject));
-                        boolean b1 = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) parameterObject));
+                        boolean b = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) parameterObject));
+                        boolean b1 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) parameterObject));
 
                         if (b || b1) eventLogService.increment("cmd", "prometheus");
+
+                        boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) parameterObject));
+                        boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) parameterObject));
+                        if (b2 || b3) eventLogService.increment("prometheus");
                     }
 
                     if (parameterObject instanceof Map) {
                         for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
                             if (map.getValue() instanceof SysConfigEntity) {
-                                boolean b = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) map.getValue()));
-                                boolean b1 = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) map.getValue()));
+                                boolean b = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) map.getValue()));
+                                boolean b1 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) map.getValue()));
 
                                 if (b || b1) eventLogService.increment("cmd", "prometheus");
+
+                                boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) map.getValue()));
+                                boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) map.getValue()));
+                                if (b2 || b3) eventLogService.increment("prometheus");
                             }
                         }
                     }
@@ -227,7 +235,7 @@ public class EventLogSqlInterceptor implements Interceptor {
      * @param entity
      * @return
      */
-    private boolean compareCmdDataChange(Map<String, String> configMap, String key, SysConfigEntity entity) {
+    private boolean compareConfigDataChange(Map<String, String> configMap, String key, SysConfigEntity entity) {
         if (key.equals(entity.getParamKey())) {
             String paramValue = configMap.get(key);
             if (!StrUtil.equals(paramValue, entity.getParamValue())) {
