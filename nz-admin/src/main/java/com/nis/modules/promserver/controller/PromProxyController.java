@@ -1,6 +1,7 @@
 package com.nis.modules.promserver.controller;
 
 import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.http.HttpConnection;
@@ -33,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -84,7 +86,7 @@ public class PromProxyController {
 			break;
 		}
 		// type 优先使用 thanos_query
-		type = (type == null) ? PromConstant.PROMSERVER_THANOS_QUERY : type;
+		// type = (type == null) ? PromConstant.PROMSERVER_THANOS_QUERY : type;
 		Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 		if (ToolUtil.isEmpty(server)) {
 			// type 其次使用 global
@@ -116,9 +118,14 @@ public class PromProxyController {
 		String queryString = request.getQueryString();
 		// 请求 prometheus url
 //		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
-		String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
+		// String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
 
-			logger.debug("prometheus url: {}", url);
+		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
+		String proxyPath = String.format("%s%s%s", configEntity.getParamValue(), "/prometheus/proxy", path);
+
+		String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
+
+		logger.debug("prometheus url: {}", url);
 		String method = request.getMethod();
 		HttpURLConnection conn = null;
 		ServletInputStream reqInputStream = null;
