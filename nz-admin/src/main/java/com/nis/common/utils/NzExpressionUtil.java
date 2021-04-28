@@ -13,6 +13,8 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.project.entity.MonitorProject;
+import com.nis.modules.asset.entity.Dc;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
@@ -46,7 +48,7 @@ public class NzExpressionUtil {
 	 * @param obj          传入变量值 asset endpoint
 	 * @return
 	 */
-	public static String renderExpression(String expression,Object obj) {
+	public static String renderExpression(String expression,Object... obj) {
 				
 		String[] expres = parseExpre(expression);
 		if(ToolUtil.isEmpty(expres) || ToolUtil.isEmpty(obj) ) {
@@ -63,26 +65,40 @@ public class NzExpressionUtil {
 		return expression;
 	}
 	
-	public static Object handleExpre(String expre,Object obj) {
+	public static Object handleExpre(String expre,Object... objs) {
 		Object result = null;
-		if(obj instanceof MonitorEndpoint) {
-			expre = expre.replaceAll("endpoint.", "");
-			result = BeanUtil.getProperty(obj,expre);
-		}else if(obj instanceof AssetAsset) {
-			expre = expre.replaceAll("asset.", "").replaceAll("datacenter.", "dc.");
-			if(!expre.contains("label.")) {
+		for(Object obj : objs) {
+			if(obj instanceof MonitorEndpoint) {
+				expre = expre.replaceAll("endpoint.", "");
+				result = BeanUtil.getProperty(obj,expre);
+			}else if(obj instanceof AssetAsset) {
+				expre = expre.replaceAll("asset.", "").replaceAll("datacenter.", "dc.");
+				if(!expre.contains("label.")) {
+					result = BeanUtil.getProperty(obj,expre);
+				}
+				if(ToolUtil.isEmpty(result)) {
+					// 针对用户输入的变量为field时  特殊处理
+					List<AssetFieldMeta> fields = BeanUtil.getProperty(obj, "fields");
+					if(ToolUtil.isNotEmpty(fields)) {
+						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
+						if(expre.contains(StrUtil.DOT)) {
+							expre = StrUtil.split(expre, StrUtil.DOT)[1];
+						}
+						result = map.get(expre);
+					}
+				}
+			}else if(obj instanceof MonitorProject) {
+				expre = expre.replaceAll("project.", "");
+				result = BeanUtil.getProperty(obj,expre);
+			}else if (obj instanceof MonitorModule) {
+				expre = expre.replaceAll("module.", "");
+				result = BeanUtil.getProperty(obj,expre);
+			}else if (obj instanceof Dc) {
+				expre = expre.replaceAll("datacenter.", "").replaceAll("dc.", "");
 				result = BeanUtil.getProperty(obj,expre);
 			}
-			if(ToolUtil.isEmpty(result)) {
-				// 针对用户输入的变量为field时  特殊处理
-				List<AssetFieldMeta> fields = BeanUtil.getProperty(obj, "fields");
-				if(ToolUtil.isNotEmpty(fields)) {
-					Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
-					if(expre.contains(StrUtil.DOT)) {
-						expre = StrUtil.split(expre, StrUtil.DOT)[1];
-					}
-					result = map.get(expre);
-				}
+			if(ToolUtil.isNotEmpty(result)) {
+				break;
 			}
 		}
 		return result;

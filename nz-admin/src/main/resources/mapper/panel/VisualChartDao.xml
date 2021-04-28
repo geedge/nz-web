@@ -65,14 +65,11 @@
             vce.type AS vce_type,
             vce.legend AS vce_legend,
             vcg.id as group_id,
-            vcg.name as group_name,
-            vcc.id as children_id,
-            vcc.name as children_name 
+            vcg.name as group_name
         FROM visual_chart vch
         LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
         left join visual_chart vcg on vch.group_id = vcg.id
 		left join visual_panel vp on vch.panel_id = vp.id
-		left join visual_chart vcc on vch.id = vcc.group_id
 		left join asset_asset aa on vch.var_id = aa.id 
 		left join monitor_endpoint me on vch.var_id = me.id 
         WHERE 1=1
@@ -108,6 +105,13 @@
 	
 		<if test="params.groupId != null">
 			AND vch.group_id = #{params.groupId}
+		</if>
+
+		<if test="params.groupIds != null">
+			AND vch.group_id in 
+				<foreach item="gid" collection="params.groupIds" separator="," open="(" close=")" index="">
+		       		#{gid}
+			     </foreach>
 		</if>
         /** 按照 weight 排序 */
         ORDER BY vch.weight,vch.id

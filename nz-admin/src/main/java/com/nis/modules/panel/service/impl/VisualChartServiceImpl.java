@@ -105,7 +105,19 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         }
         
         String groupId = (String) params.get("groupId");
-        if(!ToolUtil.equals(groupId, "0") || ToolUtil.isEmpty(groupId)) {
+        if(ToolUtil.equals(groupId, "0") && ToolUtil.isNotEmpty(result)) {
+        	List<Integer> fatherIds = result.stream().map(VisualChart::getId).collect(Collectors.toList());
+        	Map<String, Object> queryChildren =new HashMap<String,Object>();
+        	queryChildren.put("groupIds", fatherIds);
+        	List<VisualChart> childrens = this.baseMapper.queryPage(page,queryChildren);
+        	for (VisualChart chart : childrens) {
+                // param 格式处理
+                param = (String) chart.getParam();
+                if (StringUtils.isNotEmpty(param)) {
+                    chart.setParam(JSONObject.parseObject(param, Map.class));
+                }
+            }
+        	result.addAll(childrens);
         	result = this.getChartTreeList(result,0);
         }
         
