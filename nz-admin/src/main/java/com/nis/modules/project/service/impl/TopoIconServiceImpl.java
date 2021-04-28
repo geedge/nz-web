@@ -101,6 +101,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
             response.setHeader("Content-Disposition", "inline");
             response.setHeader("width", String.valueOf(icon.getWidth()));
             response.setHeader("height", String.valueOf(icon.getHeight()));
+            response.setHeader("Access-Control-Expose-Headers", "width,height");
             os.write(bytes);
             os.flush();
         } catch (IOException e) {
