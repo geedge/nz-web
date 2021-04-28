@@ -1,3 +1,4 @@
+/*
 package com.nis.modules.terminal.controller;
 
 import com.nis.common.annotation.SysLog;
@@ -56,4 +57,4 @@ public class AccountController {
         return R.ok();
     }
 
-}
+}*/

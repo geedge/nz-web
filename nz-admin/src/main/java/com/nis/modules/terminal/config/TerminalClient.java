@@ -33,8 +33,17 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
 import com.google.common.primitives.Bytes;
 import com.jcraft.jsch.*;
-import com.nis.common.utils.*;
-import com.nis.modules.terminal.entity.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DigestUtils;
+import com.nis.common.utils.StringUtils;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfService;
+import com.nis.modules.terminal.entity.TerminalCmd;
+import com.nis.modules.terminal.entity.TerminalLog;
+import com.nis.modules.terminal.entity.TerminalRecord;
+import com.nis.modules.terminal.entity.TerminalSessionEntity;
 import com.nis.modules.terminal.service.TerminalCmdService;
 import com.nis.modules.terminal.service.TerminalLogService;
 import com.nis.modules.terminal.service.TerminalRecordService;
@@ -65,7 +74,7 @@ public class TerminalClient {
     private JSch jSch;
     private ChannelShell channelShell;
     private Session session;
-    private Account terminal;
+    private AssetAsset terminal;
     private InputStream inputStream;
     private OutputStream outputStream;
     private BufferedWriter writer;
@@ -94,7 +103,7 @@ public class TerminalClient {
     private boolean telnetConnect=false;
     private boolean telnetUser=false;
     private StringBuilder sb=new StringBuilder();
-    public TerminalClient(WebSocketSession webSocketSession, Account terminal, String clientId) {
+    public TerminalClient(WebSocketSession webSocketSession, AssetAsset terminal, String clientId) {
         this.webSocketSession = webSocketSession;
         this.terminal = terminal;
         this.clientId = clientId;
@@ -113,17 +122,13 @@ public class TerminalClient {
     }
 
     public void openTerminal(final int cols, int rows, int width, int height) throws JSchException, IOException {
-        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-        if (ToolUtil.isEmpty(params)) {
-            params = new HashMap<>();
-        }
-        this.session = jSch.getSession(params.get("username"), terminal.getAsset().getHost(), terminal.getPort());
+        this.session = jSch.getSession(terminal.getAuthUsername(), terminal.getManageIp(), terminal.getAuthProtocolPort());
 
-        String sshType = params.get("method");
+        Integer sshType = terminal.getAuthType();
         switch (sshType) {
-            case "key": {
-                String privateKey = params.get("key");
-                String keyPassword = params.get("keyPassword");
+            case 2 : {// key
+                String keyPassword = terminal.getAuthPin();
+                String privateKey = terminal.getAuthPriKey();
                 if (notEmpty(privateKey)) {
                 	File keyFile = FileUtil.file(terminal.getPrivateKeyPath());
 //                    if (!keyFile.exists()) {
@@ -132,7 +137,7 @@ public class TerminalClient {
 //                    }
                     if (notEmpty(keyPassword)) {
                         //设置带口令的密钥
-                        jSch.addIdentity(terminal.getPrivateKeyPath(), keyPassword);
+                        jSch.addIdentity(terminal.getPrivateKeyPath(), StringUtils.str(Base64.getDecoder().decode(keyPassword)));
                     } else {
                         //设置不带口令的密钥
                         jSch.addIdentity(terminal.getPrivateKeyPath());
@@ -143,10 +148,10 @@ public class TerminalClient {
                 session.setConfig("StrictHostKeyChecking", "no");
                 break;
             }
-            case "password": {
+            case 1: {// pin
                 session.setConfig("StrictHostKeyChecking", "no");
                 session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-                session.setPassword(StringUtils.str(Base64.getDecoder().decode(params.get("password"))));
+                session.setPassword(StringUtils.str(Base64.getDecoder().decode(terminal.getAuthPin())));
                 break;
             }
             default: {
@@ -162,9 +167,9 @@ public class TerminalClient {
         this.channelShell.connect();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("\r\nConnecting to " + terminal.getAsset().getHost() + ":" + terminal.getPort() + "\r\n");
+        sb.append("\r\nConnecting to " + terminal.getManageIp() + ":" + terminal.getAuthProtocolPort() + "\r\n");
         sb.append("Connection established. \r\n");
-        sb.append("Login success，use user " + params.get("username") + " \r\n");
+        sb.append("Login success，use user " + terminal.getAuthUsername() + " \r\n");
     	webSocketSession.sendMessage(new TextMessage(sb.toString()));
         
     	
@@ -188,6 +193,8 @@ public class TerminalClient {
                         }
                         //取到linux远程机器输出的信息发送给前端
                         String message = builder.toString();
+
+                        logger.info(message);
 
                         // terminal record 信息梳理
                         File file = FileUtil.file(Constant.TEMP_PATH, clientId + ".log");
@@ -338,7 +345,7 @@ public class TerminalClient {
 
     public void openTelnetTerminal(final int cols, int rows, int width, int height) throws IOException {
     	TelnetClient telnet = new TelnetClient("VT100");// VT100 VT52 VT220 VTNT ANSI  
-        telnet.connect(terminal.getAsset().getHost(), terminal.getPort());  
+        telnet.connect(terminal.getManageIp(), terminal.getAuthProtocolPort());
         // telnet 不允许上传下载操作
         this.transfer=false;
         this.inputStream=telnet.getInputStream();
@@ -347,11 +354,14 @@ public class TerminalClient {
         //当前正在进行telnet连接  相关日志不记录
         this.telnetConnect=true;
 
-        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-        if (ToolUtil.isEmpty(params)) {
-            params = new HashMap<>();
-        }
-        String pin = params.get(Constant.PIN);
+        String pin = StringUtils.str(Base64.getDecoder().decode(terminal.getAuthPin()));
+        SysConfService sysConfService = (SysConfService) TerminalSession.clientAttributeInfo.get("sysConfService");
+        List<SysConfigEntity> configEntities = sysConfService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, "terminal_telnet_user_tip", "terminal_telnet_pin_tip"));
+
+        String authUserTip = this.getTelenetLoginTip(terminal.getAuthUserTip(), configEntities, "terminal_telnet_user_tip");
+        String authPinTip = this.getTelenetLoginTip(terminal.getAuthPinTip(), configEntities, "terminal_telnet_pin_tip");
+
+        logger.debug(String.format("telnet ip : %s, userTip : %s , pinTip : %s", terminal.getManageIp(), authUserTip, authPinTip));
         executorService.execute(new Runnable() {
             @Override
             public void run() {
@@ -366,11 +376,7 @@ public class TerminalClient {
                 telnetUser=true;
                 try {
                     while (webSocketSession != null && webSocketSession.isOpen()) {
-                        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-                        if (ToolUtil.isEmpty(params)) {
-                            params = new HashMap<>();
-                        }
-                        String user = params.get("username");
+                        String user = terminal.getAuthUsername();
 
                         builder.setLength(0);
                         int size = inputStream.read(buffer);
@@ -474,17 +480,20 @@ public class TerminalClient {
                         			telnetConnectCount++;
                         			telnetUser=true;
                         		}
-                                if (message.replace(" ", "").matches(".*wwwlogin:") && StringUtils.isNotEmpty(user)) {
+                            	logger.error(message);
+                                if (message.trim().matches(authUserTip) && StringUtils.isNotEmpty(user)) {
+                                    logger.error("login");
                                     webSocketSession.sendMessage(new TextMessage(message + user + "\r\n"));
                                     write(user + "\r");
-                                } else if (message.matches("Password:.*") && StringUtils.isBlank(user)) {
+                                } else if (message.trim().matches(authPinTip) && StringUtils.isBlank(user)) {
+                                    logger.error("pin");
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
-                                } else if (message.matches("Password:.*") && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(pin)) {
-                                	String s = StringUtils.str(Base64.getDecoder().decode(pin));
+                                } else if (message.trim().matches(authPinTip) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(pin)) {
+                                    logger.error("pin");
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
-                                    write(s + "\r");
+                                    write(pin + "\r");
                                 } else if (message.contains("timed out after 60 seconds")) {
                             		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
                             		// 连接超时
@@ -561,7 +570,23 @@ public class TerminalClient {
             }
         });
     }
-    
+
+    /**
+     *  用户有自定义 tip 则使用用户的，没有则使用系统配置的
+     * @param tip
+     * @param configEntities
+     * @param key
+     * @return
+     */
+    private String getTelenetLoginTip(String tip, List<SysConfigEntity> configEntities, String key) {
+        if(StringUtils.isNotEmpty(tip)){
+            return ".*" + tip.trim();
+        }else {
+            SysConfigEntity configEntity = configEntities.stream().filter(entity -> entity.getParamKey().equalsIgnoreCase(key)).findFirst().orElse(null);
+            return ".*" + configEntity.getParamValue();
+        }
+    }
+
     /**
      * 处理服务器方向键以及tab操作返回的指令信息 便于做日志记录
      * @param serverResponse    服务器响应内容
@@ -816,17 +841,12 @@ public class TerminalClient {
      * @throws IOException
      */
     public void write(String message) throws IOException {
-        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-        if (ToolUtil.isEmpty(params)) {
-            params = new HashMap<>();
-        }
         // 获取telnet登录用户名信息
-        if (telnetUser && telnetConnect && StringUtils.isEmpty(params.get("username"))) {
+        if (telnetUser && telnetConnect && StringUtils.isEmpty(terminal.getAuthUsername())) {
             sb.append(message);
             webSocketSession.sendMessage(new TextMessage(message));
         } else if (StringUtils.isNotEmpty(sb.toString())) {
-            params.put("username", sb.toString());
-            terminal.setParams(JSONObject.toJSONString(params));
+            terminal.setAuthUsername(sb.toString());
         }
         if (message.equals("\r")) {
             if (closed) {
@@ -975,11 +995,11 @@ public class TerminalClient {
         channelShell.setPtySize(cols, rows, width, height);
     }
 
-    public Account getTerminal() {
+    public AssetAsset getTerminal() {
         return terminal;
     }
 
-    public void setTerminal(Account terminal) {
+    public void setTerminal(AssetAsset terminal) {
         this.terminal = terminal;
     }
 

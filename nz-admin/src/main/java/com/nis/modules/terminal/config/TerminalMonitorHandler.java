@@ -2,10 +2,9 @@ package com.nis.modules.terminal.config;
 
 
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.SpringContextUtils;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -67,9 +66,8 @@ public class TerminalMonitorHandler extends TextWebSocketHandler {
         TerminalSession.terminalMonitorsMap.put(uuid, webSocketSessions);
 
         // 打开 monitor 返回的第一条消息
-        Account terminal = terminalClient.getTerminal();
-        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-        String firstMessage = String.format("Connection established, Start monitoring.  %s@%s \r\n", params.get("username"), terminal.getAsset().getHost());
+        AssetAsset terminal = terminalClient.getTerminal();
+        String firstMessage = String.format("Connection established, Start monitoring.  %s@%s \r\n", terminal.getAuthUsername(), terminal.getManageIp());
         session.sendMessage(new TextMessage(firstMessage));
     }
 

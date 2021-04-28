@@ -21,7 +21,7 @@
 
 package com.nis.modules.terminal.config;
 
-import com.nis.modules.terminal.entity.Account;
+import com.nis.modules.asset.entity.AssetAsset;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -33,34 +33,33 @@ import java.util.Set;
 @Component
 public class TerminalContext implements Serializable {
 
-    //key-->uuid value--->Terminal User
-    public static final Map<String, Account> terminalContext = new HashMap<String, Account>();
+    //key-->uuid value--->Terminal User (账号信息保存在 AssetAsset entity 中)
+    public static final Map<String, AssetAsset> terminalContext = new HashMap<>();
 
-    public static final Map<String,Set<String>> terminalUuid = new HashMap<String,Set<String>>();
-    
+    public static final Map<String, Set<String>> terminalUuid = new HashMap<>();
+
     private String uuid;
 
-    public Account get(String key) {
+    public AssetAsset get(String key) {
         return terminalContext.get(key(key));
     }
 
-    public void put(String key, Account terminal) {
+    public void put(String key, AssetAsset asset) {
         this.uuid = key;
         //该终端实例只能被的打开一次,之后就失效
-        terminalContext.put(key(key), terminal);
+        terminalContext.put(key(key), asset);
         /**
          * 为复制会话
          */
-        String reKey = terminal.getId() + "_" + key;
-        terminalContext.put(key(reKey), terminal);
+        String reKey = asset.getId() + "_" + key;
+        terminalContext.put(key(reKey), asset);
     }
 
-    public Account remove(String key) {
+    public AssetAsset remove(String key) {
         return terminalContext.remove(key(key));
     }
 
     private String key(String key) {
-
         return Constants.PARAM_TERMINAL_PREFIX_KEY + key;
     }
 

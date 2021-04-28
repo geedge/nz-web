@@ -24,7 +24,6 @@ package com.nis.modules.terminal.config;
 import cn.hutool.core.util.StrUtil;
 import com.nis.common.utils.DigestUtils;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.terminal.entity.Account;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.ObjectUtils;
@@ -281,14 +280,14 @@ public class TerminalSession implements Serializable {
         return terminalSession.remove(key);
     }
 
-    public static boolean isOpened(Account terminal) {
+    /*public static boolean isOpened(Account terminal) {
         for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
             if (entry.getValue().getTerminal().equals(terminal)) {
                 return true;
             }
         }
         return false;
-    }
+    }*/
 
     public static List<TerminalClient> findClient(Serializable sessionId) throws IOException {
         List<TerminalClient> terminalClients = new ArrayList<TerminalClient>(0);
@@ -316,7 +315,7 @@ public class TerminalSession implements Serializable {
         return terminalClients;
     }
 
-    public static WebSocketSession findSession(Account terminal) {
+    /*public static WebSocketSession findSession(Account terminal) {
         for (Map.Entry<WebSocketSession, TerminalClient> entry : terminalSession.entrySet()) {
             TerminalClient client = entry.getValue();
             if (client.getTerminal().equals(terminal)) {
@@ -324,7 +323,7 @@ public class TerminalSession implements Serializable {
             }
         }
         return null;
-    }
+    }*/
 
     /**
      * 通过 uuid 得到 webSocketSession 对象
