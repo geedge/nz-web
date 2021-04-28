@@ -29,7 +29,7 @@ public class MonitorModuleController {
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
     @RequiresPermissions({"module:info"})
     public R queryModuleEntity(@PathVariable("id") Integer id) {
-        return R.ok(monitorModuleService.queryModuleEntity(id));
+        return R.ok(monitorModuleService.queryModuleInfo(id));
     }
 
     /**

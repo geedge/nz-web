@@ -10,7 +10,7 @@ import java.util.Map;
 
 public interface MonitorModuleService extends IService<MonitorModule> {
 
-    MonitorModule queryModuleEntity(Integer id);
+    MonitorModule queryModuleInfo(Integer id);
 
     PageUtils queryPage(Map<String, Object> params);
 

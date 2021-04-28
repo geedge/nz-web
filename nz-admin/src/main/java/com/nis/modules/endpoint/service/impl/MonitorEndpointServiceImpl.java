@@ -278,11 +278,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
             // 名称为空 则按照 module endpoint 名称模板生成对应名称
             if (ToolUtil.isEmpty(endpoint.getName())) {
-                String endpointNameTmpl = module.getEndpointNameTmpl();
-                Map varsVal = new HashMap(4);
-                varsVal.put("asset.host", assetIdAndHostMap.get(endpoint.getAssetId()));
-                varsVal.put("module.name", module.getName());
-                String generateEndpointName = expreTmplService.renderExpression(endpointNameTmpl, varsVal);
+                AssetAsset asset = assetService.queryAssetInfo(endpoint.getAssetId());
+                MonitorModule module1 = monitorModuleService.queryModuleInfo(endpoint.getModuleId());
+                String generateEndpointName = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
                 endpoint.setName(generateEndpointName);
             }
 
@@ -604,11 +602,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 String name = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(name)) {
-                    String endpointNameTmpl = module.getEndpointNameTmpl();
-                    Map varsVal = new HashMap(4);
-                    varsVal.put("asset.host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
-                    varsVal.put("module.name", module.getName());
-                    name = expreTmplService.renderExpression(endpointNameTmpl, varsVal);
+                    AssetAsset asset = assetService.queryAssetInfo(monitorEndpoint.getAssetId());
+                    MonitorModule module1 = monitorModuleService.queryModuleInfo(module.getId());
+                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
                 }
 
                 List<String> monitorEndpointNameList = moduleIdAndEndpointNamesMap.get(module.getId());
@@ -618,7 +614,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ENDPOINT_NAME_DUPLICATE.getMsg());
                     continue;
                 }
-
 
                 // config 如果为空 则设置 module configs
                 if (StringUtils.isEmpty(configs)) {
@@ -693,7 +688,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 				throw new NZException(RCode.ASSET_ID_ISNULL);
 			}
 			
-			MonitorModule module = monitorModuleService.queryModuleEntity(moduleId);
+			MonitorModule module = monitorModuleService.queryModuleInfo(moduleId);
 			String configs = (String) param.get("configs");
 			if(ToolUtil.isEmpty(configs)) {
 				configs = module.getConfigs();
