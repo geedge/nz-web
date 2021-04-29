@@ -57,4 +57,6 @@ public interface StatService{
 	List<StatAnalysis> queryAgentType(Map<String,Object> params);
 	
 	StatAnalysis queryAssetHealthy(Map<String,Object> params);
+	
+	List<Map> queryOverviewMap();
 }

@@ -514,4 +514,39 @@
 			and aa.state_id = #{params.stateId}
 		</if>
     </select>
+    
+    
+    <select id="selectDcAssetUnhealthy" resultMap="statAnalysis">
+    	select aa.dc_id id, 
+    	count(DISTINCT aa.id) alarm
+		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
+		left join alert_message am on aa.id = am.asset_id
+		where (ap.`status`=0 or ap.status is null or am.state=1)
+		group by aa.dc_id
+    </select>
+    
+    <select id="selectDcEndpointUnhealthy" resultMap="statAnalysis">
+    	select 
+		dc.id id,
+		count(*) total,
+		sum(case when mes.state=1 then 1 else 0 end) ok
+		from dc left join asset_asset aa on dc.id = aa.dc_id
+		left join asset_ping ap on aa.id = ap.asset_id
+		left join monitor_endpoint me on aa.id = me.asset_id
+		left join monitor_endpoint_state mes on me.id = mes.endpoint_id
+		group by dc.id
+    </select>
+    
+    <select id="selectDcAlertMessage" resultMap="statAnalysis">
+    	SELECT
+		count(*) total,
+		am.dc_id id,
+		ascc.name name
+	FROM
+		alert_message am
+		LEFT JOIN alert_severity_conf ascc ON am.severity_id = ascc.id 
+	GROUP BY
+		am.dc_id,
+		am.severity_id
+    </select>
 </mapper>

@@ -53,7 +53,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/dc")
 	public R assetDc(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetDc(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -64,7 +64,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/type")
 	public R assetType(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetType(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -75,7 +75,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/state")
 	public R assetState(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetState(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -86,7 +86,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/model")
 	public R assetModel(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetModel(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -97,7 +97,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/ping")
 	public R assetPing(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetPing(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -108,7 +108,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/asset/field")
 	public R assetField(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAssetField(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -120,7 +120,7 @@ public class StatController extends AbstractController {
 	public R assetTopN(@RequestParam Map<String,Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryAssetTopN(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -154,7 +154,7 @@ public class StatController extends AbstractController {
 	public R moduleTopN(@RequestParam Map<String,Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryModuleTopN(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -176,7 +176,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/endpoint/type")
 	public R endpointType(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryEndpointType(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -187,7 +187,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/endpoint/state")
 	public R endpointState(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryEndpointState(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -198,7 +198,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/alertRule/total")
 	public R alertRuleTotal(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAlertRuleTotal(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -220,7 +220,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/alertMessage/state")
 	public R alertMessageState(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAlertMessageState(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -231,7 +231,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/alertMessage/severity")
 	public R alertMessageSeverity(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAlertMessageSeverity(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -243,7 +243,7 @@ public class StatController extends AbstractController {
 	public R alertMessageTopN(@RequestParam Map<String,Object> params) {
 		ValidateUtils.is(params.get("dimension")).notNull(RCode.DIMENSION_IS_NULL);
 		List<StatAnalysis> result = statService.queryAlertMessageTopN(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -264,7 +264,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/dc/state")
 	public R dcState() {
 		List<StatAnalysis> result = statService.queryDcState();
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -286,7 +286,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/agent/state")
 	public R agentState(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAgentState(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -297,7 +297,7 @@ public class StatController extends AbstractController {
 	@GetMapping("/agent/type")
 	public R agentType(@RequestParam Map<String,Object> params) {
 		List<StatAnalysis> result = statService.queryAgentType(params);
-		return R.ok(result);
+		return R.ok().putData("list", result);
 	}
 	
 	/**
@@ -310,4 +310,16 @@ public class StatController extends AbstractController {
 		StatAnalysis result = statService.queryAssetHealthy(params);
 		return R.ok(result);
 	}
+	
+	/**
+	 * OVERVIEW map数据接口
+	 * @param params
+	 * @return
+	 */
+	@GetMapping("/overview/map")
+	public R overviewMap() {
+		List<Map> result = statService.queryOverviewMap();
+		return R.ok().putData("list", result);
+	}
+	
 }
