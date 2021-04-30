@@ -139,6 +139,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if (ToolUtil.isNotEmpty(params.get("moduleIds"))) {
             params.put("moduleIds", String.valueOf(params.get("moduleIds")).split(StringPool.COMMA));
         }
+        // assetIds
+        if (ToolUtil.isNotEmpty(params.get("assetIds"))) {
+            params.put("assetIds", String.valueOf(params.get("assetIds")).split(StringPool.COMMA));
+        }
         // states
         if (ToolUtil.isNotEmpty(params.get("states"))) {
             params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
