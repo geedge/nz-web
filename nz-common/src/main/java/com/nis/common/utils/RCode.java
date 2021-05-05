@@ -434,7 +434,7 @@ public enum RCode {
     ALERTRULE_DESCRIPTION_ISNULL(4210629, "Alert description can not be empty"),
     ALERTRULE_RECEIVER_NOTFOUND(421030, "Alert receiver user not found"),
     ALERTRULE_IMPORT_ERROR(423031, "Alert import error"),
-
+    ALERTRULE_METHOD_ISNULL(421027, "Alert rule method can not be null"),
 
     /**
      * 告警通知脚本
@@ -452,10 +452,10 @@ public enum RCode {
      */
     ALERTSILENCE_STARTTIME_ISNULL(441001,"AlertSilence start time can not be null"),
     ALERTSILENCE_ENDTIME_ISNULL(441002,"AlertSilence end time can not be null"),
-    ALERTSILENCE_RULE_LINK_IS_NULL(441003,"AlertSilence ruleId or linkId can not be empty at the same time"),
-    ALERTSILENCE_TYPE_LINKID_IS_NULL(441004,"LinkId is not empty, Type can not be empty"),
+    ALERTSILENCE_ENDTIME_MUSTGTNOW(441003,"AlertSilence end time must great now time"),
+    ALERTSILENCE_ID_IS_NOT_NULL(441004,"ids can not be null"),
     ALERTSILENCE_TYPE_ERROR(445005,"AlertSilence type value error"),
-
+    ALERTSILENCE_MATCHER_ISNULL(441006,"AlertSilence matchers can not be null"),
 
     /**
      *  告警级别

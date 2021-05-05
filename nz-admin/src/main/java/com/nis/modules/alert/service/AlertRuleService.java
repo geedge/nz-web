@@ -26,7 +26,6 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	void delete(Integer[] ids);
 
-	Map getAlertStatById(Integer id);
 
 	void getExportTemplateByLanguage(HttpServletResponse response, String language);
 

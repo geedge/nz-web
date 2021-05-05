@@ -1,18 +1,30 @@
 package com.nis.modules.alert.controller;
 
-import cn.hutool.log.Log;
+import java.util.Arrays;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.alert.service.AlertMessageService;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.TypeEnum;
+import com.nis.modules.alert.service.AlertHandlerService;
 
-import javax.servlet.http.HttpServletResponse;
-import java.util.Arrays;
-import java.util.Map;
+import cn.hutool.log.Log;
 
 
 /**
@@ -28,8 +40,7 @@ public class AlertMessageController {
 
 	private final static Log logger = Log.get();
 
-	@Autowired
-    private AlertMessageService alertMessageService;
+	private AlertHandlerService handlerService;
 
     /**
      * 列表
@@ -38,27 +49,16 @@ public class AlertMessageController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
     @RequiresPermissions({"alert:message:list"})
     public R list(@RequestParam Map<String, Object> params){
-        PageUtils page = alertMessageService.queryPage(params);
+    	logger.debug("query param : {}", Tool.JSONUtil.toJsonStr(params));
+    	//state不能为空
+    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(params.get("state"));
+    	if(!containsstate) {
+    		throw new NZException(RCode.ERROR);
+    	}
+        PageUtils page = handlerService.queryMessagePage(params);
 		return R.ok(page);
     }
 
-	@RequestMapping( method = RequestMethod.PUT)
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTMESSAGE)
-	@RequiresPermissions({"alert:message:update"})
-    public R update(@RequestBody Map<String, Object> params) {
-		ValidateUtils.is(params.get("ids")).notNull(RCode.ALERTMSG_IDS_ISNULL)
-				.and(params.get("state")).notNull(RCode.ALERTMSG_STATE_ISNULL)
-				.and(params.get("remark")).notNull(RCode.ALERTMSG_REMARK_ISNULL);
-
-		//校验state合法性
-		Integer state = (Integer) params.get("state");
-		if (!Constant.ALERTMESSAGE_STATE.contains(state)) {
-			throw new NZException(RCode.ALERTMSG_STATE_INCORRECT);
-		}
-
-		alertMessageService.updateAlertStateByIds(params);
-    	return R.ok();
-    }
 
     /**
      * 删除
@@ -66,11 +66,13 @@ public class AlertMessageController {
     @RequestMapping( method = RequestMethod.DELETE)
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTMESSAGE)
     @RequiresPermissions({"alert:message:delete"})
-    public R delete(String ids) {
+    public R delete(Long[] ids,Integer state) {
     	ValidateUtils.is(ids).notNull();
-    	String[] split = ids.split(",");
-		alertMessageService.removeByIds(Arrays.asList(split));
-
+    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(state);
+    	if(!containsstate) {
+    		throw new NZException(RCode.ERROR);
+    	}
+    	handlerService.removeMessageByIds(state,ids);
         return R.ok();
     }
 
@@ -81,6 +83,6 @@ public class AlertMessageController {
 	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
 	@RequiresPermissions({"alert:message:export"})
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
-		alertMessageService.export(response,params);
+		handlerService.exportMessage(response,params);
 	}
 }

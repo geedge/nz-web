@@ -1,41 +1,32 @@
 package com.nis.modules.alert.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.modules.alert.dao.AlertMessageDao;
-import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.dao.AlertSilenceDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSilenceConf;
-import com.nis.modules.alert.service.AlertSilenceService;
-import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.dao.DcDao;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.module.dao.ModuleDao;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.project.dao.ProjectDao;
-import com.nis.modules.project.entity.Project;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.modules.alert.dao.AlertSilenceDao;
+import com.nis.modules.alert.entity.AlertSilenceConf;
+import com.nis.modules.alert.entity.AlertSilenceMatcher;
+import com.nis.modules.alert.service.AlertHandlerService;
+import com.nis.modules.alert.service.AlertSilenceService;
+
+import cn.hutool.core.date.DateTime;
+import cn.hutool.log.Log;
 
 @Service("alertSilenceService")
 public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSilenceConf> implements AlertSilenceService{
@@ -44,31 +35,17 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	
 	@Autowired
 	private AlertSilenceDao alertSilenceDao;
-	
 	@Autowired
-	private DcDao dcDao;
+	private AlertHandlerService handlerService;
 	
-	@Autowired
-	private AssetDao assetDao;
-	
-	@Autowired
-	private ModuleDao moduleDao;
-	
-	@Autowired
-	private ProjectDao projectDao;
-	
-	@Autowired
-	private EndpointDao endpointDao;
-	
-	@Autowired
-	private AlertRuleDao alertRuleDao;
-	
-	@Autowired
-	private AlertMessageDao alertMessageDao;
+	@Override
+	public AlertSilenceConf queryAlertSilence(Integer id) {
+		AlertSilenceConf alertSilenceConf = alertSilenceDao.selectById(id);
+		return alertSilenceConf;
+	}
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		
 		try {
 			if (params.get("startAt") != null && !StringUtils.isBlank(params.get("startAt").toString())) {
 				Date searchStartAt = DateUtils.parseDate(params.get("startAt").toString(), "yyyy-MM-dd HH:mm:ss");
@@ -88,179 +65,107 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		return new PageUtils(page);
 	}
 
+	/**
+	 * 新增  silence conf 告警静默规则
+	 */
 	@Override
-	public void saveOrUpdateAlertSilence(AlertSilenceConf alertSilenceConf) {
-		// 告警规则id 和 linkId 不能同时为空
-		if ((ObjectUtil.isEmpty(alertSilenceConf.getRuleId())) && (ObjectUtil.isEmpty(alertSilenceConf.getLinkId())))
-		{
-			throw new NZException(RCode.ALERTSILENCE_RULE_LINK_IS_NULL);
+	public void saveAlertSilenceConf(AlertSilenceConf conf) {
+		DateTime now = Tool.DateUtil.date();
+		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
+			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
-		// 关联id，存在时 type不能为空
-		if(ObjectUtil.isNotEmpty(alertSilenceConf.getLinkId())&& (ObjectUtil.isEmpty(alertSilenceConf.getType()))) 
-		{
-			throw new NZException(RCode.ALERTSILENCE_TYPE_LINKID_IS_NULL);
+		String matchers = conf.getMatchers();
+		List<AlertSilenceMatcher> matcherList = Tool.JSONUtil.toList(matchers, AlertSilenceMatcher.class);
+		if(Tool.CollUtil.isEmpty(matcherList)) {
+			throw new NZException(RCode.ALERTSILENCE_MATCHER_ISNULL);
 		}
-		
-		// 校验type类型是否正确
-		if(ObjectUtil.isNotEmpty(alertSilenceConf.getType())&&(!this.checkType(alertSilenceConf.getType())))
-		{
-			throw new NZException(RCode.ALERTSILENCE_TYPE_ERROR);
-		}
-		
-		// 根据传入的时间判断静默的状态
-	    Date currentTime = new Date();
-	    /**
-	     *  判断当前时间与静默设置时间的对比 
-	     *  如果当前时间小于开始时间 状态为active
-	     *  如果当前时间大于开始时间 小于结束时间 状态为pending
-	     *  如果当前时间大于结束时间 状态为expired 
-	     */
-		if(currentTime.before(alertSilenceConf.getStartAt())) {
-			alertSilenceConf.setState(1);
-		}else if(currentTime.after(alertSilenceConf.getStartAt())&&currentTime.before(alertSilenceConf.getEndAt())){
-			alertSilenceConf.setState(2);
+		if(Tool.DateUtil.compare(conf.getStartAt(), now)<0) {//直接生效
+			conf.setState(Constant.ALERT_SILENCE_STATE_ACTIVE);
+			alertSilenceDao.insert(conf);
+			logger.debug("save silenceconf : {}",Tool.JSONUtil.toJsonStr(conf));
+			List<AlertSilenceConf> list = Tool.ListUtil.of(conf);
+			//处理已经处于 active 状态的 alert message是否符合静默规则
+			handlerService.handleSilenceConfPendingToActive(list);
 		}else {
-			alertSilenceConf.setState(3);
+			conf.setState(Constant.ALERT_SILENCE_STATE_PENDING);
+			alertSilenceDao.insert(conf);
+			logger.debug("save silenceconf : {}",Tool.JSONUtil.toJsonStr(conf));
 		}
-	    
-		//更新时间
-		alertSilenceConf.setUtime(new Date());
-		
-		if(ObjectUtil.isNotEmpty(alertSilenceConf.getId())) {
-			alertSilenceDao.updateById(alertSilenceConf);
-		}else {
-			alertSilenceDao.insert(alertSilenceConf);
-		}
-		
-		// 如果alert message已经存在告警 需要将符合静默的数据状态state改为3
-		if(alertSilenceConf.getState().equals(2)) {
-			alertMessageDao.updateStateBySilence(alertSilenceConf);
-		}		
-	}
-
-	@Override
-	public void removeByIds(List<Integer> ids) {
-		/**
-		 * 不直接删除表中数据
-		 * 当 silence 状态为 active 时，修改 endtime 为当前时间，并将 state 改为 expired
-         * 当 silence 状态为 pending 时，修改 starttime，endtime 为当前时间，并将 state 改为 expired
-		 */
-		List<AlertSilenceConf> alertSilenceConfs = alertSilenceDao.selectBatchIds(ids);
-		for(AlertSilenceConf alertSilenceConf : alertSilenceConfs) {
-			if(alertSilenceConf.getState().equals(1)) {
-				alertSilenceConf.setEndAt(new Date());
-				alertSilenceConf.setState(3);
-			}else if(alertSilenceConf.getState().equals(2)) {
-				alertSilenceConf.setStartAt(new Date());
-				alertSilenceConf.setEndAt(new Date());
-				alertSilenceConf.setState(3);
-			}
-			alertSilenceConf.setUtime(new Date());
-		}
-		this.saveOrUpdateBatch(alertSilenceConfs);
-	}
-
-	@Override
-	public AlertSilenceConf queryAlertSilence(Integer id) {
-		AlertSilenceConf alertSilenceConf = alertSilenceDao.selectById(id);
-
-		if(ObjectUtil.isNotEmpty(alertSilenceConf)) {
-			
-			AlertRuleEntity alertRule = alertRuleDao.selectById(alertSilenceConf.getRuleId());
-			alertSilenceConf.setAlertRule(alertRule);
-			
-			if(ObjectUtil.isNotEmpty(alertSilenceConf.getType())) {
-				switch(alertSilenceConf.getType()) {
-					case "datacenter":
-						Dc dc = dcDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setDatacenter(dc);
-						break;
-					case "project":
-						Project project = projectDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setProject(project);
-						break;
-					case "module":
-						Module module = moduleDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setModule(module);
-						break;
-					case "asset":
-						Asset asset = assetDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setAsset(asset);
-						break;
-					case "endpoint":
-						Endpoint endpoint = endpointDao.selectById(alertSilenceConf.getLinkId());
-						alertSilenceConf.setEndpoint(endpoint);
-						break;
-				}
-			}
-		}
-		return alertSilenceConf;
 	}
 	
-	public Boolean checkType(String type) {
-		Boolean result=true;
-		switch(type) {
-			case "datacenter":
-				break;
-			case "project":
-				break;
-			case "module":
-				break;
-			case "endpoint":
-				break;
-			case "asset":
-				break;
-			default: 
-				result=false;
-		}
-		return result;
-	}
-
+	/**
+	 * 更新 silencConf
+	 * @param conf
+	 */
 	@Override
-	public boolean checkMatchSilence(AlertMessageEntity alertMessageEntity) {
-		if(ObjectUtil.isEmpty(alertMessageEntity)) {
-			return false;
+	public void updateAlertSilenceConf(AlertSilenceConf conf) {
+		DateTime now = Tool.DateUtil.date();
+		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
+			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
-		List<AlertSilenceConf> alertSilenceConfs = this.list(new LambdaQueryWrapper<AlertSilenceConf>().eq(AlertSilenceConf::getRuleId, alertMessageEntity.getRuleId()).eq(AlertSilenceConf::getState, 2));
-		if(ObjectUtil.isEmpty(alertSilenceConfs)) {
-			return false;
+		String matchers = conf.getMatchers();
+		List<AlertSilenceMatcher> matcherList = Tool.JSONUtil.toList(matchers, AlertSilenceMatcher.class);
+		if(Tool.CollUtil.isEmpty(matcherList)) {
+			throw new NZException(RCode.ALERTSILENCE_MATCHER_ISNULL);
+		}
+		AlertSilenceConf current = alertSilenceDao.selectById(conf.getId());
+		Integer currState = current.getState();//当前状态
+		if(currState == Constant.ALERT_SILENCE_STATE_EXPIRED) {
+			conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
+			alertSilenceDao.updateById(conf);
+			return;
+		}
+		if(Tool.DateUtil.compare(conf.getStartAt(), now)<0) {
+			conf.setState(Constant.ALERT_SILENCE_STATE_ACTIVE);
+			alertSilenceDao.updateById(conf);
+			if(currState == Constant.ALERT_SILENCE_STATE_ACTIVE) {//当前正处于生效状态
+				//将以前 处于静音的 消息失效
+				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.of(current));
+			}
+			//根据 更新后的规则匹配消息
+			handlerService.handleSilenceConfPendingToActive(Tool.ListUtil.of(conf));
 		}else {
-			for(AlertSilenceConf alertSilenceConf : alertSilenceConfs) {
-				if(alertSilenceConf.getLinkId().equals(-1)) {
-					return true;
-				}
-				switch(alertSilenceConf.getType()) {
-					case "datacenter":
-						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getDcId())){
-							return true;
-						}
-					case "project":
-						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getProjectId())){
-							return true;
-						}
-					case "module":
-						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getModuleId())){
-							return true;
-						}
-					case "endpoint":
-						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getEndpointId())){
-							return true;
-						}
-					case "asset":
-						if(alertSilenceConf.getLinkId().equals(alertMessageEntity.getAssetId())){
-							return true;
-						}
-				}
+			conf.setState(Constant.ALERT_SILENCE_STATE_PENDING);
+			alertSilenceDao.updateById(conf);
+			//由   active 变更为 pending
+			if(currState ==  Constant.ALERT_SILENCE_STATE_ACTIVE) {
+				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.of(conf));
 			}
 		}
-		return false;
 	}
-
+	
+	/**
+	 * 将 silence conf 状态改为  expired
+	 * @param conf
+	 */
+	@Transactional
 	@Override
-	public void modifySilenceState() {
-		
-		alertSilenceDao.updateSilenceState(new Date());
-		
+	public void updateAlertSilenceConfExpiredBatch(Integer ... ids) {
+		for(Integer id : ids) {
+			if(id == null) {
+				continue;
+			}
+			AlertSilenceConf conf = alertSilenceDao.selectById(id);
+			if(conf == null) {
+				continue;
+			}
+			DateTime now = Tool.DateUtil.date();
+			conf.setEndAt(now);
+			conf.setUtime(now);
+			if(conf.getState() == Constant.ALERT_SILENCE_STATE_PENDING) {
+				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
+				conf.setStartAt(now);
+				alertSilenceDao.updateById(conf);
+			} else if(conf.getState() == Constant.ALERT_SILENCE_STATE_ACTIVE) {
+				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
+				alertSilenceDao.updateById(conf);
+				//处理 处于静默状态的告警消息
+				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.toList(conf));
+			}else {
+				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
+				alertSilenceDao.updateById(conf);
+			}
+		}
 	}
 	
 }

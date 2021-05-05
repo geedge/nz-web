@@ -1,31 +1,26 @@
 package com.nis.modules.alert.entity.receive;
 
-import cn.hutool.core.util.StrUtil;
-import com.google.gson.Gson;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import lombok.Data;
-import org.springframework.util.DigestUtils;
-
 import java.io.Serializable;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.nis.common.utils.Tool;
+
+import cn.hutool.crypto.SecureUtil;
+import lombok.Data;
 
 /**
  * 用来接收告警信息的DTO类
  */
 @Data
+@SuppressWarnings("all")
 public class AlertMessageReceiveDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
-    private static Gson gson = new Gson();
-
-    private Map labels;
+    private LinkedHashMap<String,String> labels;
 
     private Map labelIds;
 
@@ -39,85 +34,8 @@ public class AlertMessageReceiveDTO implements Serializable {
 
     private Boolean snmptrap;
 
-    public static AlertMessageEntity toAlertMessageEntity(AlertMessageReceiveDTO dto, Integer buildRuleId) throws ParseException {
-        AlertMessageEntity entity = new AlertMessageEntity();
-        //取出labels，计算hash，查询redis看是否有重复
-        Map receiveLabels = dto.getLabels();
-        String md5DigestAsHex = DigestUtils.md5DigestAsHex(gson.toJson(receiveLabels).getBytes());
-        entity.setHashKey(md5DigestAsHex);
-        entity.setLabels(gson.toJson(receiveLabels));
-
-        Map receiveAnnotations = dto.getAnnotations();
-        entity.setDescription((String) receiveAnnotations.get("description"));
-        entity.setSummary((String) receiveAnnotations.get("summary"));
-
-        // 时区转换 按照数据库配置时区入库
-        String startsAt = dto.getStartsAt();
-        String endsAt = dto.getEndsAt();
-
-        Date sa = sdf.parse(startsAt);
-
-        // trap 推送过来的消息 endsAt 为空
-        Date endsAtDate = null;
-        if (StringUtils.isNotEmpty(endsAt)) {
-            endsAtDate = sdf.parse(endsAt);
-        }
-
-        // snmptrap 不需要做时间处理
-        String alertname = (String) receiveLabels.get("alertname");
-        if(!StrUtil.equals(String.valueOf(buildRuleId),alertname)) {
-            boolean b = startsAt.endsWith("Z");
-            if (!b) {
-                // 其他时区 格式统一 为  2020-10-15T23:32:30.841162867（+12:00/+08:00/-05:00）
-                int i = startsAt.lastIndexOf(":");
-                String timezoneStr = startsAt.substring(i - 3, i);
-                int timezone = Integer.parseInt(timezoneStr);
-                sa = getUTCDateByTimeZone(sa, timezone);
-
-                int i1 = endsAt.lastIndexOf(":");
-                String timezoneStr1 = startsAt.substring(i1 - 3, i1);
-                int timezone1 = Integer.parseInt(timezoneStr1);
-                endsAtDate = getUTCDateByTimeZone(endsAtDate, timezone1);
-            }
-        }
-        entity.setStartAt(sa);
-        entity.setEndAt(endsAtDate);
-
-        entity.setState(1);
-
-        Map labelIds = dto.labelIds;
-
-        if(ToolUtil.isNotEmpty(labelIds.get("endpoint"))){
-            entity.setEndpointId(Integer.parseInt( labelIds.get("endpoint").toString()));
-        }
-        if(ToolUtil.isNotEmpty(labelIds.get("project"))){
-            entity.setProjectId(Integer.parseInt(labelIds.get("project").toString()));
-        }
-        if(ToolUtil.isNotEmpty(labelIds.get("assetId"))){
-            entity.setAssetId(Integer.parseInt(labelIds.get("assetId").toString()));
-        }
-        if(ToolUtil.isNotEmpty(labelIds.get("module"))){
-            entity.setModuleId(Integer.parseInt(labelIds.get("module").toString()));
-        }
-        if(ToolUtil.isNotEmpty(labelIds.get("datacenter"))){
-            entity.setDcId(Integer.parseInt( labelIds.get("datacenter").toString()));
-        }
-
-        entity.setRuleId(Integer.parseInt((String) receiveLabels.get("alertname")));
-        entity.setSeverityId( Integer.parseInt(receiveLabels.get("severity_id").toString()));
-        return entity;
-    }
-
-    public static Date getUTCDateByTimeZone(Date sa,int timezone) {
-        int tempTime = timezone * 3600000;
-        long time = sa.getTime();
-
-        if (timezone > 0) {
-            time -= (tempTime > 0 ? tempTime : (tempTime *= -1));
-        } else {
-            time += tempTime > 0 ? tempTime : (tempTime *= -1);
-        }
-        sa = new Date(time);
-        return sa;
+    public String genHashKey() {
+    	
+    	return SecureUtil.md5(Tool.JSONUtil.toJsonStr(labels));
     }
 }

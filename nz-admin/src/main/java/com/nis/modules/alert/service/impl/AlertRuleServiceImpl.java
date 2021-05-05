@@ -1,37 +1,19 @@
 package com.nis.modules.alert.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.alert.dao.AlertMessageDao;
-import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertRuleStat;
-import com.nis.modules.alert.entity.AlertSeverityConf;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.alert.service.AlertSeverityService;
-import com.nis.modules.asset.dao.AssetDao;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.module.dao.ModuleDao;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.project.dao.ProjectDao;
-import com.nis.modules.project.entity.Project;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserService;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -45,14 +27,40 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.YamlUtil;
+import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleStat;
+import com.nis.modules.alert.entity.AlertSeverityConf;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.alert.service.AlertSeverityService;
+import com.nis.modules.asset.dao.AssetAssetDao;
+import com.nis.modules.endpoint.dao.MonitorEndpointDao;
+import com.nis.modules.module.dao.MonitorModuleDao;
+import com.nis.modules.project.dao.MonitorProjectDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.ObjectUtil;
+import lombok.extern.slf4j.Slf4j;
 
 @Service("alertRuleService")
 @Slf4j
@@ -67,19 +75,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private YamlUtil yamlUtil;
 
     @Autowired
-    private ProjectDao projectDao;
+    private MonitorProjectDao projectDao;
 
     @Autowired
-    private ModuleDao moduleDao;
+    private MonitorModuleDao moduleDao;
 
     @Autowired
-    private AssetDao assetDao;
+    private AssetAssetDao assetDao;
+
+//    @Autowired
+//    private AlertMessageDao alertMessageDao;
 
     @Autowired
-    private AlertMessageDao alertMessageDao;
-
-    @Autowired
-    private EndpointDao endpointDao;
+    private MonitorEndpointDao endpointDao;
 
     @Autowired
     private SysConfigService sysConfigService;
@@ -190,6 +198,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         String receiver = alertRule.getReceiver();
         if (StringUtils.isNotEmpty(receiver)) {
             this.validateReceiver(receiver);
+            String method = alertRule.getMethod();
+            ValidateUtils.is(method).notNull(RCode.ALERTRULE_METHOD_ISNULL);
         }
 
         // 入库
@@ -217,119 +227,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.removeByIds(idList);
 
         // 删除关联的告警消息
-        alertMessageDao.delete(new QueryWrapper<AlertMessageEntity>().lambda().in(AlertMessageEntity::getRuleId, idList));
+//        alertMessageDao.delete(new QueryWrapper<AlertMessageEntity>().lambda().in(AlertMessageEntity::getRuleId, idList));
     }
 
-    @Override
-    public Map getAlertStatById(Integer id) {
-        Map resultData = new HashMap();
-
-        // 1. project 统计
-        List<AlertRuleStat> ruleStatGooupByProject = alertRuleDao.getRuleStatGooupByProject(id);
-        if (CollectionUtils.isNotEmpty(ruleStatGooupByProject)) {
-
-            // 查询 module 统计信息
-            List<AlertRuleStat> ruleStatGooupByModule = alertRuleDao.getRuleStatGooupByModule(id);
-
-            // 处理 project 名称
-            List<Project> projects = projectDao.selectList(null);
-            Map<Integer, String> projectIdAndNameMap = projects.stream().collect(Collectors.toMap(Project::getId, Project::getName));
-            this.handleRuleStatName(ruleStatGooupByProject, projectIdAndNameMap);
-
-
-            // 如果 module 统计信息不为空
-            if (CollectionUtils.isNotEmpty(ruleStatGooupByModule)) {
-
-                // endpoint 统计
-                List<AlertRuleStat> ruleStatGooupByEndpoint = alertRuleDao.getRuleStatGooupByEndpoint(id);
-
-                // 处理 module 名称
-                List<Integer> projectIds = ruleStatGooupByProject.stream().map(AlertRuleStat::getId).collect(Collectors.toList());
-                List<Module> modules = moduleDao.selectList(new QueryWrapper<Module>().lambda().in(Module::getProjectId, projectIds));
-                Map<Integer, String> moduleIdAndNameMap = modules.stream().collect(Collectors.toMap(Module::getId, Module::getName));
-                this.handleRuleStatName(ruleStatGooupByModule, moduleIdAndNameMap);
-
-                // endpoint 统计不为空
-                if (CollectionUtils.isNotEmpty(ruleStatGooupByEndpoint)) {
-
-                    Map<Integer, AlertRuleStat> endpointStatMap = new HashMap<>();
-                    for (AlertRuleStat stat : ruleStatGooupByEndpoint) {
-                        endpointStatMap.put(stat.getId(), stat);
-                    }
-
-                    // 查询 endpoint 并根据 moduleId 分组
-                    List<Integer> moduleIds = ruleStatGooupByModule.stream().map(AlertRuleStat::getId).collect(Collectors.toList());
-                    List<Endpoint> endpoints = endpointDao.selectList(new QueryWrapper<Endpoint>().lambda().in(Endpoint::getModuleId, moduleIds));
-                    Map<Integer, List<Endpoint>> moduleIdAndEndpoints = endpoints.stream().collect(Collectors.groupingBy(Endpoint::getModuleId));
-
-                    List<Endpoint> endpointsByModuleId;
-                    List<Integer> endPointIds;
-                    List<AlertRuleStat> list;
-                    AlertRuleStat endpointStat;
-                    for (AlertRuleStat moduleStat : ruleStatGooupByModule) {
-                        // 取出 moudle 对应的 endpoints
-                        endpointsByModuleId = moduleIdAndEndpoints.get(moduleStat.getId());
-                        if (CollectionUtils.isNotEmpty(endpointsByModuleId)) {
-                            endPointIds = endpointsByModuleId.stream().map(Endpoint::getId).collect(Collectors.toList());
-                            list = new ArrayList<>();
-                            for (Integer endpointId : endPointIds) {
-                                endpointStat = endpointStatMap.get(endpointId);
-                                if (ToolUtil.isNotEmpty(endpointStat)) {
-                                    list.add(endpointStat);
-                                }
-                            }
-                            if (CollectionUtils.isNotEmpty(list)) {
-                                moduleStat.setEndpoint(list.stream().sorted((a1, a2) -> a2.getNums().compareTo(a1.getNums())).collect(Collectors.toList()));
-                            }
-                        }
-                    }
-                }
-
-                // 处理 project 对应 module 信息
-                Map<Integer, AlertRuleStat> moduleStatMap = new HashMap<>();
-                for (AlertRuleStat stat : ruleStatGooupByModule) {
-                    moduleStatMap.put(stat.getId(), stat);
-                }
-
-                Map<Integer, List<Module>> projectIdAndModules = modules.stream().collect(Collectors.groupingBy(Module::getProjectId));
-
-                List<Module> modulesByProjectId;
-                List<Integer> moduleIds;
-                List<AlertRuleStat> list;
-                AlertRuleStat moduleStat;
-                for (AlertRuleStat projectStat : ruleStatGooupByProject) {
-                    modulesByProjectId = projectIdAndModules.get(projectStat.getId());
-                    if (CollectionUtils.isNotEmpty(modulesByProjectId)) {
-                        moduleIds = modulesByProjectId.stream().map(Module::getId).collect(Collectors.toList());
-                        list = new ArrayList<>();
-                        for (Integer moduleId : moduleIds) {
-                            moduleStat = moduleStatMap.get(moduleId);
-                            if (ToolUtil.isNotEmpty(moduleStat)) {
-                                list.add(moduleStat);
-                            }
-                        }
-                        if (CollectionUtils.isNotEmpty(list)) {
-                            projectStat.setModule(list.stream().sorted((a1, a2) -> a2.getNums().compareTo(a1.getNums())).collect(Collectors.toList()));
-                        }
-                    }
-                }
-            }
-
-            resultData.put("project", ruleStatGooupByProject);
-        } else {
-            resultData.put("project", Collections.EMPTY_LIST);
-        }
-
-        // asset 统计
-        List<Asset> assets = assetDao.selectList(null);
-        Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(Asset::getId, Asset::getHost));
-
-        List<AlertRuleStat> ruleStatGooupByAsset = alertRuleDao.getRuleStatGooupByAsset(id);
-        this.handleRuleStatName(ruleStatGooupByAsset, assetIdAndHostMap);
-
-        resultData.put("asset", ruleStatGooupByAsset);
-        return resultData;
-    }
 
     @Override
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
@@ -734,9 +634,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	        }
 	        
 	        // 获取该告警下的告警数量
-	        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id).eq(AlertMessageEntity::getState, 1));
-	        
-	        alertRule.setAlertNum(alertNum);
+//	        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id).eq(AlertMessageEntity::getState, 1));
+//	        
+//	        alertRule.setAlertNum(alertNum);
 		}
 		
 		return alertRule;

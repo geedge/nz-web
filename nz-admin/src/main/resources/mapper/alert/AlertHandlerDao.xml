@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.alert.dao.AlertHandlerDao">
+	<resultMap type="com.nis.modules.alert.entity.AlertMessageEntity" id="alertMessageMap">
+        <result property="id" column="id"/>
+        <result property="ruleId" column="rule_id"/>
+		<result property="projectId" column="project_id"/>
+		<result property="moduleId" column="module_id"/>
+		<result property="endpointId" column="endpoint_id"/>
+		<result property="assetId" column="asset_id"/>
+		<result property="dcId" column="dc_id"/>
+        <result property="severityId" column="severity_id"/>
+        <result property="summary" column="summary"/>
+        <result property="description" column="description"/>
+        <result property="labels" column="labels"/>
+        <result property="startAt" column="start_at"/>
+        <result property="endAt" column="end_at"/>
+        <result property="state" column="state"/>
+		<result property="hashKey" column="hash_key"/>
+		<result property="remark" column="remark"/>
+		<association columnPrefix="r_" property="alertRule" javaType="com.nis.modules.alert.entity.AlertRuleEntity">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association columnPrefix="e_" property="enpoint" javaType="com.nis.modules.endpoint.entity.MonitorEndpoint">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
+			<result property="id" column="id"/>
+			<result property="name" column="name"/>
+			<result property="color" column="color"/>
+		</association>
+    </resultMap>
+
+
+	<!-- 根据id查询 alert message -->
+	<select id="selectMessageByIdAndTableName" resultMap="alertMessageMap">
+		select * from ${tableName} where id = #{messageId}
+	</select>
+	
+	<!-- 根据id查询 alert message -->
+	<select id="selectMessageByIdAndTableName" resultMap="alertMessageMap">
+		select * from ${tableName} where id in 
+		<foreach collection="ids" item="item" separator="," open="(" close=")">
+			#{messageId}
+		</foreach>
+	</select>
+	
+	<!-- 查询所有 active 状态 alert message -->
+	<select id="selectAllActiveMessage" resultMap="alertMessageMap">
+		select * from alert_message_active 
+	</select>
+	
+	<!-- 查询 状态未及时 修改的 alert message -->
+	<select id="selectMessageEndAtltNow" resultMap="alertMessageMap">
+		select * from ${tableName} where end_at &lt; #{now}
+	</select>
+	
+	<!-- 根据id批量删除 alert message -->
+	<delete id="deleteMessageByIdsAndTableName">
+		delete from ${tableName} where id in 
+		<foreach collection="array" item="id" separator="," open="(" close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 更新 alert message endat时间 -->
+	<update id="updateMessageEndAt" >
+		update ${tableName} set end_at = #{endAt} where id = #{id}
+	</update>
+	
+	<!-- 保存silence 与匹配的 告警消息的 关联关系 -->
+	<insert id="saveAlertSilenceMessageRel">
+		insert into ALERT_SILENCE_MESSAGE_REL 
+			(silence_conf_id,message_id,hash_key)
+		VALUES
+		<foreach collection="list" item="item" separator="," >
+			( #{item.silenceConfId}, #{item.messageId}, #{item.hashKey} )
+		</foreach>
+	</insert>
+	
+	<!-- 根据message id查找 已经匹配过的 silence conf 信息 -->
+	<select id="selectAlertSilenceIdsByMessageId" resultType="com.nis.modules.alert.entity.AlertSilenceMessageRel">
+		select silence_conf_id as silenceConfId ,message_id as messageId, hash_key as hashKey from ALERT_SILENCE_MESSAGE_REL where message_id = #{messageId}
+	</select>
+	
+	<!-- 根据silcence conf id查找 已经匹配过的 alert message 信息 -->
+	<select id="selectAlertMessageIdsBySilencConfId" resultType="com.nis.modules.alert.entity.AlertSilenceMessageRel">
+		select silence_conf_id as silenceConfId ,message_id as messageId, hash_key as hashKey from ALERT_SILENCE_MESSAGE_REL where silence_conf_id = #{confId}
+	</select>
+
+	<!-- 删除 silence conf 与  alert message 关联关系，说明告警消息当前状态由静默转变为 expired -->
+	<delete id="deleteAlertSilenceMessageRelByMessageIds">
+		delete from ALERT_SILENCE_MESSAGE_REL where message_id in 
+		<foreach collection="array" item="id" separator="," open="(" close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 删除 silence conf 与  alert message 关联关系，说明告警消息当前状态由静默转变为 expired -->
+	<delete id="deleteAlertSilenceMessageRelBySilenceConfIds">
+		delete from ALERT_SILENCE_MESSAGE_REL where silence_conf_id in 
+		<foreach collection="array" item="id" separator="," open="(" close=")">
+			#{id}
+		</foreach>
+	</delete>
+	
+	<!-- 查找alert message 与 silence conf id 符合一对一映射的 关联内容 -->
+	<select id="selectAlertMessageIdsOneByOneSilencConfId" resultType="com.nis.modules.alert.entity.AlertSilenceMessageRel">
+		SELECT
+			r.silence_conf_id as silenceConfId,
+			r.message_id as messageId,
+			r.hash_key as hashKey
+		FROM
+			( SELECT rel.silence_conf_id, rel.hash_key, message_id, count( 1 ) c FROM alert_silence_message_rel rel GROUP BY rel.message_id ) r 
+		WHERE
+			r.silence_conf_id = #{confId}
+			AND r.c = 1
+	</select>
+	
+	<!-- 保存 alertMessage -->
+	<insert id="saveAlertMessage" >
+		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, state, rule_id, 
+		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id) 
+			VALUES 
+		(#{id}, #{summary}, #{description}, #{labels}, #{startAt}, #{endAt}, #{state}, #{ruleId}, 
+		#{projectId}, #{moduleId}, #{endpointId}, #{assetId}, #{dcId}, #{hashKey}, #{remark}, #{severityId})
+	</insert>
+	
+	<!-- 批量保存alert message -->
+	<insert id="saveMessageBatch" >
+		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, state, rule_id, 
+		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id) 
+			VALUES 
+		<foreach collection="list" item="item" separator=",">
+			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.state}, 
+			#{item.ruleId}, #{item.projectId}, #{item.moduleId}, #{item.endpointId}, #{item.assetId}, 
+			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
+		</foreach>
+	</insert>
+	
+	<!-- 页面查询告警消息 -->
+	<select id="queryList" resultMap="alertMessageMap">
+		SELECT
+			am.*,
+			ar.id as r_id ,
+			ar.name as r_name,
+			p.id as p_id,
+			p.name as p_name,
+			m.id as m_id,
+			m.name as m_name,
+			e.id as e_id,
+			e.name as e_name,
+			ass.id as ass_id,
+			ass.name as ass_name,
+			alsc.id as alsc_id,
+			alsc.name as alsc_name,
+			alsc.color as alsc_color,
+		FROM
+			${tableName} am
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN monitor_project p on am.project_id = p.id
+		LEFT JOIN monitor_module m on am.module_id = m.id
+		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
+		LEFT JOIN asset_asset ass on am.asset_id = ass.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		<where>
+			<if test="params.ruleName != null and params.ruleName != ''">
+				ar.name like concat('%', #{params.ruleName}, '%')
+			</if>
+			<if test="params.severityIds != null and params.severity != ''">
+				AND am.severity_id in
+				<foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.summary != null and params.summary != ''">
+				AND am.summary like concat('%', #{params.summary}, '%')
+			</if>
+
+			<if test="params.description != null and params.description != ''">
+				AND am.description like concat('%', #{params.description}, '%')
+			</if>
+
+			<if test="params.ids != null and params.ids != ''">
+				am.id in
+				<foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+            <if test="params.state != null and params.state != ''">
+                AND am.state=#{params.state}
+            </if>
+			<if test="params.startAt != null">
+				AND am.start_at &gt;= #{params.startAt}
+			</if>
+			<if test="params.endAt != null">
+				AND am.start_at &lt;= #{params.endAt}
+			</if>
+			<if test="params.ruleIds != null and params.ruleIds != ''">
+				AND am.rule_id in
+				<foreach collection="params.ruleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.projectIds != null and params.projectIds != ''">
+				AND am.project_id in
+				<foreach collection="params.projectIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.moduleIds != null and params.moduleIds != ''">
+				AND am.module_id in
+				<foreach collection="params.moduleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.endpointIds != null and params.endpointIds != ''">
+				AND am.endpoint_id in
+				<foreach collection="params.endpointIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.assetIds != null and params.assetIds != ''">
+				AND am.asset_id in
+				<foreach collection="params.assetIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.dcIds != null and params.dcIds != ''">
+				AND am.dc_id in
+				<foreach collection="params.dcIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.labels != null and params.labels != ''">
+				AND am.labels like concat('%', #{params.labels}, '%')
+			</if>
+			<if test="params.projectName != null and params.projectName != ''">
+				AND p.name LIKE concat('%', #{params.projectName}, '%')
+			</if>
+			<if test="params.moduleName != null and params.moduleName != ''">
+				AND m.name LIKE concat('%', #{params.moduleName}, '%')
+			</if>
+			<if test="params.asset != null and params.asset != ''">
+				AND ass.name LIKE CONCAT('%', #{params.asset}, '%')
+			</if>
+		</where>
+		<if test="params.orderBy == null or params.orderBy == ''">
+			ORDER BY am.id
+		</if>
+	</select>
+	
+</mapper>

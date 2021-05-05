@@ -1,17 +1,19 @@
 package com.nis.modules.alert.entity;
 
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.project.entity.Project;
-import lombok.Data;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.project.entity.MonitorProject;
 
-import java.io.Serializable;
-import java.util.Date;
+import lombok.Data;
 
 /**
  * 
@@ -21,15 +23,20 @@ import java.util.Date;
  * @date 2019-11-25 10:11:01
  */
 @Data
-@TableName("alert_message")
+@TableName("alert_message_active")
 public class AlertMessageEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
+	/**
+	 * 表
+	 */
+	@TableField(exist = false)
+	public String tableName;
 
 	/**
 	 * 主键
 	 */
 	@TableId
-	private Integer id;
+	private Long id;
 	/**
 	 * 主键们  eg:[1,2,3]
 	 */
@@ -43,7 +50,7 @@ public class AlertMessageEntity implements Serializable {
 	 * 告警主机对象
 	 */
 	@TableField(exist = false)
-	private Asset asset;
+	private AssetAsset asset;
 	/**
 	 * 告警级别
 	 */
@@ -103,12 +110,6 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	private String remark;
 
-	/**
-	 * linkId对应实体类
-	 * */
-	@TableField(exist = false)
-	private Object linkObject;
-
 	@TableField(exist = false)
 	private AlertRuleEntity alertRule;
 
@@ -116,19 +117,19 @@ public class AlertMessageEntity implements Serializable {
 	 * 对应的project
 	 */
 	@TableField(exist = false)
-	private Project project;
+	private MonitorProject project;
 
 	/**
 	 * module
 	 */
 	@TableField(exist = false)
-	private Module module;
+	private MonitorModule module;
 
 	/**
 	 * endpoint
 	 */
 	@TableField(exist = false)
-	private Endpoint endpoint;
+	private MonitorEndpoint endpoint;
 
 	/**
 	 * dc
@@ -138,4 +139,7 @@ public class AlertMessageEntity implements Serializable {
 
 	@TableField(exist = false)
 	private AlertSeverityConf severity;
+	
+	@TableField(exist = false)
+	private List<AlertSilenceConf> silenceList;
 }

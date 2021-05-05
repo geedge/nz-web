@@ -1,0 +1,112 @@
+package com.nis.modules.alert.dao;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertSilenceMessageRel;
+
+/**
+ * 
+ * 
+ * @author song
+ * @email 
+ * @date 2019-11-25 10:11:01
+ */
+@Mapper
+public interface AlertHandlerDao {
+	/**
+	 * 保存message 到不同的表
+	 * @param message
+	 */
+	void saveAlertMessage(AlertMessageEntity message);
+	
+	void saveMessageBatch(@Param("list")List<AlertMessageEntity> messageList,@Param("tableName")String tableName);
+	
+	/**
+	 * 根据id 查询
+	 * @param message
+	 * @return
+	 */
+	AlertMessageEntity selectMessageByIdAndTableName(@Param("messageId")Long messageId,@Param("tableName")String tableName);
+	
+	/**
+	 * 根据id查找 alert message
+	 */
+	List<AlertMessageEntity> selectMessageByIdAndTableName(@Param("tableName")String tableName,@Param("ids")List<Long> ids);
+	
+	/**
+	 * 查询所有 alert_message_active
+	 * @return
+	 */
+	List<AlertMessageEntity> selectAllActiveMessage();
+	
+	
+	/**
+	 * 根据时间查找 超时未处理的告警消息
+	 * @param message
+	 * @return
+	 */
+	List<AlertMessageEntity> selectMessageEndAtltNow(@Param("now")Date now,@Param("tableName")String tableName);
+	
+	/**
+	 * 根据id 和表名 删除message
+	 * @param tableName
+	 * @param messageId
+	 */
+	void deleteMessageByIdsAndTableName(@Param("tableName")String tableName,@Param("array")Long ... ids);
+	
+	/**
+	 * 更新 不同表中 message 的endAt 时间 
+	 * @param message
+	 */
+	void updateMessageEndAt(AlertMessageEntity message);
+	
+	/**
+	 * 保存 message id 与 silence conf id 关系
+	 * 校验message 匹配 silence conf 时调用
+	 * @param smRels
+	 */
+	void saveAlertSilenceMessageRel(List<AlertSilenceMessageRel> smRels);
+	
+	/**
+	 * 根据 messageId 查找匹配的 silence conf id
+	 * @param messageId
+	 * @return
+	 */
+	List<AlertSilenceMessageRel> selectAlertSilenceIdsByMessageId(Long messageId);
+	/**
+	 * 根据 silence conf id 查找 对应的 message Id
+	 * @param confId
+	 * @return
+	 */
+	List<AlertSilenceMessageRel> selectAlertMessageIdsBySilencConfId(Integer confId);
+	/**
+	 * 根据messageid 删除 message id与 silence conf id 关于
+	 * message  状态由 silence 变为 expired 时 调用
+	 * @param messageId
+	 */
+	void deleteAlertSilenceMessageRelByMessageIds(@Param("array")Long ...messageId);
+	/**
+	 * 根据confid 删除message 与 silenceconf 关系
+	 * 
+	 * silence conf 配置 expired 时调用
+	 * @param confId
+	 */
+	void deleteAlertSilenceMessageRelBySilenceConfIds(@Param("array")Integer ...confId);
+
+	List<AlertSilenceMessageRel> selectAlertMessageIdsOneByOneSilencConfId(Integer id);
+
+	/**
+	 * 查询告警消息
+	 * @param page
+	 * @param params
+	 * @return
+	 */
+	List<AlertMessageEntity> queryList(IPage<AlertMessageEntity> page, Map<String, Object> params);
+}

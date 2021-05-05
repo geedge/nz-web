@@ -13,7 +13,7 @@ public class AlertNotifyLog {
 
 	private Integer id;
 	
-	private Integer messageId;
+	private Long messageId;
 	
 	private Long userId;
 	

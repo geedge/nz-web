@@ -71,6 +71,10 @@ public class AlertRuleEntity implements Serializable {
 	 * 通知用户ids 可多个
 	 */
 	private String receiver;
+	/**
+	 * 告警通知方式
+	 */
+	private String method;
 
 	/**
 	 * 是否为内置规则
@@ -93,6 +97,11 @@ public class AlertRuleEntity implements Serializable {
 	 */
 	@TableField(exist = false)
 	private List<SysUserEntity> receivers;
+	/**
+	 * 通知方式
+	 */
+	@TableField(exist = false)
+	private List<AlertNotifyMethod> methods;
 
 	@TableField(exist = false)
 	private AlertSeverityConf severity;

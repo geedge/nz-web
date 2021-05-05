@@ -19,7 +19,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
 import com.nis.modules.agent.job.AgentJob;
-import com.nis.modules.alert.job.AlertSilenceStatusJob;
+import com.nis.modules.alert.backend.AlertMessageExpiredJob;
+import com.nis.modules.alert.backend.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
@@ -35,13 +36,16 @@ import cn.hutool.log.Log;
 @Configuration
 public class JobConfig {
 
-    private static Log log = Log.get();
+    private static final Log log = Log.get();
 
     @Value("${nezha.agentJobCron}")
     private String agentJobCron;
 
-    @Value("${nezha.alertSilenceJobCron}")
+    @Value("${nezha.alertSilenceJobCron:0/10 * * * * ?}")
     private String alertSilenceJobCron;
+    
+    @Value("${nezha.alertMessageExpiredJobCron:0/10 * * * * ?}")
+    private String alertMessageExpiredJobCron;
 
     @Value("${nezha.assetPingJobCron}")
     private String assetPingJobCron;
@@ -49,18 +53,19 @@ public class JobConfig {
     @Value("${nezha.assetFeatureJobCron}")
     private String assetFeatureJobCron;
 
-    @Value("${nezha.haJobCron}")
+    @Value("${nezha.haJobCron:0/5 * * * * ?}")
     private String haJobCron;
 
     @Value("${nezha.endpointStateJobCron}")
     private String endpointStateJobCron;
 
     @Autowired
-    @Qualifier("costomSchedulerFactoryBean")
+//    @Qualifier("costomSchedulerFactoryBean")
     private SchedulerFactoryBean schedulerFactoryBean;
     private static final String JOB_NAME = "NZJOB";
     private String agentJobName = "AGENT_JOB";
     private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
+    private String alertMessageExpiredJobName = "ALERTMESSAGEEXPIRED_JOB";
     private String assetFeatureJobName = "ASSETFEATURE_JOB";
     private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
@@ -96,29 +101,37 @@ public class JobConfig {
         return JobBuilder.newJob(HaJob.class).withIdentity(JOB_NAME + haJobName).storeDurably().build();
     }
 
+    @Bean
+    public JobDetail alertMessageExpiredDetail() {
+        return JobBuilder.newJob(AlertMessageExpiredJob.class).withIdentity(JOB_NAME + alertMessageExpiredJobName).storeDurably().build();
+    }
 
+    
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
-        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron, scheduler);
-
-        // alertSilenceStatusJob 配置    如果配置文件没有配置定时周期 每5秒检测一次静默配置
-        createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), StringUtils.isEmpty(alertSilenceJobCron) ? "0/5 * * * * ?" : alertSilenceJobCron, scheduler);
+        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * 1 * * ?" : agentJobCron, scheduler);
 
         // assetFeatureJob 如果配置文件没有配置定时周期 默认为5分钟执行一次
-        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * * * ? *" : assetFeatureJobCron, scheduler);
+        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * 1 * ? *" : assetFeatureJobCron, scheduler);
 
         // asset pingJob 如果配置文件没有配置定时周期  默认为1分钟执行一次
         createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron, scheduler);
 
         // HA Job 如果配置文件没有配置定时周期  默认为5s执行一次
-        createCronScheduleJob(haJobName, haJobDetail(), StringUtils.isEmpty(haJobCron) ? "0/5 * * * * ?" : haJobCron, scheduler);
+        createCronScheduleJob(haJobName, haJobDetail(), haJobCron, scheduler);
         
         // endpoint state job 如果配置文件没有配置定时周期  默认为1分钟执行一次
-        createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 * * * ? *" : endpointStateJobCron, scheduler);
+        createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 1 * * ? *" : endpointStateJobCron, scheduler);
 
+        // 告警静默状态变更线程
+        //alertSilenceStatusJob 配置    如果配置文件没有配置定时周期 每5秒检测一次静默配置
+        createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), alertSilenceJobCron, scheduler);
+        
+        // 告警消息超时判断线程
+        createCronScheduleJob(alertMessageExpiredJobName, alertMessageExpiredDetail(), alertMessageExpiredJobCron, scheduler);
     }
     
     /**

@@ -1,50 +1,72 @@
 package com.nis.modules.alert.controller;
 
-import cn.hutool.log.Log;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.modules.alert.service.AlertMessageService;
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+
+import cn.hutool.log.Log;
 
 
 /**
  * 
- *
- * @author song
- * @email 
- * @date 2019-11-25 10:11:01
+ * 接收prometheus 推送的告警消息
+ * 1、直接存到 redis
+ * 2、后续 例外线程在redis 中读取解析之后再处理
  */
 @RestController
-@RequestMapping("api/v1/alerts")
+@RequestMapping("api")
 public class AlertMessageReceiveController {
 
 	private final static Log logger = Log.get();
-	
-	@Autowired
-    private AlertMessageService alertMessageService;
 
+	@Autowired
+	private RedisTemplate<String, String> redisTemplate;
+	
 	/**
 	 * 接收 prometheus 推送过来的告警消息
 	 * @param receiveStr
 	 * @param request
 	 * @return
 	 */
-    @PostMapping
-    public R alerts(@RequestBody String receiveStr, HttpServletRequest request){
+    @PostMapping("v1/alerts")
+    public R alertsV1(@RequestBody String receiveStr, HttpServletRequest request){
     	try {
-		    alertMessageService.saveBatchToCache(receiveStr, request);
+    		if(logger.isDebugEnabled()) {
+    			logger.debug("alert receive: {}", receiveStr);
+    		}
+    		ListOperations<String, String> operations = redisTemplate.opsForList();
+    		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
     	} catch (RuntimeException e) {
-		    logger.error(request.getRemoteAddr() + " 推送过来的 promethues 告警消息处理异常，消息是：" + receiveStr + " 异常信息是：" + e.getMessage(), e);
+    		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
 		}
-
         return R.ok();
     }
+    
+    @PostMapping("v2/alerts")
+    public R alertsV2(@RequestBody String receiveStr, HttpServletRequest request){
+    	try {
+    		if(logger.isDebugEnabled()) {
+    			logger.debug("alert receive: {}", receiveStr);
+    		}
+    		ListOperations<String, String> operations = redisTemplate.opsForList();
+    		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
+    	} catch (RuntimeException e) {
+    		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
+			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
+		}
+        return R.ok();
+    }
+    
 }

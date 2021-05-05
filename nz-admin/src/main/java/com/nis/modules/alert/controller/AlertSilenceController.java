@@ -1,6 +1,5 @@
 package com.nis.modules.alert.controller;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -17,11 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.fastjson.JSON;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.service.AlertSilenceService;
@@ -41,11 +42,8 @@ public class AlertSilenceController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
 	@RequiresPermissions({"alert:silence:list"})
 	public R list(@RequestParam Map<String,Object> params) {
-		
 		logger.debug("alertsilence query params is {}",JSON.toJSONString(params));
-		
 		PageUtils page = alertSilenceService.queryPage(params);
-
 		return R.ok(page);
 	}
 	
@@ -53,9 +51,7 @@ public class AlertSilenceController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSILENCE)
 	@RequiresPermissions({"alert:silence:info"})
 	public R queryAlertSilenceConf(@PathVariable("id") Integer id) {
-		
 		AlertSilenceConf result = alertSilenceService.queryAlertSilence(id);
-
 		return R.ok(result);
 	}
 	
@@ -65,12 +61,10 @@ public class AlertSilenceController {
 	public R save(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
 		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL);
-		
 		logger.debug("alertsilence save param is {}",JSON.toJSONString(alertSilenceConf));
 		
-		alertSilenceService.saveOrUpdateAlertSilence(alertSilenceConf);
-
-		return R.ok();
+		alertSilenceService.saveAlertSilenceConf(alertSilenceConf);
+		return R.ok().putData("id", alertSilenceConf.getId());
 	}
 	
 	
@@ -83,9 +77,8 @@ public class AlertSilenceController {
 		
 		logger.debug("alertsilence modify param is {}",JSON.toJSONString(alertSilenceConf));
 		
-		alertSilenceService.saveOrUpdateAlertSilence(alertSilenceConf);
-
-		return R.ok();
+		alertSilenceService.updateAlertSilenceConf(alertSilenceConf);
+		return R.ok().putData("id", alertSilenceConf.getId());
 	}
 	
 	
@@ -93,9 +86,10 @@ public class AlertSilenceController {
 	@SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ALERTSILENCE)
 	@RequiresPermissions({"alert:silence:remove"})
 	public R remove(@RequestParam Integer... ids) {
-		
-		alertSilenceService.removeByIds(Arrays.asList(ids));
-
+		if(Tool.ArrayUtil.isAllNull(ids)) {
+			throw new NZException(RCode.ALERTSILENCE_ID_IS_NOT_NULL);
+		}
+		alertSilenceService.updateAlertSilenceConfExpiredBatch(ids);
 		return R.ok();
 	}
 }

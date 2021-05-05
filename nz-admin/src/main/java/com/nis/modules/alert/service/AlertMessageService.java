@@ -1,14 +1,14 @@
 package com.nis.modules.alert.service;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.metric.dto.MetricsDto;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 
@@ -35,6 +35,5 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
 	List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
 	
-	void saveBatchToCache(String receiveStr, HttpServletRequest request) throws RuntimeException;
 }
 

@@ -1,28 +1,34 @@
 package com.nis.modules.alert.service.impl;
 
-import cn.hutool.log.Log;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertSeverityDao;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
 import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertSeverityService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import cn.hutool.log.Log;
 
 
 @Service("alertSeverityService")
 public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, AlertSeverityConf> implements AlertSeverityService {
-    private Log logger= Log.get();
+    private static final Log logger= Log.get();
 
     @Autowired
     private AlertSeverityDao alertSeverityDao;
@@ -59,7 +65,6 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
     public void validateSeverity(AlertSeverityConf alertSeverityConf, boolean isModify) {
         ValidateUtils validateUtils = ValidateUtils.is(alertSeverityConf.getName()).notNull(RCode.ALERTSEVERITY_NAME_ISNULL)
                 .and(alertSeverityConf.getColor()).notNull(RCode.ALERTSEVERITY_COLOR_ISNULL)
-                .and(alertSeverityConf.getMethods()).notNull(RCode.ALERTSEVERITY_METHODS_ISNULL)
                 .and(alertSeverityConf.getRemark()).notNull(RCode.ALERTSEVERITY_REMARK_ISNULL);
         if(isModify){
             validateUtils.and(alertSeverityConf.getId()).notNull(RCode.ALERTSEVERITY_ID_ISNULL);
@@ -68,7 +73,7 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
 
     @Override
     public void setWeight(AlertSeverityConf alertSeverityConf) {
-        AlertSeverityConf max = this.getOne(new QueryWrapper<AlertSeverityConf>().select("id","weight").orderByDesc("id").last("limit 1"));
+        AlertSeverityConf max = this.getOne(new QueryWrapper<AlertSeverityConf>().select("id","weight").orderByDesc("weight").last("limit 1"));
         if(ToolUtil.isEmpty(max)){
             alertSeverityConf.setWeight(0);
         }else{
@@ -96,20 +101,12 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
 
     @Override
     public void saveSeverity(AlertSeverityConf alertSeverityConf) {
-        //校验是否存在id对应的notify method
-        if(!alertNotifyMethodService.isExist(alertSeverityConf.getMethods())){
-            throw new NZException(RCode.ALERTNOTIFY_NOT_EXISTS);
-        }
         this.setWeight(alertSeverityConf);
         this.save(alertSeverityConf);
     }
 
     @Override
     public void updateSeverity(AlertSeverityConf alertSeverityConf) {
-        //校验是否存在id对应的notify method
-        if(!alertNotifyMethodService.isExist(alertSeverityConf.getMethods())){
-            throw new NZException(RCode.ALERTNOTIFY_NOT_EXISTS);
-        }
         this.updateById(alertSeverityConf);
     }
 
