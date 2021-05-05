@@ -154,7 +154,14 @@
                </foreach>
            </if>
 
-           <if test="params.states != null and params.states.length > 0">
+            <if test="params.assetIds != null and params.assetIds.length > 0">
+                AND a.id IN
+                <foreach collection="params.assetIds" item="assetId" index="no" open="(" separator="," close=")">
+                    #{assetId}
+                </foreach>
+            </if>
+
+            <if test="params.states != null and params.states.length > 0">
                AND es.state IN
                <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
                    #{state}

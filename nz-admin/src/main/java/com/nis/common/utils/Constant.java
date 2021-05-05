@@ -220,22 +220,20 @@ public class Constant {
 	public static final Integer ALERT_MESSAGE_ACTIVE_STATE = 1;
 	public static final Integer ALERT_MESSAGE_SILENCE_STATE = 2;
 	public static final Integer ALERT_MESSAGE_HISTORY_STATE = 3;
-	
+
 	/**
 	 * 可选值：1:active 2:pending 3:expired
 	 */
 	public static final Integer ALERT_SILENCE_STATE_ACTIVE = 1;
 	public static final Integer ALERT_SILENCE_STATE_PENDING = 2;
 	public static final Integer ALERT_SILENCE_STATE_EXPIRED = 3;
-	
+
 	/**
-	 * alert message 表 与 状态 对应关系
-	 * KEY :tablename
+	 * alert message 表 与 状态 对应关系 KEY :tablename
 	 */
 	public static final Map<String, Integer> ALERT_MESSAGE_TABLE_STATE_MAPPING = Tool.MapUtil.newHashMap();
 	/**
-	 * alert message 状态 与 表 对应关系
-	 * KEY :state
+	 * alert message 状态 与 表 对应关系 KEY :state
 	 */
 	public static final Map<Integer, String> ALERT_MESSAGE_STATE_TABLE_MAPPING = Tool.MapUtil.newHashMap();
 
@@ -400,7 +398,7 @@ public class Constant {
 		ALERT_MESSAGE_TABLE_STATE_MAPPING.put(ALERT_MESSAGE_ACTIVE_TABLE, ALERT_MESSAGE_ACTIVE_STATE);
 		ALERT_MESSAGE_TABLE_STATE_MAPPING.put(ALERT_MESSAGE_SILENCE_TABLE, ALERT_MESSAGE_SILENCE_STATE);
 		ALERT_MESSAGE_TABLE_STATE_MAPPING.put(ALERT_MESSAGE_HISTORY_TABLE, ALERT_MESSAGE_HISTORY_STATE);
-		
+
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_ACTIVE_STATE, ALERT_MESSAGE_ACTIVE_TABLE);
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, ALERT_MESSAGE_SILENCE_TABLE);
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, ALERT_MESSAGE_HISTORY_TABLE);
@@ -650,6 +648,12 @@ public class Constant {
 
 	// 内置 generator 路径
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
+	// 配置表中 blackbox 源， on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
+	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
+
+	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint
+	// 配置信息 hash 分布到 global prometheus）
+	public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED = "prometheus_federation_enabled";
 
 	// 机柜默认大小
 	public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_usize";
@@ -816,7 +820,7 @@ public class Constant {
 	 * 存放 silence 状态 告警消息
 	 */
 	public static final String ALERT_MESSAGE_SILENCE_PRIX = "alert_message_silence_";
-	
+
 	// 存放prometheus已经处理过的告警信息
 	public static final String ALERT_MESSAGE_SILENCE = "alert_message_silence";
 
@@ -852,5 +856,11 @@ public class Constant {
 	public static final String LABEL_DC_ID_KEY = "dc_id";
 	public static final String LABEL_RULE_ID_KEY = "alertname";
 	public static final String LABEL_SEVERITY_ID_KEY = "severity_id";
+
+	public static final String ALERT_API = "alert_api";
+	public static final String ALERT_PATH_PREFIX = "alert_path_prefix";
+
+	public static final String SYSCONFIG_SNMP_PORT_KEY = "snmp_trap_listen_port";
+	public static final String SYSCONFIG_SESSION_TIMEOUT_KEY = "session_timeout";
 
 }

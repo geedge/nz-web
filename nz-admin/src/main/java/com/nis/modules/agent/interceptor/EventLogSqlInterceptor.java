@@ -1,11 +1,11 @@
 package com.nis.modules.agent.interceptor;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.service.MonitorEventLogService;
@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 @Intercepts({@Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})})
 public class EventLogSqlInterceptor implements Interceptor {
 
+    protected Log log = Log.get();
+
     @Lazy
     @Autowired
     private SysConfigService sysConfigService;
@@ -63,62 +65,75 @@ public class EventLogSqlInterceptor implements Interceptor {
         Object parameterObject = args[1];
         String sql = statement.getBoundSql(parameterObject).getSql();
 
-        SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
-        sqlStatement.accept(visitor);
+        try {
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
+            sqlStatement.accept(visitor);
 
-        for (Map.Entry<TableStat.Name, TableStat> entry : visitor.getTables().entrySet()) {
-            TableStat.Name tableName = entry.getKey();
-            TableStat operationalType = entry.getValue();
-            switch (tableName.getName()) {
-                case "alert_rule":
-                case "alert_severity_conf":
-                    eventLogService.increment("prometheus", "rule");
-                    break;
-                case "dc":
-                case "monitor_endpoint":
-                    eventLogService.increment("prometheus");
-                    break;
-                case "prom_server":
-                    this.handlePromServerChange(operationalType.toString(), parameterObject);
-                    break;
-                case "asset_asset":
-                    eventLogService.increment("prometheus", "blackbox");
-                    break;
-                case "monitor_module":
-                    // 处理 snmp module
-                    this.handleSnmpModuleChange(operationalType.toString(), parameterObject);
-                    eventLogService.increment("prometheus");
-                    break;
-                case "sys_config":
-                    // cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
-                    List<SysConfigEntity> sysConfigList = sysConfigService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION));
-                    Map<String, String> configMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+            for (Map.Entry<TableStat.Name, TableStat> entry : visitor.getTables().entrySet()) {
+                TableStat.Name tableName = entry.getKey();
+                TableStat operationalType = entry.getValue();
+                switch (tableName.getName()) {
+                    case "alert_rule":
+                    case "alert_severity_conf":
+                        eventLogService.increment("prometheus", "rule");
+                        break;
+                    case "dc":
+                    case "monitor_endpoint":
+                        eventLogService.increment("prometheus");
+                        break;
+                    case "prom_server":
+                        this.handlePromServerChange(operationalType.toString(), parameterObject);
+                        break;
+                    case "asset_asset":
+                        eventLogService.increment("prometheus", "blackbox");
+                        break;
+                    case "monitor_module":
+                        // 处理 snmp module
+                        this.handleSnmpModuleChange(operationalType.toString(), parameterObject);
+                        eventLogService.increment("prometheus");
+                        break;
+                    case "sys_config":
+                        // cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
+                        List<SysConfigEntity> sysConfigList = sysConfigService.list();
+                        Map<String, String> configMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-                    // Insert / Update
-                    if (parameterObject instanceof SysConfigEntity) {
-                        boolean b = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) parameterObject));
-                        boolean b1 = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) parameterObject));
+                        // Insert / Update
+                        if (parameterObject instanceof SysConfigEntity) {
+                            boolean b = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) parameterObject));
+                            boolean b1 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) parameterObject));
 
-                        if (b || b1) eventLogService.increment("cmd", "prometheus");
-                    }
+                            if (b || b1) eventLogService.increment("cmd", "prometheus");
 
-                    if (parameterObject instanceof Map) {
-                        for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
-                            if (map.getValue() instanceof SysConfigEntity) {
-                                boolean b = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) map.getValue()));
-                                boolean b1 = this.compareCmdDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) map.getValue()));
+                            boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) parameterObject));
+                            boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) parameterObject));
+                            if (b2 || b3) eventLogService.increment("prometheus");
+                        }
 
-                                if (b || b1) eventLogService.increment("cmd", "prometheus");
+                        if (parameterObject instanceof Map) {
+                            for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
+                                if (map.getValue() instanceof SysConfigEntity) {
+                                    boolean b = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_SCRAPEINTERVAL, ((SysConfigEntity) map.getValue()));
+                                    boolean b1 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION, ((SysConfigEntity) map.getValue()));
+
+                                    if (b || b1) eventLogService.increment("cmd", "prometheus");
+
+                                    boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) map.getValue()));
+                                    boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) map.getValue()));
+                                    if (b2 || b3) eventLogService.increment("prometheus");
+                                }
                             }
                         }
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        break;
+                }
             }
+        } catch (Exception e) {
+            log.error("event log 记录变更失败", e);
+        } finally {
+            return invocation.proceed();
         }
-        return invocation.proceed();
     }
 
     /**
@@ -227,7 +242,7 @@ public class EventLogSqlInterceptor implements Interceptor {
      * @param entity
      * @return
      */
-    private boolean compareCmdDataChange(Map<String, String> configMap, String key, SysConfigEntity entity) {
+    private boolean compareConfigDataChange(Map<String, String> configMap, String key, SysConfigEntity entity) {
         if (key.equals(entity.getParamKey())) {
             String paramValue = configMap.get(key);
             if (!StrUtil.equals(paramValue, entity.getParamValue())) {

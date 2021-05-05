@@ -1,14 +1,15 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysInfoService;
@@ -26,7 +27,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -83,22 +84,27 @@ public class SysInfoServiceImpl implements SysInfoService {
         List<Promserver> healthyPromserverList = promserverDao.selectList(new QueryWrapper<Promserver>().lambda().eq(true, Promserver::getStatus, 1));
         if (CollectionUtils.isNotEmpty(healthyPromserverList)) {
             Promserver server = healthyPromserverList.get(RandomUtils.nextInt(0, healthyPromserverList.size()));
-            URL url = null;
+            SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
+            String proxyPath = configEntity.getParamValue() + "/prometheus/proxy" + "/api/v1/status/buildinfo";
+
+            UrlBuilder urlBuilder = UrlBuilder.create();
+            urlBuilder.setScheme("http").setHost(server.getHost()).setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")));
             try {
-                String buildinfoUrl = "/api/v1/status/buildinfo";
-                url = new URL("http", server.getHost(), server.getPort(), buildinfoUrl);
-                JSONObject jsonObject = HttpClientUtils.httpGet(url.toString());
-                Object data = jsonObject.get("data");
-                if (ToolUtil.isNotEmpty(data)) {
-                    Map map = JSONObject.parseObject(data.toString(), Map.class);
-                    Object version = map.get("version");
-                    componentVersion = new HashMap(4);
-                    componentVersion.put("name", "Prometheus");
-                    componentVersion.put("version", version.toString());
-                    componentVersionInfoList.add(componentVersion);
+                String result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(server.getToken()).execute().body();
+                R resultObj = JSONObject.parseObject(result, R.class);
+                if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
+                    Object data = resultObj.get("data");
+                    if (ToolUtil.isNotEmpty(data)) {
+                        Map map = JSONObject.parseObject(data.toString(), Map.class);
+                        Object version = map.get("version");
+                        componentVersion = new HashMap(4);
+                        componentVersion.put("name", "Prometheus");
+                        componentVersion.put("version", version.toString());
+                        componentVersionInfoList.add(componentVersion);
+                    }
                 }
-            } catch (IOException e) {
-                log.error(String.format("获取prometheus版本信息接口失败，promserver 信息是: %s, URL: %s, 错误信息: %s", JSONObject.toJSONString(server), url, e));
+            } catch (RuntimeException e) {
+                log.error("获取prometheus版本信息接口失败", e);
             }
         }
 

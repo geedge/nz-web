@@ -139,6 +139,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if (ToolUtil.isNotEmpty(params.get("moduleIds"))) {
             params.put("moduleIds", String.valueOf(params.get("moduleIds")).split(StringPool.COMMA));
         }
+        // assetIds
+        if (ToolUtil.isNotEmpty(params.get("assetIds"))) {
+            params.put("assetIds", String.valueOf(params.get("assetIds")).split(StringPool.COMMA));
+        }
         // states
         if (ToolUtil.isNotEmpty(params.get("states"))) {
             params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
@@ -278,11 +282,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
             // 名称为空 则按照 module endpoint 名称模板生成对应名称
             if (ToolUtil.isEmpty(endpoint.getName())) {
-                String endpointNameTmpl = module.getEndpointNameTmpl();
-                Map varsVal = new HashMap(4);
-                varsVal.put("asset.host", assetIdAndHostMap.get(endpoint.getAssetId()));
-                varsVal.put("module.name", module.getName());
-                String generateEndpointName = expreTmplService.renderExpression(endpointNameTmpl, varsVal);
+                AssetAsset asset = assetService.queryAssetInfo(endpoint.getAssetId());
+                MonitorModule module1 = monitorModuleService.queryModuleInfo(endpoint.getModuleId());
+                String generateEndpointName = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
                 endpoint.setName(generateEndpointName);
             }
 
@@ -601,14 +603,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 } else if (ToolUtil.isNotEmpty(host)) {
                     monitorEndpoint.setAssetId(assetIdByHost);
                 }
-
+                AssetAsset assetInfo = assetService.queryAssetInfo(monitorEndpoint.getAssetId());
                 String name = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(name)) {
-                    String endpointNameTmpl = module.getEndpointNameTmpl();
-                    Map varsVal = new HashMap(4);
-                    varsVal.put("asset.host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
-                    varsVal.put("module.name", module.getName());
-                    name = expreTmplService.renderExpression(endpointNameTmpl, varsVal);
+                    MonitorModule module1 = monitorModuleService.queryModuleInfo(module.getId());
+                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), assetInfo, module1);
                 }
 
                 List<String> monitorEndpointNameList = moduleIdAndEndpointNamesMap.get(module.getId());
@@ -618,7 +617,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ENDPOINT_NAME_DUPLICATE.getMsg());
                     continue;
                 }
-
 
                 // config 如果为空 则设置 module configs
                 if (StringUtils.isEmpty(configs)) {
@@ -630,8 +628,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 // 设置 host
                 Map map = JSONObject.parseObject(monitorEndpoint.getConfigs(), Map.class);
-                if(ToolUtil.isEmpty(map.get("host"))){
+                if (ToolUtil.isEmpty(map.get("host"))) {
                     map.put("host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
+                } else {
+                    // 对 host 字段进行渲染重新赋值
+                    String hostStr = (String) map.get("host");
+                    map.put("host", Tool.NzExpressionUtil.renderExpression(hostStr, assetInfo));
                 }
 
                 // 设置 port
@@ -693,7 +695,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 				throw new NZException(RCode.ASSET_ID_ISNULL);
 			}
 			
-			MonitorModule module = monitorModuleService.queryModuleEntity(moduleId);
+			MonitorModule module = monitorModuleService.queryModuleInfo(moduleId);
 			String configs = (String) param.get("configs");
 			if(ToolUtil.isEmpty(configs)) {
 				configs = module.getConfigs();

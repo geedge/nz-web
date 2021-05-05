@@ -13,11 +13,11 @@ public interface TopoIconService extends IService<TopoIcon> {
 
     List<TopoIcon> queryIconList(Map<String, Object> params);
 
-    Integer saveTopoIcon(String name, MultipartFile file,String unit) throws IOException;
+    Integer saveTopoIcon(TopoIcon icon, MultipartFile file) throws IOException;
 
     void removeIcons(Integer[] ids);
 
-    void downloadIconFileById(Integer id, HttpServletResponse response);
+    void downloadIconFileById(Integer id, Integer base64, HttpServletResponse response);
     
     List<String> queryTopoIconUnitName(String name);
 

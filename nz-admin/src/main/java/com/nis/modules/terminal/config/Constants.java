@@ -30,8 +30,8 @@ public class Constants {
     }
 
     public enum SshType {
-        ACCOUNT(0x1, "password"),
-        SSHKEY(0x2, "key");
+        ACCOUNT(1, "password"),
+        SSHKEY(2, "key");
 
         private Integer type;
         private String value;

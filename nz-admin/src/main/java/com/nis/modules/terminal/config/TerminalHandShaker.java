@@ -47,6 +47,18 @@ public class TerminalHandShaker extends HttpSessionHandshakeInterceptor {
             // 线程安全的map是不允许value为null  所以存入空字符
             String assetId = servletRequest.getServletRequest().getParameter("assetId");
             String accountId = servletRequest.getServletRequest().getParameter("accountId");
+
+            String host = servletRequest.getServletRequest().getParameter("host");
+            String port = servletRequest.getServletRequest().getParameter("port");
+            String authProtocol = servletRequest.getServletRequest().getParameter("authProtocol");
+            String authProtocolPort = servletRequest.getServletRequest().getParameter("authProtocolPort");
+            String authType = servletRequest.getServletRequest().getParameter("authType");
+            String authUsername = servletRequest.getServletRequest().getParameter("authUsername");
+            String authPin = servletRequest.getServletRequest().getParameter("authPin");
+            String authPriKey = servletRequest.getServletRequest().getParameter("authPriKey");
+            String authUserTip = servletRequest.getServletRequest().getParameter("authUserTip");
+            String authPinTip = servletRequest.getServletRequest().getParameter("authPinTip");
+
             if(StringUtils.isBlank(assetId)) {
             	assetId="";
             }
@@ -55,6 +67,18 @@ public class TerminalHandShaker extends HttpSessionHandshakeInterceptor {
             }
             attributes.put("assetId", assetId);
             attributes.put("accountId", accountId);
+
+            attributes.put("host", StringUtils.isEmpty(host) ? "" : host);
+            attributes.put("port", StringUtils.isEmpty(port) ? "" : port);
+            attributes.put("authProtocol", StringUtils.isEmpty(authProtocol) ? "" : authProtocol);
+            attributes.put("authProtocolPort", StringUtils.isEmpty(authProtocolPort) ? "" : authProtocolPort);
+            attributes.put("authType", StringUtils.isEmpty(authType) ? "" : authType);
+            attributes.put("authUsername", StringUtils.isEmpty(authUsername) ? "" : authUsername);
+            attributes.put("authPin", StringUtils.isEmpty(authPin) ? "" : authPin);
+            attributes.put("authPriKey", StringUtils.isEmpty(authPriKey) ? "" : authPriKey);
+            attributes.put("authUserTip", StringUtils.isEmpty(authUserTip) ? "" : authUserTip);
+            attributes.put("authPinTip", StringUtils.isEmpty(authPinTip) ? "" : authPinTip);
+
             attributes.put("uuid", servletRequest.getServletRequest().getParameter("uuid"));
             attributes.put("terminalToken", servletRequest.getServletRequest().getParameter("token"));
             attributes.put(Constants.PARAM_HTTP_SESSION_ID_KEY, session.getId());

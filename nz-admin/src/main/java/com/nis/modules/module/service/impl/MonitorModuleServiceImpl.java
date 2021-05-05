@@ -69,7 +69,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
 
     @Override
-    public MonitorModule queryModuleEntity(Integer id) {
+    public MonitorModule queryModuleInfo(Integer id) {
         MonitorModule module = this.getById(id);
         if (ToolUtil.isEmpty(module)) {
             throw new NZException(RCode.MODULE_NOTFOUND);

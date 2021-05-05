@@ -1,6 +1,7 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.terminal.config.Constants;
 import lombok.Data;
@@ -249,10 +250,10 @@ public class AssetAsset implements Serializable {
     private List<Integer> accounts;
 
     /**
-     * promserver ip
+     * promserver
      */
     @TableField(exist = false)
-    private String sourceIp;
+    private Promserver promserver;
 
     /**
      * blackbox job scrape_interval

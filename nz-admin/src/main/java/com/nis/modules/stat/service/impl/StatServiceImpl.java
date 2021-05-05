@@ -1,11 +1,15 @@
 package com.nis.modules.stat.service.impl;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -29,6 +35,7 @@ import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 
 
 @Service
@@ -223,5 +230,72 @@ public class StatServiceImpl implements StatService{
 		statAnalysis.setTotal(assets.size());
 		statAnalysis.setOk(assets.size()-statAnalysis.getAlarm());
 		return statAnalysis;
+	}
+
+	@Override
+	public List<Map> queryOverviewMap() {
+		List<Map> result= new ArrayList<Map>();
+		List<Dc> dcs = dcService.list();
+		// 查询dc下asset的数量信息
+		List<AssetAsset> assets = assetAssetService.list();
+		Map<Integer, List<AssetAsset>> dcAssets = assets.stream().collect(Collectors.groupingBy(AssetAsset::getDcId));
+		// 查询dc下asset相关
+		List<StatAnalysis> dcAssetUnhealthy = statDao.selectDcAssetUnhealthy();
+		Map<Integer, Integer> unhealthyAssets = dcAssetUnhealthy.stream().collect(Collectors.toMap(StatAnalysis::getId,StatAnalysis::getAlarm));
+		
+		// 查询dc下endpoint相关
+		List<StatAnalysis> dcEndpointAnalyse = statDao.selectDcEndpointUnhealthy();
+		Map<Integer, StatAnalysis> dcEnpoint = dcEndpointAnalyse.stream().collect(Collectors.toMap(StatAnalysis::getId,Function.identity()));
+		
+		// 查询dc下告警级别对应的告警数量
+		List<StatAnalysis> dcAlerts = statDao.selectDcAlertMessage();
+		Map<Integer, List<StatAnalysis>> dcAlert = dcAlerts.stream().collect(Collectors.groupingBy(StatAnalysis::getId));
+		
+		for(Dc dc : dcs) {
+			Map<String,Object> map = new HashMap();
+			map.put("name", dc.getName());
+			Integer color = 2;
+			if(StrUtil.equalsIgnoreCase(dc.getState(), Constant.SWITCH_CLOSE)) {
+				color = 3;
+				map.put("color", color);
+				result.add(map);
+				continue;
+			}
+			
+			List<AssetAsset> assetList = dcAssets.get(dc.getId());
+			Integer assetTotal = ToolUtil.isEmpty(assetList)?0:assetList.size();
+			Integer assetAlarm = ToolUtil.isEmpty(unhealthyAssets.get(dc.getId()))?0:unhealthyAssets.get(dc.getId());
+			Integer assetOk = assetTotal - assetAlarm;
+			Map asset = new HashMap();
+			asset.put("total", assetTotal);
+			asset.put("ok", assetOk);
+			asset.put("alarm", assetAlarm);
+			
+			StatAnalysis statAnalysis = dcEnpoint.get(dc.getId());
+			Integer endpointTotal = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getTotal();
+			Integer up = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getOk();
+			Integer down = endpointTotal - up; 
+			Map agent = new HashMap();
+			agent.put("up", up);
+			agent.put("down", down);
+			
+			List<StatAnalysis> alerts = dcAlert.get(dc.getId());
+			Map alert = new HashMap();
+			for(StatAnalysis data : alerts) {
+				alert.put(data.getName(), data.getTotal());
+			}
+			
+			if(ToolUtil.isEmpty(assetAlarm) && assetAlarm==0 && ToolUtil.isEmpty(down) && down==0 && ToolUtil.isEmpty(alert)) {
+				color = 1;
+			}
+			
+			map.put("color", color);
+			map.put("asset", asset);
+			map.put("agent", agent);
+			map.put("alert", alert);
+			
+			result.add(map);
+		}
+		return result;
 	}
 }

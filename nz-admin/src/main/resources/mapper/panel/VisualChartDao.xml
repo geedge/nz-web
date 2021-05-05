@@ -48,9 +48,12 @@
             vce.expression AS vce_expression,
             vce.type AS vce_type,
             vce.legend AS vce_legend,
+            vp.id as panel_id,
+            vp.name as panel_name,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
         LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
+        left join visual_panel vp on vch.panel_id = vp.id
         left join visual_chart gvch on vch.group_id = gvch.id
         left join asset_asset aa on vch.var_id = aa.id 
 		left join monitor_endpoint me on vch.var_id = me.id 
@@ -60,19 +63,14 @@
     <select id="queryPage" resultMap="visualChartResult">
         SELECT
             vch.*,
-            vce.id AS vce_id,
-            vce.expression AS vce_expression,
-            vce.type AS vce_type,
-            vce.legend AS vce_legend,
             vcg.id as group_id,
             vcg.name as group_name,
-            vcc.id as children_id,
-            vcc.name as children_name 
+            vp.id as panel_id,
+            vp.name as panel_name,
+            case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
         FROM visual_chart vch
-        LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
         left join visual_chart vcg on vch.group_id = vcg.id
 		left join visual_panel vp on vch.panel_id = vp.id
-		left join visual_chart vcc on vch.id = vcc.group_id
 		left join asset_asset aa on vch.var_id = aa.id 
 		left join monitor_endpoint me on vch.var_id = me.id 
         WHERE 1=1
@@ -105,6 +103,17 @@
 		<if test="params.varType != null and params.varType != ''">
             AND vch.var_type = #{params.varType}
         </if>
+	
+		<if test="params.groupId != null">
+			AND vch.group_id = #{params.groupId}
+		</if>
+
+		<if test="params.groupIds != null">
+			AND vch.group_id in 
+				<foreach item="gid" collection="params.groupIds" separator="," open="(" close=")" index="">
+		       		#{gid}
+			     </foreach>
+		</if>
 
         /** 按照 weight 排序 */
         ORDER BY vch.weight,vch.id

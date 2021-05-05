@@ -49,8 +49,6 @@ public class SysLoginController extends AbstractController {
 	private Producer producer;
 	@Autowired
 	private RedisTemplate<String,String> redisTemplate;
-	@Value(value="${nezha.loginExpiration:30}")
-	private Integer loginExpiration;
 	@Autowired
 	private SysConfigService configService;
 	@Autowired
@@ -93,7 +91,7 @@ public class SysLoginController extends AbstractController {
 			Map<String, Object> obj = new HashMap<>();
 			obj.put("token", subject.getSession().getId().toString());
 			// 查询系统配置信息
-			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change"};
+			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
 			for (SysConfigEntity configEntity : configEntityList) {
 				if ("timezone".equals(configEntity.getParamKey())) {

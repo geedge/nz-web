@@ -21,10 +21,8 @@
 
 package com.nis.modules.terminal.config;
 
-
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
@@ -32,16 +30,24 @@ import com.jcraft.jsch.JSchException;
 import com.mchange.lang.ByteUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants.SshType;
-import com.nis.modules.terminal.entity.*;
-import com.nis.modules.terminal.service.*;
+import com.nis.modules.terminal.entity.TerminalCmd;
+import com.nis.modules.terminal.entity.TerminalLog;
+import com.nis.modules.terminal.entity.TerminalRecord;
+import com.nis.modules.terminal.entity.TerminalSessionEntity;
+import com.nis.modules.terminal.service.TerminalCmdService;
+import com.nis.modules.terminal.service.TerminalLogService;
+import com.nis.modules.terminal.service.TerminalRecordService;
+import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
@@ -66,225 +72,261 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static com.nis.common.utils.CommonUtils.toInt;
+
 @Component
 public class TerminalHandler extends TextWebSocketHandler {
-	
-	private static final Log logger = Log.get();
-	
-    private TerminalClient terminalClient;
 
-    private static ApplicationContext applicationContext;
+	private static final Log logger = Log.get();
+
+	private static String SSH_PROTOCOL = "SSH";
+	private static String TELNET_PROTOCOL = "TELNET";
+
+	private TerminalClient terminalClient;
+
+	private static ApplicationContext applicationContext;
 
     public static void setApplicationContext(ApplicationContext applicationContext) {
         TerminalHandler.applicationContext = applicationContext;
     }
 
-    private TerminalContext terminalContext;
+	private TerminalContext terminalContext;
 
-    // 当前用户登录认证唯一标识
-    private String uuid;
-    // 当前登录设备信息
-    private String assetId;
-    
-    private String token;
-    
-    private String accountId;
-    
-    private String headerToken;
-    
-    private String loginUserName;
-    
-    private Long userId;
-    
-    private TerminalLogService terminalLogService;
+	// 当前用户登录认证唯一标识
+	private String uuid;
+	// 当前登录设备信息
+	private String assetId;
 
-    private TerminalSessionService terminalSessionService;
+	private String token;
 
-    private TerminalCmdService terminalCmdService;
+	// private String accountId;
 
-    private TerminalRecordService terminalRecordService;
+	private String host;
+	private String port;
+	private String authProtocol;
+	private String authProtocolPort;
+	private String authType;
+	private String authUsername;
+	private String authPin;
+	private String authPriKey;
+	private String authUserTip;
+	private String authPinTip;
 
-    private AssetService assetService;
-    
-    @Override
-    public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        super.afterConnectionEstablished(session);
-        if(terminalContext==null){
-            terminalContext= (TerminalContext) applicationContext.getBean("terminalContext");
-        }
-        assetId=(String)session.getAttributes().get("assetId");
-        accountId=(String)session.getAttributes().get("accountId");
-        uuid=(String)session.getAttributes().get("uuid");
-        token=(String)session.getAttributes().get("terminalToken");
+	private Long userId;
 
-	    RedisConnectionFactory factory = applicationContext.getBean(RedisConnectionFactory.class);
-	    RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-	    redisTemplate.setKeySerializer(new StringRedisSerializer());
-	    redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
-	    redisTemplate.setConnectionFactory(factory);
+	private TerminalLogService terminalLogService;
 
-	    redisTemplate.afterPropertiesSet();
-        //判断用户传入的token是否为项目获取的token信息
-	    ValueOperations ops = redisTemplate.opsForValue();
-	    Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + token);
-        if(obj == null) {
-        	session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
-        	session.close();
-        	logger.error("terminal error user token Incorrect token info is : {}",token);
-        	return;
-        }
-       /* SysUserService sysUserService = (SysUserService) applicationContext.getBean("sysUserService");
-        String loginUserName=map.get("username");
-        SysUserEntity user = sysUserService.getOne(new QueryWrapper<SysUserEntity>()
-				.eq("username", loginUserName));*/
-	    SimpleSession simpleSession = (SimpleSession) obj;
-	    SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) simpleSession.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
-	    SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
-        userId = userEntity.getId();
-        
-        // 创建登录服务器日志记录相关内容
-	    terminalLogService = (TerminalLogService) applicationContext.getBean("terminalLogService");
-	    terminalSessionService = (TerminalSessionService) applicationContext.getBean("terminalSessionService");
-	    terminalCmdService = (TerminalCmdService) applicationContext.getBean("terminalCmdService");
-	    terminalRecordService = (TerminalRecordService) applicationContext.getBean("terminalRecordService");
-	    assetService = (AssetService) applicationContext.getBean("assetService");
+	private TerminalSessionService terminalSessionService;
 
-	    TerminalSession.clientAttributeInfo.put("terminalLogService", terminalLogService);
-	    TerminalSession.clientAttributeInfo.put("terminalSessionService", terminalSessionService);
-	    TerminalSession.clientAttributeInfo.put("terminalCmdService", terminalCmdService);
-	    TerminalSession.clientAttributeInfo.put("terminalRecordService", terminalRecordService);
-	    TerminalSession.clientAttributeInfo.put("assetService", assetService);
+	private TerminalCmdService terminalCmdService;
 
-        // 初始化服务器连接基本属性配置
-        Map terminalAttribute = TerminalSession.getTerminalAttributeInfo(uuid);
-        terminalAttribute.put("userId", userId);
-        
-        //判断当前连接的数量 防止用户连接过多窗口
-        SysConfigService SysconfigService = (SysConfigService) applicationContext.getBean("sysConfigService");
-        String maxNum = SysconfigService.getValue(Constant.MAX_TERMINAL_NUM);
-        //默认20个
-        Integer num=20;
-        if(StringUtils.isNotEmpty(maxNum)) {
-        	num=Integer.valueOf(maxNum);
-        }
-        
-        Integer windowSize = TerminalSession.getWindowSize(token);
-        if(windowSize>=num) {
-        	session.sendMessage(new TextMessage("Unable to connect at the maximum number of connections"));
-        	TerminalSession.setWindowSize(token);
-        	session.close();
-        	return;
-        }
-        TerminalSession.setWindowSize(token);
-        
-        if (StringUtils.isNotBlank(assetId) && StringUtils.isNotBlank(accountId)) {
-        	
-        	// 从缓存中取出之前保存的客户端实例
-        	Account terminalInfo = terminalContext.get(uuid);
-            if (terminalInfo == null) {
-            	AssetService assetService = (AssetService) applicationContext.getBean("assetService");
-            	AccountService accountService = (AccountService) applicationContext.getBean("accountService");
-            	terminalInfo = accountService.getById(accountId);
-            	// 查询asset相关信息
-            	Asset asset = assetService.getById(assetId);
-            	terminalInfo.setAsset(asset);
-            	terminalContext.put(uuid,terminalInfo);
-            }
-            final Account terminal =terminalInfo;
-	        Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-	        if (ToolUtil.isEmpty(params)) {
-		        params = new HashMap<>();
-	        }
-	        TerminalLog terminalLog = new TerminalLog();
-	        terminalLog.setAuthType(SshType.ACCOUNT.getValue().equals(params.get("method")) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
-	        terminalLog.setHost(terminal.getAsset().getHost());
-            terminalLog.setPort(terminal.getPort());
-            terminalLog.setProtocol(terminal.getProtocol());
-            terminalLog.setUserId(userId);
-            terminalLog.setUuid(uuid);
+	private TerminalRecordService terminalRecordService;
 
-	        TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
-	        sessionEntity.setUuid(uuid);
-	        sessionEntity.setHost(terminal.getAsset().getHost());
-	        sessionEntity.setPort(terminal.getPort());
-	        sessionEntity.setProtocol(terminal.getProtocol());
-	        sessionEntity.setAuthType(SshType.ACCOUNT.getValue().equals(params.get("method")) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
-	        sessionEntity.setUserId(userId);
-	        sessionEntity.setAssetId(terminal.getAssetId());
-	        try {
-                getClient(session, terminal);
-                int cols = toInt(session.getAttributes().get("cols").toString());
-                int rows = toInt(session.getAttributes().get("rows").toString());
-                int width = toInt(session.getAttributes().get("width").toString());
-                int height = toInt(session.getAttributes().get("height").toString());
-                terminalLog.setCmd("Login");
-	            terminalLog.setUser(params.get("username"));
-                terminalLog.setStatus(1);
-                terminalLog.setTime(new Date());
-                TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
+	private AssetAssetService assetAssetService;
 
-		        // terminal session 信息
-		        sessionEntity.setLoginUser(params.get("username"));
-		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
-		        sessionEntity.setStartTime(new Date());
-		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
-		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
-		        TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
+	private AssetTypeConfService assetTypeConfService;
 
-		        // terminal cmd 信息
-		        TerminalCmd terminalCmd = new TerminalCmd();
-		        terminalCmd.setUuid(uuid);
-		        terminalCmd.setTime(0);
-		        terminalCmd.setCmd("Login");
-		        terminalCmdService.save(terminalCmd);
+	private SysConfService sysConfService;
 
-		        // 根据协议选择打开窗口类型
-	            String protocol = terminal.getProtocol();
-	            if (Constant.ACCOUNT_SSH_PROTOCOL.equals(protocol)) {
-		            terminalClient.openTerminal(cols, rows, width, height);
-	            } else if(StrUtil.equals(Constant.ACCOUNT_TELNET_PROTOCOL,protocol)) {
-		            terminalClient.openTelnetTerminal(cols, rows, width, height);
-	            }
+	@Override
+	public synchronized void afterConnectionEstablished(WebSocketSession session) throws Exception {
+		super.afterConnectionEstablished(session);
+		if (terminalContext == null) {
+			terminalContext = (TerminalContext) applicationContext.getBean("terminalContext");
+		}
+		assetId = (String) session.getAttributes().get("assetId");
+		// accountId=(String)session.getAttributes().get("accountId");
+		authProtocol =  (String) session.getAttributes().get("authProtocol");
+		host = (String) session.getAttributes().get("host");
+		port = (String) session.getAttributes().get("port");
+		authProtocolPort = (String) session.getAttributes().get("authProtocolPort");
+		authType = (String) session.getAttributes().get("authType");
+		authUsername = (String) session.getAttributes().get("authUsername");
+		authPin = (String) session.getAttributes().get("authPin");
+		authPriKey = (String) session.getAttributes().get("authPriKey");
+		authUserTip = (String) session.getAttributes().get("authUserTip");
+		authPinTip = (String) session.getAttributes().get("authPinTip");
 
-                terminalLogService.save(terminalLog);
-	            terminalSessionService.save(sessionEntity);
-            } catch (IOException e) {
-            	logger.error("error info :",e);
-            	logger.error(e);
-            	String lowerCase = e.getMessage().toLowerCase();
-            	if (StrUtil.contains(lowerCase, "auth fail")) {
-            		session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
-                } else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
-                    session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. \r\n"));
-                } else {
-                    session.sendMessage(new TextMessage("Sorry! Operation error, please try again. \r\n"));
-                }
-            	terminalLog.setStatus(0);
-                terminalLog.setTime(new Date());
-	            terminalLog.setUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
-                terminalLogService.save(terminalLog);
+		uuid = (String) session.getAttributes().get("uuid");
+		token = (String) session.getAttributes().get("terminalToken");
 
-		        // 连接异常，关闭session 记录，更改状态为 连接失败
-		        sessionEntity.setEndTime(new Date());
-		        sessionEntity.setLoginUser(StringUtils.isNotBlank(params.get("username")) ? params.get("username") : "");
-		        sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
-		        sessionEntity.setStartTime(new Date());
-		        sessionEntity.setEndTime(new Date());
-		        sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
-		        terminalSessionService.save(sessionEntity);
+		RedisConnectionFactory factory = applicationContext.getBean(RedisConnectionFactory.class);
+		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+		redisTemplate.setKeySerializer(new StringRedisSerializer());
+		redisTemplate.setValueSerializer(new JdkSerializationRedisSerializer());
+		redisTemplate.setConnectionFactory(factory);
 
-		        terminalClient.disconnect();
-                TerminalSession.remove(session);
-                //           session.close();
-                unloginUserHandle(session);
-            }
-        }else {
-        	//如果用户没有传入asset信息 则友情提示用户
-        	session.sendMessage(new TextMessage("Login fail! No login account is configured. \r\n"));	
-        	unloginUserHandle(session);
-        	logger.info("user stateless access server");
-        }
-    }
+		redisTemplate.afterPropertiesSet();
+		//判断用户传入的token是否为项目获取的token信息
+		ValueOperations ops = redisTemplate.opsForValue();
+		Object obj = ops.get(ShiroUtils.REDIS_KEYPREFIX + token);
+		if (obj == null) {
+			session.sendMessage(new TextMessage("Token error,Please log in to the system first"));
+			session.close();
+			logger.error("terminal error user token Incorrect token info is : {}", token);
+			return;
+		}
+
+		SimpleSession simpleSession = (SimpleSession) obj;
+		SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) simpleSession.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+		SysUserEntity userEntity = (SysUserEntity) primaryPrincipal.getPrimaryPrincipal();
+		userId = userEntity.getId();
+
+		// 创建登录服务器日志记录相关内容
+		terminalLogService = (TerminalLogService) applicationContext.getBean("terminalLogService");
+		terminalSessionService = (TerminalSessionService) applicationContext.getBean("terminalSessionService");
+		terminalCmdService = (TerminalCmdService) applicationContext.getBean("terminalCmdService");
+		terminalRecordService = (TerminalRecordService) applicationContext.getBean("terminalRecordService");
+		assetAssetService = applicationContext.getBean(AssetAssetService.class);
+		assetTypeConfService = applicationContext.getBean(AssetTypeConfService.class);
+		sysConfService = applicationContext.getBean(SysConfService.class);
+
+		TerminalSession.clientAttributeInfo.put("terminalLogService", terminalLogService);
+		TerminalSession.clientAttributeInfo.put("terminalSessionService", terminalSessionService);
+		TerminalSession.clientAttributeInfo.put("terminalCmdService", terminalCmdService);
+		TerminalSession.clientAttributeInfo.put("terminalRecordService", terminalRecordService);
+		TerminalSession.clientAttributeInfo.put("assetAssetService", assetAssetService);
+		TerminalSession.clientAttributeInfo.put("sysConfService", sysConfService);
+
+		// 初始化服务器连接基本属性配置
+		Map terminalAttribute = TerminalSession.getTerminalAttributeInfo(uuid);
+		terminalAttribute.put("userId", userId);
+
+		// 打开窗口
+		TerminalSession.setWindowSize(token);
+
+		AssetAsset terminalInfo = null;
+		if (StringUtils.isNotEmpty(assetId)) {
+			// 从缓存中取出之前保存的客户端实例
+			terminalInfo = terminalContext.get(uuid);
+			if (terminalInfo == null) {
+				// 查询 asset 相关信息
+				terminalInfo = assetAssetService.getById(assetId);
+				if (terminalInfo != null) {
+					AssetTypeConf typeConf = assetTypeConfService.getById(terminalInfo.getTypeId());
+					if (typeConf.getAuthProtocol().equals(1)) {
+						terminalInfo.setProtocol(SSH_PROTOCOL);
+					} else if (typeConf.getAuthProtocol().equals(2)) {
+						terminalInfo.setProtocol(TELNET_PROTOCOL);
+					}
+					terminalContext.put(uuid, terminalInfo);
+				}
+			}
+			// 不支持账号协议 并且没有填写账号信息 直接返回
+			if (terminalInfo == null || (ToolUtil.isEmpty(terminalInfo.getProtocol()) && ToolUtil.isEmpty(terminalInfo.getAuthType()) && ToolUtil.isEmpty(terminalInfo.getAuthUsername()))) {
+				//如果用户没有传入asset信息 则友情提示用户
+				session.sendMessage(new TextMessage("Login fail! No login account is configured. \r\n"));
+				unloginUserHandle(session);
+				session.close();
+				return;
+			}
+		} else {
+			terminalInfo = new AssetAsset();
+			if (authProtocol.equals("1")) {
+				terminalInfo.setProtocol(SSH_PROTOCOL);
+			} else if (authProtocol.equals("2")) {
+				terminalInfo.setProtocol(TELNET_PROTOCOL);
+			}
+			terminalInfo.setAuthProtocolPort(StringUtils.isEmpty(authProtocolPort) ? Integer.valueOf(port) : Integer.valueOf(authProtocolPort));
+			terminalInfo.setAuthType(Integer.valueOf(authType));
+			terminalInfo.setAuthUsername(authUsername);
+			authPin = authPin == null ? "" : authPin;
+			terminalInfo.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
+			terminalInfo.setAuthPriKey(authPriKey);
+			terminalInfo.setAuthUserTip(authUserTip);
+			terminalInfo.setAuthPinTip(authPinTip);
+			terminalInfo.setManageIp(host);
+			terminalInfo.setAuthProtocolPort(Integer.valueOf(port));
+
+			// 通过 manager ip 获取 asset id
+			AssetAsset asset = assetAssetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, host));
+			terminalInfo.setId(asset != null ? asset.getId() : null);
+			terminalContext.put(uuid, terminalInfo);
+		}
+
+		final AssetAsset terminal = terminalInfo;
+		TerminalLog terminalLog = new TerminalLog();
+		terminalLog.setAuthType(SshType.ACCOUNT.getType().equals(terminal.getAuthType()) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
+		terminalLog.setHost(terminal.getManageIp());
+		terminalLog.setPort(terminal.getAuthProtocolPort());
+		terminalLog.setProtocol(terminal.getProtocol());
+		terminalLog.setUserId(userId);
+		terminalLog.setUuid(uuid);
+
+		TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
+		sessionEntity.setUuid(uuid);
+		sessionEntity.setHost(terminal.getManageIp());
+		sessionEntity.setPort(terminal.getAuthProtocolPort());
+		sessionEntity.setProtocol(terminal.getProtocol());
+		sessionEntity.setAuthType(SshType.ACCOUNT.getType().equals(terminal.getAuthType()) ? SshType.ACCOUNT.getType() : SshType.SSHKEY.getType());
+		sessionEntity.setUserId(userId);
+		sessionEntity.setAssetId(terminal.getId());
+		try {
+			getClient(session, terminal);
+			int cols = toInt(session.getAttributes().get("cols").toString());
+			int rows = toInt(session.getAttributes().get("rows").toString());
+			int width = toInt(session.getAttributes().get("width").toString());
+			int height = toInt(session.getAttributes().get("height").toString());
+			terminalLog.setCmd("Login");
+			terminalLog.setUser(terminal.getAuthUsername());
+			terminalLog.setStatus(1);
+			terminalLog.setTime(new Date());
+			TerminalSession.setTerminalAttributeInfo(uuid, "terminalLog", terminalLog);
+
+			// terminal session 信息
+			sessionEntity.setLoginUser(terminal.getAuthUsername());
+			sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
+			sessionEntity.setStartTime(new Date());
+			sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
+			TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionEntity", sessionEntity);
+			TerminalSession.setTerminalAttributeInfo(uuid, "terminalSessionStartTime", System.currentTimeMillis());
+
+			// terminal cmd 信息
+			TerminalCmd terminalCmd = new TerminalCmd();
+			terminalCmd.setUuid(uuid);
+			terminalCmd.setTime(0);
+			terminalCmd.setCmd("Login");
+			terminalCmdService.save(terminalCmd);
+
+			// 根据协议选择打开窗口类型
+			String protocol = terminal.getProtocol();
+			if (SSH_PROTOCOL.equals(protocol)) {
+				terminalClient.openTerminal(cols, rows, width, height);
+			} else if (StrUtil.equals(TELNET_PROTOCOL, protocol)) {
+				terminalClient.openTelnetTerminal(cols, rows, width, height);
+			}
+
+			terminalLogService.save(terminalLog);
+			terminalSessionService.save(sessionEntity);
+		} catch (IOException e) {
+			logger.error("error info :", e);
+			logger.error(e);
+			String lowerCase = e.getMessage().toLowerCase();
+			if (StrUtil.contains(lowerCase, "auth fail")) {
+				session.sendMessage(new TextMessage("Login fail, Please check account info is accurate. \r\n"));
+			} else if (e.getLocalizedMessage().replaceAll("\\s+", "").contentEquals("Operationtimedout")) {
+				session.sendMessage(new TextMessage("Sorry! Connect timed out, please try again. \r\n"));
+			} else {
+				session.sendMessage(new TextMessage("Sorry! Operation error, please try again. \r\n"));
+			}
+			terminalLog.setStatus(0);
+			terminalLog.setTime(new Date());
+			terminalLog.setUser(StringUtils.isNotBlank(terminal.getAuthUsername()) ? terminal.getAuthUsername() : "");
+			terminalLogService.save(terminalLog);
+
+			// 连接异常，关闭session 记录，更改状态为 连接失败
+			sessionEntity.setEndTime(new Date());
+			sessionEntity.setLoginUser(StringUtils.isNotBlank(terminal.getAuthUsername()) ? terminal.getAuthUsername() : "");
+			sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
+			sessionEntity.setStartTime(new Date());
+			sessionEntity.setEndTime(new Date());
+			sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+			terminalSessionService.save(sessionEntity);
+
+			terminalClient.disconnect();
+			TerminalSession.remove(session);
+			unloginUserHandle(session);
+		}
+	}
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
@@ -683,24 +725,24 @@ public class TerminalHandler extends TextWebSocketHandler {
 		}
 	}
 
-    private TerminalClient getClient(WebSocketSession session, Account terminal) {
-        this.terminalClient = TerminalSession.get(session);
-        if (this.terminalClient == null && terminal != null) {
-            this.terminalClient = new TerminalClient(session, terminal, uuid);
-            TerminalSession.put(session, this.terminalClient);
-            TerminalSession.putTerminalInfo(token,uuid);
-        }
-        return this.terminalClient;
-    }
+	private TerminalClient getClient(WebSocketSession session, AssetAsset terminal) {
+		this.terminalClient = TerminalSession.get(session);
+		if (this.terminalClient == null && terminal != null) {
+			this.terminalClient = new TerminalClient(session, terminal, uuid);
+			TerminalSession.put(session, this.terminalClient);
+			TerminalSession.putTerminalInfo(token,uuid);
+		}
+		return this.terminalClient;
+	}
 
-    private void closeTerminal(WebSocketSession session) throws IOException {
-        terminalClient = TerminalSession.remove(session);
-        if (terminalClient != null) {
-            Account account=terminalClient.getTerminal();
-            if(account!=null){
-                String rekey=account.getId() + "_" + terminalClient.getClientId();
-                terminalContext.remove(rekey);
-            }
+	private void closeTerminal(WebSocketSession session) throws IOException {
+		terminalClient = TerminalSession.remove(session);
+		if (terminalClient != null) {
+			AssetAsset account = terminalClient.getTerminal();
+			if(account!=null){
+				String rekey=account.getId() + "_" + terminalClient.getClientId();
+				terminalContext.remove(rekey);
+			}
 
             terminalClient.disconnect();
         }
@@ -723,23 +765,23 @@ public class TerminalHandler extends TextWebSocketHandler {
 	    terminalCmd.setUuid(uuid);
 
 
-	    // terminal session 信息保存
-	    TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
-	    sessionEntity.setUuid(uuid);
-	    sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
-	    sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
-	    sessionEntity.setAuthType(1);
-	    sessionEntity.setProtocol("");
-	    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
-	    Account terminalInfo = terminalContext.get(uuid);
-	    if (terminalInfo != null) {
-		    sessionEntity.setAssetId(terminalInfo.getAssetId());
-	    } else {
-		    // 直接输入命令登录的，没有asset 信息，通过 host 尝试获取
-		    String host = TerminalSession.getTerminalMessage(uuid + "ip");
-		    Asset asset = assetService.getOne(new LambdaQueryWrapper<Asset>().eq(Asset::getHost, host));
-		    sessionEntity.setAssetId((asset != null) ? asset.getId() : null);
-	    }
+		// terminal session 信息保存
+		TerminalSessionEntity sessionEntity = new TerminalSessionEntity();
+		sessionEntity.setUuid(uuid);
+		sessionEntity.setUserId((Long) TerminalSession.getTerminalAttributeInfo(uuid).get("userId"));
+		sessionEntity.setRemoteAddr(session.getRemoteAddress().getHostString());
+		sessionEntity.setAuthType(1);
+		sessionEntity.setProtocol("");
+		sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
+		AssetAsset terminalInfo = terminalContext.get(uuid);
+		if (terminalInfo != null) {
+			sessionEntity.setAssetId(terminalInfo.getId());
+		} else {
+			// 直接输入命令登录的，没有asset 信息，通过 host 尝试获取
+			String host = TerminalSession.getTerminalMessage(uuid + "ip");
+			AssetAsset asset = assetAssetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, host));
+			sessionEntity.setAssetId((asset != null) ? asset.getId() : null);
+		}
 
     	logger.info("nezhaMessageHandle message info {}",message);
     	if(StringUtils.isEmpty(message)) {
@@ -767,18 +809,12 @@ public class TerminalHandler extends TextWebSocketHandler {
     		Asset asset=new Asset();
     		asset.setHost(TerminalSession.getTerminalMessage(uuid+"ip"));
 
-		    Account terminal = new Account();
-		    terminal.setPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid + "port")));
-		    terminal.setAsset(asset);
+			AssetAsset terminal = new AssetAsset();
+			terminal.setAuthProtocolPort(Integer.valueOf(TerminalSession.getTerminalMessage(uuid + "port")));
 
-		    Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-		    if (ToolUtil.isEmpty(params)) {
-			    params = new HashMap<>();
-		    }
-		    params.put("username", TerminalSession.getTerminalMessage(uuid + "user"));
-		    params.put("method", SshType.ACCOUNT.getValue());
-		    params.put("password", Base64.getEncoder().encodeToString(message.getBytes()));
-		    terminal.setParams(JSONObject.toJSONString(params));
+			terminal.setAuthUsername(TerminalSession.getTerminalMessage(uuid + "user"));
+			terminal.setAuthType(SshType.ACCOUNT.getType());
+			terminal.setAuthPin(Base64.getEncoder().encodeToString(message.getBytes()));
 
     		terminalLog.setUser(TerminalSession.getTerminalMessage(uuid+"user"));
 
@@ -1003,16 +1039,9 @@ public class TerminalHandler extends TextWebSocketHandler {
 		//获取到用户ssh pwd
 		Asset asset=new Asset();
 		asset.setHost(ip);
-		Account terminal=new Account();
-		terminal.setPort(Integer.valueOf(port));
-		terminal.setAsset(asset);
-
-	    Map<String, String> params = JSONObject.parseObject((String) terminal.getParams(), Map.class);
-	    if (ToolUtil.isEmpty(params)) {
-		    params = new HashMap<>();
-	    }
-	    params.put("username", user);
-	    terminal.setParams(JSONObject.toJSONString(params));
+		AssetAsset terminal = new AssetAsset();
+		terminal.setAuthProtocolPort(Integer.valueOf(port));
+		terminal.setAuthUsername(user);
 
 		//连接服务
 		TerminalLog terminalLog = new TerminalLog();

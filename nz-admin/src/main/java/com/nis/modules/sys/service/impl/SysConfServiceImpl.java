@@ -2,6 +2,8 @@ package com.nis.modules.sys.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -52,11 +54,11 @@ import java.util.stream.Collectors;
 @Service("sysConfServiceImpl")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
 
-    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout"};
+    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
 
-    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout"};
+    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
 
-    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port","session_timeout"};
+    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
 
     public static final String[][] BASIC_DEPEND={};
 
@@ -167,10 +169,13 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     @Override
     public void saveBasic(Map<String, String> params) {
-        final String SNMP_TRAP_KEY = "snmp_trap_listen_port";
-
+        final String SNMP_TRAP_KEY = Constant.SYSCONFIG_SNMP_PORT_KEY;
         SysConfigEntity snmpTrapConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SNMP_TRAP_KEY));
 
+        final String SESSION_TIME_OUT_KEY = Constant.SYSCONFIG_SESSION_TIMEOUT_KEY;
+        SysConfigEntity sessionTimeOutConf = this.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey,SESSION_TIME_OUT_KEY));
+
+        
         //过滤非法的key
         Map<String, String> result = this.validateKeys(BASIC_KEYS, params);
         //校验是否缺少必填项
@@ -196,6 +201,16 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INTERVAL);
         }
 
+        Integer promeFedeEnabledIntValue = CommonUtils.toInt(params.get("prometheus_federation_enabled"));
+        if (promeFedeEnabledIntValue != 0 && promeFedeEnabledIntValue != 1) {
+            throw new NZException(RCode.SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT);
+        }
+
+        Integer assetPingFromIntValue = CommonUtils.toInt(params.get("asset_ping_from"));
+        if (assetPingFromIntValue != 1 && assetPingFromIntValue != 2) {
+            throw new NZException(RCode.SYS_CONFIGI_ASSETPINGFROM_NCORRECT);
+        }
+
         //设置默认值
 //        this.setDefaultValue(result,BASIC_DEFAULT);
         //保存
@@ -211,11 +226,12 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             logger.info("Prometheus query_range 查询最大条数限制更改为 " + num);
         }
 
-        //发布 snmp trap监听端口
+        //发布 snmp trap 或者 session过期时间变化 监听端口
         if(ToolUtil.isEmpty(snmpTrapConf)||!StrUtil.equals(snmpTrapConf.getParamValue(),params.get(SNMP_TRAP_KEY))){
-            redisTemplate.convertAndSend(SNMP_TRAP_KEY,params.get(SNMP_TRAP_KEY));
+            redisTemplate.convertAndSend(Constant.SYSCONFIG_SNMP_PORT_KEY,params.get(Constant.SYSCONFIG_SNMP_PORT_KEY));
+        }else if(ToolUtil.isEmpty(sessionTimeOutConf)||!StrUtil.equals(sessionTimeOutConf.getParamValue(),params.get(SESSION_TIME_OUT_KEY))) {
+        	redisTemplate.convertAndSend(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY,params.get(Constant.SYSCONFIG_SESSION_TIMEOUT_KEY));
         }
-
     }
 
     /**

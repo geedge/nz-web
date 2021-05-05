@@ -167,7 +167,15 @@ public class TokenCheckFilter extends AccessControlFilter {
         }
     }
 
-    @Override
+    public Integer getLoginExpiration() {
+		return loginExpiration;
+	}
+
+	public void setLoginExpiration(Integer loginExpiration) {
+		this.loginExpiration = loginExpiration;
+	}
+
+	@Override
     protected boolean onAccessDenied(ServletRequest req, ServletResponse resp) throws Exception {
 
         return false;

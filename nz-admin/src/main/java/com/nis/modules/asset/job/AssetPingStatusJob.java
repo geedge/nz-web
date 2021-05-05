@@ -5,7 +5,7 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetPingDao;
@@ -80,11 +80,19 @@ public class AssetPingStatusJob extends QuartzJobBean {
             return;
         }
 
-        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-        String confagentPath = configEntity.getParamValue();
+        // 查询 confagent_path asset_ping_interval
+        List<SysConfigEntity> configList = sysConfigService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH, Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL));
+        Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-        String pingStateUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_success";
-        String rttUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_icmp_duration_seconds{phase='rtt'}";
+        String confagentPath = configMap.get(Constant.CONFAGENT_PATH);
+        long currentTimeMillis = System.currentTimeMillis();
+        // 单位 s
+        String assetPingIntervalStr = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL);
+        // 减去 半个 asset ping interval 周期，保证数据的完整性
+        long time = (currentTimeMillis - Long.valueOf(assetPingIntervalStr) * 1000 / 2) / 1000;
+
+        String pingStateUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_success&time=" + time;
+        String rttUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time;
 
         Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, pingStateUrlPath);
         Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, rttUrlPath);
@@ -128,6 +136,17 @@ public class AssetPingStatusJob extends QuartzJobBean {
         }
 
         upAssetPings.addAll(downAssetPings);
+        // 如果本次请求缺失 asset ， 保存上次内容，不更新 时间
+        for (AssetPing upAssetPing : upAssetPings) {
+            Iterator<AssetPing> iterator = list.iterator();
+            while (iterator.hasNext()) {
+                AssetPing next = iterator.next();
+                if (upAssetPing.getAssetId().equals(next.getAssetId())) {
+                    iterator.remove();
+                }
+            }
+        }
+        if (Tool.CollectionUtil.isNotEmpty(list)) upAssetPings.addAll(list);
 
         assetPingDao.deleteAll();
         assetPingService.saveBatch(upAssetPings);
