@@ -853,7 +853,7 @@ public class Constant {
 	public static final String LABEL_MODULE_ID_KEY = "module_id";
 	public static final String LABEL_PROJECT_ID_KEY = "project_id";
 	public static final String LABEL_ASSET_ID_KEY = "asset_id";
-	public static final String LABEL_DC_ID_KEY = "dc_id";
+	public static final String LABEL_DC_ID_KEY = "datacenter_id";
 	public static final String LABEL_RULE_ID_KEY = "alertname";
 	public static final String LABEL_SEVERITY_ID_KEY = "severity_id";
 
