@@ -924,7 +924,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	Map snmpInfos = JSONObject.parseObject((String) snmpCredential.getConfig(), Map.class);
     	Set<String> keySet = Constant.SNMP_OID_MAP.keySet();
 		for(String key:keySet) {
-			List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), (Integer)snmpInfos.get("version"), (String)snmpInfos.get("community"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
+			List<Map> snmpResults = SnmpUtil.snmpWalk(asset.getManageIp(), snmpCredential.getPort(), snmpCredential.getType(), (String)snmpInfos.get("readCommunity"), Constant.SNMP_OID_MAP.get(key), snmpInfos);
 			if("ifEntry".equals(key)) {
 				List l =new LinkedList();
 				if (CollectionUtils.isNotEmpty(snmpResults)) {
