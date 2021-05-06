@@ -24,8 +24,10 @@ import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.entity.*;
 import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
-import com.nis.modules.overview.service.OverviewService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -92,9 +94,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private AssetModelService modelService;
 
     @Autowired
-    private AssetAccountService accountService;
-
-    @Autowired
     private AssetTypeConfService typeConfService;
 
     @Autowired
@@ -107,9 +106,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private AssetFieldValueService assetFieldValueService;
 
     @Autowired
-    private AssetAccountRelService assetAccountRelService;
-
-    @Autowired
     private MonitorEndpointService monitorEndpointService;
 
     @Autowired
@@ -119,7 +115,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     private AssetPingService assetPingService;
 
     @Autowired
-    private OverviewService overviewService;
+    private MonitorEndpointStateService monitorEndpointStateService;
 
     @Autowired
     private AssetFeatureService assetFeatureService;
@@ -412,7 +408,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
         
         // account
-        List<Integer> accountIds = asset.getAccounts();
+       /* List<Integer> accountIds = asset.getAccounts();
         if (CollectionUtils.isNotEmpty(accountIds)) {
             List<AssetAccount> assetAccounts = accountService.list();
             List<Integer> idList = assetAccounts.stream().map(AssetAccount::getId).collect(Collectors.toList());
@@ -422,7 +418,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (CollectionUtils.isNotEmpty(templateAccountIds)) {
                 throw new NZException("The account information was not found. Details: " + templateAccountIds.toString(), RCode.ASSET_ACCOUNT_NOT_FOUND.getCode());
             }
-        }
+        }*/
 
         // fields
         List<AssetFieldMeta> fields = asset.getFields();
@@ -638,9 +634,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存
         this.updateById(asset);
 
-        // 如果没有指定 account, 则视为删除 asset之前关联的 account 信息
-        assetAccountRelService.remove(new LambdaQueryWrapper<AssetAccountRel>().eq(AssetAccountRel::getAssetId, asset.getId()));
-
         // 如果没有指定 meta, 则视为删除 asset之前关联的 meta 信息
         assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getAssetId, asset.getId()));
 
@@ -650,20 +643,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     private void saveAssetRelData(AssetAsset asset) {
-        // accounts
-        List<Integer> accounts = asset.getAccounts();
-        if (CollectionUtils.isNotEmpty(accounts)) {
-            List<AssetAccountRel> rels = new ArrayList<>(accounts.size());
-            AssetAccountRel tmpl;
-            for (Integer accountId : accounts) {
-                tmpl = new AssetAccountRel();
-                tmpl.setAssetId(asset.getId());
-                tmpl.setAccountId(accountId);
-                rels.add(tmpl);
-            }
-            assetAccountRelService.saveBatch(rels);
-        }
-
         // fields
         List<AssetFieldMeta> fields = asset.getFields();
         if (CollectionUtils.isNotEmpty(fields)) {
@@ -712,9 +691,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 删除 alert
         alertMessageService.removeByAssetIds(idList);
 
-        // 删除 account
-        assetAccountRelService.remove(new LambdaQueryWrapper<AssetAccountRel>().in(AssetAccountRel::getAssetId, idList));
-
         // 删除 assetPing
         if (CollectionUtils.isNotEmpty(delAssetHosts)) {
             assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getHost, delAssetHosts));
@@ -742,19 +718,24 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     public Map endpointStatByAsset(Integer assetId) {
         List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
-
-        List<Integer> suspendedEndpointIdList = monitorEndpointService.getSuspendedEndpointIdList(assetId);
-        Set<Integer> upStatusEndpointIds = overviewService.getUpStatusEndpointIds(suspendedEndpointIdList);
-
         int all = endpointList.size();
         Map resultMap = new HashMap(8);
         resultMap.put("total", all);
 
-        List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
-        endpointIdList.retainAll(upStatusEndpointIds);
-        resultMap.put("up", endpointIdList.size());
-        resultMap.put("down", all - endpointIdList.size() - suspendedEndpointIdList.size());
-        resultMap.put("suspended", suspendedEndpointIdList.size());
+        if (CollectionUtils.isNotEmpty(endpointList)) {
+            List<Integer> suspendedEndpointIdList = monitorEndpointService.getSuspendedEndpointIdList(assetId);
+            List<Integer> endpointIdList = endpointList.stream().map(MonitorEndpoint::getId).distinct().collect(Collectors.toList());
+            List<MonitorEndpointState> upEndpointStates = monitorEndpointStateService.list(new LambdaQueryWrapper<MonitorEndpointState>().in(MonitorEndpointState::getEndpointId, endpointIdList).eq(MonitorEndpointState::getState, 0));
+
+            Set<Integer> upStatusEndpointIds = upEndpointStates.stream().map(MonitorEndpointState::getEndpointId).collect(Collectors.toSet());
+            endpointIdList.retainAll(upStatusEndpointIds);
+            resultMap.put("up", endpointIdList.size());
+            resultMap.put("down", all - endpointIdList.size() - suspendedEndpointIdList.size());
+            resultMap.put("suspended", suspendedEndpointIdList.size());
+        }
+        resultMap.put("up", 0);
+        resultMap.put("down", 0);
+        resultMap.put("suspended", 0);
         return resultMap;
     }
 
@@ -1315,6 +1296,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             entity.setAssetPingInterval(assetPingIntervalConfig.getParamValue());
         }
         return assetList;
+    }
+
+    @Override
+    public List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
+        List<VisualChart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
+        if(CollectionUtils.isEmpty(chartIdWithAssetEntity)){
+            return Collections.emptyList();
+        }
+        return chartIdWithAssetEntity;
     }
 
     private int saveAssetsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {

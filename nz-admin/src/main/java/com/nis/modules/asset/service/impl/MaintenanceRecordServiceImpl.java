@@ -3,14 +3,13 @@ package com.nis.modules.asset.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.modules.asset.dao.MaintenanceRecordDao;
-import com.nis.modules.asset.entity.Asset;
+import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.MaintenanceRecord;
-import com.nis.modules.asset.service.AssetService;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.MaintenanceRecordService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +31,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
 
     // 资产 service
     @Autowired
-    private AssetService assetService;
+    private AssetAssetService assetService;
 
     // 资产维修 dao
     @Autowired
@@ -52,7 +51,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
     public void saveOrUpdateMaintenance(MaintenanceRecord maintenance) {
 
         // 1. 校验资产ID是否存在
-        Asset asset = assetService.getById(maintenance.getAssetId());
+        AssetAsset asset = assetService.getById(maintenance.getAssetId());
         if (asset == null) {
             // 资产不存在
             throw new NZException(RCode.ASSET_NOT_EXIST);

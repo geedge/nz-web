@@ -11,8 +11,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.dao.ModelDao;
-import com.nis.modules.asset.entity.ModelWithMib;
+import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.sys.dao.SnmpMibDao;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.MmMib;
@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("snmpMibService")
@@ -46,10 +47,10 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
     private SnmpMibDao snmpMibDao;
 
     @Autowired
-    private ModelDao modelDao;
+    private SysConfigDao sysConfigDao;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private AssetModelService assetModelService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -58,14 +59,12 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
         List<SnmpMib> mibs = snmpMibDao.queryList(page, params);
 
         // 获取所有 model
-        Map<Integer, ModelWithMib> modelsDetailIdAndEntity = new HashMap<>();
-        List<ModelWithMib> modelList = modelDao.selectByModels(null);
-        for (ModelWithMib entity : modelList) {
-            modelsDetailIdAndEntity.put(entity.getId(), entity);
-        }
+        List<AssetModel> assetModelList = assetModelService.list();
+        Map<Integer, AssetModel> modelsDetailIdAndEntity = assetModelList.stream().collect(Collectors.toMap(AssetModel::getId, Function.identity()));
+
 
         // 处理 modelDetail 信息
-        List<ModelWithMib> modelsDetail;
+        List<AssetModel> modelsDetail;
         for (SnmpMib snmpMib : mibs) {
             snmpMib.setContent(null);
             if (ToolUtil.isNotEmpty(snmpMib.getModels())) {
@@ -77,7 +76,6 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
                 snmpMib.setModelsDetail(modelsDetail);
             }
         }
-
         page.setRecords(mibs);
         return new PageUtils(page);
     }

@@ -9,7 +9,6 @@ import com.nis.common.xss.XssUtil;
 import com.nis.modules.terminal.config.TerminalOneProcessor;
 import com.nis.modules.terminal.entity.TerminalConfigDto;
 import com.nis.modules.terminal.service.TerminalCmdService;
-import com.nis.modules.terminal.service.TerminalLogService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.lang3.StringUtils;
@@ -35,8 +34,6 @@ public class TerminalHandlerController {
 	
 	@Autowired
     private TerminalOneProcessor terminalOneProcessor;
-	@Autowired
-    private TerminalLogService terminalLogService;
 
 	@Autowired
     private TerminalSessionService terminalSessionService;
@@ -153,14 +150,6 @@ public class TerminalHandlerController {
         	logger.error("error info :",e);
             throw new NZException(RCode.SYS_ERROR);
         }
-    }
-
-    @GetMapping(value = "/log")
-    @RequiresPermissions({"terminal:log:list"})
-    public R queryPage(@RequestParam Map<String, Object> params) throws RuntimeException {
-        params = (Map<String, Object>) XssUtil.filterParameters((Map) params);
-        PageUtils page = terminalLogService.queryPage(params);
-        return R.ok(page);
     }
 
     /**

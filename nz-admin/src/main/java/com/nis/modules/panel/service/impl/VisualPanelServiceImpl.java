@@ -3,7 +3,6 @@ package com.nis.modules.panel.service.impl;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -13,21 +12,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.panel.dao.VisualPanelDao;
-import com.nis.modules.panel.entity.ChartElement;
 import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
-import com.nis.modules.panel.service.NodeService;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
@@ -50,12 +40,11 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
 
 
 @Service("visualPanelService")
@@ -887,9 +876,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
-            List<ChartElement> elementsList = null;
+            List<VisualChartElement> elementsList = null;
             try {
-                elementsList = JSONArray.parseArray(elements, ChartElement.class);
+                elementsList = JSONArray.parseArray(elements, VisualChartElement.class);
             } catch (JSONException e) {
                 return RCode.CHART_ELEMENTS_FORMAT.getMsg();
             }
@@ -898,7 +887,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
 
-            for (ChartElement element : elementsList) {
+            for (VisualChartElement element : elementsList) {
                 if(ToolUtil.isEmpty(element.getExpression())){
                     return RCode.CHARTELEMENT_EXPRESSION_ISNULL.getMsg();
                 }

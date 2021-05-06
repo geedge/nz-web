@@ -1,13 +1,12 @@
 package com.nis.modules.panel.entity;
 
-import java.util.Date;
-import java.util.List;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.nis.modules.asset.entity.Asset;
-
+import com.nis.modules.asset.entity.AssetAsset;
 import lombok.Data;
+
+import java.util.Date;
+import java.util.List;
 
 @Data
 @TableName("visual_chart")
@@ -67,7 +66,7 @@ public class VisualChart {
     private Integer chartNums;
     
     @TableField(exist = false)
-    private Asset asset;
+    private AssetAsset asset;
     
     private Integer varType;
     

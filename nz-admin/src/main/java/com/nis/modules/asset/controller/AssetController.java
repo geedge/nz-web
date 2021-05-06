@@ -1,22 +1,16 @@
 package com.nis.modules.asset.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import cn.hutool.core.util.ObjectUtil;
 import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.*;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.asset.entity.AssetStateConf;
+import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.asset.service.AssetStateConfService;
 import com.nis.modules.asset.service.AssetTypeConfService;
-import com.nis.modules.terminal.entity.Account;
-
-import cn.hutool.core.util.ObjectUtil;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +20,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 
 /**
@@ -38,9 +31,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/asset")
 public class AssetController {
-
-    @Autowired
-    private AssetService assetService;
 
     @Autowired
     private AssetStateConfService stateConfService;
@@ -288,260 +278,6 @@ public class AssetController {
         return R.ok();
     }
     
-
-
-
-
-
-
-    /**
-     * 资产请求列表
-     *
-     * @param params
-     * @return
-     */
-    @GetMapping
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:list"})
-    public R list(@RequestParam Map<String, Object> params) {
-        PageUtils page = assetService.queryPage(params);
-        return R.ok(page);
-    }
-
-    /**
-     * 资产详情查询接口
-     * @param id
-     * @return
-     */
-    @GetMapping("/info")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:info"})
-    public R assetInfo(Integer id){
-        Map detail = assetService.detail(id);
-        return R.ok(detail);
-    }
-
-    /**
-     * 保存
-     *
-     * @param asset
-     * @return
-     */
-    @PostMapping
-    @SysLog(operation = OperationEnum.ADD,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:save"})
-    public R save(@RequestBody Asset asset) {
-        ValidateUtils.is(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
-                .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(asset.getIdcId()).notNull(RCode.DC_ID_ISNULL)
-                .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
-
-        List<Account> accounts = asset.getAccounts();
-        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter()) && CollectionUtils.isEmpty(accounts)) {
-            // 指名了需要安装 node exporter 账号信息不能为空
-            throw new NZException(RCode.ASSET_ACCOUNT_ISNULL);
-        }
-
-
-        Account accountCli = null;
-        if (CollectionUtils.isNotEmpty(accounts)) {
-            assetService.validateAccount(accounts);
-            // 找到SSH协议的账号
-            accountCli = accounts.stream().filter(account -> Constant.ACCOUNT_SSH_PROTOCOL.equals(account.getProtocol()) ? true : false).findAny().orElse(null);
-            if(ToolUtil.isNotEmpty(accountCli)){
-                accountCli = JSONObject.parseObject(JSON.toJSONString(accountCli), Account.class);
-            }
-        }
-
-        // 购买时间格式校验
-        if (StringUtils.isNotEmpty(asset.getPurchaseDate())) {
-            ValidateUtils.is(asset.getPurchaseDate()).date("yyyy-MM-dd", RCode.ASSET_PURCHASEDATE_FORMAT);
-        } else {
-            asset.setPurchaseDate(null);
-        }
-
-        assetService.saveOrUpdateAsset(asset);
-
-        if (Constant.ASSET_BUILD_NODE_EXPORTER_FLAG.equals(asset.getExporter())) {
-            R result;
-            if (accountCli == null) {
-                result = R.error(RCode.ASSET_EXPORTER_UPLOADBYSSH);
-            } else {
-                result = assetService.uploadBuildExporter(null, asset, accountCli);
-            }
-            return result;
-        }
-        return R.ok();
-    }
-
-    /**
-     * 修改
-     *
-     * @param asset
-     * @return
-     */
-    @PutMapping
-    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:update"})
-    public R update(@RequestBody Asset asset) {
-        ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
-                .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(64, RCode.ASSET_SN_TOO_LONG)
-                .and(asset.getModelId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(asset.getIdcId()).notNull(RCode.DC_ID_ISNULL)
-                .and(asset.getHost()).notNull(RCode.ASSET_HOST_ISNULL).ip(RCode.ASSET_HOST_FORMAT);
-
-
-        List<Account> accounts = asset.getAccounts();
-        if (CollectionUtils.isNotEmpty(accounts)) {
-            assetService.validateAccount(accounts);
-        }
-
-        // 购买时间格式校验
-        if (StringUtils.isNotEmpty(asset.getPurchaseDate())) {
-            ValidateUtils.is(asset.getPurchaseDate()).date("yyyy-MM-dd", RCode.ASSET_PURCHASEDATE_FORMAT);
-        } else {
-            asset.setPurchaseDate(null);
-        }
-
-        assetService.saveOrUpdateAsset(asset);
-        return R.ok();
-    }
-
-    /**
-     * 删除
-     *
-     * @param ids
-     * @return
-     */
-    @DeleteMapping
-    @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:delete"})
-    public R delete(@RequestParam Integer... ids) {
-        ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
-
-        assetService.delete(ids);
-        return R.ok();
-    }
-
-    /**
-     * 批量导入
-     *
-     * @param excelFile
-     * @return
-     */
-    @PostMapping("/import")
-    @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:import"})
-    public R importAssetsFromExcel(MultipartFile excelFile,String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
-        // 本次导入的 uuid
-        String seqUUID = UUID.randomUUID().toString();
-        Map map = assetService.importAssetsFromExcel(excelFile, seqUUID, language);
-        return R.ok(map);
-    }
-
-    /**
-     * 导出
-     *
-     * @param response
-     * @param params
-     */
-    @GetMapping("/export")
-    @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:export"})
-    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
-        assetService.export(response,params);
-    }
-
-    /**
-     * asset导入撤销
-     *
-     * @return
-     */
-    @DeleteMapping("/cancelImport")
-    @RequiresPermissions({"asset:cancel:import"})
-    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSET)
-    public R cancelImport(String seq) {
-        ValidateUtils.is(seq).notNull(RCode.ASSET_CANCELIMPORTSEQ_ISNULL);
-
-        assetService.cancelImport(seq);
-        return R.ok();
-    }
-    
-    
-    /**
-     * asset更新采集项信息
-     */
-    @GetMapping("updateFeature")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:feature"})
-    public R updateFeature(Integer assetId) {
-    	// 采集信息方法
-    	try {
-			assetService.collectData(assetId);
-			return R.ok();
-		} catch (RuntimeException e) {
-			return R.error(500,e.getMessage());
-		}
-    }
-
-    /**
-     * asset筛选条件接口, 按照dc assetType vendor pingStatus 组织统计与筛选条件
-     *
-     * @return
-     */
-    @GetMapping("/filter")
-    @RequiresPermissions({"asset:filter"})
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
-    public R updateFeature() {
-        return R.ok(assetService.filterStat());
-    }
-
-    /**
-     * 获取导入模板
-     * @param response
-     * @param language
-     */
-    @GetMapping("/template")
-    @RequiresPermissions({"asset:import:template"})
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
-
-        assetService.getExportTemplateByLanguage(response, language);
-    }
-
-    @GetMapping("/tagKey")
-    @RequiresPermissions({"asset:tag:key"})
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
-    public R tagKey(String key) {
-        List<String> keys = assetService.getTagsBykeyOrderCounts(key);
-        Map result = new HashMap(2);
-        result.put("list", keys);
-        return R.ok(result);
-    }
-
-    @GetMapping("/tagValue")
-    @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
-    @RequiresPermissions({"asset:tag:value"})
-    public R tagValue(String key, String value) {
-        ValidateUtils.is(key).notNull(RCode.ASSET_TAGKEY_ISNULL);
-
-        List<String> values = assetService.getTagValsByKeyOrderCounts(key, value);
-        Map result = new HashMap(2);
-        result.put("list", values);
-        return R.ok(result);
-    }
-
-    @PutMapping("/batch")
-    @RequiresPermissions({"asset:batch:update"})
-    public R updateBatchAccountAndTagByAssetIds(@RequestBody Map<String, Object> param){
-        ValidateUtils.is(param.get("assetIds")).notNull(RCode.ASSET_ID_ISNULL);
-
-        assetService.updateBatchAccountAndTagByAssetIds(param);
-        return R.ok();
-    }
-
     @GetMapping("/stateConf")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
     @RequiresPermissions({"asset:state:list"})

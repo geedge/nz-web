@@ -1,5 +1,6 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -10,25 +11,19 @@ import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetModelDao;
-import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
-
-import cn.hutool.core.util.StrUtil;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

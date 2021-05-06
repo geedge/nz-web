@@ -15,8 +15,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.Model;
-import com.nis.modules.asset.service.ModelService;
 import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
@@ -35,9 +33,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 
 	@Autowired
 	private SysI18nService i18nService;
-	@Autowired
-	private ModelService modelService;
-	
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
 		IPage<SysDictEntity> page=this.page(new Query<SysDictEntity>().getPage(params));
@@ -79,33 +75,10 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 			}
 		}
 
-    	//当字典表中数据为assetType或vendor类型时  有关联model不允许删除
-    	validateModel(delIds);
-    	
     	this.removeByIds(delIds);
     	
 	}
-	
-	// 校验参数逻辑 model相关
-	public void validateModel(List<Integer> ids) {
-		List<SysDictEntity> result = this.list(new QueryWrapper<SysDictEntity>().in("id", ids));
-    	SysDictEntity sysDictEntity = result.get(0);
-    	String param="";
-    	if(StrUtil.equals(sysDictEntity.getType(),Constant.DICT_ASSET_MODEL_TYPE)) {
-    		param="type";
-    	}else if(StrUtil.equals(sysDictEntity.getType(),Constant.DICT_ASSET_MODEL_VENDOR)) {
-    		param=Constant.DICT_ASSET_MODEL_VENDOR;
-    	}
-    	if(ToolUtil.isNotEmpty(param)) {
-    		Set<Integer> modelParamIds = result.stream().map(SysDictEntity::getCode).collect(Collectors.toSet());
-    		List<Model> list = modelService.list(new QueryWrapper<Model>().in(param, modelParamIds));
-    		if(ToolUtil.isNotEmpty(list)) {
-    			throw new NZException(RCode.SYS_DICT_REMOVE_ERROR);
-    		}
-    	}
-    	
-	}
-	
+
 	@Override
 	public boolean save(SysDictEntity dict) {
 		super.save(dict);
@@ -147,6 +120,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 		return true;
 	}
 
+	@Override
 	public void updateLangCache() {
 		Constant.langList.clear();
 		HashMap<String, Object> params = new HashMap<>();

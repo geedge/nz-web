@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.module.entity.Module;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.dao.TopoDao;
 import com.nis.modules.project.entity.MonitorProject;
@@ -53,43 +52,6 @@ public class TopoServiceImpl extends ServiceImpl<TopoDao, Topo> implements TopoS
         topo.setUpdateBy(ShiroUtils.getUserId().intValue());
         topo.setTopo(topoConfig);
         this.saveOrUpdate(topo);
-    }
-
-    @Override
-    public void removeNodeAndLineByModules(List<Module> modules) {
-        Set<Integer> projectIds = modules.stream().map(Module::getProjectId).collect(Collectors.toSet());
-        List<Topo> topos = this.list(new QueryWrapper<Topo>().lambda().in(Topo::getProjectId, projectIds));
-        if (CollectionUtils.isEmpty(topos)) {
-            return;
-        }
-        Map<Integer, Object> topoProjectIdAndConfigMap = topos.stream().collect(Collectors.toMap(Topo::getProjectId, Topo::getTopo));
-
-        // module 是批量删除，删除的或许不属于同一个 project
-        Map<Integer, List<Module>> projectIdAndMoudles = modules.stream().collect(Collectors.groupingBy(Module::getProjectId));
-
-        Object topoConfig;
-        Map<String, JSONArray> configMap;
-        List<Integer> moduleIds;
-        for (Map.Entry<Integer, List<Module>> entry : projectIdAndMoudles.entrySet()) {
-            topoConfig = topoProjectIdAndConfigMap.get(entry.getKey());
-            if (ToolUtil.isEmpty(topoConfig)) {
-                continue;
-            }
-
-            moduleIds = entry.getValue().stream().map(Module::getId).collect(Collectors.toList());
-            configMap = JSONObject.parseObject(topoConfig.toString(), Map.class);
-            configMap.put("pens", this.removeModuleEntity(configMap.get("pens"), moduleIds));
-            topoProjectIdAndConfigMap.put(entry.getKey(), JSONObject.toJSONString(configMap));
-        }
-
-        Date now = new Date();
-        Integer userId = ShiroUtils.getUserId().intValue();
-        for (Topo topo : topos) {
-            topo.setTopo(topoProjectIdAndConfigMap.get(topo.getProjectId()).toString());
-            topo.setUpdateBy(userId);
-            topo.setUpdateAt(now);
-        }
-        this.saveOrUpdateBatch(topos);
     }
 
     @Override

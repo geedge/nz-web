@@ -1,15 +1,11 @@
 package com.nis.modules.endpoint.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.ToString;
 
-import java.util.List;
 import java.util.Objects;
 
 @Data
-@TableName("metadata_metric")
 @ToString
 public class MetadataMetric {
     /**
@@ -32,12 +28,6 @@ public class MetadataMetric {
      * 单位
      **/
     private String unit;
-
-    /**
-     * label
-     */
-    @TableField(exist = false)
-    private List<MetadataLabel> labels;
 
     @Override
     public boolean equals(Object o) {

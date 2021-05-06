@@ -4,10 +4,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.Constant;
-import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetService;
 import com.nis.modules.sys.service.SysConfigService;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -26,9 +24,6 @@ public class AssetFeatureJob extends QuartzJobBean {
 	@Autowired
 	private AssetConcurrent assetConcurrent;
 
-	@Autowired
-	private SysConfigService sysConfigService;
-	
 	@Autowired
 	private RedisTemplate redisTemplate;
 	

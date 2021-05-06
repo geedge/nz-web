@@ -1,60 +1,18 @@
 package com.nis.modules.metric.dto;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.asset.dao.AssetPingDao;
-import com.nis.modules.asset.dao.DcDao;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.AssetPing;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.endpoint.service.EndpointService;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.search.Search;
-import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 public class NezhaMetrics implements MeterBinder {
 	public Map<String, Double> map;
-	@Autowired
-	private AlertMessageService alertMessageService;
-	@Autowired
-	private AssetService assetService;
-	@Autowired
-	private EndpointService endpointService;
-
-	@Autowired
-	private AlertRuleDao alertRuleDao;
-
-	@Autowired
-	private DcDao dcDao;
-
-	@Autowired
-	private AssetPingDao assetPingDao;
-
-	@Autowired
-	private SysConfigDao sysConfigDao;
-
-	@Autowired
-	private PromserverService promserverService;
 
 	NezhaMetrics() {
 		map = new HashMap<>();

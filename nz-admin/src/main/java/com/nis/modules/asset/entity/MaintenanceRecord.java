@@ -62,7 +62,7 @@ public class MaintenanceRecord implements Serializable {
      * 资产
      */
     @TableField(exist = false)
-    private Asset asset;
+    private AssetAsset asset;
 
     /**
      * 创建人

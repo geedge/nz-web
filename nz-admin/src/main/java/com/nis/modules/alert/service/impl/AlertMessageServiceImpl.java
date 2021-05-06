@@ -1,22 +1,24 @@
 package com.nis.modules.alert.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.metric.dto.MetricsDto;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -32,45 +34,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.dao.AlertMessageDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
-import com.nis.modules.alert.service.AlertMessageService;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.asset.entity.Asset;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.asset.service.DcService;
-import com.nis.modules.endpoint.dao.EndpointDao;
-import com.nis.modules.endpoint.entity.Endpoint;
-import com.nis.modules.endpoint.entity.EndpointState;
-import com.nis.modules.endpoint.service.EndpointService;
-import com.nis.modules.endpoint.service.EndpointStateService;
-import com.nis.modules.metric.dto.MetricsDto;
-import com.nis.modules.module.entity.Module;
-import com.nis.modules.module.service.ModuleService;
-import com.nis.modules.project.service.ProjectService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 
@@ -79,15 +49,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private Log logger= Log.get();
 
 	@Autowired
-	private AssetService assetService;
-	@Autowired
-	private ModuleService moduleService;
-	@Autowired
-	private ProjectService projectService;
-	@Autowired
 	private AlertRuleService alertRuleService;
-	@Autowired
-	private EndpointService endpointService;
 	@Autowired
 	private DcService dcService;
 	@Autowired
@@ -96,11 +58,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private AlertMessageDao alertMessageDao;
 	@Autowired
 	private SysConfigService configService;
-	@Autowired
-	private EndpointStateService endpointStateService;
-
-	@Autowired
-    private EndpointDao endpointDao;
 
 	/**
 	 * 处理请求参数
@@ -125,7 +82,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
     @Override
     public PageUtils queryPage(Map<String, Object> params)  {
 
-    	this.handleQueryDateParam(params);
+    	/*this.handleQueryDateParam(params);
 
 	    IPage<AlertMessageEntity> page = new Query<AlertMessageEntity>().getPage(params);
 
@@ -136,11 +93,12 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 		page.setRecords(alertMessages);
 
-        return new PageUtils(page);
+        return new PageUtils(page);*/
+    	return null;
     }
 
 
-    private void handleResultData(List<AlertMessageEntity> alertMessages){
+    /*private void handleResultData(List<AlertMessageEntity> alertMessages){
 
 		if(CollectionUtils.isEmpty(alertMessages)){
 			return;
@@ -162,14 +120,14 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		for (AlertMessageEntity entity:alertMessages) {
 			endpointId = entity.getEndpointId();
 			if(endpointId != null){
-//				entity.setEndpoint(endpointMap.get(endpointId));
+				entity.setEndpoint(endpointMap.get(endpointId));
 			}
 			dcId = entity.getDcId();
 			if(dcId != null){
 				entity.setDc(dcMap.get(dcId));
 			}
 		}
-	}
+	}*/
 
 	/*    @Override
 	public synchronized void saveBatch(String receiveStr, HttpServletRequest request) {
@@ -277,7 +235,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	 * @param configMap
 	 * @param receiveData
 	 */
-	private void handleEndpointStateByRule(Map<String, String> configMap, List<AlertMessageReceiveDTO> receiveData) {
+	/*private void handleEndpointStateByRule(Map<String, String> configMap, List<AlertMessageReceiveDTO> receiveData) {
 		String endpointAlertPush = configMap.get(Constant.ENDPOINT_ALERT_PUSH);
 		String endpointAlertRule = configMap.get(Constant.ENDPOINT_ALERT_RULE);
 		Integer ednpointAlertName = 0;
@@ -340,7 +298,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 				}
 			}
 		}
-	}
+	}*/
 
 	/**
 	 * 入库、过期、告警通知
@@ -369,7 +327,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 	}
 
-	private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto, Map<Integer, Endpoint> endpointMap, Map<Integer, Asset> assetIdAndEntityMap, Map<String, Asset> assetHostAndEntityMap, Map<String, Integer> projectNameAndIdMap, Map<String, Integer> dcNameAndIdMap, Map<Integer, Module> moduleIdAndEntityMap, Map<String, Module> moduleNameAndEntityMap) {
+	/*private AlertMessageReceiveDTO getReceiveLabels(AlertMessageReceiveDTO dto, Map<Integer, Endpoint> endpointMap, Map<Integer, Asset> assetIdAndEntityMap, Map<String, Asset> assetHostAndEntityMap, Map<String, Integer> projectNameAndIdMap, Map<String, Integer> dcNameAndIdMap, Map<Integer, Module> moduleIdAndEntityMap, Map<String, Module> moduleNameAndEntityMap) {
 		Map receiveLabels = dto.getLabels();
 		Map labelIds = new HashMap();
 		Integer assertId = null, moduleId = null, projectId = null, endpointId = null, dcId = null;
@@ -409,7 +367,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		dto.setLabelIds(labelIds);
 
 		return dto;
-	}
+	}*/
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
@@ -548,41 +506,41 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	 * 填充表格数据
 	 */
     private static void fill(List<AlertMessageEntity> list, int rowNum, Sheet sheet, CellStyle dataStyle) {
-//        Row r;
-//        for (AlertMessageEntity entity : list) {
-//            r = sheet.createRow(++rowNum);
-//            AlertRuleEntity alertRule = entity.getAlertRule();
-//            String ruleName = alertRule == null ? "" : alertRule.getName();
-//            Dc dc = entity.getDc();
-//            String dcName = dc == null ? "" : dc.getName();
-//            Project project = entity.getProject();
-//            String projectName = project == null ? "" : project.getName();
-//            Module module = entity.getModule();
-//            String moduleName = module == null ? "" : module.getName();
-//            Endpoint endpoint = entity.getEndpoint();
-//	        String endpointId = endpoint == null ? "" : endpoint.getId() + "";
-//            Asset asset = entity.getAsset();
-//            String assetHost = asset == null ? "" : asset.getHost();
-//	        String startAt = ToolUtil.isNotEmpty(entity.getStartAt()) ? DateUtil.formatDate(entity.getStartAt(), "yyyy-MM-dd HH:mm:ss") : "";
-//	        String endAt = ToolUtil.isNotEmpty(entity.getEndAt()) ? DateUtil.formatDate(entity.getEndAt(), "yyyy-MM-dd HH:mm:ss") : "";
-//
-//            r.createCell(0).setCellValue(entity.getId());
-//            r.createCell(1).setCellValue(ruleName);
-//            r.createCell(2).setCellValue(dcName);
-//            r.createCell(3).setCellValue(projectName);
-//            r.createCell(4).setCellValue(moduleName);
-//            r.createCell(5).setCellValue(endpointId);
-//            r.createCell(6).setCellValue(assetHost);
-//            r.createCell(7).setCellValue(entity.getLabels());
-//            r.createCell(8).setCellValue(entity.getSeverity().getName());
-//            r.createCell(9).setCellValue(entity.getSummary());
-//            r.createCell(10).setCellValue(entity.getDescription());
-//            r.createCell(11).setCellValue(startAt);
-//            r.createCell(12).setCellValue(endAt);
-//            r.createCell(13).setCellValue(entity.getState() == 1 ? "pending" : "expired");
-//
-//            ExcelUtils.setDataCellStyle(dataStyle, r, 13);
-//        }
+        /*Row r;
+        for (AlertMessageEntity entity : list) {
+            r = sheet.createRow(++rowNum);
+            AlertRuleEntity alertRule = entity.getAlertRule();
+            String ruleName = alertRule == null ? "" : alertRule.getName();
+            Dc dc = entity.getDc();
+            String dcName = dc == null ? "" : dc.getName();
+            Project project = entity.getProject();
+            String projectName = project == null ? "" : project.getName();
+            Module module = entity.getModule();
+            String moduleName = module == null ? "" : module.getName();
+            Endpoint endpoint = entity.getEndpoint();
+	        String endpointId = endpoint == null ? "" : endpoint.getId() + "";
+            Asset asset = entity.getAsset();
+            String assetHost = asset == null ? "" : asset.getHost();
+	        String startAt = ToolUtil.isNotEmpty(entity.getStartAt()) ? DateUtil.formatDate(entity.getStartAt(), "yyyy-MM-dd HH:mm:ss") : "";
+	        String endAt = ToolUtil.isNotEmpty(entity.getEndAt()) ? DateUtil.formatDate(entity.getEndAt(), "yyyy-MM-dd HH:mm:ss") : "";
+
+            r.createCell(0).setCellValue(entity.getId());
+            r.createCell(1).setCellValue(ruleName);
+            r.createCell(2).setCellValue(dcName);
+            r.createCell(3).setCellValue(projectName);
+            r.createCell(4).setCellValue(moduleName);
+            r.createCell(5).setCellValue(endpointId);
+            r.createCell(6).setCellValue(assetHost);
+            r.createCell(7).setCellValue(entity.getLabels());
+            r.createCell(8).setCellValue(entity.getSeverity().getName());
+            r.createCell(9).setCellValue(entity.getSummary());
+            r.createCell(10).setCellValue(entity.getDescription());
+            r.createCell(11).setCellValue(startAt);
+            r.createCell(12).setCellValue(endAt);
+            r.createCell(13).setCellValue(entity.getState() == 1 ? "pending" : "expired");
+
+            ExcelUtils.setDataCellStyle(dataStyle, r, 13);
+        }*/
     }
 
 }

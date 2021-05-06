@@ -69,6 +69,19 @@
         
     </resultMap>
 
+
+    <resultMap type="com.nis.modules.panel.entity.VisualChart" id="chartIdWithAssetEntity">
+        <id property="id" column="chartId"/>
+
+        <association property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+            <result property="sn" column="sn"/>
+            <result property="number" column="number"/>
+            <result property="manageIp" column="manage_ip"/>
+        </association>
+    </resultMap>
+
     <select id="queryAssetList" resultMap="assetMap">
         SELECT
             asset.*,
@@ -242,4 +255,23 @@
        		#{id}
 	    </foreach>
     </update>
+
+    <select id="getAssetsByChartIds" resultMap="chartIdWithAssetEntity">
+        SELECT
+        cha.id as chartId,
+        ass.id,
+        ass.name,
+        ass.sn,
+        ass.manage_ip,
+        ass.number
+        FROM
+        visual_chart cha
+        LEFT JOIN visual_panel pan ON cha.panel_id = pan.id
+        LEFT JOIN asset_asset ass ON pan.link = ass.id
+        WHERE
+        cha.id IN
+        <foreach collection="ids" item="id" index="no" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

@@ -3,12 +3,15 @@ package com.nis.modules.promserver.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverProxyService;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.utils.HttpClientUtils;
@@ -25,15 +28,22 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Map.Entry;
+
 @Service
 public class PromserverProxyServiceImpl implements PromserverProxyService {
 
     private static final Log logger= Log.get();
+
     @Autowired
     private PromserverService promserverService;
+
     @Autowired
     private RedisTemplate<String,String> redisTemplate;
 
+    @Autowired
+    private SysConfService sysConfService;
+
+    @Override
     public JSONObject promRequest(String url,String method,Map<String,Object> params,Integer promId,Integer idcId,Integer type,Integer endpointId) throws IOException {
     	if(endpointId != null) {// endpointId 不为空则通过 redis key 获取prometheus id
     		Object pid = redisTemplate.opsForHash().get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
@@ -42,8 +52,13 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     		}
     		promId = Integer.valueOf(pid+"");
     	}
-    	Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
-    	String promUrl = genPromUrl(server.getHost()	, server.getPort(), url, method, params);
+
+    	// confagent 项目请求前缀
+	    SysConfigEntity confagentPathConfig = sysConfService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
+	    url += confagentPathConfig + "/prometheus/proxy";
+
+	    Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
+	    String promUrl = genPromUrl(server.getHost(), server.getPort(), url, method, params);
     	logger.debug("promurl:{}",promUrl);
     	CloseableHttpClient client = null;
     	CloseableHttpResponse response = null;
@@ -78,7 +93,8 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
         		 StringEntity entity = new StringEntity(queryString,"utf-8");
         		((HttpEntityEnclosingRequestBase)request).setEntity(entity);
         	}
-        	
+        	// 设置请求头 token
+		    request.setHeader("Authorization", server.getToken());
         	response = client.execute(request);
         	int statusCode = response.getStatusLine().getStatusCode();
         	String reasonPhrase = response.getStatusLine().getReasonPhrase();

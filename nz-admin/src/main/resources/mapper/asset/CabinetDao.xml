@@ -3,20 +3,6 @@
 
 <mapper namespace="com.nis.modules.asset.dao.CabinetDao">
 
-    <resultMap id="cabinetWithAssets" type="com.nis.modules.asset.entity.Cabinet">
-        <result property="id" column="id"/>
-        <result property="name" column="name"/>
-        <result property="uSize" column="u_size"/>
-        <result property="dcId" column="dc_id"/>
-
-        <collection property="assetList" ofType="com.nis.modules.asset.entity.Asset" columnPrefix="as_">
-            <result column="id" property="id"/>
-            <result column="cabinetId" property="cabinetId"/>
-            <result column="cabinetStart" property="cabinetStart"/>
-            <result column="cabinetEnd" property="cabinetEnd"/>
-        </collection>
-    </resultMap>
-
     <resultMap id="cabinetWithAssetPosition" type="com.nis.modules.asset.entity.Cabinet">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
@@ -91,14 +77,6 @@
             cabinet cab
         WHERE
             cab.dc_id = #{id}
-    </select>
-
-    <select id="getCabinetWithAssets" resultMap="cabinetWithAssets">
-        SELECT
-	        cab.id,cab.name,cab.u_size,cab.dc_id,ass.id AS as_id,ass.cabinet_id AS as_cabinetId,ass.cabinet_start AS as_cabinetStart,ass.cabinet_end AS as_cabinetEnd
-        FROM
-            cabinet cab
-            LEFT JOIN asset ass ON cab.id = ass.cabinet_id
     </select>
 
     <select id="getCabinetWithAssetPositionInfo" resultMap="cabinetWithAssetPosition">

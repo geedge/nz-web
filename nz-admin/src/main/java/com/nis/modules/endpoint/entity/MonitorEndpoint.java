@@ -77,9 +77,6 @@ public class MonitorEndpoint implements Serializable {
 	private MonitorProject project;
 
 	@TableField(exist = false)
-	private StateInfo stateInfo;
-
-	@TableField(exist = false)
 	private Integer alertNum;
 
 	@TableField(exist = false)

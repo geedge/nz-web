@@ -1,5 +1,9 @@
 package com.nis.modules.panel.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -8,45 +12,21 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.*;
 import com.nis.common.utils.Tool.NzExpressionUtil;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.asset.dao.AssetAssetDao;
-import com.nis.modules.asset.entity.Asset;
 import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetTag;
 import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetService;
-import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.panel.dao.VisualChartDao;
-import com.nis.modules.panel.entity.Chart;
-import com.nis.modules.panel.entity.Panel;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
-import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-
-import java.util.*;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,13 +34,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 @Service("visualChartService")
 public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualChart> implements VisualChartService {
 	
 	private Log log = Log.get();
-	
-	@Autowired
-    private SysConfigService sysConfigService;
 	
 	@Autowired
 	private VisualPanelService visualPanelService;
@@ -70,9 +51,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	
 	@Autowired
 	private VisualChartElementService chartElementService;
-	
-	@Autowired
-	private AssetService assetService;
 	
 	@Autowired
 	private AssetAssetService assetAssetService;
@@ -173,7 +151,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	 * 2. tyep 有效性校验
 	 * 3. param 校验
 	 *
-	 * @param panelId
 	 * @param chart
 	 */
 	@Override
@@ -348,30 +325,30 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
      */
     private void saveAssetChartsSimultaneously(VisualPanel modelPanel, VisualChart chart) {
         // 1. 通过 panel  linke 的 modelId 查找该 model 下是否关联 asset
-        List<Asset> assets = assetService.getAssetsWithTagsByModelId(modelPanel.getLink());
+        List<AssetAsset> assets = assetAssetService.list(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getModelId, modelPanel.getLink()));
         if (CollectionUtils.isEmpty(assets)) {
             return;
         }
 
         // 2. 通过 assets 找到关联的所有 asset panel
-        List<Integer> assetsIds = assets.stream().map(Asset::getId).collect(Collectors.toList());
+        List<Integer> assetsIds = assets.stream().map(AssetAsset::getId).collect(Collectors.toList());
         List<VisualPanel> panels = visualPanelService.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, assetsIds));
 
-        Map<Integer, Asset> assetIdAndEntityMap = new HashMap<>();
-        for (Asset asset : assets) {
+        Map<Integer, AssetAsset> assetIdAndEntityMap = new HashMap<>(16);
+        for (AssetAsset asset : assets) {
             assetIdAndEntityMap.put(asset.getId(), asset);
         }
 
         // 3. 得到 panelId 和 关联的 asset 实体 ，准备做 变量替换所需
-        Map<Integer, Asset> panelIdAndAsset = new HashMap<>();
+        Map<Integer, AssetAsset> panelIdAndAsset = new HashMap<>();
         for (VisualPanel entity : panels) {
             panelIdAndAsset.put(entity.getId(), assetIdAndEntityMap.get(entity.getLink()));
         }
 
         // 4. 处理属性
         VisualChart targetChart = new VisualChart();
-        Asset asset;
-        for (Map.Entry<Integer, Asset> entry : panelIdAndAsset.entrySet()) {
+        AssetAsset asset;
+        for (Map.Entry<Integer, AssetAsset> entry : panelIdAndAsset.entrySet()) {
             asset = entry.getValue();
             targetChart = JSONObject.parseObject(JSON.toJSONString(chart), VisualChart.class);
             targetChart.setSync(null);
@@ -379,13 +356,13 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             targetChart.setPid(chart.getId());
 
             // chart ： title param   chart element : expression   属性需要做 asset 变量替换
-            targetChart.setName(this.replacAssetInfos(targetChart.getName(), asset));
-            targetChart.setParam(ToolUtil.isNotEmpty(targetChart.getParam()) ? this.replacAssetInfos(targetChart.getParam().toString(), asset) : null);
+            targetChart.setName(Tool.NzExpressionUtil.renderExpression(targetChart.getName(),asset));
+            targetChart.setParam(ToolUtil.isNotEmpty(targetChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(targetChart.getParam().toString(), asset) : null);
 
             if (CollectionUtils.isNotEmpty(targetChart.getElements())) {
                 for (VisualChartElement element : targetChart.getElements()) {
                     element.setId(null);
-                    element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? this.replacAssetInfos(element.getExpression(), asset) : null);
+                    element.setExpression(ToolUtil.isNotEmpty(element.getExpression()) ? Tool.NzExpressionUtil.renderExpression(element.getExpression(), asset) : null);
                 }
             }
 
@@ -395,29 +372,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
     }
 
     
-    private static Pattern PATTERN = Pattern.compile(".*\\{\\{asset.tag.\\[.*\\]\\}\\}.*");
-    /**
-     * model 同步更新时 标签替换
-     *
-     * @param str
-     * @param asset
-     * @return
-     */
-    private String replacAssetInfos(String str, Asset asset) {
-        str = str.replaceAll("\\{\\{asset.host\\}\\}", asset.getHost());
-        str = str.replaceAll("\\{\\{asset.sn\\}\\}", asset.getSn());
-        List<AssetTag> tags = asset.getTags();
-        if(CollectionUtils.isNotEmpty(tags)){
-            for (AssetTag tag : tags) {
-                if(PATTERN.matcher(str).matches()){
-                    str = str.replaceAll("\\{\\{asset.tag.\\[" + StringUtils.escapeString(tag.getTag()) + "\\]\\}\\}", tag.getValue());
-                }
-                str = str.replaceAll("\\{\\{asset.tag." + tag.getTag() + "\\}\\}", tag.getValue());
-            }
-        }
-        return str;
-    }
-
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public Integer updateChart(VisualChart chart) {
@@ -465,29 +419,29 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         chartElementService.delElementByChartIds(idList);
 
         // 3. 返回引用 chartId 和 对应的 asset 信息 ，准备做 变量替换所需
-        List<VisualChart> chartIdWithAssetEntity = assetService.getAssetsWithTagByChartIds(idList);
-        Map<Integer, Asset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getAsset));
+        List<VisualChart> chartIdWithAssetEntity = assetAssetService.getAssetsWithTagByChartIds(idList);
+        Map<Integer, AssetAsset> chartIdAndAssetEntityMap = chartIdWithAssetEntity.stream().collect(Collectors.toMap(VisualChart::getId, VisualChart::getAsset));
 
         // 4. 处理更新
         List<VisualChartElement> elements = chart.getElements();
         List<VisualChartElement> saveElements = new ArrayList<>();
         VisualChartElement tempElement;
-        Asset asset;
+        AssetAsset asset;
         for (VisualChart entity : charts) {
             asset = chartIdAndAssetEntityMap.get(entity.getId());
-            entity.setName(this.replacAssetInfos(chart.getName(), asset));
+            entity.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), asset));
             entity.setSpan(chart.getSpan());
             entity.setHeight(chart.getHeight());
             entity.setType(chart.getType());
             entity.setUnit(chart.getUnit());
-            entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? this.replacAssetInfos(chart.getParam().toString(), asset) : null);
+            entity.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), asset) : null);
             if (CollectionUtils.isNotEmpty(elements)) {
                 for (VisualChartElement chartElement : elements) {
                     tempElement = new VisualChartElement();
                     BeanUtils.copyProperties(chartElement, tempElement);
                     tempElement.setChartId(entity.getId());
                     tempElement.setId(null);
-                    tempElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? this.replacAssetInfos(chartElement.getExpression(), asset) : null);
+                    tempElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), asset) : null);
                     saveElements.add(tempElement);
                 }
             }

@@ -41,11 +41,9 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
 import com.nis.modules.terminal.entity.TerminalCmd;
-import com.nis.modules.terminal.entity.TerminalLog;
 import com.nis.modules.terminal.entity.TerminalRecord;
 import com.nis.modules.terminal.entity.TerminalSessionEntity;
 import com.nis.modules.terminal.service.TerminalCmdService;
-import com.nis.modules.terminal.service.TerminalLogService;
 import com.nis.modules.terminal.service.TerminalRecordService;
 import com.nis.modules.terminal.service.TerminalSessionService;
 import org.apache.commons.io.IOUtils;
@@ -365,11 +363,9 @@ public class TerminalClient {
         executorService.execute(new Runnable() {
             @Override
             public void run() {
-            	TerminalLogService terminalLogService = (TerminalLogService) TerminalSession.clientAttributeInfo.get("terminalLogService");
                 TerminalSessionService terminalSessionService = (TerminalSessionService) TerminalSession.clientAttributeInfo.get("terminalSessionService");
                 TerminalCmdService terminalCmdService = (TerminalCmdService) TerminalSession.clientAttributeInfo.get("terminalCmdService");
                 TerminalRecordService terminalRecordService = (TerminalRecordService) TerminalSession.clientAttributeInfo.get("terminalRecordService");
-                TerminalLog terminalLog = (TerminalLog) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalLog");
                 TerminalSessionEntity sessionEntity = (TerminalSessionEntity) TerminalSession.getTerminalAttributeInfo(clientId).get("terminalSessionEntity");
                 byte[] buffer = new byte[1024 * 4];
                 StringBuilder builder = new StringBuilder();
@@ -452,12 +448,6 @@ public class TerminalClient {
                             }else {
                             	//telnet登录状态修改
                             	if(message.contains("Last login")) {
-                            		terminalLog.setCmd("Login");
-                            		terminalLog.setStatus(1);
-                            		terminalLog.setTime(new Date());
-                            		terminalLog.setUser(user);
-                            		terminalLogService.save(terminalLog);
-
                                     // cmd 信息
                                     TerminalCmd terminalCmd = new TerminalCmd();
                                     terminalCmd.setUuid(clientId);
@@ -497,11 +487,6 @@ public class TerminalClient {
                                 } else if (message.contains("timed out after 60 seconds")) {
                             		webSocketSession.sendMessage(new TextMessage(message+"\r\nConnection closed by foreign host.\r\n$: "));
                             		// 连接超时
-                            		terminalLog.setCmd("Login");
-                            		terminalLog.setStatus(0);
-                            		terminalLog.setTime(new Date());
-                            		terminalLog.setUser(user);
-                            		terminalLogService.save(terminalLog);
                             		TerminalSession.remove(webSocketSession);
                             		closed=true;
                             		telnetConnect=false;
@@ -512,12 +497,6 @@ public class TerminalClient {
                             		webSocketSession.sendMessage(new TextMessage(message));
                             		if(telnetConnectCount==3) {
                             			// 连接错误达到限制 关闭连接 连接失败
-                            			terminalLog.setCmd("Login");
-                                		terminalLog.setStatus(0);
-                                		terminalLog.setTime(new Date());
-                                		terminalLog.setUser(user);
-                                		terminalLogService.save(terminalLog);
-
                                         // cmd 信息
                                         TerminalCmd terminalCmd = new TerminalCmd();
                                         terminalCmd.setUuid(clientId);

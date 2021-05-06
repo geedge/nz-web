@@ -3,10 +3,8 @@ package com.nis.modules.endpoint.service.impl;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DigestUtils;
-import com.nis.modules.endpoint.dao.MetadataMetricDao;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
 import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
@@ -17,15 +15,12 @@ import java.io.IOException;
 import java.util.*;
 
 @Service
-public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, MetadataMetric>
-		implements MetadataMetricService {
+public class MetadataMetricServiceImpl implements MetadataMetricService {
 
 	private static Log logger = Log.get();
 
 	@Autowired
 	private PromserverProxyServiceImpl promserverProxyService;
-
-
 
 	@Override
 	public List<MetadataMetric> metadata(Integer endpointId) throws IOException{
@@ -55,7 +50,5 @@ public class MetadataMetricServiceImpl extends ServiceImpl<MetadataMetricDao, Me
 		}
 		return metrics;
 	}
-
-	
 
 }

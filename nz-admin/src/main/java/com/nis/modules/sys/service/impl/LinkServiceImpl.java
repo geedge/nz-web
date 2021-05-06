@@ -4,11 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertSeverityConf;
-import com.nis.modules.panel.entity.Node;
-import com.nis.modules.panel.service.NodeService;
 import com.nis.modules.sys.dao.LinkDao;
 import com.nis.modules.sys.entity.Link;
 import com.nis.modules.sys.service.LinkService;
@@ -17,15 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class LinkServiceImpl extends ServiceImpl<LinkDao, Link> implements LinkService {
+
 	@Autowired
 	private LinkDao linkDao;
-	@Autowired
-	private NodeService nodeService;
+
 	@Override
 	public List<Link> queryList(Map<String, Object> params) {
 		List<Link> list = linkDao.queryList(params);

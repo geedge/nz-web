@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.panel.entity.VisualChart;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -55,4 +56,5 @@ public interface AssetAssetService extends IService<AssetAsset> {
      */
     List<AssetAsset> getBlackboxAssetInfoList();
 
+    List<VisualChart> getAssetsWithTagByChartIds(List<Integer> idList);
 }

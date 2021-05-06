@@ -4,7 +4,7 @@
 <mapper namespace="com.nis.modules.alert.dao.AlertMessageDao">
 
 	<!-- 可根据自己的需求，是否要使用 -->
-    <resultMap type="com.nis.modules.alert.entity.AlertMessageEntity" id="alertMessageMap">
+    <!--<resultMap type="com.nis.modules.alert.entity.AlertMessageEntity" id="alertMessageMap">
         <result property="id" column="id"/>
         <result property="severityId" column="severity_id"/>
         <result property="summary" column="summary"/>
@@ -231,7 +231,7 @@
 		<if test="params.orderBy == null or params.orderBy == ''">
 			ORDER BY am.state , am.start_at DESC
 		</if>
-	</select>
+	</select>-->
 
 	<update id="updateBatch">
 		 UPDATE alert_message am SET am.state = 2, am.end_at = #{nowDate}

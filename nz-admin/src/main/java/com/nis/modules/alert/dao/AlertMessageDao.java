@@ -24,7 +24,7 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     void updateBatch(@Param("hashKeys") List<String> updateCacheKeys, @Param("nowDate") Date utcTimeByConfigTimeZone);
 
-    List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
+    // List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 
     void deleteByAssetIds(@Param("ids")List<Integer> idList);
 
