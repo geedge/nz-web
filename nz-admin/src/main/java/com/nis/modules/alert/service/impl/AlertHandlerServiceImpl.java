@@ -1,37 +1,17 @@
 package com.nis.modules.alert.service.impl;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.date.DateTime;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
-import com.nis.modules.alert.entity.AlertSilenceConf;
-import com.nis.modules.alert.entity.AlertSilenceMatcher;
-import com.nis.modules.alert.entity.AlertSilenceMessageRel;
+import com.nis.modules.alert.entity.*;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertHandlerService;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -48,9 +28,24 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfService;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("alertMessageHandlerService")
 public class AlertHandlerServiceImpl implements AlertHandlerService {
@@ -78,6 +73,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private AlertHandlerDao msgHandlerDao;
 	@Autowired
 	private AlertSilenceDao alertSilenceDao;
+	@Autowired
+	private SysConfService sysConfService;
 	/**
 	 * alert message 超时时间
 	 */
@@ -411,7 +408,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Override
 	public PageUtils queryMessagePage(Map<String, Object> params) {
 		//根据状态判断对应的表
-		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(params.get("state"));
+		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
 		params.put("tableName", tableName);
 		IPage<AlertMessageEntity> page = new Query<AlertMessageEntity>().getPage(params);
 		List<AlertMessageEntity> list = msgHandlerDao.queryList(page,params);
@@ -431,10 +428,90 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 
 	@Override
 	public void exportMessage(HttpServletResponse response, Map<String, Object> params) {
-		// TODO Auto-generated method stub
-		
+		List<SysConfigEntity> configList = sysConfService.list();
+		Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+		Map map = JSONObject.parseObject(configMap.get("alert_export_header"), Map.class, Feature.OrderedField);
+
+		// 导出最大条数限制
+		int exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+		int exportRealTotal = 0;
+
+		SXSSFWorkbook workbook = null;
+		try {
+			String language = (String) params.get("language");
+			language = ToolUtil.isEmpty(language) ? "en" : language;
+
+			String sheetName = "AlertMessages";
+			workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+			SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+			PageUtils page = this.queryMessagePage(params);
+			List<AlertMessageEntity> exportAlertMsgList = (List<AlertMessageEntity>) page.getList();
+			exportRealTotal = exportAlertMsgList.size();
+
+			// 判断导出条数是否超过配置最大导出量
+			if (exportAlertMsgList.size() > exportMaxLine) {
+				throw new NZException(RCode.SYS_CONFIG_EXPORT_MAX_LINE);
+			}
+
+			this.fillData(exportAlertMsgList, 1, sheet, workbook);
+
+			String fileName = "AlertMessagesExport.xlsx";
+			response.setContentType("application/excel");
+			response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+			workbook.write(response.getOutputStream());
+		} catch (IOException | NZException e) {
+			try {
+				String errMsg;
+				if (e instanceof NZException) {
+					errMsg = String.format("Configure the maximum number of export: %s, query the total number of export: %s", exportMaxLine, exportRealTotal);
+				} else {
+					errMsg = "Export error";
+				}
+				response.sendError(413, errMsg);
+			} catch (IOException ex) {
+				log.error(ex);
+			}
+		} finally {
+			try {
+				if (workbook != null) {
+					workbook.close();
+				}
+			} catch (IOException e) {
+				log.error(e);
+			}
+		}
 	}
-	
+
+	private void fillData(List<AlertMessageEntity> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+		Row row;
+		CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+
+		for (AlertMessageEntity alertMessage : list) {
+
+			String startAt = ToolUtil.isNotEmpty(alertMessage.getStartAt()) ? DateUtil.formatDate(alertMessage.getStartAt(), "yyyy-MM-dd HH:mm:ss") : "";
+			String endAt = ToolUtil.isNotEmpty(alertMessage.getEndAt()) ? DateUtil.formatDate(alertMessage.getEndAt(), "yyyy-MM-dd HH:mm:ss") : "";
+
+			row = sheet.createRow(rowNum++);
+			row.createCell(0).setCellValue(alertMessage.getId());
+			row.createCell(1).setCellValue(alertMessage.getAlertRule().getName());
+			row.createCell(2).setCellValue(ToolUtil.isNotEmpty(alertMessage.getDc()) ? alertMessage.getDc().getName() : "");
+			row.createCell(3).setCellValue(ToolUtil.isNotEmpty(alertMessage.getProject()) ? alertMessage.getProject().getName() : "");
+			row.createCell(4).setCellValue(ToolUtil.isNotEmpty(alertMessage.getModule()) ? alertMessage.getModule().getName() : "");
+			row.createCell(5).setCellValue(ToolUtil.isNotEmpty(alertMessage.getEndpoint()) ? alertMessage.getEndpoint().getName() : "");
+			row.createCell(6).setCellValue(ToolUtil.isNotEmpty(alertMessage.getAsset()) ? alertMessage.getAsset().getName() : "");
+			row.createCell(7).setCellValue(ToolUtil.isNotEmpty(alertMessage.getLabels()) ? alertMessage.getLabels() : "");
+			row.createCell(8).setCellValue(ToolUtil.isNotEmpty(alertMessage.getSeverity()) ? alertMessage.getSeverity().getName() : "");
+			row.createCell(9).setCellValue(alertMessage.getSummary());
+			row.createCell(10).setCellValue(alertMessage.getDescription());
+			row.createCell(11).setCellValue(startAt);
+			row.createCell(12).setCellValue(endAt);
+			row.createCell(13).setCellValue(Constant.ALERT_MESSAGE_STATE_NAME_MAPPING.get(alertMessage.getState()));
+
+			// 设置单元格样式
+			ExcelUtils.setDataCellStyle(dataStyle, row, 13);
+		}
+	}
 	/**
 	 * 计算 active silence key 超时时间
 	 * @param endAt

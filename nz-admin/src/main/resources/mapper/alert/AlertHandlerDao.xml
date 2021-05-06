@@ -31,11 +31,15 @@
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
 		</association>
-		<association columnPrefix="e_" property="enpoint" javaType="com.nis.modules.endpoint.entity.MonitorEndpoint">
+		<association columnPrefix="e_" property="endpoint" javaType="com.nis.modules.endpoint.entity.MonitorEndpoint">
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
 		</association>
 		<association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+			<id column="id" property="id"/>
+			<result column="name" property="name"/>
+		</association>
+		<association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
 		</association>
@@ -170,14 +174,17 @@
 			alsc.id as alsc_id,
 			alsc.name as alsc_name,
 			alsc.color as alsc_color,
+			dc.id as dc_id,
+			dc.name as dc_name
 		FROM
-			${tableName} am
+			${params.tableName} am
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN monitor_project p on am.project_id = p.id
 		LEFT JOIN monitor_module m on am.module_id = m.id
 		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
 		LEFT JOIN asset_asset ass on am.asset_id = ass.id
 		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		LEFT JOIN dc dc on am.dc_id = dc.id
 		<where>
 			<if test="params.ruleName != null and params.ruleName != ''">
 				ar.name like concat('%', #{params.ruleName}, '%')

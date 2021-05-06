@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,6 +41,7 @@ public class AlertMessageController {
 
 	private final static Log logger = Log.get();
 
+	@Autowired
 	private AlertHandlerService handlerService;
 
     /**
@@ -51,7 +53,7 @@ public class AlertMessageController {
     public R list(@RequestParam Map<String, Object> params){
     	logger.debug("query param : {}", Tool.JSONUtil.toJsonStr(params));
     	//state不能为空
-    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(params.get("state"));
+    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(Integer.valueOf(params.get("state").toString()));
     	if(!containsstate) {
     		throw new NZException(RCode.ERROR);
     	}

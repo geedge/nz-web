@@ -237,6 +237,11 @@ public class Constant {
 	 */
 	public static final Map<Integer, String> ALERT_MESSAGE_STATE_TABLE_MAPPING = Tool.MapUtil.newHashMap();
 
+    /**
+     * alert message 状态 与 名称 对应关系 KEY :state
+     */
+	public static final Map<Integer, String> ALERT_MESSAGE_STATE_NAME_MAPPING = Tool.MapUtil.newHashMap();
+
 	static {
 		DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider",
 				DatabaseIdProvider.class);
@@ -402,6 +407,10 @@ public class Constant {
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_ACTIVE_STATE, ALERT_MESSAGE_ACTIVE_TABLE);
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, ALERT_MESSAGE_SILENCE_TABLE);
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, ALERT_MESSAGE_HISTORY_TABLE);
+
+        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_ACTIVE_STATE, "active");
+        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, "silence");
+        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, "expired");
 
 	}
 
