@@ -122,7 +122,7 @@
             LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
             LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
             LEFT JOIN monitor_endpoint me ON asset.id = me.asset_id
-            LEFT JOIN alert_message msg ON asset.id = msg.asset_id	AND msg.state = 1
+            LEFT JOIN alert_message_active msg ON asset.id = msg.asset_id
 
         <where>
 

@@ -27,8 +27,7 @@
             dc dc
             LEFT JOIN cabinet cab ON cab.dc_id = dc.id
             LEFT JOIN asset_asset asset ON asset.dc_id = dc.id
-            LEFT JOIN alert_message msg ON dc.id = msg.dc_id
-            AND msg.state = 1
+            LEFT JOIN alert_message_active msg ON dc.id = msg.dc_id
 
         <where>
             <if test="params.ids != null">

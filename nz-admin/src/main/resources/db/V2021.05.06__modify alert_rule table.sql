@@ -3,6 +3,7 @@
  * 2. alert_rule 删除 severity 列
  * 3. alert rule 导入导出模板变更
  * 4. 新增 asset_chart_tpl/endpoint_chart_tpl asset endpoint chart 模板
+ * 5. 新增 alert_message_active/alert_message_history/alert_message_silence 表
  */
 
 ALTER TABLE `alert_rule` ADD COLUMN `method` VARCHAR(256) COMMENT 'receiver 不为空时，必填';
@@ -17,3 +18,118 @@ DELETE from sys_config where param_key = "endpoint_chart_tpl";
 
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'asset_chart_tpl', '{\"name\":\"{{asset.sn}}\",\"type\":\"assetInfo\",\"span\":12,\"height\":400,\"unit\":2}', 1, NULL);
 INSERT INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (NULL, 'endpoint_chart_tpl', '{\"name\":\"{{endpoint.name}}\",\"type\":\"endpointInfo\",\"span\":12,\"height\":400,\"unit\":2}', 1, NULL);
+
+
+/*
+ Navicat Premium Data Transfer
+
+ Source Server         : 192.168.40.42
+ Source Server Type    : MySQL
+ Source Server Version : 100214
+ Source Host           : 192.168.40.42:3306
+ Source Schema         : nz
+
+ Target Server Type    : MySQL
+ Target Server Version : 100214
+ File Encoding         : 65001
+
+ Date: 07/05/2021 15:22:30
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for alert_message_active
+-- ----------------------------
+DROP TABLE IF EXISTS `alert_message_active`;
+CREATE TABLE `alert_message_active`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `summary` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警摘要',
+  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警描述',
+  `labels` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警labels信息',
+  `start_at` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `end_at` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `state` int(10) NULL DEFAULT NULL COMMENT '状态1:pending,2:Expired',
+  `rule_id` int(10) NOT NULL COMMENT '告警规则ID',
+  `project_id` int(10) NULL DEFAULT NULL COMMENT '关联project id',
+  `module_id` int(10) NULL DEFAULT NULL COMMENT '关联module id',
+  `endpoint_id` int(10) NULL DEFAULT NULL COMMENT '关联endpoint id',
+  `asset_id` int(10) NULL DEFAULT NULL COMMENT '关联资产id',
+  `dc_id` int(10) NULL DEFAULT NULL COMMENT '关联idc id',
+  `hash_key` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'redis hash key',
+  `remark` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '备注 记录手动关闭记录信息，格式\r\n\r\ntime     username\r\n\r\nmessage',
+  `severity_id` int(10) NULL DEFAULT NULL COMMENT '告警级别id,关联ALERT_SEVERITY_CONF',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_state`(`state`) USING BTREE,
+  INDEX `idx_rule_id`(`rule_id`) USING BTREE,
+  INDEX `idx_project_id`(`project_id`) USING BTREE,
+  INDEX `idx_module_id`(`module_id`) USING BTREE,
+  INDEX `idx_endpoint_id`(`endpoint_id`) USING BTREE,
+  INDEX `idx_asset_id`(`asset_id`) USING BTREE,
+  INDEX `idx_dc_id`(`dc_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for alert_message_history
+-- ----------------------------
+DROP TABLE IF EXISTS `alert_message_history`;
+CREATE TABLE `alert_message_history`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `summary` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警摘要',
+  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警描述',
+  `labels` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警labels信息',
+  `start_at` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `end_at` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `state` int(10) NULL DEFAULT NULL COMMENT '状态1:pending,2:Expired',
+  `rule_id` int(10) NOT NULL COMMENT '告警规则ID',
+  `project_id` int(10) NULL DEFAULT NULL COMMENT '关联project id',
+  `module_id` int(10) NULL DEFAULT NULL COMMENT '关联module id',
+  `endpoint_id` int(10) NULL DEFAULT NULL COMMENT '关联endpoint id',
+  `asset_id` int(10) NULL DEFAULT NULL COMMENT '关联资产id',
+  `dc_id` int(10) NULL DEFAULT NULL COMMENT '关联idc id',
+  `hash_key` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'redis hash key',
+  `remark` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '备注 记录手动关闭记录信息，格式\r\n\r\ntime     username\r\n\r\nmessage',
+  `severity_id` int(10) NULL DEFAULT NULL COMMENT '告警级别id,关联ALERT_SEVERITY_CONF',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_state`(`state`) USING BTREE,
+  INDEX `idx_rule_id`(`rule_id`) USING BTREE,
+  INDEX `idx_project_id`(`project_id`) USING BTREE,
+  INDEX `idx_module_id`(`module_id`) USING BTREE,
+  INDEX `idx_endpoint_id`(`endpoint_id`) USING BTREE,
+  INDEX `idx_asset_id`(`asset_id`) USING BTREE,
+  INDEX `idx_dc_id`(`dc_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 20210430071700002 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for alert_message_silence
+-- ----------------------------
+DROP TABLE IF EXISTS `alert_message_silence`;
+CREATE TABLE `alert_message_silence`  (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `summary` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警摘要',
+  `description` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警描述',
+  `labels` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '告警labels信息',
+  `start_at` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `end_at` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `state` int(10) NULL DEFAULT NULL COMMENT '状态1:pending,2:Expired',
+  `rule_id` int(10) NOT NULL COMMENT '告警规则ID',
+  `project_id` int(10) NULL DEFAULT NULL COMMENT '关联project id',
+  `module_id` int(10) NULL DEFAULT NULL COMMENT '关联module id',
+  `endpoint_id` int(10) NULL DEFAULT NULL COMMENT '关联endpoint id',
+  `asset_id` int(10) NULL DEFAULT NULL COMMENT '关联资产id',
+  `dc_id` int(10) NULL DEFAULT NULL COMMENT '关联idc id',
+  `hash_key` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT 'redis hash key',
+  `remark` text CHARACTER SET utf8 COLLATE utf8_general_ci NULL COMMENT '备注 记录手动关闭记录信息，格式\r\n\r\ntime     username\r\n\r\nmessage',
+  `severity_id` int(10) NULL DEFAULT NULL COMMENT '告警级别id,关联ALERT_SEVERITY_CONF',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_state`(`state`) USING BTREE,
+  INDEX `idx_rule_id`(`rule_id`) USING BTREE,
+  INDEX `idx_project_id`(`project_id`) USING BTREE,
+  INDEX `idx_module_id`(`module_id`) USING BTREE,
+  INDEX `idx_endpoint_id`(`endpoint_id`) USING BTREE,
+  INDEX `idx_asset_id`(`asset_id`) USING BTREE,
+  INDEX `idx_dc_id`(`dc_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 20210430064300002 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+SET FOREIGN_KEY_CHECKS = 1;

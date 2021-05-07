@@ -464,7 +464,7 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
         }
     }
 
-	@Override
+	/*@Override
 	public void updateAlertStateByIds(Map<String, Object> params) {
 		// 当前时间
 		Date date = new Date();
@@ -495,14 +495,24 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 			HashOperations<String, Object, Object> opsForHash = redisTemplate.opsForHash();
 			opsForHash.delete(Constant.REDIS_KEY_ALERTMESSAGE, hashKeys.toArray());
 		}
-	}
+	}*/
 
     @Override
     public List<MetricsDto> queryAlertMessageStatisticsInfoByRule() {
         return alertMessageDao.queryAlertMessageStatisticsInfoByRule();
     }
 
-    /**
+	@Override
+	public Integer getAactiveAlertCountByModuleId(Integer moduleId) {
+		return alertMessageDao.getAactiveAlertCountByModuleId(moduleId);
+	}
+
+	@Override
+	public Integer getAactiveAlertCountByProjectId(Integer projectId) {
+		return alertMessageDao.getAactiveAlertCountByProjectId(projectId);
+	}
+
+	/**
 	 * 填充表格数据
 	 */
     private static void fill(List<AlertMessageEntity> list, int rowNum, Sheet sheet, CellStyle dataStyle) {

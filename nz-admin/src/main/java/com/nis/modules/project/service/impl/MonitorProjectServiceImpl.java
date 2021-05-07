@@ -60,8 +60,8 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
         project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
 
-        int alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()).eq(AlertMessageEntity::getState, 1));
-        project.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+        Integer alertNum = alertMessageService.getAactiveAlertCountByProjectId(project.getId());
+        project.setAlertNum(alertNum);
 
         return project;
     }

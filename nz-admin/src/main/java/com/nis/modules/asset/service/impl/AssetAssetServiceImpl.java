@@ -723,7 +723,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
-    @Override
+    /*@Override
     public Map alertStatByAsset(Integer assetId) {
         List<AlertMessageEntity> alerts = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, assetId));
         long p1 = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
@@ -736,7 +736,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         resultMap.put(Constant.ALERT_SEVERITY_MEDIUM, p2);
         resultMap.put(Constant.ALERT_SEVERITY_LOW, p3);
         return resultMap;
-    }
+    }*/
 
     @Override
     public Map endpointStatByAsset(Integer assetId) {

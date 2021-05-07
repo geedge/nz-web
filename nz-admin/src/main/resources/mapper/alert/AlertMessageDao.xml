@@ -233,14 +233,14 @@
 		</if>
 	</select>-->
 
-	<update id="updateBatch">
+	<!--<update id="updateBatch">
 		 UPDATE alert_message am SET am.state = 2, am.end_at = #{nowDate}
 		 WHERE am.hash_key IN
 		<foreach collection="hashKeys" item="hashKey" index="no" open="(" separator="," close=")">
 			#{hashKey}
 		</foreach>
 		AND state = 1
-	</update>
+	</update>-->
 
 	<delete id="deleteByAssetIds">
 		delete from alert_message where asset_id in
@@ -282,15 +282,13 @@
 			count( am.id ) total,
 			rule_id id
 		FROM
-			alert_message am
-		WHERE
-			am.state = 1
+			alert_message_active am
 		GROUP BY
 			am.rule_id
 	</select>
 
 
-	<update id="updateAlertStateByIds">
+	<!--<update id="updateAlertStateByIds">
 		update alert_message am set remark = #{params.remark} , state = #{params.state}
 		<if test="params.endAt != null and params.endAt != ''">
 			, end_at = #{params.endAt}
@@ -299,11 +297,10 @@
 		<foreach collection="ids" item="id" open="(" separator="," close=")">
 			#{id}
 		</foreach>
-	</update>
+	</update>-->
 
 	<select id="getAlertsStatColumn" resultType="com.nis.modules.alert.entity.AlertMessageEntity">
 		SELECT
-			severity,
 			rule_id,
 			project_id,
 			module_id,
@@ -311,13 +308,11 @@
 			endpoint_id,
 			dc_id
 		FROM
-			alert_message
-		WHERE
-			state = 1
+			alert_message_active
 	</select>
 
 
-	<update id="updateStateBySilence" parameterType="com.nis.modules.alert.entity.AlertSilenceConf">
+	<!--<update id="updateStateBySilence" parameterType="com.nis.modules.alert.entity.AlertSilenceConf">
 		update alert_message set state = 3 
 		where rule_id = #{ruleId} and start_at &gt;= #{startAt} and end_at &lt;= #{endAt}
 		<if test="type=='datacenter'">
@@ -335,5 +330,5 @@
 		<if test="type=='endpoint'">
 		   and endpoint_id = #{linkId}
 		</if>
-	</update>
+	</update>-->
 </mapper>

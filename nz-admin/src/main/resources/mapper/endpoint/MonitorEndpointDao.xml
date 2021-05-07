@@ -129,7 +129,7 @@
         LEFT JOIN monitor_project p ON m.project_id = p.id
         LEFT JOIN asset_asset a ON e.asset_id = a.id
         LEFT JOIN monitor_endpoint_state es ON e.id = es.endpoint_id
-        LEFT JOIN alert_message msg ON e.id = msg.endpoint_id	AND msg.state = 1
+        LEFT JOIN alert_message_active msg ON e.id = msg.endpoint_id
 
         <where>
 
