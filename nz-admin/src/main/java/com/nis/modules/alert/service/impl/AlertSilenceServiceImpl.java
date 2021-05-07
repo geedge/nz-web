@@ -71,6 +71,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Override
 	public void saveAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
+		conf.setUtime(now);
 		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
 			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
@@ -100,6 +101,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Override
 	public void updateAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
+		conf.setUtime(now);
 		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
 			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
