@@ -24,14 +24,15 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -83,6 +84,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private VisualPanelService visualPanelService;
+
+    @Autowired
+    private VisualChartService visualChartService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -258,6 +262,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             moduleIdAndEndpointsMap.put(module.getId(), ToolUtil.isEmpty(moduleEndpoints) ? new ArrayList<>() : moduleEndpoints);
         }
 
+        // 配置信息获取
+        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
+        // endpoint config
+        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
+
         MonitorModule module;
         for (MonitorEndpoint endpoint : endpointList) {
             module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
@@ -310,15 +319,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             this.saveOrUpdate(endpoint);
             
             if(addEndpoint) {
-	            // 保存panel信息
-	 			VisualPanel panel = new VisualPanel();
-	 			panel.setName(Constant.PanelType.ENDPOINT.getValue()+"_panel_"+endpoint.getId());
-	 			panel.setType(Constant.PanelType.ENDPOINT.getValue());
-	 			panel.setPid(0);
-	 			panel.setLink(endpoint.getId());
-	 			panel.setWeight(0);
-	 			panel.setCreateBy(ShiroUtils.getUserId().intValue());
-	 			visualPanelService.save(panel);
+                // 新增时需要新增 panel chart
+                visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), null, chartTemplate);
             }
         }
     }
@@ -334,9 +336,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 删除 alert
         alertMessageDao.deleteByEndpointIds(ids);
         
-        // 删除 panel
-        visualPanelService.remove(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue())
-        		.in(VisualPanel::getLink, ids));
+        // 删除关联的 panel chart  chartElement信息
+        List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));
+        if (CollectionUtils.isNotEmpty(panels)) {
+            Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
+            visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
+        }
     }
 
     @Override
@@ -369,8 +374,19 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public void cancelImport(String seq) {
-        // 撤销导入
-        this.remove(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getSeq, seq));
+        List<MonitorEndpoint> endpointList = this.list(new QueryWrapper<MonitorEndpoint>().lambda().eq(MonitorEndpoint::getSeq, seq));
+        List<Integer> endpointIds = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(endpointIds)) {
+            // 撤销导入
+            this.remove(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getSeq, seq));
+
+            // 删除关联的 panel chart  chartElement信息
+            List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, endpointIds));
+            if (CollectionUtils.isNotEmpty(panels)) {
+                Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
+                visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            }
+        }
     }
 
     @Override
@@ -497,6 +513,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map<String, Integer> assetNameAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
         Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(AssetAsset::getId, AssetAsset::getManageIp));
 
+        // 配置信息获取
+        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
+        // endpoint config
+        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
 
         int successNum = 0;
         Row row;
@@ -653,6 +673,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 try {
                     this.save(monitorEndpoint);
+                    // 新增时需要新增 panel chart
+                    visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), monitorEndpoint.getId(), monitorEndpoint.getSeq(), chartTemplate);
                     successNum++;
 
                     monitorEndpointNameList.add(name);

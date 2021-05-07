@@ -670,6 +670,12 @@ public class Constant {
 	// 测试邮件发送模板
 	public static final String SYSCONFIG_KEY_TESTEMAIL_SEND_TEMPLATE = "test_email_send_template";
 
+	// 新增 asset 添加chart配置
+	public static final String SYSCONFIG_KEY_ASSET_CHART_TPL = "asset_chart_tpl";
+
+	// 新增 endpoint 添加chart配置
+	public static final String SYSCONFIG_KEY_ENDPOINT_CHART_TPL = "endpoint_chart_tpl";
+
 	// 新增model 添加chart配置
 	public static final String SYSCONFIG_KEY_MODEL_CHART_TPL = "model_chart_tpl";
 

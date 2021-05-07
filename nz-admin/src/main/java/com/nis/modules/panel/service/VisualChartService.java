@@ -1,10 +1,11 @@
 package com.nis.modules.panel.service;
 
-import java.util.List;
-import java.util.Map;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.panel.entity.VisualChart;
+
+import java.util.List;
+import java.util.Map;
 
 public interface VisualChartService extends IService<VisualChart> {
 	
@@ -31,4 +32,6 @@ public interface VisualChartService extends IService<VisualChart> {
     Integer fromTmpl(Map<String,Object> params);
     
     Integer syncTmpl(Map<String,Object> params);
+
+	void saveRelPanelAndChart(String typeStr, Integer linkId, String seq, VisualChart chartTemplate);
 }
