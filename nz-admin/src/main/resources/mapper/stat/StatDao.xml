@@ -221,35 +221,35 @@
     </select>
     
     <select id="selectAlertMessageStateAnalysis" resultMap="statAnalysis">
-    	select state,
-    	count(id) as num
-    	from alert_message
+    	select am.state,
+    	count(am.id) as num
+    	from (select * from alert_message_active union all select * from alert_message_history union all select * from alert_message_silence) am
     	where 1=1 
     	<if test="params.projectId != null">
-    		and project_id = #{params.projectId}
+    		and am.project_id = #{params.projectId}
     	</if>
     	<if test="params.moduleId != null">
-    		and project_id = #{params.moduleId}
+    		and am.module_id = #{params.moduleId}
     	</if>
     	<if test="params.endpointId != null">
-    		and project_id = #{params.endpointId}
+    		and am.endpoint_id = #{params.endpointId}
     	</if>
     	<if test="params.dcId != null">
-    		and project_id = #{params.dcId}
+    		and am.dc_id = #{params.dcId}
     	</if>
     	<if test="params.assetId != null">
-    		and project_id = #{params.assetId}
+    		and am.asset_id = #{params.assetId}
     	</if>
     	<if test="params.ruleId != null">
-    		and project_id = #{params.ruleId}
+    		and am.rule_id = #{params.ruleId}
     	</if>
-    	group by state
+    	group by am.state
     </select>
     
     <select id="selectAlertMessageSeverityAnalysis" resultMap="statAnalysis">
     select ascc.name as name,
     	count(am.id) as num
-    	from alert_message am left join alert_severity_conf ascc on am.severity_id = ascc.id
+    	from alert_message_active am left join alert_severity_conf ascc on am.severity_id = ascc.id
     	where 1=1 
     	<if test="params.projectId != null">
     		and project_id = #{params.projectId}
@@ -273,7 +273,7 @@
     	select t.id as id,
     	t.name as name,
     	count(*) as num
-    	from alert_message am
+    	from alert_message_active am
     	<if test="params.dimension=='project'">
     		left join monitor_project t on am.project_id = t.id
     	</if>
@@ -396,7 +396,7 @@
     
     <select id="selectAlertMessageTotal" resultMap="statAnalysis">
     	select count(*) as num
-    	from alert_message am
+    	from alert_message_active am
     	where 1=1 
     	<if test="params.projectId != null">
     		and am.project_id = #{params.projectId}
@@ -499,7 +499,7 @@
     <select id="selectAssetUnhealthy" resultMap="statAnalysis">
     	select count(DISTINCT aa.id) alarm
 		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
-		left join alert_message am on aa.id = am.asset_id
+		left join alert_message_active am on aa.id = am.asset_id
 		where (ap.`status`=0 or ap.status is null or am.state=1)
 		<if test="params.dcId != null">
 			and aa.dc_id = #{params.dcId}
@@ -520,7 +520,7 @@
     	select aa.dc_id id, 
     	count(DISTINCT aa.id) alarm
 		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
-		left join alert_message am on aa.id = am.asset_id
+		left join alert_message_active am on aa.id = am.asset_id
 		where (ap.`status`=0 or ap.status is null or am.state=1)
 		group by aa.dc_id
     </select>
@@ -543,7 +543,7 @@
 		am.dc_id id,
 		ascc.name name
 	FROM
-		alert_message am
+		alert_message_active am
 		LEFT JOIN alert_severity_conf ascc ON am.severity_id = ascc.id 
 	GROUP BY
 		am.dc_id,
