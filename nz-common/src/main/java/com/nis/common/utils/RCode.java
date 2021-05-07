@@ -436,6 +436,7 @@ public enum RCode {
     ALERTRULE_RECEIVER_NOTFOUND(421030, "Alert receiver user not found"),
     ALERTRULE_IMPORT_ERROR(423031, "Alert import error"),
     ALERTRULE_METHOD_ISNULL(421027, "Alert rule method can not be null"),
+    ALERTRULE_METHOD_NOTFOUND(426028, "Alert rule method not found"),
 
     /**
      * 告警通知脚本
@@ -479,6 +480,7 @@ public enum RCode {
     ALERTNOTIFY_STATE_ISNULL(461005,"Alert notify method state can not be null"),
     ALERTNOTIFY_ID_ISNULL(461006,"Alert notify method ID can not be null"),
     ALERTNOTIFY_FILEPATH_ISNULL(461007,"Alert notify method file path can not be null"),
+    ALERTNOTIFY_NAME_DUPLICATE(462008, "Alert notify method name duplicate"),
     /**
      * setting菜单项相关
      */

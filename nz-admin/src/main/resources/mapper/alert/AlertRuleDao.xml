@@ -8,6 +8,10 @@
         <result property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="expr" column="expr"/>
+        <result property="operator" column="operator"/>
+        <result property="threshold" column="threshold"/>
+        <result property="unit" column="unit"/>
+        <result property="method" column="method"/>
         <result property="last" column="last"/>
         <result property="severityId" column="severity_id"/>
         <result property="summary" column="summary"/>
@@ -37,6 +41,7 @@
         ar.summary,
         ar.description,
         ar.receiver,
+        ar.method,
         alsc.id as alsc_id,
         alsc.name as alsc_name,
         alsc.color as alsc_color,

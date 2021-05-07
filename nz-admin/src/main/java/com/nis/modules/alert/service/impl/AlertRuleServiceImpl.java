@@ -1,19 +1,27 @@
 package com.nis.modules.alert.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertNotifyMethod;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleStat;
+import com.nis.modules.alert.entity.AlertSeverityConf;
+import com.nis.modules.alert.service.AlertNotifyMethodService;
+import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.alert.service.AlertSeverityService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -27,44 +35,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.common.utils.YamlUtil;
-import com.nis.modules.alert.dao.AlertRuleDao;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertRuleStat;
-import com.nis.modules.alert.entity.AlertSeverityConf;
-import com.nis.modules.alert.service.AlertRuleService;
-import com.nis.modules.alert.service.AlertSeverityService;
-import com.nis.modules.asset.dao.AssetAssetDao;
-import com.nis.modules.endpoint.dao.MonitorEndpointDao;
-import com.nis.modules.module.dao.MonitorModuleDao;
-import com.nis.modules.project.dao.MonitorProjectDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserService;
-
-import cn.hutool.core.util.ObjectUtil;
-import lombok.extern.slf4j.Slf4j;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service("alertRuleService")
-@Slf4j
 public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEntity> implements AlertRuleService {
+
+    private static Log log = Log.get();
+
     @Autowired
     private AlertRuleDao alertRuleDao;
 
@@ -75,23 +57,12 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private YamlUtil yamlUtil;
 
     @Autowired
-    private MonitorProjectDao projectDao;
-
-    @Autowired
-    private MonitorModuleDao moduleDao;
-
-    @Autowired
-    private AssetAssetDao assetDao;
-
-//    @Autowired
-//    private AlertMessageDao alertMessageDao;
-
-    @Autowired
-    private MonitorEndpointDao endpointDao;
+    private AlertNotifyMethodService methodService;
 
     @Autowired
     private SysConfigService sysConfigService;
 
+    @Autowired
     private AlertSeverityService alertSeverityService;
 
     @Override
@@ -105,26 +76,44 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         IPage<AlertRuleEntity> page = new Query<AlertRuleEntity>().getPage(params);
         List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params, receivers);
 
+        // 查询结果不为空时处理返回结果
+        if(CollectionUtils.isNotEmpty(ruleEntityList)){
+            this.handleResuleList(ruleEntityList);
+        }
+
+        page.setRecords(ruleEntityList);
+        return new PageUtils(page);
+    }
+
+    private void handleResuleList(List<AlertRuleEntity> ruleEntityList) {
         // 获取所有用户
         List<SysUserEntity> userList = sysUserService.list();
-        Map<Long, String> userIdAndName = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
+        Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
+
+        // method
+        List<AlertNotifyMethod> methodList = methodService.list();
+        Map<Integer, AlertNotifyMethod> methodIdAndEntitiyMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getId, Function.identity()));
 
         ruleEntityList.stream().forEach(alertRule -> {
             String receiver = alertRule.getReceiver();
             if (StringUtils.isNotEmpty(receiver)) {
                 List<SysUserEntity> list = new ArrayList<>();
                 Arrays.asList(receiver.split(",")).stream().forEach(id -> {
-                    SysUserEntity userEntity = new SysUserEntity();
-                    userEntity.setId(Long.valueOf(id));
-                    userEntity.setName(userIdAndName.get(Long.valueOf(id)));
+                    SysUserEntity userEntity = userIdAndEntityMap.get(Long.valueOf(id));
                     list.add(userEntity);
                 });
                 alertRule.setReceivers(list);
             }
+            String method = alertRule.getMethod();
+            if (StringUtils.isNotEmpty(method)) {
+                List<AlertNotifyMethod> list = new ArrayList<>();
+                Arrays.asList(method.split(",")).stream().forEach(id -> {
+                    AlertNotifyMethod notifyMethod = methodIdAndEntitiyMap.get(Integer.valueOf(id));
+                    list.add(notifyMethod);
+                });
+                alertRule.setMethods(list);
+            }
         });
-
-        page.setRecords(ruleEntityList);
-        return new PageUtils(page);
     }
 
     public boolean checkName(AlertRuleEntity alertRule) {
@@ -312,6 +301,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private int saveAlertDataFromSheet(Sheet sheet, List<String> alertNameList, List<Map> failDetails, List<SysUserEntity> userList, List<String> headerInfos, String seqUUID) {
         int successNum = 0;
         List<AlertSeverityConf> severityConfs = alertSeverityService.list();
+        List<AlertNotifyMethod> methodList = methodService.list();
         Row row;
         for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
             row = sheet.getRow(i);
@@ -397,11 +387,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
             }
             String description = ExcelUtils.getCellValue(row.getCell(8));
-            /*if (StringUtils.isEmpty(description)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_DESCRIPTION_ISNULL.getMsg());
-            }*/
             String receiver = ExcelUtils.getCellValue(row.getCell(9));
+            String method = ExcelUtils.getCellValue(row.getCell(10));
             if (StringUtils.isNotEmpty(receiver)) {
                 if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {
                     saveFlag = false;
@@ -409,7 +396,23 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 } else {
                     receiver = this.getUserIdsByUserNames(receiver, userList);
                 }
+                if(StringUtils.isEmpty(method)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ALERTRULE_METHOD_ISNULL.getMsg());
+                }
             }
+
+            if (StringUtils.isNotEmpty(method)) {
+                // 校验 method 是否存在
+                if (CollectionUtils.isNotEmpty(this.getNonExistentMethods(method, methodList))) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_METHOD_NOTFOUND.getMsg());
+                } else {
+                    // 获取 method ids
+                    method = this.getMethodIdsByUserNames(method, methodList);
+                }
+            }
+
             if (saveFlag) {
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
                 ruleEntity.setName(alertName);
@@ -422,6 +425,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setSummary(summary);
                 ruleEntity.setDescription(description);
                 ruleEntity.setReceiver(receiver);
+                ruleEntity.setMethod(method);
                 ruleEntity.setSeq(seqUUID);
                 try {
                     boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
@@ -444,6 +448,33 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             }
         }
         return successNum;
+    }
+
+    private List<String> getNonExistentMethods(String method, List<AlertNotifyMethod> methodList) {
+        List<String> methodNames = methodList.stream().map(AlertNotifyMethod::getName).collect(Collectors.toList());
+        List<String> list = new ArrayList<>(Arrays.asList(method.split(",")));
+        Iterator<String> iterator = list.iterator();
+        String next;
+        while (iterator.hasNext()) {
+            next = iterator.next();
+            if (methodNames.contains(next)) {
+                iterator.remove();
+            }
+        }
+        return list;
+    }
+
+    private String getMethodIdsByUserNames(String method, List<AlertNotifyMethod> methodList) {
+        Map<String, Integer> nameAndIdMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getName, AlertNotifyMethod::getId));
+        List<String> list = Arrays.asList(method.split(","));
+        String methodIds = "";
+        for (String name : list) {
+            methodIds += nameAndIdMap.get(name) + ",";
+        }
+        if (StringUtils.isNotEmpty(methodIds)) {
+            methodIds = methodIds.substring(0, methodIds.length() - 1);
+        }
+        return methodIds;
     }
 
     private String getUserIdsByUserNames(String receiver, List<SysUserEntity> userList) {
@@ -537,6 +568,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private void fillData(List<AlertRuleEntity> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
         List<SysUserEntity> sysUserList = sysUserService.list();
         Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
+        List<AlertNotifyMethod> methodList = methodService.list();
+        Map<Integer, String> methodIdAndNameMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getId, AlertNotifyMethod::getName));
         Row row;
         String receiveIds, receiveNames;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
@@ -565,8 +598,20 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 row.createCell(9).setCellValue(receiveNames);
             }
 
+            String methodIds = rule.getMethod();
+            if (StringUtils.isNotEmpty(methodIds)) {
+                String methodNames = "";
+                for (String id : Arrays.asList(methodIds.split(","))) {
+                    methodNames += methodIdAndNameMap.get(Integer.valueOf(id)) + ",";
+                }
+                if (StringUtils.isNotEmpty(methodNames)) {
+                    methodNames = methodNames.substring(0, methodNames.length() - 1);
+                }
+                row.createCell(10).setCellValue(methodNames);
+            }
+
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
         }
     }
 
@@ -593,7 +638,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
                 .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
-                .and(alertRule.getSeverity()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
+                .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
                 .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL)
                 .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL)
                 .and(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL)
@@ -609,6 +654,27 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
         if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
             throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+        }
+
+        // 校验 method 是否存在
+        String method = alertRule.getMethod();
+
+        if (StringUtils.isNotEmpty(method)) {
+            List<AlertNotifyMethod> methodList = methodService.list();
+            List<Integer> methodIdList = methodList.stream().map(AlertNotifyMethod::getId).collect(Collectors.toList());
+
+            Arrays.asList(method.split(",")).stream().forEach(id -> {
+                try {
+                    Integer aint = Integer.valueOf(id);
+                    if (!methodIdList.contains(aint)) {
+                        // method 不存在
+                        throw new NZException(RCode.ALERTRULE_METHOD_NOTFOUND);
+                    }
+                } catch (NumberFormatException e) {
+                    log.error(e);
+                    throw new NZException(RCode.ALERTRULE_METHOD_NOTFOUND);
+                }
+            });
         }
     }
 
