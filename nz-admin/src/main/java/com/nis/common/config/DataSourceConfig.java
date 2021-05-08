@@ -14,9 +14,13 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.nis.common.utils.Tool;
 
+import cn.hutool.log.Log;
+
 @Configuration
 public class DataSourceConfig {
 
+	private static final Log log = Log.get();
+	
 	@Value("${database.host}")
 	private String databaseHost;
 	@Value("${database.port:3306}")
@@ -61,6 +65,7 @@ public class DataSourceConfig {
 		if(!Tool.StrUtil.isAllNotBlank(this.databaseHost,this.databaseUser,this.databaseName)) {
         	return null;
         }
+		log.info("datasource config,user:{}, url: {}",this.databaseUser,this.getDbUrl());
         DruidDataSource dataSource = new DruidDataSource();
         dataSource.setUrl(this.getDbUrl());
         dataSource.setUsername(this.databaseUser);

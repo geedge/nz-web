@@ -45,6 +45,15 @@ public class SetupController  {
     private String restartCommand;
     
     /**
+     * 获取 nezha inited 状态
+     * @return
+     */
+    @GetMapping("inited")
+    public R state() {
+    	return R.ok().put("inited", inited);
+    }
+    
+    /**
      * 最后完成配置
      * @param setup
      * @return

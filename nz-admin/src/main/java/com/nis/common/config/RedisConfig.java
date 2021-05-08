@@ -62,6 +62,7 @@ public class RedisConfig {
 		if(!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(),this.getRedisPort(),this.getRedisDatabase())) {
 			return null;
 		}
+		log.info("redis config: {}:{}/{}",this.getRedisHost(),this.getRedisPort(),this.getRedisDatabase());
 		RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
 		configuration.setDatabase(this.getRedisDatabase());
 		configuration.setHostName(this.getRedisHost());
