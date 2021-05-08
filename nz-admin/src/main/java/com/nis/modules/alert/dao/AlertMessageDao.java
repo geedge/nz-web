@@ -11,17 +11,12 @@ import java.util.List;
 
 /**
  * 
- * 
  * @author song
  * @email 
  * @date 2019-11-25 10:11:01
  */
 @Mapper
 public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
-
-    // void updateBatch(@Param("hashKeys") List<String> updateCacheKeys, @Param("nowDate") Date utcTimeByConfigTimeZone);
-
-    // List<AlertMessageEntity> list(IPage<AlertMessageEntity> page,@Param("params") Map<String, Object> params);
 
     void deleteByAssetIds(@Param("ids")List<Integer> idList);
 
@@ -33,14 +28,10 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     void deleteByDCIds(@Param("ids")List ids);
 
-    // void updateAlertStateByIds(@Param("ids")List<String> idList, @Param("params") Map<String, Object> params);
-
-    List<MetricsDto> queryAlertMessageStatisticsInfoByRule();
+    void deleteByRuleIds(@Param("ids") List ruleIds);
 
     // 只返回用于统计的列  severity rule_id  project_id module_id asset_id dc_id
     List<AlertMessageEntity> getAlertsStatColumn();
-
-    // void updateStateBySilence(AlertSilenceConf alertSilenceConf);
 
     @Select("SELECT COUNT(1) FROM ALERT_MESSAGE_ACTIVE WHERE module_id = #{moduleId};")
     Integer getAactiveAlertCountByModuleId(@Param("moduleId")Integer moduleId);

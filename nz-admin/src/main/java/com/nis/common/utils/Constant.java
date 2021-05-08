@@ -112,10 +112,6 @@ public class Constant {
 	public static final String[] SYSCONFIG_RESET_TYPE = { "metric", "alert", "sysconfig" };
 
 	/**
-	 * 告警等级
-	 */
-//    public static final List<String> ALERT_LEVEL;
-	/**
 	 * 告警信息状态
 	 */
 	public static final List<Integer> ALERTMESSAGE_STATE;
@@ -155,11 +151,6 @@ public class Constant {
 	public static final String PROMSERVERUP_ENDPOINT_LABEL = "endpoint";
 
 	/**
-	 * redis缓存区域配置信息key值
-	 */
-	public static final String REDIS_KEY_AREA = "area";
-
-	/**
 	 * 临时目录
 	 */
 	public static final String TEMP_PATH = System.getProperty("user.dir") + File.separator + "tmp";
@@ -168,8 +159,6 @@ public class Constant {
 	 * 工具目录
 	 */
 	public static final String TOOL_PATH = System.getProperty("user.dir") + File.separator + "tools";
-
-	public static final List<String> SPECIAL_SYS_DICT;
 
 	// 当前sys_config 配置中配置项和所属类别map
 	public static final Map<String, List<String>> SYSCONFIG_TYPEWITHKEYS_MAP;
@@ -185,9 +174,6 @@ public class Constant {
 
 	// snmp set value 可选类型集合
 	public static final List<String> SNMP_SETVLAUE_TYPE;
-
-	// idc trafficSetting direction 流量方向 可选值 rx(接收） tx（发送）
-	public static final List<String> TRAFFIC_DIRECTIONS;
 
 	// 图表 singleStat statistics可选值列表
 	public static final List<String> CHART_SINGLESTAT_STATISTICS;
@@ -273,10 +259,6 @@ public class Constant {
 		ALERTMESSAGE_STATE.add(1);
 		ALERTMESSAGE_STATE.add(2);
 
-		SPECIAL_SYS_DICT = new ArrayList<String>();
-		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_TYPE);
-		SPECIAL_SYS_DICT.add(Constant.DICT_ASSET_MODEL_VENDOR);
-
 		SYSCONFIG_TYPEWITHKEYS_MAP = new HashMap<>();
 
 		SYSCONFIG_TYPEWITHKEYS_MAP.put("basic",
@@ -303,10 +285,6 @@ public class Constant {
 		SNMP_SETVLAUE_TYPE.add("BITS");
 		SNMP_SETVLAUE_TYPE.add("Float");
 		SNMP_SETVLAUE_TYPE.add("DateAndTime");
-
-		TRAFFIC_DIRECTIONS = new ArrayList<>();
-		TRAFFIC_DIRECTIONS.add("rx");
-		TRAFFIC_DIRECTIONS.add("tx");
 
 		CHART_SINGLESTAT_STATISTICS = new ArrayList<>();
 		CHART_SINGLESTAT_STATISTICS.add("min");
@@ -672,23 +650,7 @@ public class Constant {
 		}
 	}
 
-	// system built_in 2非内置，1内置
-	public static final String SYSTEM_BUILDIN_YES = "1"; // 内置
-	public static final String SYSTEM_BUILDIN_NO = "2"; // 非内置
-
 	// nz-web 新增常量
-
-	// 字典表中资产型号厂商type值
-	public static final String DICT_ASSET_MODEL_VENDOR = "vendor";
-
-	// 字典表中资产型号类型type值
-	public static final String DICT_ASSET_MODEL_TYPE = "assetType";
-
-	// 字典表中资产状态 type 值
-	public static final String DICT_ASSET_STATE_TYPE = "assetState";
-
-	// 字典表中 account 认证类型的 type 值
-	public static final String DICT_ACCOUNT_AUTH_TYPE = "authType";
 
 	// 字典表中 chart 类型的 type 值
 	public static final String DICT_CHART_TYPE = "chartType";
@@ -707,9 +669,6 @@ public class Constant {
 
 	// 二级域名
 	public static final String REGEX_DOMAIN = "(\\w*\\.?){2}\\.(com.cn|net.cn|gov.cn|org\\.nz|org.cn|com|net|org|gov|cc|biz|info|cn|co)$";
-
-	// 系统配置表中 内置 module 的 key名
-	public static final String SYSCONFIG_KEY_INIT_MODULE = "init_module_node_exporter";
 
 	// 配置表中 告警间隔 key
 	public static final String SYSCONFIG_KEY_ALERTINTERVAL = "alert_interval";
@@ -744,38 +703,11 @@ public class Constant {
 	// endpoint state 定时任务执行间隔时间
 	public static final String SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL = "endpoint_query_interval";
 
-	// 内置 node_exporter 默认安装服务器路径
-	public static final String SYSCONFIG_KEY_NODEEXPORTER_TARGETPATH = "node_exporter_target_path";
-
-	// 内置 node_exporter 项目中的路径
-	public static final String SYSCONFIG_KEY_NODEEXPORTER_PATH = "node_exporter_path";
-
-	// 内置 node_exporter 压缩包名称
-	public static final String SYSCONFIG_KEY_NODEEXPORTER_NAME = "node_exporter_name";
-
-	// 内置 node_exporter 初始执行脚本名称
-	public static final String SYSCONFIG_KEY_NODEEXPORTER_SHELLNAME = "node_exporter_shell_name";
-
-	// asset 内置node exporter 标识
-	public static final Integer ASSET_BUILD_NODE_EXPORTER_FLAG = 1;
-
-	// 主机连通性检查开关，1：开启，0：关闭
-	public static final String SYSCONFIG_KEY_ASSET_PING_SWITCH = "asset_ping_switch";
-
 	// 邮件告警开关
 	public static final String SYSCONFIG_KEY_EMAIL_ENABLE = "email_enable";
 
 	// nezha 系统版本
 	public static final String SYSCONFIG_KEY_SYSTEM_VERSION = "system_version";
-
-	// 主机连通性检查开关 打开状态 on
-	public static final String ASSET_PING_OPEN_SWITCH = "on";
-
-	// asset IP 不可达时返回表述信息
-	public static final String ASSET_PING_DOWN_FLAG = "unreachable";
-
-	// asset fping 命令语句 key
-	public static final String SYSCONFIG_KEY_ASSET_FPING_COMMAND = "asset_ping_command";
 
 	// 内置 generator 路径
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
@@ -805,8 +737,6 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_PROJECT_CHART_TPL = "project_chart_tpl";
 
 	// asset 导入表头
-	public static final String SYSCONFIG_KEY_ASSET_EXPORT_HEADER = "asset_export_header";
-
 	public static final String SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER = "asset_asset_export_header";
 
 	// alert rule 导入表头
@@ -822,9 +752,6 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER = "asset_chart_export_header";
 
 	// endpoint 导入表头
-	public static final String SYSCONFIG_KEY_ENDPOINT_EXPORT_HEADER = "endpoint_export_header";
-
-	// endpoint 导入表头
 	public static final String SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER = "monitor_endpoint_export_header";
 
 	// expression template 导入表头
@@ -832,9 +759,6 @@ public class Constant {
 
 	// 登录时 ldap template 超时时间
 	public static final String SYSCONFIG_KEY_LDAP_QUERY_TIMEOUT = "ldap_query_timeout";
-
-	// asset ping 命令中文件名称 会替换成文件的路径
-	public static final String ASSET_PING_COMMAND_FILENAME = "{filename}";
 
 	// 告警级别 高
 	public static final String ALERT_SEVERITY_HIGH = "P1";
@@ -858,9 +782,6 @@ public class Constant {
 	public static final String CONFAGENT_PORT = "confagent_port";
 	// confagent项目名称
 	public static final String CONFAGENT_PATH = "confagent_path";
-
-	// 最大窗口允许的连接数
-	public static final String MAX_TERMINAL_NUM = "max_terminal_num";
 
 	// 开关开启状态
 	public static final String SWITCH_OPEN = "on";

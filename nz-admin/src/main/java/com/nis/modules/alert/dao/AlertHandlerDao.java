@@ -143,4 +143,11 @@ public interface AlertHandlerDao {
 	 * @return
 	 */
 	List<Long> selectAlertSilencMessageIdByEndpointIds(@Param("ids")List endpointIds);
+
+	/**
+	 * 根据 rule_id 查询 alert_message_silence 静默的 message ids
+	 * @param ruleIds
+	 * @return
+	 */
+	List<Long> selectAlertSilencMessageIdByRuleIds(@Param("ids") List ruleIds);
 }
