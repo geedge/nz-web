@@ -60,8 +60,8 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
         project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
 
-        int alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()).eq(AlertMessageEntity::getState, 1));
-        project.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+        Integer alertNum = alertMessageService.getAactiveAlertCountByProjectId(project.getId());
+        project.setAlertNum(alertNum);
 
         return project;
     }
@@ -74,7 +74,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
             params.put("ids", listIds);
         }
 
-        IPage<MonitorProject> page = new Query<MonitorProject>().getPage(params);
+        IPage page = new Query(MonitorProject.class).getPage(params);
         List<MonitorProject> projectList = monitorProjectDao.queryProjectList(page, params);
 
         page.setRecords(projectList);
@@ -142,6 +142,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        // 删除告警消息
+        alertMessageService.removeByProjectIds(Arrays.asList(ids));
     }
 
 }

@@ -26,5 +26,5 @@ import java.util.Map;
 @Mapper
 public interface SysLogDao extends BaseMapper<SysLogEntity> {
 
-    List<SysLogEntity> queryList(IPage<SysLogEntity> page, @Param("params") Map<String, Object> params);
+    List<SysLogEntity> queryList(IPage page, @Param("params") Map<String, Object> params);
 }

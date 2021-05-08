@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service("visualChartService")
@@ -57,7 +56,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	
 	@Autowired
 	private MonitorEndpointService monitorEndpointService;
-	
+
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String ids = (String) params.get("ids");
@@ -70,7 +69,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         	List<String> listIds = Arrays.asList(pid.split(","));
         	params.put("pids",listIds);
         }
-		IPage<VisualChart> page = new Query<VisualChart>().getPage(params);
+		IPage page = new Query(VisualChart.class).getPage(params);
 		// 查询出chart信息
 		List<VisualChart> result = this.baseMapper.queryPage(page,params);
 		//查询elements
@@ -91,7 +90,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         String groupId = (String) params.get("groupId");
         if(ToolUtil.equals(groupId, "0") && ToolUtil.isNotEmpty(result)) {
         	Map<String, Object> queryChildren =new HashMap<String,Object>();
-        	IPage<VisualChart> childrenpage = new Query<VisualChart>().getPage(queryChildren);
+        	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
         	queryChildren.put("groupIds", fatherIds);
         	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
         	// 查询chart相关的element
@@ -812,5 +811,32 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		chartElementService.saveBatch(tmplChartElements);
 		
 		return result.size();
+	}
+
+	@Override
+	public void saveRelPanelAndChart(String typeStr, Integer linkId, String seq, VisualChart chartTemplate) {
+		VisualPanel panel = new VisualPanel();
+		panel.setName(typeStr + "_panel_" + linkId);
+		panel.setType(typeStr);
+		panel.setPid(0);
+		panel.setLink(linkId);
+		panel.setWeight(0);
+		panel.setCreateBy(ShiroUtils.getUserId().intValue());
+		if(StringUtils.isNotEmpty(seq)){
+			panel.setSeq(seq);
+		}
+		visualPanelService.save(panel);
+
+		VisualChart target = new VisualChart();
+		BeanUtils.copyProperties(chartTemplate, target);
+		target.setParam(ToolUtil.isNotEmpty(target.getParam()) ? JSONObject.toJSONString(target.getParam()) : null);
+		target.setPanelId(panel.getId());
+		target.setGroupId(0);
+		target.setUpdateBy(ShiroUtils.getUserId().intValue());
+		target.setUpdateAt(new Date());
+		if(StringUtils.isNotEmpty(seq)){
+			target.setSeq(seq);
+		}
+		this.save(target);
 	}
 }

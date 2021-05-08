@@ -271,5 +271,48 @@
 			ORDER BY am.id
 		</if>
 	</select>
-	
+
+
+	<select id="selectAlertSilencMessageIdByDcIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE dc_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="selectAlertSilencMessageIdByProjectIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE project_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="selectAlertSilencMessageIdByModuleIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE module_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="selectAlertSilencMessageIdByAssetIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE asset_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="selectAlertSilencMessageIdByEndpointIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE endpoint_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="selectAlertSilencMessageIdByRuleIds" resultType="java.lang.Long">
+		SELECT id FROM alert_message_silence WHERE rule_id IN
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>
+	</select>
+
 </mapper>

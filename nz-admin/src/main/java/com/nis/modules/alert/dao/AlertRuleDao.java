@@ -19,6 +19,6 @@ import java.util.Map;
 @Mapper
 public interface AlertRuleDao extends BaseMapper<AlertRuleEntity> {
 
-    List<AlertRuleEntity> queryList(IPage<AlertRuleEntity> page, @Param("params") Map<String, Object> params, @Param("receivers")List<String> receivers);
+    List<AlertRuleEntity> queryList(IPage page, @Param("params") Map<String, Object> params, @Param("receivers")List<String> receivers);
 
 }

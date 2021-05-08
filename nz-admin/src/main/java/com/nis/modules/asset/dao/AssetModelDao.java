@@ -20,5 +20,5 @@ import java.util.Map;
 @Repository
 public interface AssetModelDao extends BaseMapper<AssetModel> {
 
-    List<AssetModel> queryList(IPage<AssetModel> page, @Param("params") Map<String, Object> params);
+    List<AssetModel> queryList(IPage page, @Param("params") Map<String, Object> params);
 }

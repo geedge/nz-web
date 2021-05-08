@@ -14,6 +14,6 @@ import java.util.Map;
 @Repository
 public interface MonitorModuleDao extends BaseMapper<MonitorModule> {
 
-    List<MonitorModule> queryPage(IPage<MonitorModule> page, @Param("params") Map<String, Object> params);
+    List<MonitorModule> queryPage(IPage page, @Param("params") Map<String, Object> params);
 
 }

@@ -28,6 +28,9 @@ import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -134,6 +137,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 	@Autowired
 	private SnmpCredentialService snmpCredentialService;
+
+	@Autowired
+    private VisualChartService chartService;
+
+	@Autowired
+    private VisualPanelService panelService;
 
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -257,7 +266,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 处理请求参数
         this.handleQueryAssetParam(params);
 
-        IPage<AssetAsset> page = new Query<AssetAsset>().getPage(params);
+        IPage page = new Query(AssetAsset.class).getPage(params);
         List<AssetAsset> assetList = assetDao.queryAssetList(page, params);
 
         // 查询结果不为空时处理返回结果
@@ -592,6 +601,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
+
+        // 配置信息获取
+        SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
+        // asset config
+        VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
+        // 新增时需要新增 panel chart
+        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), null, chartTemplate);
         return asset.getId();
     }
 
@@ -698,9 +714,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 删除 field
         assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().in(AssetFieldValue::getAssetId, idList));
+
+        // 删除关联的 panel chart  chartElement信息
+        List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, ids));
+        if (CollectionUtils.isNotEmpty(panels)) {
+            Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
+            panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+        }
     }
 
-    @Override
+    /*@Override
     public Map alertStatByAsset(Integer assetId) {
         List<AlertMessageEntity> alerts = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, assetId));
         long p1 = alerts.stream().filter(alert -> Constant.ALERT_SEVERITY_HIGH.equals(alert.getSeverity())).count();
@@ -713,7 +736,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         resultMap.put(Constant.ALERT_SEVERITY_MEDIUM, p2);
         resultMap.put(Constant.ALERT_SEVERITY_LOW, p3);
         return resultMap;
-    }
+    }*/
 
     @Override
     public Map endpointStatByAsset(Integer assetId) {
@@ -1273,6 +1296,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             brandService.remove(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getSeq, seq));
             // model
             modelService.remove(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSeq, seq));
+
+            // 删除关联的 panel chart  chartElement信息
+            List<VisualPanel> panels = panelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).in(VisualPanel::getLink, assetIds));
+            if (CollectionUtils.isNotEmpty(panels)) {
+                Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
+                panelService.delPanelsAndChartInfoByPanelIds(panelIds);
+            }
         }
     }
 
@@ -1335,8 +1365,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         SysConfigEntity defaultCabinetUsizeConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU));
         Integer defaultCabinetUsize = Integer.parseInt(defaultCabinetUsizeConfig.getParamValue());
 
-        Pattern sshPortPattern = Pattern.compile("ssh/\\d+");
-        Pattern telnetPortPattern = Pattern.compile("telnet/\\d+");
+        // 配置信息获取  asset chart template
+        SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
+        VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
 
         int successNum = 0;
         // 处理 excel 数据，将含宿主机资产排到前面
@@ -1611,7 +1642,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
                     // 调用入库方法
-                    Map updateMap = this.saveRowData(saveEntitys);
+                    Map updateMap = this.saveRowData(saveEntitys,chartTemplate);
                     dataSourceTransactionManager.commit(transactionStatus);
                     this.updateImportAssetRelatedInfo(updateMap, assetNameAndEntityMap, assetSnList, assetIpList, dcNameAndEntityMap, brandNameAndEntityMap, brandIdAndModelListMap, cabinetList);
                     successNum++;
@@ -1734,7 +1765,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
     }
 
-    public Map saveRowData(Map saveEntitys) {
+    public Map saveRowData(Map saveEntitys,VisualChart chartTemplate) {
         Map updateMap = new HashMap();
         // DC
         Dc dc = (Dc) saveEntitys.get("dc");
@@ -1790,6 +1821,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetId(cabinet.getId());
         }
         this.save(asset);
+        // 新增时需要新增 panel chart
+        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
         updateMap.put("asset", asset);
 
         // fields

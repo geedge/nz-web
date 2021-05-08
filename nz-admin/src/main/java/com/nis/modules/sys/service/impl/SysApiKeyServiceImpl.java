@@ -29,7 +29,7 @@ public class SysApiKeyServiceImpl extends ServiceImpl<SysApiKeyDao,SysApiKey> im
 	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		IPage<SysApiKey> result = new Query<SysApiKey>().getPage(params);
+		IPage result = new Query(SysApiKey.class).getPage(params);
 		String ids = (String) params.get("ids");
         if(StrUtil.isNotBlank(ids)) {
         	List<String> listIds = Arrays.asList(ids.split(","));

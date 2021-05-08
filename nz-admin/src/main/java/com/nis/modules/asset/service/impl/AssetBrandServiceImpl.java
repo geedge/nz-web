@@ -52,7 +52,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
     public PageUtils queryPage(Map<String, Object> params) {
         LambdaQueryWrapper<AssetBrand> queryWrapper = new LambdaQueryWrapper<AssetBrand>()
                 .like(ToolUtil.isNotEmpty(params.get("name")), AssetBrand::getName, params.get("name"));
-        IPage<AssetBrand> page = this.page(new Query<AssetBrand>().getPage(params), queryWrapper);
+        IPage page = this.page(new Query(AssetBrand.class).getPage(params), queryWrapper);
         return new PageUtils(page);
     }
 

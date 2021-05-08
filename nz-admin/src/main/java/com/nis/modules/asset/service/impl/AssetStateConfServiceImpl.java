@@ -52,7 +52,7 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
         LambdaQueryWrapper<AssetStateConf> queryWrapper = new LambdaQueryWrapper<AssetStateConf>().
                 eq(ToolUtil.isNotEmpty(params.get("id")), AssetStateConf::getId, params.get("id"))
                 .like(ToolUtil.isNotEmpty(params.get("name")), AssetStateConf::getName, params.get("name"));
-        IPage<AssetStateConf> page = this.page(new Query<AssetStateConf>().getPage(params), queryWrapper);
+        IPage page = this.page(new Query(AssetStateConf.class).getPage(params), queryWrapper);
 
         List<AssetStateConf> data = page.getRecords();
         if (CollectionUtils.isNotEmpty(data)) {

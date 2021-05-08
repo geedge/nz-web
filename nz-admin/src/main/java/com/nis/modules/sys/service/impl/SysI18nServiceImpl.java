@@ -40,7 +40,7 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<SysI18nEntity> page = this.page(
-                new Query<SysI18nEntity>().getPage(params),
+                new Query(SysI18nEntity.class).getPage(params),
                 new QueryWrapper<SysI18nEntity>()
                 	.like(!StringUtils.isEmpty((String)params.get("code")), "code", (String)params.get("code"))
                 	.eq(!StringUtils.isEmpty((String)params.get("lang")), "lang", (String)params.get("lang"))

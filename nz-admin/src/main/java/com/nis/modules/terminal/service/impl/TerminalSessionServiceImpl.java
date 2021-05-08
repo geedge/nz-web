@@ -74,7 +74,7 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
         // 处理请求参数
         this.handleQueryDateParam(params);
 
-        IPage<TerminalSessionEntity> page = new Query<TerminalSessionEntity>().getPage(params);
+        IPage page = new Query(TerminalSessionEntity.class).getPage(params);
         List<TerminalSessionEntity> sessionEntityList = terminalSessionDao.queryList(page, params);
 
         // 查询结果不为空时处理返回结果

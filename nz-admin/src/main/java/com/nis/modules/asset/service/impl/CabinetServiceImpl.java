@@ -167,7 +167,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
             params.put("dcIds", Arrays.asList(dcIds.split(",")));
         }
 
-        IPage<Cabinet> page = new Query<Cabinet>().getPage(params);
+        IPage page = new Query(Cabinet.class).getPage(params);
         List<Cabinet> cabinetList = cabinetDao.queryPage(page, params);
 
         page.setRecords(cabinetList);

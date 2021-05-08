@@ -38,7 +38,7 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        IPage<AlertNotifyMethod> page = new Query<AlertNotifyMethod>().getPage(params);
+        IPage page = new Query(AlertNotifyMethod.class).getPage(params);
 
         List<AlertNotifyMethod> list = alertNotifyMethodDao.queryList(page,params);
 
