@@ -45,7 +45,7 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 
 	@Override
 	public PageUtils queryList(Map<String, Object> params) {
-		IPage<AssetFieldMeta> page = new Query<AssetFieldMeta>().getPage(params);
+		IPage page = new Query(AssetFieldMeta.class).getPage(params);
 		String groupIds = (String) params.get("groupIds");
         if(StrUtil.isNotBlank(groupIds)) {
         	List<String> listIds = Arrays.asList(groupIds.split(","));

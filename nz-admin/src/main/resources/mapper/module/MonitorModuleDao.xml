@@ -35,7 +35,7 @@
             monitor_module m
         LEFT JOIN monitor_project p ON m.project_id = p.id
         LEFT JOIN monitor_endpoint me ON m.id = me.module_id
-        LEFT JOIN alert_message msg ON m.id = msg.module_id AND msg.state = 1
+        LEFT JOIN alert_message_active msg ON m.id = msg.module_id
         <where>
 
             <if test="params.ids != null and params.ids.length > 0">

@@ -13,8 +13,8 @@ import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
 import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertRuleStat;
 import com.nis.modules.alert.entity.AlertSeverityConf;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
@@ -65,6 +65,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     @Autowired
     private AlertSeverityService alertSeverityService;
 
+    @Autowired
+    private AlertMessageService alertMessageService;
+
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         String receiverStr = (String) params.get("receiver");
@@ -73,7 +76,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             receivers = Arrays.asList(receiverStr.split(","));
         }
 
-        IPage<AlertRuleEntity> page = new Query<AlertRuleEntity>().getPage(params);
+        IPage page = new Query(AlertRuleEntity.class).getPage(params);
         List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params, receivers);
 
         // 查询结果不为空时处理返回结果
@@ -216,7 +219,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.removeByIds(idList);
 
         // 删除关联的告警消息
-//        alertMessageDao.delete(new QueryWrapper<AlertMessageEntity>().lambda().in(AlertMessageEntity::getRuleId, idList));
+        alertMessageService.removeByRuleIds(Arrays.asList(ids));
     }
 
 
@@ -626,12 +629,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         return unitDescr;
     }
 
-    private void handleRuleStatName(List<AlertRuleStat> ruleStats, Map<Integer, String> pojoIdAndNameMap) {
-        ruleStats.stream().forEach(stat -> {
-            stat.setName(pojoIdAndNameMap.get(stat.getId()));
-        });
-    }
-
     private void validateParam(AlertRuleEntity alertRule) {
         String operator = alertRule.getOperator();
         Integer unit = alertRule.getUnit();
@@ -698,11 +695,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	            });
 	            alertRule.setReceivers(list);
 	        }
-	        
-	        // 获取该告警下的告警数量
-//	        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id).eq(AlertMessageEntity::getState, 1));
-//	        
-//	        alertRule.setAlertNum(alertNum);
 		}
 		
 		return alertRule;

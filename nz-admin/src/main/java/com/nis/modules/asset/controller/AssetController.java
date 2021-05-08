@@ -144,11 +144,11 @@ public class AssetController {
      * alert 统计
      * @return
      */
-    @GetMapping("/asset/stat/alert/{id}")
+    /*@GetMapping("/asset/stat/alert/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSET)
     public R alertStatByAsset(@PathVariable Integer id) {
         return R.ok(assetAssetService.alertStatByAsset(id));
-    }
+    }*/
 
     /**
      * endpoint 统计

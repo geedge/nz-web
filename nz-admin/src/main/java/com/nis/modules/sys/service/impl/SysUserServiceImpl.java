@@ -69,7 +69,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
         	List<String> listIds = Arrays.asList(ids.split(","));
         	params.put("ids",listIds);
         }
-		IPage<SysUserEntity> page = new Query<SysUserEntity>().getPage(params);
+		IPage page = new Query(SysUserEntity.class).getPage(params);
 		List<SysUserEntity> userList = baseMapper.queryList(page, params);
 
 		// 补充 Notificationscript roles 信息

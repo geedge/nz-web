@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
-import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.CabinetDao;
 import com.nis.modules.asset.dao.DcDao;
@@ -49,14 +49,13 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private PromserverDao promserverDao;
 
     @Autowired
-    private AlertMessageDao alertMessageDao;
-
-    @Autowired
     private SysUserService sysUserService;
 
     @Autowired
     private DcDao dcDao;
 
+    @Autowired
+    private AlertMessageService alertMessageService;
 
     @Override
     public Dc queryDcDetails(Integer id) {
@@ -73,7 +72,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Integer cabinetNum = cabinetDao.selectCount(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
         dc.setCabinetNum(cabinetNum);
 
-        Integer alertNum = alertMessageDao.selectCount(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()).eq(AlertMessageEntity::getState, 1));
+        Integer alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
         dc.setAlertNum(alertNum);
 
         Integer assetNum = assetDao.selectCount(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
@@ -90,7 +89,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             params.put("ids", listIds);
         }
 
-        IPage<Dc> page = new Query<Dc>().getPage(params);
+        IPage page = new Query(Dc.class).getPage(params);
         List<Dc> dcList = dcDao.queryDcList(page, params);
 
         if(CollectionUtils.isNotEmpty(dcList)){
@@ -254,6 +253,6 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         this.removeByIds(Arrays.asList(ids));
 
         // 5. 删除 alert
-        alertMessageDao.deleteByDCIds(Arrays.asList(ids));
+        alertMessageService.removeByDcIds(Arrays.asList(ids));
     }
 }

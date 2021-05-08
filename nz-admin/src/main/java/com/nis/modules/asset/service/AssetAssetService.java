@@ -29,7 +29,7 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     void deleteAsset(Integer... ids);
 
-    Map alertStatByAsset(Integer assetId);
+//    Map alertStatByAsset(Integer assetId);
 
     Map endpointStatByAsset(Integer id);
 

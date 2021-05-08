@@ -50,7 +50,7 @@
         ar.build_in AS buildIn,
         COUNT(am.id) AS alertNum
         FROM alert_rule ar
-        LEFT JOIN alert_message am ON ar.id = am.rule_id AND am.state = 1
+        LEFT JOIN alert_message_active am ON ar.id = am.rule_id
         LEFT JOIN alert_severity_conf alsc on ar.severity_id = alsc.id
 
         <where>

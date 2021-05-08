@@ -12,7 +12,7 @@ import java.util.Map;
 @Mapper
 public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
 
-    List<MonitorEndpoint> queryPage(IPage<MonitorEndpoint> page, @Param("params") Map<String, Object> params);
+    List<MonitorEndpoint> queryPage(IPage page, @Param("params") Map<String, Object> params);
 
     List<Integer> getSuspendedEndpointIdList(@Param("assetId")Integer assetId);
 

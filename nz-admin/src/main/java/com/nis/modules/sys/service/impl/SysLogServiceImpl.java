@@ -55,7 +55,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogDao, SysLogEntity> impl
         	List<String> listIds = Arrays.asList(ids.split(","));
         	params.put("operaId",listIds);
         }
-        IPage<SysLogEntity> page = new Query<SysLogEntity>().getPage(params);
+        IPage page = new Query(SysLogEntity.class).getPage(params);
         List<SysLogEntity> sysLogEntities = sysLogDao.queryList(page, params);
 
         page.setRecords(sysLogEntities);

@@ -39,7 +39,7 @@ public class MaintenanceRecordServiceImpl extends ServiceImpl<MaintenanceRecordD
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        IPage<MaintenanceRecord> page = new Query<MaintenanceRecord>().getPage(params);
+        IPage page = new Query(MaintenanceRecord.class).getPage(params);
 
         List<MaintenanceRecord> maintenanceRecords = maintenanceRecordDao.queryList(page, params);
         page.setRecords(maintenanceRecords);

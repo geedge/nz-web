@@ -23,7 +23,7 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     
     List<VisualChart> selectTmplCharts(@Param("params") Map<String,Object> params);
     
-	List<VisualChart> queryPage(IPage<VisualChart> page,@Param("params") Map<String, Object> params);
+	List<VisualChart> queryPage(IPage page,@Param("params") Map<String, Object> params);
 
 	List<VisualChart> queryPage(@Param("params") Map<String, Object> params);
 }

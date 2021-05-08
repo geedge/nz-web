@@ -20,7 +20,7 @@ import java.util.Map;
 @Repository
 public interface CabinetDao extends BaseMapper<Cabinet> {
 
-    List<Cabinet> queryPage(IPage<Cabinet> page, @Param("params") Map<String, Object> params);
+    List<Cabinet> queryPage(IPage page, @Param("params") Map<String, Object> params);
 
     // 根据 数据中心id 获取包含机柜最大行列值
     Map<String,Integer> getCabinetMaxXY(@Param("id") Integer id);

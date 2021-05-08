@@ -12,6 +12,6 @@ import java.util.Map;
 @Mapper
 public interface TerminalSessionDao extends BaseMapper<TerminalSessionEntity>{
 
-    List<TerminalSessionEntity> queryList(IPage<TerminalSessionEntity> page, @Param("params") Map<String, Object> params);
+    List<TerminalSessionEntity> queryList(IPage page, @Param("params") Map<String, Object> params);
 
 }

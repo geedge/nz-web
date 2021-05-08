@@ -84,8 +84,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
         module.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
 
-        int alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getModuleId, module.getId()).eq(AlertMessageEntity::getState, 1));
-        module.setAlertNum(Integer.valueOf(String.valueOf(alertNum)));
+        Integer alertNum = alertMessageService.getAactiveAlertCountByModuleId(module.getId());
+        module.setAlertNum(alertNum);
         return module;
     }
 
@@ -109,7 +109,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 处理请求参数
         this.handleQueryParam(params);
 
-        IPage<MonitorModule> page = new Query<MonitorModule>().getPage(params);
+        IPage page = new Query(MonitorModule.class).getPage(params);
         List<MonitorModule> datas = monitorModuleDao.queryPage(page, params);
 
         page.setRecords(datas);

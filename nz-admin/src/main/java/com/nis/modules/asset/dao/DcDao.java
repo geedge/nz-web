@@ -20,5 +20,5 @@ import java.util.Map;
 @Repository
 public interface DcDao extends BaseMapper<Dc> {
 
-    List<Dc> queryDcList(IPage<Dc> page, @Param("params") Map<String, Object> params);
+    List<Dc> queryDcList(IPage page, @Param("params") Map<String, Object> params);
 }

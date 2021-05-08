@@ -136,7 +136,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
             // 删除 chart info
             Integer[] removePanelIds = panelIds.stream().toArray(n -> new Integer[n]);
-//            visualChartService.delChartsByPanelId(removePanelIds);
+            visualChartService.delVisualChartsByPanelId(removePanelIds);
         }
     }
 

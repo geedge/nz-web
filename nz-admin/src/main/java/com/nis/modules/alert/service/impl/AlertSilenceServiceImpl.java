@@ -59,7 +59,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			logger.error("时间转换异常,参数是 {},异常信息：{}", params, e);
 		}
 		
-		IPage<AlertSilenceConf> page = new Query<AlertSilenceConf>().getPage(params);
+		IPage page = new Query(AlertSilenceConf.class).getPage(params);
 		List<AlertSilenceConf> alertSilences = alertSilenceDao.selectAlertSilenceConfs(page,params);
 		page.setRecords(alertSilences);
 		return new PageUtils(page);
@@ -71,6 +71,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Override
 	public void saveAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
+		conf.setUtime(now);
 		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
 			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}
@@ -100,6 +101,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	@Override
 	public void updateAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
+		conf.setUtime(now);
 		if(Tool.DateUtil.compare(conf.getEndAt(), now)<0) {
 			throw new NZException(RCode.ALERTSILENCE_ENDTIME_MUSTGTNOW);
 		}

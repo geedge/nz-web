@@ -5,6 +5,7 @@ import cn.hutool.log.Log;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
+import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.stat.TableStat;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.ToolUtil;
@@ -130,7 +131,8 @@ public class EventLogSqlInterceptor implements Interceptor {
                 }
             }
         } catch (Exception e) {
-            log.error("event log 记录变更失败", e);
+            if (!(e instanceof ParserException))
+                log.error("event log 记录变更失败", e);
         } finally {
             return invocation.proceed();
         }

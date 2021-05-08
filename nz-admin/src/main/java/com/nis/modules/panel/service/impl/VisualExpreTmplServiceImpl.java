@@ -109,7 +109,7 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
                 .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, params.get("name"))
                 .eq(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
 
-        IPage<VisualExpressionTmpl> page = this.page(new Query<VisualExpressionTmpl>().getPage(params), queryWrapper);
+        IPage page = this.page(new Query(VisualExpressionTmpl.class).getPage(params), queryWrapper);
         return new PageUtils(page);
     }
 

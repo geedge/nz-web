@@ -31,13 +31,13 @@ public class SQLFilter {
         }
 
         //转换成小写
-        str = str.toLowerCase();
+        String str1 = str.toLowerCase();
 
         String s = "";
-        if (str.startsWith("-")) {
-            s = str.substring(1);
+        if (str1.startsWith("-")) {
+            s = str1.substring(1);
         } else {
-            s = str;
+            s = str1;
         }
 
         if (sqlPattern.matcher(s).matches()) {
