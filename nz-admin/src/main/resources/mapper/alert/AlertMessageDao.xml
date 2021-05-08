@@ -243,38 +243,78 @@
 	</update>-->
 
 	<delete id="deleteByAssetIds">
-		delete from alert_message where asset_id in
+		delete from alert_message_active where asset_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
-		</foreach>
+		</foreach>;
+		delete from alert_message_history where asset_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
+		delete from alert_message_silence where asset_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
 	</delete>
 
 	<delete id="deleteByModuleIds">
-		delete from alert_message where module_id in
+		delete from alert_message_active where module_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
-		</foreach>
+		</foreach>;
+		delete from alert_message_history where module_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
+		delete from alert_message_silence where module_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
 	</delete>
 
 	<delete id="deleteByProjectIds">
-		delete from alert_message where project_id in
+		delete from alert_message_active where project_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
-		</foreach>
+		</foreach>;
+		delete from alert_message_history where project_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
+		delete from alert_message_silence where project_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
 	</delete>
 
 	<delete id="deleteByEndpointIds">
-		delete from alert_message where endpoint_id in
+		delete from alert_message_active where endpoint_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
-		</foreach>
+		</foreach>;
+		delete from alert_message_history where endpoint_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
+		delete from alert_message_silence where endpoint_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
 	</delete>
 
 	<delete id="deleteByDCIds">
-		delete from alert_message where dc_id in
+		delete from alert_message_active where dc_id in
 		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
 			#{id}
-		</foreach>
+		</foreach>;
+		delete from alert_message_history where dc_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
+		delete from alert_message_silence where dc_id in
+		<foreach item="id" collection="ids" separator="," open="(" close=")" index="">
+			#{id}
+		</foreach>;
 	</delete>
 
 	<select id="queryAlertMessageStatisticsInfoByRule" resultType="com.nis.modules.metric.dto.MetricsDto">

@@ -15,6 +15,7 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
@@ -87,6 +88,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private VisualChartService visualChartService;
+
+    @Autowired
+    private AlertMessageService alertMessageService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -334,7 +338,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         monitorEndpointStateService.removeByIds(ids);
 
         // 删除 alert
-        alertMessageDao.deleteByEndpointIds(ids);
+        alertMessageService.removeByEndpointIds(ids);
         
         // 删除关联的 panel chart  chartElement信息
         List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));

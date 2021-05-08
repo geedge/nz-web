@@ -10,6 +10,7 @@
         <result property="remark" column="remark"/>
         <result property="seq" column="seq"/>
         <result property="chartIds" column="chart_ids"/>
+        <result property="assetNum" column="assetNum"/>
 
         <association property="brand" columnPrefix="b_" javaType="com.nis.modules.asset.entity.AssetBrand">
             <id property="id" column="id"/>
@@ -21,10 +22,14 @@
         SELECT
             model.*,
             brand.id as b_id,
-            brand.name as b_name
+            brand.name as b_name,
+            count( DISTINCT asset.id ) AS assetNum
+
         FROM
             asset_model model
             LEFT JOIN asset_brand brand ON model.brand_id = brand.id
+            LEFT JOIN asset_asset asset ON model.id = asset.model_id
+
         where 1=1
             <if test="params.name != null and params.name != ''">
                 and model.name LIKE CONCAT('%', #{params.name}, '%')
@@ -41,5 +46,7 @@
 		       		#{id}
 			    </foreach>
             </if>
+
+        GROUP BY model.id
     </select>
 </mapper>

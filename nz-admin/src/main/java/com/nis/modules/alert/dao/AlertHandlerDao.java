@@ -1,15 +1,14 @@
 package com.nis.modules.alert.dao;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceMessageRel;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -109,4 +108,39 @@ public interface AlertHandlerDao {
 	 * @return
 	 */
 	List<AlertMessageEntity> queryList(IPage page, Map<String, Object> params);
+
+	/**
+	 * 根据 dc_id 查询 alert_message_silence 静默的 message ids
+	 * @param dcIds
+	 * @return
+	 */
+	List<Long> selectAlertSilencMessageIdByDcIds(@Param("ids") List dcIds);
+
+	/**
+	 * 根据 project_id 查询 alert_message_silence 静默的 message ids
+	 * @param projectIdList
+	 * @return
+	 */
+    List<Long> selectAlertSilencMessageIdByProjectIds(@Param("ids")List projectIdList);
+
+	/**
+	 * 根据 module_id 查询 alert_message_silence 静默的 message ids
+	 * @param moduleIdList
+	 * @return
+	 */
+	List<Long> selectAlertSilencMessageIdByModuleIds(@Param("ids")List moduleIdList);
+
+	/**]
+	 * 根据 asset_id 查询 alert_message_silence 静默的 message ids
+	 * @param assetIdList
+	 * @return
+	 */
+	List<Long> selectAlertSilencMessageIdByAssetIds(@Param("ids")List<Integer> assetIdList);
+
+	/**
+	 * 根据 endpoint_id 查询 alert_message_silence 静默的 message ids
+	 * @param endpointIds
+	 * @return
+	 */
+	List<Long> selectAlertSilencMessageIdByEndpointIds(@Param("ids")List endpointIds);
 }

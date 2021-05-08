@@ -142,6 +142,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // 删除
         this.removeByIds(Arrays.asList(ids));
+
+        // 删除告警消息
+        alertMessageService.removeByProjectIds(Arrays.asList(ids));
     }
 
 }

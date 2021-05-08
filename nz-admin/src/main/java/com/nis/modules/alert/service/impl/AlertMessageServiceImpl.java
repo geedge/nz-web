@@ -5,11 +5,11 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -17,7 +17,6 @@ import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.metric.dto.MetricsDto;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,9 +26,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.shiro.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +35,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -58,6 +54,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 	private AlertMessageDao alertMessageDao;
 	@Autowired
 	private SysConfigService configService;
+
+	@Autowired
+	private AlertHandlerDao msgHandlerDao;
 
 	/**
 	 * 处理请求参数
@@ -371,20 +370,67 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void removeByAssetIds(List<Integer> idList) {
-		alertMessageDao.deleteByAssetIds(idList);
+	public void removeByAssetIds(List<Integer> assetIdList) {
+		List<Long> silencMessageIds = msgHandlerDao.selectAlertSilencMessageIdByAssetIds(assetIdList);
+		// 存在静默告警消息，删除 alert_silence_message_rel 表关系
+		if (CollectionUtils.isNotEmpty(silencMessageIds)) {
+			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(silencMessageIds.toArray(new Long[]{}));
+		}
+
+		// 删除告警消息
+		alertMessageDao.deleteByAssetIds(assetIdList);
 	}
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void removeByModuleIds(List ids) {
-		alertMessageDao.deleteByModuleIds(ids);
+	public void removeByModuleIds(List moduleIdList) {
+		List<Long> silencMessageIds = msgHandlerDao.selectAlertSilencMessageIdByModuleIds(moduleIdList);
+		// 存在静默告警消息，删除 alert_silence_message_rel 表关系
+		if (CollectionUtils.isNotEmpty(silencMessageIds)) {
+			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(silencMessageIds.toArray(new Long[]{}));
+		}
+
+		// 删除告警消息
+		alertMessageDao.deleteByModuleIds(moduleIdList);
 	}
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
-	public void removeByProjectIds(List ids) {
-		alertMessageDao.deleteByProjectIds(ids);
+	public void removeByProjectIds(List projectIdList) {
+		List<Long> silencMessageIds = msgHandlerDao.selectAlertSilencMessageIdByProjectIds(projectIdList);
+		// 存在静默告警消息，删除 alert_silence_message_rel 表关系
+		if (CollectionUtils.isNotEmpty(silencMessageIds)) {
+			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(silencMessageIds.toArray(new Long[]{}));
+		}
+
+		// 删除告警消息
+		alertMessageDao.deleteByProjectIds(projectIdList);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByDcIds(List dcIds) {
+		List<Long> silencMessageIds = msgHandlerDao.selectAlertSilencMessageIdByDcIds(dcIds);
+		// 存在静默告警消息，删除 alert_silence_message_rel 表关系
+		if (CollectionUtils.isNotEmpty(silencMessageIds)) {
+			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(silencMessageIds.toArray(new Long[]{}));
+		}
+
+		// 删除告警消息
+		alertMessageDao.deleteByDCIds(dcIds);
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void removeByEndpointIds(List endpointIds) {
+		List<Long> silencMessageIds = msgHandlerDao.selectAlertSilencMessageIdByEndpointIds(endpointIds);
+		// 存在静默告警消息，删除 alert_silence_message_rel 表关系
+		if (CollectionUtils.isNotEmpty(silencMessageIds)) {
+			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(silencMessageIds.toArray(new Long[]{}));
+		}
+
+		// 删除告警消息
+		alertMessageDao.deleteByEndpointIds(endpointIds);
 	}
 
 	@Override
