@@ -21,6 +21,8 @@ import com.nis.common.utils.Tool;
 
 import cn.hutool.log.Log;
 import lombok.Data;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
 /**
  * redis 初始化配置
  * @author fang
@@ -90,6 +92,11 @@ public class RedisConfig {
 	@Bean(name = "redisTemplate")
 	public RedisTemplate<?, ?> redisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
 		RedisTemplate<?, ?> template = new RedisTemplate<>();
+
+		template.setKeySerializer(new StringRedisSerializer());
+		template.setHashKeySerializer(new StringRedisSerializer());
+		template.setHashValueSerializer(new StringRedisSerializer());
+		template.setValueSerializer(new StringRedisSerializer());
 		template.setConnectionFactory(redisConnectionFactory);
 		template.afterPropertiesSet();
 		template.execute(new RedisCallback<Object>() {
@@ -110,6 +117,10 @@ public class RedisConfig {
 	@Bean(name = "stringRedisTemplate")
 	public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
 		StringRedisTemplate template = new StringRedisTemplate();
+		template.setKeySerializer(new StringRedisSerializer());
+		template.setHashKeySerializer(new StringRedisSerializer());
+		template.setHashValueSerializer(new StringRedisSerializer());
+		template.setValueSerializer(new StringRedisSerializer());
 		template.setConnectionFactory(redisConnectionFactory);
 		template.afterPropertiesSet();
 		return template;
