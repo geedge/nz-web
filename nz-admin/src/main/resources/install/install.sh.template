@@ -23,9 +23,9 @@ ROOT_PATH=/opt/nezha
 
 AGENT_TOKEN=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
 
-INSTALL_PATH=$ROOT_PATH/confagent
+INSTALL_PATH=$ROOT_PATH/nz-agent
 
-WORK_PATH=/tmp/.nezha/confagent
+WORK_PATH=/tmp/.nezha/nzagent
 
 rm -rf $WORK_PATH&&mkdir -p $WORK_PATH
 
@@ -61,7 +61,7 @@ function log() {
 function isInstall() {
   case $CURRENT_OS in
   'centos')
-    if [ $(rpm -aq |grep confagent|wc -l) -lt 1 ];then
+    if [ $(rpm -aq |grep nzagent|wc -l) -lt 1 ];then
       echo 0
     else
       echo 1;
@@ -73,7 +73,7 @@ function isInstall() {
 function getPackageName() {
   case $CURRENT_OS in
   'centos')
-    echo "confagent.rpm"
+    echo "nzagent.rpm"
     ;;
   esac
 }
@@ -124,16 +124,16 @@ EOF
       exit 1
     fi
   else
-    log red "install confagent package may be has some error please try again or install by yourself"
+    log red "install nzagent package may be has some error please try again or install by yourself"
     exit 1
   fi
 }
 
 if [ 1 -eq $(isInstall) ];then
-  log yellow "The confagent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
+  log yellow "The nzagent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
 else
   downloadPackaget && installPackage
-  log green "The confagent install finish,you can check agent info in WEB gui"
+  log green "The nzagent install finish,you can check agent info in WEB gui"
 fi
 
 

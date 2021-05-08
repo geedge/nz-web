@@ -1,80 +1,109 @@
 package com.nis.setup.controller;
 
+import java.io.File;
+import java.sql.SQLException;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.setup.entity.SetupEntity;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.db.Db;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
 import cn.hutool.log.Log;
-import com.alibaba.druid.pool.DruidDataSource;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.setup.entity.DatabaseEntity;
-import com.nis.setup.entity.RedisEntity;
-import com.nis.setup.entity.SetupEntity;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.EnvironmentAware;
-import org.springframework.core.env.Environment;
-import org.springframework.web.bind.annotation.*;
-import org.yaml.snakeyaml.Yaml;
+import cn.hutool.setting.dialect.Props;
 import redis.clients.jedis.Jedis;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/setup")
-@ConditionalOnProperty(prefix = "nezha",name = "inited",havingValue = "0")
-public class SetupController implements ApplicationContextAware, EnvironmentAware {
+public class SetupController  {
     private Log log = Log.get();
-
+    
+	@Value("${nezha.inited:0}")
+    private int inited;
     @Value("${server.tomcat.basedir}")
     private String tmpDir;
-
-    @Value("${nezha.resource.db:config/application-prod.yml}")
-    private String dbConfPath;
-
-    @Value("${nezha.resource.main:config/application.yml}")
-    private String mainConfPath;
-
-    private Environment environment;
-
-    private ConfigurableApplicationContext context;
-
+    @Value("${nezha.config.path:./config/nezha.properties}")
+    private String nezhaConfigPath;
+    @Value("${spring.datasource.druid.driver-class-name}")
+    private String driver;
+    @Value("${nezha.restart.command:systemctl restart nzweb.service}")
+    private String restartCommand;
+    
+    /**
+     * 最后完成配置
+     * @param setup
+     * @return
+     */
     @PostMapping("/config")
     public R setup(@RequestBody SetupEntity setup){
         ValidateUtils.is(setup.getDatabase().getHost()).notNull(RCode.SYS_CONFIG_DB_URL_ISNULL)
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
                 .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL)
                 .and(setup.getRedis().getHost()).notNull(RCode.SYS_CONFIG_REDIS_HOST_ISNULL);
-
         R r = doCheckCode(setup.getCode());
         if(r.get("code") != RCode.SUCCESS.getCode()){
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
+        if(inited == 2) {//已经配置过，不需要再配置
+        	return R.error(RCode.SYS_CONFIG_HAD_CONFIG);
+        }
         try{
-            File mainConf = CommonUtils.getResourceFile(mainConfPath);
-            modifyApplication(mainConf, setup.getRedis());
-            File dbConf = CommonUtils.getResourceFile(dbConfPath);
-            modifyApplicationProfile(dbConf,setup.getDatabase());
-
-            writeTmpFile(setup);
-
-            restart();
+        	//配置文件
+        	boolean absolutePath = Tool.FileUtil.isAbsolutePath(nezhaConfigPath);
+    		File configFile = absolutePath ? Tool.FileUtil.file(nezhaConfigPath) : Tool.FileUtil.file(Tool.WebPathUtil.getRootPath(),nezhaConfigPath);
+    		log.info("nezhaConfigPath:{}",configFile.getAbsolutePath());
+    		//更改 nezha.inited 为 2，下次启动时不再执行
+    		//nezha.properties 配置文件路径：./config/nezha.properties
+    		Props prop = null;
+    		if(!configFile.exists()) {
+    			//创建父目录&配置文件
+    			Tool.FileUtil.mkParentDirs(configFile.getAbsolutePath());
+    			configFile.createNewFile();
+    		}
+    		prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
+    		prop.put("nezha.inited", "1");
+    		prop.put("database.host",setup.getDatabase().getHost());
+    		prop.put("database.port",Tool.StrUtil.utf8Str(setup.getDatabase().getPort()));
+    		prop.put("database.name",setup.getDatabase().getName());
+    		prop.put("database.user",setup.getDatabase().getUsername());
+    		prop.put("database.pin",setup.getDatabase().getPin());
+    		prop.put("redis.host",setup.getRedis().getHost());
+    		prop.put("redis.port",Tool.StrUtil.utf8Str(setup.getRedis().getPort()));
+    		prop.put("redis.pin",setup.getRedis().getPin());
+    		if(Tool.StrUtil.isBlank(prop.getStr("server.port"))) {
+    			prop.put("server.port","8080");
+    		}
+    		//保存配置文件
+    		prop.store(configFile.getAbsolutePath());
+    		
+        	//其它配置保存到临时文件
+            File tmpConfigFile = Tool.FileUtil.file(tmpDir, Constant.SETUP_FILE_NAME);
+            if(!tmpConfigFile.exists()) {
+    			//创建父目录&配置文件
+    			Tool.FileUtil.mkParentDirs(tmpConfigFile.getAbsolutePath());
+    			tmpConfigFile.createNewFile();
+    		}
+            Tool.FileUtil.writeUtf8String(Tool.JSONUtil.toJsonStr(setup), tmpConfigFile);
+            //重启nzweb
+            this.restart();
             return R.ok();
-        }catch (IOException e){
+        }catch (Exception e){
+        	log.error(e);
             return R.error();
         }
     }
@@ -93,34 +122,18 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         ValidateUtils.is(setup.getDatabase().getHost()).notNull(RCode.SYS_CONFIG_DB_PARAM_INVALID)
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
                 .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
-        Connection connection=null;
-        DruidDataSource druidDataSource = null;
-        String driver = environment.getProperty("spring.datasource.druid.driver-class-name");
         try{
-
-            Class.forName(driver);
-//            connection = DriverManager.getConnection(setup.getDatabase().getUrl(),setup.getDatabase().getUsername(),setup.getDatabase().getPassword());
-            druidDataSource = new DruidDataSource();
-            druidDataSource.setUrl(setup.getDatabase().getUrl());
-            druidDataSource.setUsername(setup.getDatabase().getUsername());
-            druidDataSource.setPassword(setup.getDatabase().getPin());
-            druidDataSource.setValidationQuery("SELECT 1");
-            druidDataSource.setTestOnBorrow(true);
-            druidDataSource.setMaxActive(2);
-            druidDataSource.setInitialSize(1);
-            druidDataSource.init();
-            connection = druidDataSource.getConnection(5000);
-            if(connection != null){
-                return R.ok();
-            }
+        	SimpleDataSource ds = new SimpleDataSource(setup.getDatabase().getUrl(), setup.getDatabase().getUsername(), setup.getDatabase().getPin(), driver);
+            Db db = DbUtil.use(ds);
+            String result = db.queryString("select 1");
+        	if(Tool.StrUtil.isNotBlank(result)) {
+        		 return R.ok();
+        	}
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
-        }catch (SQLException | ReflectiveOperationException e){
+        }catch (SQLException | RuntimeException e){
             log.error(e);
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
-        }finally {
-            IoUtil.close(connection);
-            IoUtil.close(druidDataSource);
-        }
+        } 
     }
 
     @PostMapping("/checkRedis")
@@ -130,7 +143,6 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
             return R.error(RCode.SYS_CONFIG_CODE_INVALID);
         }
         ValidateUtils.is(setup.getRedis().getHost()).notNull(RCode.SYS_CONFIG_REDIS_HOST_ISNULL);
-
         Jedis jedis = null;
         try{
             jedis = new Jedis(setup.getRedis().getHost(),setup.getRedis().getPort(),5000);
@@ -157,6 +169,7 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
     }
     private R doCheckCode(String code){
         File codeFile = FileUtil.file(this.tmpDir,"nezha.auth");
+        log.info("nezha.auth path: {} ",codeFile.getAbsolutePath());
         if(!FileUtil.exist(codeFile)){
             return R.error(RCode.SYS_CONFIG_CODE_FILE_ISNULL);
         }
@@ -168,75 +181,9 @@ public class SetupController implements ApplicationContextAware, EnvironmentAwar
         return R.ok();
     }
 
-    private void modifyApplication(File file, RedisEntity redisEntity){
-
-        Yaml yaml = new Yaml();
-        Map<String,Object> application = yaml.load(Tool.FileUtil.getInputStream(file));
-        Map<String,Object> spring =(Map<String,Object>) application.get("spring");
-
-        Map<String,Object> autoconfigure =(Map<String,Object>) spring.get("autoconfigure");
-        autoconfigure.put("exclude",new Class[]{});
-        spring.put("autoconfigure",autoconfigure);
-
-        Map<String,Object> redis =(Map<String,Object>) spring.get("redis");
-        redis.put("host",redisEntity.getHost());
-        redis.put("port",redisEntity.getPort());
-        redis.put("password",redisEntity.getPin());
-        spring.put("redis",redis);
-
-        application.put("spring",spring);
-
-        Map<String,Object> nezha =(Map<String,Object>) application.get("nezha");
-        nezha.put("inited",1);
-
-        BufferedOutputStream outputStream = FileUtil.getOutputStream(file);
-        IoUtil.write(outputStream,true,yaml.dumpAsMap(application).getBytes());
-    }
-
-    private void modifyApplicationProfile(File file, DatabaseEntity database)  {
-        Yaml yaml = new Yaml();
-        Map<String,Object> profile = yaml.load(Tool.FileUtil.getInputStream(file));
-        Map<String,Object> spring =(Map<String,Object>) profile.get("spring");
-
-        Map<String,Object> datasource = (Map<String,Object>) spring.get("datasource");
-        Map<String,Object> druid = (Map<String,Object>) datasource.get("druid");
-
-        druid.put("url",database.getUrl());
-        druid.put("username",database.getUsername());
-        druid.put("password",database.getPin());
-
-        datasource.put("druid",druid);
-        profile.put("datasource",datasource);
-
-        BufferedOutputStream outputStream = FileUtil.getOutputStream(file);
-        IoUtil.write(outputStream,true,yaml.dumpAsMap(profile).getBytes());
-
-    }
-    public void writeTmpFile(SetupEntity setup) throws IOException{
-        File file = FileUtil.file(this.tmpDir,"setup.obj");
-        if (FileUtil.exist(file)){
-            boolean delete = file.delete();
-            if(delete) {
-            	log.debug("文件删除成功");
-            }else {
-            	log.debug("文件删除失败");
-            }
-        }
-        IoUtil.writeObj(FileUtil.getOutputStream(file),true,setup);
-    }
-
     public void restart(){
         if (Tool.SystemUtil.getOsInfo().isLinux()){
-            RuntimeUtil.exec("systemctl restart nzweb.service");
+            RuntimeUtil.exec(restartCommand);
         }
-    }
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.context =(ConfigurableApplicationContext) applicationContext;
-    }
-
-    @Override
-    public void setEnvironment(Environment environment) {
-        this.environment = environment;
     }
 }

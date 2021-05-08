@@ -7,6 +7,7 @@ import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -19,6 +20,7 @@ import java.util.Map;
 
 @Slf4j
 @Configuration
+@DependsOn(value = {"dataSourceConfig"})
 public class FlywayConfig {
 
     @Autowired
@@ -48,7 +50,7 @@ public class FlywayConfig {
                 }
             }
         } catch (IntrospectionException e) {
-            e.printStackTrace();
+        	log.error("flyway执行脚本失败", e);
         }
 
         FluentConfiguration configure = Flyway.configure();
@@ -59,7 +61,7 @@ public class FlywayConfig {
             flyway.migrate();
         } catch (FlywayException e) {
             flyway.repair();
-            log.error("flyway执行脚本失败，错误信息是："+ e);
+            log.error("flyway执行脚本失败", e);
         }
     }
 }

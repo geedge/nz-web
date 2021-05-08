@@ -1,9 +1,8 @@
 package com.nis.setup.entity;
 
-import lombok.Data;
-
 import java.io.Serializable;
-import java.util.Map;
+
+import lombok.Data;
 @Data
 public class SetupEntity implements Serializable {
     private RedisEntity redis;

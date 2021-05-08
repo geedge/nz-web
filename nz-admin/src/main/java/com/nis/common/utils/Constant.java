@@ -872,4 +872,7 @@ public class Constant {
 	public static final String SYSCONFIG_SNMP_PORT_KEY = "snmp_trap_listen_port";
 	public static final String SYSCONFIG_SESSION_TIMEOUT_KEY = "session_timeout";
 
+	public static final String SETUP_FILE_NAME = "setup.json";
+	
+	
 }

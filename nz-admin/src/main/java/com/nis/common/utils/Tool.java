@@ -2,6 +2,8 @@ package com.nis.common.utils;
 
 import java.awt.Graphics;
 import java.awt.Robot;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -9,6 +11,7 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
@@ -1083,4 +1086,41 @@ public class Tool {
 	 *
 	 */
 	public static class NzExpressionUtil extends com.nis.common.utils.NzExpressionUtil{};
+	
+	/**
+	 * 获取项目中各种路径
+	 * @author ThinkPad
+	 *
+	 */
+	public static class WebPathUtil {
+	    /**
+	     * 如果已打成jar包，则返回jar包所在目录
+	     * 如果未打成jar，则返回target所在目录
+	     * @return
+	     */
+	    public static String getClassPath() {
+			try {
+		        // 项目的编译文件的根目录
+				String path = URLDecoder.decode(Tool.class.getResource("/").getPath(), Constant.DEFAULT_CHARTSET_NAME);
+				if (path.startsWith("file:")) {
+		            int i = path.indexOf(".jar!");
+		            path = path.substring(0, i);
+		            path = path.replaceFirst("file:", "");
+		            // 项目所在的目录
+			        return new File(path).getParentFile().getAbsolutePath();
+		        }else {
+		        	//classpath 路径
+		        	return new File(path).getAbsolutePath();
+		        }
+			} catch (UnsupportedEncodingException e) {
+				return null;
+			}
+	    }
+	    
+	    public static  String getRootPath() {
+	    	File file = Tool.FileUtil.file(WebPathUtil.getClassPath());
+	    	return file.getAbsolutePath();
+	    }
+	    
+	}
 }

@@ -1,40 +1,71 @@
 
 package com.nis;
 
-import com.nis.modules.terminal.config.TerminalHandler;
-import com.nis.setup.register.SetupAutoConfiguration;
-import io.micrometer.core.instrument.MeterRegistry;
+import java.util.TimeZone;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-import java.util.TimeZone;
+import com.nis.AdminApplication.SetupAutoConfiguration;
+import com.nis.modules.terminal.config.TerminalHandler;
 
+import cn.hutool.core.util.StrUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 
-@SpringBootApplication(scanBasePackages = {"com.nis.setup"})
+@SpringBootApplication(scanBasePackages = { "com.nis.setup" })
 @Import(SetupAutoConfiguration.class)
-public class AdminApplication{
+@PropertySource(value = { "file:./config/nezha.properties","classpath:./config/nezha.properties" }, encoding = "utf-8", ignoreResourceNotFound = true)
+public class AdminApplication {
+
 	public static void main(String[] args) {
 		// 默认为 UTC 时区
 		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 		ConfigurableApplicationContext run = SpringApplication.run(AdminApplication.class, args);
 		TerminalHandler.setApplicationContext(run);
 	}
-	
+
 	@Bean
-    MeterRegistryCustomizer<MeterRegistry> configurer(@Value("Nezha") String applicationName) {
-        return (registry) -> registry.config().commonTags("application", applicationName);
-    }
+	MeterRegistryCustomizer<MeterRegistry> configurer(@Value("Nezha") String applicationName) {
+		return (registry) -> registry.config().commonTags("application", applicationName);
+	}
+
+	static class SetupAutoConfiguration implements ImportBeanDefinitionRegistrar, EnvironmentAware {
+		private Environment environment;
+		
+		@Override
+		public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
+				BeanDefinitionRegistry registry) {
+			String inited = environment.getProperty("nezha.inited");
+			if (!StrUtil.isEmpty(inited) && Integer.parseInt(inited) > 0) {
+				ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(registry, true);
+				scanner.scan("com.nis.modules", "com.nis.common");
+			}
+		}
+		
+		@Override
+		public void setEnvironment(Environment environment) {
+			this.environment = environment;
+		}
+	}
+
 	@Bean
-	public FilterRegistrationBean corsFilter() {
+	public FilterRegistrationBean<CorsFilter> corsFilter() {
 		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		final CorsConfiguration config = new CorsConfiguration();
 		// 允许cookies跨域
@@ -54,11 +85,9 @@ public class AdminApplication{
 		config.addAllowedMethod("DELETE");
 		config.addAllowedMethod("PATCH");
 		source.registerCorsConfiguration("/**", config);
-
-		FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
+		FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<CorsFilter>(new CorsFilter(source));
 		// 设置监听器的优先级
 		bean.setOrder(0);
-
 		return bean;
 	}
 }

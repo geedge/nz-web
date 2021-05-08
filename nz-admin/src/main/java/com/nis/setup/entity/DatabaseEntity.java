@@ -1,13 +1,12 @@
 package com.nis.setup.entity;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.io.Serializable;
+
+import lombok.Data;
 
 @Data
 public class DatabaseEntity implements Serializable {
-    private String host;
+	private String host;
     private Integer port = 3306;
     private String name = "nz";
     private String username;
