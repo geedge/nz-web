@@ -20,5 +20,5 @@ import java.util.Map;
 @Repository
 public interface MaintenanceRecordDao extends BaseMapper<MaintenanceRecord> {
 
-    List<MaintenanceRecord> queryList(IPage<MaintenanceRecord> page, @Param("params") Map<String, Object> params);
+    List<MaintenanceRecord> queryList(IPage page, @Param("params") Map<String, Object> params);
 }

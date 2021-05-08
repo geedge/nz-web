@@ -410,7 +410,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		//根据状态判断对应的表
 		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
 		params.put("tableName", tableName);
-		IPage<AlertMessageEntity> page = new Query<AlertMessageEntity>().getPage(params);
+		IPage page = new Query(AlertMessageEntity.class).getPage(params);
 		List<AlertMessageEntity> list = msgHandlerDao.queryList(page,params);
 		page.setRecords(list);
 		return new PageUtils(page);

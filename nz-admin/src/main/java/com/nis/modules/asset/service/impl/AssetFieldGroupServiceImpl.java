@@ -38,7 +38,7 @@ public class AssetFieldGroupServiceImpl extends ServiceImpl<AssetFieldGroupDao,A
 	@Override
 	public PageUtils queryList(Map<String, Object> params) {
 		String name = (String) params.get("name");
-		IPage<AssetFieldGroup> page = new Query<AssetFieldGroup>().getPage(params);
+		IPage page = new Query(AssetFieldGroup.class).getPage(params);
 		IPage<AssetFieldGroup> result = this.page(page, new QueryWrapper<AssetFieldGroup>().lambda().like(ObjectUtil.isNotEmpty(name), AssetFieldGroup::getName, name));
 		return new PageUtils(result);
 	}

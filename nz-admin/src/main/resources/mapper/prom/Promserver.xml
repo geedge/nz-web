@@ -3,7 +3,68 @@
 
 <mapper namespace="com.nis.modules.promserver.dao.PromserverDao">
 
+	<resultMap type="com.nis.modules.promserver.entity.Promserver" id="agentInfoMap">
+	<result property="id" column="id"/>
+	<result property="dcId" column="dc_id"/>
+	<result property="host" column="host"/>
+	<result property="port" column="port"/>
+	<result property="type" column="type"/>
+	<result property="status" column="status"/>
+	<result property="checkTime" column="check_time"/>
+	<result property="statusInfo" column="status_info"/>
+	<result property="token" column="token"/>
+
+	<association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
+		<id property="id" column="id"/>
+		<result property="name" column="name"/>
+	</association>
+	</resultMap>
+
 	<update id="updateStatusInfo">
 		update prom_server set status=#{promserver.status},check_time=#{promserver.checkTime},status_info=#{promserver.statusInfo} where id=#{promserver.id}
 	</update>
+
+	<select id="queryList" resultMap="agentInfoMap">
+		SELECT
+			ps.*,
+			dc.id AS d_id,
+			dc.NAME AS d_name
+		FROM
+			prom_server ps
+			LEFT JOIN dc dc ON ps.dc_id = dc.id
+		<where>
+			<if test="params.ids != null">
+				ps.id in
+				<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+					#{id}
+				</foreach>
+			</if>
+
+			<if test="params.dcIds != null">
+				AND ps.dc_id in
+				<foreach item="dcId" collection="params.dcIds" separator="," open="(" close=")" index="">
+					#{dcId}
+				</foreach>
+			</if>
+
+			<if test="params.statuss != null">
+				AND ps.status in
+				<foreach item="status" collection="params.statuss" separator="," open="(" close=")" index="">
+					#{status}
+				</foreach>
+			</if>
+
+			<if test="params.host != null and params.host != ''">
+				AND ps.host like CONCAT('%', #{params.host}, '%')
+			</if>
+
+			<if test="params.port != null and params.port != ''">
+				AND ps.port = #{params.port}
+			</if>
+
+			<if test="params.token != null and params.token != ''">
+				AND ps.token = #{params.token}
+			</if>
+		</where>
+	</select>
 </mapper>

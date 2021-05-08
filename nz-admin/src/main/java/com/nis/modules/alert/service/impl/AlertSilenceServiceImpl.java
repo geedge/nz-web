@@ -59,7 +59,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			logger.error("时间转换异常,参数是 {},异常信息：{}", params, e);
 		}
 		
-		IPage<AlertSilenceConf> page = new Query<AlertSilenceConf>().getPage(params);
+		IPage page = new Query(AlertSilenceConf.class).getPage(params);
 		List<AlertSilenceConf> alertSilences = alertSilenceDao.selectAlertSilenceConfs(page,params);
 		page.setRecords(alertSilences);
 		return new PageUtils(page);

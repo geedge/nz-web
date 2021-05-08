@@ -11,5 +11,5 @@ import java.util.Map;
 
 @Mapper
 public interface AlertNotifyMethodDao extends BaseMapper<AlertNotifyMethod> {
-    List<AlertNotifyMethod> queryList(IPage<AlertNotifyMethod> page, @Param("params")Map<String, Object> params);
+    List<AlertNotifyMethod> queryList(IPage page, @Param("params")Map<String, Object> params);
 }

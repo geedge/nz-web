@@ -242,6 +242,11 @@ public class Constant {
      */
 	public static final Map<Integer, String> ALERT_MESSAGE_STATE_NAME_MAPPING = Tool.MapUtil.newHashMap();
 
+	/**
+	 * 表名 和 排序字段对应关系  KEY: tablename
+	 */
+	public static final Map<String, Map<String, String>> TABLE_NAME_ORDER_FIELD_MAPPING = Tool.MapUtil.newHashMap();
+
 	static {
 		DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider",
 				DatabaseIdProvider.class);
@@ -412,6 +417,126 @@ public class Constant {
         ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, "silence");
         ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, "expired");
 
+		Map<String, String> assetOrderFieldMap = new HashMap<>();
+		assetOrderFieldMap.put("name", "asset.name");
+		assetOrderFieldMap.put("id", "asset.id");
+		assetOrderFieldMap.put("manageIp", "asset.manage_ip");
+		assetOrderFieldMap.put("type", "type.name");
+		assetOrderFieldMap.put("state", "state.name");
+		assetOrderFieldMap.put("dc", "dc.name");
+		assetOrderFieldMap.put("cabinet", "cab.name");
+		assetOrderFieldMap.put("brand", "brand.name");
+		assetOrderFieldMap.put("model", "model.name");
+		assetOrderFieldMap.put("endpointNum", "endpointNum");
+		assetOrderFieldMap.put("alertNum", "alertNum");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("asset_asset", assetOrderFieldMap);
+
+		Map<String, String> modelOrderFieldMap = new HashMap<>();
+		modelOrderFieldMap.put("name", "model.name");
+		modelOrderFieldMap.put("id", "model.id");
+		modelOrderFieldMap.put("brand", "brand.name");
+		modelOrderFieldMap.put("assetNum", "assetNum");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("asset_model", modelOrderFieldMap);
+
+		Map<String, String> labelsOrderFieldMap = new HashMap<>();
+		labelsOrderFieldMap.put("name", "afm.name");
+		labelsOrderFieldMap.put("id", "afm.id");
+		labelsOrderFieldMap.put("metaKey", "afm.meta_key");
+		labelsOrderFieldMap.put("group", "afg.name");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("asset_field_meta", labelsOrderFieldMap);
+
+		Map<String, String> assetTypeOrderFieldMap = new HashMap<>();
+		assetTypeOrderFieldMap.put("name", "name");
+		assetTypeOrderFieldMap.put("id", "id");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("asset_type_conf", assetTypeOrderFieldMap);
+
+		Map<String, String> projectOrderFieldMap = new HashMap<>();
+		projectOrderFieldMap.put("name", "mp.name");
+		projectOrderFieldMap.put("id", "mp.id");
+		projectOrderFieldMap.put("moduleNum", "moduleNum");
+		projectOrderFieldMap.put("endpointNum", "endpointNum");
+		projectOrderFieldMap.put("alertNum", "alertNum");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("monitor_project", projectOrderFieldMap);
+
+		Map<String, String> moduleOrderFieldMap = new HashMap<>();
+		moduleOrderFieldMap.put("name", "m.name");
+		moduleOrderFieldMap.put("id", "m.id");
+		moduleOrderFieldMap.put("project", "p.name");
+		moduleOrderFieldMap.put("endpointNum", "endpointNum");
+		moduleOrderFieldMap.put("alertNum", "alertNum");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("monitor_module", moduleOrderFieldMap);
+
+		Map<String, String> endpointOrderFieldMap = new HashMap<>();
+		endpointOrderFieldMap.put("name", "e.name");
+		endpointOrderFieldMap.put("id", "e.id");
+		endpointOrderFieldMap.put("project", "p.name");
+		endpointOrderFieldMap.put("module", "m.name");
+		endpointOrderFieldMap.put("asset", "a.name");
+		endpointOrderFieldMap.put("alerts", "alertNum");
+		endpointOrderFieldMap.put("state", "es.state");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("monitor_endpoint", endpointOrderFieldMap);
+
+		Map<String, String> alertMsgOrderFieldMap = new HashMap<>();
+		alertMsgOrderFieldMap.put("priority", "alsc.name");
+		alertMsgOrderFieldMap.put("id", "am.id");
+		alertMsgOrderFieldMap.put("alertRule", "ar.name");
+		alertMsgOrderFieldMap.put("labels", "am.labels");
+		alertMsgOrderFieldMap.put("startAt", "am.start_at");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_message_active", alertMsgOrderFieldMap);
+
+		Map<String, String> alertRuleOrderFieldMap = new HashMap<>();
+		alertRuleOrderFieldMap.put("name", "ar.name");
+		alertRuleOrderFieldMap.put("id", "ar.name");
+		alertRuleOrderFieldMap.put("severity", "alsc.name");
+		alertRuleOrderFieldMap.put("alertNum", "alertNum");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_rule", alertRuleOrderFieldMap);
+
+		Map<String, String> alertSilenceOrderFieldMap = new HashMap<>();
+		alertSilenceOrderFieldMap.put("state", "state");
+		alertSilenceOrderFieldMap.put("id", "id");
+		alertSilenceOrderFieldMap.put("matchers", "matchers");
+		alertSilenceOrderFieldMap.put("startAt", "start_at");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_silence_conf", alertSilenceOrderFieldMap);
+
+		Map<String, String> dcOrderFieldMap = new HashMap<>();
+		dcOrderFieldMap.put("name", "dc.name");
+		dcOrderFieldMap.put("id", "dc.id");
+		dcOrderFieldMap.put("cabinetNum", "cabinetNum");
+		dcOrderFieldMap.put("assetNum", "assetNum");
+		dcOrderFieldMap.put("alertNum", "alertNum");
+		dcOrderFieldMap.put("state", "dc.state");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("dc", dcOrderFieldMap);
+
+		Map<String, String> agentOrderFieldMap = new HashMap<>();
+		agentOrderFieldMap.put("datacenter", "dc.name");
+		agentOrderFieldMap.put("id", "ps.id");
+		agentOrderFieldMap.put("type", "ps.type");
+		agentOrderFieldMap.put("status", "ps.status");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("prom_server", agentOrderFieldMap);
+
+		Map<String, String> expreOrderFieldMap = new HashMap<>();
+		expreOrderFieldMap.put("name", "name");
+		expreOrderFieldMap.put("id", "id");
+		expreOrderFieldMap.put("gname", "gname");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("visual_expression_tmpl", expreOrderFieldMap);
+
+		Map<String, String> chartTempOrderFieldMap = new HashMap<>();
+		chartTempOrderFieldMap.put("name", "vch.name");
+		chartTempOrderFieldMap.put("id", "vch.id");
+		chartTempOrderFieldMap.put("type", "vch.type");
+		chartTempOrderFieldMap.put("varType", "vch.var_type");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("visual_chart", chartTempOrderFieldMap);
+
+		Map<String, String> mibOrderFieldMap = new HashMap<>();
+		mibOrderFieldMap.put("name", "sm.name");
+		mibOrderFieldMap.put("id", "sm.id");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("snmp_mib", mibOrderFieldMap);
+
+		Map<String, String> snmpCerdenOrderFieldMap = new HashMap<>();
+		snmpCerdenOrderFieldMap.put("name", "name");
+		snmpCerdenOrderFieldMap.put("id", "id");
+		snmpCerdenOrderFieldMap.put("type", "type");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("snmp_credential", snmpCerdenOrderFieldMap);
 	}
 
 	/**
@@ -606,9 +731,6 @@ public class Constant {
 
 	// 配置表中 prometheus rule.yml 模板 Key
 	public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
-
-	// 配置表中 blackbox 源， on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
-	public static final String SYSCONFIG_KEY_PING_SOURCE_IPADDRESS = "ping_source_ip_address";
 
 	// 配置表中 prometheus 本地保存天数配置
 	public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";

@@ -54,7 +54,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
                 .eq(ToolUtil.isNotEmpty(params.get("vm")), AssetTypeConf::getVm, params.get("vm"))
                 .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"));
 
-        IPage<AssetTypeConf> page = this.page(new Query<AssetTypeConf>().getPage(params), queryWrapper);
+        IPage page = this.page(new Query(AssetTypeConf.class).getPage(params), queryWrapper);
         List<AssetTypeConf> assetTypeConfs = page.getRecords();
         if (CollectionUtils.isNotEmpty(assetTypeConfs)) {
             List<AssetTypeConf> allConfig = this.list();

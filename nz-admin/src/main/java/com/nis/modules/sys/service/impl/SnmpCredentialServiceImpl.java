@@ -30,7 +30,7 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 		String name = (String) params.get("name");
 		String types = (String) params.get("types");
 		
-		IPage<SnmpCredential> result = this.page(new Query<SnmpCredential>().getPage(params), new QueryWrapper<SnmpCredential>().lambda()
+		IPage result = this.page(new Query(SnmpCredential.class).getPage(params), new QueryWrapper<SnmpCredential>().lambda()
 				.in(ToolUtil.isNotEmpty(ids), SnmpCredential::getId, ToolUtil.isNotEmpty(ids) ? Arrays.asList(ids.toString().split(",")) : null)
 				.like(ToolUtil.isNotEmpty(name), SnmpCredential::getName, name)
 				.in(ToolUtil.isNotEmpty(types), SnmpCredential::getType, ToolUtil.isNotEmpty(types) ? Arrays.asList(types.toString().split(",")) : null));

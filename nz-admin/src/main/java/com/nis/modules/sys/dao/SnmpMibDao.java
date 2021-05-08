@@ -12,7 +12,7 @@ import java.util.Map;
 @Mapper
 public interface SnmpMibDao extends BaseMapper<SnmpMib> {
 
-    List<SnmpMib> queryList(IPage<SnmpMib> page, @Param("params") Map<String, Object> params);
+    List<SnmpMib> queryList(IPage page, @Param("params") Map<String, Object> params);
 
     List<SnmpMib> getMibTreesByIdsAndModels(@Param("ids")String[] ids, @Param("models")String[] models);
 

@@ -12,6 +12,6 @@ import java.util.Map;
 @Mapper
 public interface MonitorProjectDao extends BaseMapper<MonitorProject> {
 
-    List<MonitorProject> queryProjectList(IPage<MonitorProject> page, @Param("params") Map<String, Object> params);
+    List<MonitorProject> queryProjectList(IPage page, @Param("params") Map<String, Object> params);
 
 }

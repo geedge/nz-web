@@ -54,7 +54,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        IPage<SnmpMib> page = new Query<SnmpMib>().getPage(params);
+        IPage page = new Query(SnmpMib.class).getPage(params);
 
         List<SnmpMib> mibs = snmpMibDao.queryList(page, params);
 

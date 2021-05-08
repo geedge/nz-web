@@ -73,7 +73,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             receivers = Arrays.asList(receiverStr.split(","));
         }
 
-        IPage<AlertRuleEntity> page = new Query<AlertRuleEntity>().getPage(params);
+        IPage page = new Query(AlertRuleEntity.class).getPage(params);
         List<AlertRuleEntity> ruleEntityList = alertRuleDao.queryList(page, params, receivers);
 
         // 查询结果不为空时处理返回结果

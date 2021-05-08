@@ -82,7 +82,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 		String paramKey = (String)params.get("paramKey");
 
 		IPage<SysConfigEntity> page = this.page(
-			new Query<SysConfigEntity>().getPage(params),
+			new Query(SysConfigEntity.class).getPage(params),
 			new QueryWrapper<SysConfigEntity>()
 				.like(StringUtils.isNotBlank(paramKey),"param_key", paramKey)
 				.eq("status", 1)

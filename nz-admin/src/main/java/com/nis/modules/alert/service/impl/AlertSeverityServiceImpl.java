@@ -38,7 +38,7 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        IPage page = new Query<AlertSeverityConf>().getPage(params);
+        IPage page = new Query(AlertSeverityConf.class).getPage(params);
 
         List<AlertSeverityConf> list = alertSeverityDao.queryList(page,params);
         //遍历，设置notify method

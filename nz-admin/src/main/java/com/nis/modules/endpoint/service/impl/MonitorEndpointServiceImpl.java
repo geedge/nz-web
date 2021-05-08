@@ -123,7 +123,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         // 处理请求参数
         this.handleQueryParam(params);
 
-        IPage<MonitorEndpoint> page = new Query<MonitorEndpoint>().getPage(params);
+        IPage page = new Query(MonitorEndpoint.class).getPage(params);
         List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
 
         page.setRecords(datas);
@@ -423,7 +423,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
-        IPage<MonitorEndpoint> page = new Query<MonitorEndpoint>().getPage(params);
+        IPage page = new Query(MonitorEndpoint.class).getPage(params);
         List<MonitorEndpoint> list = monitorEndpointDao.queryPage(page, params);
 
         SXSSFWorkbook workbook = null;

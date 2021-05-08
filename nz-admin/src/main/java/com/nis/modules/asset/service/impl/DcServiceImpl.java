@@ -90,7 +90,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             params.put("ids", listIds);
         }
 
-        IPage<Dc> page = new Query<Dc>().getPage(params);
+        IPage page = new Query(Dc.class).getPage(params);
         List<Dc> dcList = dcDao.queryDcList(page, params);
 
         if(CollectionUtils.isNotEmpty(dcList)){

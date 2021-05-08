@@ -31,7 +31,7 @@ public interface SysUserDao extends BaseMapper<SysUserEntity> {
 	List<Long> queryAllMenuId(Long userId);
 
 
-	List<SysUserEntity> queryList(IPage<SysUserEntity> page, @Param("params") Map<String, Object> params);
+	List<SysUserEntity> queryList(IPage page, @Param("params") Map<String, Object> params);
 
 	// 根据角色ID 获取所属用户
 	List<SysUserEntity> getUserListByRoleId(@Param("roleId")  Integer roleId);

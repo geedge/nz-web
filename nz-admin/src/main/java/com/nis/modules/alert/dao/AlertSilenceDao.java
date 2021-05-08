@@ -13,6 +13,6 @@ import com.nis.modules.alert.entity.AlertSilenceConf;
 @Mapper
 public interface AlertSilenceDao extends BaseMapper<AlertSilenceConf>{
 
-	List<AlertSilenceConf> selectAlertSilenceConfs(IPage<AlertSilenceConf> page,@Param("params")Map<String,Object> params);
+	List<AlertSilenceConf> selectAlertSilenceConfs(IPage page,@Param("params")Map<String,Object> params);
 
 }

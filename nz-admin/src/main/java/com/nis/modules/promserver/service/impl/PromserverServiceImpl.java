@@ -1,5 +1,6 @@
 package com.nis.modules.promserver.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -14,7 +15,6 @@ import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service("promserverService")
@@ -36,41 +35,31 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	@Autowired
 	private DcService dcService;
 
+	@Autowired
+	private PromserverDao promserverDao;
+
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
-		String host = (String)params.get("host");
-		String type = (String)params.get("type");
-		String port = (String)params.get("port");
-		String token = (String) params.get("token");
-		IPage<Promserver> page = this.page(
-				new Query<Promserver>().getPage(params),
-				new QueryWrapper<Promserver>().lambda()
-						.in(ToolUtil.isNotEmpty(params.get("ids")), Promserver::getId, ToolUtil.isNotEmpty(params.get("ids")) ? Arrays.asList(params.get("ids").toString().split(",")) : null)
-						.in(ToolUtil.isNotEmpty(params.get("dcIds")), Promserver::getDcId, ToolUtil.isNotEmpty(params.get("dcIds")) ? Arrays.asList(params.get("dcIds").toString().split(",")) : null)
-						.in(ToolUtil.isNotEmpty(params.get("statuss")), Promserver::getStatus, ToolUtil.isNotEmpty(params.get("statuss")) ? Arrays.asList(params.get("statuss").toString().split(",")) : null)
-						.like(StringUtils.isNotBlank(host), Promserver::getHost, host)
-						.eq(StringUtils.isNotBlank(type), Promserver::getType, type)
-						.eq(StringUtils.isNotBlank(port), Promserver::getPort, port)
-						.like(StringUtils.isNotEmpty(token), Promserver::getToken, token)
-		);
-
-		List<Promserver> promserverList = page.getRecords();
-		if (CollectionUtils.isNotEmpty(promserverList)) {
-			promserverList = this.handleResultViewData(promserverList);
+		String ids = (String) params.get("ids");
+		if (StrUtil.isNotBlank(ids)) {
+			params.put("ids", Arrays.asList(ids.split(",")));
 		}
+		String dcIds = (String) params.get("dcIds");
+		if (StrUtil.isNotBlank(dcIds)) {
+			params.put("dcIds", Arrays.asList(dcIds.split(",")));
+		}
+		String statuss = (String) params.get("statuss");
+		if (StrUtil.isNotBlank(statuss)) {
+			params.put("statuss", Arrays.asList(statuss.split(",")));
+		}
+
+		IPage page = new Query(Promserver.class).getPage(params);
+		List<Promserver> promserverList = promserverDao.queryList(page, params);
+
 		page.setRecords(promserverList);
 		return new PageUtils(page);
 	}
 
-	private List<Promserver> handleResultViewData(List<Promserver> promserverList) {
-		List<Dc> dcList = dcService.list();
-		Map<Integer, Dc> dcIdAndEntityMap = dcList.stream().collect(Collectors.toMap(Dc::getId, Function.identity()));
-
-		for (Promserver pojo : promserverList) {
-			pojo.setDc(dcIdAndEntityMap.get(pojo.getDcId()));
-		}
-		return promserverList;
-	}
 
 	public void validateParam(Promserver promserverEntity,boolean modify) {
 		Promserver promserver = this.getOne(new QueryWrapper<Promserver>().lambda()

@@ -109,7 +109,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 处理请求参数
         this.handleQueryParam(params);
 
-        IPage<MonitorModule> page = new Query<MonitorModule>().getPage(params);
+        IPage page = new Query(MonitorModule.class).getPage(params);
         List<MonitorModule> datas = monitorModuleDao.queryPage(page, params);
 
         page.setRecords(datas);

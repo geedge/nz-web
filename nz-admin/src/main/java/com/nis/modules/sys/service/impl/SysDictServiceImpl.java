@@ -36,7 +36,7 @@ public class SysDictServiceImpl extends ServiceImpl<SysDictDao, SysDictEntity> i
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-		IPage<SysDictEntity> page=this.page(new Query<SysDictEntity>().getPage(params));
+		IPage<SysDictEntity> page=this.page(new Query(SysDictEntity.class).getPage(params));
 
 		List<SysDictEntity> list=this.baseMapper.querySysDictListWithPage(page,params);
 

@@ -266,7 +266,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 处理请求参数
         this.handleQueryAssetParam(params);
 
-        IPage<AssetAsset> page = new Query<AssetAsset>().getPage(params);
+        IPage page = new Query(AssetAsset.class).getPage(params);
         List<AssetAsset> assetList = assetDao.queryAssetList(page, params);
 
         // 查询结果不为空时处理返回结果

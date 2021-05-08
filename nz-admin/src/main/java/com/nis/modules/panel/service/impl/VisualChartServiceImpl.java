@@ -69,7 +69,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         	List<String> listIds = Arrays.asList(pid.split(","));
         	params.put("pids",listIds);
         }
-		IPage<VisualChart> page = new Query<VisualChart>().getPage(params);
+		IPage page = new Query(VisualChart.class).getPage(params);
 		// 查询出chart信息
 		List<VisualChart> result = this.baseMapper.queryPage(page,params);
 		//查询elements
@@ -90,7 +90,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         String groupId = (String) params.get("groupId");
         if(ToolUtil.equals(groupId, "0") && ToolUtil.isNotEmpty(result)) {
         	Map<String, Object> queryChildren =new HashMap<String,Object>();
-        	IPage<VisualChart> childrenpage = new Query<VisualChart>().getPage(queryChildren);
+        	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
         	queryChildren.put("groupIds", fatherIds);
         	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
         	// 查询chart相关的element

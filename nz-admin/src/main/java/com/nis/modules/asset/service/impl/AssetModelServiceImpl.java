@@ -70,7 +70,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
-        IPage<AssetModel> page = new Query<AssetModel>().getPage(params);
+        IPage page = new Query(AssetModel.class).getPage(params);
         String ids = (String) params.get("ids");
         if(StrUtil.isNotBlank(ids)) {
         	List<String> listIds = Arrays.asList(ids.split(","));
@@ -88,9 +88,6 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         		List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
             	model.setCharts(charts);
         	}
-        	//获取资产数量
-        	List<AssetAsset> list = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getModelId, model.getId()));
-        	model.setAssetNum(list.size());
         }
         page.setRecords(modelList);
         return new PageUtils(page);

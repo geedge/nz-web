@@ -74,7 +74,7 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
             params.put("ids", listIds);
         }
 
-        IPage<MonitorProject> page = new Query<MonitorProject>().getPage(params);
+        IPage page = new Query(MonitorProject.class).getPage(params);
         List<MonitorProject> projectList = monitorProjectDao.queryProjectList(page, params);
 
         page.setRecords(projectList);

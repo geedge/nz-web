@@ -108,5 +108,5 @@ public interface AlertHandlerDao {
 	 * @param params
 	 * @return
 	 */
-	List<AlertMessageEntity> queryList(IPage<AlertMessageEntity> page, Map<String, Object> params);
+	List<AlertMessageEntity> queryList(IPage page, Map<String, Object> params);
 }
