@@ -1104,6 +1104,9 @@ public class Tool {
 				String path = URLDecoder.decode(Tool.class.getResource("/").getPath(), Constant.DEFAULT_CHARTSET_NAME);
 				if (path.startsWith("file:")) {
 		            int i = path.indexOf(".jar!");
+		            if(i == -1){
+		            	i = path.indexOf(".xjar!");
+					}
 		            path = path.substring(0, i);
 		            path = path.replaceFirst("file:", "");
 		            // 项目所在的目录
