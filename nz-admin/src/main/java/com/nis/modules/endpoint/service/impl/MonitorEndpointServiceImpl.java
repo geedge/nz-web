@@ -153,7 +153,14 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         }
         // states
         if (ToolUtil.isNotEmpty(params.get("states"))) {
-            params.put("states", String.valueOf(params.get("states")).split(StringPool.COMMA));
+            String[] states = String.valueOf(params.get("states")).split(StringPool.COMMA);
+            params.put("states", states);
+            for (String state : states) {
+                if("2".equalsIgnoreCase(state)){
+                    params.put("suspendedStatus", "2");
+                    break;
+                }
+            }
         }
 
     }

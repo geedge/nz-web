@@ -166,6 +166,10 @@
                <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
                    #{state}
                </foreach>
+
+                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+                    OR es.state >= 2
+                </if>
            </if>
 
            <if test="params.name != null and params.name != ''">
