@@ -25,7 +25,7 @@ AGENT_TOKEN=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
 
 INSTALL_PATH=$ROOT_PATH/nz-agent
 
-WORK_PATH=/tmp/.nezha/nzagent
+WORK_PATH=/tmp/.nezha/nz-agent
 
 rm -rf $WORK_PATH&&mkdir -p $WORK_PATH
 
@@ -61,7 +61,7 @@ function log() {
 function isInstall() {
   case $CURRENT_OS in
   'centos')
-    if [ $(rpm -aq |grep nzagent|wc -l) -lt 1 ];then
+    if [ $(rpm -aq |grep nz-agent|wc -l) -lt 1 ];then
       echo 0
     else
       echo 1;
@@ -73,7 +73,7 @@ function isInstall() {
 function getPackageName() {
   case $CURRENT_OS in
   'centos')
-    echo "nzagent.rpm"
+    echo "nz-agent.rpm"
     ;;
   esac
 }
@@ -104,7 +104,7 @@ function installPackage() {
   if [ 0 -eq $? ];then
     cat > $WORK_PATH/param.tmp <<EOF
     {
-      "idcId":$DATACENTER_ID,
+      "dcId":$DATACENTER_ID,
       "host":"$LOCALHOST",
       "type":$TYPE,
       "port":9090,
@@ -124,16 +124,16 @@ EOF
       exit 1
     fi
   else
-    log red "install nzagent package may be has some error please try again or install by yourself"
+    log red "install nz-agent package may be has some error please try again or install by yourself"
     exit 1
   fi
 }
 
 if [ 1 -eq $(isInstall) ];then
-  log yellow "The nzagent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
+  log yellow "The nz-agent is installed , token is "$(cat $INSTALL_PATH/config/auth.token)
 else
   downloadPackaget && installPackage
-  log green "The nzagent install finish,you can check agent info in WEB gui"
+  log green "The nz-agent install finish,you can check agent info in WEB gui"
 fi
 
 
