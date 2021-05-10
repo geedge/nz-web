@@ -670,8 +670,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			message.setDc(dc);
 		}
 		// 判断 module id 是否存在
-		if (moduleId == null && Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY))) {
-			moduleId = Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_MODULE_ID_KEY));
+		if (moduleId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY))) {
+			moduleId = (moduleId != null) ? moduleId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_MODULE_ID_KEY));
 			MonitorModule module = moduleService.getById(moduleId);
 			projectId = module.getProjectId();
 			message.setModuleId(moduleId);
