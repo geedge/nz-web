@@ -59,8 +59,8 @@ public class RedisConfig {
 	private long redisTimeout;
 	
 	
-	@Bean
-	public RedisConnectionFactory RedisConnectionFactory() {
+	@Bean(name = "redisConnectionFactory")
+	public RedisConnectionFactory redisConnectionFactory() {
 		if(!Tool.ObjectUtil.isAllNotEmpty(this.getRedisHost(),this.getRedisPort(),this.getRedisDatabase())) {
 			return null;
 		}

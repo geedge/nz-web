@@ -81,7 +81,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
     	//添加license 拦截器，排除 license 接口
-    	registry.addInterceptor(licenseInterceptor()).excludePathPatterns("/sys/license/**","/api/v1/alerts","/api/v2/alerts");
+    	registry.addInterceptor(licenseInterceptor()).excludePathPatterns("/sys/license/**","/api/v1/alerts","/api/v2/alerts","/setup/**");
     	
         SysConfigService sysConfigService = (SysConfigService) SpringContextUtils.getBean("sysConfigService");
         registry.addInterceptor(new SysMenuInterceptor(sysConfigService)).addPathPatterns("/sys/menu/**");

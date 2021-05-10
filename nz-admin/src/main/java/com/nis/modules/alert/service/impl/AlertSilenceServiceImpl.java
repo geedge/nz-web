@@ -84,7 +84,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			conf.setState(Constant.ALERT_SILENCE_STATE_ACTIVE);
 			alertSilenceDao.insert(conf);
 			logger.debug("save silenceconf : {}",Tool.JSONUtil.toJsonStr(conf));
-			List<AlertSilenceConf> list = Tool.ListUtil.of(conf);
+			List<AlertSilenceConf> list = Tool.ListUtil.toList(conf);
 			//处理已经处于 active 状态的 alert message是否符合静默规则
 			handlerService.handleSilenceConfPendingToActive(list);
 		}else {
@@ -122,16 +122,16 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			alertSilenceDao.updateById(conf);
 			if(currState == Constant.ALERT_SILENCE_STATE_ACTIVE) {//当前正处于生效状态
 				//将以前 处于静音的 消息失效
-				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.of(current));
+				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.toList(current));
 			}
 			//根据 更新后的规则匹配消息
-			handlerService.handleSilenceConfPendingToActive(Tool.ListUtil.of(conf));
+			handlerService.handleSilenceConfPendingToActive(Tool.ListUtil.toList(conf));
 		}else {
 			conf.setState(Constant.ALERT_SILENCE_STATE_PENDING);
 			alertSilenceDao.updateById(conf);
 			//由   active 变更为 pending
 			if(currState ==  Constant.ALERT_SILENCE_STATE_ACTIVE) {
-				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.of(conf));
+				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.toList(conf));
 			}
 		}
 	}
