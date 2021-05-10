@@ -127,14 +127,16 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if (Tool.CollUtil.isEmpty(confList) || message == null) {
 			return null;
 		}
+		List<AlertSilenceConf> result = Tool.CollUtil.list(true);
 		Iterator<AlertSilenceConf> ite = confList.iterator();
 		for (; ite.hasNext();) {// 遍历静默配置规则
-			boolean b = judgeAlertMessageSilence(message, ite.next());
-			if(!b) {//不匹配
-				ite.remove();
+			AlertSilenceConf next = ite.next();
+			boolean b = judgeAlertMessageSilence(message, next);
+			if(b) {//匹配
+				result.add(next);
 			}
 		}
-		return confList;
+		return result;
 	}
 	
 	/**
@@ -162,10 +164,11 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				if (!Tool.ReUtil.isMatch(value, mVal)) {
 					return false;
 				}
-			}
-			// 完全匹配不成功
-			if (!Tool.StrUtil.equals(value, mVal)) {
-				return false;
+			}else {
+				// 完全匹配不成功
+				if (!Tool.StrUtil.equals(value, mVal)) {
+					return false;
+				}
 			}
 		}
 		return true;
@@ -266,16 +269,20 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey));
 			}
 		}
-		msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
-		if(Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
-			// 删除原来 active 表中数据
-			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE, ids.toArray(new Long[] {}));
+		if(Tool.CollUtil.isNotEmpty(msgList)) {
+			msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
 		}
-		if(Constant.ALERT_MESSAGE_SILENCE_STATE.equals(fromState)) {
-			// 删除原来 active 表中数据
-			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE, ids.toArray(new Long[] {}));
-			// 删除 alert_silence_message_rel 表关系
-			msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(ids.toArray(new Long[] {}));
+		if(Tool.CollUtil.isNotEmpty(ids)) {
+			if(Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
+				// 删除原来 active 表中数据
+				msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE, ids.toArray(new Long[] {}));
+			}
+			if(Constant.ALERT_MESSAGE_SILENCE_STATE.equals(fromState)) {
+				// 删除原来 active 表中数据
+				msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE, ids.toArray(new Long[] {}));
+				// 删除 alert_silence_message_rel 表关系
+				msgHandlerDao.deleteAlertSilenceMessageRelByMessageIds(ids.toArray(new Long[] {}));
+			}
 		}
 	}
 	
@@ -323,6 +330,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 */
 	@Override
 	public void updateSilenceConfStateBatch(int state,Integer ... silencConfId) {
+		if(Tool.ArrayUtil.isEmpty(silencConfId)) {
+			return;
+		}
 		AlertSilenceConf entity = new AlertSilenceConf();
 		entity.setState(state);
 		alertSilenceDao.update(entity, new UpdateWrapper<AlertSilenceConf>().lambda().in(AlertSilenceConf::getId, silencConfId));
@@ -402,7 +412,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		//保存到 alert_message_silence 表及 rel 表
 		this.handleMessageSilenceBatch(activeMessage);
 		//删除 alert_message_active 表数据
-		msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE, messageIds.toArray(new Long[] {}));
+		if(Tool.CollUtil.isNotEmpty(messageIds)) {
+			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE, messageIds.toArray(new Long[] {}));
+		}
 	}
 
 	@Override
@@ -421,6 +433,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 */
 	@Override
 	public void removeMessageByIds(Integer state, Long ... ids) {
+		if(Tool.ArrayUtil.isEmpty(ids)) {
+			return;
+		}
 		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(state);
 		msgHandlerDao.deleteMessageByIdsAndTableName(tableName, ids);
 		
