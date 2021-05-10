@@ -294,7 +294,19 @@
 				<include>${project.build.finalName}.jar</include> </resource> </resources> 
 				</configuration> 运行命令 mvn clean package docker:build 打包并生成docker镜像 </plugin> -->
 
-
+			<plugin>
+				<groupId>com.github.core-lib</groupId>
+				<artifactId>xjar-maven-plugin</artifactId>
+				<version>4.0.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build</goal>
+						</goals>
+						<phase>install</phase>
+					</execution>
+				</executions>
+			</plugin>
 
 			<plugin>
 				<groupId>pl.project13.maven</groupId>
