@@ -24,7 +24,6 @@ public class AlertSeverityController {
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSEVERITY)
-    @RequiresPermissions({"alert:severity:list"})
     public R list(@RequestParam Map<String, Object> params ){
         log.info("query alert severity with parameter: {}", Tool.JSONUtil.toJsonStr(params));
 
@@ -35,7 +34,6 @@ public class AlertSeverityController {
 
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTSEVERITY)
-    @RequiresPermissions({"alert:severity:list"})
     public R detail(@PathVariable(value = "id",required = true) Integer id){
         AlertSeverityConf alertSeverityConf = alertSeverityService.getSeverityById(id);
         return R.ok(alertSeverityConf);
@@ -63,7 +61,6 @@ public class AlertSeverityController {
 
     @PutMapping("/weight")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTSEVERITY)
-    @RequiresPermissions({"alert:severity:weight"})
     public R weight(@RequestBody List<AlertSeverityConf> alertSeverityConfs){
         alertSeverityService.saveWeights(alertSeverityConfs);
         return R.ok();

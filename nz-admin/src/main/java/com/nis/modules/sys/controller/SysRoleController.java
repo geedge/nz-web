@@ -28,7 +28,6 @@ public class SysRoleController extends AbstractController {
 	 */
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-	@RequiresPermissions("sys:role:list")
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysRoleService.queryPage(params);
 
@@ -42,7 +41,6 @@ public class SysRoleController extends AbstractController {
      */
     @GetMapping("/menu/{id}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions("sys:role:menu")
     public R list(@PathVariable("id") Integer roleId) {
         ValidateUtils.is(roleId).notNull(RCode.SYS_ROLE_ID_ISNULL);
 

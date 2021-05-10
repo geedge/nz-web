@@ -9,7 +9,6 @@
 package com.nis.modules.sys.controller;
 
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
@@ -17,7 +16,6 @@ import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysDictService;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,7 +40,6 @@ public class SysDictController extends AbstractController {
      * 列表
      */
     @GetMapping("/list")
-    @RequiresPermissions("sys:dict:list")
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = sysDictService.queryPage(params);
 
@@ -60,7 +57,6 @@ public class SysDictController extends AbstractController {
         @ApiImplicitParam(paramType="query", name = "name", value = "名称", required = false),
         @ApiImplicitParam(paramType="query", name = "type", value = "类别", required = false)
     })
-    @RequiresPermissions({"sys:dict:all"})
     public R all(@ApiParam(hidden=true) @RequestParam Map<String, Object> params) {
     	String type = (String) params.get("type");
     	ValidateUtils.is(type).notNull(RCode.NOT_NULL_ERROR);
@@ -73,7 +69,6 @@ public class SysDictController extends AbstractController {
      * 信息
      */
 //    @RequestMapping("/info/{id}")
-//    @RequiresPermissions("sys:dict:info")
     public R info(@PathVariable("id") Long id){
         SysDictEntity dict = sysDictService.getById(id);
 
@@ -84,7 +79,6 @@ public class SysDictController extends AbstractController {
      * 保存
      */
     @RequestMapping("/save")
-    @RequiresPermissions("sys:dict:save")
     public R save(@RequestBody SysDictEntity dict){
 
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
@@ -100,7 +94,6 @@ public class SysDictController extends AbstractController {
      * 修改
      */
     @RequestMapping("/update")
-    @RequiresPermissions("sys:dict:update")
     public R update(@RequestBody SysDictEntity dict){
         //校验类型
         ValidateUtils.is(dict.getType()).notNull(RCode.SYS_DICT_TYPE_ISNULL);
@@ -122,7 +115,6 @@ public class SysDictController extends AbstractController {
      * 删除
      */
     @DeleteMapping("/delete")
-    @RequiresPermissions("sys:dict:delete")
     public R delete(@RequestParam String ids){
     	ValidateUtils.is(ids).notNull(RCode.SYS_DICT_ID_ISNULL);
         sysDictService.delete(ids);

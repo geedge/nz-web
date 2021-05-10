@@ -63,7 +63,6 @@ public class TerminalHandlerController {
     }
 	
 	@PostMapping(value = "upload")
-    @RequiresPermissions("terminal:upload")
     public R upload(HttpSession httpSession, String uuid, @RequestParam(value = "file", required = false) MultipartFile file, String path) throws RuntimeException {
 		if(StringUtils.isBlank(uuid)) {
 			throw new NZException(RCode.TERMINAL_UUID_ISNULL);
@@ -130,7 +129,6 @@ public class TerminalHandlerController {
     }
 	
 	@PostMapping(value = "download")
-    @RequiresPermissions("terminal:download")
     public void download(HttpSession httpSession,HttpServletResponse res, @RequestBody Map<String,String> param) throws RuntimeException {
 		String uuid = param.get("uuid");
 		String path = param.get("path");
@@ -179,6 +177,7 @@ public class TerminalHandlerController {
     }
 
     @PutMapping("/kill")
+    @RequiresPermissions({"terminal:kill"})
     public R killTerminal(@RequestBody Map<String, String> params) {
         ValidateUtils.is(params.get("uuid")).notNull(RCode.TERMINAL_UUID_ISNULL);
 

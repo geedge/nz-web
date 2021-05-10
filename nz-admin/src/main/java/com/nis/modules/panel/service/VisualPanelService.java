@@ -16,8 +16,6 @@ public interface VisualPanelService extends IService<VisualPanel> {
 	
     void delPanels(Integer... ids);
 
-    void modify(VisualPanel visualPanel);
-
     void modify(List<VisualPanel> visualPanelList);
 
     List<VisualPanel> queryList(Map<String, Object> params);

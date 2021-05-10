@@ -20,7 +20,6 @@ public class AlertNotifyMethodController {
 
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTNOTIFYMETHOD)
-    @RequiresPermissions({"alert:notify:list"})
     public R detail(@PathVariable(value = "id",required = true) Integer id){
         AlertNotifyMethod alertNotifyMethod = alertNotifyMethodService.getById(id);
 
@@ -29,7 +28,6 @@ public class AlertNotifyMethodController {
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTNOTIFYMETHOD)
-    @RequiresPermissions({"alert:notify:list"})
     public R list(@RequestParam Map<String, Object> params ){
         PageUtils page = alertNotifyMethodService.queryPage(params);
 
@@ -47,7 +45,7 @@ public class AlertNotifyMethodController {
     }
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ALERTNOTIFYMETHOD)
-    @RequiresPermissions({"alert:notify:save"})
+    @RequiresPermissions({"alert:notify:update"})
     public R update(@RequestBody AlertNotifyMethod alertNotifyMethod){
         alertNotifyMethodService.validateNotifyMethod(alertNotifyMethod,true);
         alertNotifyMethodService.updateById(alertNotifyMethod);

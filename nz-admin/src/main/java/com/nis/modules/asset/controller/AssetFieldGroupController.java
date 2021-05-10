@@ -34,7 +34,6 @@ public class AssetFieldGroupController {
 	
 	@GetMapping("/{id}")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDGROUP)
-	@RequiresPermissions({"asset:fieldgroup:info"})
 	public R queryAssetFieldGroupById(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL);
 		
@@ -44,7 +43,6 @@ public class AssetFieldGroupController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDGROUP)
-	@RequiresPermissions({"asset:fieldgroup:list"})
 	public R queryAssetFieldGroupList(@RequestParam Map<String,Object> params) {
 		
 		PageUtils page = assetFieldGroupService.queryList(params);
@@ -53,7 +51,7 @@ public class AssetFieldGroupController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDGROUP)
-	@RequiresPermissions({"asset:fieldgroup:update"})
+	@RequiresPermissions({"field:group:update"})
 	public R modifyAssetFieldGroup(@RequestBody AssetFieldGroup assetFieldGroup) {
 		
 		ValidateUtils.is(assetFieldGroup.getId()).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL)
@@ -65,7 +63,7 @@ public class AssetFieldGroupController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDGROUP)
-	@RequiresPermissions({"asset:fieldgroup:add"})
+	@RequiresPermissions({"field:group:save"})
 	public R saveAssetFieldGroup(@RequestBody AssetFieldGroup assetFieldGroup) {
 		
 		ValidateUtils.is(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL);
@@ -77,7 +75,7 @@ public class AssetFieldGroupController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDGROUP)
-	@RequiresPermissions({"asset:fieldgroup:delete"})
+	@RequiresPermissions({"field:group:delete"})
 	public R removeAssetFieldGroup(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL);
 		

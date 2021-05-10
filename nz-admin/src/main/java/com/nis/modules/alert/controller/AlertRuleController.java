@@ -44,7 +44,6 @@ public class AlertRuleController {
      */
     @RequestMapping(value = "", method = RequestMethod.GET)
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
-    @RequiresPermissions({"alert:rule:list"})
     public R list(@RequestParam Map<String, Object> params){
         PageUtils page = alertRuleService.queryPage(params);
 
@@ -90,7 +89,6 @@ public class AlertRuleController {
 
 
     @GetMapping("/template")
-    @RequiresPermissions({"alert:rule:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
 
@@ -99,7 +97,7 @@ public class AlertRuleController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
-    @RequiresPermissions({"alert:rule:import"})
+    @RequiresPermissions({"alert:rule:save"})
     public R importAlertFromExcelFile(MultipartFile excelFile,String language) {
         ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL)
                 .and(language).notNull(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -109,14 +107,12 @@ public class AlertRuleController {
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
-    @RequiresPermissions({"alert:rule:export"})
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         alertRuleService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ALERTRULE)
-    @RequiresPermissions({"alert:rule:cancel:import"})
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ALERTRULE_CANCELIMPORTSEQ_ISNULL);
 
@@ -127,7 +123,6 @@ public class AlertRuleController {
     
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
-    @RequiresPermissions({"alert:rule:info"})
     public R queryAlertRule(@PathVariable Integer id) {
     	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
     	

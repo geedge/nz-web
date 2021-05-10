@@ -33,7 +33,6 @@ public class PromserverController extends AbstractController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.PROMSERVER)
-	@RequiresPermissions({"promserver:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = promserverService.queryPage(params);
 		return R.ok(page);

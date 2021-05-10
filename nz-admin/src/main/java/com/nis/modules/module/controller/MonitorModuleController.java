@@ -27,7 +27,6 @@ public class MonitorModuleController {
      */
     @GetMapping("/module/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
-    @RequiresPermissions({"module:info"})
     public R queryModuleEntity(@PathVariable("id") Integer id) {
         return R.ok(monitorModuleService.queryModuleInfo(id));
     }
@@ -40,7 +39,6 @@ public class MonitorModuleController {
      */
     @GetMapping("/module")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
-    @RequiresPermissions({"module:list"})
     public R queryModulePage(@RequestParam Map<String, Object> params) {
         PageUtils page = monitorModuleService.queryPage(params);
         return R.ok(page);
@@ -54,7 +52,6 @@ public class MonitorModuleController {
      */
     @GetMapping("/module/tree")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.MODULE)
-    @RequiresPermissions({"module:list"})
     public R queryModuleTree(String name) {
         Map map = new HashMap(2);
         map.put("list", monitorModuleService.queryModuleTree(name));

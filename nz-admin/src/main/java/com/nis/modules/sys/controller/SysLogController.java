@@ -37,7 +37,6 @@ public class SysLogController {
 	 * 列表
 	 */
 	@GetMapping
-	@RequiresPermissions("sys:log:list")
 	public R list(@RequestParam Map<String, Object> params){
 		params = XssUtil.filterParameters(params);
 		PageUtils page = sysLogService.queryPage(params);

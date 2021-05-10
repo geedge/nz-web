@@ -33,14 +33,12 @@ public class MonitorEndpointController {
      */
     @GetMapping("/endpoint/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:info"})
     public R queryEndpointEntity(@PathVariable("id") Integer id) {
         return R.ok(monitorEndpointService.queryEndpointEntity(id));
     }
 
     @GetMapping("/endpoint")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:list"})
     public R queryEndpointPage(@RequestParam Map<String, Object> params) {
         PageUtils page = monitorEndpointService.queryPage(params);
         return R.ok(page);
@@ -54,7 +52,6 @@ public class MonitorEndpointController {
      */
     @GetMapping("/endpoint/tree")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:list"})
     public R queryEndpointTree(String name) {
         Map map = new HashMap(2);
         map.put("list", monitorEndpointService.queryEndpointTree(name));
@@ -91,7 +88,6 @@ public class MonitorEndpointController {
     }
 
     @GetMapping("/endpoint/template")
-    @RequiresPermissions({"endpoint:import:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
 
@@ -106,7 +102,6 @@ public class MonitorEndpointController {
      */
     @DeleteMapping("/endpoint/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:cancel:import"})
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.ENDPOINT_CANCELIMPORTSEQ_ISNULL);
 
@@ -116,7 +111,7 @@ public class MonitorEndpointController {
 
     @PostMapping("/endpoint/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:import"})
+    @RequiresPermissions({"endpoint:save"})
     public R importEndpoint(MultipartFile excelFile, String language) {
         ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL)
                 .and(language).notNull(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -133,7 +128,6 @@ public class MonitorEndpointController {
      */
     @GetMapping("/endpoint/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ENDPOINT)
-    @RequiresPermissions({"endpoint:export"})
     public void exportEndpointsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         monitorEndpointService.export(response, params);
     }

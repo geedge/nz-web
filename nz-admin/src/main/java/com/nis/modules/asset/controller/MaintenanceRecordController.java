@@ -33,7 +33,6 @@ public class MaintenanceRecordController {
      * @return
      */
     @GetMapping
-    @RequiresPermissions({"asset:maintenance:list"})
     public R list(@RequestParam Map<String, Object> params) {
         PageUtils page = maintenanceRecordService.queryPage(params);
         return R.ok(page);

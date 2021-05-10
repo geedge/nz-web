@@ -14,7 +14,6 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.panel.dao.VisualPanelDao;
-import com.nis.modules.panel.entity.Node;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
@@ -350,62 +349,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         // 修改
         this.updateById(panel);
-    }
-
-    /**
-     * 调整panel位置
-     */
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public synchronized void modify(VisualPanel panel) {
-        String type = panel.getType();
-        List<Constant.PanelType> panelTypes = Arrays.asList(Constant.PanelType.values());
-        List<String> types = panelTypes.stream().map(Constant.PanelType::getValue).collect(Collectors.toList());
-        if (!types.contains(type)) {
-            throw new NZException(RCode.PANEL_TYPE_INVALIDE);
-        }
-
-        List<VisualPanel> panelList = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, type));
-
-        // 当前类型没有panel
-        if (CollectionUtils.isEmpty(panelList)) {
-            throw new NZException(RCode.PANEL_NOTFOUND_BYTYPE);
-        }
-
-        Map<Integer, Node> idAndPanelMap = new HashMap<>();
-        for (VisualPanel panel1 : panelList) {
-//            idAndPanelMap.put(panel1.getId(), panel1);
-        }
-
-        // 当前类型下不存在此panel
-        Node oldPanel = idAndPanelMap.get(panel.getId());
-        if (oldPanel == null) {
-            throw new NZException(RCode.PANEL_NOT_EXIST);
-        }
-
-        // 就只有一个图表 不让其调整位置
-        if (panelList.size() == 1) {
-            oldPanel.setPrev(Constant.START_PREV_VALUE);
-            oldPanel.setNext(Constant.END_NEXT_VALUE);
-//            this.updateById((VisualPanel) oldPanel);
-            return;
-        }
-
-		/*        // 校验 prev next 参数是否合法
-		if (nodeService.validatePrevAndNext(idAndPanelMap, panel)) {
-		    return;
-		}*/
-
-		/*        List<Node> updatePanels = nodeService.modify(idAndPanelMap, panel, oldPanel);
-		
-		// 更新库中数据
-		if (CollectionUtils.isNotEmpty(updatePanels)) {
-		    Set<VisualPanel> panels = new HashSet<>();
-		    for (Node updatePanel : updatePanels) {
-		        panels.add((VisualPanel) updatePanel);
-		    }
-		    this.saveOrUpdateBatch(panels);
-		}*/
     }
 
     @Override

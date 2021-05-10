@@ -41,7 +41,6 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
-    @RequiresPermissions({"project:info"})
     public R queryProjectEntity(@PathVariable("id") Integer id) {
         return R.ok(monitorProjectService.queryProjectEntity(id));
     }
@@ -54,7 +53,6 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
-    @RequiresPermissions({"project:list"})
     public R queryProjectPage(@RequestParam Map<String, Object> params) {
         PageUtils page = monitorProjectService.queryPage(params);
         return R.ok(page);
@@ -115,7 +113,6 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo/iconUnit")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
-    @RequiresPermissions({"project:topo:icon:list"})
     public R queryTopoUnit(String name) {
         List<String> result = topoIconService.queryTopoIconUnitName(name);
         return R.ok(result);
@@ -146,7 +143,6 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo/icon")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.PROJECT)
-    @RequiresPermissions({"project:topo:icon:list"})
     public R queryIconList(@RequestParam Map<String, Object> params) {
         Map result = new HashMap(2);
         List<TopoIcon> topoIcons = topoIconService.queryIconList(params);
@@ -206,7 +202,6 @@ public class MonitorProjectController extends AbstractController {
      * @param response
      */
     @GetMapping("/project/topo/icon/{id}/{base64}")
-    @RequiresPermissions({"project:topo:icon:info"})
     public void downloadIconFile(@PathVariable("id") Integer id, @PathVariable("base64") Integer base64, HttpServletResponse response) {
         ValidateUtils.is(id).notNull(RCode.PROJECT_ICONID_ISNULL);
 
@@ -221,7 +216,6 @@ public class MonitorProjectController extends AbstractController {
      */
     @GetMapping("/project/topo")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.TOPO)
-    @RequiresPermissions({"project:topo:list"})
     public R queryTopo(Integer projectId) {
         ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
 

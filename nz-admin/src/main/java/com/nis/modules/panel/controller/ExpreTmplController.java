@@ -32,14 +32,12 @@ public class ExpreTmplController {
 
     @GetMapping("/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:info"})
     public R queryTmplInfo(@PathVariable("id") Integer id) {
         return R.ok(expreTmplService.queryTmplInfoById(id));
     }
 
     @GetMapping
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:list"})
     public R queryTmplPage(@RequestParam Map<String, Object> params) {
         PageUtils page = expreTmplService.queryPage(params);
         return R.ok(page);
@@ -47,7 +45,6 @@ public class ExpreTmplController {
 
     @GetMapping("/gname")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:gname"})
     public R queryTmplsByGname(@RequestParam(value = "gname", required = false) String gname) {
         List<String> list = expreTmplService.queryTmplsByGname(gname);
         Map map = new HashMap(2);
@@ -92,7 +89,6 @@ public class ExpreTmplController {
 
     @PostMapping("/render")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:render"})
     public R renderExpressionContent(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL)
                 .and(tmpl.getVarsVal()).notNull(RCode.EXPRETMPL_RENDER_DATA_ISNULL);
@@ -103,7 +99,6 @@ public class ExpreTmplController {
     }
 
     @GetMapping("/template")
-    @RequiresPermissions({"expression:tmpl:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
         if (ToolUtil.isEmpty(language)) {
             throw new NZException(RCode.EXPRETMPL_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -114,7 +109,7 @@ public class ExpreTmplController {
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:import"})
+    @RequiresPermissions({"expression:tmpl:save"})
     public R importTmplsFromExcel(MultipartFile excelFile, String language) {
         ValidateUtils.is(excelFile).notNull(RCode.EXPRETMPL_IMPORT_FILE_ISNULL)
                 .and(language).notNull(RCode.EXPRETMPL_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -125,14 +120,12 @@ public class ExpreTmplController {
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:export"})
     public void exportExpreTmpls(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         expreTmplService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.EXPRESSIONTMPL)
-    @RequiresPermissions({"expression:tmpl:cancel:import"})
     public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
         ValidateUtils.is(seq).notNull(RCode.EXPRETMPL_SEQ_ISNULL);
 

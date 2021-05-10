@@ -7,6 +7,7 @@ import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +45,7 @@ public class AssetBrandModelController {
 
     @PostMapping("/asset/brand")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSETBRAND)
+    @RequiresPermissions({"asset:brand:save"})
     public R saveAssetBrand(@RequestBody AssetBrand brand) {
         ValidateUtils.is(brand.getName()).notNull(RCode.ASSET_BRAND_NAME_ISNULL);
 
@@ -53,6 +55,7 @@ public class AssetBrandModelController {
 
     @PutMapping("/asset/brand")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSETBRAND)
+    @RequiresPermissions({"asset:brand:update"})
     public R editAssetBrand(@RequestBody AssetBrand brand) {
         ValidateUtils.is(brand.getId()).notNull(RCode.ASSET_BRAND_ID_ISNULL)
                 .and(brand.getName()).notNull(RCode.ASSET_BRAND_NAME_ISNULL);
@@ -63,6 +66,7 @@ public class AssetBrandModelController {
 
     @DeleteMapping("/asset/brand")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.ASSETBRAND)
+    @RequiresPermissions({"asset:brand:delete"})
     public R deleteAssetBrands(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_BRAND_ID_ISNULL);
 
@@ -86,6 +90,7 @@ public class AssetBrandModelController {
 
     @PostMapping("/asset/model")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODEL)
+    @RequiresPermissions({"asset:model:save"})
     public R saveAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
                 .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL);
@@ -96,6 +101,7 @@ public class AssetBrandModelController {
 
     @PutMapping("/asset/model")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODEL)
+    @RequiresPermissions({"asset:model:update"})
     public R editAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
@@ -107,6 +113,7 @@ public class AssetBrandModelController {
 
     @DeleteMapping("/asset/model")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
+    @RequiresPermissions({"asset:model:delete"})
     public R deleteAssetModels(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 

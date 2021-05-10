@@ -31,7 +31,6 @@ public class SysUserController extends AbstractController {
 	 */
 	@RequestMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ACCOUNT)
-    @RequiresPermissions("sys:user:list")
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysUserService.queryPage(params);
 		return R.ok(page);
@@ -70,7 +69,6 @@ public class SysUserController extends AbstractController {
 	 * 用户信息
 	*/ 
 	@RequestMapping("/{id}")
-	@RequiresPermissions("sys:user:info")
 	public R info(@PathVariable("id") Long id){
 		ValidateUtils.is(id).notNull(RCode.SYS_USER_ID_ISNULL);
 		SysUserEntity user = sysUserService.queryUserInfo(id);

@@ -38,7 +38,6 @@ public class SnmpCredentialController {
 	
 	@GetMapping("/{id}")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
-	@RequiresPermissions({"snmp:credential:info"})
 	public R queryCredentialById(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
 		SnmpCredential result = snmpCredentialService.getById(id);
@@ -47,7 +46,6 @@ public class SnmpCredentialController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
-	@RequiresPermissions({"snmp:credential:list"})
 	public R queryCredentialList(@RequestParam Map<String,Object> params) {
 		PageUtils page = snmpCredentialService.queryPage(params);
 		return R.ok(page);
@@ -73,7 +71,7 @@ public class SnmpCredentialController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
-	@RequiresPermissions({"snmp:credential:add"})
+	@RequiresPermissions({"snmp:credential:save"})
 	public R saveCredential(@RequestBody SnmpCredential snmpCredential) {
 		ValidateUtils.is(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL)
 		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)

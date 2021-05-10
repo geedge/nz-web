@@ -35,7 +35,6 @@ public class AssetFieldMetaController {
 	
 	@GetMapping("/{id}")
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
-	@RequiresPermissions({"asset:fieldmeta:info"})
 	public R queryAssetFieldMetaById(@PathVariable Integer id) {
 		ValidateUtils.is(id).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
 		
@@ -45,7 +44,6 @@ public class AssetFieldMetaController {
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
-	@RequiresPermissions({"asset:fieldmeta:list"})
 	public R queryAssetFieldMetaList(@RequestParam Map<String,Object> params) {
 		
 		PageUtils page = assetFieldMetaService.queryList(params);
@@ -54,7 +52,7 @@ public class AssetFieldMetaController {
 	
 	@PutMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
-	@RequiresPermissions({"asset:fieldmeta:update"})
+	@RequiresPermissions({"field:meta:update"})
 	public R modifyAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
 		ValidateUtils.is(assetFieldMeta.getId()).notNull(RCode.ASSET_FIELD_META_ID_ISNULL)
 		.and(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL)
@@ -70,7 +68,7 @@ public class AssetFieldMetaController {
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
-	@RequiresPermissions({"asset:fieldmeta:add"})
+	@RequiresPermissions({"field:meta:save"})
 	public R saveAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
 		ValidateUtils.is(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL)
 		.and(assetFieldMeta.getMetaKey()).notNull(RCode.ASSET_FIELD_META_KEY_ISNULL)
@@ -85,7 +83,7 @@ public class AssetFieldMetaController {
 	
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
-	@RequiresPermissions({"asset:fieldmeta:delete"})
+	@RequiresPermissions({"field:meta:delete"})
 	public R removeAssetFieldMeta(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.ASSET_FIELD_META_ID_ISNULL);
 		

@@ -49,7 +49,6 @@ public class AlertMessageController {
      */
     @RequestMapping(method = RequestMethod.GET)
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
-    @RequiresPermissions({"alert:message:list"})
     public R list(@RequestParam Map<String, Object> params){
     	logger.debug("query param : {}", Tool.JSONUtil.toJsonStr(params));
     	//state不能为空
@@ -83,7 +82,6 @@ public class AlertMessageController {
 	 */
 	@GetMapping(value = "/export")
 	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
-	@RequiresPermissions({"alert:message:export"})
 	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
 		handlerService.exportMessage(response,params);
 	}

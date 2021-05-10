@@ -28,7 +28,6 @@ public class VisualPanelController {
 
 	@GetMapping("/{id}")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:info" })
 	public R panel(@PathVariable Integer id) {
 		VisualPanel panel = visualPanelService.queryInfo(id);
 		return R.ok().putData("data", panel);
@@ -36,7 +35,6 @@ public class VisualPanelController {
 
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:list" })
 	public R panelList(@RequestParam Map<String, Object> params) {
 		List<VisualPanel> panels = visualPanelService.queryList(params);
 		return R.ok().putData("list",panels);
@@ -44,7 +42,7 @@ public class VisualPanelController {
 
 	@RequestMapping(method = { RequestMethod.POST })
 	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:save" })
+	@RequiresPermissions({ "visual:panel:save" })
 	public R panelSave(@RequestBody VisualPanel panel) {
 		visualPanelService.saveVisualPanel(panel);
 		return R.ok().putData("panel", panel);
@@ -52,7 +50,7 @@ public class VisualPanelController {
 
 	@RequestMapping(method = { RequestMethod.PUT })
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:update" })
+	@RequiresPermissions({ "visual:panel:update" })
 	public R panelUpdate(@RequestBody VisualPanel panel) {
 		ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
 
@@ -62,7 +60,7 @@ public class VisualPanelController {
 
 	@DeleteMapping
 	@SysLog(operation = OperationEnum.DELETE, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:delete" })
+	@RequiresPermissions({ "visual:panel:delete" })
 	public R panleDelete(@RequestParam Integer... ids) {
 		ValidateUtils.is(ids).notNull(RCode.PANEL_ID_ISNULL);
 
@@ -78,14 +76,12 @@ public class VisualPanelController {
 	 */
 	@PutMapping("/tree")
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALPANEL)
-	@RequiresPermissions({ "visualpanel:modify" })
 	public R modify(@RequestBody List<VisualPanel> panelList) {
 		visualPanelService.modify(panelList);
 		return R.ok();
 	}
 	
 	@GetMapping("/template")
-    @RequiresPermissions({"visualpanel:import:template"})
     public void getExportTemplateByLanguage(HttpServletResponse response, String language, String type) {
         if (ToolUtil.isEmpty(language)) throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
 
@@ -94,7 +90,7 @@ public class VisualPanelController {
 	
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
-    @RequiresPermissions({"visualpanel:import"})
+	@RequiresPermissions({ "visual:panel:save"})
     public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
         ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
                 .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL)
@@ -105,14 +101,12 @@ public class VisualPanelController {
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
-    @RequiresPermissions({"visualpanel:export"})
     public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
         visualPanelService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")
     @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.CHART)
-    @RequiresPermissions({"visualpanel:cancel:import"})
     public R cancelImport(String seq) {
         ValidateUtils.is(seq).notNull(RCode.PANEL_CANCELIMPORTSEQ_ISNULL);
 

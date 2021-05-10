@@ -24,7 +24,6 @@ public class LinkController extends AbstractController{
 	
 	@GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.LINK)
-	@RequiresPermissions({"sys:link:list"})
 	public R list(@RequestParam Map<String, Object> params){
 		List<Link> result = linkService.queryList(params);
 		return R.ok().putData("list",result);
@@ -63,7 +62,6 @@ public class LinkController extends AbstractController{
 	
 	@PutMapping("/weights")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.LINK)
-		@RequiresPermissions({"sys:link:modify"})
 	public R modify(@RequestBody List<Link> links){
 
 		linkService.saveWeights(links);

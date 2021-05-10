@@ -7,6 +7,7 @@ import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.CabinetService;
 import com.nis.modules.asset.service.DcService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,6 +63,7 @@ public class DcController {
      */
     @PostMapping
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"dc:save"})
     public R saveDc(@RequestBody Dc dc) {
         ValidateUtils.is(dc.getName()).notNull(RCode.DC_NAME_ISNULL)
                 .and(dc.getState()).notNull(RCode.DC_STATE_ISNULL)
@@ -79,6 +81,7 @@ public class DcController {
      */
     @PutMapping
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"dc:update"})
     public R updateDc(@RequestBody Dc dc) {
         ValidateUtils.is(dc.getId()).notNull(RCode.DC_ID_ISNULL)
                 .and(dc.getName()).notNull(RCode.DC_NAME_ISNULL)
@@ -98,6 +101,7 @@ public class DcController {
      */
     @DeleteMapping
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"dc:delete"})
     public R deleteDcByIds(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.DC_ID_ISNULL);
 
@@ -141,6 +145,7 @@ public class DcController {
      */
     @PostMapping("/cabinet")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:save"})
     public R saveCabinet(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
                 .and(cabinet.getDcId()).notNull(RCode.DC_ID_ISNULL)
@@ -159,6 +164,7 @@ public class DcController {
      */
     @PutMapping("/cabinet")
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:update"})
     public R updateCabinet(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getId()).notNull(RCode.DC_CABINETID_ISNULL)
                 .and(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
@@ -179,6 +185,7 @@ public class DcController {
      */
     @DeleteMapping("/cabinet")
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.CABINET)
+    @RequiresPermissions({"cabinet:delete"})
     public R deleteCabinetByIds(@RequestParam Integer ... ids) {
         ValidateUtils.is(ids).notNull(RCode.DC_CABINETID_ISNULL);
 

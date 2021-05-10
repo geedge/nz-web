@@ -21,7 +21,6 @@ public class SysConfController {
 
     @GetMapping("/basic")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions({"sys:config:list"})
     public R basic(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.BASIC_KEYS);
         return R.ok(result);
@@ -38,7 +37,6 @@ public class SysConfController {
 
     @GetMapping("/email")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions({"sys:config:list"})
     public R email(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.EMAIL_KEYS);
 
@@ -55,7 +53,6 @@ public class SysConfController {
 
     @GetMapping("/terminal")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions({"sys:config:list"})
     public R terminal(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.TERMINAL_KEYS);
 
@@ -71,7 +68,6 @@ public class SysConfController {
     }
     @GetMapping("/ldap")
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions({"sys:config:list"})
     public R ldap(){
         Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.LDAP_KEYS);
         //不将密码传递到前端

@@ -40,7 +40,6 @@ public class SysConfigController extends AbstractController {
 	 * 所有配置列表
 	 */
 	@RequestMapping("/list")
-	//@RequiresPermissions("sys:config:list")
 	public R list(@RequestParam Map<String, Object> params){
 		PageUtils page = sysConfigService.queryPage(params);
 
@@ -52,7 +51,6 @@ public class SysConfigController extends AbstractController {
 	 * 配置信息
 	 */
 	@RequestMapping("/info/{id}")
-	//@RequiresPermissions("sys:config:info")
 	@ResponseBody
 	public R info(@PathVariable("id") Long id){
 		SysConfigEntity config = sysConfigService.getById(id);
@@ -64,7 +62,6 @@ public class SysConfigController extends AbstractController {
 	 */
 	@SysLog
 	@RequestMapping("/save")
-	//@RequiresPermissions("sys:config:save")
 	public R save(@RequestBody SysConfigEntity config){
 		ValidatorUtils.validateEntity(config);
 
@@ -78,7 +75,6 @@ public class SysConfigController extends AbstractController {
 	 */
 	@SysLog
 	@RequestMapping("/update")
-	//@RequiresPermissions("sys:config:update")
 	public R update(@RequestBody SysConfigEntity config){
 		ValidatorUtils.validateEntity(config);
 
@@ -92,7 +88,6 @@ public class SysConfigController extends AbstractController {
 	 */
 	@SysLog
 	@RequestMapping("/delete")
-	//@RequiresPermissions("sys:config:delete")
 	public R delete(@RequestBody Long[] ids){
 		sysConfigService.deleteBatch(ids);
 
@@ -107,7 +102,6 @@ public class SysConfigController extends AbstractController {
      */
     @GetMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
-    @RequiresPermissions({"sys:config:list"})
     public R getConfigList(String[] type, String[] paramKey) {
     	// 查询参数不能同时为空
 		if((type == null || type.length == 0) && (paramKey == null || paramKey.length == 0)){

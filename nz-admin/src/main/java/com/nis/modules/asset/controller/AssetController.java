@@ -71,6 +71,7 @@ public class AssetController {
      */
     @PostMapping("/asset")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:save"})
     public R saveAsset(@RequestBody AssetAsset asset) {
         ValidateUtils.is(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL)
                 .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
@@ -101,6 +102,7 @@ public class AssetController {
      */
     @PutMapping("/asset")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:update"})
     public R updateAsset(@RequestBody AssetAsset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
                 .and(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL)
@@ -132,6 +134,7 @@ public class AssetController {
      */
     @DeleteMapping("/asset")
     @SysLog(operation = OperationEnum.DELETE,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:delete"})
     public R deleteAsset(@RequestParam Integer... ids) {
         ValidateUtils.is(ids).notNull(RCode.ASSET_ID_ISNULL);
 
@@ -219,6 +222,7 @@ public class AssetController {
      */
     @PostMapping("/asset/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:save"})
     public R importAssets(MultipartFile excelFile,String language) {
         ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL)
                 .and(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
@@ -273,6 +277,7 @@ public class AssetController {
      */
     @PutMapping("/asset/bulkEdit")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
+    @RequiresPermissions({"asset:update"})
     public R bulkEdit(@RequestBody Map<String,Object> params) {
     	assetAssetService.bulkEdit(params);
         return R.ok();
@@ -280,7 +285,6 @@ public class AssetController {
     
     @GetMapping("/stateConf")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
-    @RequiresPermissions({"asset:state:list"})
     public R queryStateConfList(@RequestParam Map<String, Object> params) {
         PageUtils page = stateConfService.queryPage(params);
         return R.ok(page);
@@ -288,7 +292,6 @@ public class AssetController {
 
     @GetMapping("/stateConf/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETSTATECONF)
-    @RequiresPermissions({"asset:state:info"})
     public R queryStateConfInfo(@PathVariable("id") Integer id) {
         AssetStateConf assetStateConf = stateConfService.queryConfInfo(id);
         return R.ok(assetStateConf);
@@ -336,7 +339,6 @@ public class AssetController {
 
     @GetMapping("/typeConf/{id}")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
-    @RequiresPermissions({"asset:type:info"})
     public R queryTypeConfInfo(@PathVariable("id") Integer id) {
         AssetTypeConf assetTypeConf = typeConfService.queryConfInfo(id);
         return R.ok(assetTypeConf);
@@ -344,7 +346,6 @@ public class AssetController {
 
     @GetMapping("/typeConf")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
-    @RequiresPermissions({"asset:type:list"})
     public R queryTypeConfList(@RequestParam Map<String, Object> params) {
         PageUtils page = typeConfService.queryPage(params);
         return R.ok(page);
@@ -352,7 +353,6 @@ public class AssetController {
 
     @GetMapping("/typeConf/tree")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ASSETTYPECONF)
-    @RequiresPermissions({"asset:type:tree"})
     public R queryTypeConfTree(Integer pid) {
         List<AssetTypeConf> typeConfTreeList = typeConfService.queryTypeConfTree(pid);
         Map map = new HashMap(2);
