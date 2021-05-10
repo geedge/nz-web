@@ -1,11 +1,15 @@
 package com.nis.common.config;
 
-import java.sql.SQLException;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
-
+import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.autoconfigure.ConfigurationCustomizer;
+import com.baomidou.mybatisplus.autoconfigure.MybatisPlusProperties;
+import com.baomidou.mybatisplus.autoconfigure.SpringBootVFS;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.config.GlobalConfig;
+import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
+import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
+import com.baomidou.mybatisplus.core.injector.ISqlInjector;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
 import org.apache.ibatis.plugin.Interceptor;
@@ -18,18 +22,13 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackages;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ResourceLoaderAware;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
+import org.springframework.context.annotation.*;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.type.AnnotationMetadata;
@@ -38,27 +37,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import com.baomidou.mybatisplus.autoconfigure.ConfigurationCustomizer;
-import com.baomidou.mybatisplus.autoconfigure.MybatisPlusProperties;
-import com.baomidou.mybatisplus.autoconfigure.SpringBootVFS;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.config.GlobalConfig;
-import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.baomidou.mybatisplus.core.incrementer.IKeyGenerator;
-import com.baomidou.mybatisplus.core.injector.ISqlInjector;
-import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
-import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-
-import cn.hutool.log.Log;
+import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
+import java.util.List;
 
 /**
  * mybatis-plus 初始化配置
- *
  */
 @Configuration
 @DependsOn(value = { "flywayConfig" })
@@ -78,62 +62,6 @@ public class MybatisPlusConfig {
 	}
 
 	private static final Log logger = Log.get();
-
-	/**
-	 * 分页插件
-	 */
-	@Bean
-	public PaginationInterceptor paginationInterceptor() {
-		return new PaginationInterceptor();
-	}
-
-	@Bean
-	public SeqKeyGenerator seqKeyGenerator() {
-		return new SeqKeyGenerator();
-	}
-
-	@Bean
-	public ISqlInjector sqlInjector() {
-		return new LogicSqlInjector();
-	}
-
-	/**
-	 * 自定义主键生成器
-	 * 
-	 * @author fang
-	 *
-	 */
-	static class SeqKeyGenerator implements IKeyGenerator {
-		@Autowired
-		DatabaseIdProvider databaseIdProvider;
-		@Autowired
-		DataSource dataSource;
-
-		@Override
-		public String executeSql(String incrementerName) {
-			String databaseId = null;
-			try {
-				databaseId = databaseIdProvider.getDatabaseId(dataSource);
-			} catch (SQLException e) {
-				logger.error(e);
-			}
-
-			if (ToolUtil.isEmpty(databaseId)) {
-				throw new NZException(RCode.ERROR);
-			}
-
-			switch (databaseId) {
-			case Constant.MYSQL:
-				return String.format("select seq_nextval('%s')", incrementerName);
-			case Constant.POSTGRESQL:
-				return String.format("select seq_nextval('%s')", incrementerName);
-			case Constant.ORACLE:
-				return String.format("select %s.nextval from dual", incrementerName);
-			default:
-				return String.format("select seq_nextval('%s')", incrementerName);
-			}
-		}
-	}
 
 	private final MybatisPlusProperties properties;
 
