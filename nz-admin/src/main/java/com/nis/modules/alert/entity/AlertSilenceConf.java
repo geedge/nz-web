@@ -16,7 +16,7 @@ public class AlertSilenceConf {
 	
 	private String name;
 	
-	private String reason;
+	private String remark;
 	
 	private String matchers;
 	
