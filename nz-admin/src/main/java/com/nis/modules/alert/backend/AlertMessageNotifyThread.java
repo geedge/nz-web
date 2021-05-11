@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.mail.MessagingException;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.core.ListOperations;
@@ -97,6 +98,9 @@ public class AlertMessageNotifyThread implements Runnable {
 				if (Tool.CollUtil.isEmpty(userList) || Tool.CollUtil.isEmpty(methodList)) {
 					continue;
 				}
+				// 内置 email 通知方式
+				AlertNotifyMethod buildInEmailMethod = alertNotifyMethodService.getOne(new LambdaQueryWrapper<AlertNotifyMethod>().eq(AlertNotifyMethod::getBuildIn, 1));
+
 				List<AlertNotifyLog> logList = Tool.ListUtil.list(false);
 				//遍历用户 & 通知方式 通知
 				for (SysUserEntity user : userList) {
@@ -111,7 +115,7 @@ public class AlertMessageNotifyThread implements Runnable {
 								Tool.JSONUtil.toJsonStr(method));
 						// 只有一条 email 内置通知
 						if (Tool.ObjectUtil.equal(method.getBuildIn(), 1)) {
-							AlertNotifyLog notifyLog = notifyEmail(user, messageEntity);
+							AlertNotifyLog notifyLog = notifyEmail(user, buildInEmailMethod, messageEntity);
 							logList.add(notifyLog);
 						}else {
 							AlertNotifyLog notifyLog = notifyScript(user, method, messageEntity);
@@ -145,7 +149,7 @@ public class AlertMessageNotifyThread implements Runnable {
 		AlertNotifyLog log = new AlertNotifyLog();
 		log.setMessageId(message.getId());
 		log.setMessageState(message.getState());
-		log.setMethod(method.getName());
+		log.setMethodId(method.getId());
 		log.setUserId(user.getId());
 		log.setTime(Tool.DateUtil.date());
 		log.setState(1);
@@ -169,19 +173,20 @@ public class AlertMessageNotifyThread implements Runnable {
 
 	/**
 	 * 邮件方式通知
-	 * 
+	 * @param user
+	 * @param buildInEmailMethod
 	 * @param message
 	 * @return
 	 * @throws IOException
 	 * @throws TemplateException
 	 */
-	public AlertNotifyLog notifyEmail(SysUserEntity user, AlertMessageEntity message)
+	public AlertNotifyLog notifyEmail(SysUserEntity user, AlertNotifyMethod buildInEmailMethod, AlertMessageEntity message)
 			throws IOException, TemplateException {
 		Integer state = message.getState();// 消息状态
 		AlertNotifyLog log = new AlertNotifyLog();
 		log.setMessageId(message.getId());
 		log.setMessageState(state);
-		log.setMethod("Built-in Email");
+		log.setMethodId(buildInEmailMethod != null ? buildInEmailMethod.getId() : 1);
 		log.setUserId(user.getId());
 		log.setTime(Tool.DateUtil.date());
 		Template template = this.getEmailTemplate();

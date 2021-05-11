@@ -44,6 +44,12 @@ public class SysMenuEntity implements Serializable {
      */
     private String icon;
 
+    /**
+     * 必要权限，如编辑按钮需要 勾选查看权限
+     * 填写内容为 sys_menu.id，多个逗号分隔
+     */
+    private String required;
+
     @TableField(exist = false)
     private List<SysMenuEntity> children;
 }

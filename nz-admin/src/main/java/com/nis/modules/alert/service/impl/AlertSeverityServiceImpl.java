@@ -41,8 +41,6 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
         IPage page = new Query(AlertSeverityConf.class).getPage(params);
 
         List<AlertSeverityConf> list = alertSeverityDao.queryList(page,params);
-        //遍历，设置notify method
-        list.stream().forEach(item -> setNotifyMethods(item) );
         page.setRecords(list);
 
         return new PageUtils(page);
@@ -55,8 +53,6 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
                                                     .in(ToolUtil.isNotEmpty(params.get("ids")),AlertSeverityConf::getId,String.valueOf(params.get("ids")).split(","))
                                                     .like(ToolUtil.isNotEmpty(params.get("name")),AlertSeverityConf::getName,String.valueOf(params.get("name")))
                                                 );
-
-        list.stream().forEach(item -> setNotifyMethods(item) );
 
         return list;
     }
@@ -91,11 +87,9 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
         alertSeverityDao.saveWeightBatch(alertSeverityConfs);
     }
 
+    @Override
     public AlertSeverityConf getSeverityById(Integer id){
         AlertSeverityConf alertSeverityConf = super.getById(id);
-        if(alertSeverityConf != null ){
-            setNotifyMethods(alertSeverityConf);
-        }
         return alertSeverityConf;
     }
 
@@ -110,16 +104,4 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
         this.updateById(alertSeverityConf);
     }
 
-
-    /**
-    * @Description 为SeverityConf 实体类填充notify method
-    * @Author  rui
-    * @Date   2021/4/12
-    */
-    private void setNotifyMethods(AlertSeverityConf conf){
-        if(conf.toMethodsIds().size()>0){
-            Collection<AlertNotifyMethod> methods = alertNotifyMethodService.listByIds(conf.toMethodsIds());
-            conf.setNotifyMethods(Tool.ListUtil.toList(methods));
-        }
-    }
 }

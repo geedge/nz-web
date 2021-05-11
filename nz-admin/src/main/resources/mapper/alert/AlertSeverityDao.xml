@@ -8,7 +8,6 @@
         <result property="color" column="color"/>
         <result property="weight" column="weight"/>
         <result property="remark" column="remark"/>
-        <result property="methods" column="methods"/>
 
     </resultMap>
 
@@ -27,8 +26,7 @@
         name,
         color,
         weight,
-        remark,
-        methods
+        remark
         from alert_severity_conf
     </sql>
 

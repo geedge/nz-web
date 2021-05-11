@@ -17,7 +17,7 @@ public class AlertNotifyLog {
 	
 	private Long userId;
 	
-	private String method;
+	private Integer methodId;
 	
 	private Integer messageState;
 	
