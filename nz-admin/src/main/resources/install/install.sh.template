@@ -81,7 +81,7 @@ PACKAGE_NAME=$(getPackageName $CURRENT_OS)
 
 function downloadPackaget() {
   cd $WORK_PATH;
-
+  log yellow "current os is $CURRENT_OS ,download package from http://$REMOTE_IP/agent/download?os=$CURRENT_OS"
   if command -v wget >/dev/null 2>&1;then
     wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
     return 0
@@ -97,6 +97,7 @@ function downloadPackaget() {
 function installPackage() {
   case $CURRENT_OS in
   'centos')
+    log yellow 'install package right now...'
     rpm -ivh $WORK_PATH/$PACKAGE_NAME && mkdir -p $INSTALL_PATH/config; echo $AGENT_TOKEN > $INSTALL_PATH/config/auth.token
     ;;
   esac
