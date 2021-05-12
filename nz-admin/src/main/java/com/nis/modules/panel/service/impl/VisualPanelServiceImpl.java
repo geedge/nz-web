@@ -552,9 +552,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("图表导出文件生成失败，错误信息是：" + e);
+            log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
         } catch (RuntimeException e) {
-            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
+            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
         } finally {
             if (workbook != null) {
                 IOUtils.closeQuietly(workbook);
@@ -650,7 +650,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (ToolUtil.isEmpty(param)) {
             return "";
         }
-        Map<String, Object> map = JSONObject.parseObject(param.toString(), Map.class);
+        Map<String, Object> map = JSONObject.parseObject(JSONObject.toJSONString(param), Map.class);
         map.entrySet().removeIf(entry -> ToolUtil.isEmpty(entry.getValue()));
         return ToolUtil.isEmpty(map) ? "" : JSONObject.toJSONString(map);
     }

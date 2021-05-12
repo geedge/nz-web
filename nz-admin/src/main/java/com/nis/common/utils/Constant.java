@@ -12,6 +12,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import org.apache.ibatis.mapping.DatabaseIdProvider;
+import org.apache.poi.util.TempFile;
 
 import javax.sql.DataSource;
 import java.io.File;
@@ -254,6 +255,9 @@ public class Constant {
 				logger.debug("临时目录tmp创建失败");
 			}
 		}
+
+		// 设置 POI 临时目录为项目 临时目录
+		TempFile.setTempFileCreationStrategy(new TempFile.DefaultTempFileCreationStrategy(tempPath));
 
 		ALERTMESSAGE_STATE = new ArrayList<Integer>();
 		ALERTMESSAGE_STATE.add(1);

@@ -55,35 +55,16 @@ public class SnmpCredentialController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
 	@RequiresPermissions({"snmp:credential:update"})
 	public R modifyCredential(@RequestBody SnmpCredential snmpCredential) {
-		ValidateUtils.is(snmpCredential.getId()).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL)
-		.and(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL)
-		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
-		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL);
-		// 当snmp为v3版本时进行参数校验
-		if(ToolUtil.equals(snmpCredential.getType(), 3)) {
-			SnmpUtil.ValidateAuthForSnmpV3((Map)JSON.parseObject(snmpCredential.getConfig()));
-		}
-		snmpCredentialService.updateById(snmpCredential);
-		return R.ok().putData("id", snmpCredential.getId());
+		Integer id = snmpCredentialService.modifySnmpCredential(snmpCredential);
+		return R.ok().putData("id", id);
 	}
 	
 	@PostMapping
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SNMPCREDENTIAL)
 	@RequiresPermissions({"snmp:credential:save"})
 	public R saveCredential(@RequestBody SnmpCredential snmpCredential) {
-		ValidateUtils.is(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL)
-		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
-		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL);
-		// 当snmp为v3版本时进行参数校验
-		if(ToolUtil.equals(snmpCredential.getType(), 3)) {
-			SnmpUtil.ValidateAuthForSnmpV3((Map)JSON.parseObject(snmpCredential.getConfig()));
-		}
-		snmpCredentialService.save(snmpCredential);
-		return R.ok().putData("id", snmpCredential.getId());
+		Integer id = snmpCredentialService.saveSnmpCredential(snmpCredential);
+		return R.ok().putData("id", id);
 	}
 	
 	@DeleteMapping
@@ -91,7 +72,7 @@ public class SnmpCredentialController {
 	@RequiresPermissions({"snmp:credential:delete"})
 	public R deleteCredential(@RequestParam String ids) {
 		ValidateUtils.is(ids).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
-		snmpCredentialService.removeByIds(Arrays.asList(ids.split(",")));
+		snmpCredentialService.removeSnmpCredential(Arrays.asList(ids.split(",")));
 		return R.ok();
 	}
 }

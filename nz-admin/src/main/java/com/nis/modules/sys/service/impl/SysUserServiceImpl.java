@@ -16,7 +16,10 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.*;
+import com.nis.modules.sys.service.SysMenuService;
+import com.nis.modules.sys.service.SysRoleService;
+import com.nis.modules.sys.service.SysUserRoleService;
+import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -119,14 +122,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	    }
 
 	    // 校验角色
-	    List<Integer> roleIds = user.getRoleIds();
-	    if (CollectionUtils.isEmpty(roleIds)) throw new NZException(RCode.SYS_ROLE_ID_ISNULL);
+	    String roleIds = user.getRoleIds();
+	    if (StringUtils.isEmpty(roleIds)) throw new NZException(RCode.SYS_ROLE_ID_ISNULL);
 
 	    List<SysRoleEntity> roleList = sysRoleService.list();
 	    List<Integer> roleIdList = roleList.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
 
-	    for (Integer roleId : roleIds) {
-		    if (!roleIdList.contains(roleId))
+	    for (String roleId : Arrays.asList(roleIds.split(","))) {
+		    if (!roleIdList.contains(Integer.valueOf(roleId)))
 			    throw new NZException(RCode.SYS_ROLE_ISNULL);
 	    }
     }
@@ -187,13 +190,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	 * @param userId
 	 * @param roleIds
 	 */
-	private void handleUserRoleRelation(Long userId, List<Integer> roleIds) {
+	private void handleUserRoleRelation(Long userId, String roleIds) {
 		// 当前用户关联的角色
 		List<SysUserRoleEntity> roles = sysUserRoleService.list(new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getUserId, userId.intValue()));
 		List<Integer> idList = roles.stream().map(SysUserRoleEntity::getRoleId).distinct().collect(Collectors.toList());
 
 		// 角色信息未改变 不进行处理
-		if (CommonUtils.checkIdListDiffrent(idList, roleIds))
+		List<Integer> roleIdList = new ArrayList<>();
+		for (String s : Arrays.asList(roleIds.split(","))) {
+			roleIdList.add(Integer.valueOf(s));
+		}
+		if (CommonUtils.checkIdListDiffrent(idList, roleIdList))
 			return;
 
 		// 角色变更
