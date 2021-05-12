@@ -6,8 +6,8 @@ import com.nis.modules.sys.entity.SysUserRoleEntity;
 import java.util.List;
 
 public interface SysUserRoleService extends IService<SysUserRoleEntity> {
-	
-	void saveOrUpdate(Long userId, List<Integer> roleIdList);
+
+	void saveOrUpdate(Long userId, String roleIds);
 	
 	/**
 	 * 根据用户ID，获取角色ID列表
