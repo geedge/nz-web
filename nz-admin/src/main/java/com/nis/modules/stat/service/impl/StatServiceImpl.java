@@ -281,8 +281,10 @@ public class StatServiceImpl implements StatService{
 			
 			List<StatAnalysis> alerts = dcAlert.get(dc.getId());
 			Map alert = new HashMap();
-			for(StatAnalysis data : alerts) {
-				alert.put(data.getName(), data.getTotal());
+			if(ToolUtil.isNotEmpty(alerts)) {
+				for(StatAnalysis data : alerts) {
+					alert.put(data.getName(), data.getTotal());
+				}
 			}
 			
 			if(ToolUtil.isEmpty(assetAlarm) && assetAlarm==0 && ToolUtil.isEmpty(down) && down==0 && ToolUtil.isEmpty(alert)) {

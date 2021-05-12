@@ -739,6 +739,8 @@ public enum RCode {
 	SNMP_CREDENTIAL_NAME_ISNULL(591005,"Snmp credential name can not be null"),
 	SNMP_CREDENTIAL_PORT_ISNULL(591006,"Snmp credential port can not be null"),
 	SNMP_CREDENTIAL_NOT_FOUND(596007,"Snmp credential not found"),
+	SNMP_CREDENTIAL_NAME_DUPLICATE(596008,"Snmp credential name duplicate"),
+	SNMP_CREDENTIAL_ASSETS_EXISTS(596009,"These Snmp credential contain assets and cannot be deleted"),
     /**
      * webshell相关
      */
