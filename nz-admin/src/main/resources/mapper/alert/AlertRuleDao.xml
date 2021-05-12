@@ -24,7 +24,6 @@
             <result property="name" column="name"/>
             <result property="color" column="color"/>
             <result property="remark" column="remark"/>
-            <result property="methods" column="methods"/>
         </association>
     </resultMap>
 
@@ -46,7 +45,6 @@
         alsc.name as alsc_name,
         alsc.color as alsc_color,
         alsc.remark as alsc_remark,
-        alsc.methods as alsc_methods,
         ar.build_in AS buildIn,
         COUNT(am.id) AS alertNum
         FROM alert_rule ar
