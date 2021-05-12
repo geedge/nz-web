@@ -45,6 +45,7 @@ public class Query {
             limit = Long.parseLong((String)params.get(Constant.LIMIT));
             if(limit == -1){
                 limit = Long.MAX_VALUE;
+                curPage = 0;
             }
         }
 
