@@ -61,7 +61,7 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 		
 		// 验证key值和type值
 		String type = assetFieldMeta.getType();
-		if(!Constant.ASSET_FIELD_META_VALUE.contains(type)) {
+		if(!Constant.ASSET_FIELD_META_VALUE.contains(type.toLowerCase())) {
 			throw new NZException(RCode.ASSET_FIELD_META_TYPE_ERROR);
 		}
 		String key = assetFieldMeta.getMetaKey();
