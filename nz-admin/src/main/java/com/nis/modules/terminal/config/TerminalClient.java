@@ -472,15 +472,12 @@ public class TerminalClient {
                         		}
                             	logger.error(message);
                                 if (message.trim().matches(authUserTip) && StringUtils.isNotEmpty(user)) {
-                                    logger.error("login");
                                     webSocketSession.sendMessage(new TextMessage(message + user + "\r\n"));
                                     write(user + "\r");
                                 } else if (message.trim().matches(authPinTip) && StringUtils.isBlank(user)) {
-                                    logger.error("pin");
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                 } else if (message.trim().matches(authPinTip) && StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(pin)) {
-                                    logger.error("pin");
                                     telnetUser = false;
                                     webSocketSession.sendMessage(new TextMessage("\r\n" + message));
                                     write(pin + "\r");

@@ -223,7 +223,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 			terminalInfo.setAuthType(Integer.valueOf(authType));
 			terminalInfo.setAuthUsername(authUsername);
 			authPin = authPin == null ? "" : authPin;
-			terminalInfo.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
+			terminalInfo.setAuthPin(authPin);
 			terminalInfo.setAuthPriKey(authPriKey);
 			terminalInfo.setAuthUserTip(authUserTip);
 			terminalInfo.setAuthPinTip(authPinTip);
@@ -276,7 +276,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 			}
 
 			terminalSessionService.save(sessionEntity);
-		} catch (IOException e) {
+		} catch (IOException | JSchException e) {
 			logger.error("error info :", e);
 			logger.error(e);
 			String lowerCase = e.getMessage().toLowerCase();
@@ -785,7 +785,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 				// 连接之后 session 状态为 connecting
 			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTING.getValue());
 			    sessionEntity.setStartTime(new Date());
-			} catch (IOException e) {
+			} catch (IOException | JSchException e) {
 				// 如果出现异常连接失败 则将session中client信息清空 
 			    sessionEntity.setStatus(Constants.SessionStatus.CONNECTION_FAILED.getValue());
 			    sessionEntity.setStartTime(new Date());
