@@ -228,12 +228,12 @@
 		</dependency>
 
 		<!-- 添加 XJar 依赖 -->
-		<dependency>
-			<groupId>com.github.core-lib</groupId>
-			<artifactId>xjar</artifactId>
-			<version>4.0.1</version>
-			<!-- <scope>test</scope> -->
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.github.core-lib</groupId>-->
+<!--			<artifactId>xjar</artifactId>-->
+<!--			<version>4.0.1</version>-->
+<!--			&lt;!&ndash; <scope>test</scope> &ndash;&gt;-->
+<!--		</dependency>-->
 
 		<dependency>
 			<groupId>org.flywaydb</groupId>
@@ -294,16 +294,40 @@
 				<include>${project.build.finalName}.jar</include> </resource> </resources> 
 				</configuration> 运行命令 mvn clean package docker:build 打包并生成docker镜像 </plugin> -->
 
+<!--			<plugin>-->
+<!--				<groupId>com.github.core-lib</groupId>-->
+<!--				<artifactId>xjar-maven-plugin</artifactId>-->
+<!--				<version>4.0.1</version>-->
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<goals>-->
+<!--							<goal>build</goal>-->
+<!--						</goals>-->
+<!--						<phase>install</phase>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
+			<!-- 添加 XJar Maven 插件 -->
 			<plugin>
-				<groupId>com.github.core-lib</groupId>
-				<artifactId>xjar-maven-plugin</artifactId>
-				<version>4.0.1</version>
+				<groupId>com.mesalab.xjar-maven-plugin</groupId>
+				<artifactId>mesalab-xjar-maven-plugin</artifactId>
+				<version>1.0.0</version>
 				<executions>
 					<execution>
 						<goals>
 							<goal>build</goal>
 						</goals>
-						<phase>install</phase>
+						<phase>package</phase>
+
+						<configuration>
+<!--							<password>111111</password>-->
+<!--							<includes>-->
+<!--								<include>cn/nis/ntc/**</include>-->
+<!--							</includes>-->
+<!--							<excludes>-->
+<!--								<exclude>cn/nis/ntc/api/config/Swagger2Configuration.class</exclude>-->
+<!--							</excludes>-->
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

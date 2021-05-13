@@ -43,7 +43,10 @@ public class SetupController  {
     private String driver;
     @Value("${nezha.restart.command:systemctl restart nzweb.service}")
     private String restartCommand;
-    
+    @Value("${database.loginTimeout:10}")
+    private Integer dbLoginTimeouot;//数据库登录超时时间
+    @Value("${redis.loginTimeout:10}")
+    private Integer redisLoginTimeouot;//redis登录超时时间
     /**
      * 获取 nezha inited 状态
      * @return
@@ -133,7 +136,8 @@ public class SetupController  {
                 .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
         try{
         	SimpleDataSource ds = new SimpleDataSource(setup.getDatabase().getUrl(), setup.getDatabase().getUsername(), setup.getDatabase().getPin(), driver);
-            Db db = DbUtil.use(ds);
+        	ds.setLoginTimeout(dbLoginTimeouot);
+        	Db db = DbUtil.use(ds);
             String result = db.queryString("select 1");
         	if(Tool.StrUtil.isNotBlank(result)) {
         		 return R.ok();
@@ -154,7 +158,7 @@ public class SetupController  {
         ValidateUtils.is(setup.getRedis().getHost()).notNull(RCode.SYS_CONFIG_REDIS_HOST_ISNULL);
         Jedis jedis = null;
         try{
-            jedis = new Jedis(setup.getRedis().getHost(),setup.getRedis().getPort(),5000);
+            jedis = new Jedis(setup.getRedis().getHost(),setup.getRedis().getPort(),redisLoginTimeouot);
             if(!StrUtil.isEmpty(setup.getRedis().getPin())){
                 jedis.auth(setup.getRedis().getPin());
             }

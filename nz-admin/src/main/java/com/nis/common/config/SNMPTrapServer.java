@@ -3,6 +3,7 @@ package com.nis.common.config;
 import cn.hutool.core.exceptions.ExceptionUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
@@ -11,8 +12,11 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.service.AlertRuleService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.TrapMessage;
 import com.nis.modules.sys.service.SysConfigService;
@@ -44,6 +48,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -61,7 +66,8 @@ import java.util.*;
 public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// implements CommandResponder, extends
 																			// Service
 	private static Log logger = Log.get();
-
+	@Autowired
+	private AssetAssetService assetAssetService;
 	@Autowired
 	private AlertRuleService alertRuleService;
 	@Autowired
@@ -221,13 +227,13 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 					else if (variable1.equals(SnmpConstants.authenticationFailure))
 //						trapmessageinfo.setTrapName("SNMP认证失败");
 						trapmessageinfo.setTrapName("SNMP Authentication Failed");
-					else // 系统默认的类别不能匹配时，再使用自定义的trap信息库。是否需要分别自定义snmpV1和snmpValue2的trap信息库（定义到文件或者定义到数据库，必须体统重新加载的界面接口）
+					/*else // 系统默认的类别不能匹配时，再使用自定义的trap信息库。是否需要分别自定义snmpV1和snmpValue2的trap信息库（定义到文件或者定义到数据库，必须体统重新加载的界面接口）
 					if (getTrapName(variable1) != null && !variable1.equals("")) {
 						trapmessageinfo.setTrapName(getTrapName(variable1));
 					} else {
 //						throw new Exception("未被定义的SNMPTRAP类型！");
 						throw new Exception("Undefined SNMPTRAP type!");
-					}
+					}*/
 			}
 			StringBuffer trapInfo = new StringBuffer();
 			trapInfo.append("trapmessageinfo.getTrapName()：" + trapmessageinfo.getTrapName());
@@ -242,8 +248,9 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 
 // 组装prometheus_alert格式
 			Integer alertName = alertRule.getId();
-			Integer severity = alertRule.getSeverity().getId();
+			Integer severity = alertRule.getSeverityId();
 			String asset = trapmessageinfo.getAgentSendIP();
+			AssetAsset assetData = assetAssetService.getOne(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getManageIp, asset));
 			String oid = trapmessageinfo.getTrapOID();
 			String value = trapmessageinfo.getOriginalPDU().getVariableBindings().toString();
 
@@ -266,7 +273,9 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 			JSONObject labels = new JSONObject();
 			labels.put("alertname", alertName.toString());
 			labels.put("severity", severity);
-			labels.put("asset", asset);
+			if(ToolUtil.isNotEmpty(assetData)) {
+				labels.put("asset", assetData.getId());
+			}
 			labels.put("trapOID", oid);
 
 			JSONObject annotations = new JSONObject();
@@ -294,10 +303,15 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 			if (StringUtils.isNotBlank(alertApi)) {
 				String[] alertApis = alertApi.split(":");
 				alertApi = alertApis[0];
-				Integer alertPort = Integer.valueOf(alertApis[1]);
+				Integer alertPort = 80; 
+				if(alertApis.length>1) {
+					alertPort = Integer.valueOf(alertApis[1]);;
+				}
+				String path = String.format("%s%s", alertPathPrefix, "/api/v1/alerts");
 				String url = UrlBuilder.create().setScheme("http").setHost(alertApi).setPort(alertPort)
-						.appendPath(alertPathPrefix + "/api/v1/alerts").toString();
-				Object postForEntity = restTemplate.postForEntity(url, entity, Object.class);
+						.setPath(UrlPath.of(path, Charset.forName("UTF-8")))
+						.toString();
+				Object postForEntity = restTemplate.postForEntity(url, entity, Object.class);				
 				logger.info("post success info {}", JSON.toJSON(postForEntity));
 			}
 		} catch (Exception exception) {

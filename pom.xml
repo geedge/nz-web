@@ -209,6 +209,12 @@
 
 	<!-- 阿里云maven仓库 -->
 	<repositories>
+		<!-- 配置私服地址  -->
+		<repository>
+			<id>nexus</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.125:8099/content/groups/public/</url>
+		</repository>
 		<repository>
 			<id>public</id>
 			<name>aliyun nexus</name>
@@ -230,8 +236,15 @@
 			<id>jitpack.io</id>
 			<url>https://jitpack.io</url>
 		</repository>
+
 	</repositories>
+
 	<pluginRepositories>
+		<pluginRepository>
+			<id>nexus</id>
+			<name>Team Nexus Repository</name>
+			<url>http://192.168.40.125:8099/content/groups/public/</url>
+		</pluginRepository>
 		<pluginRepository>
 			<id>public</id>
 			<name>aliyun nexus</name>
