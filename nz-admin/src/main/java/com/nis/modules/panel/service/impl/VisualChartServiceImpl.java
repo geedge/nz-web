@@ -474,11 +474,21 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
                 }
             }
         }
-        // 删除自身
-        this.baseMapper.deleteBatchIds(Arrays.asList(ids));
+
+		List<Integer> idList = new ArrayList<>(Arrays.asList(ids));
+
+		// 如果删除 ids 中 type 为 group ，则补充 group 包含的 chart ids
+		List<VisualChart> childrenCharts = this.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, Arrays.asList(ids)));
+        if(CollectionUtils.isNotEmpty(childrenCharts)){
+	        Set<Integer> idSet = childrenCharts.stream().map(VisualChart::getId).collect(Collectors.toSet());
+	        idList.addAll(idSet);
+        }
+
+		// 删除自身
+        this.baseMapper.deleteBatchIds(idList);
 
         // 删除char element
-        chartElementService.delElementByChartIds(Arrays.asList(ids));
+        chartElementService.delElementByChartIds(idList);
 	}
 	
 	@Override
