@@ -320,7 +320,7 @@
 						<phase>package</phase>
 
 						<configuration>
-							<password>111111</password>
+<!--							<password>111111</password>-->
 <!--							<includes>-->
 <!--								<include>cn/nis/ntc/**</include>-->
 <!--							</includes>-->
