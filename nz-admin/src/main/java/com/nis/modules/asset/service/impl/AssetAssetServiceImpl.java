@@ -16,6 +16,7 @@ import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
@@ -194,6 +195,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (ToolUtil.isNotEmpty(asset.getCabinetEnd())) {
             asset.setCabinetEnd(asset.getCabinetEnd() - 1);
         }
+
+        int endpointCount = monitorEndpointService.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
+        asset.setEndpointNum(endpointCount);
+
+        int alertCount = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
+        asset.setAlertNum(alertCount);
+
         return asset;
     }
 
