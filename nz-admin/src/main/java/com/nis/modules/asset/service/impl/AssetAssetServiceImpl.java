@@ -16,7 +16,6 @@ import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
@@ -382,7 +381,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
         } else {
             // 宿主机，不能选择宿主机
-            if (asset.getPid() != null && !asset.equals(-1)) {
+            if (asset.getPid() != null && !asset.getPid().equals(-1)) {
                 throw new NZException(RCode.ASSET_NOT_SUPPORT_MOUNTING);
             }
         }
@@ -1303,6 +1302,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
                 panelService.delPanelsAndChartInfoByPanelIds(panelIds);
             }
+
+            // 删除 field meta/value
+            assetFieldMetaService.remove(new LambdaQueryWrapper<AssetFieldMeta>().eq(AssetFieldMeta::getSeq,seq));
+            assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getSeq, seq));
         }
     }
 
@@ -1501,7 +1504,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
 
                 // 虚拟机 vm info 校验 / 虚拟机必须选择宿主
-                if (typeConf.getVm().equals(1) && StringUtils.isEmpty(parentName)) {
+                if (typeConf !=null && typeConf.getVm().equals(1) && StringUtils.isEmpty(parentName)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SELECT_PARENT.getMsg());
                 }
@@ -1525,7 +1528,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     Integer modelUsize = modelIdAndUsizeMap.get(modelId);
                     modelUsize = ToolUtil.isEmpty(modelUsize) ? 1 : modelUsize;
                     boolean posttionFlag = start != null && end != null;
-                    if (dcId != null) { // dc已存在，不需要添加
+                    if (dcId != null && StringUtils.isNotEmpty(cabinetName)) { // dc已存在，不需要添加
                         Cabinet cabinet = this.validateCabinet(cabinetName, dcId, cabinetList, seqUUID, saveEntitys, defaultCabinetUsize);
                         cabinetId = cabinet.getId();
                         boolean cabinetExitFlag = cabinet.getId() != null;
@@ -1548,7 +1551,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                                 }
                             }
                         }
-                    } else { // dc不存在
+                    } else if (dcId == null && StringUtils.isNotEmpty(cabinetName)) { // dc不存在
                         this.saveEntityAddCabEntity(saveEntitys, cabinetName, defaultCabinetUsize, seqUUID);
                         if (posttionFlag) {
                             end = end + 1;
@@ -1579,13 +1582,24 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             
             
             String authProtocolPort = ExcelUtils.getCellValue(row.getCell(14));
+            if(StringUtils.isNotEmpty(authProtocolPort)){
+                if (!CommonUtils.checkPort(authProtocolPort)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ACCOUNT_PORT_ERROR.getMsg());
+                }
+            }
             String authType = ExcelUtils.getCellValue(row.getCell(15));
+            if(StringUtils.isNotEmpty(authType)){
+                if (!"1".equalsIgnoreCase(authType) && !"2".equalsIgnoreCase(authType)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
+                }
+            }
             String authUsername = ExcelUtils.getCellValue(row.getCell(16));
             String authPin = ExcelUtils.getCellValue(row.getCell(17));
             String authPriKey = ExcelUtils.getCellValue(row.getCell(18));
             String authUserTip = ExcelUtils.getCellValue(row.getCell(19));
             String authPinTip = ExcelUtils.getCellValue(row.getCell(20));
-            String snmpCredentialId = ExcelUtils.getCellValue(row.getCell(21));
             if(ObjectUtil.equals(authType, "1")) {
             	if(ObjectUtil.isEmpty(authUsername)) {
             		saveFlag = false;
@@ -1600,8 +1614,19 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ASSET_AUTHPRIKEY_ISNULL.getMsg());
             	}
             }
-            
-            
+
+            Integer snmpCredentialId = null;
+            String snmpCredentialName = ExcelUtils.getCellValue(row.getCell(21));
+            if(StringUtils.isNotEmpty(snmpCredentialName)){
+                SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
+                if(snmpCredential == null){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(21), RCode.SNMP_CREDENTIAL_NOT_FOUND.getMsg());
+                }else{
+                    snmpCredentialId = snmpCredential.getId();
+                }
+            }
+
             // 前面没有报错
             if (saveFlag) {
                 AssetAsset asset = new AssetAsset();
@@ -1621,14 +1646,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCabinetId(cabinetId);
                 asset.setCabinetStart(start);
                 asset.setCabinetEnd(end);
-                asset.setAuthProtocolPort(Integer.valueOf(authProtocolPort));
-                asset.setAuthType(Integer.valueOf(authType));
+                asset.setAuthProtocolPort(StringUtils.isNotEmpty(authProtocolPort) ? Integer.valueOf(authProtocolPort) : null);
+                asset.setAuthType(StringUtils.isNotEmpty(authType) ? Integer.valueOf(authType) : null);
                 asset.setAuthUsername(authUsername);
-                asset.setAuthPin(authPinTip);
+                asset.setAuthPin(StringUtils.isNotEmpty(authPin) ? Base64.getEncoder().encodeToString(authPin.getBytes()) : null);
                 asset.setAuthPriKey(authPriKey);
                 asset.setAuthUserTip(authUserTip);
                 asset.setAuthPinTip(authPinTip);
-                asset.setSnmpCredentialId(Integer.valueOf(snmpCredentialId));
+                asset.setSnmpCredentialId(snmpCredentialId);
                 if (parentAsset == null) {
                     asset.setPid(-1);
                 } else {
@@ -1670,6 +1695,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     meta.setName(metaKey);
                     meta.setGroupId("1");
                     meta.setParam("{}");
+                    meta.setSeq(seqUUID);
                     assetFieldMetaService.save(meta);
                 }
                 AssetFieldValue value = new AssetFieldValue();
@@ -1960,7 +1986,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
             row.createCell(19).setCellValue(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
             row.createCell(20).setCellValue(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
-            row.createCell(21).setCellValue(ToolUtil.isEmpty(asset.getSnmpCredentialId()) ? "" : String.valueOf(asset.getSnmpCredentialId()));
+
+            String snmpCredentialName = "";
+            if (ToolUtil.isNotEmpty(asset.getSnmpCredentialId())) {
+                SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
+                snmpCredentialName = snmpCredential == null ? "" : snmpCredential.getName();
+            }
+            row.createCell(21).setCellValue(snmpCredentialName);
             
             // 设置单元格样式
             ExcelUtils.setDataCellStyle(dataStyle, row, 21);

@@ -569,7 +569,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             }
 
             String assetName = ExcelUtils.getCellValue(row.getCell(3));
-            if (StringUtils.isNotEmpty(assetName)) {
+            if (StringUtils.isEmpty(assetName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NAME_ISNULL.getMsg());
+            } else {
                 if (ToolUtil.isEmpty(assetNameAndIdMap.get(assetName))) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
@@ -612,29 +615,18 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             }
 
             if (saveFlag) {
-                Integer assetIdByName = assetNameAndIdMap.get(assetName);
-                Integer assetIdByHost;
-                Object host = configMap.get("host");
-                if (ToolUtil.isEmpty(host)) {
-                    assetIdByHost = null;
-                } else {
-                    assetIdByHost = assetHostAndIdMap.get(String.valueOf(host));
-                }
-
-                // 通过 asset name  , configs hsot 都没有找到 asset
-                if (assetIdByName == null && assetIdByHost == null) {
+                Integer assetId = assetNameAndIdMap.get(assetName);
+                // 通过 asset name
+                if (assetId == null) {
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NOT_EXIST.getMsg());
                     continue;
                 }
 
                 MonitorEndpoint monitorEndpoint = new MonitorEndpoint();
                 // endpoint asset_id
-                if (StringUtils.isNotEmpty(assetName)) {
-                    monitorEndpoint.setAssetId(assetIdByName);
-                } else if (ToolUtil.isNotEmpty(host)) {
-                    monitorEndpoint.setAssetId(assetIdByHost);
-                }
-                AssetAsset assetInfo = assetService.queryAssetInfo(monitorEndpoint.getAssetId());
+                 monitorEndpoint.setAssetId(assetId);
+
+                AssetAsset assetInfo = assetService.queryAssetInfo(assetId);
                 String name = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(name)) {
                     MonitorModule module1 = monitorModuleService.queryModuleInfo(module.getId());
