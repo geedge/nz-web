@@ -64,7 +64,7 @@
 		<association property="pingInfo" columnPrefix="assp_" javaType="com.nis.modules.asset.entity.AssetPing">
             <result property="status" column="status"/>
             <result property="rtt" column="rtt"/>
-            <result property="lastUpdate" column="last_update"/>
+            <result property="lastUpdate" column="lastUpdate"/>
         </association>
         
     </resultMap>
