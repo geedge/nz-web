@@ -12,12 +12,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
@@ -236,6 +236,9 @@ public class StatServiceImpl implements StatService{
 	public List<Map> queryOverviewMap() {
 		List<Map> result= new ArrayList<Map>();
 		List<Dc> dcs = dcService.list();
+		if(Tool.CollectionUtil.isEmpty(dcs)) {
+			return result;
+		}
 		// 查询dc下asset的数量信息
 		List<AssetAsset> assets = assetAssetService.list();
 		Map<Integer, List<AssetAsset>> dcAssets = assets.stream().collect(Collectors.groupingBy(AssetAsset::getDcId));
@@ -252,8 +255,11 @@ public class StatServiceImpl implements StatService{
 		Map<Integer, List<StatAnalysis>> dcAlert = dcAlerts.stream().collect(Collectors.groupingBy(StatAnalysis::getId));
 		
 		for(Dc dc : dcs) {
-			Map<String,Object> map = new HashMap();
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("id", dc.getId());
 			map.put("name", dc.getName());
+			map.put("longitude", dc.getLongitude());
+			map.put("latitude", dc.getLatitude());
 			Integer color = 2;
 			if(StrUtil.equalsIgnoreCase(dc.getState(), Constant.SWITCH_CLOSE)) {
 				color = 3;
