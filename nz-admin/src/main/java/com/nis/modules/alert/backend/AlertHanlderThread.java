@@ -87,8 +87,13 @@ public class AlertHanlderThread implements Runnable {
 						String endsAt = dto.getEndsAt();
 						DateTime nowDate = Tool.DateUtil.date();
 						//计算 expired 时间，参照 alert manager实现，当之后一直未收到alert message 时，根据此字段判断alert message 是否已经 expired
-						DateTime endTime = Tool.StrUtil.isBlank(endsAt)?Tool.DateUtil.offsetSecond(nowDate, resolveTimeout)
-								: Tool.DateUtil.parse(endsAt,Constant.ALERT_MESSAGE_DATE_FORMAT);
+						DateTime endTime = null;
+						if(Tool.StrUtil.isBlank(endsAt)) {
+							endTime = Tool.DateUtil.offsetSecond(nowDate, resolveTimeout);
+							dto.setEndsAt(Tool.DateUtil.format(endTime, Constant.ALERT_MESSAGE_DATE_FORMAT));
+						} else {
+							endTime = Tool.DateUtil.parse(endsAt,Constant.ALERT_MESSAGE_DATE_FORMAT);
+						}
 						String hash = dto.genHashKey();// 计算hash 值
 						//查找 redis 是否存在,value 为id
 						String activeRk = (String)operations.get(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hash));
