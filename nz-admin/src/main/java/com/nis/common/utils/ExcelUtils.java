@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -31,6 +32,12 @@ public class ExcelUtils {
     private final static String excel2003L = ".xls";
     // 2007+ 版本的excel
     private final static String excel2007U = ".xlsx";
+
+    private static NumberFormat numberFormat = NumberFormat.getNumberInstance();
+
+    static {
+        numberFormat.setGroupingUsed(false);
+    }
 
     /**
      * 校验文件格式
@@ -98,12 +105,15 @@ public class ExcelUtils {
                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                         Date date = cell.getDateCellValue();
                         result = sdf.format(date);
-                    } else {
+                    }
+                    else {
                         // 数字也按照字符串类型获取值
-                        /*DecimalFormat df = new DecimalFormat("#");
-                        result = df.format(cell.getNumericCellValue());*/
-                        cell.setCellType(Cell.CELL_TYPE_STRING);
-                        result = cell.getStringCellValue();
+                        // DecimalFormat df = new DecimalFormat("#");
+                        // result = df.format(cell.getNumericCellValue());
+                        // cell.setCellType(Cell.CELL_TYPE_STRING);
+                        // result = cell.getStringCellValue();
+                        double d = cell.getNumericCellValue();
+                        result = numberFormat.format(d);
                     }
                     break;
                 case Cell.CELL_TYPE_BOOLEAN:// 布尔
@@ -121,7 +131,7 @@ public class ExcelUtils {
                     break;
             }
         }
-        return result.toString();
+        return result.toString().trim();
     }
 
     /**
