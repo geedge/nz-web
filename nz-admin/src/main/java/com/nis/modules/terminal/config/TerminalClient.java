@@ -37,6 +37,7 @@ import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.DigestUtils;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
@@ -115,7 +116,7 @@ public class TerminalClient {
         } else {
             this.httpSessionId = (String) webSocketSession.getAttributes().get(Constants.PARAM_HTTP_SESSION_ID_KEY);
         }
-        this.sendTempCmdId = this.clientId + this.httpSessionId;
+        this.sendTempCmdId = Tool.StrUtil.concat(true, this.clientId,this.httpSessionId);
         this.jSch = new JSch();
     }
 

@@ -793,7 +793,7 @@ public class TerminalHandler extends TextWebSocketHandler {
 
 			    sshLogin=false;
 				TerminalSession.remove(session);
-				session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"ip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"port")+"): Connection failed."+"\r\n$: "));
+				session.sendMessage(new TextMessage("Connection failed."));
 			}
     		//连接后（不论成功失败）将基础设置重置
     		TerminalSession.setTerminalAttributeInfo(uuid, "cursorIndex", 0);
@@ -1011,7 +1011,8 @@ public class TerminalHandler extends TextWebSocketHandler {
 		    sessionEntity.setEndTime(new Date());
 
 		    terminalSessionService.save(sessionEntity);
-			session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"telip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"telport")+"): Connection failed."+"\r\n$: "));
+//		    session.sendMessage(new TextMessage("\r\nCould not connect to '"+TerminalSession.getTerminalMessage(uuid+"telip")+"' (port "+TerminalSession.getTerminalMessage(uuid+"telport")+"): Connection failed."+"\r\n$: "));
+		    session.sendMessage(new TextMessage("Connection failed."));
 			TerminalSession.remove(session);
 		}
     }
