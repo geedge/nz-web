@@ -28,7 +28,9 @@ import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -143,6 +145,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 	@Autowired
     private VisualPanelService panelService;
+
+	@Autowired
+    private VisualChartElementService chartElementService;
 
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
@@ -609,13 +614,76 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
 
+        // 新增 asset 时，新增 asset panel chart / 关联 Model charts
+        this.saveAssetChartsWhenInsert(asset);
+        return asset.getId();
+    }
+
+    /**
+     * 新增 asset 时，新增 asset panel chart / 关联 Model charts
+     * @param asset
+     */
+    private void saveAssetChartsWhenInsert(AssetAsset asset) {
         // 配置信息获取
         SysConfigEntity assetChartConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_CHART_TPL));
         // asset config
         VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
         // 新增时需要新增 panel chart
         chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), null, chartTemplate);
-        return asset.getId();
+
+
+        // 通过关联 model charts 添加 asset charts
+        AssetModel model = modelService.getById(asset.getModelId());
+        if (StringUtils.isNotEmpty(model.getChartIds())) {
+            List<String> list = Arrays.asList(model.getChartIds().split(","));
+            List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
+            List<VisualChart> chartList = chartService.queryChartWithElementByIds(chartIdList);
+
+            AssetAsset assetInfo = this.queryAssetInfo(asset.getId());
+
+            VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET.getValue()).eq(VisualPanel::getLink, asset.getId()));
+
+            // model chart 组 和 asset 新增 chart 组关联关系，用来做 asset 新增 chart 组关系映射
+            Map<Integer, Integer> groupIdMapping = new HashMap<>();
+
+            // 按照 group 升序，先添加组
+            chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+
+            // 渲染新增
+            for (VisualChart chart : chartList) {
+                VisualChart saveChart = new VisualChart();
+                Tool.BeanUtil.copyProperties(chart, saveChart);
+                saveChart.setId(null);
+                saveChart.setPanelId(assetPanel.getId());
+                saveChart.setUpdateAt(new Date());
+                saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+                saveChart.setPid(chart.getId());
+
+                saveChart.setVarType(1);
+                saveChart.setVarId(asset.getId());
+
+                Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
+                saveChart.setGroupId(newGroupId == null ? 0 : newGroupId);
+
+                saveChart.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), assetInfo));
+                saveChart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), asset) : null);
+
+                chartService.save(saveChart);
+
+                if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
+                    groupIdMapping.put(chart.getId(), saveChart.getId());
+                }
+
+                if (CollectionUtils.isNotEmpty(saveChart.getElements())) {
+                    for (VisualChartElement chartElement : saveChart.getElements()) {
+                        chartElement.setId(null);
+                        chartElement.setChartId(saveChart.getId());
+                        chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), asset) : null);
+                    }
+                    chartElementService.saveBatch(saveChart.getElements());
+                }
+            }
+        }
     }
 
     @Override

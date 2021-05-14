@@ -34,4 +34,6 @@ public interface VisualChartService extends IService<VisualChart> {
     Integer syncTmpl(Map<String,Object> params);
 
 	void saveRelPanelAndChart(String typeStr, Integer linkId, String seq, VisualChart chartTemplate);
+
+	List<VisualChart> queryChartWithElementByIds(List<Integer> chartIdList);
 }

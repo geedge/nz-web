@@ -849,4 +849,10 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		}
 		this.save(target);
 	}
+
+	@Override
+	public List<VisualChart> queryChartWithElementByIds(List<Integer> chartIdList) {
+		List<VisualChart> visualCharts = this.baseMapper.queryChartWithElementByIds(chartIdList);
+		return CollectionUtils.isEmpty(visualCharts) ? new ArrayList<>() : visualCharts;
+	}
 }

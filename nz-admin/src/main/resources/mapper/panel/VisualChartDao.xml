@@ -184,4 +184,24 @@
        		#{id}
 	     </foreach>
 	</select>
+
+    <select id="queryChartWithElementByIds" resultMap="visualChartResult">
+        SELECT
+            vch.*,
+            vce.id AS vce_id,
+            vce.expression AS vce_expression,
+            vce.type AS vce_type,
+            vce.legend AS vce_legend
+        FROM
+            visual_chart vch
+            LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
+        <where>
+            <if test="list != null">
+                vch.id in
+                <foreach item="id" collection="list" separator="," open="(" close=")" index="">
+                    #{id}
+                </foreach>
+            </if>
+        </where>
+    </select>
 </mapper>

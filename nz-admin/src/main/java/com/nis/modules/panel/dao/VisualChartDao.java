@@ -26,4 +26,6 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
 	List<VisualChart> queryPage(IPage page,@Param("params") Map<String, Object> params);
 
 	List<VisualChart> queryPage(@Param("params") Map<String, Object> params);
+
+    List<VisualChart> queryChartWithElementByIds(@Param("list")List<Integer> chartIdList);
 }
