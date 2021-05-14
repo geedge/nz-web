@@ -471,12 +471,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (ToolUtil.isEmpty(chartTypeMapByLanguage)) {
             throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
         }
-
+        
         int successNum = 0;
         if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
-            successNum = this.saveDashboardChartDataFromSheet(sheet, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
+        	// 处理excel表数据 将group chart相关排在前列
+            List<Row> rows = this.groupChartRowHandle(sheet,1);
+            successNum = this.saveDashboardChartDataFromSheet(rows, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
         } else {
-            successNum = this.saveAssetChartDataFromSheet(sheet, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
+        	List<Row> rows = this.groupChartRowHandle(sheet,0);
+            successNum = this.saveAssetChartDataFromSheet(rows, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
         }
         int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
@@ -572,10 +575,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 chartTemplateTyep = Constant.SYSCONFIG_KEY_CHART_EXPORT_HEADER;
                 break;
             }
-            case "model": {
-                chartTemplateTyep = Constant.SYSCONFIG_KEY_MODEL_CHART_EXPORT_HEADER;
-                break;
-            }
+			/*case "model": {
+			    chartTemplateTyep = Constant.SYSCONFIG_KEY_MODEL_CHART_EXPORT_HEADER;
+			    break;
+			}*/
             case "asset": {
                 chartTemplateTyep = Constant.SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER;
                 break;
@@ -596,20 +599,21 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
             row = sheet.createRow(rowNum++);
             type = chart.getType();
-            row.createCell(0).setCellValue(chart.getName());
-            row.createCell(1).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
-            row.createCell(2).setCellValue(chart.getSpan());
-            row.createCell(3).setCellValue(chart.getHeight());
+            row.createCell(0).setCellValue(chart.getGroup().getName());
+            row.createCell(1).setCellValue(chart.getName());
+            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            row.createCell(3).setCellValue(chart.getSpan());
+            row.createCell(4).setCellValue(chart.getHeight());
             if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
-                row.createCell(4).setCellValue("");
+                row.createCell(5).setCellValue("");
             } else {
-                row.createCell(4).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+                row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
             }
-            row.createCell(5).setCellValue(this.handleChartParam(chart.getParam()));
-            row.createCell(6).setCellValue(this.handleChartElementForExport(chart.getElements()));
+            row.createCell(6).setCellValue(this.handleChartParam(chart.getParam()));
+            row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 6);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 7);
         }
     }
     
@@ -667,7 +671,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
     
-    private int saveDashboardChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, Map<String, String> chartTypeMapByLanguage, List<String> headerInfos) {
+    private int saveDashboardChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, Map<String, String> chartTypeMapByLanguage, List<String> headerInfos) {
         List<VisualPanel> panelTreeList = this.queryList(new HashMap());
         Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
         for (VisualPanel panel : panelTreeList) {
@@ -684,12 +688,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             panelMaxWeight = endPanel.getWeight();
         }
 
-        Row row;
         int successNum = 0;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            row = sheet.getRow(i);
+        for (Row row : rows) {
             if (row == null) continue;
-            int dataFromExcelRowNum = i + 1;
+            int dataFromExcelRowNum = row.getRowNum() + 1;
             boolean saveFlag = true;
             boolean typeFlag = true;
             String panelName = ExcelUtils.getCellValue(row.getCell(0));
@@ -697,78 +699,110 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.PANEL_NAME_ISNULL.getMsg());
             }
-            String title = ExcelUtils.getCellValue(row.getCell(1));
+            Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID, ++panelMaxWeight);
+            Integer groupId=0;
+            String groupName = ExcelUtils.getCellValue(row.getCell(1));
+            if(StrUtil.isNotBlank(groupName)) {
+            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+                if(ToolUtil.isEmpty(groupChart)) {
+                	groupChart = new VisualChart();
+                	groupChart.setPanelId(panelId);
+                	groupChart.setName(groupName);
+                	groupChart.setGroupId(0);
+                	groupChart.setSpan(12);
+                	groupChart.setHeight(100);
+                	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+                	groupChart.setUpdateAt(new Date());
+                	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
+                	groupChart.setUnit(2);
+                	groupChart.setBuildIn(0);
+                	groupChart.setRemark("");
+                	visualChartService.save(groupChart);
+                }
+                groupId = groupChart.getId();
+            }
+            
+            String title = ExcelUtils.getCellValue(row.getCell(2));
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TITLE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TITLE_ISNULL.getMsg());
             }
-            String type = ExcelUtils.getCellValue(row.getCell(2));
+            String type = ExcelUtils.getCellValue(row.getCell(3));
+            
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
                 type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
-            String span = ExcelUtils.getCellValue(row.getCell(3));
+            
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
+        		// chart group 不允许重复 
+            	saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
+            }
+            
+            String span = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_SPAN_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_SPAN_ISNULL.getMsg());
             }else{
                 Integer width = null;
                 try {
                     width = Double.valueOf(span).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_FORMAT.getMsg());
                 }
                 if(width != null && (width < 1 || width > 12)){
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
-            String height = ExcelUtils.getCellValue(row.getCell(4));
+            String height = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_ISNULL.getMsg());
             }else{
                 try {
                     Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_FORMAT.getMsg());
                 }
             }
-            String unit = ExcelUtils.getCellValue(row.getCell(5));
+            String unit = ExcelUtils.getCellValue(row.getCell(6));
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_UNIT_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
-            String param = ExcelUtils.getCellValue(row.getCell(6));
+            String param = ExcelUtils.getCellValue(row.getCell(7));
             if(typeFlag){
                 String msg = this.validateChartParamForImport(type, param, "dashboard");
-                if(StringUtils.isNotEmpty(msg)){
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
-                }
-            }
-            String elements = ExcelUtils.getCellValue(row.getCell(7));
-            if(typeFlag){
-                String msg = this.validateChartElementForImport(type, elements);
                 if(StringUtils.isNotEmpty(msg)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
+            String elements = ExcelUtils.getCellValue(row.getCell(8));
+            if(typeFlag){
+                String msg = this.validateChartElementForImport(type, elements);
+                if(StringUtils.isNotEmpty(msg)){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
+                }
+            }
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
-                    Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID, ++panelMaxWeight);
+                    
                     VisualChart chart = new VisualChart();
                     chart.setSeq(seqUUID);
                     chart.setPanelId(panelId);
@@ -781,6 +815,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
                     chart.setUpdateAt(new Date());
+                    chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+                    chart.setGroupId(groupId);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -814,8 +850,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
     
     private String validateChartElementForImport(String type, String elements) {
-        // elemrnt 只有 alert  和 url , text 可以没有，其他必须有
-        if(!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE,type) && !StrUtil.equals(Constant.CHART_URL_TYPE,type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE,type)){
+        // elemrnt 只有 alert  和 url , text group 可以没有，其他必须有
+        if(!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE,type) && !StrUtil.equals(Constant.CHART_URL_TYPE,type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE,type) && !StrUtil.equals(Constant.CHART_GROUP_TYPE,type) ){
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
@@ -1001,86 +1037,116 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return null;
     }
     
-    private int saveAssetChartDataFromSheet(Sheet sheet, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
+    private int saveAssetChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
         if (linkId == null) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
 
         VisualPanel panel = this.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panelType).eq(VisualPanel::getLink, linkId));
         if (panel == null) throw new NZException(RCode.PANEL_NOT_EXIST);
 
-        Row row;
         int successNum = 0;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            row = sheet.getRow(i);
+        for (Row row : rows) {
             if (row == null) continue;
-            int dataFromExcelRowNum = i + 1;
+            int dataFromExcelRowNum = row.getRowNum() + 1;
             boolean saveFlag = true;
             boolean typeFlag = true;
-            String title = ExcelUtils.getCellValue(row.getCell(0));
+            
+            Integer groupId=0;
+            String groupName = ExcelUtils.getCellValue(row.getCell(0));
+            if(StrUtil.isNotBlank(groupName)) {
+            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+                if(ToolUtil.isEmpty(groupChart)) {
+                	groupChart = new VisualChart();
+                	groupChart.setPanelId(panel.getId());
+                	groupChart.setName(groupName);
+                	groupChart.setGroupId(0);
+                	groupChart.setSpan(12);
+                	groupChart.setHeight(100);
+                	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+                	groupChart.setUpdateAt(new Date());
+                	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
+                	groupChart.setUnit(2);
+                	groupChart.setBuildIn(0);
+                	groupChart.setRemark("");
+                	visualChartService.save(groupChart);
+                }
+                groupId = groupChart.getId();
+            }
+            
+            String title = ExcelUtils.getCellValue(row.getCell(1));
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.CHART_TITLE_ISNULL.getMsg());
             }
-            String type = ExcelUtils.getCellValue(row.getCell(1));
+            
+            String type = ExcelUtils.getCellValue(row.getCell(2));
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TYPE_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_ISNULL.getMsg());
             } else {
                 type = this.validateChartTypeForImport(type, chartTypeMapByLanguage);
                 if (StringUtils.isEmpty(type)) {
                     saveFlag = typeFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.CHART_TYPE_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
-            String span = ExcelUtils.getCellValue(row.getCell(2));
+            
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
+        		// chart group 不允许重复 
+            	saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
+            }
+            
+            String span = ExcelUtils.getCellValue(row.getCell(3));
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_SPAN_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_SPAN_ISNULL.getMsg());
             } else {
                 Integer width = null;
                 try {
                     width = Double.valueOf(span).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_WIDTH_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_FORMAT.getMsg());
                 }
                 if (width != null && (width < 1 || width > 12)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_WIDTH_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
-            String height = ExcelUtils.getCellValue(row.getCell(3));
+            String height = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_HEIGHT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_ISNULL.getMsg());
             } else {
                 try {
                     Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_HEIGHT_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_FORMAT.getMsg());
                 }
             }
-            String unit = ExcelUtils.getCellValue(row.getCell(4));
+            String unit = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_UNIT_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
-            String param = ExcelUtils.getCellValue(row.getCell(5));
+            String param = ExcelUtils.getCellValue(row.getCell(6));
             if (typeFlag) {
                 String msg = this.validateChartParamForImport(type, param, type);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
                 }
             }
-            String elements = ExcelUtils.getCellValue(row.getCell(6));
+            String elements = ExcelUtils.getCellValue(row.getCell(7));
             if (typeFlag) {
                 String msg = this.validateChartElementForImport(type, elements);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
             if (saveFlag) {
@@ -1098,6 +1164,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
                     chart.setParam(param.toString());
                     chart.setUpdateAt(new Date());
+                    chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
+                    chart.setGroupId(groupId);
+                    chart.setVarType(1);
+                    chart.setVarId(linkId);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1130,30 +1200,30 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
     
     private List<VisualChart> exportDataByParams(Map<String, Object> params) {
-        Integer panelId = null;
+        String panelId = null;
         if (ToolUtil.isNotEmpty(params.get("panelId"))) {
-            panelId = Integer.valueOf(params.get("panelId").toString());
+            panelId = params.get("panelId").toString();
         }
-        Integer chartId = null;
+        String chartId = null;
         if (ToolUtil.isNotEmpty(params.get("chartId"))) {
-            chartId = Integer.valueOf(params.get("chartId").toString());
+            chartId = params.get("chartId").toString();
         }
         List<VisualChart> chartList = new ArrayList<VisualChart>();
-        if (panelId == null) {
+        if(chartId != null) {
+            // 只导出当前 chart
+            chartList.addAll(this.queryChartsByPanelId(panelId, chartId,params));
+        }else if (ToolUtil.isEmpty(panelId)) {
             // 导出所有 dashboard panel
             List<VisualPanel> panelList = this.list(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, Constant.PanelType.DASHBOARD.getValue()).orderByAsc(VisualPanel::getWeight, VisualPanel::getId));
            // panelList = panelService.getSequentialPanelList(panelList);
             for (VisualPanel panel : panelList) {
-                chartList.addAll(this.queryChartsByPanelId(panel.getId(),null));
+            	Map<String, Object> param = new HashMap<String,Object>();
+            	param.put("pageSize", "-1");
+                chartList.addAll(this.queryChartsByPanelId(panel.getId().toString(),null,param));
             }
-        } else {
-            if (chartId != null) {
-                // 只导出当前 chart
-                chartList.addAll(this.queryChartsByPanelId(panelId, chartId));
-            } else {
-                // 导出 panel 下所有chart
-                chartList.addAll(this.queryChartsByPanelId(panelId, null));
-            }
+        } else if(ToolUtil.isNotEmpty(panelId)){
+            // 导出 panel 下所有chart
+            chartList.addAll(this.queryChartsByPanelId(panelId, null,params));
         }
         return chartList;
     }
@@ -1174,20 +1244,21 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             row = sheet.createRow(rowNum++);
              type = chart.getType();
             row.createCell(0).setCellValue(nodeIdAndNamePathMap.get(chart.getPanelId()));
-            row.createCell(1).setCellValue(chart.getName());
-            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
-            row.createCell(3).setCellValue(chart.getSpan());
-            row.createCell(4).setCellValue(chart.getHeight());
+            row.createCell(1).setCellValue(chart.getGroup().getName());
+            row.createCell(2).setCellValue(chart.getName());
+            row.createCell(3).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            row.createCell(4).setCellValue(chart.getSpan());
+            row.createCell(5).setCellValue(chart.getHeight());
             if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
-                row.createCell(5).setCellValue("");
+                row.createCell(6).setCellValue("");
             } else {
-                row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+                row.createCell(6).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
             }
-            row.createCell(6).setCellValue(this.handleChartParam(chart.getParam()));
-            row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
+            row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
+            row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 7);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 8);
         }
     }
     
@@ -1203,8 +1274,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
     
-    public List<VisualChart> queryChartsByPanelId(Integer panelId,Integer chartId) {
-    	Map<String,Object> params =new HashMap<String,Object>();
+    public List<VisualChart> queryChartsByPanelId(String panelId,String chartId,Map<String,Object> params) {
     	params.put("panelId", panelId);
     	params.put("ids", chartId);
         PageUtils queryPage = visualChartService.queryPage(params);
@@ -1212,4 +1282,25 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return result;
     }
 
+    public List<Row> groupChartRowHandle(Sheet sheet,Integer type) {
+    	// type标识dashboard还是asset 区别去第几列查找group chart信息
+    	List<Row> rows = new ArrayList<>();
+        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) {
+                continue;
+            }
+            rows.add(row);
+        }
+        List<Row> list = rows.stream().filter(cells -> {
+            String groupName = ExcelUtils.getCellValue(cells.getCell(type));
+            if (StringUtils.isEmpty(groupName)) {
+                return true;
+            }
+            return false;
+        }).collect(Collectors.toList());
+        rows.removeAll(list);
+        list.addAll(rows);
+        return list;
+    }
 }
