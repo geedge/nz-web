@@ -592,7 +592,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(asset.getCabinetEnd() + 1);
         }
 
-        if (asset.getPid() != null) {
+        if (asset.getPid() != null && asset.getPid()!=-1) {
             // pid 不为空 证明是 虚拟极，继承宿主机 dc cabinet state end 信息
             AssetAsset parent = this.getById(asset.getPid());
             asset.setDcId(parent.getDcId());
@@ -1708,7 +1708,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 AssetAsset asset = new AssetAsset();
                 asset.setName(name);
                 asset.setSn(sn);
-                asset.setPid(parentAsset == null ? -1 : parentAsset.getId());
                 asset.setTypeId(typeConf.getId());
                 asset.setStateId(stateConf.getId());
                 asset.setPurchaseDate(StringUtils.isEmpty(purchaseDate) ? null : purchaseDate);
@@ -1922,17 +1921,19 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getCabinetId() == null && cabinet != null) {
             asset.setCabinetId(cabinet.getId());
         }
-        this.save(asset);
+//        this.save(asset);
+        this.saveAsset(asset);
         // 新增时需要新增 panel chart
-        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
+		/*        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
+		updateMap.put("asset", asset);
+		
+		// fields
+		List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
+		if (CollectionUtils.isNotEmpty(fields)) {
+		    fields.forEach(assetFieldValue -> assetFieldValue.setAssetId(asset.getId()));
+		    assetFieldValueService.saveBatch(fields);
+		}*/
         updateMap.put("asset", asset);
-
-        // fields
-        List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
-        if (CollectionUtils.isNotEmpty(fields)) {
-            fields.forEach(assetFieldValue -> assetFieldValue.setAssetId(asset.getId()));
-            assetFieldValueService.saveBatch(fields);
-        }
         return updateMap;
     }
 

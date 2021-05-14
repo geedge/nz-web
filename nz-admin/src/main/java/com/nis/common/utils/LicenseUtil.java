@@ -32,7 +32,7 @@ public class LicenseUtil {
 			}
 			String token = StrUtil.concat(true, hardwareUUID, serialNumber, boardSerialNumber);
 			machineIdCache = SecureUtil.sha1(token);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.warn("Get machine id error", e);
 		}
 	}
