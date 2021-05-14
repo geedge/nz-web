@@ -250,6 +250,10 @@ public class StatServiceImpl implements StatService{
 		List<StatAnalysis> dcEndpointAnalyse = statDao.selectDcEndpointUnhealthy();
 		Map<Integer, StatAnalysis> dcEnpoint = dcEndpointAnalyse.stream().collect(Collectors.toMap(StatAnalysis::getId,Function.identity()));
 		
+		// 查询dc下agent相关
+		List<StatAnalysis> dcAgentAnalyse = statDao.selectDcAgentUnhealthy();
+		Map<Integer, StatAnalysis> dcAgent = dcAgentAnalyse.stream().collect(Collectors.toMap(StatAnalysis::getId,Function.identity()));
+
 		// 查询dc下告警级别对应的告警数量
 		List<StatAnalysis> dcAlerts = statDao.selectDcAlertMessage();
 		Map<Integer, List<StatAnalysis>> dcAlert = dcAlerts.stream().collect(Collectors.groupingBy(StatAnalysis::getId));
@@ -281,9 +285,18 @@ public class StatServiceImpl implements StatService{
 			Integer endpointTotal = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getTotal();
 			Integer up = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getOk();
 			Integer down = endpointTotal - up; 
+			Map endpoint = new HashMap();
+			endpoint.put("up", up);
+			endpoint.put("down", down);
+			
+			StatAnalysis agentAnalysis = dcAgent.get(dc.getId());
+			Integer agentTotal = ToolUtil.isEmpty(agentAnalysis)?0:agentAnalysis.getTotal();
+			Integer agentUp = ToolUtil.isEmpty(agentAnalysis)?0:agentAnalysis.getOk();
+			Integer agentDown = agentTotal - agentUp; 
 			Map agent = new HashMap();
-			agent.put("up", up);
-			agent.put("down", down);
+			agent.put("up", agentUp);
+			agent.put("down", agentDown);
+			
 			
 			List<StatAnalysis> alerts = dcAlert.get(dc.getId());
 			Map alert = new HashMap();
@@ -299,6 +312,7 @@ public class StatServiceImpl implements StatService{
 			
 			map.put("color", color);
 			map.put("asset", asset);
+			map.put("endpoint", endpoint);
 			map.put("agent", agent);
 			map.put("alert", alert);
 			

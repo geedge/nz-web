@@ -60,4 +60,6 @@ public interface StatDao {
 	List<StatAnalysis> selectDcEndpointUnhealthy();
 	
 	List<StatAnalysis> selectDcAlertMessage();
+	
+	List<StatAnalysis> selectDcAgentUnhealthy();
 }

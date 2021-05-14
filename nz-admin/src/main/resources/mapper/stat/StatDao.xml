@@ -519,8 +519,8 @@
     <select id="selectDcAssetUnhealthy" resultMap="statAnalysis">
     	select aa.dc_id id, 
     	count(DISTINCT aa.id) alarm
-		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
-		left join alert_message_active am on aa.id = am.asset_id
+		from alert_message_active am left join asset_asset aa  on aa.id = am.asset_id
+		left join asset_ping ap on aa.manage_ip = ap.host
 		where (ap.`status`=0 or ap.status is null or am.state=1)
 		group by aa.dc_id
     </select>
@@ -530,10 +530,10 @@
 		dc.id id,
 		count(*) total,
 		sum(case when mes.state=1 then 1 else 0 end) ok
-		from dc left join asset_asset aa on dc.id = aa.dc_id
+		from monitor_endpoint me left join monitor_endpoint_state mes on me.id = mes.endpoint_id
+		left join asset_asset aa  on aa.id = me.asset_id
 		left join asset_ping ap on aa.id = ap.asset_id
-		left join monitor_endpoint me on aa.id = me.asset_id
-		left join monitor_endpoint_state mes on me.id = mes.endpoint_id
+		left join dc  on dc.id = aa.dc_id
 		group by dc.id
     </select>
     
@@ -548,5 +548,14 @@
 	GROUP BY
 		am.dc_id,
 		am.severity_id
+    </select>
+    
+    <select id="selectDcAgentUnhealthy" resultMap="statAnalysis">
+    	select 
+		dc.id,
+		count(*) total,
+		sum(case when ps.status=1 then 1 else 0 end) ok
+		from prom_server ps left join dc on dc.id = ps.dc_id
+		group by ps.dc_id
     </select>
 </mapper>
