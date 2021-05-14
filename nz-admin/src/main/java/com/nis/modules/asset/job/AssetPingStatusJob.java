@@ -64,7 +64,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
         try {
             // 获取 ping 数据
             this.execAssetPing();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("asset ping 采集异常", e);
         } finally {
             sw.stop();

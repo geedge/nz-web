@@ -262,24 +262,21 @@ public class SysLogAspect {
 			return paramResult;
 		}
 		if (StringUtils.isNotEmpty(paramResult)) {
-			try {
-				Map<String, Object> map = JSONObject.parseObject(paramResult, Map.class);
-				for (Map.Entry<String, Object> obj : map.entrySet()) {
-					Object value = obj.getValue();
-					if (value instanceof Map) {
-						for (Object pojo : ((Map) value).values()) {
-							if (pojo instanceof Map && pojo != null) {
-								((Map) pojo).remove("ldap_password");
-								((Map) pojo).remove("email_smtp_password");
-							}
+			Map<String, Object> map = JSONObject.parseObject(paramResult, Map.class);
+			for (Map.Entry<String, Object> obj : map.entrySet()) {
+				Object value = obj.getValue();
+				if (value instanceof Map) {
+					for (Object pojo : ((Map) value).values()) {
+						if (pojo instanceof Map && pojo != null) {
+							((Map) pojo).remove("ldap_password");
+							((Map) pojo).remove("email_smtp_password");
 						}
-						((Map) value).remove("topo");
-						obj.setValue(value);
 					}
+					((Map) value).remove("topo");
+					obj.setValue(value);
 				}
-				return JSONObject.toJSONString(map);
-			} catch (Exception e) {
 			}
+			return JSONObject.toJSONString(map);
 		}
 		return paramResult;
 	}

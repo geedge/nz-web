@@ -1110,10 +1110,10 @@ public class Tool {
 		            path = path.substring(0, i);
 		            path = path.replaceFirst("file:", "");
 		            // 项目所在的目录
-			        return new File(path).getParentFile().getAbsolutePath();
+					return Tool.FileUtil.newFile(path).getParentFile().getAbsolutePath();
 		        }else {
 		        	//classpath 路径
-		        	return new File(path).getAbsolutePath();
+					return Tool.FileUtil.newFile(path).getAbsolutePath();
 		        }
 			} catch (UnsupportedEncodingException e) {
 				return null;

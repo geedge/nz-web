@@ -1,26 +1,21 @@
 package com.nis.common.utils;
 
-import java.io.BufferedInputStream;
-import java.io.UnsupportedEncodingException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.Map;
-
-import org.w3c.dom.Document;
-
-import com.alibaba.fastjson.JSON;
-import com.nis.modules.sys.entity.LicenseEntity;
-import com.nis.modules.sys.entity.LicenseEntity.Product;
-import com.nis.modules.sys.entity.LicenseEntity.Signature;
-import com.nis.modules.sys.entity.LicenseEntity.Tokens;
-
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.Sign;
 import cn.hutool.crypto.asymmetric.SignAlgorithm;
 import cn.hutool.log.Log;
 import cn.hutool.system.oshi.OshiUtil;
+import com.alibaba.fastjson.JSON;
+import com.nis.modules.sys.entity.LicenseEntity;
+import com.nis.modules.sys.entity.LicenseEntity.Signature;
+import org.w3c.dom.Document;
 import oshi.hardware.ComputerSystem;
+
+import java.io.UnsupportedEncodingException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.util.Map;
 
 public class LicenseUtil {
 	private static final Log log = Log.get();
@@ -37,7 +32,7 @@ public class LicenseUtil {
 			}
 			String token = StrUtil.concat(true, hardwareUUID, serialNumber, boardSerialNumber);
 			machineIdCache = SecureUtil.sha1(token);
-		} catch (Throwable e) {
+		} catch (Exception e) {
 			log.warn("Get machine id error", e);
 		}
 	}

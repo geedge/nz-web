@@ -196,7 +196,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
             try {
                 JSONArray.parseArray(JSONObject.toJSONString(walk));
-            } catch (Exception e) {
+            } catch (JSONException e) {
                 throw new NZException(RCode.MODULE_SNMP_WALK_FORMAT);
             }
         }

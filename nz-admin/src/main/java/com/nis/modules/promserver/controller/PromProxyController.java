@@ -115,7 +115,9 @@ public class PromProxyController {
 	 */
 	public void requestProm(String host, int port, String path, HttpServletRequest request,
 			HttpServletResponse response)  {
-		String queryString = request.getQueryString();
+//		String queryString = request.getQueryString();
+		String queryString = ReflectUtil.invoke(request, "getQueryString");
+
 		// 请求 prometheus url
 //		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
 		// String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
@@ -206,14 +208,24 @@ public class PromProxyController {
 
 	private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
 		StringBuffer resultStr = new StringBuffer();
-		try (InputStreamReader inputStreamReader = new InputStreamReader(new GZIPInputStream(connInputStream), "UTF-8");
-			 BufferReaderWrapper bufferedReader = new BufferReaderWrapper(inputStreamReader);) {
+		InputStreamReader inputStreamReader = null;
+		BufferReaderWrapper bufferedReader = null;
+		try {
+			inputStreamReader = new InputStreamReader(new GZIPInputStream(connInputStream), "UTF-8");
+			bufferedReader = new BufferReaderWrapper(inputStreamReader);
 			String str = null;
 			while ((str = bufferedReader.load()) != null) {
 				resultStr.append(str);
 			}
 		} catch (IOException e) {
 			logger.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e));
+		} finally {
+			if(bufferedReader != null){
+				IOUtils.closeQuietly(bufferedReader);
+			}
+			if(inputStreamReader != null){
+				IOUtils.closeQuietly(inputStreamReader);
+			}
 		}
 
 		Map result = new HashMap();

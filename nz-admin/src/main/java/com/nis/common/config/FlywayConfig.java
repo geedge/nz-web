@@ -1,7 +1,7 @@
 package com.nis.common.config;
 
 import cn.hutool.core.util.ReflectUtil;
-import lombok.extern.slf4j.Slf4j;
+import cn.hutool.log.Log;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
@@ -18,10 +18,11 @@ import java.beans.PropertyDescriptor;
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Configuration
 @DependsOn(value = {"dataSourceConfig"})
 public class FlywayConfig {
+
+    private static Log log = Log.get();
 
     @Autowired
     private DataSource dataSource;

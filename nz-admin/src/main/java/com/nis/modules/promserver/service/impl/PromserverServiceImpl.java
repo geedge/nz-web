@@ -164,6 +164,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 			url = new URL("http", promServer.getHost(), promServer.getPort(), urlPath);
 		} catch (MalformedURLException e) {
 			log.error(e);
+			throw new NZException(RCode.ERROR);
 		}
 		String result = Tool.HttpUtil.createGet(url.toString()).auth(promServer.getToken()).execute().body();
 		if (log.isDebugEnabled()) log.debug(String.format("请求 %s 接口，相应内容为 %s", url.toString(), result));

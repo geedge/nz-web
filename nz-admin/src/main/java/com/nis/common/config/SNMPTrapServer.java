@@ -45,6 +45,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -76,11 +77,15 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 	private String alertPathPrefix;
 	private Integer snmpTrapThredPoolSize = 2;
 
-	public static Snmp snmp;
+	private static Snmp snmp;
 	
 	@Override
 	public void run(ApplicationArguments args) throws IOException {
 		initServer();
+	}
+
+	public static Snmp getSnmp() {
+		return snmp;
 	}
 
 	public void initServer() throws IOException {
@@ -153,7 +158,10 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 			}
 			logger.info((new StringBuilder("receive snmp event：")).append(commandresponderevent.getPDU()).toString());
 			UdpAddress udpaddress = (UdpAddress) commandresponderevent.getPeerAddress();
-			String s = udpaddress.getInetAddress().getHostAddress();
+			String s = udpaddress.getInetAddress().toString();
+			if(StringUtils.isNotEmpty(s)){
+				s = s.substring(s.lastIndexOf("/") + 1, s.length());
+			}
 			PDU pdu = commandresponderevent.getPDU();
 			logger.info((new StringBuilder("receive TRap:")).append(pdu).toString());
 			TrapMessage trapmessageinfo = new TrapMessage();
@@ -314,10 +322,10 @@ public class SNMPTrapServer implements CommandResponder, ApplicationRunner {// i
 				Object postForEntity = restTemplate.postForEntity(url, entity, Object.class);				
 				logger.info("post success info {}", JSON.toJSON(postForEntity));
 			}
-		} catch (Exception exception) {
-			logger.error("Error parsing UDP trap: {}", ExceptionUtil.getMessage(exception));
-		} finally {
-
+		} catch (NumberFormatException e) {
+			logger.error("Error parsing UDP trap: {}", ExceptionUtil.getMessage(e));
+		} catch (RestClientException e) {
+			logger.error("Error parsing UDP trap: {}", ExceptionUtil.getMessage(e));
 		}
 	}
 

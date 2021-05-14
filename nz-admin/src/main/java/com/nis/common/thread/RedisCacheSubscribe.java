@@ -1,23 +1,18 @@
 package com.nis.common.thread;
 
-import org.springframework.context.annotation.Bean;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.servlet.Filter;
-
-import org.apache.shiro.SecurityUtils;
-import org.apache.shiro.cache.CacheManager;
-import org.apache.shiro.mgt.SecurityManager;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.nis.common.config.SNMPTrapServer;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.SpringContextUtils;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
-import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
-import org.apache.shiro.web.servlet.ProxiedFilterChain;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -26,20 +21,15 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Component;
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.config.SNMPTrapServer;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.SpringContextUtils;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
 
-import cn.hutool.core.util.StrUtil;
+import javax.servlet.Filter;
+import java.io.IOException;
+import java.util.Map;
 
 @Component
 public class RedisCacheSubscribe  implements MessageListener{
+
+	private static Log log = Log.get();
 
 	@Autowired
 	private RedisTemplate redisTemplate;
@@ -69,13 +59,13 @@ public class RedisCacheSubscribe  implements MessageListener{
 	
 		if(StrUtil.isNotBlank(snmpPort)) {
 			// 监听到snmp端口变化 
-			if(ToolUtil.isNotEmpty(SNMPTrapServer.snmp)) {
+			if(ToolUtil.isNotEmpty(SNMPTrapServer.getSnmp())) {
 				try {
-					SNMPTrapServer.snmp.close();
+					SNMPTrapServer.getSnmp().close();
 					SNMPTrapServer server = (SNMPTrapServer) SpringContextUtils.getBean(SNMPTrapServer.class);
 					server.initServer();
 				} catch (IOException e) {
-					e.printStackTrace();
+					log.error(e);
 				}
 				
 			}
@@ -83,8 +73,8 @@ public class RedisCacheSubscribe  implements MessageListener{
 			// 监听到session过期时间变化
 			Map<String, Filter> filters = shiroFilterFactoryBean.getFilters();
 			TokenCheckFilter filter = (TokenCheckFilter) filters.get("tokenCheckFilter");
-			Integer loginExpiration = filter.getLoginExpiration();
-			System.out.println(loginExpiration);
+//			Integer loginExpiration = filter.getLoginExpiration();
+//			System.out.println(loginExpiration);
 			filter.setLoginExpiration(Integer.valueOf(sessionTimeOut));
 			redisCacheManager.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			redisSessionDao.setExpire(Integer.valueOf(sessionTimeOut) * 60);

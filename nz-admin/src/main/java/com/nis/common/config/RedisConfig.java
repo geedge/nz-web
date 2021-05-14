@@ -106,7 +106,6 @@ public class RedisConfig {
 				String ping = connection.ping();
 				if(Tool.StrUtil.isBlank(ping)) {
 					log.error("redis connetion error");
-					System.exit(1);
 				}
 				return null;
 			}

@@ -1,3 +1,4 @@
+/*
 package com.nis.common.utils;
 
 import cn.hutool.core.io.IoUtil;
@@ -10,10 +11,12 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.util.Properties;
 
+*/
 /**
  * 1. sftp传输文件
  * 2. 执行命令
- */
+ *//*
+
 public class SftpUtils {
 
     private static Log logger = Log.get();
@@ -27,7 +30,8 @@ public class SftpUtils {
     private static Integer connectTimeOut = 5000;
 
 
-    /**
+    */
+/**
      * 登陆
      *
      * @param server     ip
@@ -37,7 +41,8 @@ public class SftpUtils {
      * @param password   密码
      * @param privateKey 密钥文件
      * @throws Exception
-     */
+     *//*
+
     public void loginIn(String server, Integer port, String username, Integer authType, String pin, String privateKey, String keyPassword) throws NZException  {
         OutputStream out = null;
         File file = null;
@@ -85,7 +90,8 @@ public class SftpUtils {
         }
     }
 
-    /**
+    */
+/**
      * 上传到sftp
      *
      * @param targetPath 目标服务器安装目录
@@ -93,7 +99,8 @@ public class SftpUtils {
      * @param fileName   文件名称
      * @param shellName  脚本名称
      * @throws Exception
-     */
+     *//*
+
     public void upload(String targetPath, String path, String fileName, String shellName) throws NZException, JSchException {
         // sftp通道
         Channel channel = session.openChannel("sftp");
@@ -140,11 +147,13 @@ public class SftpUtils {
         }
     }
 
-    /**
+    */
+/**
      * 执行命令
      *
      * @param cmd
-     */
+     *//*
+
     public void exec(String cmd) {
         try {
             // 执行命令通道
@@ -157,9 +166,11 @@ public class SftpUtils {
         }
     }
 
-    /**
+    */
+/**
      * 退出登陆
-     */
+     *//*
+
     public void logout() {
         if (sftp != null) {
             if (sftp.isConnected()) {
@@ -173,9 +184,11 @@ public class SftpUtils {
         }
     }
 
-    /**
+    */
+/**
      * 创建文件目录
-     */
+     *//*
+
     private void createDir(String createpath) {
         try {
             if (isDirExist(createpath)) {
@@ -204,9 +217,11 @@ public class SftpUtils {
         }
     }
 
-    /**
+    */
+/**
      * 判断目录是否存在
-     */
+     *//*
+
     public boolean isDirExist(String directory) {
         boolean isDirExistFlag = false;
         try {
@@ -222,3 +237,4 @@ public class SftpUtils {
         return isDirExistFlag;
     }
 }
+*/

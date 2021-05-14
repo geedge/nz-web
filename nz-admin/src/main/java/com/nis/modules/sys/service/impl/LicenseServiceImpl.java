@@ -7,6 +7,8 @@ import java.security.PublicKey;
 import java.util.Date;
 import java.util.TimeZone;
 
+import cn.hutool.core.io.IORuntimeException;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -255,16 +257,22 @@ public class LicenseServiceImpl implements LicenseService {
 			File file = Tool.FileUtil.newFile(publicKeyPath);
 			log.debug("pubk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
 			// 通过 getResourceAsStream 确保jar包中也能够读取
-			try (InputStream is = file.exists() ? Tool.FileUtil.getInputStream(file)
-					: this.getClass().getResourceAsStream(publicKeyPath)) {
+			InputStream is = null;
+			try {
+				is = file.exists() ? Tool.FileUtil.getInputStream(file) : this.getClass().getResourceAsStream(publicKeyPath);
 				cache = Tool.PemUtil.readPemPublicKey(is);
 				log.info("license public key load success");
 				if (log.isDebugEnabled()) {
 					log.debug("public key content: {}", cache);
 				}
 				LicenseServiceImpl.publickeyCache = cache;
-			} catch (IOException e) {
+			} catch (IORuntimeException e) {
+				log.error(e);
 				throw new NZException("license public key load error", 999);
+			} finally {
+				if(is != null){
+					IOUtils.closeQuietly(is);
+				}
 			}
 		}
 		return cache;

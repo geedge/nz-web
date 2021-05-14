@@ -1,8 +1,10 @@
 package com.nis.setup.controller;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 
+import cn.hutool.core.io.IORuntimeException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -85,8 +87,9 @@ public class SetupController  {
     		if(!configFile.exists()) {
     			//创建父目录&配置文件
     			Tool.FileUtil.mkParentDirs(configFile.getAbsolutePath());
-    			configFile.createNewFile();
-    		}
+                boolean newFile = configFile.createNewFile();
+                log.info("set up config new file {}", newFile);
+            }
     		prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
     		prop.put("nezha.inited", "1");
     		prop.put("database.host",setup.getDatabase().getHost());
@@ -102,20 +105,24 @@ public class SetupController  {
     		}
     		//保存配置文件
     		prop.store(configFile.getAbsolutePath());
-    		
+
         	//其它配置保存到临时文件
             File tmpConfigFile = Tool.FileUtil.file(tmpDir, Constant.SETUP_FILE_NAME);
             if(!tmpConfigFile.exists()) {
     			//创建父目录&配置文件
     			Tool.FileUtil.mkParentDirs(tmpConfigFile.getAbsolutePath());
-    			tmpConfigFile.createNewFile();
-    		}
+                boolean newFile = tmpConfigFile.createNewFile();
+                log.info("set up config new file {}", newFile);
+            }
             Tool.FileUtil.writeUtf8String(Tool.JSONUtil.toJsonStr(setup), tmpConfigFile);
             //重启nzweb
             this.restart();
             return R.ok();
-        }catch (Exception e){
-        	log.error(e);
+        } catch (IOException e) {
+            log.error(e);
+            return R.error();
+        } catch (IORuntimeException e) {
+            log.error(e);
             return R.error();
         }
     }

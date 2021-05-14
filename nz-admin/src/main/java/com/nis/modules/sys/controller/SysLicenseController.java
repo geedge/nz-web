@@ -9,6 +9,8 @@ import java.util.TimeZone;
 
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.exceptions.UtilException;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -97,10 +99,20 @@ public class SysLicenseController extends AbstractController {
 		byte[] bytes = file.getBytes();
 		//获取文件内容
 		String xml = null;
-		try(ByteArrayInputStream stream = Tool.IoUtil.toStream(bytes);){
+		ByteArrayInputStream stream = null;
+		try {
+			stream = Tool.IoUtil.toStream(bytes);
 			Document document = Tool.XmlUtil.readXML(stream);
 			xml = Tool.XmlUtil.toStr(document, Constant.DEFAULT_CHARTSET_NAME, false);
+		} catch (UtilException e) {
+			logger.error("upload License error", e);
+			throw new NZException(RCode.ERROR);
+		} finally {
+			if(stream != null){
+				IOUtils.closeQuietly(stream);
+			}
 		}
+
 		//将内容转换为 javabean
 		LicenseEntity licenseEntity = Tool.LicenseUtil.xmlToLicenseBean(xml);
 		//校验证书内容是否缺失
@@ -139,14 +151,15 @@ public class SysLicenseController extends AbstractController {
 	 * @throws IOException 
 	*/ 
 	@PostMapping("/gen")
-	public void genLicense(@RequestBody LicenseEntity license,HttpServletResponse response) throws IOException{
+	public void genLicense(@RequestBody LicenseEntity license,HttpServletResponse response){
 		//验证参数是否为空
 		ValidateUtils.is(license).notNull(RCode.LICENSE_PARAM_IS_NULL);
 		//计算摘要和签名
 		File file = Tool.FileUtil.newFile(prikeyPath);
 		log.debug("pk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
-		try (InputStream inputStream = file.exists() ? Tool.FileUtil.getInputStream(file)
-				: this.getClass().getResourceAsStream(prikeyPath)) {
+		InputStream inputStream = null;
+		try {
+			inputStream = file.exists() ? Tool.FileUtil.getInputStream(file) : this.getClass().getResourceAsStream(prikeyPath);
 			DateTime now = Tool.DateUtil.date().setTimeZone(TimeZone.getTimeZone("UTC"));
 			license.setGenDate(Tool.DateUtil.format(now, DatePattern.UTC_PATTERN));
 			//算config
@@ -159,11 +172,19 @@ public class SysLicenseController extends AbstractController {
 			signature.setSignatureValue(sign);
 			//保存签名信息
 			license.setSignature(signature);
+
+			//转为xml
+			String xmlStr = Tool.LicenseUtil.licenseBeanToXml(license, true);
+			//下载文件
+			Tool.ResponseUtil.downloadFile(response, licenseFileName, Tool.StrUtil.bytes(xmlStr,Constant.DEFAULT_CHARTSET_NAME));
+		} catch (IOException e) {
+			logger.error("generate License error", e);
+			throw new NZException(RCode.ERROR);
+		} finally {
+			if(inputStream != null){
+				IOUtils.closeQuietly(inputStream);
+			}
 		}
-		//转为xml
-		String xmlStr = Tool.LicenseUtil.licenseBeanToXml(license, true);
-		//下载文件
-		Tool.ResponseUtil.downloadFile(response, licenseFileName, Tool.StrUtil.bytes(xmlStr,Constant.DEFAULT_CHARTSET_NAME));
 	}
 
 }

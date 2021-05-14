@@ -2,6 +2,7 @@ package com.nis.common.config;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -34,10 +35,12 @@ public class AlertRunner implements CommandLineRunner{
 	@Override
 	public void run(String... args) throws Exception {
 		//启动 告警消息处理线程
-		threadPool.submit(handlerThread);
+		Future<?> submit = threadPool.submit(handlerThread);
+		log.info("handlerThread: {}", submit.isDone());
 		log.info("启动 {} 成功","AlertHanlderThread");
 		//启动邮件通知线程
-		threadPool.submit(notifyThread);
+		Future<?> submit1 = threadPool.submit(notifyThread);
+		log.info("handlerThread: {}", submit1.isDone());
 		log.info("启动 {} 成功","AlertMessageNotifyThread");
 	}
 

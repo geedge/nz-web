@@ -195,6 +195,7 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
             // multipartFile.transferTo(mibFile.getAbsoluteFile());
             FileUtils.copyInputStreamToFile(multipartFile.getInputStream(), mibFile);
             mib = ml.load(mibFile);
+            logger.info("mib name {}", mib != null ? mib.getName(): "mib 解析异常");
         } catch (IOException e) {
             logger.error("mib文件获取失败",e);
         } catch (MibLoaderException e) {

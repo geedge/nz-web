@@ -258,21 +258,6 @@ public class AssetController {
 
 
     /**
-     * asset更新采集项信息
-     */
-    @GetMapping("/asset/feature/update/{id}")
-    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ASSET)
-    public R updateAssetFeature(@PathVariable Integer assetId) {
-        // 采集信息方法
-        try {
-            // assetAssetService.collectData(assetId);
-            return R.ok();
-        } catch (Exception e) {
-            return R.error(500, e.getMessage());
-        }
-    }
-
-    /**
      * asset资产批量修改
      */
     @PutMapping("/asset/bulkEdit")
