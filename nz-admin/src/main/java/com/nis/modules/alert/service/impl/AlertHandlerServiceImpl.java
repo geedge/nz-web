@@ -252,16 +252,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Iterator<AlertMessageEntity> iterator = msgList.iterator();
 		for(;iterator.hasNext();) {//逐个设置 key 缓存，邮件通知
 			AlertMessageEntity message = iterator.next();
-			AlertMessageEntity fromMessage = msgHandlerDao.selectMessageByIdAndTableName(message.getId(), fromTable);
-			if(fromMessage == null) {
-				iterator.remove();
-				continue;
-			}
-			Tool.BeanUtil.copyProperties(fromMessage, message, "endAt");//复制原内容
-			message.setState(state);//修改状态
-			String hashKey = fromMessage.getHashKey();
-			ids.add(fromMessage.getId());
+			String hashKey = message.getHashKey();
 			if(Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
+				AlertMessageEntity fromMessage = msgHandlerDao.selectMessageByIdAndTableName(message.getId(), fromTable);
+				if(fromMessage == null) {
+					iterator.remove();
+					continue;
+				}
+				Tool.BeanUtil.copyProperties(fromMessage, message, "endAt");//复制原内容
+				message.setState(state);//修改状态
+				hashKey = fromMessage.getHashKey();
+				ids.add(fromMessage.getId());
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey));
 				this.pushMessageNotifyList(fromMessage);
 			}
@@ -269,7 +270,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, hashKey));
 			}
 		}
-		if(Tool.CollUtil.isNotEmpty(msgList)) {
+		//只有 active 消息失效会保存到 history
+		if(Tool.CollUtil.isNotEmpty(msgList) && Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
 			msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
 		}
 		if(Tool.CollUtil.isNotEmpty(ids)) {
