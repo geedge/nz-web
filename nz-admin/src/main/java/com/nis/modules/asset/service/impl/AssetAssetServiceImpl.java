@@ -637,6 +637,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (StringUtils.isNotEmpty(model.getChartIds())) {
             List<String> list = Arrays.asList(model.getChartIds().split(","));
             List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
+            // 补充 group 下的 chart id
+            List<VisualChart> childCharts = chartService.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, chartIdList));
+            List<Integer> childChartIdList = childCharts.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
+            chartIdList.addAll(childChartIdList);
+            chartIdList = chartIdList.stream().distinct().collect(Collectors.toList());
             List<VisualChart> chartList = chartService.queryChartWithElementByIds(chartIdList);
 
             AssetAsset assetInfo = this.queryAssetInfo(asset.getId());
