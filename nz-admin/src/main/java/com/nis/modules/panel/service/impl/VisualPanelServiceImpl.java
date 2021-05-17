@@ -703,7 +703,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Integer groupId=0;
             String groupName = ExcelUtils.getCellValue(row.getCell(1));
             if(StrUtil.isNotBlank(groupName)) {
-            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
                 if(ToolUtil.isEmpty(groupChart)) {
                 	groupChart = new VisualChart();
                 	groupChart.setPanelId(panelId);
@@ -1053,7 +1053,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Integer groupId=0;
             String groupName = ExcelUtils.getCellValue(row.getCell(0));
             if(StrUtil.isNotBlank(groupName)) {
-            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
                 if(ToolUtil.isEmpty(groupChart)) {
                 	groupChart = new VisualChart();
                 	groupChart.setPanelId(panel.getId());

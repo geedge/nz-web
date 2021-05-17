@@ -229,7 +229,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	        // group 类型不需要校验 elements
 	        case Constant.CHART_GROUP_TYPE:{
 	        	// 当chart为group时 不允许name重复  会影响chart批量导入
-	        	List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, chart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).ne(ToolUtil.isNotEmpty(chart.getId()), VisualChart::getId,chart.getId()));
+	        	List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, chart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, chart.getPanelId()).ne(ToolUtil.isNotEmpty(chart.getId()), VisualChart::getId,chart.getId()));
 	            if(ToolUtil.isNotEmpty(charts)) {
 	            	throw new NZException(RCode.CHART_GROUP_NAME_DUPLICATE);
 	            }
