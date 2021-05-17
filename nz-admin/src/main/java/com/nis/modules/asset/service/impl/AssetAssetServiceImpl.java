@@ -614,13 +614,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
 
-        // 新增 asset 时，新增 asset panel chart / 关联 Model charts
+        // 新增 asset 时，新增 asset panel chart /
         this.saveAssetChartsWhenInsert(asset);
+
+        // 新增 asset 时，新增 关联 Model charts
+        this.saveAssetModelChartsWhenInsert(asset);
         return asset.getId();
     }
 
     /**
-     * 新增 asset 时，新增 asset panel chart / 关联 Model charts
+     * 新增 asset 时，新增 asset panel chart
      * @param asset
      */
     private void saveAssetChartsWhenInsert(AssetAsset asset) {
@@ -630,8 +633,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         VisualChart chartTemplate = JSONObject.parseObject(assetChartConfig.getParamValue(), VisualChart.class);
         // 新增时需要新增 panel chart
         chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), null, chartTemplate);
+    }
 
-
+    /**
+     * 新增 asset 时，新增 关联 Model charts
+     *
+     * @param asset
+     */
+    private void saveAssetModelChartsWhenInsert(AssetAsset asset) {
         // 通过关联 model charts 添加 asset charts
         AssetModel model = modelService.getById(asset.getModelId());
         if (StringUtils.isNotEmpty(model.getChartIds())) {
@@ -1926,18 +1935,18 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getCabinetId() == null && cabinet != null) {
             asset.setCabinetId(cabinet.getId());
         }
-//        this.save(asset);
-        this.saveAsset(asset);
+        this.save(asset);
         // 新增时需要新增 panel chart
-		/*        chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
-		updateMap.put("asset", asset);
+		chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
+		// 新增 asset 时，新增 关联 Model charts
+        this.saveAssetModelChartsWhenInsert(asset);
 		
 		// fields
 		List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
 		if (CollectionUtils.isNotEmpty(fields)) {
 		    fields.forEach(assetFieldValue -> assetFieldValue.setAssetId(asset.getId()));
 		    assetFieldValueService.saveBatch(fields);
-		}*/
+		}
         updateMap.put("asset", asset);
         return updateMap;
     }
@@ -2064,8 +2073,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             row.createCell(14).setCellValue(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
             row.createCell(15).setCellValue(ToolUtil.isEmpty(asset.getAuthType()) ? "" : String.valueOf(asset.getAuthType()));
             row.createCell(16).setCellValue(ToolUtil.isEmpty(asset.getAuthUsername()) ? "" : asset.getAuthUsername());
-            row.createCell(17).setCellValue(ToolUtil.isEmpty(asset.getAuthPin()) ? "" : asset.getAuthPin());
-            row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
+//            row.createCell(17).setCellValue(ToolUtil.isEmpty(asset.getAuthPin()) ? "" : asset.getAuthPin());
+//            row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
+            row.createCell(17).setCellValue("");
+            row.createCell(18).setCellValue("");
             row.createCell(19).setCellValue(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
             row.createCell(20).setCellValue(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
 
