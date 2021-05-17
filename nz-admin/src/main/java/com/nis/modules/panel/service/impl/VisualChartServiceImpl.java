@@ -90,6 +90,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         String groupId = (String) params.get("groupId");
         if(ToolUtil.equals(groupId, "0") && ToolUtil.isNotEmpty(result)) {
         	Map<String, Object> queryChildren =new HashMap<String,Object>();
+	        queryChildren.put(Constant.LIMIT, "-1");
         	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
         	queryChildren.put("groupIds", fatherIds);
         	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
