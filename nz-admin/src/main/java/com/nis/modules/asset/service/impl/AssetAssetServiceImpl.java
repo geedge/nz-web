@@ -2094,7 +2094,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (CollectionUtils.isNotEmpty(asset.getFields())) {
                 fieldStr = "";
                 for (AssetFieldMeta meta : asset.getFields()) {
-                    fieldStr += meta.getMetaKey() + "=" + meta.getValue() + "\n";
+                    fieldStr += meta.getMetaKey() + "=" + meta.getValue().get(0) + "\n";
                 }
                 row.createCell(13).setCellValue(fieldStr);
             }
