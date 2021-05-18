@@ -105,6 +105,7 @@ public enum RCode {
     CHART_SYNCTMPL_ERROR(121065,"Chart sync param can not be null"),
     CHART_VARID_ERROR(121066,"varid param error"),
     CHART_GROUP_NAME_DUPLICATE(121067,"chart type is group name is duplicate"),
+    CHART_HEIGHT_INVALIDE(123068, "Chart height should be between 1 and 12"),
 
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),

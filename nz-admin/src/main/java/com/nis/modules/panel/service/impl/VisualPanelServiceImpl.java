@@ -770,11 +770,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_ISNULL.getMsg());
             }else{
+                Integer heightIntVal = null;
                 try {
-                    Double.valueOf(height).intValue();
+                    heightIntVal = Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_FORMAT.getMsg());
+                }
+                if (heightIntVal != null && (heightIntVal < 1 || heightIntVal > 12)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_INVALIDE.getMsg());
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(6));
@@ -1121,11 +1126,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_ISNULL.getMsg());
             } else {
+                Integer heightIntVal = null;
                 try {
-                    Double.valueOf(height).intValue();
+                    heightIntVal = Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_FORMAT.getMsg());
+                }
+                if (heightIntVal != null && (heightIntVal < 1 || heightIntVal > 12)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_INVALIDE.getMsg());
                 }
             }
             String unit = ExcelUtils.getCellValue(row.getCell(5));

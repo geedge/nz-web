@@ -736,8 +736,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             asset.setCabinetEnd(parent.getCabinetEnd());
         }
 
+        // 留作对比是否更改 model
+        AssetAsset oldAsset = this.getById(asset.getId());
+
         // 保存
         this.updateById(asset);
+
+        // 如果修改了Model, 处理关联 charts 变化
+        if (!oldAsset.getModelId().equals(asset.getModelId())) {
+            this.updateModelCharts(asset);
+        }
 
         // 如果没有指定 meta, 则视为删除 asset之前关联的 meta 信息
         assetFieldValueService.remove(new LambdaQueryWrapper<AssetFieldValue>().eq(AssetFieldValue::getAssetId, asset.getId()));
@@ -745,6 +753,27 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
         return asset.getId();
+    }
+
+    /**
+     * asset 更改了 model , 对应更新 asset charts,自己的 charts 保留
+     * @param asset
+     */
+    @Transactional(rollbackFor = Exception.class)
+    private void updateModelCharts(AssetAsset asset) {
+        VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET).eq(VisualPanel::getLink, asset.getId()));
+        List<VisualChart> chartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, assetPanel.getId()));
+        List<Integer> delIds = chartList.stream().filter(chart -> chart.getPid() != null ? true : false).map(VisualChart::getId).collect(Collectors.toList());
+
+        // 删除之前 model 关联的图表
+        Integer[] ids = new Integer[delIds.size()];
+        delIds.toArray(ids);
+
+        // 删除旧 model 关联的 charts
+        chartService.delCharts(ids, null);
+
+        // 新增新 model 关联的 charts
+        this.saveAssetModelChartsWhenInsert(asset);
     }
 
     private void saveAssetRelData(AssetAsset asset) {
