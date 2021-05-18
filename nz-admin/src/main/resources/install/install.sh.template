@@ -98,7 +98,7 @@ function installPackage() {
   case $CURRENT_OS in
   'centos')
     log yellow 'install package right now...'
-    rpm -ivh $WORK_PATH/$PACKAGE_NAME && mkdir -p $INSTALL_PATH/config; echo $AGENT_TOKEN > $INSTALL_PATH/config/auth.token
+    rpm -ivh $WORK_PATH/$PACKAGE_NAME && mkdir -p $INSTALL_PATH/config; echo $AGENT_TOKEN > $INSTALL_PATH/config/token.auth
     ;;
   esac
 
