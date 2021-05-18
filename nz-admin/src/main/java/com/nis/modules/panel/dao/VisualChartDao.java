@@ -14,7 +14,9 @@ import org.apache.ibatis.annotations.Param;
 public interface VisualChartDao extends BaseMapper<VisualChart> {
 
     VisualChart queryInfo(Integer id);
-    
+
+    List<VisualChart> queryList(@Param("list") List<Integer> idList);
+
     void updateSizeById(@Param("chart") VisualChart chart);
     
     void updateWeightBatch(@Param("panelId")Integer panelId , @Param("charts") List<VisualChart> charts);
