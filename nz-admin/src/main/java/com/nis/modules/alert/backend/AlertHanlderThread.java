@@ -61,6 +61,12 @@ public class AlertHanlderThread implements Runnable {
 		log.info("AlertHanlderRunner 告警消息处理线程启动");
 		while (true) {
 			try {
+				// 检查 haMode
+		    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+		        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+					Thread.sleep(10000);
+		        	continue;
+		        }
 				ValueOperations<String, Object> operations = redisTemplate.opsForValue();
 				ListOperations<String, Object> opsForList = redisTemplate.opsForList();
 				// 1、从redis中阻塞获取  等待30s

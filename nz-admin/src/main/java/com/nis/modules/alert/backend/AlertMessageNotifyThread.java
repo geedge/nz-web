@@ -33,6 +33,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 
 import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
@@ -69,6 +70,12 @@ public class AlertMessageNotifyThread implements Runnable {
 		logger.info("AlertMessageNotifyHandler 告警通知线程启动");
 		while (true) {
 			try {
+				// 检查 haMode
+		    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+		        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+					Thread.sleep(10000);
+		        	continue;
+		        }
 				ListOperations<String, String> opsForList = redisTemplate.opsForList();
 				//从队列中取一条 需要通知的 alertmessage
 				String messageStr = opsForList.rightPop(Constant.ALERT_MESSAGE_NOTIFY,30,TimeUnit.SECONDS);
