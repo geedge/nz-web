@@ -69,6 +69,10 @@ public class AlertHanlderThread implements Runnable {
 		        }
 				ValueOperations<String, Object> operations = redisTemplate.opsForValue();
 				ListOperations<String, Object> opsForList = redisTemplate.opsForList();
+				if(redisTemplate.hasKey(Constant.ALERT_MESSAGE_RECV)) {
+					Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
+		    		log.debug("alert_message_recv size : {}",size);
+				}
 				// 1、从redis中阻塞获取  等待30s
 				String alertMessageStr = (String)opsForList.rightPop(Constant.ALERT_MESSAGE_RECV,30,TimeUnit.SECONDS);
 				if (Tool.StrUtil.isBlank(alertMessageStr)) {

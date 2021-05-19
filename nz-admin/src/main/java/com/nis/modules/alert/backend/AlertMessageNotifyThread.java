@@ -77,6 +77,10 @@ public class AlertMessageNotifyThread implements Runnable {
 		        	continue;
 		        }
 				ListOperations<String, String> opsForList = redisTemplate.opsForList();
+				if(redisTemplate.hasKey(Constant.ALERT_MESSAGE_NOTIFY)) {
+					Long size = opsForList.size(Constant.ALERT_MESSAGE_NOTIFY);
+		    		logger.debug("alert_message_notify size : {}",size);
+				}
 				//从队列中取一条 需要通知的 alertmessage
 				String messageStr = opsForList.rightPop(Constant.ALERT_MESSAGE_NOTIFY,30,TimeUnit.SECONDS);
 				AlertMessageEntity messageEntity = Tool.JSONUtil.toBean(messageStr, AlertMessageEntity.class);
