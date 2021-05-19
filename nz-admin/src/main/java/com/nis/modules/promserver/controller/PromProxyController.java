@@ -99,7 +99,7 @@ public class PromProxyController {
 		// Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 //			logger.debug("path:{},prometheus server:{}", promPath, JSONUtils.valueToString(server));
 		// 请求 prometheus server
-		requestProm(server.getHost(), server.getPort(), promPath, request, response);
+		requestProm(server.getHost(), server.getPort(), promPath, server.getToken(), request, response);
 	}
 
 	/**
@@ -113,8 +113,7 @@ public class PromProxyController {
 	 * @throws IOException
 	 * @throws MalformedURLException
 	 */
-	public void requestProm(String host, int port, String path, HttpServletRequest request,
-			HttpServletResponse response)  {
+	public void requestProm(String host, int port, String path, String token, HttpServletRequest request, HttpServletResponse response) {
 //		String queryString = request.getQueryString();
 		String queryString = ReflectUtil.invoke(request, "getQueryString");
 
@@ -146,8 +145,14 @@ public class PromProxyController {
 			while (headerNames.hasMoreElements()) {
 				String hn = headerNames.nextElement();
 				/*conn.addRequestProperty(XssUtil.stripXSS(hn), XssUtil.stripXSS(request.getHeader(hn)));*/
+				if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
+					continue;
+				}
 				ReflectUtil.invoke(conn,"addRequestProperty",hn,request.getHeader(hn));
 			}
+
+			ReflectUtil.invoke(conn, "addRequestProperty", Constant.AUTH_TOKEN_CODE, token);
+
 			if (!"GET".equalsIgnoreCase(method)) {
 				conn.setDoOutput(true);
 				conn.setDoInput(true);
