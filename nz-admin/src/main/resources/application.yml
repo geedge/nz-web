@@ -82,7 +82,7 @@ nezha:
 #  inited: 2  #系统初始化状态 0 未初始化，1 配置文件初始化完成 2 所有初始化完成
   virtualAgentNum: 10 # agent 平均分配时，一致性 hash 虚节点数量
 logging:
-  config: ./config/logback-spring.xml
+  config: classpath:config/logback-spring.xml
 
 #mybatis
 mybatis-plus:
