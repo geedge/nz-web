@@ -544,7 +544,8 @@
 		ascc.name name
 	FROM
 		alert_message_active am
-		LEFT JOIN alert_severity_conf ascc ON am.severity_id = ascc.id 
+		LEFT JOIN alert_severity_conf ascc ON am.severity_id = ascc.id
+	WHERE am.dc_id >= 1
 	GROUP BY
 		am.dc_id,
 		am.severity_id
