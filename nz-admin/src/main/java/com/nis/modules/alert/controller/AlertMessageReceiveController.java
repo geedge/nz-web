@@ -47,6 +47,8 @@ public class AlertMessageReceiveController {
     		}
     		ListOperations<String, String> operations = redisTemplate.opsForList();
     		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
+    		Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
+    		logger.debug("alert_message_recv size : {}",size);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
@@ -62,6 +64,8 @@ public class AlertMessageReceiveController {
     		}
     		ListOperations<String, String> operations = redisTemplate.opsForList();
     		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
+    		Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
+    		logger.debug("alert_message_recv size : {}",size);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
