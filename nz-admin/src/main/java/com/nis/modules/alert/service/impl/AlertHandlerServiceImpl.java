@@ -351,7 +351,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		}
 		log.debug("告警静默规则状态变更：active -> expired ,silenceConf : {}", Tool.JSONUtil.toJsonStr(silenceList));
 		List<Integer> ids = Tool.ListUtil.list(false);
-		List<AlertMessageEntity> messageList = Tool.ListUtil.list(false);
+		List<Long> msgIds = Tool.ListUtil.list(false);
 		for(AlertSilenceConf silenceConf : silenceList) {
 			Integer confId = silenceConf.getId();
 			ids.add(confId);
@@ -360,17 +360,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			List<AlertSilenceMessageRel> smRel = msgHandlerDao.selectAlertMessageIdsOneByOneSilencConfId(confId);
 			if(Tool.CollUtil.isNotEmpty(smRel)) {
 				for(AlertSilenceMessageRel rel : smRel) {
-					AlertMessageEntity message = new AlertMessageEntity();
-					message.setId(rel.getMessageId());
-					message.setHashKey(rel.getHashKey());
-					messageList.add(message);
+					redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, rel.getHashKey()));
 				}
 			}
 		}
 		//删除 alert_message_silence 
-		if(Tool.CollUtil.isNotEmpty(messageList)) {
-			this.handleMessageExpiredBatch(messageList, Constant.ALERT_MESSAGE_SILENCE_STATE);
+		if(Tool.CollUtil.isNotEmpty(msgIds)) {
+			log.debug("silence messsageIds : {}", msgIds.toString());
+			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE,msgIds.toArray(new Long[] {}));
 		}
+		log.debug("silence confIds : {}", ids.toString());
+		msgHandlerDao.deleteAlertSilenceMessageRelBySilenceConfIds(ids.toArray(new Integer[] {}));
 		//更新 alert silence conf 状态 为 expired
 		this.updateSilenceConfStateBatch(Constant.ALERT_SILENCE_STATE_EXPIRED, ids.toArray(new Integer[] {}));
 	}

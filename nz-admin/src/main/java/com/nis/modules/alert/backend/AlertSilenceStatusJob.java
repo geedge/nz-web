@@ -28,8 +28,7 @@ import cn.hutool.log.Log;
  * 2、静默状态由 active 变更为 expired
  *     查询 state = active & 失效时间 < now
  *     根据 silence conf id 查询已经被静默的 message 且 message 只匹配了当前 silence conf
- *     将 符合条件的 silence message 保存到 history message
- *     删除 message 与 silence conf id 关系
+ *     删除 silence message 与 silence conf id 关系
  * @author ThinkPad
  *
  */
