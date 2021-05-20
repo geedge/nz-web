@@ -263,7 +263,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				}
                 fromMessage.setState(state); // 修改状态
 				Tool.BeanUtil.copyProperties(fromMessage, message, "endAt");//复制原内容
-				// message.setState(state);//修改状态
+				message.setState(state);//修改状态
 				hashKey = fromMessage.getHashKey();
 				ids.add(fromMessage.getId());
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey));
