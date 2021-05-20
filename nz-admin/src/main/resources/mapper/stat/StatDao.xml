@@ -272,45 +272,27 @@
     <select id="selectAlertMessageTopNAnalysis" resultMap="statAnalysis">
     	select t.id as id,
     	t.name as name,
-    	count(*) as num
+    	count(am.id) as num
     	from alert_message_active am
     	<if test="params.dimension=='project'">
-    		left join monitor_project t on am.project_id = t.id
+    		right join monitor_project t on am.project_id = t.id
     	</if>
     	<if test="params.dimension=='module'">
-    		left join monitor_module t on am.module_id = t.id
+    		right join monitor_module t on am.module_id = t.id
     	</if>
     	<if test="params.dimension=='endpoint'">
-    		left join monitor_endpoint t on am.endpoint_id = t.id
+    		right join monitor_endpoint t on am.endpoint_id = t.id
     	</if>
     	<if test="params.dimension=='datacenter'">
-    		left join dc t on am.dc_id = t.id
+    		right join dc t on am.dc_id = t.id
     	</if>
     	<if test="params.dimension=='asset'">
-    		left join asset_asset t on am.asset_id = t.id
+    		right join asset_asset t on am.asset_id = t.id
     	</if>
     	<if test="params.dimension=='alertRule'">
-    		left join alert_rule t on am.rule_id = t.id
+    		right join alert_rule t on am.rule_id = t.id
     	</if>
     	where 1=1
-    	<if test="params.dimension=='project'">
-    		and am.project_id is not null
-    	</if>
-    	<if test="params.dimension=='module'">
-    		and am.module_id is not null
-    	</if>
-    	<if test="params.dimension=='endpoint'">
-    		and am.endpoint_id = t.id is not null
-    	</if>
-    	<if test="params.dimension=='datacenter'">
-    		and am.dc_id is not null
-    	</if>
-    	<if test="params.dimension=='asset'">
-    		and am.asset_id is not null
-    	</if>
-    	<if test="params.dimension=='alertRule'">
-    		and am.rule_id is not null
-    	</if> 
     	<if test="params.projectId != null">
     		and am.project_id = #{params.projectId}
     	</if>

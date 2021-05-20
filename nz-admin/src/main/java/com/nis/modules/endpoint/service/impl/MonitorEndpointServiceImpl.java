@@ -1,6 +1,7 @@
 package com.nis.modules.endpoint.service.impl;
 
 import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -26,7 +27,9 @@ import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
+import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.panel.service.VisualPanelService;
@@ -34,6 +37,8 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -91,6 +96,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private AlertMessageService alertMessageService;
+    
+    @Autowired
+    private VisualChartElementService visualChartElementService;
     
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
@@ -332,10 +340,71 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             if(addEndpoint) {
                 // 新增时需要新增 panel chart
                 visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), null, chartTemplate);
+                
+                // 新增时同时需要新增module下chart ids关联的模板
+                this.saveModuleChartTmpl(endpoint);
             }
         }
     }
 
+    public void saveModuleChartTmpl(MonitorEndpoint endpoint) {
+    	MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+    	if(ToolUtil.isNotEmpty(module) && StrUtil.isNotBlank(module.getChartIds())) {
+    		List<String> list = Arrays.asList(module.getChartIds().split(","));
+            List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
+            // 补充 group 下的 chart id
+            List<VisualChart> childCharts = visualChartService.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, chartIdList));
+            List<Integer> childChartIdList = childCharts.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
+            chartIdList.addAll(childChartIdList);
+            chartIdList = chartIdList.stream().distinct().collect(Collectors.toList());
+            List<VisualChart> chartList = visualChartService.queryChartWithElementByIds(chartIdList);
+            
+            MonitorEndpoint endpointInfo = this.queryEndpointEntity(endpoint.getId());
+            VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).eq(VisualPanel::getLink, endpoint.getId()));
+
+            // model chart 组 和 asset 新增 chart 组关联关系，用来做 asset 新增 chart 组关系映射
+            Map<Integer, Integer> groupIdMapping = new HashMap<>();
+
+            // 按照 group 升序，先添加组
+            chartList = chartList.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+
+            // 渲染新增
+            for (VisualChart chart : chartList) {
+                VisualChart saveChart = new VisualChart();
+                Tool.BeanUtil.copyProperties(chart, saveChart);
+                saveChart.setId(null);
+                saveChart.setPanelId(endpointPanel.getId());
+                saveChart.setUpdateAt(new Date());
+                saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
+                saveChart.setPid(chart.getId());
+
+                saveChart.setVarType(1);
+                saveChart.setVarId(endpoint.getId());
+
+                Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
+                saveChart.setGroupId(newGroupId == null ? 0 : newGroupId);
+
+                saveChart.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), endpointInfo));
+                saveChart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), endpoint) : null);
+
+                visualChartService.save(saveChart);
+
+                if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
+                    groupIdMapping.put(chart.getId(), saveChart.getId());
+                }
+
+                if (CollectionUtils.isNotEmpty(saveChart.getElements())) {
+                    for (VisualChartElement chartElement : saveChart.getElements()) {
+                        chartElement.setId(null);
+                        chartElement.setChartId(saveChart.getId());
+                        chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), endpoint) : null);
+                    }
+                    visualChartElementService.saveBatch(saveChart.getElements());
+                }
+            }
+    	}
+    }
+    
     @Override
     public void deleteEndpointByIds(List<Integer> ids) {
         // 删除 endpoint
