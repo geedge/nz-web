@@ -170,12 +170,23 @@ public class AlertMessageNotifyThread implements Runnable {
 			log.setErrorMsg("file not exist");
 			log.setState(0);
 		}else {
-			Process process = Tool.RuntimeUtil.exec(filePath, Tool.JSONUtil.toJsonStr(message));
-			String result = Tool.RuntimeUtil.getErrorResult(process, Charset.forName(Constant.DEFAULT_CHARTSET_NAME));
-			Tool.RuntimeUtil.destroy(process);
-			if (Tool.StrUtil.isNotBlank(result)) {//错误信息不为空则说明发送报错
-				log.setState(0);
-				log.setErrorMsg(result);
+			Object account = Tool.BeanUtil.getProperty(user, method.getAccount());
+			if(logger.isDebugEnabled()) {
+				logger.debug("account:{},message:{}", account,Tool.JSONUtil.toJsonStr(message));
+			}
+			Process process = null;
+			try {
+				process = Tool.RuntimeUtil.exec(filePath, Tool.StrUtil.str(account, Constant.DEFAULT_CHARTSET_NAME),Tool.JSONUtil.toJsonStr(message));
+				String result = Tool.RuntimeUtil.getErrorResult(process, Charset.forName(Constant.DEFAULT_CHARTSET_NAME));
+				logger.debug("result:{}", result);
+				if (Tool.StrUtil.isNotBlank(result)) {//错误信息不为空则说明发送报错
+					log.setState(0);
+					log.setErrorMsg(result);
+				}
+			} finally {
+				if(process != null) {
+					Tool.RuntimeUtil.destroy(process);
+				}
 			}
 		}
 		logger.debug("告警通知结果:{}", Tool.JSONUtil.toJsonStr(log));
