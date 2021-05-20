@@ -35,11 +35,6 @@ public interface AlertHandlerDao {
 	AlertMessageEntity selectMessageByIdAndTableName(@Param("messageId")Long messageId,@Param("tableName")String tableName);
 	
 	/**
-	 * 根据id查找 alert message
-	 */
-	List<AlertMessageEntity> selectMessageByIdAndTableName(@Param("tableName")String tableName,@Param("ids")List<Long> ids);
-	
-	/**
 	 * 查询所有 alert_message_active
 	 * @return
 	 */

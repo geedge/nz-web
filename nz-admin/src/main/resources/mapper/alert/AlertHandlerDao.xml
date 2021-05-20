@@ -56,14 +56,6 @@
 		select * from ${tableName} where id = #{messageId}
 	</select>
 	
-	<!-- 根据id查询 alert message -->
-	<select id="selectMessageByIdAndTableName" resultMap="alertMessageMap">
-		select * from ${tableName} where id in 
-		<foreach collection="ids" item="item" separator="," open="(" close=")">
-			#{messageId}
-		</foreach>
-	</select>
-	
 	<!-- 查询所有 active 状态 alert message -->
 	<select id="selectAllActiveMessage" resultMap="alertMessageMap">
 		select * from alert_message_active 
