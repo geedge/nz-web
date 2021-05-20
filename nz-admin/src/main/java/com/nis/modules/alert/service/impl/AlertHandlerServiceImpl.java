@@ -364,12 +364,13 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			if(Tool.CollUtil.isNotEmpty(smRel)) {
 				for(AlertSilenceMessageRel rel : smRel) {
 					redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_SILENCE_PRIX, rel.getHashKey()));
+					msgIds.add(rel.getMessageId());
 				}
 			}
 		}
 		//删除 alert_message_silence 
+		log.debug("silence messsageIds : {}", msgIds.toString());
 		if(Tool.CollUtil.isNotEmpty(msgIds)) {
-			log.debug("silence messsageIds : {}", msgIds.toString());
 			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE,msgIds.toArray(new Long[] {}));
 		}
 		log.debug("silence confIds : {}", ids.toString());
