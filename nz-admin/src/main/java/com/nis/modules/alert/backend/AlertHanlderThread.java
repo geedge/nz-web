@@ -102,7 +102,7 @@ public class AlertHanlderThread implements Runnable {
 							endTime = Tool.DateUtil.offsetSecond(nowDate, resolveTimeout);
 							dto.setEndsAt(Tool.DateUtil.format(endTime, Constant.ALERT_MESSAGE_DATE_FORMAT));
 						} else {
-							endTime = Tool.DateUtil.parse(endsAt,Constant.ALERT_MESSAGE_DATE_FORMAT);
+							endTime = Tool.DateUtil.parseUTC(endsAt);//Tool.DateUtil.parse(endsAt,Constant.ALERT_MESSAGE_DATE_FORMAT);
 						}
 						String hash = dto.genHashKey();// 计算hash 值
 						//查找 redis 是否存在,value 为id

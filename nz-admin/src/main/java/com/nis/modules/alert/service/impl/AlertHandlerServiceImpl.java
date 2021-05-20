@@ -721,8 +721,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		message.setSeverity(severityConf);
 		
 		// 设置时间
-		DateTime endAt = Tool.DateUtil.parse(dto.getEndsAt(), Constant.ALERT_MESSAGE_DATE_FORMAT);
-		DateTime startAt = Tool.DateUtil.parse(dto.getStartsAt(), Constant.ALERT_MESSAGE_DATE_FORMAT);
+		DateTime endAt = Tool.DateUtil.parseUTC(dto.getEndsAt());
+		DateTime startAt = Tool.DateUtil.parseUTC(dto.getStartsAt());
 		message.setEndAt(endAt);
 		message.setStartAt(startAt);
 		// 设置 annotation 信息
