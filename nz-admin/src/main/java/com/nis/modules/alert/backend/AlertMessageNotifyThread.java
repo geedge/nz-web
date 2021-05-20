@@ -215,8 +215,8 @@ public class AlertMessageNotifyThread implements Runnable {
 		String content = this.genMailContent(message, template);
 		String stateStr = "UNKNOWN";
         switch (message.getState()) {
-            case 1:stateStr = "Active";break;
-            case 3:stateStr = "Expired";break;
+            case 1:stateStr = "[Active] ";break;
+            case 3:stateStr = "[Expired] ";break;
         }
 		try {
 			mailUtil.sendHTML(Tool.ListUtil.toList(user.getEmail()), Tool.StrUtil.concat(true, stateStr,message.getSummary()), content);

@@ -2,6 +2,7 @@ package com.nis.modules.alert.backend;
 
 import java.util.List;
 
+import com.alibaba.fastjson.JSONObject;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -46,6 +47,7 @@ public class AlertMessageExpiredJob extends QuartzJobBean{
         sw.start("message active to expired");
         // 1、查询 alert_message_active表 endAt < now-resolveTime 的告警消息
         List<AlertMessageEntity> messageList = messageHandlerService.selectMessagegtNow(Constant.ALERT_MESSAGE_ACTIVE_TABLE);
+        log.debug("expired 告警 {}", JSONObject.toJSONString(messageList));
         // 2、将 查出来的告警消息 写入到  expired 表&删除redis key
         if(Tool.CollUtil.isNotEmpty(messageList)) {
         	messageHandlerService.handleMessageExpiredBatch(messageList, Constant.ALERT_MESSAGE_ACTIVE_STATE);
