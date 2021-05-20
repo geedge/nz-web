@@ -292,7 +292,25 @@
     	<if test="params.dimension=='alertRule'">
     		left join alert_rule t on am.rule_id = t.id
     	</if>
-    	where 1=1 
+    	where 1=1
+    	<if test="params.dimension=='project'">
+    		and am.project_id is not null
+    	</if>
+    	<if test="params.dimension=='module'">
+    		and am.module_id is not null
+    	</if>
+    	<if test="params.dimension=='endpoint'">
+    		and am.endpoint_id = t.id is not null
+    	</if>
+    	<if test="params.dimension=='datacenter'">
+    		and am.dc_id is not null
+    	</if>
+    	<if test="params.dimension=='asset'">
+    		and am.asset_id is not null
+    	</if>
+    	<if test="params.dimension=='alertRule'">
+    		and am.rule_id is not null
+    	</if> 
     	<if test="params.projectId != null">
     		and am.project_id = #{params.projectId}
     	</if>
@@ -302,6 +320,7 @@
     	<if test="params.dcId != null">
     		and am.dc_id = #{params.dcId}
     	</if>
+    	group by t.id
     	order by num desc limit 0,#{params.size}
     </select>
     
@@ -451,6 +470,12 @@
     	<if test="params.stateId != null">
     		and aa.state_id = #{params.stateId}
     	</if>
+    	<if test="params.dimension == 'model'">
+    		group by aa.model_id
+    	</if>
+    	<if test="params.dimension == 'type'">
+    		group by aa.type_id
+    	</if>
     	order by num desc
     	limit 0,#{params.size}
     </select>
@@ -464,6 +489,7 @@
     	<if test="params.projectId != null">
     		and mm.project_id = #{params.project_id}
     	</if>
+    	group by mm.id
     	order by num desc
     	limit 0,#{params.size}
     </select>

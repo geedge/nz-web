@@ -21,6 +21,8 @@ import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.dao.MonitorModuleDao;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
+import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.project.service.TopoService;
@@ -67,7 +69,9 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
     @Autowired
     private SnmpCredentialService snmpCredentialService;
 
-
+    @Autowired
+    private VisualChartService visualChartService;
+    
     @Override
     public MonitorModule queryModuleInfo(Integer id) {
         MonitorModule module = this.getById(id);
@@ -86,6 +90,12 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         Integer alertNum = alertMessageService.getAactiveAlertCountByModuleId(module.getId());
         module.setAlertNum(alertNum);
+        
+        String chartIds = module.getChartIds();
+        if(StrUtil.isNotBlank(chartIds)) {
+        	List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
+        	module.setCharts(charts);
+        }
         return module;
     }
 

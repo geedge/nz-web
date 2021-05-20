@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.project.entity.MonitorProject;
 import lombok.Data;
 
@@ -94,4 +95,9 @@ public class MonitorModule implements Serializable {
      */
     @TableField(exist = false)
     private Integer alertNum;
+    
+    private String chartIds;
+    
+    @TableField(exist = false)
+    private List<VisualChart> charts;
 }
