@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.QueryTimeoutException;
@@ -128,6 +129,7 @@ public class AlertHanlderThread implements Runnable {
 							}
 							//首次收到 active 消息变更为expired 消息，更新状态
 							if(Tool.StrUtil.isNotBlank(activeRk)) {
+								log.debug("告警失效 {}", JSONObject.toJSONString(message));
 								message.setId(Tool.NumberUtil.toBigInteger(activeRk).longValue());
 								//删除 active 表数据，history新增一条，推送邮件通知队列
 								messageHandlerService.handleMessageExpiredBatch(Tool.ListUtil.toList(message), Constant.ALERT_MESSAGE_ACTIVE_STATE);

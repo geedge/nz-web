@@ -256,12 +256,14 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			String hashKey = message.getHashKey();
 			if(Constant.ALERT_MESSAGE_ACTIVE_STATE.equals(fromState)) {
 				AlertMessageEntity fromMessage = msgHandlerDao.selectMessageByIdAndTableName(message.getId(), fromTable);
-				if(fromMessage == null) {
+                log.debug("fromMessage {}", fromMessage != null ? JSONObject.toJSONString(fromMessage) : "null");
+                if(fromMessage == null) {
 					iterator.remove();
 					continue;
 				}
+                fromMessage.setState(state); // 修改状态
 				Tool.BeanUtil.copyProperties(fromMessage, message, "endAt");//复制原内容
-				message.setState(state);//修改状态
+				// message.setState(state);//修改状态
 				hashKey = fromMessage.getHashKey();
 				ids.add(fromMessage.getId());
 				redisTemplate.delete(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey));
@@ -565,7 +567,6 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	/**
 	 * 补充alermessage 内容
 	 * 
-	 * @param dto
 	 * @return
 	 */
 	@Override
