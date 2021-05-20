@@ -110,6 +110,9 @@ public class StatServiceImpl implements StatService{
 	public List<StatAnalysis> queryAlertMessageTopN(Map<String, Object> params) {
 		if(ObjectUtils.isEmpty(params.get("size"))) {
 			params.put("size", topNSize);
+		}else {
+			String size = (String) params.get("size");
+			params.put("size", Integer.valueOf(size));
 		}
 		return statDao.selectAlertMessageTopNAnalysis(params);
 	}
@@ -163,6 +166,9 @@ public class StatServiceImpl implements StatService{
 	public List<StatAnalysis> queryAssetTopN(Map<String, Object> params) {
 		if(ObjectUtils.isEmpty(params.get("size"))) {
 			params.put("size", topNSize);
+		}else {
+			String size = (String) params.get("size");
+			params.put("size", Integer.valueOf(size));
 		}
 		return statDao.selectAssetTopN(params);
 	}
@@ -187,6 +193,9 @@ public class StatServiceImpl implements StatService{
 	public List<StatAnalysis> queryModuleTopN(Map<String, Object> params) {
 		if(ObjectUtils.isEmpty(params.get("size"))) {
 			params.put("size", topNSize);
+		}else {
+			String size = (String) params.get("size");
+			params.put("size", Integer.valueOf(size));
 		}
 		return statDao.selectModuleTopN(params);
 	}

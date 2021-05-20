@@ -247,7 +247,7 @@
     </select>
     
     <select id="selectAlertMessageSeverityAnalysis" resultMap="statAnalysis">
-    select ascc.name as name,
+    	select ascc.name as name,
     	count(am.id) as num
     	from alert_message_active am left join alert_severity_conf ascc on am.severity_id = ascc.id
     	where 1=1 
@@ -255,16 +255,16 @@
     		and project_id = #{params.projectId}
     	</if>
     	<if test="params.moduleId != null">
-    		and project_id = #{params.moduleId}
+    		and module_id = #{params.moduleId}
     	</if>
     	<if test="params.endpointId != null">
-    		and project_id = #{params.endpointId}
+    		and endpoint_id = #{params.endpointId}
     	</if>
     	<if test="params.dcId != null">
-    		and project_id = #{params.dcId}
+    		and dc_id = #{params.dcId}
     	</if>
     	<if test="params.assetId != null">
-    		and project_id = #{params.assetId}
+    		and asset_id = #{params.assetId}
     	</if>
     	group by ascc.id
     </select>

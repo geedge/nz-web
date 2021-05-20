@@ -249,11 +249,11 @@
 			<if test="params.labels != null and params.labels != ''">
 				AND am.labels like concat('%', #{params.labels}, '%')
 			</if>
-			<if test="params.projectName != null and params.projectName != ''">
-				AND p.name LIKE concat('%', #{params.projectName}, '%')
+			<if test="params.endpointName != null and params.endpointName != ''">
+				AND e.name LIKE concat('%', #{params.endpointName}, '%')
 			</if>
-			<if test="params.moduleName != null and params.moduleName != ''">
-				AND m.name LIKE concat('%', #{params.moduleName}, '%')
+			<if test="params.assetName != null and params.assetName != ''">
+				AND ass.name LIKE CONCAT('%', #{params.assetName}, '%')
 			</if>
 			<if test="params.asset != null and params.asset != ''">
 				AND ass.name LIKE CONCAT('%', #{params.asset}, '%')
