@@ -254,8 +254,9 @@
 				<directory>src/main/resources</directory>
 				<excludes>
 					<exclude>**/license.key</exclude>
-					<exclude>**/confagent.rpm</exclude>
+					<exclude>**/*agent*.rpm</exclude>
 					<exclude>**/application-*.yml</exclude>
+					<exclude>**/logback-spring.xml</exclude>
 					<exclude>**/swagger/**</exclude>
 					<exclude>**/nezha.properties</exclude>
 				</excludes>

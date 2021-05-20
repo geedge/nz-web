@@ -51,11 +51,11 @@ public class RedisConfig {
 	private int maxIdle;
 	@Value("${spring.redis.jedis.pool.min-idle:3}")
 	private int minIdle;
-	@Value("${spring.redis.jedis.pool.max-wait:-1}")
+	@Value("${spring.redis.jedis.pool.max-wait:100000}")
 	private int maxWait;
 	@Value("${spring.redis.jedis.pool.max-active:100}")
 	private int maxActive;
-	@Value("${spring.redis.timeout:10000}")
+	@Value("${spring.redis.timeout:100000}")
 	private long redisTimeout;
 	
 	
