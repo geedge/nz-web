@@ -29,7 +29,7 @@ public class JobConfig {
 
     private static final Log log = Log.get();
 
-    @Value("${nezha.agentJobCron:0/30 * 1 * * ?}")
+    @Value("${nezha.agentJobCron:0/30 * * * * ?}")
     private String agentJobCron;
 
     @Value("${nezha.alertSilenceJobCron:0/10 * * * * ?}")
@@ -111,7 +111,7 @@ public class JobConfig {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
-        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * 1 * * ?" : agentJobCron, scheduler);
+        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron, scheduler);
 
         // assetFeatureJob 如果配置文件没有配置定时周期 默认为5分钟执行一次
         createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * 1 * ? *" : assetFeatureJobCron, scheduler);
