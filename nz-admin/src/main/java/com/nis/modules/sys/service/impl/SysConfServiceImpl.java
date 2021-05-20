@@ -488,7 +488,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         // 设置超时时间为10秒
         prop.setProperty("mail.smtp.timeout", Tool.StrUtil.isBlank(smtpTimeout)?Constant.CONNECTION_SMTP_TIMEOUT:smtpTimeout.trim()+"000");
 
-        if(Tool.StrUtil.isNotBlank(securityType)){
+        if ("SSL".equalsIgnoreCase(securityType) || "TLS".equalsIgnoreCase(securityType)) {
             prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             prop.put("mail.smtp.socketFactory.fallback", "false");
             prop.put("mail.smtp.starttls.enable", "true");
