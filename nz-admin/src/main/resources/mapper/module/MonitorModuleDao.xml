@@ -67,4 +67,15 @@
     </select>
 
 
+    <select id="nzEndpointNumsMetric" resultType="com.nis.modules.metric.dto.MetricsDto">
+        SELECT
+            module.name AS name,
+            count( endpoint.id ) AS total
+        FROM
+            monitor_module module
+            LEFT JOIN monitor_endpoint endpoint ON module.id = endpoint.module_id
+        GROUP BY
+            module.id
+    </select>
+
 </mapper>

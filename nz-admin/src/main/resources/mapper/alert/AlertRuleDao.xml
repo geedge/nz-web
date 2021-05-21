@@ -108,4 +108,18 @@
         GROUP BY ar.id
     </select>
 
+    <select id="nzAlertMumsMetric" resultType="com.nis.modules.metric.dto.MetricsDto">
+        SELECT
+            ar.id,
+            ar.name,
+            sc.name AS severity,
+            count( DISTINCT am.id ) as total
+        FROM
+            alert_rule ar
+            LEFT JOIN alert_severity_conf sc ON ar.severity_id = sc.id
+            LEFT JOIN alert_message_active am ON ar.id = am.rule_id
+        GROUP BY
+            ar.id
+    </select>
+
 </mapper>

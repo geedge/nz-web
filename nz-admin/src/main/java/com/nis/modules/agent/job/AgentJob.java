@@ -390,7 +390,7 @@ public class AgentJob extends QuartzJobBean {
         jobList.add(nezhaMetricsMap);
 
         // confagent_metrics
-        Map agentMetricsMap = new LinkedHashMap();
+        /*Map agentMetricsMap = new LinkedHashMap();
         agentMetricsMap.put("job_name", "confagent_metrics");
         agentMetricsMap.put("metrics_path", configMap.get(Constant.CONFAGENT_PATH) + "/metrics");
         agentMetricsMap.put("isFederate", false);
@@ -407,7 +407,7 @@ public class AgentJob extends QuartzJobBean {
         agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
         agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
 
-        jobList.add(agentMetricsMap);
+        jobList.add(agentMetricsMap);*/
         params.put("jobList", jobList);
 
         Map map = null;

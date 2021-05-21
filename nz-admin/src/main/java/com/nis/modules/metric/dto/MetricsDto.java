@@ -4,12 +4,20 @@ import lombok.Data;
 
 @Data
 public class MetricsDto {
+
 	private Integer id;
-	private double total;
-	private String severity;
-	private Integer type;
+
 	private String name;
-	private String vendor;
-	private String assetType;
+
+	private String model;
+
+	private String brand;
+
 	private String state;
+
+	private String type;
+
+	private String severity;
+
+	private Integer total;
 }
