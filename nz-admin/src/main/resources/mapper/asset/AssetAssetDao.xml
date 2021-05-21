@@ -277,4 +277,11 @@
             #{id}
         </foreach>
     </select>
+
+    <update id="updateBrandIdByModelId">
+        UPDATE asset_asset
+        SET brand_id = #{brandId}
+        WHERE
+            model_id = #{modelId}
+    </update>
 </mapper>
