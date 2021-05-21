@@ -479,7 +479,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             successNum = this.saveDashboardChartDataFromSheet(rows, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
         } else {
         	List<Row> rows = this.groupChartRowHandle(sheet,0);
-            successNum = this.saveAssetChartDataFromSheet(rows, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
+            successNum = this.saveAssetEndpointChartDataFromSheet(rows, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
         }
         int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
 
@@ -545,7 +545,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
             // 填充数据
             if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)){
-                this.fillAssetModelChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
+                this.fillAssetEndpointChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }else{
                 this.fillDashboardChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
             }
@@ -591,7 +591,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
 	
     
-    private void fillAssetModelChartData(List<VisualChart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
+    private void fillAssetEndpointChartData(List<VisualChart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
         Row row;
         String type;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
@@ -1043,7 +1043,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return null;
     }
     
-    private int saveAssetChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
+    private int saveAssetEndpointChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
         if (linkId == null) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
 
         VisualPanel panel = this.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panelType).eq(VisualPanel::getLink, linkId));
@@ -1220,6 +1220,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (ToolUtil.isNotEmpty(params.get("chartId"))) {
             chartId = params.get("chartId").toString();
         }
+        String panelType=null;
+        if(ToolUtil.isNotEmpty(params.get("type"))) {
+        	panelType =  params.get("type").toString();
+        	params.put("panelType", panelType);
+        	params.remove("type");
+        }
         List<VisualChart> chartList = new ArrayList<VisualChart>();
         if(chartId != null) {
             // 只导出当前 chart
@@ -1230,6 +1236,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
            // panelList = panelService.getSequentialPanelList(panelList);
             for (VisualPanel panel : panelList) {
             	Map<String, Object> param = new HashMap<String,Object>();
+            	param.put("panelType", panelType);
             	param.put("pageSize", "-1");
                 chartList.addAll(this.queryChartsByPanelId(panel.getId().toString(),null,param));
             }
