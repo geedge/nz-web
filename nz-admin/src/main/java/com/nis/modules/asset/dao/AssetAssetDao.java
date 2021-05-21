@@ -26,4 +26,6 @@ public interface AssetAssetDao extends BaseMapper<AssetAsset> {
     void updateAssetStateBatch(@Param("ids") List<Integer> ids,@Param("params")Map<String,Object> params);
 
     List<VisualChart> getAssetsByChartIds(List<Integer> chartIds);
+
+    void updateBrandIdByModelId(@Param("modelId") Integer modelId, @Param("brandId") Integer brandId);
 }

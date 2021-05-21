@@ -402,7 +402,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * 重置alert
      */
     private void resetAlert() throws RuntimeException{
-        alertMessageService.remove(new LambdaQueryWrapper<AlertMessageEntity>());
+        alertMessageService.removeAllData();
     }
 
     /**

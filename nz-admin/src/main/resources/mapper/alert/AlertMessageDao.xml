@@ -104,6 +104,11 @@
 		FROM
 			alert_message_active
 	</select>
-
+	
+	<select id="removeAllData">
+		delete from alert_message_active;
+		delete from alert_message_history;
+		delete from alert_message_silence;
+	</select>
 
 </mapper>

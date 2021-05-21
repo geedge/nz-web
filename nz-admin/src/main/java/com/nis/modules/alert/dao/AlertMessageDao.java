@@ -38,4 +38,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
 
     @Select("SELECT COUNT(1) FROM ALERT_MESSAGE_ACTIVE WHERE project_id = #{projectId};")
     Integer getAactiveAlertCountByProjectId(@Param("projectId")Integer projectId);
+    
+    void removeAllData();
 }

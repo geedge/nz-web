@@ -113,4 +113,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
         return alertMessageDao.getAactiveAlertCountByProjectId(projectId);
     }
 
+	@Override
+	public void removeAllData() {
+		this.baseMapper.removeAllData();
+	}
+
 }

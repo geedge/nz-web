@@ -10,6 +10,7 @@ import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
@@ -22,6 +23,7 @@ import com.nis.modules.panel.service.VisualChartService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +50,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     
     @Autowired
     private VisualChartService visualChartService;
+
+    @Autowired
+    private AssetAssetDao assetDao;
 
     @Override
     public AssetModel queryModelInfo(Integer id) {
@@ -134,12 +139,20 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateModel(AssetModel model) {
         // 1. 校验
         this.validateAssetModelInfo(model);
 
+        AssetModel oldModel = this.getById(model.getId());
+
         // 保存
         this.updateById(model);
+
+        // 如果修改了Model, 处理关联 charts 变化
+        if (!oldModel.getBrandId().equals(model.getBrandId())) {
+            assetDao.updateBrandIdByModelId(model.getId(), model.getBrandId());
+        }
     }
 
     @Override

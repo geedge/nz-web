@@ -127,7 +127,7 @@
 		<if test="params.varType != null and params.varType != ''">
             AND vch.var_type = #{params.varType}
         </if>
-	
+		
 		<if test="params.groupId != null">
 			AND vch.group_id = #{params.groupId}
 		</if>
@@ -137,6 +137,10 @@
 				<foreach item="gid" collection="params.groupIds" separator="," open="(" close=")" index="">
 		       		#{gid}
 			     </foreach>
+		</if>
+		
+		<if test="params.panelType!=null and params.panelType!=''">
+			AND vp.type = #{params.panelType}
 		</if>
 
         /* 如果排序字段为null , 按照 weight 排序 */
