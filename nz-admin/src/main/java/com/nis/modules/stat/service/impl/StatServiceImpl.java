@@ -256,8 +256,8 @@ public class StatServiceImpl implements StatService{
 		Map<Integer, Integer> unhealthyAssets = dcAssetUnhealthy.stream().collect(Collectors.toMap(StatAnalysis::getId,StatAnalysis::getAlarm));
 		
 		// 查询dc下endpoint相关
-		List<StatAnalysis> dcEndpointAnalyse = statDao.selectDcEndpointUnhealthy();
-		Map<Integer, StatAnalysis> dcEnpoint = dcEndpointAnalyse.stream().collect(Collectors.toMap(StatAnalysis::getId,Function.identity()));
+//		List<StatAnalysis> dcEndpointAnalyse = statDao.selectDcEndpointUnhealthy();
+//		Map<Integer, StatAnalysis> dcEnpoint = dcEndpointAnalyse.stream().collect(Collectors.toMap(StatAnalysis::getId,Function.identity()));
 		
 		// 查询dc下agent相关
 		List<StatAnalysis> dcAgentAnalyse = statDao.selectDcAgentUnhealthy();
@@ -290,13 +290,13 @@ public class StatServiceImpl implements StatService{
 			asset.put("ok", assetOk);
 			asset.put("alarm", assetAlarm);
 			
-			StatAnalysis statAnalysis = dcEnpoint.get(dc.getId());
-			Integer endpointTotal = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getTotal();
-			Integer up = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getOk();
-			Integer down = endpointTotal - up; 
-			Map endpoint = new HashMap();
-			endpoint.put("up", up);
-			endpoint.put("down", down);
+//			StatAnalysis statAnalysis = dcEnpoint.get(dc.getId());
+//			Integer endpointTotal = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getTotal();
+//			Integer up = ToolUtil.isEmpty(statAnalysis)?0:statAnalysis.getOk();
+//			Integer down = endpointTotal - up; 
+//			Map endpoint = new HashMap();
+//			endpoint.put("up", up);
+//			endpoint.put("down", down);
 			
 			StatAnalysis agentAnalysis = dcAgent.get(dc.getId());
 			Integer agentTotal = ToolUtil.isEmpty(agentAnalysis)?0:agentAnalysis.getTotal();
@@ -315,13 +315,13 @@ public class StatServiceImpl implements StatService{
 				}
 			}
 			
-			if(ToolUtil.isEmpty(assetAlarm) && assetAlarm==0 && ToolUtil.isEmpty(down) && down==0 && ToolUtil.isEmpty(alert)) {
+			if(ToolUtil.isEmpty(assetAlarm) && assetAlarm==0 && ToolUtil.isEmpty(alert)) {
 				color = 1;
 			}
 			
 			map.put("color", color);
 			map.put("asset", asset);
-			map.put("endpoint", endpoint);
+//			map.put("endpoint", endpoint);
 			map.put("agent", agent);
 			map.put("alert", alert);
 			
