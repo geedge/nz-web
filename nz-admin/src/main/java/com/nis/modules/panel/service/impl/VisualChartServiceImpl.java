@@ -714,7 +714,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		List<Integer> ids = (List<Integer>) params.get("ids");
 		Integer panelId = (Integer) params.get("panelId");
 		List<Integer> models = (List<Integer>) params.get("models");
-		List<Integer> modules = (List<Integer>) params.get("modules");
+		Integer modules = (Integer) params.get("modules");
 		// 五个参数不能同时为空
 		if(ObjectUtils.isEmpty(pid) && ObjectUtils.isEmpty(ids) && ObjectUtils.isEmpty(panelId)
 				&&ObjectUtils.isEmpty(models)&&ObjectUtils.isEmpty(modules)) {
@@ -772,32 +772,30 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			}
 			
 			if(ToolUtil.isNotEmpty(modules)) {
-				List<MonitorModule> monitorModules = (List<MonitorModule>) monitorModuleService.listByIds(modules);
-				for(MonitorModule monitorModule : monitorModules) {
-					if(StrUtil.isNotBlank(monitorModule.getChartIds())) {
-						List<String> moduleChartIds = Arrays.asList(monitorModule.getChartIds().split(","));
-						List<Integer> chartIdList = moduleChartIds.stream().map(Integer::parseInt).collect(Collectors.toList());					
-						// 获取所有模板数据
-						List<VisualChart> templateCharts = this.baseMapper.queryList(chartIdList);
-						// 获取所有实例化图表数据信息 用于删除操作
-						List<VisualChart> charts = this.baseMapper.selectInstanceChart(2, monitorModule.getId());
-						// 记录同步的chartId统一删除
-						List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
-						Map<String,Object> endpointMap =new HashMap<String,Object>();
-						endpointMap.put("moduleIds", monitorModule.getId()+"");
-						endpointMap.put("pageSize", "-1");
-						PageUtils endpointPage = monitorEndpointService.queryPage(endpointMap);
-						List<MonitorEndpoint> monitorEndpoints = (List<MonitorEndpoint>) endpointPage.getList();
-						if(ToolUtil.isEmpty(monitorEndpoints)) {
-							continue;
-						}
-						List<VisualChart> chartResult = this.handlerSyncChart(null,templateCharts,monitorEndpoints);
-						if(ToolUtil.isNotEmpty(chartResult)) {
-							// 批量删除chart 重新同步chart
-							this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
-						}
-						analysis.addAll(chartResult);
+				MonitorModule monitorModule = monitorModuleService.getById(modules);
+				if(StrUtil.isNotBlank(monitorModule.getChartIds())) {
+					List<String> moduleChartIds = Arrays.asList(monitorModule.getChartIds().split(","));
+					List<Integer> chartIdList = moduleChartIds.stream().map(Integer::parseInt).collect(Collectors.toList());					
+					// 获取所有模板数据
+					List<VisualChart> templateCharts = this.baseMapper.queryList(chartIdList);
+					// 获取所有实例化图表数据信息 用于删除操作
+					List<VisualChart> charts = this.baseMapper.selectInstanceChart(2, monitorModule.getId());
+					// 记录同步的chartId统一删除
+					List<Integer> removeIds = charts.stream().map(VisualChart::getId).collect(Collectors.toList());
+					Map<String,Object> endpointMap =new HashMap<String,Object>();
+					endpointMap.put("moduleIds", monitorModule.getId()+"");
+					endpointMap.put("pageSize", "-1");
+					PageUtils endpointPage = monitorEndpointService.queryPage(endpointMap);
+					List<MonitorEndpoint> monitorEndpoints = (List<MonitorEndpoint>) endpointPage.getList();
+					if(ToolUtil.isEmpty(monitorEndpoints)) {
+						return 0;
 					}
+					List<VisualChart> chartResult = this.handlerSyncChart(null,templateCharts,monitorEndpoints);
+					if(ToolUtil.isNotEmpty(chartResult)) {
+						// 批量删除chart 重新同步chart
+						this.delCharts(removeIds.toArray(new Integer[] {removeIds.size()}), 1);
+					}
+					analysis.addAll(chartResult);
 				}
 			}
 		}
@@ -836,9 +834,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		}
 		// 组装所有模板图表包含新增图表
 		tmpCharts.addAll(groupTmpCharts);
-		Map<Integer, VisualChart> map = tmpCharts.stream().collect(Collectors.toMap(VisualChart::getId, Function.identity()));
 		// 根据后两项参数进行逻辑区分
 		if (ToolUtil.isEmpty(obj) && instanceCharts!=null) {
+			Map<Integer, VisualChart> map = tmpCharts.stream().collect(Collectors.toMap(VisualChart::getId, Function.identity()));
 			instanceCharts = instanceCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
 			for(VisualChart instanceChart : instanceCharts) {
 				VisualChart temp = map.get(instanceChart.getPid());
@@ -854,7 +852,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					}
 				}
 			}
-		}else {
+		}else if(ToolUtil.isNotEmpty(obj) && instanceCharts==null){
 			Map<Integer,Integer> tmpGroupIdAndInstanceGroupId = new HashMap<Integer,Integer>();
 			for(VisualChart tmpChart : tmpCharts) {
 				for(Object data : (List<Object>)obj) {

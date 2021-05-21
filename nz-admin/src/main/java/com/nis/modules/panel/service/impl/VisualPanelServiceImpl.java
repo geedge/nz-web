@@ -707,7 +707,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID, ++panelMaxWeight);
             Integer groupId=0;
             String groupName = ExcelUtils.getCellValue(row.getCell(1));
-            if(StrUtil.isNotBlank(groupName)) {
+            if(StrUtil.isNotBlank(groupName) && saveFlag) {
             	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
                 if(ToolUtil.isEmpty(groupChart)) {
                 	groupChart = new VisualChart();
@@ -746,7 +746,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             
-            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
             if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
             	saveFlag = false;
