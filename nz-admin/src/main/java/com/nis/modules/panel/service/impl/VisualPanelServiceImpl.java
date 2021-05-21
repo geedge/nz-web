@@ -1102,11 +1102,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             
-            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
             if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
             	saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
             }
             
             String span = ExcelUtils.getCellValue(row.getCell(3));
