@@ -58,11 +58,11 @@
             type.name AS type,
             count( asset.id ) as total
         FROM
-            asset_model model
-            LEFT JOIN asset_brand brand ON model.brand_id = brand.id
-            LEFT JOIN asset_asset asset ON model.id = asset.model_id
+            asset_asset asset
             LEFT JOIN asset_state_conf state ON asset.state_id = state.id
             LEFT JOIN asset_type_conf type ON asset.type_id = type.id
+            LEFT JOIN asset_model model ON model.id = asset.model_id
+            LEFT JOIN asset_brand brand ON model.brand_id = brand.id
         GROUP BY
             model.id,
             state.id,

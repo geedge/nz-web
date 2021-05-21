@@ -17,19 +17,12 @@ import io.micrometer.core.instrument.search.Search;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class NezhaMetrics implements MeterBinder {
-
-    public Map<String, Double> map;
-
-    NezhaMetrics() {
-        map = new HashMap<>();
-    }
 
     @Autowired
     private DcDao dcDao;
@@ -48,10 +41,6 @@ public class NezhaMetrics implements MeterBinder {
 
     @Override
     public void bindTo(MeterRegistry meterRegistry) {
-        if (map == null) {
-            map = new HashMap<>(16);
-        }
-
         // 清空指标数据
         this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums", "nz_asset_nums", "nz_endpoint_nums", "nz_prometheus_status");
 
@@ -61,9 +50,7 @@ public class NezhaMetrics implements MeterBinder {
         List<MetricsDto> nzAlertMumsMetrics = alertRuleDao.nzAlertMumsMetric();
         for (int i = 0; i < nzAlertMumsMetrics.size(); i++) {
             MetricsDto dto = nzAlertMumsMetrics.get(i);
-            String key = "alertNums" + i;
-            map.put(key, dto.getTotal().doubleValue());
-            Gauge.builder("nz_alert_nums", map, x -> x.get(key))
+            Gauge.builder("nz_alert_nums", dto, value -> dto.getTotal())
                     .tags("id", dto.getId() + "", "name", dto.getName(), "severity", dto.getSeverity())
                     .description("Alert statistics info")
                     .register(meterRegistry);
@@ -76,10 +63,8 @@ public class NezhaMetrics implements MeterBinder {
         for (int i = 0; i < nzAssetNumsMetric.size(); i++) {
             MetricsDto dto = nzAssetNumsMetric.get(i);
             // 这里将统计值扔进 map 操作是避免弱引用  统计结果出现NaN
-            String key = "assetNums" + i;
-            map.put(key, dto.getTotal().doubleValue());
-            Gauge.builder("nz_asset_nums", map, x -> x.get(key))
-                    .tags("model", dto.getModel(), "type", dto.getType() != null ? dto.getType() : "", "brand", dto.getBrand() != null ? dto.getBrand() : "", "state", dto.getState() != null ? dto.getState() : "")
+            Gauge.builder("nz_asset_nums", dto, value -> dto.getTotal())
+                    .tags("model", dto.getModel(), "type", dto.getType(), "brand", dto.getBrand(), "state", dto.getState())
                     .description("Asset statistics info")
                     .register(meterRegistry);
         }
@@ -90,9 +75,7 @@ public class NezhaMetrics implements MeterBinder {
         List<MetricsDto> nzEndpointNumsMetric = monitorModuleDao.nzEndpointNumsMetric();
         for (int i = 0; i < nzEndpointNumsMetric.size(); i++) {
             MetricsDto dto = nzEndpointNumsMetric.get(i);
-            String key = "endpointNums" + i;
-            map.put(key, dto.getTotal().doubleValue());
-            Gauge.builder("nz_endpoint_nums", map, x -> x.get(key))
+            Gauge.builder("nz_endpoint_nums", dto, value -> dto.getTotal())
                     .tags("module", dto.getName())
                     .description("Endpoint statistics info")
                     .register(meterRegistry);
@@ -107,9 +90,7 @@ public class NezhaMetrics implements MeterBinder {
 
         for (int i = 0; i < promserverList.size(); i++) {
             Promserver promserver = promserverList.get(i);
-            String key = "status" + i;
-            map.put(key, promserver.getStatus().doubleValue());
-            Gauge.builder("nz_prometheus_status", map, x -> x.get(key))
+            Gauge.builder("nz_prometheus_status", promserver,value -> promserver.getStatus())
                     .tags("datacenter", idcIdAndNameMap.get(promserver.getDcId()) == null ? "null" : idcIdAndNameMap.get(promserver.getDcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
                     .description("Prometheus statistics info")
                     .register(meterRegistry);

@@ -838,7 +838,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		tmpCharts.addAll(groupTmpCharts);
 		Map<Integer, VisualChart> map = tmpCharts.stream().collect(Collectors.toMap(VisualChart::getId, Function.identity()));
 		// 根据后两项参数进行逻辑区分
-		if(ToolUtil.isEmpty(obj)) {
+		if (ToolUtil.isEmpty(obj) && CollectionUtils.isNotEmpty(instanceCharts)) {
 			instanceCharts = instanceCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
 			for(VisualChart instanceChart : instanceCharts) {
 				VisualChart temp = map.get(instanceChart.getPid());
