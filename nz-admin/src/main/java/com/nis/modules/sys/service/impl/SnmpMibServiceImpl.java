@@ -202,7 +202,8 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
             logger.error("mib文件解析失败",e);
         } finally {
             if (mibFile != null && mibFile.exists()) {
-                mibFile.delete();
+                boolean delete = mibFile.delete();
+                logger.debug("mib file delete: {}", delete);
             }
         }
 

@@ -65,7 +65,8 @@ public class AlertHanlderThread implements Runnable {
 				// 检查 haMode
 		    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
 		        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) {
-					Thread.sleep(10000);
+		        	boolean sleep = Tool.ThreadUtil.sleep(10000);
+		        	log.debug("sleep 10000ms :{}",sleep);
 		        	continue;
 		        }
 				ValueOperations<String, Object> operations = redisTemplate.opsForValue();
