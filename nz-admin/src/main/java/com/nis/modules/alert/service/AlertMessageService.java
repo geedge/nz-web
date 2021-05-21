@@ -28,5 +28,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	Integer getAactiveAlertCountByModuleId(Integer moduleId);
 
 	Integer getAactiveAlertCountByProjectId(Integer projectId);
+	
+	void removeAllData();
 }
 
