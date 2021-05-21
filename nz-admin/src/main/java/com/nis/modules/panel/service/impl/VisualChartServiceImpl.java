@@ -817,7 +817,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		
 		Map<Integer,List<VisualChart>> groupIdAndChildren = new HashMap<Integer,List<VisualChart>>();
 		// 根据组进行排序
-		tmpCharts=tmpCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+		tmpCharts=tmpCharts.stream().sorted(Comparator.comparing(VisualChart::getGroupId).reversed()).collect(Collectors.toList());
 		for(int i =tmpCharts.size()-1;i>=0;i--) {
 			VisualChart tmpChart = tmpCharts.get(i);
 			if(tmpChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
