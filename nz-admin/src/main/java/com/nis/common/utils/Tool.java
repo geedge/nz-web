@@ -20,12 +20,16 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Spliterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 
-public class Tool {
+import cn.hutool.core.date.DateTime;
 
+public class Tool {
+	public static final Pattern REGEX_SPECIAL_DATE = Pattern.compile("(\\d{4}-\\d{1,2}-\\d{1,2}[T]\\d{1,2}:\\d{1,2}:\\d{1,2})(.\\d{1,10})(\\+\\d{1,2}:\\d{1,2})");
 	/**
 	 * 数据库操作工具类
 	 */
@@ -98,7 +102,26 @@ public class Tool {
 	 *
 	 * @author xiaoleilu
 	 */
-	public static class DateUtil extends cn.hutool.core.date.DateUtil {}
+	public static class DateUtil extends cn.hutool.core.date.DateUtil {
+		/**
+		 * 为了处理 2021-05-21T12:06:29.272986526+08:00 格式时间
+		 * @param utcString
+		 * @return
+		 */
+		public static DateTime parseUTC(String utcString) {
+			if(StrUtil.isBlank(utcString)) {
+				return null;
+			}
+			if(utcString.length() > 29) {
+				Matcher matcher = REGEX_SPECIAL_DATE.matcher(utcString);
+				if(matcher.matches()) {
+					utcString = Tool.StrUtil.concat(true, matcher.group(1),matcher.group(3));
+				}
+			}
+			return cn.hutool.core.date.DateUtil.parseUTC(utcString);
+		}
+		
+	}
 	/**
 	 * EC密钥参数相关工具类封装
 	 *
