@@ -583,6 +583,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 chartTemplateTyep = Constant.SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER;
                 break;
             }
+            case "endpoint": {
+                chartTemplateTyep = Constant.SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER;
+                break;
+            }
             default:
                 throw new NZException(RCode.PANEL_CHART_TEMPLATE_TYPE_INCORRECT);
         }
@@ -596,7 +600,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         String type;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (VisualChart chart : charts) {
-            if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
+            if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())
+            	||	Constant.CHART_ENDPOINTINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
             row = sheet.createRow(rowNum++);
             type = chart.getType();
             row.createCell(0).setCellValue(chart.getGroup().getName());

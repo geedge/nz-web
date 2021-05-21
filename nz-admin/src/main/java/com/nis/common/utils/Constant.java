@@ -849,6 +849,9 @@ public class Constant {
 
 	// 图表类型为 assetInfo
 	public static final String CHART_ASSETINFO_TYPE = "assetInfo";
+	
+	// 图表类型为 endpointInfo
+	public static final String CHART_ENDPOINTINFO_TYPE = "endpointInfo";
 
 	public static final String CHART_GROUP_TYPE = "group";
 
