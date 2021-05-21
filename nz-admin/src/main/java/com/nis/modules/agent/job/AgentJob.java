@@ -59,6 +59,9 @@ public class AgentJob extends QuartzJobBean {
     @Value("${nezha.virtualAgentNum}")
     private Integer virtualAgentNum;
 
+	@Value("${connect.timeout:30000}")
+	private Integer connectTimeout;
+	
     @Autowired
     private DcService dcService;
 
@@ -906,7 +909,7 @@ public class AgentJob extends QuartzJobBean {
                     urlBuilder.setScheme("http").setHost(promServer.getHost()).setPort(promServer.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("healthy");
                     String result = null;
                     try {
-                        result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(promServer.getToken()).execute().body();
+                        result = Tool.HttpUtil.createGet(urlBuilder.build()).timeout(connectTimeout).auth(promServer.getToken()).execute().body();
                     } catch (RuntimeException e) {
                         log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
                     }
