@@ -191,22 +191,30 @@
 		<if test="params.pid != null">
 			and vch.pid = #{params.pid}
 		</if>
-		<if test="params.models != null and (params.models).size > 0">
-			and aa.model_id in 
-			<foreach item="modelId" collection="params.models" separator="," open="(" close=")" index="">
-	       		#{modelId}
+		<if test="params.ids != null and params.size > 0 ">
+			and vch.id in
+			<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+	       		#{id}
 		     </foreach>
+	     </if>
+	</select>
+	
+	<select id="selectInstanceChart" resultMap="visualChartResult">
+		select vc.*
+		from visual_chart vc
+		<if test="type==1">
+			left join asset_asset t on vc.var_id = t.id
 		</if>
-		<if test="params.modules != null  and (params.modules).size > 0">
-			and me.module_id in 
-			<foreach item="moduleId" collection="params.modules" separator="," open="(" close=")" index="">
-	       		#{moduleId}
-		     </foreach>
+		<if test="type==2">
+			left join monitor_endpoint t on vc.var_id = t.id
 		</if>
-		and vch.id in
-		<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
-       		#{id}
-	     </foreach>
+		where 1=1
+		<if test="type==1">
+			and t.model_id = #{id}
+		</if>
+		<if test="type==2">
+			and t.module_id= #{id}
+		</if>
 	</select>
 
     <select id="queryChartWithElementByIds" resultMap="visualChartResult">

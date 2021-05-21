@@ -30,4 +30,7 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
 	List<VisualChart> queryPage(@Param("params") Map<String, Object> params);
 
     List<VisualChart> queryChartWithElementByIds(@Param("list")List<Integer> chartIdList);
+    
+    // 查询model和module实例化的图表数据信息
+    List<VisualChart> selectInstanceChart(@Param("type")Integer type,@Param("id")Integer id);
 }
