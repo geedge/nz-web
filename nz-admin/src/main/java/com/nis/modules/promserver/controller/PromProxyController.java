@@ -22,6 +22,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
@@ -56,6 +57,9 @@ public class PromProxyController {
 	@Autowired
 	private RedisTemplate redisTemplate;
 
+	@Value("${connect.timeout:30000}")
+	private Integer connectTimeout;
+	
 	@RequestMapping(value = "/prom/**")
 	public void promProxy(HttpServletRequest request, HttpServletResponse response) {
 		String promPath = request.getServletPath().substring(5);
@@ -160,6 +164,7 @@ public class PromProxyController {
 				connOutputStream = conn.getOutputStream();
 				IOUtils.copy(reqInputStream, connOutputStream);
 			}
+			conn.setConnectTimeout(connectTimeout);
 			conn.connect();
 			int responseCode = conn.getResponseCode();
 			connInputStream = (responseCode < 400)? conn.getInputStream():conn.getErrorStream();
