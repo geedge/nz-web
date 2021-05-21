@@ -1,23 +1,9 @@
 package com.nis.modules.alert.backend;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.mail.MessagingException;
-
+import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.QueryTimeoutException;
-import org.springframework.data.redis.core.ListOperations;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
-import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.MailUtil;
 import com.nis.common.utils.TemplateUtil;
@@ -31,12 +17,23 @@ import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
-
-import cn.hutool.core.date.StopWatch;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.QueryTimeoutException;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+
+import javax.mail.MessagingException;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 告警邮件发送线程 1、redis 中读取 需要发送的告警消息 2、检查告警消息发送方式 3、发送 4、记录发送状态
@@ -177,7 +174,8 @@ public class AlertMessageNotifyThread implements Runnable {
 			}
 			Process process = null;
 			try {
-				process = Tool.RuntimeUtil.exec(filePath, Tool.StrUtil.str(account, Constant.DEFAULT_CHARTSET_NAME),Tool.JSONUtil.toJsonStr(message));
+				String[] envp = new String[0];
+				process = Tool.RuntimeUtil.exec(envp, filePath, Tool.StrUtil.str(account, Constant.DEFAULT_CHARTSET_NAME), Tool.JSONUtil.toJsonStr(message));
 				String result = Tool.RuntimeUtil.getErrorResult(process, Charset.forName(Constant.DEFAULT_CHARTSET_NAME));
 				logger.debug("result:{}", result);
 				if (Tool.StrUtil.isNotBlank(result)) {//错误信息不为空则说明发送报错
