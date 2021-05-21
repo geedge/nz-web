@@ -839,6 +839,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
             panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
+        // 删除 关联通过 chart temp 创建的 charts
+        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));
     }
 
     /*@Override
