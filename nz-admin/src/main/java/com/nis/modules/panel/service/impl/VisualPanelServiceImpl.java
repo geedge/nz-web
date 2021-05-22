@@ -1301,6 +1301,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     public List<VisualChart> queryChartsByPanelId(String panelId,String chartId,Map<String,Object> params) {
     	params.put("panelId", panelId);
     	params.put("ids", chartId);
+    	params.put("returnChildren","0");
         PageUtils queryPage = visualChartService.queryPage(params);
         List<VisualChart> result = (List<VisualChart>) queryPage.getList();
         return result;

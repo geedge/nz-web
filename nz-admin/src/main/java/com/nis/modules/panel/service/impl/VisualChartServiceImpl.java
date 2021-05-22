@@ -98,11 +98,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             chart.setElements(chartIdAndElement.get(chart.getId()));
         }
         
-        Integer returnChildren = (Integer) params.get("returnChildren");
+        String returnChildren = (String) params.get("returnChildren");
         if(ToolUtil.isEmpty(returnChildren)) {
-        	returnChildren = 1 ;
+        	returnChildren = "1" ;
         }
-        if(returnChildren != 0) {
+        if(StrUtil.equals(returnChildren, "1")) {
         	List<Integer> fatherIds = result.stream().filter(chart->chart.getGroupId()==0).map(VisualChart::getId).collect(Collectors.toList());
         	if(ToolUtil.isNotEmpty(fatherIds)) {
         		Map<String, Object> queryChildren =new HashMap<String,Object>();
