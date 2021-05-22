@@ -84,9 +84,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		// 查询出chart信息
 		List<VisualChart> result = this.baseMapper.queryPage(page,params);
 		//查询elements
-        List<Integer> fatherIds = result.stream().map(VisualChart::getId).collect(Collectors.toList());
-        List<VisualChartElement> fatherElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, fatherIds));
-		Map<Integer, List<VisualChartElement>> fatherIdAndElement = fatherElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
+        List<Integer> chartIds = result.stream().map(VisualChart::getId).collect(Collectors.toList());
+        List<VisualChartElement> chartElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, chartIds));
+		Map<Integer, List<VisualChartElement>> chartIdAndElement = chartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
         
 		String param;
         for (VisualChart chart : result) {
@@ -95,37 +95,40 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
             if (StringUtils.isNotEmpty(param)) {
                 chart.setParam(JSONObject.parseObject(param, Map.class));
             }
-            chart.setElements(fatherIdAndElement.get(chart.getId()));
+            chart.setElements(chartIdAndElement.get(chart.getId()));
         }
         
-        String groupId = (String) params.get("groupId");
-        if(ToolUtil.equals(groupId, "0") && ToolUtil.isNotEmpty(result)) {
-        	Map<String, Object> queryChildren =new HashMap<String,Object>();
-	        queryChildren.put(Constant.LIMIT, "-1");
-        	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
-        	queryChildren.put("groupIds", fatherIds);
-        	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
-        	// 查询chart相关的element
-        	if(ToolUtil.isNotEmpty(childrens)) {
-        		List<Integer> childIds = childrens.stream().map(VisualChart::getId).collect(Collectors.toList());
-        		List<VisualChartElement> childElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, childIds));
-        		Map<Integer, List<VisualChartElement>> childIdAndElement = childElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
-        		for (VisualChart chart : childrens) {
-                    // param 格式处理
-                    param = (String) chart.getParam();
-                    if (StringUtils.isNotEmpty(param)) {
-                        chart.setParam(JSONObject.parseObject(param, Map.class));
+        Integer returnChildren = (Integer) params.get("returnChildren");
+        if(ToolUtil.isEmpty(returnChildren)) {
+        	returnChildren = 1 ;
+        }
+        if(returnChildren != 0) {
+        	List<Integer> fatherIds = result.stream().filter(chart->chart.getGroupId()==0).map(VisualChart::getId).collect(Collectors.toList());
+        	if(ToolUtil.isNotEmpty(fatherIds)) {
+        		Map<String, Object> queryChildren =new HashMap<String,Object>();
+    	        queryChildren.put(Constant.LIMIT, "-1");
+            	IPage childrenpage = new Query(VisualChart.class).getPage(queryChildren);
+            	queryChildren.put("groupIds", fatherIds);
+            	List<VisualChart> childrens = this.baseMapper.queryPage(childrenpage,queryChildren);
+            	// 查询chart相关的element
+            	if(ToolUtil.isNotEmpty(childrens)) {
+            		List<Integer> childIds = childrens.stream().map(VisualChart::getId).collect(Collectors.toList());
+            		List<VisualChartElement> childElements = chartElementService.list(new QueryWrapper<VisualChartElement>().lambda().in(VisualChartElement::getChartId, childIds));
+            		Map<Integer, List<VisualChartElement>> childIdAndElement = childElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
+            		for (VisualChart chart : childrens) {
+                        // param 格式处理
+                        param = (String) chart.getParam();
+                        if (StringUtils.isNotEmpty(param)) {
+                            chart.setParam(JSONObject.parseObject(param, Map.class));
+                        }
+                        chart.setElements(childIdAndElement.get(chart.getId()));
                     }
-                    chart.setElements(childIdAndElement.get(chart.getId()));
-                }
-            	result.addAll(childrens);
-            	result = this.getChartTreeList(result,0);
-        	}
-        	
+                	result.addAll(childrens);
+                	result = this.getChartTreeList(result,0);
+            	}
+        	}        	
         }
-        
         page.setRecords(result);
-        //处理所有group下children
 		return new PageUtils(page);
 	}
 	
