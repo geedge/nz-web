@@ -422,6 +422,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
             visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
+
+        // 删除 关联通过 chart temp 创建的 charts
+        visualChartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 2).in(VisualChart::getVarId, ids));
     }
 
     @Override
