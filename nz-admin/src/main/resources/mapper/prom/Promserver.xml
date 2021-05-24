@@ -47,9 +47,9 @@
 				</foreach>
 			</if>
 
-			<if test="params.statuss != null">
+			<if test="params.statuses != null">
 				AND ps.status in
-				<foreach item="status" collection="params.statuss" separator="," open="(" close=")" index="">
+				<foreach item="status" collection="params.statuses" separator="," open="(" close=")" index="">
 					#{status}
 				</foreach>
 			</if>
@@ -64,6 +64,10 @@
 
 			<if test="params.token != null and params.token != ''">
 				AND ps.token = #{params.token}
+			</if>
+			
+			<if test="params.type != null and params.type != ''">
+				AND ps.type = #{params.type}
 			</if>
 		</where>
 	</select>

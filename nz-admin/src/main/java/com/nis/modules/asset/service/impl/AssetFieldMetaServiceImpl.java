@@ -12,12 +12,14 @@ import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.ObjectUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
 import com.nis.modules.asset.dao.AssetFieldValueDao;
 import com.nis.modules.asset.entity.AssetFieldMeta;
@@ -50,6 +52,9 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
         if(StrUtil.isNotBlank(groupIds)) {
         	List<String> listIds = Arrays.asList(groupIds.split(","));
         	params.put("groupIds",listIds);
+        }
+        if (ToolUtil.isNotEmpty(params.get("ids"))) {
+            params.put("ids", Arrays.asList(String.valueOf(params.get("ids")).split(StringPool.COMMA)));
         }
 		List<AssetFieldMeta> assetFieldMetas =assetFieldMetaDao.selectAssetFieldMetaList(page,params);
 		page.setRecords(assetFieldMetas);

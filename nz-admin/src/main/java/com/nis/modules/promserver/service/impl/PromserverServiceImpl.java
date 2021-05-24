@@ -48,9 +48,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		if (StrUtil.isNotBlank(dcIds)) {
 			params.put("dcIds", Arrays.asList(dcIds.split(",")));
 		}
-		String statuss = (String) params.get("statuss");
+		String statuss = (String) params.get("statuses");
 		if (StrUtil.isNotBlank(statuss)) {
-			params.put("statuss", Arrays.asList(statuss.split(",")));
+			params.put("statuses", Arrays.asList(statuss.split(",")));
 		}
 
 		IPage page = new Query(Promserver.class).getPage(params);

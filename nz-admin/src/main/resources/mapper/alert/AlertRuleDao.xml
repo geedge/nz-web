@@ -60,8 +60,8 @@
                 </foreach>
             </if>
 
-            <if test="params.alertName != null and params.alertName != ''">
-                AND ar.name LIKE CONCAT('%', #{params.alertName}, '%')
+            <if test="params.name != null and params.name != ''">
+                AND ar.name LIKE CONCAT('%', #{params.name}, '%')
             </if>
 
             <if test="params.expr != null and params.expr != ''">

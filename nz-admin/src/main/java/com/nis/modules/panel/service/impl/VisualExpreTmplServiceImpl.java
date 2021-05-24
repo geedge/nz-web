@@ -2,6 +2,7 @@ package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -104,8 +105,13 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
+    	String ids = (String) params.get("ids");
+    	List<String> asList =null;
+    	if(StrUtil.isNotEmpty(ids)) {
+    		asList = Arrays.asList(ids.split(","));
+    	}
         LambdaQueryWrapper<VisualExpressionTmpl> queryWrapper = new LambdaQueryWrapper<VisualExpressionTmpl>()
-                .eq(ToolUtil.isNotEmpty(params.get("id")), VisualExpressionTmpl::getId, params.get("id"))
+                .in(ToolUtil.isNotEmpty(params.get("ids")), VisualExpressionTmpl::getId, asList)
                 .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, params.get("name"))
                 .eq(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
 

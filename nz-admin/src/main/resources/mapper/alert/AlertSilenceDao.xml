@@ -20,9 +20,12 @@
          select id,name,matchers,remark,start_at,end_at,utime,state
          from alert_silence_conf
          <where>
-         	 <if test="params.id != null and params.id !='' ">
-         		and id = #{params.id}
-	         </if>
+         	 <if test="params.ids != null and params.ids != ''">
+                and id in
+                <foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+             </if>
 	         <if test="params.name != null and params.name !='' ">
          		and name like concat('%', #{params.name}, '%')
 	         </if>
