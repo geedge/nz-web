@@ -228,6 +228,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             params.put("dcIds", Arrays.asList(String.valueOf(params.get("dcIds")).split(StringPool.COMMA)));
         }
 
+        if (ToolUtil.isNotEmpty(params.get("ping"))) {
+            params.put("ping", Arrays.asList(String.valueOf(params.get("ping")).split(StringPool.COMMA)));
+        }
+        
         if (ToolUtil.isNotEmpty(params.get("cabinetIds"))) {
             params.put("cabinetIds", Arrays.asList(String.valueOf(params.get("cabinetIds")).split(StringPool.COMMA)));
         }
@@ -2137,6 +2141,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 				Integer authType = (Integer) params.get("authType");
 				String authUsername	= (String) params.get("authUsername");
 				String authPin	= (String) params.get("authPin");
+				if(StrUtil.isNotBlank(authPin)) {
+					params.put("authPin",Base64.getEncoder().encodeToString(authPin.getBytes()));
+		        }
 				String authPriKey	= (String) params.get("authPriKey");
 				if(ObjectUtil.equal(authType, 1)) {
 		        	ValidateUtils.is(authUsername).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)

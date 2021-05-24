@@ -194,7 +194,7 @@
                  </foreach>
              </if>
 
-            <if test="params.ping != null and params.ping != ''">
+            <if test="params.ping != null and params.ping.size > 0">
                 AND assp.status IN
                  <foreach collection="params.ping" item="ps" index="no" open="(" separator="," close=")">
                      #{ps}

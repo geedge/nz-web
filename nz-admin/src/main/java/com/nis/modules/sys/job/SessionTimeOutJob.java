@@ -41,7 +41,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
-		/*// 获取redis中所有的token信息
+		// 获取redis中所有的token信息
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
 		
 		// 获取所有登录用户的信息
@@ -77,7 +77,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 				// kill 之后，将剩余文件写到数据库中
 		        TerminalHandler.handleRecodeAfterClientClose(userTerminal.getUuid(), terminalRecordService);
 			}
-		}	*/	
+		}		
 	}
 
 }
