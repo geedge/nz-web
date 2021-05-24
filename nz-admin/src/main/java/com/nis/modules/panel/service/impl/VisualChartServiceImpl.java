@@ -324,15 +324,15 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
         // 3. 保存 chart elements信息
         chartElementService.saveOrUpdateElements(chart.getId(), chart.getElements());
 
-        // 4. 同步新增处理
-        Integer sync = chart.getSync();
-        if (sync != null) {
-            VisualPanel panel = visualPanelService.getById(chart.getPanelId());
-            // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对已通过对应 model panel 创建的 asset panel 追加新增的 chart
-            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
-                this.saveAssetChartsSimultaneously(panel, chart);
-            }
-        }
+		/*// 4. 同步新增处理
+		Integer sync = chart.getSync();
+		if (sync != null) {
+		    VisualPanel panel = visualPanelService.getById(chart.getPanelId());
+		    // 当前 chart 所属 panel 为 model 类型并且 同步标识 为 1 时 ，对已通过对应 model panel 创建的 asset panel 追加新增的 chart
+		    if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType()) && sync.equals(1)) {
+		        this.saveAssetChartsSimultaneously(panel, chart);
+		    }
+		}*/
         
         return chart.getId();
 	}
@@ -827,9 +827,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				// 如果类型为组 查询组下所有模板信息
 				List<VisualChart> list = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getGroupId, tmpChart.getId()));
 				List<Integer> childIds = list.stream().map(VisualChart::getId).collect(Collectors.toList());
-				List<VisualChart> groupChildrens = this.baseMapper.queryList(childIds);
-				groupTmpCharts.addAll(groupChildrens);
-				groupIdAndChildren.put(tmpChart.getId(),groupChildrens);
+				if(ToolUtil.isNotEmpty(childIds)) {
+					List<VisualChart> groupChildrens = this.baseMapper.queryList(childIds);
+					groupTmpCharts.addAll(groupChildrens);
+					groupIdAndChildren.put(tmpChart.getId(),groupChildrens);
+				}
 			}
 			if(tmpChart.getGroupId()!=0 && ToolUtil.isNotEmpty(groupIdAndChildren.get(tmpChart.getGroupId()))) {
 				tmpCharts.remove(i);
