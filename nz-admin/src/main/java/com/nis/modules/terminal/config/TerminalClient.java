@@ -969,7 +969,9 @@ public class TerminalClient {
     }
 
     public void resize(Integer cols, Integer rows, Integer width, Integer height) throws IOException {
-        channelShell.setPtySize(cols, rows, width, height);
+        if (channelShell != null) {
+            channelShell.setPtySize(cols, rows, width, height);
+        }
     }
 
     public AssetAsset getTerminal() {
