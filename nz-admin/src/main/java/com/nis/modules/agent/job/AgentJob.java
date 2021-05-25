@@ -4,10 +4,8 @@ import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.MonitorEventLogDao;
@@ -24,6 +22,7 @@ import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -87,6 +86,9 @@ public class AgentJob extends QuartzJobBean {
 
     @Autowired
     private MonitorEndpointService monitorEndpointService;
+
+    @Autowired
+    private MonitorModuleService monitorModuleService;
     
     @Autowired
     private AssetAssetService assetService;
@@ -502,12 +504,10 @@ public class AgentJob extends QuartzJobBean {
 
     /**
      * 组装 snmp.yml
-     *
-     * @param endpointList
      * @return
      */
-    private Map generateSnmpYml(List<MonitorEndpoint> endpointList) {
-        List<MonitorModule> snmpTypeModule = endpointList.stream().filter(endpoint -> Constant.MODULE_TYPE_SNMP.equals(endpoint.getModule().getType())).map(MonitorEndpoint::getModule).collect(Collectors.toList());
+    private Map generateSnmpYml() {
+        List<MonitorModule> snmpTypeModule = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getType, Constant.MODULE_TYPE_SNMP));
         Set<String> snmpYmls = snmpTypeModule.stream().map(MonitorModule::getSnmpYml).collect(Collectors.toSet());
         Map resultMap = new LinkedHashMap();
         snmpYmls.stream().forEach(s -> resultMap.putAll(JSONObject.parseObject(s)));
@@ -615,7 +615,7 @@ public class AgentJob extends QuartzJobBean {
             if (snmpChangeFlag) {
                 log.debug("snmp.yml 配置下发" + JSONObject.toJSONString(promserver));
                 // snmp_exporter 模板信息
-                Map snmpExporterYmlMap = this.generateSnmpYml(endpointListByPromServer);
+                Map snmpExporterYmlMap = this.generateSnmpYml();
 
                 UrlBuilder urlBuilder1 = UrlBuilder.create();
                 urlBuilder1.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("snmpExporter").appendPath("config");
@@ -623,7 +623,7 @@ public class AgentJob extends QuartzJobBean {
                 try {
                     snmpConfResult = Tool.HttpUtil.createPost(urlBuilder1.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(snmpExporterYmlMap)).execute().body();
                 } catch (RuntimeException e) {
-                    log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+                    log.error(String.format("请求 %s 接口失败", urlBuilder1.toString()), e);
                 }
                 log.debug("snmp 请求返回结果 {}", snmpConfResult);
                 if (snmpConfResult == null) {
