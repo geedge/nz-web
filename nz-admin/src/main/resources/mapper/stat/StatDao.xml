@@ -527,9 +527,9 @@
     <select id="selectDcAssetUnhealthy" resultMap="statAnalysis">
     	select aa.dc_id id, 
     	count(DISTINCT aa.id) alarm
-		from alert_message_active am left join asset_asset aa  on aa.id = am.asset_id
-		left join asset_ping ap on aa.manage_ip = ap.host
-		where (ap.`status`=0 or ap.status is null or am.state=1)
+		from asset_asset aa left join asset_ping ap on aa.id = ap.asset_id
+		left join alert_message_active ama on aa.id = ama.asset_id 
+		where (ap.`status`=0 or ap.`status` is null) or ama.state=1
 		group by aa.dc_id
     </select>
     
