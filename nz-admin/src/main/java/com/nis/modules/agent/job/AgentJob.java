@@ -621,7 +621,7 @@ public class AgentJob extends QuartzJobBean {
                 urlBuilder1.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("snmpExporter").appendPath("config");
                 String snmpConfResult = null;
                 try {
-                    snmpConfResult = Tool.HttpUtil.createPost(urlBuilder1.build()).auth(promserver.getToken()).body(JSON.toJSONString(snmpExporterYmlMap, SerializerFeature.WriteNonStringKeyAsString)).execute().body();
+                    snmpConfResult = Tool.HttpUtil.createPost(urlBuilder1.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(snmpExporterYmlMap)).execute().body();
                 } catch (RuntimeException e) {
                     log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
                 }
