@@ -3,6 +3,7 @@ package com.nis.modules.sys.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nis.common.validator.group.AddGroup;
 import com.nis.common.validator.group.UpdateGroup;
@@ -44,6 +45,7 @@ public class SysUserEntity implements Serializable {
 	/**
 	 * 盐
 	 */
+	@JsonIgnore
 	private String salt;
 
 	/**

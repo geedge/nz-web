@@ -3,6 +3,8 @@ package com.nis.modules.alert.backend;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.MailUtil;
@@ -60,6 +62,20 @@ public class AlertMessageNotifyThread implements Runnable {
 	private AlertNotifyLogService alertNotifyLogService;
 	@Autowired
 	private MailUtil mailUtil;
+
+	private static PropertyFilter excludefilter;
+
+	static {
+		excludefilter = new PropertyFilter() {
+			@Override
+			public boolean apply(Object object, String name, Object value) {
+				if ("pin".equals(name) || "salt".equals(name)) {
+					return false;
+				}
+				return true;
+			}
+		};
+	}
 
 	@Override
 	public void run() {
@@ -120,7 +136,7 @@ public class AlertMessageNotifyThread implements Runnable {
 							logger.info("用户 {},{} 不存在", user.getName(), accountName);
 							continue;
 						}
-						logger.debug("告警邮件通知人信息:{},通知方式:{}", Tool.JSONUtil.toJsonStr(user),
+						logger.debug("告警邮件通知人信息:{},通知方式:{}", JSONObject.toJSONString(user, excludefilter),
 								Tool.JSONUtil.toJsonStr(method));
 						// 只有一条 email 内置通知
 						if (Tool.ObjectUtil.equal(method.getBuildIn(), 1)) {
@@ -221,7 +237,7 @@ public class AlertMessageNotifyThread implements Runnable {
 			mailUtil.sendHTML(Tool.ListUtil.toList(user.getEmail()), Tool.StrUtil.concat(true, stateStr,message.getSummary()), content);
 			log.setState(1);
 		} catch (MessagingException e) {
-			logger.error(e, "邮件通知error,user:{},message:{}", Tool.JSONUtil.toJsonStr(user),Tool.JSONUtil.toJsonStr(message));
+			logger.error(e, "邮件通知error,user:{},message:{}", JSONObject.toJSONString(user, excludefilter),Tool.JSONUtil.toJsonStr(message));
 			log.setState(0);
 			log.setErrorMsg(e.getMessage());
 		}
