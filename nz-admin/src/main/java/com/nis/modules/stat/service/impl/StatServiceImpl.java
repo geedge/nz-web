@@ -315,7 +315,7 @@ public class StatServiceImpl implements StatService{
 				}
 			}
 			
-			if(ToolUtil.isEmpty(assetAlarm) && assetAlarm==0 && ToolUtil.isEmpty(alert)) {
+			if(agentDown==0 && assetAlarm==0 && ToolUtil.isEmpty(alert)) {
 				color = 1;
 			}
 			

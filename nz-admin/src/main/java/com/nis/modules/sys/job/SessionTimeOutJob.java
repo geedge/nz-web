@@ -16,6 +16,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.terminal.config.Constants;
@@ -65,13 +66,10 @@ public class SessionTimeOutJob extends QuartzJobBean {
 				updateDatas.add(userTerminal);
 				WebSocketSession session = TerminalSession.findSession(userTerminal.getUuid());
 				try {
-		            TerminalSession.remove(session);
-		            // TerminalHandler.unloginUserHandle(session);
-		            StringBuilder sb = new StringBuilder();
-		            sb.append("\u001B[01;31m\u001B[K Administrator disconnected \u001B[m\u001B[K  \r\n");
-		            sb.append("$: ");
-		            session.sendMessage(new TextMessage(sb.toString()));
-		        } catch (IOException e) {
+					if(ToolUtil.isNotEmpty(session)) {
+						TerminalSession.remove(session);
+					}
+		        } catch (RuntimeException e) {
 		            log.error(String.format("terminal session kill failed,uuid = %s,错误信息 = %s", userTerminal.getUuid(), e.getMessage()), e);
 		        }
 				// kill 之后，将剩余文件写到数据库中
