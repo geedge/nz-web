@@ -75,7 +75,10 @@ public class SessionTimeOutJob extends QuartzJobBean {
 				// kill 之后，将剩余文件写到数据库中
 		        TerminalHandler.handleRecodeAfterClientClose(userTerminal.getUuid(), terminalRecordService);
 			}
-		}		
+		}
+		if(ToolUtil.isNotEmpty(updateDatas)) {
+			terminalSessionService.updateBatchById(updateDatas);
+		}
 	}
 
 }
