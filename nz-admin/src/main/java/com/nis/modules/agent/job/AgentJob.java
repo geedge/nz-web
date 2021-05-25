@@ -4,8 +4,10 @@ import cn.hutool.core.lang.hash.MurmurHash;
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.MonitorEventLogDao;
@@ -619,11 +621,11 @@ public class AgentJob extends QuartzJobBean {
                 urlBuilder1.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(configMap.get(Constant.CONFAGENT_PATH)).appendPath("snmpExporter").appendPath("config");
                 String snmpConfResult = null;
                 try {
-                    snmpConfResult = Tool.HttpUtil.createPost(urlBuilder1.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(snmpExporterYmlMap)).execute().body();
+                    snmpConfResult = Tool.HttpUtil.createPost(urlBuilder1.build()).auth(promserver.getToken()).body(JSON.toJSONString(snmpExporterYmlMap, SerializerFeature.WriteNonStringKeyAsString)).execute().body();
                 } catch (RuntimeException e) {
                     log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
                 }
-
+                log.debug("snmp 请求返回结果 {}", snmpConfResult);
                 if (snmpConfResult == null) {
                     this.updatePromServerStatus(promserver, 0);
                     continue;
@@ -997,6 +999,7 @@ public class AgentJob extends QuartzJobBean {
     private void afterRequestApi(String result, Promserver promserver) {
         R snmpResultObj = JSONObject.parseObject(result, R.class);
         if (!RCode.SUCCESS.getCode().equals((Integer) snmpResultObj.get("code"))) {
+            log.debug("请求失败，promserver 状态变更为 0 {}", JSONObject.toJSONString(promserver));
             this.updatePromServerStatus(promserver, 0);
         }
     }
