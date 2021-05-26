@@ -108,7 +108,7 @@ function installPackage() {
       "dcId":$DATACENTER_ID,
       "host":"$LOCALHOST",
       "type":$TYPE,
-      "port":9090,
+      "port":10090,
       "token":"$AGENT_TOKEN"
     }
 EOF

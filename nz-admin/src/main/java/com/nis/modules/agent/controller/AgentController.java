@@ -8,8 +8,11 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.utils.CommonUtil;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +45,9 @@ public class AgentController {
 
 	@Value("${nezha.installPath:install/}")
 	private String installPath;
+
+	@Autowired
+	private SysConfigDao sysConfigDao;
 
 	@Autowired
 	private PromserverService promserverService;
@@ -142,7 +148,8 @@ public class AgentController {
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(port).notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 		//拼接url
 		UrlBuilder urlBuilder = UrlBuilder.create();
-		urlBuilder.setScheme("http").setHost(host).setPort(port).appendPath("confagent").appendPath("auth")
+		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
+		urlBuilder.setScheme("http").setHost(host).setPort(port).appendPath(configEntity.getParamValue()).appendPath("auth")
 				.appendPath("refresh");
 		//调用 confagent接口 获取结果
 		String result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(token).execute().body();
