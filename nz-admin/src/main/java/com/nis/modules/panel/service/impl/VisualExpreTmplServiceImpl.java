@@ -82,7 +82,12 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         if (ToolUtil.isEmpty(tmpl)) {
             throw new NZException(RCode.EXPRETMPL_NOT_FOUND);
         }
-        tmpl.setVars(this.parseExpre(tmpl.getExpression()));
+        String[] vars = this.parseExpre(tmpl.getExpression());
+        if (Tool.ObjectUtil.isNotEmpty(vars)) {
+            List<String> list = Arrays.stream(vars).distinct().collect(Collectors.toList());
+            vars = list.toArray(new String[list.size()]);
+            tmpl.setVars(vars);
+        }
         return tmpl;
     }
 
