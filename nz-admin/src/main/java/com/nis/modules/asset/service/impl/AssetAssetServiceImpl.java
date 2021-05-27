@@ -27,6 +27,8 @@ import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
@@ -149,6 +151,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 	@Autowired
     private VisualChartElementService chartElementService;
 
+	@Autowired
+    private MonitorModuleService moduleService;
+
     @Override
     public AssetAsset queryAssetInfo(Integer id) {
         AssetAsset asset = this.getById(id);
@@ -242,6 +247,20 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         if (ToolUtil.isNotEmpty(params.get("stateIds"))) {
             params.put("stateIds", Arrays.asList(String.valueOf(params.get("stateIds")).split(StringPool.COMMA)));
+        }
+
+        if (ToolUtil.isNotEmpty(params.get("moduleIds"))) {
+            params.put("moduleIds", Arrays.asList(String.valueOf(params.get("moduleIds")).split(StringPool.COMMA)));
+        }
+
+        if (ToolUtil.isNotEmpty(params.get("projectIds"))) {
+            List<String> projectIdList = Arrays.asList(params.get("projectIds").toString().split(StringPool.COMMA));
+            List<MonitorModule> moduleListByProjectIds = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getProjectId, projectIdList));
+            List<Integer> moduleIds = moduleListByProjectIds.stream().map(MonitorModule::getId).collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(moduleIds)) {
+                moduleIds.add(-99999);
+            }
+            params.put("innerModuleIdsByPorjects", moduleIds);
         }
 
         if (ToolUtil.isNotEmpty(params.get("fields"))) {

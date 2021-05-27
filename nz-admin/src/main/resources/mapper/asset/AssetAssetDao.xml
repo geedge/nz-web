@@ -187,6 +187,20 @@
                  </foreach>
              </if>
 
+            <if test="params.moduleIds != null and params.moduleIds.size > 0">
+                AND me.module_id IN
+                <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator="," close=")">
+                    #{moduleId}
+                </foreach>
+            </if>
+
+            <if test="params.innerModuleIdsByPorjects != null and params.innerModuleIdsByPorjects.size > 0">
+                AND me.module_id IN
+                <foreach collection="params.innerModuleIdsByPorjects" item="moduleId" index="no" open="(" separator="," close=")">
+                    #{moduleId}
+                </foreach>
+            </if>
+
              <if test="params.innerAssetIdsByFields != null and params.innerAssetIdsByFields.size > 0">
                  AND asset.id IN
                  <foreach collection="params.innerAssetIdsByFields" item="tmplId" index="no" open="(" separator="," close=")">

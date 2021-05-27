@@ -1,13 +1,7 @@
 package com.nis.modules.stat.service.impl;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -231,10 +225,10 @@ public class StatServiceImpl implements StatService{
 	@Override
 	public StatAnalysis queryAssetHealthy(Map<String, Object> params) {
 		List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda()
-				.eq(ObjectUtil.isNotEmpty(params.get("dcId")),AssetAsset::getDcId,params.get("dcId"))
-				.eq(ObjectUtil.isNotEmpty(params.get("typeId")),AssetAsset::getTypeId,params.get("typeId"))
-				.eq(ObjectUtil.isNotEmpty(params.get("modelId")),AssetAsset::getModelId,params.get("modelId"))
-				.eq(ObjectUtil.isNotEmpty(params.get("stateId")),AssetAsset::getStateId,params.get("stateId")));
+				.in(ObjectUtil.isNotEmpty(params.get("dcId")), AssetAsset::getDcId, ObjectUtil.isNotEmpty(params.get("dcId")) ? Arrays.asList(params.get("dcId").toString().split(",")) : null)
+				.in(ObjectUtil.isNotEmpty(params.get("typeId")),AssetAsset::getTypeId,ObjectUtil.isNotEmpty(params.get("typeId")) ? Arrays.asList(params.get("typeId").toString().split(",")) : null)
+				.in(ObjectUtil.isNotEmpty(params.get("modelId")),AssetAsset::getModelId,ObjectUtil.isNotEmpty(params.get("modelId")) ? Arrays.asList(params.get("modelId").toString().split(",")) : null)
+				.in(ObjectUtil.isNotEmpty(params.get("stateId")),AssetAsset::getStateId,ObjectUtil.isNotEmpty(params.get("stateId")) ? Arrays.asList(params.get("stateId").toString().split(",")) : null));
 		StatAnalysis statAnalysis = statDao.selectAssetUnhealthy(params);
 		statAnalysis.setTotal(assets.size());
 		statAnalysis.setOk(assets.size()-statAnalysis.getAlarm());
