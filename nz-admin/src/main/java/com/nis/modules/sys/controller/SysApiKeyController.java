@@ -29,7 +29,7 @@ public class SysApiKeyController {
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.SYSTEMAPIKEY)
 	@RequiresPermissions({"sys:apiKey:save"})
 	public R addSysApiKey(@RequestBody SysApiKey sysApiKey) {
-		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL)
+		ValidateUtils.is(sysApiKey.getName()).notNull(RCode.SYSAPIKEY_NAME_ISNULL).maxLength(64)
 		.and(sysApiKey.getRoleId()).notNull(RCode.SYSAPIKEY_ROLEID_ISNULL);
 		
 		Integer id = sysApiKeyService.addSysApiKey(sysApiKey);

@@ -58,7 +58,9 @@ public class AlertSilenceController {
 	@RequiresPermissions({"alert:silence:save"})
 	public R save(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
-		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL);
+		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL)
+		.and(alertSilenceConf.getName()).notNull(RCode.ALERTSILENCE_NAME_ISNULL).maxLength(64)
+		.and(alertSilenceConf.getRemark()).maxLength(256);
 		logger.debug("alertsilence save param is {}",JSON.toJSONString(alertSilenceConf));
 		
 		alertSilenceService.saveAlertSilenceConf(alertSilenceConf);
@@ -71,7 +73,9 @@ public class AlertSilenceController {
 	@RequiresPermissions({"alert:silence:update"})
 	public R modify(@RequestBody AlertSilenceConf alertSilenceConf) {
 		ValidateUtils.is(alertSilenceConf.getStartAt()).notNull(RCode.ALERTSILENCE_STARTTIME_ISNULL)
-		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL);
+		.and(alertSilenceConf.getEndAt()).notNull(RCode.ALERTSILENCE_ENDTIME_ISNULL)
+		.and(alertSilenceConf.getName()).notNull(RCode.ALERTSILENCE_NAME_ISNULL).maxLength(64)
+		.and(alertSilenceConf.getRemark()).maxLength(256);
 		
 		logger.debug("alertsilence modify param is {}",JSON.toJSONString(alertSilenceConf));
 		

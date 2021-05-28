@@ -63,10 +63,11 @@ public class MonitorModuleController {
     @RequiresPermissions({"module:save"})
     public R saveModule(@RequestBody MonitorModule module) {
         ValidateUtils.is(module.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
-                .and(module.getName()).notNull(RCode.MODULE_NAME_ISNULL)
+                .and(module.getName()).notNull(RCode.MODULE_NAME_ISNULL).maxLength(64)
                 .and(module.getEndpointNameTmpl()).notNull(RCode.MODULE_ENDPOINTNAMETMPL_ISNULL)
                 .and(module.getType()).notNull(RCode.MODULE_TYPE_ISNULL)
-                .and(module.getConfigs()).notNull(RCode.MODULE_CONFIGS_ISNULL);
+                .and(module.getConfigs()).notNull(RCode.MODULE_CONFIGS_ISNULL)
+                .and(module.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", monitorModuleService.saveModule(module));
@@ -79,10 +80,11 @@ public class MonitorModuleController {
     public R editModule(@RequestBody MonitorModule module) {
         ValidateUtils.is(module.getId()).notNull(RCode.MODULE_ID_ISNULL)
                 .and(module.getProjectId()).notNull(RCode.MODULE_PROJECTID_ISNULL)
-                .and(module.getName()).notNull(RCode.MODULE_NAME_ISNULL)
+                .and(module.getName()).notNull(RCode.MODULE_NAME_ISNULL).maxLength(64)
                 .and(module.getEndpointNameTmpl()).notNull(RCode.MODULE_ENDPOINTNAMETMPL_ISNULL)
                 .and(module.getType()).notNull(RCode.MODULE_TYPE_ISNULL)
-                .and(module.getConfigs()).notNull(RCode.MODULE_CONFIGS_ISNULL);
+                .and(module.getConfigs()).notNull(RCode.MODULE_CONFIGS_ISNULL)
+                .and(module.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", monitorModuleService.updateModule(module));

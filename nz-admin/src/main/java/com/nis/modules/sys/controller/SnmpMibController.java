@@ -68,7 +68,7 @@ public class SnmpMibController extends AbstractController {
     @SysLog(operation = OperationEnum.ADD,type = TypeEnum.MIB)
     @RequiresPermissions({"sys:mib:save"})
     public R save(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
-        ValidateUtils.is(file).notNull(RCode.SNMP_MIB_FILE_ISNULL);
+        ValidateUtils.is(file).notNull(RCode.SNMP_MIB_FILE_ISNULL).and(snmpMib.getRemark()).maxLength(256);
 
         snmpMibService.saveOrUpdateSnmpMib(snmpMib, file);
         return R.ok();
@@ -86,7 +86,7 @@ public class SnmpMibController extends AbstractController {
     @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.MIB)
     @RequiresPermissions({"sys:mib:update"})
     public R update(SnmpMib snmpMib, @RequestParam(value = "file", required = false) MultipartFile file) {
-        ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL);
+        ValidateUtils.is(snmpMib.getId()).notNull(RCode.SNMP_MIB_ID_ISNULL).and(snmpMib.getRemark()).maxLength(256);
 
         snmpMibService.saveOrUpdateSnmpMib(snmpMib, file);
         return R.ok();

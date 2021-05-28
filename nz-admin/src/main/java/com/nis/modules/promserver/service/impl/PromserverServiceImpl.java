@@ -74,10 +74,10 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		String host = promserverEntity.getHost();
 		Integer port = promserverEntity.getPort();
 		ValidateUtils.is(promserverEntity.getDcId()).notNull(RCode.PROMSERVER_DCID_ISNULL)
-				.and(host).notNull(RCode.PROMSERVER_HOST_ISNULL)
+				.and(host).notNull(RCode.PROMSERVER_HOST_ISNULL).maxLength(64)
 				.and(type).notNull(RCode.PROMSERVER_TYPE_ISNULL)
-				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL)
-				.and(promserverEntity.getToken()).notNull(RCode.PROMSERVER_TOKEN_ISNULL);
+				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL).maxLength(10)
+				.and(promserverEntity.getToken()).notNull(RCode.PROMSERVER_TOKEN_ISNULL).maxLength(64);
 
 		// 校验ip是否合法
 		boolean ipFlag = CommonUtils.checkIp(host);

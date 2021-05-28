@@ -33,8 +33,8 @@ public class LinkController extends AbstractController{
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.LINK)
 	@RequiresPermissions({"sys:link:save"})
 	public R save(@RequestBody Link link) {
-		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL);
-		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL);
+		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL).maxLength(64);
+		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL).maxLength(1024);
 		linkService.saveLink(link);
 		return R.ok();
 	}
@@ -44,8 +44,8 @@ public class LinkController extends AbstractController{
 	@RequiresPermissions({"sys:link:update"})
 	public R update(@RequestBody Link link) {
 		ValidateUtils.is(link.getId()).notNull(RCode.LINK_ID_ISNULL);
-		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL);
-		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL);
+		ValidateUtils.is(link.getName()).notNull(RCode.LINK_NAME_ISNULL).maxLength(64);
+		ValidateUtils.is(link.getUrl()).notNull(RCode.LINK_URL_ISNULL).maxLength(1024);
 		linkService.updateById(link);
 		return R.ok();
 	}

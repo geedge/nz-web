@@ -55,12 +55,13 @@ public class AssetFieldMetaController {
 	@RequiresPermissions({"field:meta:update"})
 	public R modifyAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
 		ValidateUtils.is(assetFieldMeta.getId()).notNull(RCode.ASSET_FIELD_META_ID_ISNULL)
-		.and(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL)
-		.and(assetFieldMeta.getMetaKey()).notNull(RCode.ASSET_FIELD_META_KEY_ISNULL)
+		.and(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL).maxLength(64)
+		.and(assetFieldMeta.getMetaKey()).notNull(RCode.ASSET_FIELD_META_KEY_ISNULL).maxLength(128)
 		.and(assetFieldMeta.getGroupId()).notNull(RCode.ASSET_FIELD_META_GROUPID_ISNULL)
 		.and(assetFieldMeta.getSearch()).notNull(RCode.ASSET_FIELD_META_SEARCH_ISNULL)
 		.and(assetFieldMeta.getDisplay()).notNull(RCode.ASSET_FIELD_META_DISPLAY_ISNULL)
-		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL);
+		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL)
+		.and(assetFieldMeta.getRemark()).maxLength(256);
 		
 		Integer id = assetFieldMetaService.saveOrModify(assetFieldMeta);
 		return R.ok().putData("id",id);
@@ -70,12 +71,13 @@ public class AssetFieldMetaController {
 	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ASSETFIELDMETA)
 	@RequiresPermissions({"field:meta:save"})
 	public R saveAssetFieldMeta(@RequestBody AssetFieldMeta assetFieldMeta) {
-		ValidateUtils.is(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL)
-		.and(assetFieldMeta.getMetaKey()).notNull(RCode.ASSET_FIELD_META_KEY_ISNULL)
+		ValidateUtils.is(assetFieldMeta.getName()).notNull(RCode.ASSET_FIELD_META_NAME_ISNULL).maxLength(64)
+		.and(assetFieldMeta.getMetaKey()).notNull(RCode.ASSET_FIELD_META_KEY_ISNULL).maxLength(128)
 		.and(assetFieldMeta.getGroupId()).notNull(RCode.ASSET_FIELD_META_GROUPID_ISNULL)
 		.and(assetFieldMeta.getSearch()).notNull(RCode.ASSET_FIELD_META_SEARCH_ISNULL)
 		.and(assetFieldMeta.getDisplay()).notNull(RCode.ASSET_FIELD_META_DISPLAY_ISNULL)
-		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL);
+		.and(assetFieldMeta.getType()).notNull(RCode.ASSET_FIELD_META_TYPE_ISNULL)
+		.and(assetFieldMeta.getRemark()).maxLength(256);
 		
 		Integer id = assetFieldMetaService.saveOrModify(assetFieldMeta);
 		return R.ok().putData("id",id);

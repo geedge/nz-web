@@ -632,14 +632,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     private void validateParam(AlertRuleEntity alertRule) {
         String operator = alertRule.getOperator();
         Integer unit = alertRule.getUnit();
-        ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL)
-                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL)
+        ValidateUtils.is(alertRule.getName()).notNull(RCode.ALERTRULE_NAME_ISNULL).maxLength(64)
+                .and(alertRule.getExpr()).notNull(RCode.ALERTRULE_EXPR_ISNULL).maxLength(512)
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
                 .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
-                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL)
+                .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
                 .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL)
-                .and(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL)
-                .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
+                .and(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
+                .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
+                .and(alertRule.getDescription()).maxLength(512);
 
         operator = operator.replaceAll(" ", "");
         alertRule.setOperator(operator);

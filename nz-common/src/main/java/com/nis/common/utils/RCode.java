@@ -460,6 +460,7 @@ public enum RCode {
     ALERTSILENCE_ID_IS_NOT_NULL(441004,"ids can not be null"),
     ALERTSILENCE_TYPE_ERROR(445005,"AlertSilence type value error"),
     ALERTSILENCE_MATCHER_ISNULL(441006,"AlertSilence matchers can not be null"),
+    ALERTSILENCE_NAME_ISNULL(441007,"AlertSilence name can not be null"),
 
     /**
      *  告警级别

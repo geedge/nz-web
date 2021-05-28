@@ -55,7 +55,8 @@ public class AssetFieldGroupController {
 	public R modifyAssetFieldGroup(@RequestBody AssetFieldGroup assetFieldGroup) {
 		
 		ValidateUtils.is(assetFieldGroup.getId()).notNull(RCode.ASSET_FIELD_GROUP_ID_ISNULL)
-		.and(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL);
+		.and(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL).maxLength(64)
+		.and(assetFieldGroup.getRemark()).maxLength(256);
 		
 		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
 		return R.ok().putData("id", id);
@@ -66,7 +67,8 @@ public class AssetFieldGroupController {
 	@RequiresPermissions({"field:group:save"})
 	public R saveAssetFieldGroup(@RequestBody AssetFieldGroup assetFieldGroup) {
 		
-		ValidateUtils.is(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL);
+		ValidateUtils.is(assetFieldGroup.getName()).notNull(RCode.ASSET_FIELD_GROUP_NAME_ISNULL).maxLength(64)
+		.and(assetFieldGroup.getRemark()).maxLength(256);
 		
 		Integer id = assetFieldGroupService.saveOrModifyAssetFieldGroup(assetFieldGroup);
 		

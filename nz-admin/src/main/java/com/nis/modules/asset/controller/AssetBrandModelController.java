@@ -92,8 +92,9 @@ public class AssetBrandModelController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:save"})
     public R saveAssetModel(@RequestBody AssetModel model) {
-        ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
-                .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL);
+        ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL).maxLength(64)
+                .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL)
+                .and(model.getRemark()).maxLength(256);
 
         modelService.saveModel(model);
         return R.ok();
@@ -104,8 +105,9 @@ public class AssetBrandModelController {
     @RequiresPermissions({"asset:model:update"})
     public R editAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
-                .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL)
-                .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL);
+                .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL).maxLength(64)
+                .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL)
+                .and(model.getRemark()).maxLength(256);
 
         modelService.updateModel(model);
         return R.ok();

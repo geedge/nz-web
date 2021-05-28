@@ -105,8 +105,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
     private void validateUserInfo(SysUserEntity user) {
 	    Integer status = user.getStatus();
-        ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL)
-                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL).and(user.getName()).notNull(RCode.SYS_USER_NAME_ISNULL);
+        ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL).maxLength(64)
+        		.and(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64)
+        		.and(user.getMobile()).maxLength(64)
+                .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL).and(user.getName()).notNull(RCode.SYS_USER_NAME_ISNULL).maxLength(64);
 
         List<SysUserEntity> list = this.list(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getName, user.getName()).ne(ObjectUtil.isNotEmpty(user.getId()),SysUserEntity::getId, user.getId()));
         if(ObjectUtil.isNotEmpty(list)) {
@@ -118,7 +120,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	    }
 	    String email = user.getEmail();
 	    if(StringUtils.isNotEmpty(email)){
-	    	ValidateUtils.is(email).email(RCode.SYS_USER_EMAIL_FORMAT);
+	    	ValidateUtils.is(email).email(RCode.SYS_USER_EMAIL_FORMAT).maxLength(64);
 	    }
 
 	    // 校验角色

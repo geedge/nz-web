@@ -68,7 +68,8 @@ public class MonitorProjectController extends AbstractController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
     @RequiresPermissions({"project:save"})
     public R saveProject(@RequestBody MonitorProject project) {
-        ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+        ValidateUtils.is(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL).maxLength(64)
+        .and(project.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", monitorProjectService.saveProject(project));
@@ -86,7 +87,8 @@ public class MonitorProjectController extends AbstractController {
     @RequiresPermissions({"project:update"})
     public R editProject(@RequestBody MonitorProject project) {
         ValidateUtils.is(project.getId()).notNull(RCode.PROJECT_ID_ISNULL)
-                .and(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL);
+                .and(project.getName()).notNull(RCode.PROJECT_NAME_ISNULL).maxLength(64)
+                .and(project.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", monitorProjectService.updateProject(project));
@@ -161,8 +163,8 @@ public class MonitorProjectController extends AbstractController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.PROJECT)
     @RequiresPermissions({"project:topo:icon:save"})
     public R save(TopoIcon icon, @RequestParam(value = "file", required = false) MultipartFile file) {
-        ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL)
-                .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL)
+        ValidateUtils.is(icon.getName()).notNull(RCode.PROJECT_TOPOICON_NAME_ISNULL).maxLength(64)
+                .and(icon.getUnit()).notNull(RCode.PROJECT_TOPOICON_UNIT_ISNULL).maxLength(64)
                 .and(file).notNull(RCode.PROJECT_TOPOICON_FILE_ISNULL);
 
 

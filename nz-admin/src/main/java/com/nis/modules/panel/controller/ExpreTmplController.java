@@ -56,8 +56,9 @@ public class ExpreTmplController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:save"})
     public R saveTmpl(@RequestBody VisualExpressionTmpl tmpl) {
-        ValidateUtils.is(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
-                .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
+        ValidateUtils.is(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL).maxLength(64)
+                .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL).maxLength(4096)
+                .and(tmpl.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", expreTmplService.saveTmpl(tmpl));
@@ -69,8 +70,9 @@ public class ExpreTmplController {
     @RequiresPermissions({"expression:tmpl:update"})
     public R editTmpl(@RequestBody VisualExpressionTmpl tmpl) {
         ValidateUtils.is(tmpl.getId()).notNull(RCode.EXPRETMPL_ID_ISNULL)
-                .and(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL)
-                .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL);
+                .and(tmpl.getName()).notNull(RCode.EXPRETMPL_NAME_ISNULL).maxLength(64)
+                .and(tmpl.getExpression()).notNull(RCode.EXPRETMPL_EXPRESSION_ISNULL).maxLength(4096)
+                .and(tmpl.getRemark()).maxLength(256);
 
         Map map = new HashMap(2);
         map.put("id", expreTmplService.updateTmpl(tmpl));

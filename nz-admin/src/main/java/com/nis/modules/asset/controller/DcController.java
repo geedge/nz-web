@@ -65,10 +65,12 @@ public class DcController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.DATACENTER)
     @RequiresPermissions({"dc:save"})
     public R saveDc(@RequestBody Dc dc) {
-        ValidateUtils.is(dc.getName()).notNull(RCode.DC_NAME_ISNULL)
+        ValidateUtils.is(dc.getName()).notNull(RCode.DC_NAME_ISNULL).maxLength(64)
                 .and(dc.getState()).notNull(RCode.DC_STATE_ISNULL)
                 .and(dc.getY()).min(1, RCode.DC_Y_MINIMUM)
-                .and(dc.getX()).min(1, RCode.DC_X_MINIMUM);
+                .and(dc.getX()).min(1, RCode.DC_X_MINIMUM)
+                .and(dc.getLocation()).maxLength(256)
+                .and(dc.getTel()).maxLength(128);
 
         return R.ok().putData("id", dcService.saveDc(dc));
     }
@@ -84,10 +86,12 @@ public class DcController {
     @RequiresPermissions({"dc:update"})
     public R updateDc(@RequestBody Dc dc) {
         ValidateUtils.is(dc.getId()).notNull(RCode.DC_ID_ISNULL)
-                .and(dc.getName()).notNull(RCode.DC_NAME_ISNULL)
+                .and(dc.getName()).notNull(RCode.DC_NAME_ISNULL).maxLength(64)
                 .and(dc.getState()).notNull(RCode.DC_STATE_ISNULL)
                 .and(dc.getY()).min(1, RCode.DC_Y_MINIMUM)
-                .and(dc.getX()).min(1, RCode.DC_X_MINIMUM);
+                .and(dc.getX()).min(1, RCode.DC_X_MINIMUM)
+                .and(dc.getLocation()).maxLength(256)
+                .and(dc.getTel()).maxLength(128);
 
         return R.ok().putData("id", dcService.updateDc(dc));
     }
@@ -147,7 +151,8 @@ public class DcController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.CABINET)
     @RequiresPermissions({"cabinet:save"})
     public R saveCabinet(@RequestBody Cabinet cabinet) {
-        ValidateUtils.is(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
+        ValidateUtils.is(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL).maxLength(64)
+        		.and(cabinet.getRemark()).maxLength(256)
                 .and(cabinet.getDcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);
@@ -167,7 +172,8 @@ public class DcController {
     @RequiresPermissions({"cabinet:update"})
     public R updateCabinet(@RequestBody Cabinet cabinet) {
         ValidateUtils.is(cabinet.getId()).notNull(RCode.DC_CABINETID_ISNULL)
-                .and(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL)
+                .and(cabinet.getName()).notNull(RCode.DC_CABINETNAME_ISNULL).maxLength(64)
+        		.and(cabinet.getRemark()).maxLength(256)
                 .and(cabinet.getDcId()).notNull(RCode.DC_ID_ISNULL)
                 .and(cabinet.getY()).min(1, RCode.CABINET_Y_MINIMUM)
                 .and(cabinet.getX()).min(1, RCode.CABINET_X_MINIMUM);

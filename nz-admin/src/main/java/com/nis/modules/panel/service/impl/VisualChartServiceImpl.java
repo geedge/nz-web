@@ -181,10 +181,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	    }
 	    
 	    String type = chart.getType();
-	    ValidateUtils.is(chart.getName()).notNull(RCode.CHART_TITLE_ISNULL)
+	    ValidateUtils.is(chart.getName()).notNull(RCode.CHART_TITLE_ISNULL).maxLength(64)
 	            .and(chart.getSpan()).notNull(RCode.CHART_SPAN_ISNULL)
 	            .and(chart.getHeight()).notNull(RCode.CHART_HEIGHT_ISNULL)
-	            .and(type).notNull(RCode.CHART_TYPE_ISNULL);
+	            .and(type).notNull(RCode.CHART_TYPE_ISNULL)
+	            .and(chart.getRemark()).maxLength(256);
 	
 	    // 2. 验证type是否在枚举范围内
 	    sysDictService.checkSysDicValue(Constant.DICT_CHART_TYPE, type, RCode.CHART_TYPE_INVALIDE);

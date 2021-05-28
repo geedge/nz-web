@@ -44,6 +44,7 @@ public class VisualPanelController {
 	@SysLog(operation = OperationEnum.ADD, type = TypeEnum.VISUALPANEL)
 	@RequiresPermissions({ "visual:panel:save" })
 	public R panelSave(@RequestBody VisualPanel panel) {
+		ValidateUtils.is(panel.getName()).maxLength(64);
 		visualPanelService.saveVisualPanel(panel);
 		return R.ok().putData("panel", panel);
 	}
@@ -52,7 +53,8 @@ public class VisualPanelController {
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.VISUALPANEL)
 	@RequiresPermissions({ "visual:panel:update" })
 	public R panelUpdate(@RequestBody VisualPanel panel) {
-		ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL);
+		ValidateUtils.is(panel.getId()).notNull(RCode.PANEL_ID_ISNULL)
+		.and(panel.getName()).maxLength(64);
 
 		visualPanelService.updateVisualPanel(panel);
 		return R.ok().putData("panel", panel);

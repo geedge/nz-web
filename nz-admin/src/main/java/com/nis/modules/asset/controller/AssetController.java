@@ -73,17 +73,18 @@ public class AssetController {
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:save"})
     public R saveAsset(@RequestBody AssetAsset asset) {
-        ValidateUtils.is(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL)
-                .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
-                .and(asset.getManageIp()).notNull(RCode.ASSET_MANAGEIP_ISNULL).ip(RCode.ASSET_MANAGEIP_FORMAT)
+        ValidateUtils.is(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL).maxLength(128)
+                .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(128)
+                .and(asset.getManageIp()).notNull(RCode.ASSET_MANAGEIP_ISNULL).ip(RCode.ASSET_MANAGEIP_FORMAT).maxLength(64)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODEL_ID_ISNULL)
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
-                .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
+                .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL)
+                .and(asset.getNumber()).maxLength(128);
         
         if(ObjectUtil.equal(asset.getAuthType(), 1)) {
-        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
-        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64)
+        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
         }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
         	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
         }
@@ -105,18 +106,19 @@ public class AssetController {
     @RequiresPermissions({"asset:update"})
     public R updateAsset(@RequestBody AssetAsset asset) {
         ValidateUtils.is(asset.getId()).notNull(RCode.ASSET_ID_ISNULL)
-                .and(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL)
-                .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL)
-                .and(asset.getManageIp()).notNull(RCode.ASSET_MANAGEIP_ISNULL).ip(RCode.ASSET_MANAGEIP_FORMAT)
+                .and(asset.getName()).notNull(RCode.ASSET_NAME_ISNULL).maxLength(128)
+                .and(asset.getSn()).notNull(RCode.ASSET_SN_ISNULL).maxLength(128)
+                .and(asset.getManageIp()).notNull(RCode.ASSET_MANAGEIP_ISNULL).ip(RCode.ASSET_MANAGEIP_FORMAT).maxLength(64)
                 .and(asset.getBrandId()).notNull(RCode.ASSET_BRAND_ID_ISNULL)
                 .and(asset.getModelId()).notNull(RCode.ASSET_MODEL_ID_ISNULL)
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
-                .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
-
+                .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL)
+                .and(asset.getNumber()).maxLength(128);
+        
         if(ObjectUtil.equal(asset.getAuthType(), 1)) {
-        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL)
-        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL);
+        	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64)
+        	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
         }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
         	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
         }

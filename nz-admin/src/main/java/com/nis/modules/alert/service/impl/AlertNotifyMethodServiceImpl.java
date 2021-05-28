@@ -49,10 +49,10 @@ public class AlertNotifyMethodServiceImpl extends ServiceImpl<AlertNotifyMethodD
 
     @Override
     public void validateNotifyMethod(AlertNotifyMethod alertNotifyMethod,Boolean isModify) {
-        ValidateUtils validateUtils = ValidateUtils.is(alertNotifyMethod.getName()).notNull(RCode.ALERTNOTIFY_NAME_ISNULL)
+        ValidateUtils validateUtils = ValidateUtils.is(alertNotifyMethod.getName()).notNull(RCode.ALERTNOTIFY_NAME_ISNULL).maxLength(64)
                 .and(alertNotifyMethod.getAccount()).notNull(RCode.ALERTNOTIFY_ACCOUNT_ISNULL)
                 .and(alertNotifyMethod.getState()).notNull(RCode.ALERTNOTIFY_STATE_ISNULL)
-                .and(alertNotifyMethod.getFilePath()).notNull(RCode.ALERTNOTIFY_FILEPATH_ISNULL);
+                .and(alertNotifyMethod.getFilePath()).notNull(RCode.ALERTNOTIFY_FILEPATH_ISNULL).maxLength(256);
         //校验文件是否存在
         if (Tool.StrUtil.isNotEmpty(alertNotifyMethod.getFilePath()) && !Tool.FileUtil.exist(alertNotifyMethod.getFilePath()))
             throw new NZException(RCode.ALERTNOTIFY_FILE_NOTEXISTS);
