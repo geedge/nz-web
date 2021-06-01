@@ -1,5 +1,6 @@
 package com.nis.common.utils;
 
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.Sign;
@@ -101,7 +102,12 @@ public class LicenseUtil {
 	public static LicenseEntity xmlToLicenseBean(String licenseXml) {
 		if (Tool.StrUtil.isNotBlank(licenseXml)) {
 			Map<String, Object> map = Tool.XmlUtil.xmlToMap(licenseXml);
-			return Tool.BeanUtil.toBeanIgnoreError(map, LicenseEntity.class);
+			map.forEach((k, v) -> {
+				if(Tool.ObjectUtil.isEmpty(v)) {
+					map.put(k, null);
+				}
+			});
+			return Tool.BeanUtil.toBean(map, LicenseEntity.class,CopyOptions.create().setIgnoreError(true).setIgnoreNullValue(true));
 		}
 		return null;
 	}
