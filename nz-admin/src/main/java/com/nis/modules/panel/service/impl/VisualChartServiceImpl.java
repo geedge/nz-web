@@ -859,7 +859,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				}
 			}
 		}else if(ToolUtil.isNotEmpty(obj) && instanceCharts==null){
-			Map<Integer,Integer> tmpGroupIdAndInstanceGroupId = new HashMap<Integer,Integer>();
+			Map<String,Integer> tmpGroupIdAndInstanceGroupId = new HashMap<String,Integer>();
 			for(VisualChart tmpChart : tmpCharts) {
 				for(Object data : (List<Object>)obj) {
 					Integer varId =0;
@@ -875,7 +875,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					}
 					VisualChart syncChart =new VisualChart();
 					BeanUtils.copyProperties(tmpChart, syncChart);
-					Integer instantceId = tmpGroupIdAndInstanceGroupId.get(tmpChart.getGroupId());
+					Integer instantceId = tmpGroupIdAndInstanceGroupId.get(tmpChart.getGroupId()+":"+varId);
 					syncChart.setGroupId(ToolUtil.isEmpty(instantceId)? 0:instantceId);
 					syncChart.setPid(tmpChart.getId());
 					syncChart.setVarId(varId);
@@ -915,7 +915,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					}
 					chartElementService.saveBatch(tmplChartElements);
 					if(tmpChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-						tmpGroupIdAndInstanceGroupId.put(tmpChart.getId(), syncChart.getId());
+						tmpGroupIdAndInstanceGroupId.put(tmpChart.getId()+":"+varId, syncChart.getId());
 					}
 				}
 			}
