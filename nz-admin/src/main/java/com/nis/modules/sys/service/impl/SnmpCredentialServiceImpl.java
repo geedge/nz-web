@@ -69,7 +69,6 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 		ValidateUtils.is(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL).maxLength(64)
 		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
 		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL).maxLength(64)
-		.and(snmpCredential.getRemark()).notNull(RCode.SNMP_CREDENTIAL_REMARK_ISNULL)
 		.and(snmpCredential.getPort()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL)
 		.and(snmpCredential.getRemark()).maxLength(1024);
 		// 当snmp为v3版本时进行参数校验
