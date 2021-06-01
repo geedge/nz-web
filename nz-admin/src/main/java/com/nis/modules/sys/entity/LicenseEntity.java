@@ -5,12 +5,14 @@ import java.io.UnsupportedEncodingException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Date;
+import java.util.Map;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.asymmetric.Sign;
 import cn.hutool.crypto.asymmetric.SignAlgorithm;
@@ -98,6 +100,13 @@ public class LicenseEntity implements Serializable,Cloneable{
 	 */
 	public String genConfigStr() {
 		LicenseEntity config = this.genConfig();
+		Map<String, Object> beanToMap = Tool.BeanUtil.beanToMap(config);
+		beanToMap.forEach((k, v) -> {
+			if(Tool.ObjectUtil.isEmpty(v)) {
+				beanToMap.put(k, null);
+			}
+		});
+		config = Tool.BeanUtil.toBean(beanToMap, LicenseEntity.class,CopyOptions.create().setIgnoreError(true).setIgnoreNullValue(true));
 		return config.toString();
 	}
 	
