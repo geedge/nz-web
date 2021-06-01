@@ -792,8 +792,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Integer[] ids = new Integer[delIds.size()];
         delIds.toArray(ids);
 
-        // 删除旧 model 关联的 charts
-        chartService.delCharts(ids, null);
+        if (ToolUtil.isNotEmpty(ids)) {
+            // 删除旧 model 关联的 charts
+            chartService.delCharts(ids, null);
+        }
 
         // 新增新 model 关联的 charts
         this.saveAssetModelChartsWhenInsert(asset);

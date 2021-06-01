@@ -940,7 +940,7 @@ INSERT INTO `sys_menu` VALUES (11, 'User', 'user', 'config.user.user', 2149, '',
 INSERT INTO `sys_menu` VALUES (12, 'role', 'role', 'config.roles.roles', 2149, '', 1, '/roles', 2, '', '');
 INSERT INTO `sys_menu` VALUES (13, 'Agent', 'agent', 'config.agent.agent.agent', 10, '', 1, '/agent', 3, '', '');
 INSERT INTO `sys_menu` VALUES (14, 'dc', 'dc', 'config.dc.dc', 10, '', 1, '/dc', 1, '', '');
-INSERT INTO `sys_menu` VALUES (15, 'model', 'model', 'config.model.model', 2148, '', 1, '/model', 1, '', '');
+INSERT INTO `sys_menu` VALUES (15, 'model', 'model', 'config.model.model', 2147, '', 1, '/model', 1, '', '');
 INSERT INTO `sys_menu` VALUES (16, 'SNMP', 'snmp', 'SNMP', 10, '', 1, '/snmp', 6, '', '');
 INSERT INTO `sys_menu` VALUES (17, 'system', 'system', 'config.system.system', 10, '', 1, '/system', 7, '', '');
 INSERT INTO `sys_menu` VALUES (18, 'Terminal log', 'terminalLog', 'config.terminallog.terminallog', 2149, '', 1, '/terminalLog', 12, '', '');
@@ -1026,7 +1026,7 @@ INSERT INTO `sys_menu` VALUES (2131, 'Asset state view', 'assetState_view', 'but
 INSERT INTO `sys_menu` VALUES (2132, 'Asset state to add', 'assetState_toAdd', 'buttons.assetState.toAdd', 2126, 'asset:state:save', 2, '', 2, '', '');
 INSERT INTO `sys_menu` VALUES (2133, 'Asset state to edit', 'assetState_toEdit', 'buttons.assetState.toEdit', 2126, 'asset:state:update', 2, '', 3, '', '');
 INSERT INTO `sys_menu` VALUES (2134, 'Asset state delete', 'assetState_delete', 'buttons.assetState.delete', 2126, 'asset:state:delete', 2, '', 4, '', '');
-INSERT INTO `sys_menu` VALUES (2136, 'Asset label', 'assetLabel', 'config.assetLabel.assetLabel', 2148, '', 1, '/assetLabel', 2, '', '');
+INSERT INTO `sys_menu` VALUES (2136, 'Asset label', 'assetLabel', 'config.assetLabel.assetLabel', 2147, '', 1, '/assetLabel', 2, '', '');
 INSERT INTO `sys_menu` VALUES (2137, 'Add asset label', 'asset_label_add', 'buttons.add', 2136, 'field:meta:save,field:group:save', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2138, 'Edit asset label', 'asset_label_edit', 'buttons.edit', 2136, 'field:meta:update,field:group:update', 2, '', 5, '', '');
 INSERT INTO `sys_menu` VALUES (2139, 'Delete asset label', 'asset_label_delete', 'buttons.delete', 2136, 'field:meta:delete,field:group:delete', 2, '', 10, '', '');
@@ -1034,7 +1034,6 @@ INSERT INTO `sys_menu` VALUES (2144, 'project', 'project', 'overall.project', 6,
 INSERT INTO `sys_menu` VALUES (2145, 'module', 'module', 'project.module.module', 6, '', 1, '/monitor/module', 5, '', '');
 INSERT INTO `sys_menu` VALUES (2146, 'endpoint', 'endpoint', 'project.endpoint.endpoint', 6, '', 1, '/monitor/endpoint', 10, '', '');
 INSERT INTO `sys_menu` VALUES (2147, 'Assets', 'assets', 'overall.asset', 0, '', 1, '', 2, 'nz-icon nz-icon-menu-assets', '');
-INSERT INTO `sys_menu` VALUES (2148, 'Configuration', 'configuration', 'overall.configuration', 2147, '', 1, '', 2, '', '');
 INSERT INTO `sys_menu` VALUES (2149, 'Administration', 'administration', 'overall.administration', 0, '', 1, '', 50, 'nz-icon nz-icon-personal-circle', '');
 INSERT INTO `sys_menu` VALUES (2150, 'Kill terminal', 'terminal_kill', 'buttons.terminalLog.kill', 18, 'terminal:kill', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2151, 'Monitor terminal', 'terminal_monitor', 'buttons.terminalLog.monitor', 18, '', 2, '', 5, '', '');
@@ -1047,7 +1046,7 @@ INSERT INTO `sys_menu` VALUES (2159, 'Notification', 'notification', 'system.not
 INSERT INTO `sys_menu` VALUES (2160, 'Link', 'link', 'config.system.link.link', 17, '', 3, '', 10, '', '');
 INSERT INTO `sys_menu` VALUES (2161, 'Add project', 'project_add', 'buttons.add', 2144, 'project:save', 2, '', 10, '', '');
 INSERT INTO `sys_menu` VALUES (2162, 'View module', 'monitor_module_view', 'buttons.view', 2145, '', 2, '', 5, '', '');
-INSERT INTO `sys_menu` VALUES (2163, 'Expire', 'alertSilence_expire', 'buttons.expire', 2114, 'alert:silence:delete', 2, '', 20, '', '');
+INSERT INTO `sys_menu` VALUES (2163, 'Expire', 'alertSilence_expire', 'buttons.expired', 2114, '', 2, '', 20, '', '');
 INSERT INTO `sys_menu` VALUES (2164, 'Browser', 'snmp_mib_browser', 'config.mib.mibBrowser', 16, '', 3, '/mib/browser', 2, '', '');
 INSERT INTO `sys_menu` VALUES (2165, 'Mib file', 'snmp_mib_file', 'config.mib.mib', 16, '', 3, '/mib/file', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2166, 'Credentials', 'snmp_mib_credentials', 'config.mib.credentials', 16, '', 3, '/mib/credentials', 3, '', '');
@@ -1057,13 +1056,13 @@ INSERT INTO `sys_menu` VALUES (2171, 'project:topo:icon:save', 'topo_icon_save',
 INSERT INTO `sys_menu` VALUES (2172, 'projectTopoIconInfo', 'topo_icon_info', 'project.topo.icon.info', 2144, '', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2173, 'projectTopoList', 'topo_list', 'project.topo.list', 2144, '', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2174, 'projectTopoUpdate', 'project_topo_update', 'project.topo.update', 2144, 'project:topo:update', 2, '', 1, '', '');
-INSERT INTO `sys_menu` VALUES (2176, 'endpointList', 'endpoint_list', 'peoject.endpoint.list', 2146, '', 2, '', 1, '', '');
+INSERT INTO `sys_menu` VALUES (2176, 'endpointList', 'endpoint_list', 'project.endpoint.list', 2146, '', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2180, 'template', 'template', 'overall.template', 10, '', 1, '/template', 4, '', '');
 INSERT INTO `sys_menu` VALUES (2181, 'exprTemp', 'config.exprTemp', 'overall.exprTemp', 2180, '', 3, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2182, 'bbuttons.system.reset', 'system_reset_reset', 'system.reset.reset', 17, 'sys:config:reset', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2185, 'addChartTemp', 'addChartTemp', 'dashboard.addChartTemp', 3, 'visual:chart:save', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2187, 'apiKey', 'apiKey', 'system.apikey.apiKey', 17, '', 3, '', 1, '', '');
-INSERT INTO `sys_menu` VALUES (2188, 'buttons.system.apikey.add', 'system_apiKey_add', 'buttons.system.apikey.add', 17, 'sys:apiKey:save', 2, '', 1, '', '');
+INSERT INTO `sys_menu` VALUES (2188, 'buttons.system.apikey.add', 'system_apiKey_add', 'buttons.system.apiKey.add', 17, 'sys:apiKey:save', 2, '', 1, '', '');
 INSERT INTO `sys_menu` VALUES (2189, 'buttons.system.apiKey.edit', 'system_apiKey_edit', 'buttons.system.apiKey.edit', 17, 'sys:apiKey:save', 2, '', 2, '', '');
 INSERT INTO `sys_menu` VALUES (2190, 'buttons.system.apiKey.delete', 'system_apiKey_delete', 'buttons.system.apiKey.delete', 17, 'sys:apiKey:delete', 2, '', 3, '', '');
 
