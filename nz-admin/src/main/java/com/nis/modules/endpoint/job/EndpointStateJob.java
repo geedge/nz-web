@@ -5,8 +5,6 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
@@ -16,7 +14,6 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -103,14 +100,6 @@ public class EndpointStateJob extends QuartzJobBean {
         // down 掉的 endpoint
         List<Integer> upIdList = upEndpointStateList.stream().map(MonitorEndpointState::getEndpointId).distinct().collect(Collectors.toList());
         List<MonitorEndpoint> downEndpointList = allEndpointList.stream().filter(entity -> !upIdList.contains(entity.getId())).collect(Collectors.toList());
-        List<Promserver> upPromserverList = promserverService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
-        Map<Integer, List<Promserver>> dcIdAndPromserverList = upPromserverList.stream().collect(Collectors.groupingBy(Promserver::getDcId));
-        for (MonitorEndpoint endpoint : downEndpointList) {
-            Dc dc = endpoint.getDc();
-            List<Promserver> promserverList = dcIdAndPromserverList.get(dc.getId());
-            dc.setUpPromNum(CollectionUtils.isEmpty(promserverList) ? 0 : promserverList.size());
-            endpoint.setDc(dc);
-        }
 
         // 设置 down state
         List<MonitorEndpointState> downEndpointStateList = new ArrayList<>();
@@ -123,35 +112,20 @@ public class EndpointStateJob extends QuartzJobBean {
             // 开启：ON, 关闭：OFF
             String dcStateStr = endpoint.getDc().getState();
             boolean dcState = dcStateStr.equals("ON") ? true : false;
-            // Dc 下 up prom_server 数量
-            Integer dcUpPromNum = endpoint.getDc().getUpPromNum();
-            boolean upPromState = (dcUpPromNum != null && dcUpPromNum > 0) ? true : false;
-            if (!dcState && monitor.equals(0) && enabled.equals(0) && upPromState) {
+            if (!dcState && monitor.equals(0) && enabled.equals(1)) {
                 state = 2;
-            } else if (!dcState && monitor.equals(0) && enabled.equals(1) && !upPromState) {
+            } else if (!dcState && monitor.equals(1) && enabled.equals(0)) {
                 state = 4;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(0) && !upPromState) {
+            } else if (dcState && monitor.equals(0) && enabled.equals(0)) {
                 state = 8;
-            } else if (dcState && monitor.equals(0) && enabled.equals(0) && !upPromState) {
-                state = 16;
-            } else if (!dcState && monitor.equals(0) && enabled.equals(1) && upPromState) {
+            } else if (!dcState && monitor.equals(1) && enabled.equals(1)) {
                 state = 6;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(0) && upPromState) {
+            } else if (dcState && monitor.equals(0) && enabled.equals(1)) {
                 state = 10;
-            } else if (dcState && monitor.equals(0) && enabled.equals(0) && upPromState) {
-                state = 18;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(1) && !upPromState) {
+            } else if (dcState && monitor.equals(1) && enabled.equals(0)) {
                 state = 12;
-            } else if (dcState && monitor.equals(0) && enabled.equals(1) && !upPromState) {
-                state = 20;
-            } else if (dcState && monitor.equals(1) && enabled.equals(0) && !upPromState) {
-                state = 24;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(1) && upPromState) {
+            } else if (dcState && monitor.equals(1) && enabled.equals(1)) {
                 state = 14;
-            } else if (dcState && monitor.equals(0) && enabled.equals(1) && upPromState) {
-                state = 22;
-            } else if (dcState && monitor.equals(1) && enabled.equals(1) & !upPromState) {
-                state = 28;
             }
             downEndpointStateList.add(new MonitorEndpointState(endpoint.getId(), state, new Date()));
         }
