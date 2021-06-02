@@ -124,8 +124,6 @@ public class EndpointStateJob extends QuartzJobBean {
                 state = 10;
             } else if (dcState && monitor.equals(1) && enabled.equals(0)) {
                 state = 12;
-            } else if (dcState && monitor.equals(1) && enabled.equals(1)) {
-                state = 14;
             }
             downEndpointStateList.add(new MonitorEndpointState(endpoint.getId(), state, new Date()));
         }
