@@ -958,11 +958,12 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		syncChart.setElements(copyElements);
 		result.add(syncChart);		
 		if(syncChart.getType().equals(Constant.CHART_GROUP_TYPE)) {
-			// 当chart为group时 不允许name重复  会影响chart批量导入
-        	List<VisualChart> charts = this.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, syncChart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, syncChart.getPanelId()).ne(ToolUtil.isNotEmpty(syncChart.getId()), VisualChart::getId,syncChart.getId()));
-            if(ToolUtil.isNotEmpty(charts)) {
-            	throw new NZException(RCode.CHART_GROUP_NAME_DUPLICATE);
-            }
+			// 当chart为group时 不允许name重复
+        	VisualChart chart = this.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, syncChart.getName()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()).eq(VisualChart::getPanelId, syncChart.getPanelId()).ne(ToolUtil.isNotEmpty(syncChart.getId()), VisualChart::getId,syncChart.getId()));
+			if(ToolUtil.isNotEmpty(chart)) {
+				// group chart不能重复  先将group删除 防止不能创建组
+				this.removeById(chart.getId());
+			}
 		}
 		this.save(syncChart);
 		List<VisualChartElement> tmplChartElements = new ArrayList<VisualChartElement>();
