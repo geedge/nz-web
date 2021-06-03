@@ -108,7 +108,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 
                             boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) parameterObject));
                             boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) parameterObject));
-                            if (b2 || b3) eventLogService.increment("prometheus");
+                            boolean b4 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ALERT_API, ((SysConfigEntity) parameterObject));
+                            if (b2 || b3 || b4) eventLogService.increment("prometheus");
                         }
 
                         if (parameterObject instanceof Map) {
@@ -121,7 +122,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 
                                     boolean b2 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ASSET_PING_FROM, ((SysConfigEntity) map.getValue()));
                                     boolean b3 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED, ((SysConfigEntity) map.getValue()));
-                                    if (b2 || b3) eventLogService.increment("prometheus");
+                                    boolean b4 = this.compareConfigDataChange(configMap, Constant.SYSCONFIG_KEY_ALERT_API, ((SysConfigEntity) map.getValue()));
+                                    if (b2 || b3 || b4) eventLogService.increment("prometheus");
                                 }
                             }
                         }
