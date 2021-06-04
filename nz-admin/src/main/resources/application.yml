@@ -8,6 +8,8 @@ server:
 #  port: 8088
 
 spring:
+  resources:
+    static-locations: ./public/
   main:
     allow-bean-definition-overriding: true
   profiles:
