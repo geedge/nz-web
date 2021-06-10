@@ -23,7 +23,7 @@
             </if>
 
             <if test="params.uuid != null ">
-                AND ts.uuid = #{params.uuid}
+                AND ts.uuid like CONCAT('%', #{params.uuid}, '%')
             </if>
 
             <if test="params.remoteAddr != null and params.remoteAddr != ''">
