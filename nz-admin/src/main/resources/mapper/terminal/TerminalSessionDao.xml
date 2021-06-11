@@ -53,7 +53,7 @@
         </where>
 
         <if test="params.orderBy == null or params.orderBy == ''">
-            ORDER BY ts.status ASC,ts.id DESC
+            ORDER BY ts.id DESC
         </if>
     </select>
 </mapper>
