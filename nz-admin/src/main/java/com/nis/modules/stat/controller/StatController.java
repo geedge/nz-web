@@ -322,4 +322,13 @@ public class StatController extends AbstractController {
 		return R.ok().putData("list", result);
 	}
 	
+	/**
+	 * Module 异常数据统计
+	 * @return
+	 */
+	@GetMapping("/module/abnormal")
+	public R moduleAbnormal(@RequestParam Map<String,Object> params) {
+		List<StatAnalysis> result = statService.queryModuleAbnormal(params);
+		return R.ok().putData("list", result);
+	}
 }

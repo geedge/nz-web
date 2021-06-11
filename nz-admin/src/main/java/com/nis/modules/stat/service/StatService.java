@@ -59,4 +59,6 @@ public interface StatService{
 	StatAnalysis queryAssetHealthy(Map<String,Object> params);
 	
 	List<Map> queryOverviewMap();
+	
+	List<StatAnalysis> queryModuleAbnormal(Map<String,Object> params);
 }

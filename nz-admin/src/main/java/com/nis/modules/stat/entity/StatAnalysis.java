@@ -23,4 +23,12 @@ public class StatAnalysis {
 	private Integer ok;
 	
 	private Integer alarm;
+	
+	private Integer state;
+	
+	private Integer alert;
+	
+	private Integer endpoint;
+	
+	private Integer asset;
 }

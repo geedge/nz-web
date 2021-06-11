@@ -62,4 +62,12 @@ public interface StatDao {
 	List<StatAnalysis> selectDcAlertMessage();
 	
 	List<StatAnalysis> selectDcAgentUnhealthy();
+	
+	List<Integer> selectModuleDownEndpoint(@Param("params") Map<String, Object> params);
+	
+	List<StatAnalysis> selectModuleAlertEndpoint(@Param("params") Map<String, Object> params);
+	
+	List<StatAnalysis> selectModuleAlertNum(@Param("params") Map<String, Object> params);
+	
+	List<StatAnalysis> selectModuleAssetRelation(@Param("params") Map<String, Object> params);
 }

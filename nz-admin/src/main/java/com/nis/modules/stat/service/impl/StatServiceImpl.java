@@ -13,10 +13,18 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetPingService;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
@@ -52,6 +60,18 @@ public class StatServiceImpl implements StatService{
 	
 	@Autowired
 	private AssetAssetService assetAssetService;
+	
+	@Autowired
+	private AssetPingService assetPingService;
+	
+	@Autowired
+	private MonitorEndpointService monitorEndpointService;
+	
+	@Autowired
+	private MonitorEndpointStateService monitorEndpointStateService;
+	
+	@Autowired
+	private AlertMessageService alertMessageService;
 	
 	private Integer topNSize=10;
 	
@@ -320,6 +340,103 @@ public class StatServiceImpl implements StatService{
 			map.put("alert", alert);
 			
 			result.add(map);
+		}
+		return result;
+	}
+
+	@Override
+	public List<StatAnalysis> queryModuleAbnormal(Map<String, Object> params) {
+		String projectId = (String) params.get("projectId");
+		String moduleId = (String) params.get("moduleId");
+		List<MonitorModule> modules = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda()
+				.eq(ObjectUtil.isNotEmpty(projectId), MonitorModule::getProjectId,projectId)
+				.eq(ObjectUtil.isNotEmpty(moduleId), MonitorModule::getId,moduleId));
+		
+		List<MonitorEndpoint> endpoints = monitorEndpointService.list();
+		Map<Integer, Integer> idAndModuleId = endpoints.stream().collect(Collectors.toMap(MonitorEndpoint::getId, MonitorEndpoint::getModuleId));
+		
+		// 查询module下的alert信息
+		List<StatAnalysis> alerts = statDao.selectModuleAlertNum(params);
+		Map<Integer, Integer> moduleAndAlertCount = alerts.stream().collect(Collectors.toMap(StatAnalysis::getId, StatAnalysis::getAlert));
+		
+		Map<Integer,Integer> moduleAndEndpointCount = new HashMap<Integer,Integer>();
+		// 查询module下down掉的endpoint信息
+		List<Integer> downEndpoints = statDao.selectModuleDownEndpoint(params);
+		
+		// 查询module下endpoint关联的告警信息
+		List<StatAnalysis> alertInfos = statDao.selectModuleAlertEndpoint(params);
+		List<Integer> alertEndpoints = alertInfos.stream().map(StatAnalysis::getEndpoint).collect(Collectors.toList());
+		
+		downEndpoints.addAll(alertEndpoints);
+		
+		// 有异常的endpoint id信息
+		List<Integer> endpointIds = downEndpoints.stream().distinct().collect(Collectors.toList());
+		
+		// 分组endpoint信息
+		if(ObjectUtil.isNotEmpty(endpointIds)) {
+			for(Integer id : endpointIds) {
+				Integer moduleIdInfo = idAndModuleId.get(id);
+				Integer count = moduleAndEndpointCount.get(moduleIdInfo);
+				if(ObjectUtil.isEmpty(count)) {
+					count = 1;
+				}else {
+					count += 1;
+				}
+				moduleAndEndpointCount.put(moduleIdInfo, count);
+			}
+		}
+		
+		Map<Integer,Integer> moduleAndAssetCount = new HashMap<Integer,Integer>();
+		// 获取asset异常数量  包含ping不通的asset以及有告警的asset信息
+		List<Integer> alertAssets = alertInfos.stream().map(StatAnalysis::getAsset).collect(Collectors.toList());
+		List<AssetPing> assetPings = assetPingService.list(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getStatus, 0));
+		List<Integer> assetPingErrorIds = assetPings.stream().map(AssetPing::getAssetId).collect(Collectors.toList());
+		alertAssets.addAll(assetPingErrorIds);
+		// 有异常的asset id信息
+		List<Integer> assetIds = alertAssets.stream().distinct().collect(Collectors.toList());
+		
+		// 获取module和asset的关系
+		List<StatAnalysis> moduleAndAsset = statDao.selectModuleAssetRelation(params);
+		Map<Integer, List<StatAnalysis>> assetAndModules = moduleAndAsset.stream().collect(Collectors.groupingBy(StatAnalysis::getAsset));
+		
+		if(ObjectUtil.isNotEmpty(assetIds)) {
+			for(Integer assetId : assetIds) {
+				List<StatAnalysis> moduleInfos = assetAndModules.get(assetId);
+				if(ObjectUtil.isNotEmpty(moduleInfos)) {
+					for(StatAnalysis moduleInfo : moduleInfos) {
+						Integer count = moduleAndAssetCount.get(moduleInfo.getId());
+						if(ObjectUtil.isEmpty(count)) {
+							count = 1;
+						}else {
+							count += 1;
+						}
+						moduleAndAssetCount.put(moduleInfo.getId(), count);
+					}
+				}
+			}
+		}
+		
+		
+		List<StatAnalysis> result = new ArrayList<StatAnalysis>();
+		if(ObjectUtil.isNotEmpty(modules)) {
+			for(MonitorModule module : modules) {
+				Integer alert = moduleAndAlertCount.get(module.getId());
+				Integer endpoint = moduleAndEndpointCount.get(module.getId());
+				Integer asset = moduleAndAssetCount.get(module.getId());
+				Integer state = 1;
+				if(ObjectUtil.isNotEmpty(alert) || ObjectUtil.isNotEmpty(endpoint) || ObjectUtil.isNotEmpty(asset)) {
+					state = 0;
+				}
+				
+				StatAnalysis data = new StatAnalysis();
+				data.setId(module.getId());
+				data.setName(module.getName());
+				data.setState(state);
+				data.setAlert(ObjectUtil.isEmpty(alert)?0:alert);
+				data.setEndpoint(ObjectUtil.isEmpty(endpoint)?0:endpoint);
+				data.setAsset(ObjectUtil.isEmpty(asset)?0:asset);
+				result.add(data);
+			}
 		}
 		return result;
 	}
