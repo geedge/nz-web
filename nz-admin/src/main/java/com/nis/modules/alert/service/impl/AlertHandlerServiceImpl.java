@@ -75,6 +75,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private AlertSilenceDao alertSilenceDao;
 	@Autowired
 	private SysConfService sysConfService;
+	@Value("${redis.maxQueueLength:100}")
+    private Long maxQueueLength;//redis队列长度
 	/**
 	 * alert message 超时时间
 	 */
@@ -562,6 +564,11 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		message = getAlertMessageLinkObject(message);
 		//添加到邮件通知队列
 		redisTemplate.opsForList().leftPush(Constant.ALERT_MESSAGE_NOTIFY, Tool.JSONUtil.toJsonStr(message));
+		//判断是否超出所设置的队列最大长度
+		Long size = redisTemplate.opsForList().size(Constant.ALERT_MESSAGE_NOTIFY);
+		if(size > maxQueueLength) {
+			redisTemplate.opsForList().trim(Constant.ALERT_MESSAGE_NOTIFY, 0, maxQueueLength-1);
+		}
 	}
 	
 	/**
