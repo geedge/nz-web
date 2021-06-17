@@ -464,6 +464,7 @@ public class Constant {
 		alertMsgOrderFieldMap.put("alertRule", "ar.name");
 		alertMsgOrderFieldMap.put("labels", "am.labels");
 		alertMsgOrderFieldMap.put("startAt", "am.start_at");
+		alertMsgOrderFieldMap.put("severityId","am.severity_id");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_message_active", alertMsgOrderFieldMap);
 
 		Map<String, String> alertRuleOrderFieldMap = new HashMap<>();
