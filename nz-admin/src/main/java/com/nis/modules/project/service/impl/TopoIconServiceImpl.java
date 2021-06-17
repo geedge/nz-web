@@ -1,22 +1,5 @@
 package com.nis.modules.project.service.impl;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.project.dao.TopoIconDao;
-import com.nis.modules.project.entity.TopoIcon;
-import com.nis.modules.project.service.TopoIconService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -26,6 +9,27 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.TransientDataAccessResourceException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.project.dao.TopoIconDao;
+import com.nis.modules.project.entity.TopoIcon;
+import com.nis.modules.project.service.TopoIconService;
+
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("topoIconService")
 public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> implements TopoIconService {
@@ -42,7 +46,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
     }
 
     @Override
-    public Integer saveTopoIcon(TopoIcon icon, MultipartFile file) throws IOException {
+    public Integer saveTopoIcon(TopoIcon icon, MultipartFile file) throws IOException{
         // 校验文件类型
         this.validateIconFileType(file);
         String filename = file.getOriginalFilename();
@@ -67,7 +71,17 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
         topoIcon.setBytes(Base64.getEncoder().encodeToString(file.getBytes()));
         topoIcon.setWidth(width == null ? -1 : width);
         topoIcon.setHeight(height == null ? -1 : height);
-        this.save(topoIcon);
+        try {
+			this.save(topoIcon);
+		} catch (Exception e) {
+			if(e instanceof TransientDataAccessResourceException) {
+				if(e.getMessage().contains("PacketTooBigException")) {
+					throw new NZException(RCode.PROJECT_ICON_BIG_ERROR);
+				}
+			}else {
+				throw new NZException(RCode.ERROR);
+			}
+		}
         return topoIcon.getId();
     }
 
