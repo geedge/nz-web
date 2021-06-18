@@ -157,15 +157,18 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			if(conf.getState() == Constant.ALERT_SILENCE_STATE_PENDING) {
 				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
 				conf.setStartAt(now);
-				alertSilenceDao.updateById(conf);
+				//alertSilenceDao.updateById(conf);
+				alertSilenceDao.deleteById(id);
 			} else if(conf.getState() == Constant.ALERT_SILENCE_STATE_ACTIVE) {
 				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
-				alertSilenceDao.updateById(conf);
+				//alertSilenceDao.updateById(conf);
+				alertSilenceDao.deleteById(id);
 				//处理 处于静默状态的告警消息
 				handlerService.handleSilenceConfActiveToExired(Tool.ListUtil.toList(conf));
 			}else {
 				conf.setState(Constant.ALERT_SILENCE_STATE_EXPIRED);
-				alertSilenceDao.updateById(conf);
+				//alertSilenceDao.updateById(conf);
+				alertSilenceDao.deleteById(id);
 			}
 		}
 	}

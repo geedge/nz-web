@@ -79,6 +79,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
 					throw new NZException(RCode.PROJECT_ICON_BIG_ERROR);
 				}
 			}else {
+				log.error("保存图片信息失败" + JSONObject.toJSONString(icon), e);
 				throw new NZException(RCode.ERROR);
 			}
 		}
