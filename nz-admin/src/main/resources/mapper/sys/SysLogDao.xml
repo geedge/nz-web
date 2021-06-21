@@ -64,10 +64,10 @@
 						    </foreach>
                         </if>
                         <if test="params.params != null and params.params != ''">
-                        	AND sl.params = #{params.params}
+                        	AND sl.params like CONCAT('%', #{params.params}, '%')
                         </if>
                         <if test="params.response != null and params.response != ''">
-                        	AND sl.response = #{params.response}
+                        	AND sl.response like CONCAT('%', #{params.response}, '%')
                         </if>
                         <if test="params.exception != null and params.exception != ''">
                         	AND sl.exception = #{params.exception}

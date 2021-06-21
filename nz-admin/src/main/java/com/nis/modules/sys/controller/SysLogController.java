@@ -38,7 +38,7 @@ public class SysLogController {
 	 */
 	@GetMapping
 	public R list(@RequestParam Map<String, Object> params){
-		params = XssUtil.filterParameters(params);
+		/*params = XssUtil.filterParameters(params);*/
 		PageUtils page = sysLogService.queryPage(params);
 
 		return R.ok(page);
