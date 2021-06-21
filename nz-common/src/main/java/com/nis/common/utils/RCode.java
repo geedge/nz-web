@@ -145,7 +145,8 @@ public enum RCode {
     PROJECT_TOPOICON_UNIT_ISNULL(211014,"Topo icon unit is null"),
     PROJECT_BUILDIN_CAN_NOT_EDIT(217015, "The built-in project does not allow editing"),
     PROJECT_ICON_BASE64_VALUEERROR(214016, "The base64 value must be 0 and 1"),
-
+    PROJECT_ICON_BIG_ERROR(214017,"Topo icon file is too big ,Please contact your administrator to modify the database configuration : max_allowed_packet"),
+    
     MODULE_ID_ISNULL(221000, "Module id can not be empty"),
     MODULE_PROJECTID_ISNULL(221001, "Project id can not be empty"),
     MODULE_NAME_ISNULL(221002, "Module name info can not be empty"),
@@ -725,7 +726,7 @@ public enum RCode {
     SYS_ROLE_MENUID_ISNULL(581005, "Role related menu id is required"),
     SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
-
+    SYS_ROLE_REMOVE_ERROR(587008,"These roles contains user can't remove roles"),
 
     LINK_ID_ISNULL(581001,"link id can not be null"),
     LINK_NAME_ISNULL(581002,"link name can not be null"),

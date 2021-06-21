@@ -106,7 +106,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
     private void validateUserInfo(SysUserEntity user) {
 	    Integer status = user.getStatus();
         ValidateUtils.is(user.getUsername()).notNull(RCode.SYS_USER_USERNAME_ISNULL).maxLength(64)
-        		.and(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64)
         		.and(user.getMobile()).maxLength(64)
                 .and(status).notNull(RCode.SYS_USER_STATUS_ISNULL).and(user.getName()).notNull(RCode.SYS_USER_NAME_ISNULL).maxLength(64);
 
@@ -140,6 +139,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	@Transactional(rollbackFor = Exception.class)
 	public Integer saveUser(SysUserEntity user) {
 
+		ValidateUtils.is(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64);
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
 

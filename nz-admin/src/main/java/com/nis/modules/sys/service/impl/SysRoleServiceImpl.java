@@ -16,6 +16,7 @@ import com.nis.modules.sys.entity.SysMenuEntity;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysRoleMenuEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserRoleEntity;
 import com.nis.modules.sys.service.*;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -222,6 +223,14 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                 throw new NZException(RCode.SYS_ROLE_CANNOT_DELETE);
         }
 
+        // 角色关联用户不允许删除
+        List<SysUserRoleEntity> roleAndUsers = sysUserRoleService.list();
+        List<Integer> roleAndUserIds = roleAndUsers.stream().map(SysUserRoleEntity::getRoleId).distinct().collect(Collectors.toList());
+        roleAndUserIds.retainAll(Arrays.asList(roleIds));
+        if (CollectionUtils.isNotEmpty(roleAndUserIds)) {
+            throw new NZException("These roles have been used by users and cannot be deleted. Details: " + roleAndUserIds.toString(), RCode.SYS_ROLE_REMOVE_ERROR.getCode());
+        }
+        
         // 删除角色
         this.removeByIds(Arrays.asList(roleIds));
 
