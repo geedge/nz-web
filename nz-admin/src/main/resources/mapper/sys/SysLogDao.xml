@@ -51,6 +51,9 @@
                                         #{id}
                                 </foreach>
                         </if>
+                        <if test="params.userId != null">
+                                AND sl.user_id = #{params.userId}
+                        </if>
                         <if test="params.name != null and params.name != ''">
                                 AND (su.name like CONCAT('%', #{params.name}, '%') or su.username like CONCAT('%', #{params.name}, '%'))
                         </if>

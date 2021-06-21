@@ -42,6 +42,10 @@
                 AND ts.end_time &lt;= #{params.endTime}
             </if>
 
+			<if test="params.userId != null">
+                AND ts.user_id = #{params.userId}
+            </if>
+
             <if test="params.username != null and params.username != ''">
                 AND su.username like CONCAT('%', #{params.username}, '%')
             </if>
