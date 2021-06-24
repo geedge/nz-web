@@ -861,8 +861,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
     
     private String validateChartElementForImport(String type, String elements) {
-        // elemrnt 只有 alert  和 url , text group 可以没有，其他必须有
-        if(!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE,type) && !StrUtil.equals(Constant.CHART_URL_TYPE,type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE,type) && !StrUtil.equals(Constant.CHART_GROUP_TYPE,type) ){
+        // elemrnt 只有 alert  , diagram 和 url , text group 可以没有，其他必须有
+        if (!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE, type) && !StrUtil.equals(Constant.CHART_URL_TYPE, type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE, type) && !StrUtil.equals(Constant.CHART_GROUP_TYPE, type) && !StrUtil.equals(Constant.CHART_DIAGRAM_TYPE, type)) {
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }

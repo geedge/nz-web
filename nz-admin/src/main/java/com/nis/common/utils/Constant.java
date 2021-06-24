@@ -845,6 +845,9 @@ public class Constant {
 	// 图表类型为alertList
 	public static final String CHART_ALERTLIST_TYPE = "alertList";
 
+	// 图表类型为 diagram
+	public static final String CHART_DIAGRAM_TYPE = "diagram";
+
 	// 图表类型为 text
 	public static final String CHART_TEXT_TYPE = "text";
 

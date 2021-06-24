@@ -238,10 +238,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            chartElementService.validateElements(elements);
 	            break;
 	        }
-	        // alertList 类型不需要校验 elements
-	        case Constant.CHART_ALERTLIST_TYPE:{
-	            break;
-	        }
+	        // alertList diagram 类型不需要校验 elements
+	        case Constant.CHART_ALERTLIST_TYPE:
+		    case Constant.CHART_DIAGRAM_TYPE:{
+		    	break;
+		    }
 	        // group 类型不需要校验 elements
 	        case Constant.CHART_GROUP_TYPE:{
 	        	// 当chart为group时 不允许name重复  会影响chart批量导入
@@ -259,7 +260,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            break;
 	        }
 	        default: {
-	            // 除 url alertList 类型外，其他类型都需校验 elements
+	            // 除 url alertList diagram 类型外，其他类型都需校验 elements
 	            ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
 	            chartElementService.validateElements(elements);
 	        }
