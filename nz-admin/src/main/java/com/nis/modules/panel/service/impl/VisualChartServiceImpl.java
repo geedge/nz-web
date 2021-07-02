@@ -205,7 +205,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            String urlStr = url.toString();
 	            // 如果是model panel添加charts url类型支持{{}}替换
 	            VisualPanel panel = visualPanelService.getById(panelId);
-	            if(StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType())) {
+	            if(ObjectUtil.isNotEmpty(panel) && StrUtil.equals(Constant.PanelType.MODEL.getValue(),panel.getType())) {
 	                // 替换全部变量 替换为 a（任意字符） 不影响原来的数据格式 然后进行校验
 	                urlStr = urlStr.replaceAll("\\{\\{asset\\..*?\\}\\}", "a");
 	
@@ -623,9 +623,11 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 			// 如果类型为 group 则添加组下所有 charts
 			List<VisualChart> childrenChartList = this.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getGroupId, chartInfo.getId()).eq(VisualChart::getPanelId, 0));
 			List<Integer> childrenChartIdList = childrenChartList.stream().map(VisualChart::getId).distinct().collect(Collectors.toList());
-
-			List<VisualChart> visualCharts = this.baseMapper.queryList(childrenChartIdList);
-			chartList.addAll(visualCharts);
+			
+			if(ObjectUtil.isNotEmpty(childrenChartIdList)) {
+				List<VisualChart> visualCharts = this.baseMapper.queryList(childrenChartIdList);
+				chartList.addAll(visualCharts);
+			}
 		}
 
 		// 按照 group 升序，先添加组
