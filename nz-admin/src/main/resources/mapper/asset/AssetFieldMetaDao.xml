@@ -82,7 +82,7 @@
     		and afm.name like CONCAT('%', #{params.name}, '%')
     	</if>
     	<if test="params.key!=null and params.key !=''">
-    		and afm.key like CONCAT('%', #{params.key}, '%')
+    		and afm.meta_key like CONCAT('%', #{params.key}, '%')
     	</if>
     	<if test="params.groupIds!=null and params.groupIds.size>0">
     		and afm.group_id in 
