@@ -446,7 +446,7 @@ INSERT INTO `asset_type_conf` VALUES (5, 0, '0', '1', 'Computer', '', '1', 1, 0,
 INSERT INTO `asset_type_conf` VALUES (6, 0, '0', '1', 'Server', '', '1', 1, 0, 0, 0, '');
 INSERT INTO `asset_type_conf` VALUES (7, 0, '1', '0', 'Virtual machine', '', '1', 1, 0, 0, 0, '');
 INSERT INTO `asset_type_conf` VALUES (8, 0, '0', '0', 'ADC', '', '1', 1, 1, 0, 0, '');
-
+INSERT INTO `asset_type_conf` VALUES (9, 0, '0', '0', 'Other', '', '1', 0, 0, 0, 0, '');
 -- ----------------------------
 -- Table structure for cabinet
 -- ----------------------------
