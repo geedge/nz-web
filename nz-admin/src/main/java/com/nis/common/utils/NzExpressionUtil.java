@@ -60,6 +60,7 @@ public class NzExpressionUtil {
 			if (renderValue == null) {
 	            continue;
 	        }
+			expre = expre.replaceAll("\\[", "\\\\[").replaceAll("\\]", "\\\\]");
 	        expression = expression.replaceAll("\\{\\{" + expre + "\\}\\}", renderValue == null ? "\\{\\{" + expre + "\\}\\}" : renderValue.toString());	    
 		}
 		return expression;
@@ -71,6 +72,38 @@ public class NzExpressionUtil {
 			if(obj instanceof MonitorEndpoint) {
 				expre = expre.replaceAll("endpoint.", "");
 				result = BeanUtil.getProperty(obj,expre);
+				if(ToolUtil.isEmpty(result)&&expre.contains("asset.")) {
+					// 针对用户输入的变量为field时  特殊处理
+					List<AssetFieldMeta> fields = BeanUtil.getProperty(obj, "asset.fields");
+					if(ToolUtil.isNotEmpty(fields)) {
+						String key=null;
+						Integer index=null;
+						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
+						if(expre.contains(StrUtil.DOT)) {
+							expre = StrUtil.split(expre, StrUtil.DOT)[1];
+						}
+						try {
+							Pattern pattern = Pattern.compile("(\\[)(.+?)(\\])");
+					        Matcher matcher = pattern.matcher(expre);
+					        while (matcher.find()) {
+						        String group = matcher.group();
+						        group=group.replaceAll("(\\[)|(\\])", "").trim();
+						        index = Integer.valueOf(group);
+						        key=expre.substring(0,expre.indexOf("["));
+					        }
+						}catch(NumberFormatException e) {
+					        
+					    }
+						if(ToolUtil.isNotEmpty(map)&&ToolUtil.isNotEmpty(key)&&ToolUtil.isNotEmpty(index)) {
+							List<String> list = map.get(key);
+							if(ToolUtil.isNotEmpty(list)) {
+								result = list.get(index);
+							}
+						}else{
+							result = map.get(expre);
+						}
+					}
+				}
 			}else if(obj instanceof AssetAsset) {
 				expre = expre.replaceAll("asset.", "").replaceAll("datacenter.", "dc.");
 				if(!expre.contains("label.")) {
@@ -80,11 +113,32 @@ public class NzExpressionUtil {
 					// 针对用户输入的变量为field时  特殊处理
 					List<AssetFieldMeta> fields = BeanUtil.getProperty(obj, "fields");
 					if(ToolUtil.isNotEmpty(fields)) {
+						String key=null;
+						Integer index=null;
 						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
 						if(expre.contains(StrUtil.DOT)) {
 							expre = StrUtil.split(expre, StrUtil.DOT)[1];
 						}
-						result = map.get(expre);
+						try {
+							Pattern pattern = Pattern.compile("(\\[)(.+?)(\\])");
+					        Matcher matcher = pattern.matcher(expre);
+					        while (matcher.find()) {
+						        String group = matcher.group();
+						        group=group.replaceAll("(\\[)|(\\])", "").trim();
+						        index = Integer.valueOf(group);
+						        key=expre.substring(0,expre.indexOf("["));
+					        }
+						}catch(NumberFormatException e) {
+					        
+					    }
+						if(ToolUtil.isNotEmpty(map)&&ToolUtil.isNotEmpty(key)&&ToolUtil.isNotEmpty(index)) {
+							List<String> list = map.get(key);
+							if(ToolUtil.isNotEmpty(list)) {
+								result = list.get(index);
+							}
+						}else{
+							result = map.get(expre);
+						}
 					}
 				}
 			}else if(obj instanceof MonitorProject) {
