@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.baomidou.mybatisplus.extension.service.additional.query.impl.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -163,6 +164,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         AssetTypeConf type = typeConfService.getById(asset.getTypeId());
         asset.setType(type);
 
+        if(type.getVmh()==1) {
+        	List<AssetAsset> children = this.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getPid, id));
+        	if(ToolUtil.isNotEmpty(children)) {
+        		asset.setChildrenNum(children.size());
+            	asset.setChildren(children);
+        	}
+        }
+        
         AssetStateConf state = stateConfService.getById(asset.getStateId());
         asset.setState(state);
 
@@ -253,6 +262,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             params.put("moduleIds", Arrays.asList(String.valueOf(params.get("moduleIds")).split(StringPool.COMMA)));
         }
 
+        if (ToolUtil.isNotEmpty(params.get("pids"))) {
+            params.put("pids", Arrays.asList(String.valueOf(params.get("pids")).split(StringPool.COMMA)));
+        }
+        
         if (ToolUtil.isNotEmpty(params.get("projectIds"))) {
             List<String> projectIdList = Arrays.asList(params.get("projectIds").toString().split(StringPool.COMMA));
             List<MonitorModule> moduleListByProjectIds = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getProjectId, projectIdList));
@@ -319,7 +332,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         List<AssetAsset> list = this.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = list.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
-
+        Map<Integer, List<AssetAsset>> pidAndEntity = list.stream().collect(Collectors.groupingBy(AssetAsset::getPid));
+        
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
@@ -333,6 +347,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             if (asset.getPid() != -1) {
                 asset.setParent(assetIdAndEntityMap.get(asset.getPid()));
             }
+            
+            List<AssetAsset> children = pidAndEntity.get(asset.getId());
+            if(ToolUtil.isNotEmpty(children)) {
+            	asset.setChildrenNum(children.size());
+            }
+            
             asset.setFields(assetIdAndMetaInfoList.get(asset.getId()));
 
             // cabinetEnd 存值的时候会+1 在此减一返回前台

@@ -270,6 +270,12 @@ public class AssetAsset implements Serializable {
     @TableField(exist = false)
     private Integer alertNum;
 
+    @TableField(exist = false)
+    private Integer childrenNum;
+    
+    @TableField(exist = false)
+    private List<AssetAsset> children;
+    
     public String getPrivateKeyPath() {
         if (this.authType != null && this.authUsername != null) {
             return Constants.NZ_USER_HOME.concat("/").concat(this.manageIp).concat("@").concat(this.authUsername).concat("_id_rsa");

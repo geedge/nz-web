@@ -215,6 +215,13 @@
                  </foreach>
             </if>
             
+            <if test="params.pids != null and params.pids.size > 0">
+                AND asset.pid IN
+                 <foreach collection="params.pids" item="pid" index="no" open="(" separator="," close=")">
+                     #{pid}
+                 </foreach>
+            </if>
+            
             <if test="params.authProtocol != null">
                 AND type.auth_protocol = #{params.authProtocol}
             </if>
