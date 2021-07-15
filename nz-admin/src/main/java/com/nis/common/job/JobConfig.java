@@ -8,6 +8,8 @@ import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
+import com.nis.modules.terminal.job.TerminalCleanRecordJob;
+
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,9 @@ public class JobConfig {
 	@Value("${nezha.sessionTimeOutJobCron:0 0/5 * * * ? *}")
 	private String sessionTimeOutJobCron;
 
+	@Value("${nezha.terminalCleanJobCron:0 0 1 * * ?}")
+	private String terminalCleanJobCron;
+	
     @Autowired
 //    @Qualifier("costomSchedulerFactoryBean")
     private SchedulerFactoryBean schedulerFactoryBean;
@@ -65,7 +70,7 @@ public class JobConfig {
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
     private String haJobName = "HA_JOB";
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
-    
+    private String terminalCleanJobCronName = "TERMINALCLEAN_JOB";
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
@@ -106,6 +111,11 @@ public class JobConfig {
 	    return JobBuilder.newJob(SessionTimeOutJob.class).withIdentity(JOB_NAME + sessionTimeOutJobName).storeDurably().build();
 	}
     
+	@Bean
+	public JobDetail terminalCleanJobDetail() {
+	    return JobBuilder.newJob(TerminalCleanRecordJob.class).withIdentity(JOB_NAME + terminalCleanJobCronName).storeDurably().build();
+	}
+	
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
@@ -133,6 +143,9 @@ public class JobConfig {
         createCronScheduleJob(alertMessageExpiredJobName, alertMessageExpiredDetail(), StringUtils.isEmpty(alertMessageExpiredJobCron) ? "0/10 * * * * ?" : alertMessageExpiredJobCron, scheduler);
         // session time out job 如果配置文件没有配置定时周期  默认为5分钟执行一次
         createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron, scheduler);
+        
+        // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
+        createCronScheduleJob(terminalCleanJobCronName, terminalCleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron, scheduler);
     }
     
     /**
