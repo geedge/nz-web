@@ -575,7 +575,15 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public List<MonitorEndpoint> getEnableEndpointInfoList() {
-        return monitorEndpointDao.getEnableEndpointInfoList();
+        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableEndpointInfoList();
+        // 如 asset 存在 parent , 则 set parent
+        List<AssetAsset> assetList = assetService.list();
+        Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
+        for (MonitorEndpoint endpoint : enableEndpointInfoList) {
+            AssetAsset relAsset = endpoint.getAsset();
+            relAsset.setParent(assetIdAndEntityMap.get(relAsset.getPid()));
+        }
+        return enableEndpointInfoList;
     }
 
     private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {

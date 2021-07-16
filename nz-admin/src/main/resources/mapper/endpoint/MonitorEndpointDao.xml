@@ -67,6 +67,7 @@
             <result column="sn" property="sn"/>
             <result column="name" property="name"/>
             <result column="dc_id" property="dcId"/>
+            <result column="pid" property="pid"/>
         </association>
 
         <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
@@ -222,6 +223,7 @@
             ass.NAME AS ass_name,
             ass.manage_ip AS ass_manage_ip,
             ass.dc_id AS ass_dc_id,
+            ass.pid AS ass_pid,
 
             dc.id AS dc_id,
             dc.NAME AS dc_name
