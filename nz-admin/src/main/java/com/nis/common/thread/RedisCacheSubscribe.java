@@ -8,6 +8,8 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.MySessionManager;
+
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisSessionDAO;
@@ -46,6 +48,9 @@ public class RedisCacheSubscribe  implements MessageListener{
 	@Autowired
 	private SysConfigService sysConfigService;
 	
+	@Autowired
+	private MySessionManager mySessionManager;
+	
 	@Override
 	public void onMessage(Message message, byte[] pattern) {
 		byte[] body = message.getBody();
@@ -78,6 +83,7 @@ public class RedisCacheSubscribe  implements MessageListener{
 			filter.setLoginExpiration(Integer.valueOf(sessionTimeOut));
 			redisCacheManager.setExpire(Integer.valueOf(sessionTimeOut) * 60);
 			redisSessionDao.setExpire(Integer.valueOf(sessionTimeOut) * 60);
+			mySessionManager.setGlobalSessionTimeout(Integer.valueOf(sessionTimeOut) * 60 * 1000);
 		}
 	}
 

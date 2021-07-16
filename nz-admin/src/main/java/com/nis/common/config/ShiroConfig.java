@@ -177,6 +177,7 @@ public class ShiroConfig {
 		redisSessionDAO.setRedisManager(redisManager());
 		redisSessionDAO.setExpire(loginExpiration * 60);
 		redisSessionDAO.setKeyPrefix(ShiroUtils.REDIS_KEYPREFIX);
+		redisSessionDAO.setSessionInMemoryEnabled(false);
 		return redisSessionDAO;
 	}
 
@@ -200,7 +201,9 @@ public class ShiroConfig {
 	 */
 	@Bean
 	public SessionManager sessionManager() {
+		Integer loginExpiration = getTimeOutData();
 		MySessionManager mySessionManager = new MySessionManager();
+		mySessionManager.setGlobalSessionTimeout(loginExpiration);
 		mySessionManager.setSessionDAO(redisSessionDAO());
 		return mySessionManager;
 	}

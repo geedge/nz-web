@@ -1,0 +1,1 @@
+ALTER TABLE visual_chart MODIFY `param` LONGTEXT DEFAULT NULL COMMENT '参数 记录type的具体参数信息，数据格式为json对象\r\n\r\n当type = url时\r\n\r\n{\r\n\r\n    “url”:"https://www.baidu.com"\r\n\r\n}';
