@@ -45,7 +45,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogDao, SysLogEntity> impl
     public PageUtils queryPage(Map<String, Object> params) {
         String username = (String) params.get("username");
         if (StringUtils.isNotEmpty(username)) {
-            List<SysUserEntity> userList = userService.list(new LambdaQueryWrapper<SysUserEntity>().like(SysUserEntity::getName, username));
+            List<SysUserEntity> userList = userService.list(new LambdaQueryWrapper<SysUserEntity>().like(SysUserEntity::getUsername, username));
             List<Long> userIds = userList.stream().map(SysUserEntity::getId).distinct().collect(Collectors.toList());
             params.put("userIds", userIds);
         }
