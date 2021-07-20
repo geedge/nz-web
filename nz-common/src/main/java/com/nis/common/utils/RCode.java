@@ -594,6 +594,9 @@ public enum RCode {
     DC_LONGITUDE_ERROR(535041, "Dc longitude range is -180 to +180"),
     DC_LATITUDE_ERROR(535042, "Dc latitude range is -90 to +90"),
     CABINET_NOT_EXISTS(536043, "Cabinet does not exist"),
+    DC_LONGITUDE_FORMAT(533044, "Dc longitude format should be a double"),
+    DC_LATITUDE_FORMAT(533045, "Dc latitude format should be a double"),
+    DC_SEQ_ISNULL(531046, "Cancel import serial number is empty"),
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang
@@ -773,9 +776,13 @@ public enum RCode {
     /**
      * 导入相关
      */
-    IMPORT_EXCELFILE_TYPE(900, "Only support import XLS or XLSX file"),
-    IMPORT_EXCELFILE_PARSE_ERROR(901, "Import file resolution failed"),
-    IMPORT_EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the excel import template is inconsistent with the system template"),
+    EXCELFILE_TYPE_ERROR(900, "Only support import XLS or XLSX file"),
+    EXCELFILE_PARSE_ERROR(901, "Import file resolution failed"),
+    EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the excel import template is inconsistent with the system template"),
+    EXCELFILE_HEADER_LANGUAGE_ERROR(903, "Excel header language must be en, cn or ru"),
+    EXCELFILE_IMPORT_FILE_ISNULL(904, "Import file is null"),
+    EXCELFILE_HEADER_LANGUAGE_ISNULL(905, "Language can not be empty"),
+    EXCELFILE_IMPORT_ERROR(906, "File import error"),
 
     NOT_NULL_ERROR(990, "not null error"), //not null错误
     NOT_NUMBER_ERROR(991, "not number error"), //not number错误

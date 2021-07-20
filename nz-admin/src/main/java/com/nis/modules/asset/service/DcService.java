@@ -3,7 +3,9 @@ package com.nis.modules.asset.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.Dc;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -47,5 +49,13 @@ public interface DcService extends IService<Dc> {
      * @param ids
      */
     void delete(Integer... ids);
+
+    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+
+    Map importDatacentersFromExcel(MultipartFile excelFile, String language);
+
+    void export(HttpServletResponse response, Map<String, Object> params);
+
+    void cancelImport(String seq);
 }
 

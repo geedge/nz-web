@@ -483,7 +483,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
         boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
         if (!headerFlag) {
-            throw new NZException(RCode.IMPORT_EXCELFILE_HEADER_TEMPLATE_ERROR);
+            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
         }
 
         Map<String, String> exportHeader = (Map) map.get(language);

@@ -1,6 +1,7 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.Cabinet;
@@ -10,7 +11,9 @@ import com.nis.modules.asset.service.DcService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 
@@ -113,6 +116,40 @@ public class DcController {
         return R.ok();
     }
 
+
+    @GetMapping("/template")
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
+
+        dcService.getExportTemplateByLanguage(response, language);
+    }
+
+
+    @PostMapping("/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"dc:save"})
+    public R importDatacentersFromExcel(MultipartFile excelFile, String language) {
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
+                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+
+        Map info = dcService.importDatacentersFromExcel(excelFile, language);
+        return R.ok(info);
+    }
+
+    @GetMapping("/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.DATACENTER)
+    public void exportDataCenters(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        dcService.export(response, params);
+    }
+
+    @DeleteMapping("/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
+    public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
+        ValidateUtils.is(seq).notNull(RCode.DC_SEQ_ISNULL);
+
+        dcService.cancelImport(seq);
+        return R.ok();
+    }
 
     /**
      * 机柜详情

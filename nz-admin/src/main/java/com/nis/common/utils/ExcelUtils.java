@@ -277,14 +277,14 @@ public class ExcelUtils {
 
     public static Workbook getWorkBookFromMultipartFile(MultipartFile excelFile) {
         if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
-            throw new NZException(RCode.IMPORT_EXCELFILE_TYPE);
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
         }
 
         Workbook work = null;
         try {
             work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
         } catch (IOException e) {
-            throw new NZException(RCode.IMPORT_EXCELFILE_PARSE_ERROR);
+            throw new NZException(RCode.EXCELFILE_PARSE_ERROR);
         } finally {
             if (work != null) {
                 IOUtils.closeQuietly(work);
