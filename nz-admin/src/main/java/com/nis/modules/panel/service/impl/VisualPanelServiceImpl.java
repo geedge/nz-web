@@ -519,7 +519,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (CollectionUtils.isNotEmpty(charts)) {
         	VisualChart chart = charts.stream().findFirst().get();
             VisualPanel panel = this.getById(chart.getPanelId());
-            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),panel.getType())) {
+            if(panel == null || !StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),panel.getType())) {
                 type = Constant.PanelType.ASSET.getValue();
             }
         }
@@ -543,6 +543,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
             Map chartTypeMapByLanguage = (Map)  chartTypeMap.get(language);
 
+            charts = charts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
             // 填充数据
             if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)){
                 this.fillAssetEndpointChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
@@ -579,10 +580,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 			    chartTemplateTyep = Constant.SYSCONFIG_KEY_MODEL_CHART_EXPORT_HEADER;
 			    break;
 			}*/
-            case "asset": {
-                chartTemplateTyep = Constant.SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER;
-                break;
-            }
+            case "asset":
+            case "template":
             case "endpoint": {
                 chartTemplateTyep = Constant.SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER;
                 break;
@@ -596,6 +595,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	
     
     private void fillAssetEndpointChartData(List<VisualChart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
+        Map<Integer, String> varTypeIdAndNameMap = new HashMap<>(4);
+        varTypeIdAndNameMap.put(1, "Asset");
+        varTypeIdAndNameMap.put(2, "Endpoint");
         Row row;
         String type;
         CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
@@ -607,18 +609,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             row.createCell(0).setCellValue(chart.getGroup().getName());
             row.createCell(1).setCellValue(chart.getName());
             row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
-            row.createCell(3).setCellValue(chart.getSpan());
-            row.createCell(4).setCellValue(chart.getHeight());
+            row.createCell(3).setCellValue(ToolUtil.isEmpty(varTypeIdAndNameMap.get(chart.getVarType())) ? "" : varTypeIdAndNameMap.get(chart.getVarType()));
+            row.createCell(4).setCellValue(chart.getSpan());
+            row.createCell(5).setCellValue(chart.getHeight());
             if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
-                row.createCell(5).setCellValue("");
+                row.createCell(6).setCellValue("");
             } else {
-                row.createCell(5).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+                row.createCell(6).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
             }
-            row.createCell(6).setCellValue(this.handleChartParam(chart.getParam()));
-            row.createCell(7).setCellValue(this.handleChartElementForExport(chart.getElements()));
+            row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
+            row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 7);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 8);
         }
     }
     
@@ -1049,10 +1052,17 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
     
     private int saveAssetEndpointChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
-        if (linkId == null) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
+        // 导入类型 template 标识
+        Boolean templateFlag = Constant.PanelType.TEMPLATE.getValue().equalsIgnoreCase(panelType);
+        // chart template 导入导出 varType map
+        Map<String, Integer> varTypeAndValMap = new HashMap<>(4);
+        varTypeAndValMap.put("Asset", 1);
+        varTypeAndValMap.put("Endpoint", 2);
+
+        if (linkId == null && !templateFlag) throw new NZException(RCode.PANEL_CHART_IMPORT_LINKID_ISNULL);
 
         VisualPanel panel = this.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panelType).eq(VisualPanel::getLink, linkId));
-        if (panel == null) throw new NZException(RCode.PANEL_NOT_EXIST);
+        if (panel == null && !templateFlag) throw new NZException(RCode.PANEL_NOT_EXIST);
 
         int successNum = 0;
         for (Row row : rows) {
@@ -1064,10 +1074,18 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             Integer groupId=0;
             String groupName = ExcelUtils.getCellValue(row.getCell(0));
             if(StrUtil.isNotBlank(groupName)) {
-            	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+                VisualChart groupChart;
+                if (templateFlag) {
+                    // template 类型，panel = 0 为 template
+                    groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+                } else {
+                    // asset endpoint 类型，通过指定 panel group name 查找 group
+                    groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+                }
                 if(ToolUtil.isEmpty(groupChart)) {
                 	groupChart = new VisualChart();
-                	groupChart.setPanelId(panel.getId());
+                	// panel 为 null,即为 template type, panel_id = 0
+                    groupChart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
                 	groupChart.setSpan(12);
@@ -1101,69 +1119,86 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_INVALIDE.getMsg());
                 }
             }
-            
-            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
-            if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
+
+            VisualChart groupChart = null;
+            if (templateFlag) {
+                groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+            } else {
+                groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+            }
+            if (StrUtil.equals(type, Constant.CHART_GROUP_TYPE)&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
             	saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
             }
-            
-            String span = ExcelUtils.getCellValue(row.getCell(3));
+
+            // varType, type = template required
+            String varType = ExcelUtils.getCellValue(row.getCell(3));
+            if(templateFlag){
+                if (StringUtils.isEmpty(varType)) {
+                    saveFlag = typeFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_VARTYPE_ISNULL.getMsg());
+                } else if (ToolUtil.isEmpty(varTypeAndValMap.get(varType.trim()))) {
+                    saveFlag = typeFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_VARTYPE_ERROR.getMsg());
+                }
+            }
+
+            String span = ExcelUtils.getCellValue(row.getCell(4));
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_SPAN_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_SPAN_ISNULL.getMsg());
             } else {
                 Integer width = null;
                 try {
                     width = Double.valueOf(span).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_FORMAT.getMsg());
                 }
                 if (width != null && (width < 1 || width > 12)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_WIDTH_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
-            String height = ExcelUtils.getCellValue(row.getCell(4));
+            String height = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_ISNULL.getMsg());
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_ISNULL.getMsg());
             } else {
                 Integer heightIntVal = null;
                 try {
                     heightIntVal = Double.valueOf(height).intValue();
                 } catch (NumberFormatException e) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_FORMAT.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_FORMAT.getMsg());
                 }
                 if (heightIntVal != null && (heightIntVal < 1 || heightIntVal > 12)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_HEIGHT_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_INVALIDE.getMsg());
                 }
             }
-            String unit = ExcelUtils.getCellValue(row.getCell(5));
+            String unit = ExcelUtils.getCellValue(row.getCell(6));
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_UNIT_NOTFOUND.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
-            String param = ExcelUtils.getCellValue(row.getCell(6));
+            String param = ExcelUtils.getCellValue(row.getCell(7));
             if (typeFlag) {
                 String msg = this.validateChartParamForImport(type, param, type);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
-            String elements = ExcelUtils.getCellValue(row.getCell(7));
+            String elements = ExcelUtils.getCellValue(row.getCell(8));
             if (typeFlag) {
                 String msg = this.validateChartElementForImport(type, elements);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
             if (saveFlag) {
@@ -1171,7 +1206,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 try {
                 	VisualChart chart = new VisualChart();
                     chart.setSeq(seqUUID);
-                    chart.setPanelId(panel.getId());
+                    // panel 为 null,即为 template type, panel_id = 0
+                    chart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
                     chart.setName(title);
                     chart.setType(type);
                     chart.setSpan(Double.valueOf(span).intValue());
@@ -1183,7 +1219,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setUpdateAt(new Date());
                     chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                     chart.setGroupId(groupId);
-                    chart.setVarType(1);
+                    chart.setVarType(varTypeAndValMap.get(varType));
                     chart.setVarId(linkId);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
@@ -1228,7 +1264,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         String panelType=null;
         if(ToolUtil.isNotEmpty(params.get("type"))) {
         	panelType =  params.get("type").toString();
-        	params.put("panelType", panelType);
+            if (!Constant.PanelType.TEMPLATE.getValue().equals(panelType)) {
+                params.put("panelType", panelType);
+            }
         	params.remove("type");
         }
         List<VisualChart> chartList = new ArrayList<VisualChart>();
