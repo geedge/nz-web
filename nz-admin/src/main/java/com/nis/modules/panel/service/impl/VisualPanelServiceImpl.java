@@ -1269,6 +1269,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
         	params.remove("type");
         }
+        String pageSize = (String) params.get("pageSize");
+        if ("-1".equals(pageSize) && Constant.PanelType.TEMPLATE.getValue().equals(panelType) && panelId == null) {
+            panelId = "0";
+        }
         List<VisualChart> chartList = new ArrayList<VisualChart>();
         if(chartId != null) {
             // 只导出当前 chart
@@ -1335,14 +1339,36 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             this.getPanelIdAndNamePathMapFromTree(cPanel, cPath, nodeIdAndNamePathMap);
         }
     }
-    
-    public List<VisualChart> queryChartsByPanelId(String panelId,String chartId,Map<String,Object> params) {
-    	params.put("panelId", panelId);
-    	params.put("ids", chartId);
-    	params.put("returnChildren","0");
+
+    public List<VisualChart> queryChartsByPanelId(String panelId, String chartId, Map<String, Object> params) {
+        params.put("panelId", panelId);
+        params.put("ids", chartId);
+        params.put("returnChildren", "1");
+        params.put("groupId", 0);
         PageUtils queryPage = visualChartService.queryPage(params);
         List<VisualChart> result = (List<VisualChart>) queryPage.getList();
-        return result;
+
+        // 递归展开节点信息
+        List<VisualChart> allChartList = new ArrayList<>();
+        for (VisualChart entity : result) {
+            getAllChildrenChartList(entity, allChartList);
+        }
+        return allChartList;
+    }
+
+    /**
+     * 平铺 获取所有 chart 节点
+     *
+     * @param chart
+     * @param chartList
+     */
+    public void getAllChildrenChartList(VisualChart chart, List<VisualChart> chartList) {
+        chartList.add(chart);
+        if (CollectionUtils.isNotEmpty(chart.getChildren())) {
+            for (VisualChart pojo : chart.getChildren()) {
+                getAllChildrenChartList(pojo, chartList);
+            }
+        }
     }
 
     public List<Row> groupChartRowHandle(Sheet sheet,Integer type) {
