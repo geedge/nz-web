@@ -1,6 +1,7 @@
 package com.nis.modules.asset.controller;
 
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.AssetBrand;
@@ -10,7 +11,9 @@ import com.nis.modules.asset.service.AssetModelService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -120,6 +123,41 @@ public class AssetBrandModelController {
         ValidateUtils.is(ids).notNull(RCode.ASSET_MODELID_ISNULL);
 
         modelService.delete(ids);
+        return R.ok();
+    }
+
+
+    @GetMapping("/asset/model/template")
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+
+        modelService.getExportTemplateByLanguage(response, language);
+    }
+
+
+    @PostMapping("/asset/model/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODEL)
+    @RequiresPermissions({"asset:model:save"})
+    public R importAssetModelFromExcel(MultipartFile excelFile, String language) {
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
+                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+
+        Map info = modelService.importAssetModelFromExcel(excelFile, language);
+        return R.ok(info);
+    }
+
+    @GetMapping("/asset/model/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.MODEL)
+    public void exportAssetModels(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        modelService.export(response, params);
+    }
+
+    @DeleteMapping("/asset/model/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.MODEL)
+    public R cancelImport(@RequestParam(value = "seq", required = false) String seq) {
+        ValidateUtils.is(seq).notNull(RCode.ASSET_MODEL_SEQ_ISNULL);
+
+        modelService.cancelImport(seq);
         return R.ok();
     }
 

@@ -293,9 +293,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
             workbook.write(response.getOutputStream());
         } catch (IOException e) {
-            log.error("dc 模板生成失败，错误信息是：" + e);
+            log.error("dc 模板生成失败，错误信息是：" + e.getMessage(), e);
         } catch (RuntimeException e) {
-            log.error("获取 dc 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
+            log.error("获取 dc 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
         } finally {
             if (workbook != null) {
                 IOUtils.closeQuietly(workbook);

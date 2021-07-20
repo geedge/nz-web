@@ -1,15 +1,16 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.entity.AssetAsset;
@@ -20,14 +21,29 @@ import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
+import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +54,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel> implements AssetModelService {
+
+    private static Log log = Log.get();
 
     @Autowired
     private AssetAssetService assetAssetService;
@@ -53,6 +71,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
 
     @Autowired
     private AssetAssetDao assetDao;
+
+    @Autowired
+    private SysConfigDao sysConfigDao;
+
+    @Autowired
+    private DataSourceTransactionManager dataSourceTransactionManager;
 
     @Override
     public AssetModel queryModelInfo(Integer id) {
@@ -169,4 +193,226 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         // 删除
         this.removeByIds(Arrays.asList(ids));
     }
+
+    @Override
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        Map<String, String> exportHeaderMap;
+        if (map.get(language) != null) {
+            exportHeaderMap = (Map) map.get(language);
+        } else {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        SXSSFWorkbook workbook = null;
+        try {
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Asset model", true);
+            String fileName = "AssetModelExportTemplate.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Asset model 模板生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("获取 Asset model 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                IOUtils.closeQuietly(workbook);
+            }
+        }
+    }
+
+    @Override
+    public Map importAssetModelFromExcel(MultipartFile excelFile, String language) {
+        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+
+        Sheet sheet = work.getSheetAt(0);
+
+        // 表头校验
+        SysConfigEntity config = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER));
+        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
+        if (!headerFlag) {
+            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
+        }
+
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+
+        List<Map> failDetails = new ArrayList<>();
+        String seqUUID = UUID.randomUUID().toString();
+
+        int successNum = this.saveAssetModelsFromSheet(sheet, failDetails, headerInfos, seqUUID);
+        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+        Map resultMap = new HashMap(8);
+        resultMap.put("seq", seqUUID);
+        resultMap.put("totalNum", totalNum);
+        resultMap.put("successNum", successNum);
+        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        return resultMap;
+    }
+
+    private int saveAssetModelsFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+        int successNum = 0;
+        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+            int dataFromExcelRowNum = i + 1;
+            boolean saveFlag = true;
+
+            String modelName = ExcelUtils.getCellValue(row.getCell(0));
+            if (StringUtils.isEmpty(modelName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_MODELNAME_ISNULL.getMsg());
+            }
+
+            String brandName = ExcelUtils.getCellValue(row.getCell(1));
+            if (StringUtils.isEmpty(brandName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_BRAND_NAME_ISNULL.getMsg());
+            }
+
+            String chartNames = ExcelUtils.getCellValue(row.getCell(2));
+            StringBuilder relChartTemplateIds = new StringBuilder();
+            if (StringUtils.isNotEmpty(chartNames)) {
+                String[] split = chartNames.split(",");
+                for (String chartName : split) {
+                    List<VisualChart> list = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).eq(VisualChart::getName, chartName));
+                    list = list.stream().filter(chart -> chart.getVarType() == 1).collect(Collectors.toList());
+                    if (Tool.CollectionUtil.isEmpty(list)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NOTEXSITS.getMsg());
+                    } else if (list.size() == 1) {
+                        // 类型为 asset ,且通过名称只关联一个
+                        relChartTemplateIds.append(list.get(0).getId());
+                        relChartTemplateIds.append(",");
+                    } else if (list.size() > 1) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NAME_DUPLICATE_NOTLINK.getMsg());
+                    }
+                }
+            }
+
+            String remark = ExcelUtils.getCellValue(row.getCell(3));
+            if (saveFlag) {
+                DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
+                AssetModel model = new AssetModel();
+                try {
+                    AssetBrand brand = brandService.getOne(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getName, brandName));
+                    if (brand == null) {
+                        brand = new AssetBrand();
+                        brand.setSeq(seqUUID);
+                        brand.setName(brandName);
+                        brandService.save(brand);
+                    }
+
+                    // 名称校验
+                    int countByName = this.count(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, brand.getId()).eq(AssetModel::getName, modelName));
+                    if (countByName > 0) {
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_MODELNAME_DUPLICATE.getMsg());
+                        continue;
+                    }
+
+                    model.setName(modelName);
+                    model.setBrandId(brand.getId());
+                    model.setRemark(remark);
+                    model.setUsize(1);
+                    String chartIds = relChartTemplateIds.toString();
+                    model.setChartIds(StrUtil.isNotEmpty(chartIds) ? chartIds.substring(0, chartIds.length() - 1) : "");
+                    model.setSeq(seqUUID);
+                    this.save(model);
+
+                    dataSourceTransactionManager.commit(transactionStatus);
+                    successNum++;
+                } catch (RuntimeException e) {
+                    dataSourceTransactionManager.rollback(transactionStatus);
+                    log.error(String.format("asset model 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(model), e.getMessage()), e);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                }
+            }
+        }
+        return successNum;
+    }
+
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
+        Map failDetail = new HashMap(4);
+        failDetail.put("lineNo", i);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
+        failDetails.add(failDetail);
+    }
+
+
+    @Override
+    public void export(HttpServletResponse response, Map<String, Object> params) {
+        SysConfigEntity configEntity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODEL_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+
+        PageUtils page = this.queryPage(params);
+        List<AssetModel> list = (List<AssetModel>) page.getList();
+
+        SXSSFWorkbook workbook = null;
+        try {
+            // 添加标题行 默认语言 en
+            String language = (String) params.get("language");
+            language = ToolUtil.isEmpty(language) ? "en" : language;
+
+            String sheetName = "Asset model";
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+            this.fillData(list, 1, sheet, workbook);
+
+            // 响应为流
+            String fileName = "AssetModels.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Asset model 导出文件生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("Asset model 导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+        }
+    }
+
+    private void fillData(List<AssetModel> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+        for (AssetModel model : list) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(model.getName());
+            row.createCell(1).setCellValue(model.getBrand().getName());
+            String chartIds = model.getChartIds();
+            String chartNames = "";
+            if (StrUtil.isNotEmpty(chartIds)) {
+                List<VisualChart> chartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
+                for (VisualChart chart : chartList) {
+                    chartNames += chart.getName() + ",";
+                }
+                chartNames = StrUtil.isNotEmpty(chartNames) ? chartNames.substring(0, chartNames.length() - 1) : chartNames;
+            }
+            row.createCell(2).setCellValue(chartNames);
+            row.createCell(3).setCellValue(ObjectUtil.defaultIfNull(model.getRemark(), ""));
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(dataStyle, row, 3);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelImport(String seq) {
+        this.remove(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSeq, seq));
+        brandService.remove(new LambdaQueryWrapper<AssetBrand>().eq(AssetBrand::getSeq, seq));
+    }
+
 }

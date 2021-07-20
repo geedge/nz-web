@@ -119,7 +119,7 @@ public class DcController {
 
     @GetMapping("/template")
     public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
 
         dcService.getExportTemplateByLanguage(response, language);
     }

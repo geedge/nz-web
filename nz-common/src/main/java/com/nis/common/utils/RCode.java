@@ -107,6 +107,7 @@ public enum RCode {
     CHART_GROUP_NAME_DUPLICATE(121067,"chart type is group name is duplicate"),
     CHART_HEIGHT_INVALIDE(123068, "Chart height should be between 1 and 12"),
     CHART_VARTYPE_ERROR(123069,"Chart var type must be Asset or Endpoint"),
+    CHART_NAME_DUPLICATE_NOTLINK(122070, "Chart name is duplicated and cannot be linked"),
 
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
@@ -299,6 +300,7 @@ public enum RCode {
     ASSET_MODELRELATED_MIBS(323012, "These models contain mibs and cannot be deleted"),
     ASSET_MODEL_BRANDID_ISNULL(321013, "Asset model brand id can not be null"),
     ASSET_MODEL_CHART_ERROR(321014,"Asset model chart template not exist"),
+    ASSET_MODEL_SEQ_ISNULL(321015, "Cancel import serial number is empty"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),

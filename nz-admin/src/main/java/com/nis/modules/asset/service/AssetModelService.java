@@ -3,7 +3,9 @@ package com.nis.modules.asset.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetModel;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -23,4 +25,12 @@ public interface AssetModelService extends IService<AssetModel> {
     void updateModel(AssetModel model);
 
     void delete(Integer... ids);
+
+    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+
+    Map importAssetModelFromExcel(MultipartFile excelFile, String language);
+
+    void export(HttpServletResponse response, Map<String, Object> params);
+
+    void cancelImport(String seq);
 }
