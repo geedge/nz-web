@@ -3,7 +3,9 @@ package com.nis.modules.asset.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.Cabinet;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -54,5 +56,13 @@ public interface CabinetService extends IService<Cabinet> {
      * @return
      */
     Map getCabinetUsizeDetails(Integer id);
+
+    void getCabinetExportTemplateByLanguage(HttpServletResponse response, String language);
+
+    Map importCabinetsFromExcel(MultipartFile excelFile, String language);
+
+    void export(HttpServletResponse response, Map<String, Object> params);
+
+    void cancelImport(String seq);
 }
 

@@ -768,6 +768,9 @@ public class Constant {
 	// model 导入表头
 	public static final String SYSCONFIG_KEY_MODEL_EXPORT_HEADER = "model_export_header";
 
+	// cabinet 导入表头
+	public static final String SYSCONFIG_KEY_CABINET_EXPORT_HEADER = "cabinet_export_header";
+
 	// 登录时 ldap template 超时时间
 	public static final String SYSCONFIG_KEY_LDAP_QUERY_TIMEOUT = "ldap_query_timeout";
 

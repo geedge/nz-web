@@ -253,5 +253,37 @@ public class DcController {
     }
 
 
+    @GetMapping("/cabinet/template")
+    public void getCabinetExportTemplateByLanguage(HttpServletResponse response, String language) {
+        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+
+        cabinetService.getCabinetExportTemplateByLanguage(response, language);
+    }
+
+    @PostMapping("/cabinet/import")
+    @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
+    @RequiresPermissions({"cabinet:save"})
+    public R importCabinetsFromExcel(MultipartFile excelFile, String language) {
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
+                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+
+        Map info = cabinetService.importCabinetsFromExcel(excelFile, language);
+        return R.ok(info);
+    }
+
+    @GetMapping("/cabinet/export")
+    @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.DATACENTER)
+    public void exportCabinets(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+        cabinetService.export(response, params);
+    }
+
+    @DeleteMapping("/cabinet/cancelImport")
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.DATACENTER)
+    public R cancelCabinetImport(@RequestParam(value = "seq", required = false) String seq) {
+        ValidateUtils.is(seq).notNull(RCode.DC_SEQ_ISNULL);
+
+        cabinetService.cancelImport(seq);
+        return R.ok();
+    }
 
 }

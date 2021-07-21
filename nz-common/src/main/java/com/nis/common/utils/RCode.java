@@ -599,6 +599,11 @@ public enum RCode {
     DC_LONGITUDE_FORMAT(533044, "Dc longitude format should be a double"),
     DC_LATITUDE_FORMAT(533045, "Dc latitude format should be a double"),
     DC_SEQ_ISNULL(531046, "Cancel import serial number is empty"),
+    CABINET_USIZE_FORMAT(533047, "Cabinet u size format should be a integer"),
+    CABINET_USIZE_ERROR(535048, "Cabinet u size range is 1 to 47"),
+    CABINET_X_FORMAT(533049, "Cabinet x format should be a integer"),
+    CABINET_Y_FORMAT(533050, "Cabinet y format should be a integer"),
+
 
     SYS_I18N_DUPLICATE(542000, "duplicate error (code + lang)"), //国际化配置重复（code+lang）
     SYS_I18N_NOSUCHLANG(543001, "no such lang"),                  //不合法的lang

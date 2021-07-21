@@ -1,7 +1,10 @@
 package com.nis.modules.asset.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -21,9 +24,20 @@ import com.nis.modules.asset.service.DcService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -182,7 +196,7 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         // Usize 为空 则从配置表中取出 cabinet u位默认值
         if (cabinet.getuSize() == null) {
             SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq(SysConfigEntity::getStatus, 1));
-            cabinet.setuSize(Integer.valueOf(configEntity.getParamKey()));
+            cabinet.setuSize(Integer.valueOf(configEntity.getParamValue()));
         }
 
         // 保存
@@ -262,4 +276,250 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
         resuleData.put("available", size - tempList.size());
         return resuleData;
     }
+
+    @Override
+    public void getCabinetExportTemplateByLanguage(HttpServletResponse response, String language) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        Map<String, String> exportHeaderMap;
+        if (map.get(language) != null) {
+            exportHeaderMap = (Map) map.get(language);
+        } else {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        SXSSFWorkbook workbook = null;
+        try {
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Cabinet", true);
+            String fileName = "CabinetExportTemplate.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Cabinet 模板生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("获取 Cabinet 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                IOUtils.closeQuietly(workbook);
+            }
+        }
+    }
+
+    @Override
+    public Map importCabinetsFromExcel(MultipartFile excelFile, String language) {
+        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+
+        Sheet sheet = work.getSheetAt(0);
+
+        // 表头校验
+        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER));
+        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
+        if (!headerFlag) {
+            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
+        }
+
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+
+        List<Map> failDetails = new ArrayList<>();
+        String seqUUID = UUID.randomUUID().toString();
+
+        int successNum = this.saveCabinetsFromSheet(sheet, failDetails, headerInfos, seqUUID);
+        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+        Map resultMap = new HashMap(8);
+        resultMap.put("seq", seqUUID);
+        resultMap.put("totalNum", totalNum);
+        resultMap.put("successNum", successNum);
+        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        return resultMap;
+    }
+
+    private int saveCabinetsFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+        int successNum = 0;
+        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+            int dataFromExcelRowNum = i + 1;
+            boolean saveFlag = true;
+
+            String cabinetName = ExcelUtils.getCellValue(row.getCell(0));
+            if (StringUtils.isEmpty(cabinetName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_CABINETNAME_ISNULL.getMsg());
+            }
+
+            String dcName = ExcelUtils.getCellValue(row.getCell(1));
+            Dc dc = null;
+            if (StringUtils.isEmpty(dcName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.DC_NAME_ISNULL.getMsg());
+            } else {
+                dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcName));
+                if (ToolUtil.isEmpty(dc)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.DC_NOT_EXISTS.getMsg());
+                }
+            }
+
+            String uSize = ExcelUtils.getCellValue(row.getCell(2));
+            if (StringUtils.isNotEmpty(uSize)) {
+                Integer uSizeIntVal = null;
+                try {
+                    uSizeIntVal = Double.valueOf(uSize).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CABINET_USIZE_FORMAT.getMsg());
+                }
+                if (uSizeIntVal != null && (uSizeIntVal < 1 || uSizeIntVal > Constant.CURRENT_CABINET_MAXU)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CABINET_USIZE_ERROR.getMsg());
+                }
+            }
+
+            String y = ExcelUtils.getCellValue(row.getCell(3));
+            if (StringUtils.isNotEmpty(y)) {
+                try {
+                    Double.valueOf(y).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_Y_FORMAT.getMsg());
+                }
+            }
+            String x = ExcelUtils.getCellValue(row.getCell(4));
+            if (StringUtils.isNotEmpty(x)) {
+                try {
+                    Double.valueOf(x).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CABINET_X_FORMAT.getMsg());
+                }
+            }
+            String remark = ExcelUtils.getCellValue(row.getCell(5));
+            if (saveFlag) {
+                // 名称校验
+                int countByName = this.count(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getName, cabinetName).eq(Cabinet::getDcId, dc.getId()));
+                if (countByName > 0) {
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_CABINETNAME_DUPLICATE.getMsg());
+                    continue;
+                }
+                // 校验行列
+                if (StrUtil.isAllNotEmpty(x, y)) {
+                    int xIntVal = Double.valueOf(x).intValue();
+                    int yIntVal = Double.valueOf(y).intValue();
+                    if (yIntVal > dc.getY()) {
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_Y_INCORRECT.getMsg());
+                        continue;
+                    }
+                    if (xIntVal > dc.getX()) {
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CABINET_X_INCORRECT.getMsg());
+                        continue;
+                    }
+                    int countByPosition = this.count(new QueryWrapper<Cabinet>().lambda().eq(Cabinet::getDcId, dc.getId()).eq(Cabinet::getY, yIntVal).eq(Cabinet::getX, xIntVal));
+                    if (countByPosition > 0) {
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CABINET_POSITION_OCCUPIED.getMsg());
+                        continue;
+                    }
+                }
+                Cabinet cabinet = new Cabinet();
+                try {
+                    cabinet.setName(cabinetName);
+                    cabinet.setDcId(dc.getId());
+
+                    if (StrUtil.isNotEmpty(uSize)) {
+                        cabinet.setuSize(Double.valueOf(uSize).intValue());
+                    } else {
+                        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DEFAULT_CABINETU).eq(SysConfigEntity::getStatus, 1));
+                        cabinet.setuSize(Integer.valueOf(configEntity.getParamValue()));
+                    }
+
+                    cabinet.setRemark(remark);
+                    if (StrUtil.isNotEmpty(x)) {
+                        cabinet.setX(Double.valueOf(x).intValue());
+                    }
+                    if (StrUtil.isNotEmpty(y)) {
+                        cabinet.setY(Double.valueOf(y).intValue());
+                    }
+                    cabinet.setSeq(seqUUID);
+                    this.save(cabinet);
+                    successNum++;
+                } catch (RuntimeException e) {
+                    log.error(String.format("cabinet 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(cabinet), e.getMessage()), e);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                }
+            }
+        }
+        return successNum;
+    }
+
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
+        Map failDetail = new HashMap(4);
+        failDetail.put("lineNo", i);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
+        failDetails.add(failDetail);
+    }
+
+    @Override
+    public void export(HttpServletResponse response, Map<String, Object> params) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+
+        PageUtils page = this.queryCabinetPage(params);
+        List<Cabinet> list = (List<Cabinet>) page.getList();
+
+        SXSSFWorkbook workbook = null;
+        try {
+            // 添加标题行 默认语言 en
+            String language = (String) params.get("language");
+            language = ToolUtil.isEmpty(language) ? "en" : language;
+
+            String sheetName = "Cabinet";
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+            this.fillData(list, 1, sheet, workbook);
+
+            // 响应为流
+            String fileName = "Cabinets.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Cabinet 导出文件生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("Cabinet 导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+        }
+    }
+
+    private void fillData(List<Cabinet> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+        for (Cabinet cabinet : list) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(cabinet.getName());
+            row.createCell(1).setCellValue(cabinet.getDc().getName());
+            row.createCell(2).setCellValue(ObjectUtil.defaultIfNull(cabinet.getuSize(), "").toString());
+            row.createCell(3).setCellValue(ObjectUtil.defaultIfNull(cabinet.getY(), "").toString());
+            row.createCell(4).setCellValue(ObjectUtil.defaultIfNull(cabinet.getX(), "").toString());
+            row.createCell(5).setCellValue(ObjectUtil.defaultIfNull(cabinet.getRemark(), ""));
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(dataStyle, row, 5);
+        }
+    }
+
+    @Override
+    public void cancelImport(String seq) {
+        this.remove(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getSeq, seq));
+    }
+
 }
