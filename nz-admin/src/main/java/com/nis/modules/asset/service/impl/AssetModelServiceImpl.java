@@ -313,6 +313,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                     int countByName = this.count(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getBrandId, brand.getId()).eq(AssetModel::getName, modelName));
                     if (countByName > 0) {
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_MODELNAME_DUPLICATE.getMsg());
+                        dataSourceTransactionManager.commit(transactionStatus);
                         continue;
                     }
 
