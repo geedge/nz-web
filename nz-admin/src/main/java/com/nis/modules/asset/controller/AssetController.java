@@ -80,8 +80,11 @@ public class AssetController {
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
                 .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL)
-                .and(asset.getNumber()).maxLength(128);
-        
+                .and(asset.getNumber()).maxLength(128)
+                .and(asset.getClientAddress()).maxLength(64)
+                .and(asset.getClientPin()).maxLength(64)
+                .and(asset.getClientUser()).maxLength(64);
+
         if(ObjectUtil.equal(asset.getAuthType(), 1)) {
         	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64)
         	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
@@ -114,14 +117,18 @@ public class AssetController {
                 .and(asset.getDcId()).notNull(RCode.ASSET_DC_ID_ISNULL)
                 .and(asset.getStateId()).notNull(RCode.ASSET_STATE_ID_ISNULL)
                 .and(asset.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL)
-                .and(asset.getNumber()).maxLength(128);
+                .and(asset.getNumber()).maxLength(128)
+                .and(asset.getNumber()).maxLength(128)
+                .and(asset.getClientAddress()).maxLength(64)
+                .and(asset.getClientPin()).maxLength(64)
+                .and(asset.getClientUser()).maxLength(64);
         
-        if(ObjectUtil.equal(asset.getAuthType(), 1)) {
+        /*if(ObjectUtil.equal(asset.getAuthType(), 1)) {
         	ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64)
         	.and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
         }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
         	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
-        }
+        }*/
         
         Map map = new HashMap(2);
         map.put("id", assetAssetService.updateAsset(asset));
@@ -357,7 +364,8 @@ public class AssetController {
                 .and(conf.getAuthProtocol()).notNull(RCode.TYPECONF_AUTHPROTOCOL_ISNULL)
                 .and(conf.getSnmpEnable()).notNull(RCode.TYPECONF_SNMPENABLE_ISNULL)
                 .and(conf.getSnmpCollect()).notNull(RCode.TYPECONF_SNMPCOLLECT_ISNULL)
-                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL);
+                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL)
+                .and(conf.getClientEnable()).notNull(RCode.TYPECONF_CLIENTENABLE_ISNULL);
         if(ToolUtil.equals(conf.getSshCollect(), 1)) {
         	ValidateUtils.is(conf.getSshCollectScript()).notNull(RCode.TYPECONF_SSHCOLLECTSCRIPT_ISNULL);
         }
@@ -377,7 +385,8 @@ public class AssetController {
                 .and(conf.getAuthProtocol()).notNull(RCode.TYPECONF_AUTHPROTOCOL_ISNULL)
                 .and(conf.getSnmpEnable()).notNull(RCode.TYPECONF_SNMPENABLE_ISNULL)
                 .and(conf.getSnmpCollect()).notNull(RCode.TYPECONF_SNMPCOLLECT_ISNULL)
-                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL);
+                .and(conf.getSshCollect()).notNull(RCode.TYPECONF_SSHCOLLECT_ISNULL)
+                .and(conf.getClientEnable()).notNull(RCode.TYPECONF_CLIENTENABLE_ISNULL);
         if(ToolUtil.equals(conf.getSshCollect(), 1)) {
         	ValidateUtils.is(conf.getSshCollectScript()).notNull(RCode.TYPECONF_SSHCOLLECTSCRIPT_ISNULL);
         }

@@ -95,13 +95,13 @@ public class AssetAsset implements Serializable {
     /**
      * 密码
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField
     private String authPin;
     
     /**
      * 秘钥
      */
-    @TableField(strategy = FieldStrategy.IGNORED)
+    @TableField
     private String authPriKey;
     
     /**
@@ -154,6 +154,27 @@ public class AssetAsset implements Serializable {
      * 购买日期
      */
     private String purchaseDate;
+
+    /**
+     * talon 连接ip 默认："{{asset.manageIp}}"
+     */
+    @TableField(value = "client_host")
+    private String clientAddress;
+
+    /**
+     * talon 连接port  默认：10092
+     */
+    private Integer clientPort;
+
+    /**
+     * talon 连接 用户名
+     */
+    private String clientUser;
+
+    /**
+     * talon 连接 密码
+     */
+    private String clientPin;
 
     /**
      * 添加日期
@@ -282,5 +303,11 @@ public class AssetAsset implements Serializable {
         }
         return null;
     }
+
+    /**
+     * client 状态 关联 asset_talon_status
+     */
+    @TableField(exist = false)
+    private Integer clientState;
 
 }

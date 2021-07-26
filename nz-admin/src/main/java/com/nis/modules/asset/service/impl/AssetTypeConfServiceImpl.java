@@ -52,7 +52,10 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
                 .eq(ToolUtil.isNotEmpty(params.get("id")), AssetTypeConf::getId, params.get("id"))
                 .like(ToolUtil.isNotEmpty(params.get("name")), AssetTypeConf::getName, params.get("name"))
                 .eq(ToolUtil.isNotEmpty(params.get("vm")), AssetTypeConf::getVm, params.get("vm"))
-                .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"));
+                .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"))
+                .eq(ToolUtil.isNotEmpty(params.get("authProtocol")), AssetTypeConf::getAuthProtocol, params.get("authProtocol"))
+                .eq(ToolUtil.isNotEmpty(params.get("snmpEnable")), AssetTypeConf::getSnmpEnable, params.get("snmpEnable"))
+                .eq(ToolUtil.isNotEmpty(params.get("clientEnable")), AssetTypeConf::getClientEnable, params.get("clientEnable"));
 
         IPage page = this.page(new Query(AssetTypeConf.class).getPage(params), queryWrapper);
         List<AssetTypeConf> assetTypeConfs = page.getRecords();
@@ -81,7 +84,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
             throw new NZException(RCode.TYPECONF_NAME_DUPLICATE);
         }
 
-        // 2. 校验 vm vmh ssh te;net build 值
+        // 2. 校验 vm vmh ssh te;net build clientEnable 值
         List<Integer> switchList = Arrays.asList(new Integer[]{1, 0});
         if (!switchList.contains(conf.getVm())) {
             throw new NZException(RCode.TYPECONF_VM_INCORRECT);
@@ -91,6 +94,9 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
         }
         if (ToolUtil.isNotEmpty(conf.getBuildIn()) && !switchList.contains(conf.getBuildIn())) {
             throw new NZException(RCode.TYPECONF_BUILDIN_INCORRECT);
+        }
+        if (!switchList.contains(conf.getClientEnable())) {
+            throw new NZException(RCode.TYPECONF_CLIENTENABLE_INCORRECT);
         }
 
         // 3. pid 是否存在

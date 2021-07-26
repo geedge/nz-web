@@ -77,6 +77,11 @@ public class AssetTypeConf implements Serializable {
      * ssh自动化采集脚本路径
      */
     private String sshCollectScript;
+
+    /**
+     * 是否支持 nz 客户端（talon）  默认：0   0：不开启  1：开启
+     */
+    private Integer clientEnable;
     
     /**
      * 描述

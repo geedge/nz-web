@@ -284,7 +284,8 @@ public enum RCode {
     ASSET_AUTHPIN_ISNULL(311064, "Asset auth pin can not be empty"),
     ASSET_AUTHPRIKEY_ISNULL(311065, "Asset auth pri key can not be empty"),
     ASSET_EDITTYPE_ISNULL(311066,"Asset edit type can not be empty"),
-    
+    ASSET_CLIENTPORT_ERROR(315067,"Asset client port is incorrect"),
+
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
     ASSET_MODELID_ISNULL(321001, "Asset model id can not be null"),      // 资产型号ID不能为空
     ASSET_MODELNAME_DUPLICATE(322002, "Asset model name duplicate"),     // 资产型号名称重复
@@ -373,7 +374,9 @@ public enum RCode {
     TYPECONF_SNMPCOLLECT_ISNULL(351019, "Asset type config snmp collect is null"),
     TYPECONF_SSHCOLLECT_ISNULL(351020, "Asset type config ssh collect is null"),
     TYPECONF_SSHCOLLECTSCRIPT_ISNULL(351021, "Asset type config ssh collect script is null"),
-    
+    TYPECONF_CLIENTENABLE_ISNULL(351022, "Asset type config client enable is null"),
+    TYPECONF_CLIENTENABLE_INCORRECT(354023, "Asset type config client enable must be 0 or 1"),
+
     ASSET_BRAND_NOT_FOUND(366000, "Asset brand not found"),
     ASSET_BRAND_NAME_ISNULL(361001, "Asset brand name is null"),
     ASSET_BRAND_ID_ISNULL(361002, "Asset brand id is null"),

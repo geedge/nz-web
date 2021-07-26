@@ -171,7 +171,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             	asset.setChildren(children);
         	}
         }
-        
+
         AssetStateConf state = stateConfService.getById(asset.getStateId());
         asset.setState(state);
 
@@ -186,7 +186,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
         asset.setPingInfo(assetPing);
-        
+
         if (asset.getCabinetId() != null) {
             Cabinet cabinet = cabinetService.getById(asset.getCabinetId());
             asset.setCabinet(cabinet);
@@ -221,6 +221,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         int alertCount = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
         asset.setAlertNum(alertCount);
 
+        // 不返回 密码 / 密钥信息
+        asset.setAuthPin(null);
+        asset.setAuthPriKey(null);
+        asset.setClientPin(null);
         return asset;
     }
 
@@ -245,7 +249,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (ToolUtil.isNotEmpty(params.get("ping"))) {
             params.put("ping", Arrays.asList(String.valueOf(params.get("ping")).split(StringPool.COMMA)));
         }
-        
+
         if (ToolUtil.isNotEmpty(params.get("cabinetIds"))) {
             params.put("cabinetIds", Arrays.asList(String.valueOf(params.get("cabinetIds")).split(StringPool.COMMA)));
         }
@@ -265,7 +269,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (ToolUtil.isNotEmpty(params.get("pids"))) {
             params.put("pids", Arrays.asList(String.valueOf(params.get("pids")).split(StringPool.COMMA)));
         }
-        
+
         if (ToolUtil.isNotEmpty(params.get("projectIds"))) {
             List<String> projectIdList = Arrays.asList(params.get("projectIds").toString().split(StringPool.COMMA));
             List<MonitorModule> moduleListByProjectIds = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getProjectId, projectIdList));
@@ -358,6 +362,25 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             // cabinetEnd 存值的时候会+1 在此减一返回前台
             if (ToolUtil.isNotEmpty(asset.getCabinetEnd())) {
                 asset.setCabinetEnd(asset.getCabinetEnd() - 1);
+            }
+
+            // clientstate
+            if (ToolUtil.isNotEmpty(asset.getClientState())) {
+                switch (asset.getClientState()) {
+                    case 1:// ok
+                        break;
+                    case 3: { // 认证失败
+                        asset.setClientState(-1);
+                        break;
+                    }
+                    case 2:  // 超时
+                    case 4: {// 未知错误
+                        asset.setClientState(0); // 认证失败
+                        break;
+                    }
+                    default:
+                        asset.setClientState(null);
+                }
             }
         }
     }
@@ -470,7 +493,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
         }
-        
+
         // account
        /* List<Integer> accountIds = asset.getAccounts();
         if (CollectionUtils.isNotEmpty(accountIds)) {
@@ -501,6 +524,28 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         String authPin = asset.getAuthPin();
         if(StrUtil.isNotBlank(authPin)) {
         	asset.setAuthPin(Base64.getEncoder().encodeToString(authPin.getBytes()));
+        } else {
+            asset.setAuthPin(null);
+        }
+
+        // 修改时， 当 authType 与原来不一致时，则按照新增时规则校验
+        if (asset.getId() != null) {
+            AssetAsset oldAssetById = this.getById(asset.getId());
+            if (oldAssetById == null) {
+                throw new NZException(RCode.ASSET_NOT_EXIST);
+            }
+            if (asset.getAuthType() != oldAssetById.getAuthType()) {
+                if (ObjectUtil.equal(asset.getAuthType(), 1)) {
+                    ValidateUtils.is(asset.getAuthUsername()).notNull(RCode.ASSET_AUTHUSERNAME_ISNULL).maxLength(64).and(asset.getAuthPin()).notNull(RCode.ASSET_AUTHPIN_ISNULL).maxLength(256);
+                } else if (ObjectUtil.equal(asset.getAuthType(), 2)) {
+                    ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
+                }
+            }
+        }
+
+        // client port
+        if (asset.getClientPort() != null) {
+            ValidateUtils.is(asset.getClientPort()).port(RCode.ASSET_CLIENTPORT_ERROR);
         }
     }
 
@@ -650,7 +695,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             AssetModel model = modelService.getById(asset.getModelId());
             asset.setBrandId(model.getBrandId());
         }
-        
+
         // 保存
         this.save(asset);
 
@@ -781,6 +826,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 留作对比是否更改 model
         AssetAsset oldAsset = this.getById(asset.getId());
+
+        // authPrivKey
+        if (StrUtil.isEmpty(asset.getAuthPriKey())) {
+            asset.setAuthPriKey(null);
+        }
 
         // 保存
         this.updateById(asset);
@@ -1214,7 +1264,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         		}
         	}
         }
-        
+
         for(Map.Entry<Integer, List<AssetFieldMeta>> entry : fieldIdAndfields.entrySet()) {
         	List<AssetFieldMeta> fields = fieldIdAndfields.get(entry.getKey());
         	List children = new ArrayList();
@@ -1793,6 +1843,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
+            String clientUser = ExcelUtils.getCellValue(row.getCell(22));
+            String clientPin = ExcelUtils.getCellValue(row.getCell(23));
+            String clientAddress = ExcelUtils.getCellValue(row.getCell(24));
+            String clientPort = ExcelUtils.getCellValue(row.getCell(25));
+            if (StringUtils.isNotEmpty(clientPort)) {
+                if (!CommonUtils.checkPort(clientPort)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(25), RCode.ASSET_CLIENTPORT_ERROR.getMsg());
+                }
+            }
+
             // 前面没有报错
             if (saveFlag) {
                 AssetAsset asset = new AssetAsset();
@@ -1828,6 +1889,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     asset.setCabinetStart(parentAsset.getCabinetStart());
                     asset.setCabinetEnd(parentAsset.getCabinetEnd());
                 }
+                asset.setClientUser(ObjectUtil.defaultIfEmpty(clientUser, null));
+                asset.setClientPin(ObjectUtil.defaultIfEmpty(clientPin, null));
+                asset.setClientAddress(ObjectUtil.defaultIfEmpty(clientAddress, null));
+                asset.setClientPort(StringUtils.isNotEmpty(clientPort) ? Integer.valueOf(clientPort) : null);
                 saveEntitys.put("asset", asset);
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -2016,7 +2081,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 		chartService.saveRelPanelAndChart(Constant.PanelType.ASSET.getValue(), asset.getId(), asset.getSeq(), chartTemplate);
 		// 新增 asset 时，新增 关联 Model charts
         this.saveAssetModelChartsWhenInsert(asset);
-		
+
 		// fields
 		List<AssetFieldValue> fields = (List<AssetFieldValue>) saveEntitys.get("fields");
 		if (CollectionUtils.isNotEmpty(fields)) {
@@ -2162,9 +2227,13 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 snmpCredentialName = snmpCredential == null ? "" : snmpCredential.getName();
             }
             row.createCell(21).setCellValue(snmpCredentialName);
-            
+
+            row.createCell(22).setCellValue(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
+//            row.createCell(23).setCellValue(asset.getClientPin());
+            row.createCell(24).setCellValue(ObjectUtil.defaultIfNull(asset.getClientAddress(), ""));
+            row.createCell(25).setCellValue(ObjectUtil.defaultIfNull(asset.getClientPort(), "").toString());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 21);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 25);
         }
     }
 
