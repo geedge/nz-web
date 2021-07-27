@@ -617,9 +617,14 @@ public class Constant {
 	}
 
 	public enum PromserverType {
-		GLOBAL("global", 1), PER_DATACENTER("per_datacenter", 2), THANOS_QUERY("thanos_query", 3),
-		THANOS_RULE("thanos_rule", 4), THANOS_SIDECAR("thanos_sidecar", 5), THANOS_STORE("thanos_store", 6),
-		THANOS_COMPACTOR("thanos_compactor", 7);
+		GLOBAL("global", 1),
+		PER_DATACENTER("per_datacenter", 2),
+		THANOS_QUERY("thanos_query", 3),
+		THANOS_RULE("thanos_rule", 4),
+		THANOS_SIDECAR("thanos_sidecar", 5),
+		THANOS_STORE("thanos_store", 6),
+		THANOS_COMPACTOR("thanos_compactor", 7),
+		LOKI("loki", 11);
 
 		private String name;
 		private Integer value;
