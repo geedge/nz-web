@@ -924,7 +924,7 @@ public class Constant {
 
 	public static final Integer ADMIN_USER_ID = 1;
 
-	public static final String PIN = "password";
+	public static final String PIN = "pin";
 
 	// 高可用
 	public static final String SERVER_ID = Tool.IdUtil.fastUUID();
