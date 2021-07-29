@@ -124,8 +124,8 @@ public class AgentJob extends QuartzJobBean {
         List<SysConfigEntity> configEntityList = sysConfigService.list();
         Map<String, String> configMap = configEntityList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-        // 全部 prom_server
-        List<Promserver> allPromServers = promService.list();
+        // 全部 prom_server  GLOBAL PER_DATACENTER
+        List<Promserver> allPromServers = promService.list(new LambdaQueryWrapper<Promserver>().in(Promserver::getType, Constant.PromserverType.GLOBAL.getValue(),Constant.PromserverType.PER_DATACENTER.getValue()));
 
         // 健康的 prom_server
         List<Promserver> healthyPromServers = this.getHealthyPromServers(allPromServers, configMap);

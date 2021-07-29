@@ -238,9 +238,19 @@ public class LokiProxyController {
                 if (ToolUtil.isEmpty(resultArray)) {
                     return result;
                 }
-                // labels series
-                handleDataStructure(data, resultArray, request);
-                data.put("resultType", "streamsFormat");
+
+                List<Object> valuesList = resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
+                // 查询结果集超过系统设置最大限制 , -1 表示不做限制
+                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
+                Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
+                if (!queryMaxSeriesIntVal.equals(-1) && valuesList.size() > queryMaxSeriesIntVal) {
+                    data.put("result", Collections.emptyList());
+                    result.put("message", String.format("Configure the maximum number of Series: %s, query the total number of Series: %s", queryMaxSeriesIntVal, valuesList.size()));
+                } else {
+                    // labels series
+                    handleDataStructure(data, resultArray, request);
+                    data.put("resultType", "streamsFormat");
+                }
                 result.put("data", data);
             }
         }
@@ -290,8 +300,16 @@ public class LokiProxyController {
 
         SortedMap<Long, Integer> timeAndIndexMap = new TreeMap<>();
 
-        BigDecimal stepDecimal = BigDecimal.valueOf((end - first)).divide(BigDecimal.valueOf(nodeNum), 0);
-        long step = stepDecimal.longValue();
+        // 总时间 秒
+        BigDecimal elapsedsSecondsTime = BigDecimal.valueOf(end - first).divide(BigDecimal.valueOf(1000000000.0), 0);
+        long step;
+        if (elapsedsSecondsTime.longValue() < nodeNum) {
+            step = 1000000000; // 一秒
+            nodeNum = elapsedsSecondsTime.intValue();
+        } else {
+            BigDecimal stepDecimal = BigDecimal.valueOf(end - first).divide(BigDecimal.valueOf(nodeNum), 0);
+            step = stepDecimal.longValue();
+        }
 
         List<Long[]> timeStampAndCounterList = new ArrayList();
         timeStampAndCounterList.add(new Long[]{first, 0L});
