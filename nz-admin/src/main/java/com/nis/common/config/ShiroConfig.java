@@ -92,6 +92,7 @@ public class ShiroConfig {
 		filterMap.put("/favicon.ico", "anon");
 		filterMap.put("/captcha.jpg", "anon");
 		filterMap.put("/api/**", "anon");
+		filterMap.put("/logs/loki/**", "anon");
 		filterMap.put("/terminal.ws", "anon");
 		filterMap.put("/terminal/monitor.ws", "anon");
 		filterMap.put("/sys/license/**", "anon");// license 相关接口

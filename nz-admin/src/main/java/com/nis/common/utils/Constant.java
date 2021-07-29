@@ -147,6 +147,16 @@ public class Constant {
 	public static final String QUERY_MAX_SERIES = "query_max_series";
 
 	/**
+	 * loki log query range 代理接口 限制查询最大条数
+	 */
+	public static final String LOKILOG_QUERY_MAX_SERIES = "lokilog_query_max_series";
+
+	/**
+	 * LOKI LOG query range 图表最大点数
+	 */
+	public static final String LOKILOG_QUERY_NODE_NUM = "lokilog_query_node_num";
+
+	/**
 	 * prometheus server up 也就是endpoint状态 'endpoint'键值对应endpointId
 	 */
 	public static final String PROMSERVERUP_ENDPOINT_LABEL = "endpoint";
