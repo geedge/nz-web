@@ -36,6 +36,7 @@ public class MonitorModule implements Serializable {
     /**
      * modulle 类型 可选值 ： http 、snmp
      */
+    @TableField(exist = false)
     private String type;
 
     /**

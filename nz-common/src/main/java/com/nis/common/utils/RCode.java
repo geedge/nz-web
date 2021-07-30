@@ -181,6 +181,8 @@ public enum RCode {
     MODULE_CONFIGS_FORMAT(223029,"Module configs must be JSON format"),
     MODULE_SNMP_WALK_ISNULL(221030,"Snmp type module walk oids cannot be empty"),
     MODULE_SNMP_WALK_FORMAT(223031,"Module walk oids format error"),
+    MODULE_SEQ_ISNULL(221032, "Cancel import serial number is empty"),
+    MODULE_CONFIGS_TYPE_DUPLICATE(222033, "Module config type is duplicate"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),

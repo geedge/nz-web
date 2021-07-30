@@ -1,10 +1,12 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -14,7 +16,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
-import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -32,11 +33,23 @@ import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,7 +84,10 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Autowired
     private VisualChartService visualChartService;
-    
+
+    @Autowired
+    private DataSourceTransactionManager dataSourceTransactionManager;
+
     @Override
     public MonitorModule queryModuleInfo(Integer id) {
         MonitorModule module = this.getById(id);
@@ -90,17 +106,18 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         Integer alertNum = alertMessageService.getAactiveAlertCountByModuleId(module.getId());
         module.setAlertNum(alertNum);
-        
+
         String chartIds = module.getChartIds();
-        if(StrUtil.isNotBlank(chartIds)) {
-        	List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
-        	module.setCharts(charts);
+        if (StrUtil.isNotBlank(chartIds)) {
+            List<VisualChart> charts = (List<VisualChart>) visualChartService.listByIds(Arrays.asList(chartIds.split(",")));
+            module.setCharts(charts);
         }
         return module;
     }
 
     /**
      * 处理请求参数
+     *
      * @param params
      */
     private void handleQueryParam(Map<String, Object> params) {
@@ -169,45 +186,64 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_NAME_DUPLICATE);
         }
 
-        // 3.校验 type 类型是否在枚举范围内
-        String type = module.getType();
-        if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, type) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, type)) {
-            throw new NZException(RCode.MODULE_TYPE_INVALID);
-        }
-
-        // 4. config 格式校验
-        Map configMap;
+        // config 格式校验
+        List<Map> configMapList;
         try {
-            configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
+            configMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
         } catch (JSONException e) {
             throw new NZException(RCode.MODULE_CONFIGS_FORMAT);
         }
 
-        // 5. 端口校验
-        Object port = configMap.get("port");
-        if (ToolUtil.isNotEmpty(port)) {
-            flag = CommonUtils.checkPort(port.toString());
-            if (!flag) {
-                throw new NZException(RCode.MODULE_PORT_ERROR);
-            }
+        if (Tool.CollectionUtil.isEmpty(configMapList)) {
+            throw new NZException(RCode.MODULE_CONFIGS_ISNULL);
         }
 
-        // snmp 类型校验 config
-        if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, type)) {
-            // snmpCredentialsId 必须存在
-            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-            ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+        // 每个type 最多包含一个
+        long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
+        if (countByType != configMapList.size()) {
+            throw new NZException(RCode.MODULE_CONFIGS_TYPE_DUPLICATE);
+        }
 
-            SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
-            ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
+        Map metricsConfigMap = configMapList.stream().filter(map -> {
+            String configType = (String) map.get("type");
+            return StrUtil.equals("metrics", configType);
+        }).findFirst().get();
 
-            Object walk = configMap.get("walk");
-            ValidateUtils.is(walk).notNull(RCode.MODULE_SNMP_WALK_ISNULL);
+        if (metricsConfigMap != null) {
+            Map configMap = (Map) metricsConfigMap.get("config");
+            // 端口校验
+            Object port = configMap.get("port");
+            if (ToolUtil.isNotEmpty(port)) {
+                flag = CommonUtils.checkPort(port.toString());
+                if (!flag) {
+                    throw new NZException(RCode.MODULE_PORT_ERROR);
+                }
+            }
 
-            try {
-                JSONArray.parseArray(JSONObject.toJSONString(walk));
-            } catch (JSONException e) {
-                throw new NZException(RCode.MODULE_SNMP_WALK_FORMAT);
+            String protocol = (String) configMap.get("protocol");
+
+            // 校验 type 类型是否在枚举范围内
+            if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                throw new NZException(RCode.MODULE_TYPE_INVALID);
+            }
+
+            // snmp 类型校验 config
+            if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                // snmpCredentialsId 必须存在
+                Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+
+                SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+                ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
+
+                Object walk = configMap.get("walk");
+                ValidateUtils.is(walk).notNull(RCode.MODULE_SNMP_WALK_ISNULL);
+
+                try {
+                    JSONArray.parseArray(JSONObject.toJSONString(walk));
+                } catch (JSONException e) {
+                    throw new NZException(RCode.MODULE_SNMP_WALK_FORMAT);
+                }
             }
         }
     }
@@ -217,29 +253,36 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 1. 校验
         this.validateModuleInfo(module);
 
-        // 2. snmp 类型处理
-        if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, module.getType())) {
-            // port  缺省值
-            Map configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
-            Object port = configMap.get("port");
+        List<Map> configMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
+        Map metricsConfigMap = configMapList.stream().filter(map -> {
+            String configType = (String) map.get("type");
+            return StrUtil.equals("metrics", configType);
+        }).findFirst().get();
 
-            if (ToolUtil.isEmpty(port)) {
-                configMap.put("port", Constant.SNMP_DEFAULT_PORT);
-                module.setConfigs(JSONObject.toJSONString(configMap));
-            }
+        if (metricsConfigMap != null) {
+            Map configMap = (Map) metricsConfigMap.get("config");
+            String protocol = (String) configMap.get("protocol");
+            // 2. snmp 类型处理
+            if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                // port  缺省值
+                Object port = configMap.get("port");
+                if (ToolUtil.isEmpty(port)) {
+                    configMap.put("port", Constant.SNMP_DEFAULT_PORT);
+                    module.setConfigs(JSONObject.toJSONString(configMapList));
+                }
 
-            // 处理snmYml字段
-            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-            String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), module);
-            module.setSnmpYml(snmpYml);
-        } else {
-            // http port 缺省值设置
-            Map configMap = JSONObject.parseObject(module.getConfigs(), Map.class);
-            Object port = configMap.get("port");
+                // 处理snmYml字段
+                Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), module);
+                module.setSnmpYml(snmpYml);
+            } else {
+                // http port 缺省值设置
+                Object port = configMap.get("port");
 
-            if (ToolUtil.isEmpty(port)) {
-                configMap.put("port", 9100);
-                module.setConfigs(JSONObject.toJSONString(configMap));
+                if (ToolUtil.isEmpty(port)) {
+                    configMap.put("port", 9100);
+                    module.setConfigs(JSONObject.toJSONString(configMapList));
+                }
             }
         }
 
@@ -269,14 +312,24 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         // 2. 校验
         this.validateModuleInfo(moduleEntity);
 
-        // 3. snmp 类型 ， 处理 snmpYml 字段 , 如果 module 名称发生改动
-        if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, moduleEntity.getType())) {
-            Map configMap = JSONObject.parseObject(moduleEntity.getConfigs(), Map.class);
-            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
-            String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), moduleEntity);
-            moduleEntity.setSnmpYml(snmpYml);
-        }else{
-            moduleEntity.setSnmpYml("{}");
+        // 3. snmp yml
+        List<Map> configMapList = JSONObject.parseArray(moduleEntity.getConfigs(), Map.class);
+        Map metricsConfigMap = configMapList.stream().filter(map -> {
+            String configType = (String) map.get("type");
+            return StrUtil.equals("metrics", configType);
+        }).findFirst().get();
+
+        if (metricsConfigMap != null) {
+            Map configMap = (Map) metricsConfigMap.get("config");
+            String protocol = (String) configMap.get("protocol");
+            // snmp 类型 ， 处理 snmpYml 字段 , 如果 module 名称发生改动
+            if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), moduleEntity);
+                moduleEntity.setSnmpYml(snmpYml);
+            } else {
+                moduleEntity.setSnmpYml("{}");
+            }
         }
 
         // 4. 修改了 project ， 修改 topo config
@@ -344,10 +397,10 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             camelToUnderlineMap.put(underlineKey, entry.getValue());
         }
 
-        if(Constant.SNMPV1.equals(type) || Constant.SNMPV2.equals(type)){
+        if (Constant.SNMPV1.equals(type) || Constant.SNMPV2.equals(type)) {
             if (ToolUtil.isNotEmpty(camelToUnderlineMap.get("read_community"))) {
                 camelToUnderlineMap.put("community", camelToUnderlineMap.get("read_community"));
-            }else{
+            } else {
                 camelToUnderlineMap.put("community", Constant.SNMP_DEFAULT_COMMUNITY);
             }
         }
@@ -378,7 +431,12 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         Map modules = new HashMap();
 
         Map module = new HashMap();
-        module.put(moduleEntity.getName(), this.handleGenerateParam(snmpCredentialsId, moduleEntity.getConfigs()));
+        List<Map> configMapList = JSONObject.parseArray(moduleEntity.getConfigs(), Map.class);
+        Map metricsConfigMap = configMapList.stream().filter(map -> {
+            String configType = (String) map.get("type");
+            return StrUtil.equals("metrics", configType);
+        }).findFirst().get();
+        module.put(moduleEntity.getName(), this.handleGenerateParam(snmpCredentialsId, metricsConfigMap.get("config").toString()));
 
         modules.put("modules", module);
 
@@ -436,7 +494,334 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         } catch (RuntimeException e) {
             log.error("无法读取snmp.yml文件的内容", e);
         }
-        return snmpYml;
+        return StrUtil.emptyToDefault(snmpYml, "{}");
+    }
+
+    @Override
+    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        Map<String, String> exportHeaderMap;
+        if (map.get(language) != null) {
+            exportHeaderMap = (Map) map.get(language);
+        } else {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        SXSSFWorkbook workbook = null;
+        try {
+            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Module", true);
+            String fileName = "ModuleExportTemplate.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Module 模板生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("获取 Module 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                IOUtils.closeQuietly(workbook);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelImport(String seq) {
+        // project
+        monitorProjectService.remove(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getSeq, seq));
+
+        // 删除 Module
+        this.remove(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getSeq, seq));
+    }
+
+    @Override
+    public Map importDatacentersFromExcel(MultipartFile excelFile, String language) {
+        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+
+        Sheet sheet = work.getSheetAt(0);
+
+        // 表头校验
+        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER));
+        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
+        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
+        if (!headerFlag) {
+            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
+        }
+
+        Map<String, String> exportHeader = (Map) map.get(language);
+        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+
+        List<Map> failDetails = new ArrayList<>();
+        String seqUUID = UUID.randomUUID().toString();
+
+        int successNum = this.saveModulesFromSheet(sheet, failDetails, headerInfos, seqUUID);
+        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+        Map resultMap = new HashMap(8);
+        resultMap.put("seq", seqUUID);
+        resultMap.put("totalNum", totalNum);
+        resultMap.put("successNum", successNum);
+        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("failDetail", CommonUtils.handleImportFailDetails(failDetails));
+        return resultMap;
+    }
+
+    private int saveModulesFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+        int successNum = 0;
+        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+            int dataFromExcelRowNum = i + 1;
+            boolean saveFlag = true;
+
+            String moduleName = ExcelUtils.getCellValue(row.getCell(0));
+            if (StringUtils.isEmpty(moduleName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.MODULE_NAME_ISNULL.getMsg());
+            } else {
+                int countByName = this.count(new QueryWrapper<MonitorModule>().lambda().eq(MonitorModule::getName, moduleName));
+                if (countByName > 0) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.MODULE_NAME_DUPLICATE.getMsg());
+                }
+            }
+
+            String projectName = ExcelUtils.getCellValue(row.getCell(1));
+            if (StringUtils.isEmpty(projectName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.PROJECT_NAME_ISNULL.getMsg());
+            }
+
+            String configStr = ExcelUtils.getCellValue(row.getCell(3));
+            if (StringUtils.isEmpty(configStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_ISNULL.getMsg());
+            } else {
+                List<Map> configMapList = null;
+                try {
+                    configMapList = JSONObject.parseArray(configStr, Map.class);
+                } catch (JSONException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_FORMAT.getMsg());
+                }
+                if (saveFlag && Tool.CollectionUtil.isEmpty(configMapList)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_ISNULL.getMsg());
+                }else if(saveFlag && Tool.CollectionUtil.isNotEmpty(configMapList)){
+                    long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
+                    if (countByType != configMapList.size()) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_CONFIGS_TYPE_DUPLICATE.getMsg());
+                    }
+                    Map metricsConfigMap = configMapList.stream().filter(map -> {
+                        String configType = (String) map.get("type");
+                        return StrUtil.equals("metrics", configType);
+                    }).findFirst().get();
+                    if (metricsConfigMap != null) {
+                        Map configMap = (Map) metricsConfigMap.get("config");
+                        Object port = configMap.get("port");
+                        if (ToolUtil.isNotEmpty(port)) {
+                            if (!CommonUtils.checkPort(port.toString())) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_PORT_ERROR.getMsg());
+                            }
+                        }
+                        String protocol = (String) configMap.get("protocol");
+                        if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_TYPE_INVALID.getMsg());
+                        }
+
+                        if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                            Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                            if (ToolUtil.isEmpty(snmpCredentialsId)) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.SNMP_CREDENTIAL_ID_ISNULL.getMsg());
+                            }
+
+                            SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+                            if (ToolUtil.isEmpty(snmpCredential)) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.SNMP_CREDENTIAL_NOT_FOUND.getMsg());
+                            }
+
+                            Object walk = configMap.get("walk");
+                            if (ToolUtil.isEmpty(walk)) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_SNMP_WALK_ISNULL.getMsg());
+                            }
+                            try {
+                                JSONArray.parseArray(JSONObject.toJSONString(walk));
+                            } catch (JSONException e) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_SNMP_WALK_FORMAT.getMsg());
+                            }
+                        }
+                    }
+                }
+            }
+
+            String chartNames = ExcelUtils.getCellValue(row.getCell(4));
+            StringBuilder relChartTemplateIds = new StringBuilder();
+            if (StringUtils.isNotEmpty(chartNames)) {
+                String[] split = chartNames.split(",");
+                for (String chartName : split) {
+                    List<VisualChart> list = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).eq(VisualChart::getName, chartName));
+                    // VarType 2 为  endpoint
+                    list = list.stream().filter(chart -> chart.getVarType() == 2).collect(Collectors.toList());
+                    if (Tool.CollectionUtil.isEmpty(list)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_NOTEXSITS.getMsg());
+                    } else if (list.size() == 1) {
+                        // 类型为 endpoint ,且通过名称只关联一个
+                        relChartTemplateIds.append(list.get(0).getId());
+                        relChartTemplateIds.append(",");
+                    } else if (list.size() > 1) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_NAME_DUPLICATE_NOTLINK.getMsg());
+                    }
+                }
+            }
+
+            if (saveFlag) {
+                String endpointNameTmpl = ExcelUtils.getCellValue(row.getCell(2));
+                String remark = ExcelUtils.getCellValue(row.getCell(5));
+
+                DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
+
+                MonitorModule module = new MonitorModule();
+                try {
+                    MonitorProject project = monitorProjectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getName, projectName));
+                    if (project == null) {
+                        project = new MonitorProject();
+                        project.setSeq(seqUUID);
+                        project.setName(projectName);
+                        monitorProjectService.save(project);
+                    }
+
+                    module.setProjectId(project.getId());
+                    module.setName(moduleName);
+                    endpointNameTmpl = StrUtil.isEmpty(endpointNameTmpl) ? "{{asse.host}}-{{module.name}}" : endpointNameTmpl;
+                    module.setEndpointNameTmpl(endpointNameTmpl);
+                    module.setRemark(remark);
+                    String chartIds = relChartTemplateIds.toString();
+                    module.setChartIds(StrUtil.isNotEmpty(chartIds) ? chartIds.substring(0, chartIds.length() - 1) : "");
+                    module.setSeq(seqUUID);
+                    module.setConfigs(configStr);
+
+                    List<Map> configMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
+                    Map metricsConfigMap = configMapList.stream().filter(map -> {
+                        String configType = (String) map.get("type");
+                        return StrUtil.equals("metrics", configType);
+                    }).findFirst().get();
+
+                    Map configMap = (Map) metricsConfigMap.get("config");
+                    String protocol = (String) configMap.get("protocol");
+                    if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        Object port = configMap.get("port");
+                        if (ToolUtil.isEmpty(port)) {
+                            configMap.put("port", Constant.SNMP_DEFAULT_PORT); // port  缺省值
+                            module.setConfigs(JSONObject.toJSONString(configMapList));
+                        }
+
+                        // 处理snmYml字段
+                        Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                        String snmpYml = this.generateYmlFromSnmpParam(snmpCredentialsId.toString(), module);
+                        module.setSnmpYml(snmpYml);
+                    } else {
+                        Object port = configMap.get("port");
+                        if (ToolUtil.isEmpty(port)) {
+                            configMap.put("port", 9100); // http port 缺省值设置
+                            module.setConfigs(JSONObject.toJSONString(configMapList));
+                        }
+                    }
+
+                    this.save(module);
+
+                    dataSourceTransactionManager.commit(transactionStatus);
+                    successNum++;
+                } catch (RuntimeException e) {
+                    dataSourceTransactionManager.rollback(transactionStatus);
+                    log.error(String.format("module 导入保存失败,实体信息是：%s,错误信息是：%s", JSONObject.toJSONString(module), e.getMessage()), e);
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.EXCELFILE_IMPORT_ERROR.getMsg());
+                }
+            }
+        }
+        return successNum;
+    }
+
+    private void addFailDetail(int i, List<Map> failDetails, String headerInfo, String msg) {
+        Map failDetail = new HashMap(4);
+        failDetail.put("lineNo", i);
+        failDetail.put("errorMsg", headerInfo + ": " + msg);
+        failDetails.add(failDetail);
+    }
+
+    @Override
+    public void export(HttpServletResponse response, Map<String, Object> params) {
+        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MODULE_EXPORT_HEADER));
+        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+
+        PageUtils page = this.queryPage(params);
+        List<MonitorModule> list = (List<MonitorModule>) page.getList();
+
+        SXSSFWorkbook workbook = null;
+        try {
+            // 添加标题行 默认语言 en
+            String language = (String) params.get("language");
+            language = ToolUtil.isEmpty(language) ? "en" : language;
+
+            String sheetName = "Monitor modules";
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            SXSSFSheet sheet = workbook.getSheet(sheetName);
+
+            this.fillData(list, 1, sheet, workbook);
+
+            // 响应为流
+            String fileName = "Modules.xlsx";
+            response.setContentType("application/excel");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
+            workbook.write(response.getOutputStream());
+        } catch (IOException e) {
+            log.error("Modules 导出文件生成失败，错误信息是：" + e.getMessage(), e);
+        } catch (RuntimeException e) {
+            log.error("Dc 导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
+        } finally {
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+        }
+    }
+
+    private void fillData(List<MonitorModule> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+        for (MonitorModule module : list) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(module.getName());
+            row.createCell(1).setCellValue(module.getProject().getName());
+            row.createCell(2).setCellValue(ObjectUtil.defaultIfNull(module.getEndpointNameTmpl(), ""));
+            row.createCell(3).setCellValue(ObjectUtil.defaultIfNull(module.getConfigs(), ""));
+            String chartIds = module.getChartIds();
+            String chartNames = "";
+            if (StrUtil.isNotEmpty(chartIds)) {
+                List<VisualChart> chartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
+                for (VisualChart chart : chartList) {
+                    chartNames += chart.getName() + ",";
+                }
+                chartNames = StrUtil.isNotEmpty(chartNames) ? chartNames.substring(0, chartNames.length() - 1) : chartNames;
+            }
+            row.createCell(4).setCellValue(ObjectUtil.defaultIfNull(chartNames, "").toString());
+            row.createCell(5).setCellValue(ObjectUtil.defaultIfNull(module.getRemark(), "").toString());
+
+            // 设置单元格样式
+            ExcelUtils.setDataCellStyle(dataStyle, row, 5);
+        }
     }
 
 }
