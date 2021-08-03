@@ -361,13 +361,15 @@ public class PromProxyController {
 			return null;
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		GZIPOutputStream gzip;
+		GZIPOutputStream gzip = null;
 		try {
 			gzip = new GZIPOutputStream(out);
 			gzip.write(str.getBytes());
-			gzip.close();
+			// gzip.close();
 		} catch (IOException e) {
 			logger.error(e);
+		} finally {
+			IOUtils.closeQuietly(gzip, out);
 		}
 		return out.toByteArray();
 	}
