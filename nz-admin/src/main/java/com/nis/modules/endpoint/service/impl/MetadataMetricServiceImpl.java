@@ -31,7 +31,7 @@ public class MetadataMetricServiceImpl implements MetadataMetricService {
 		queryParam.put("match_target", DigestUtils.urlEncode(endpoint));
 		String url = "/api/v1/targets/metadata";
 		JSONObject result = promserverProxyService.promRequest(url, "GET",queryParam, null, null, 2, endpointId);
-		if (result != null && result.get("status").equals("success")) {
+		if (result != null && "success".equals(result.get("status"))) {
 			JSONArray array = (JSONArray) result.get("data");
 			JSONObject jsonObject;
 			MetadataMetric metadataMetric;

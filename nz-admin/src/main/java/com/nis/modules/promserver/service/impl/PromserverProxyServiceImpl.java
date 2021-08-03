@@ -1,5 +1,7 @@
 package com.nis.modules.promserver.service.impl;
 
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -24,8 +26,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -55,7 +56,7 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
 
     	// confagent 项目请求前缀
 	    SysConfigEntity confagentPathConfig = sysConfService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-	    url += confagentPathConfig + "/prometheus/proxy";
+	    url += confagentPathConfig.getParamValue() + "/prometheus/proxy";
 
 	    Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 	    String promUrl = genPromUrl(server.getHost(), server.getPort(), url, method, params);
@@ -126,12 +127,13 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     		queryStr= genQueryString(params);
     	}
     	String result=null;
-		try {
+		/*try {
 			result=new URL("http", host,port,url+"?"+queryStr.toString()).toString();
 		} catch (MalformedURLException e) {
 			logger.error(e);
-		}
-		return result;
+		}*/
+	    result = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(url, Charset.forName("UTF-8"))).toURL().toString() + queryStr.toString();
+	    return result;
     }
     
     /**
