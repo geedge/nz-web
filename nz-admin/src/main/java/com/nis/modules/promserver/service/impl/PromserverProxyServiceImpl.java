@@ -127,12 +127,12 @@ public class PromserverProxyServiceImpl implements PromserverProxyService {
     		queryStr= genQueryString(params);
     	}
     	String result=null;
+	    result = UrlBuilder.of("http", host, port, url, queryStr, null, Charset.forName("utf-8")).build();
 		/*try {
 			result=new URL("http", host,port,url+"?"+queryStr.toString()).toString();
 		} catch (MalformedURLException e) {
 			logger.error(e);
 		}*/
-	    result = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(url, Charset.forName("UTF-8"))).toURL().toString() + queryStr.toString();
 	    return result;
     }
     
