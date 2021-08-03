@@ -127,6 +127,20 @@ public class LokiProxyController {
     public void requestProm(String host, int port, String path, String token, HttpServletRequest request, HttpServletResponse response) {
         String queryString = ReflectUtil.invoke(request, "getQueryString");
 
+        if ("/loki/api/v1/query_range".equals(path)) {
+            String limit = request.getParameter("limit");
+            if (StrUtil.isEmpty(limit)) {
+                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKI_QUERY_RANGE_DEFAULT_LIMIT));
+                String defaultLimitVal;
+                if (configEntity != null) {
+                    defaultLimitVal = configEntity.getParamValue();
+                } else {
+                    defaultLimitVal = "1000";
+                }
+                queryString = String.format("limit=%s&%s", defaultLimitVal, queryString);
+            }
+        }
+
         String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(path, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
         log.debug("loki url: {}", url);
         String method = request.getMethod();
