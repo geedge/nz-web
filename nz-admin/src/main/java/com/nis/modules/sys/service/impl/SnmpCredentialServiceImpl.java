@@ -68,9 +68,9 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 	public void validateSnmpCredential(SnmpCredential snmpCredential) {
 		ValidateUtils.is(snmpCredential.getName()).notNull(RCode.SNMP_CREDENTIAL_NAME_ISNULL).maxLength(64)
 		.and(snmpCredential.getType()).notNull(RCode.SNMP_CREDENTIAL_TYPE_ISNULL)
-		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL).maxLength(64)
+		.and(snmpCredential.getConfig()).notNull(RCode.SNMP_CREDENTIAL_CONFIG_ISNULL).maxLength(1024)
 		.and(snmpCredential.getPort()).notNull(RCode.SNMP_CREDENTIAL_PORT_ISNULL)
-		.and(snmpCredential.getRemark()).maxLength(1024);
+		.and(snmpCredential.getRemark()).maxLength(256);
 		// 当snmp为v3版本时进行参数校验
 		if(ToolUtil.equals(snmpCredential.getType(), 3)) {
 			SnmpUtil.ValidateAuthForSnmpV3((Map)JSON.parseObject(snmpCredential.getConfig()));
