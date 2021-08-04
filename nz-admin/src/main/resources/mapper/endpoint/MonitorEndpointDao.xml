@@ -7,17 +7,11 @@
         <result property="name" column="name"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
-        <result property="hash" column="hash"/>
-        <result property="enabled" column="enabled"/>
-        <result property="configs" column="configs"/>
         <result property="alertNum" column="alertNum"/>
-
-        <result column="es_state" property="state"/>
 
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
 	    	<id column="id" property="id"/>
 	    	<result column="name" property="name"/>
-	    	<result column="type" property="type"/>
 	    </association>
 
 	    <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
@@ -43,9 +37,6 @@
         <result property="name" column="name"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
-        <result property="hash" column="hash"/>
-        <result property="enabled" column="enabled"/>
-        <result property="configs" column="configs"/>
 
         <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
             <id column="id" property="id"/>
@@ -53,7 +44,6 @@
             <result column="project_id" property="projectId"/>
             <result column="configs" property="configs"/>
             <result column="snmp_yml" property="snmpYml"/>
-            <result column="type" property="type"/>
         </association>
 
         <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
@@ -81,9 +71,6 @@
         <result property="name" column="name"/>
         <result property="moduleId" column="module_id"/>
         <result property="assetId" column="asset_id"/>
-        <result property="hash" column="hash"/>
-        <result property="enabled" column="enabled"/>
-        <result property="configs" column="configs"/>
 
         <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
             <id column="id" property="id"/>
@@ -111,7 +98,6 @@
         e.*,
         m.id AS m_id,
         m.name AS m_name,
-        m.type AS m_type,
         a.id AS a_id,
         a.manage_ip AS a_manage_ip,
         a.sn AS a_sn,
@@ -122,14 +108,14 @@
         a.NAME AS a_name,
         p.id AS p_id,
         p.NAME AS p_name,
-        es.state AS es_state,
         count( DISTINCT msg.id ) AS alertNum
         FROM
         monitor_endpoint e
         LEFT JOIN monitor_module m ON e.module_id = m.id
         LEFT JOIN monitor_project p ON m.project_id = p.id
+        LEFT JOIN monitor_endpoint_config ec ON e.id = ec.endpoint_id
+        LEFT JOIN monitor_endpoint_state es ON es.endpoint_id = ec.endpoint_id AND es.config_id = ec.id
         LEFT JOIN asset_asset a ON e.asset_id = a.id
-        LEFT JOIN monitor_endpoint_state es ON e.id = es.endpoint_id
         LEFT JOIN alert_message_active msg ON e.id = msg.endpoint_id
 
         <where>
@@ -181,6 +167,13 @@
            <if test="params.assetName != null and params.assetName != ''">
                AND a.name like CONCAT('%', #{params.assetName}, '%')
            </if>
+
+            <if test="params.types != null and params.types.length > 0">
+                AND ec.type IN
+                <foreach collection="params.types" item="type" index="no" open="(" separator="," close=")">
+                    #{type}
+                </foreach>
+            </if>
 
        </where>
 

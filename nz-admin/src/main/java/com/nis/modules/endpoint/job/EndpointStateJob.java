@@ -73,7 +73,7 @@ public class EndpointStateJob extends QuartzJobBean {
     @Transactional(rollbackFor = Exception.class)
     public void updateEndpointStatus() {
         // 随机获取一个 Global Prometheus
-        Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
+        /*Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
         if (promserver == null) {
             log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 promserver");
             this.allEndpointStateDown();
@@ -132,18 +132,18 @@ public class EndpointStateJob extends QuartzJobBean {
 
         // 保存
         endpointStateDao.deleteAll();
-        endpointStateService.saveBatch(upEndpointStateList);
+        endpointStateService.saveBatch(upEndpointStateList);*/
     }
 
     /**
      * 全部 endpoint 状态为 down
      */
     private void allEndpointStateDown() {
-        endpointStateDao.deleteAll();
+        /*endpointStateDao.deleteAll();
         List<MonitorEndpoint> endpointList = endpointService.list();
         List<MonitorEndpointState> stateList = new ArrayList<>(endpointList.size());
         endpointList.forEach(endpoint -> stateList.add(new MonitorEndpointState(endpoint.getId(), 0, new Date())));
-        endpointStateService.saveBatch(stateList);
+        endpointStateService.saveBatch(stateList);*/
     }
 
     /**

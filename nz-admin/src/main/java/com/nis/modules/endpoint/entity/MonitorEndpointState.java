@@ -24,7 +24,13 @@ public class MonitorEndpointState implements Serializable {
     @TableId(type = IdType.INPUT)
 	private Integer endpointId;
 
+    private Integer configId;
+
+    private String type;
+
     private Integer state;
+
+    private Integer ver;
 
     private Date time;
 

@@ -61,20 +61,31 @@ public class MonitorEndpointController {
     @PostMapping("/endpoint")
     @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ENDPOINT)
     @RequiresPermissions({"endpoint:save"})
-    public R saveEndpoint(@RequestBody List<MonitorEndpoint> endpointList) {
-        monitorEndpointService.saveOrUpdateBatchEndpointList(endpointList);
-        return R.ok();
+    public R saveEndpoint(@RequestBody MonitorEndpoint endpoint) {
+        ValidateUtils.is(endpoint.getName()).notNull(RCode.ENDPOINT_NAME_ISNULL).maxLength(128)
+                .and(endpoint.getModuleId()).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
+                .and(endpoint.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
+
+        return R.ok().putData("id", monitorEndpointService.saveEndpoint(endpoint));
     }
 
     @PutMapping("/endpoint")
     @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.ENDPOINT)
     @RequiresPermissions({"endpoint:update"})
-    public R modify(@RequestBody List<MonitorEndpoint> endpointList) {
-        for (MonitorEndpoint endpointEntity : endpointList) {
-            ValidateUtils.is(endpointEntity.getId()).notNull(RCode.ENDPOINT_ID_ISNULL);
-        }
-        monitorEndpointService.saveOrUpdateBatchEndpointList(endpointList);
-        return R.ok();
+    public R modify(@RequestBody MonitorEndpoint endpoint) {
+        ValidateUtils.is(endpoint.getId()).notNull(RCode.ENDPOINT_ID_ISNULL)
+                .and(endpoint.getName()).notNull(RCode.ENDPOINT_NAME_ISNULL).maxLength(128)
+                .and(endpoint.getModuleId()).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
+                .and(endpoint.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
+
+        return R.ok().putData("id", monitorEndpointService.updateEndpoint(endpoint));
+    }
+
+    @PostMapping("/endpoint/bulk")
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.ENDPOINT)
+    @RequiresPermissions({"endpoint:save"})
+    public R saveBatchEndpoint(@RequestBody List<MonitorEndpoint> endpointList) {
+        return R.ok(monitorEndpointService.saveBatchEndpoint(endpointList));
     }
 
     @DeleteMapping("/endpoint")
@@ -132,23 +143,12 @@ public class MonitorEndpointController {
         monitorEndpointService.export(response, params);
     }
 
-    /**
-     * 配置变量内容替换
-     * @param params
-     * @return
-     */
-    @PostMapping("/endpoint/render")
-	public R render(@RequestBody List<Map<String,Object>> params) {
-		
-    	List<Map<String, Object>> result = monitorEndpointService.render(params);
-		return R.ok().putData("list", result);
-	}
-    
-    @PutMapping("/endpoint/render")
-	public R renderPutMethod(@RequestBody List<Map<String,Object>> params) {
-		
-    	List<Map<String, Object>> result = monitorEndpointService.render(params);
-		return R.ok().putData("list", result);
-	}
+    @RequestMapping(value = "/endpoint/render", method = {RequestMethod.POST, RequestMethod.PUT})
+    public R render(@RequestBody Map<String, String> params) {
+        ValidateUtils.is(params.get("moduleIds")).notNull(RCode.MODULE_ID_ISNULL)
+                .and(params.get("assetIds")).notNull(RCode.ASSET_ID_ISNULL);
+
+        return R.ok().putData("list", monitorEndpointService.render(params));
+    }
 }
 

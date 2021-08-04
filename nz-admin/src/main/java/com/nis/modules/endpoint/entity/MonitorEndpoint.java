@@ -12,7 +12,6 @@ import com.nis.modules.promserver.entity.Promserver;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Map;
 
 @Data
 @TableName("monitor_endpoint")
@@ -40,29 +39,10 @@ public class MonitorEndpoint implements Serializable {
 	 */
 	private Integer assetId;
 
-	/**
-	 * 配置参数 当type=HTTP,默认为 module.configs
-	 */
-	private String configs;
-
-	@TableField(exist = false)
-	private Map config;
-	/**
-	 * 计算 moduleId + assetId + host + port + configs 的hash值，用于确保相同配置不重复
-	 */
-	private String hash;
-
-	/**
-	 * 是否启用 可选值
-	 * 0：停用
-	 * 1：启用
-	 */
-	private Integer enabled;
-
 	private String seq;
 
 	@TableField(exist = false)
-	private Integer state;
+	private Object configs;
 
 	@TableField(exist = false)
 	private MonitorModule module;

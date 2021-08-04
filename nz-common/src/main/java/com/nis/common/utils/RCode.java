@@ -161,7 +161,7 @@ public enum RCode {
     SYS_CONFIG_MODULEKEY_ISNULL(221009, "System config init module node exporter can not be null"),// 内置module不能为空
     MODULE_NAME_DUPLICATE(222010, "Module name is duplicate"),
     MODULE_TYPE_ISNULL(221011, "Module type can not be empty"),
-    MODULE_TYPE_INVALID(224012, "Module type must be http or snmp"),
+    MODULE_PROTOCOL_INVALID(224012, "Module protocol must be http or snmp"),
     MODULE_SNMPVERSION_INVALID(224013,"Snmp version must be 2 or 3"),
     MODULE_AUTHSECURITYLEVEL_INVALID(224014,"Security level must be one of authPriv, authNoPriv or noAuthNoPriv"),
     MODULE_PRIVPASSWORD_ISNULL(221015,"Priv password is missing, required for SNMPv3 with priv"),
@@ -172,7 +172,7 @@ public enum RCode {
     MODULE_REMOVE_ERROR(223020,"These modules contains endpoint can't remove modules"),
     MODULE_NOTFOUND(226021, "Module not found"),
     MODULE_NOTEXIS_PROJECT(226022, "Module does not exist in the current project"),
-    MODULE_TYPE_INCONSISTENT(223023, "Module type is inconsistent with the filling type"),
+    MODULE_TYPE_INCONSISTENT(223023, "Module type is invalid"),
     MODULE_SNMP_NOTEXIST(226024, "SNMP type module must exist"),
     MODULE_LABELS_FORMAT(223025,"Module labels must be JSON format"),
     MODULE_LABELS_KEY_FORMAT(223026,"Module labels key format is incorrect"),
@@ -183,6 +183,7 @@ public enum RCode {
     MODULE_SNMP_WALK_FORMAT(223031,"Module walk oids format error"),
     MODULE_SEQ_ISNULL(221032, "Cancel import serial number is empty"),
     MODULE_CONFIGS_TYPE_DUPLICATE(222033, "Module config type is duplicate"),
+    MODULE_CONFIG_FILENAME_ISNULL(221034, "Module config file path is null"),
 
     ENDPOINT_ID_ISNULL(231000, "Endpoint id can not be empty"),
     ENDPOINT_MODULEID_ISNULL(231001, "Module Id can not be empty"),
@@ -215,6 +216,12 @@ public enum RCode {
     ENDPOINT_ASSET_NAME_HOST_ISNULL(231028, "Asset name and host cannot be empty at the same time"),
     ENDPOINT_IMPORT_ERROR(233029, "Endpoint template import error"),
     ENDPOINT_CONFIGS_FORMAT(233030,"Endpoint configs must be JSON format"),
+    ENDPOINT_PROTOCOL_INVALID(234031, "Endpoint protocol must be http or snmp"),
+    ENDPOINT_SNMP_WALK_FORMAT(233032,"Endpoint walk oids format error"),
+    ENDPOINT_SNMP_WALK_ISNULL(231033,"Snmp type module walk oids cannot be empty"),
+    ENDPOINT_TYPE_ISNULL(231034, "Endpoint type can not be empty"),
+    ENDPOINT_TYPE_INVALID(233035, "Endpoint type is invalid"),
+    ENDPOINT_CONFIGS_TYPE_DUPLICATE(232036, "Endpoint config type is duplicate"),
 
     /**
      * assets菜单项相关

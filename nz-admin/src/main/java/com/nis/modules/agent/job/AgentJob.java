@@ -106,7 +106,7 @@ public class AgentJob extends QuartzJobBean {
         sw.start();
         try {
             // 配置下发
-            this.setUpAgentConfig();
+            // this.setUpAgentConfig();
         } catch (RuntimeException e) {
             log.error("agent 同步异常", e);
         } finally {
@@ -673,7 +673,7 @@ public class AgentJob extends QuartzJobBean {
      */
     private List<MonitorEndpoint> handleEndpointConfigForTmpl(List<MonitorEndpoint> endpointList, Promserver promserver) {
         for (MonitorEndpoint endpoint : endpointList) {
-            endpoint.setConfig(JSONObject.parseObject(endpoint.getConfigs(), Map.class));
+            //endpoint.setConfig(JSONObject.parseObject(endpoint.getConfigs(), Map.class));
 
             // project name 处理
             MonitorProject project = endpoint.getProject();
@@ -746,7 +746,8 @@ public class AgentJob extends QuartzJobBean {
         Map<Integer, Integer> endpointIdAndPromIdMap = new LinkedHashMap(16);
 
         // endpoint hash 处理
-        Map<Integer, String> endpointIdAndHashMap = endpointListByDc.stream().collect(Collectors.toMap(MonitorEndpoint::getId, MonitorEndpoint::getHash));
+//        Map<Integer, String> endpointIdAndHashMap = endpointListByDc.stream().collect(Collectors.toMap(MonitorEndpoint::getId, MonitorEndpoint::getHash));
+        Map<Integer, String> endpointIdAndHashMap = new HashMap<>();
         for (Map.Entry<Integer, String> entry : endpointIdAndHashMap.entrySet()) {
             Integer endpointId = entry.getKey();
             String endpointHash = entry.getValue();

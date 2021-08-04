@@ -18,8 +18,6 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     List<MonitorProject> queryEndpointTree(String name);
 
-    void saveOrUpdateBatchEndpointList(List<MonitorEndpoint> endpointList);
-
     void deleteEndpointByIds(List<Integer> ids);
 
     void getExportTemplateByLanguage(HttpServletResponse response, String language);
@@ -40,9 +38,14 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      */
     List<MonitorEndpoint> getEnableEndpointInfoList();
 
-    List<Map<String,Object>> render(List<Map<String,Object>> params);
-
     // endpoint 列表，包含 asset dc prom_server 数据
     List<MonitorEndpoint> endpointDetailList();
 
+    Integer saveEndpoint(MonitorEndpoint endpoint);
+
+    Integer updateEndpoint(MonitorEndpoint endpoint);
+
+    Map saveBatchEndpoint(List<MonitorEndpoint> endpointList);
+
+    List<Map> render(Map<String, String> params);
 }

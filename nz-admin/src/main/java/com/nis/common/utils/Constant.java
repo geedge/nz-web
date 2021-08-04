@@ -675,6 +675,26 @@ public class Constant {
 		}
 	}
 
+	public enum MonitorConfType {
+		METRICS("metrics"),
+		LOGS("logs"),
+		TRACE("trace");
+
+		private String value;
+
+		MonitorConfType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
+	}
+
 	// nz-web 新增常量
 
 	// 字典表中 chart 类型的 type 值

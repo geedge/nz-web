@@ -1,8 +1,10 @@
 package com.nis.modules.endpoint.service.impl;
 
 import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -21,7 +23,9 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
@@ -31,14 +35,14 @@ import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
-import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysConfigDao;
+import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -48,8 +52,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -83,10 +90,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private MonitorProjectService monitorProjectService;
 
     @Autowired
-    private VisualExpreTmplService expreTmplService;
-
-    @Autowired
-    private MonitorEndpointStateService monitorEndpointStateService;
+    private MonitorEndpointStateService endpointStateService;
 
     @Autowired
     private VisualPanelService visualPanelService;
@@ -96,10 +100,19 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private AlertMessageService alertMessageService;
-    
+
     @Autowired
     private VisualChartElementService visualChartElementService;
-    
+
+    @Autowired
+    private MonitorEndpointConfigService endpointConfigService;
+
+    @Autowired
+    private SnmpCredentialService snmpCredentialService;
+
+    @Autowired
+    private DataSourceTransactionManager dataSourceTransactionManager;
+
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
         MonitorEndpoint endpoint = this.getById(id);
@@ -124,9 +137,18 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             endpoint.setAlertNum(tempAlert.size());
         }
 
-        // state
-        MonitorEndpointState endpointState = monitorEndpointStateService.getById(endpoint.getId());
-        endpoint.setState((endpointState == null) ? 0 : endpointState.getState());
+        // configs
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+        for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
+            endpointConfig.setVer(endpointConfig.getVersion());
+
+            MonitorEndpointState endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+            if (endpointStateByConfigId == null)
+                continue;
+            endpointConfig.setState(endpointStateByConfigId.getState());
+            endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
+        }
+        endpoint.setConfigs(endpointConfigs);
         return endpoint;
     }
 
@@ -138,8 +160,31 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         IPage page = new Query(MonitorEndpoint.class).getPage(params);
         List<MonitorEndpoint> datas = monitorEndpointDao.queryPage(page, params);
 
+        // 查询结果不为空时处理返回结果
+        if (CollectionUtils.isNotEmpty(datas)) {
+            this.handleResuleList(datas);
+        }
+
         page.setRecords(datas);
         return new PageUtils(page);
+    }
+
+    private void handleResuleList(List<MonitorEndpoint> endpointList) {
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
+
+        for (MonitorEndpoint endpoint : endpointList) {
+            List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
+            for (MonitorEndpointConfig endpointConfig : configsByEndpointId) {
+                endpointConfig.setVer(endpointConfig.getVersion());
+
+                MonitorEndpointState endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+                if (endpointStateByConfigId == null)
+                    continue;
+                endpointConfig.setState(endpointStateByConfigId.getState());
+                endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
+            }
+            endpoint.setConfigs(configsByEndpointId);
+        }
     }
 
     private void handleQueryParam(Map<String, Object> params) {
@@ -159,18 +204,22 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if (ToolUtil.isNotEmpty(params.get("assetIds"))) {
             params.put("assetIds", String.valueOf(params.get("assetIds")).split(StringPool.COMMA));
         }
-        // states
-        if (ToolUtil.isNotEmpty(params.get("states"))) {
-            String[] states = String.valueOf(params.get("states")).split(StringPool.COMMA);
+        // state
+        if (ToolUtil.isNotEmpty(params.get("state"))) {
+            String[] states = String.valueOf(params.get("state")).split(StringPool.COMMA);
             params.put("states", states);
             for (String state : states) {
-                if("2".equalsIgnoreCase(state)){
+                if ("2".equalsIgnoreCase(state)) {
                     params.put("suspendedStatus", "2");
                     break;
                 }
             }
         }
 
+        // type
+        if (ToolUtil.isNotEmpty(params.get("type"))) {
+            params.put("types", String.valueOf(params.get("type")).split(StringPool.COMMA));
+        }
     }
 
     @Override
@@ -208,149 +257,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return projectList;
     }
 
-    private void validateParam(List<MonitorEndpoint> endpointList) {
-        List<MonitorModule> moduleList = monitorModuleService.list();
-        List<Integer> moduleIdList = moduleList.stream().map(MonitorModule::getId).collect(Collectors.toList());
-
-        List<AssetAsset> assetList = assetService.list();
-        List<Integer> assetIdList = assetList.stream().map(AssetAsset::getId).collect(Collectors.toList());
-
-        List<Integer> enabledList = Arrays.asList(new Integer[]{1, 0});
-        //String name;
-        Integer moduleId, assetId, enabled;
-        for (MonitorEndpoint endpoint : endpointList) {
-            moduleId = endpoint.getModuleId();
-            assetId = endpoint.getAssetId();
-
-            // 1. 非空校验
-            ValidateUtils.is(moduleId).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
-                    .and(assetId).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
-
-            // 2. module 是否存在
-            if (!moduleIdList.contains(moduleId)) {
-                throw new NZException(RCode.MODULE_NOTFOUND);
-            }
-
-            // 3. asset 是否存在
-            if (!assetIdList.contains(assetId)) {
-                throw new NZException(RCode.ASSET_NOT_EXIST);
-            }
-
-            // 4. enabled 值是否有误
-            enabled = endpoint.getEnabled();
-            if (enabled != null && !enabledList.contains(enabled)) {
-                throw new NZException(RCode.ENDPOINT_ENABLED_INVALIDE);
-            }
-
-            // 5. configs 校验
-            Map configMap = new HashMap();
-            if (endpoint.getConfigs() != null) {
-                try {
-                    configMap  = JSONObject.parseObject(endpoint.getConfigs(), Map.class);
-                } catch (JSONException e) {
-                    throw new NZException(RCode.ENDPOINT_CONFIGS_FORMAT);
-                }
-            }
-
-            // 6. port 校验
-            Object port = configMap.get("port");
-            ValidateUtils.is(port).notNull(RCode.ENDPOINT_PORT_ISNULL);
-            boolean flag = CommonUtils.checkPort(port.toString());
-            if (!flag) {
-                throw new NZException(RCode.ENDPOINT_PORT_ERROR);
-            }
-        }
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void saveOrUpdateBatchEndpointList(List<MonitorEndpoint> endpointList) {
-        // 校验
-        this.validateParam(endpointList);
-
-        List<MonitorModule> moduleList = monitorModuleService.list();
-        Map<Integer, MonitorModule> moduleIdAndModuleInfoMap = moduleList.stream().collect(Collectors.toMap(MonitorModule::getId, Function.identity()));
-
-        List<AssetAsset> assetList = assetService.list();
-        Map<Integer, String> assetIdAndHostMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, AssetAsset::getManageIp));
-
-        List<MonitorEndpoint> endpoints = this.list();
-        Map<Integer, List<MonitorEndpoint>> moduleIdAndEndpointsMap = new HashMap<>();
-        for (MonitorModule module : moduleList) {
-            List<MonitorEndpoint> moduleEndpoints = endpoints.stream().filter(endpoint -> endpoint.getModuleId().equals(module.getId())).collect(Collectors.toList());
-            moduleIdAndEndpointsMap.put(module.getId(), ToolUtil.isEmpty(moduleEndpoints) ? new ArrayList<>() : moduleEndpoints);
-        }
-
-        // 配置信息获取
-        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
-        // endpoint config
-        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
-
-        MonitorModule module;
-        for (MonitorEndpoint endpoint : endpointList) {
-            module = moduleIdAndModuleInfoMap.get(endpoint.getModuleId());
-            if (ToolUtil.isEmpty(endpoint.getEnabled())) {
-                endpoint.setEnabled(1);
-            }
-            if (ToolUtil.isEmpty(endpoint.getConfigs())) {
-                endpoint.setConfigs(module.getConfigs());
-            }
-
-            String configs = endpoint.getConfigs();
-            Map endpointConfigMap = JSONObject.parseObject(configs, Map.class);
-            if (ToolUtil.isEmpty(endpointConfigMap.get("port"))) {
-                Map moduleConfigMap = JSONObject.parseObject(module.getConfigs(), Map.class);
-                endpointConfigMap.put("port", moduleConfigMap.get("port"));
-                endpoint.setConfigs(JSONObject.toJSONString(endpointConfigMap));
-            }
-            if (ToolUtil.isEmpty(endpointConfigMap.get("host"))) {
-                endpointConfigMap.put("host", assetIdAndHostMap.get(endpoint.getAssetId()));
-                endpoint.setConfigs(JSONObject.toJSONString(endpointConfigMap));
-            }
-
-            // 名称为空 则按照 module endpoint 名称模板生成对应名称
-            if (ToolUtil.isEmpty(endpoint.getName())) {
-                AssetAsset asset = assetService.queryAssetInfo(endpoint.getAssetId());
-                MonitorModule module1 = monitorModuleService.queryModuleInfo(endpoint.getModuleId());
-                String generateEndpointName = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
-                endpoint.setName(generateEndpointName);
-            }
-
-            // 校验名称是否重复
-            List<MonitorEndpoint> monitorEndpointList = moduleIdAndEndpointsMap.get(endpoint.getModuleId());
-            MonitorEndpoint monitorEndpoint = monitorEndpointList.stream().filter(entity -> entity.getName().equals(endpoint.getName()) && !entity.getId().equals(endpoint.getId())).findAny().orElse(null);
-            if (ToolUtil.isNotEmpty(monitorEndpoint)) {
-                throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
-            }
-            monitorEndpointList.add(endpoint);
-            moduleIdAndEndpointsMap.put(endpoint.getModuleId(), monitorEndpointList);
-
-            String hash = endpoint.getModuleId() + endpoint.getAssetId() + endpoint.getConfigs();
-            endpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
-
-            // 判断当前操作是新增还是修改标识
-            boolean addEndpoint = false;
-            if(ToolUtil.isEmpty(endpoint.getId())) {
-            	addEndpoint = true;
-            }
-            
-            // 保存 endpoint
-            this.saveOrUpdate(endpoint);
-            
-            if(addEndpoint) {
-                // 新增时需要新增 panel chart
-                visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), null, chartTemplate);
-                
-                // 新增时同时需要新增module下chart ids关联的模板
-                this.saveModuleChartTmpl(endpoint);
-            }
-        }
-    }
-
     public void saveModuleChartTmpl(MonitorEndpoint endpoint) {
-    	MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
-    	if(ToolUtil.isNotEmpty(module) && StrUtil.isNotBlank(module.getChartIds())) {
-    		List<String> list = Arrays.asList(module.getChartIds().split(","));
+        MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+        if (ToolUtil.isNotEmpty(module) && StrUtil.isNotBlank(module.getChartIds())) {
+            List<String> list = Arrays.asList(module.getChartIds().split(","));
             List<Integer> chartIdList = list.stream().map(Integer::parseInt).collect(Collectors.toList());
             // 补充 group 下的 chart id
             List<VisualChart> childCharts = visualChartService.list(new LambdaQueryWrapper<VisualChart>().in(VisualChart::getGroupId, chartIdList));
@@ -358,7 +268,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             chartIdList.addAll(childChartIdList);
             chartIdList = chartIdList.stream().distinct().collect(Collectors.toList());
             List<VisualChart> chartList = visualChartService.queryChartWithElementByIds(chartIdList);
-            
+
             MonitorEndpoint endpointInfo = this.queryEndpointEntity(endpoint.getId());
             VisualPanel endpointPanel = visualPanelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).eq(VisualPanel::getLink, endpoint.getId()));
 
@@ -387,6 +297,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 saveChart.setName(Tool.NzExpressionUtil.renderExpression(chart.getName(), endpointInfo));
                 saveChart.setParam(ToolUtil.isNotEmpty(chart.getParam()) ? Tool.NzExpressionUtil.renderExpression(chart.getParam().toString(), endpoint) : null);
 
+                saveChart.setSeq(endpoint.getSeq());
                 visualChartService.save(saveChart);
 
                 if (Constant.CHART_GROUP_TYPE.equalsIgnoreCase(chart.getType())) {
@@ -398,24 +309,26 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                         chartElement.setId(null);
                         chartElement.setChartId(saveChart.getId());
                         chartElement.setExpression(ToolUtil.isNotEmpty(chartElement.getExpression()) ? Tool.NzExpressionUtil.renderExpression(chartElement.getExpression(), endpoint) : null);
+                        chartElement.setSeq(endpoint.getSeq());
                     }
                     visualChartElementService.saveBatch(saveChart.getElements());
                 }
             }
-    	}
+        }
     }
-    
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteEndpointByIds(List<Integer> ids) {
         // 删除 endpoint
         this.removeByIds(ids);
 
         // 删除 endpoint state
-        monitorEndpointStateService.removeByIds(ids);
+        endpointStateService.removeByIds(ids);
 
         // 删除 alert
         alertMessageService.removeByEndpointIds(ids);
-        
+
         // 删除关联的 panel chart  chartElement信息
         List<VisualPanel> panels = visualPanelService.list(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ENDPOINT.getValue()).in(VisualPanel::getLink, ids));
         if (CollectionUtils.isNotEmpty(panels)) {
@@ -425,6 +338,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 删除 关联通过 chart temp 创建的 charts
         visualChartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 2).in(VisualChart::getVarId, ids));
+
+        // configs
+        endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>().in(MonitorEndpointConfig::getEndpointId, ids));
     }
 
     @Override
@@ -469,6 +385,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 Set<Integer> panelIds = panels.stream().map(VisualPanel::getId).collect(Collectors.toSet());
                 visualPanelService.delPanelsAndChartInfoByPanelIds(panelIds);
             }
+
+            // configs
+            endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getSeq, seq));
         }
     }
 
@@ -506,9 +425,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
-        IPage page = new Query(MonitorEndpoint.class).getPage(params);
-        this.handleQueryParam(params);
-        List<MonitorEndpoint> list = monitorEndpointDao.queryPage(page, params);
+
+        PageUtils page = this.queryPage(params);
+        List<MonitorEndpoint> list = (List<MonitorEndpoint>) page.getList();
 
         SXSSFWorkbook workbook = null;
         try {
@@ -544,12 +463,31 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 // asset name
                 row1.createCell(3).setCellValue(asset.getName());
                 // config
-                row1.createCell(4).setCellValue(endpoint.getConfigs());
-                // enabled
-                row1.createCell(5).setCellValue(endpoint.getEnabled());
+                List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
+                if (Tool.CollectionUtil.isNotEmpty(configs)) {
+                    String metricsConfStr = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).map(MonitorEndpointConfig::getConfig).findFirst().orElse("");
+                    List<String> tempConfigList = new ArrayList<>();
+                    if(StrUtil.isNotEmpty(metricsConfStr)){
+                        tempConfigList.add(metricsConfStr);
+                    }
+
+                    List<String> logsConfigsMap = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.LOGS.getValue().equals(monitorEndpointConfig.getType())).map(MonitorEndpointConfig::getConfig).collect(Collectors.toList());
+                    if (Tool.CollectionUtil.isNotEmpty(logsConfigsMap)) {
+                        List<Map> confMaps = new ArrayList<>();
+                        for (String confStr : logsConfigsMap) {
+                            confMaps.add(JSONObject.parseObject(confStr));
+                        }
+                        Map logsMap = new HashMap();
+                        logsMap.put("type", Constant.MonitorConfType.LOGS.getValue());
+                        logsMap.put("config",confMaps);
+                        tempConfigList.add(JSONObject.toJSONString(logsMap));
+                    }
+
+                    row1.createCell(4).setCellValue(tempConfigList.toString());
+                }
 
                 // 设置单元格样式
-                ExcelUtils.setDataCellStyle(dataStyle, row1, 5);
+                ExcelUtils.setDataCellStyle(dataStyle, row1, 4);
             }
 
             // 响应为流
@@ -593,21 +531,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         List<MonitorModule> moduleList = monitorModuleService.list();
         Map<String, MonitorModule> monitorModuleMap = moduleList.stream().collect(Collectors.toMap(MonitorModule::getName, Function.identity()));
 
-        List<MonitorEndpoint> endpoints = this.list();
-        Map<Integer, List<String>> moduleIdAndEndpointNamesMap = new HashMap<>();
-        for (MonitorModule module : moduleList) {
-            List<String> endpointNames = endpoints.stream().filter(endpoint -> endpoint.getModuleId().equals(module.getId())).map(MonitorEndpoint::getName).collect(Collectors.toList());
-            moduleIdAndEndpointNamesMap.put(module.getId(), ToolUtil.isEmpty(endpointNames) ? new ArrayList<>() : endpointNames);
-        }
-
         List<AssetAsset> assets = assetService.list();
-        Map<String, Integer> assetHostAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getManageIp, AssetAsset::getId));
         Map<String, Integer> assetNameAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
-        Map<Integer, String> assetIdAndHostMap = assets.stream().collect(Collectors.toMap(AssetAsset::getId, AssetAsset::getManageIp));
 
-        // 配置信息获取
+        // endpoint chart template
         SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
-        // endpoint config
         VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
 
         int successNum = 0;
@@ -660,38 +588,100 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
             }
 
-            String configs = ExcelUtils.getCellValue(row.getCell(4));
-            Map<String, Object> configMap = new HashMap();
-            if (StringUtils.isNotEmpty(configs)) {
+            String configStr = ExcelUtils.getCellValue(row.getCell(4));
+            List<Map> configMapList = new ArrayList<>();
+            if (StringUtils.isNotEmpty(configStr)) {
                 try {
-                    configMap = JSONObject.parseObject(configs, Map.class);
-                    // port 校验
+                    configMapList = JSONObject.parseArray(configStr, Map.class);
+                } catch (JSONException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_CONFIGS_FORMAT.getMsg());
+                }
+
+                // 每个 type 最多包含一个
+                long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
+                if (countByType != configMapList.size()) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_CONFIGS_TYPE_DUPLICATE.getMsg());
+                }
+
+                List<String> configTypeList = Arrays.asList(Constant.MonitorConfType.values()).stream().map(Constant.MonitorConfType::getValue).collect(Collectors.toList());
+                for (Map map : configMapList) {
+                    if (ToolUtil.isEmpty(map.get("type"))) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_TYPE_ISNULL.getMsg());
+                    }
+                    if (!configTypeList.contains(map.get("type").toString())) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_TYPE_INVALID.getMsg());
+                    }
+                }
+
+                Map metricsConfigMap = configMapList.stream().filter(map -> { String configType = (String) map.get("type"); return StrUtil.equals("metrics", configType); }).findFirst().orElse(null);
+                if (metricsConfigMap != null) {
+                    Map configMap = (Map) metricsConfigMap.get("config");
+                    String protocol = (String) configMap.get("protocol");
+                    // 校验 type 类型是否在枚举范围内
+                    if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_PROTOCOL_INVALID.getMsg());
+                    }
+
                     Object port = configMap.get("port");
-                    if(ToolUtil.isNotEmpty(port)){
+                    if (ToolUtil.isNotEmpty(port)) {
                         if (!CommonUtils.checkPort(port.toString())) {
                             saveFlag = false;
                             this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_PORT_ERROR.getMsg());
                         }
                     }
-                    // host 校验
+
                     Object host = configMap.get("host");
-                    if(ToolUtil.isNotEmpty(host)){
+                    if (ToolUtil.isNotEmpty(host)) {
                         if (!CommonUtils.checkIp(host.toString())) {
                             saveFlag = false;
                             this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_HOST_FORMAT.getMsg());
                         }
                     }
-                } catch (JSONException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_CONFIGS_FORMAT.getMsg());
-                }
-            }
+                    // snmp 类型校验 config
+                    if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        // snmpCredentialsId 必须存在
+                        Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                        if (ToolUtil.isEmpty(snmpCredentialsId)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.SNMP_CREDENTIAL_ID_ISNULL.getMsg());
+                        }
 
-            String enabled = ExcelUtils.getCellValue(row.getCell(5));
-            if (StringUtils.isNotEmpty(enabled)) {
-                if (!"1".equals(enabled) && !"0".equals(enabled)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ENDPOINT_ENABLED_INVALIDE.getMsg());
+                        SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+                        if (ToolUtil.isEmpty(snmpCredential)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.SNMP_CREDENTIAL_NOT_FOUND.getMsg());
+                        }
+
+                        Object walk = configMap.get("walk");
+                        if (ToolUtil.isEmpty(walk)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_SNMP_WALK_ISNULL.getMsg());
+                        }
+
+                        try {
+                            JSONArray.parseArray(JSONObject.toJSONString(walk));
+                        } catch (JSONException e) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_SNMP_WALK_FORMAT.getMsg());
+                        }
+                    }
+                }
+                Map logsConfigMap = configMapList.stream().filter(map -> { String configType = (String) map.get("type"); return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType); }).findFirst().orElse(null);
+                if (logsConfigMap != null) {
+                    if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
+                        List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
+                        for (Map configMap : configMaps) {
+                            if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.MODULE_CONFIG_FILENAME_ISNULL.getMsg());
+                            }
+                        }
+                    }
                 }
             }
 
@@ -705,66 +695,49 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 MonitorEndpoint monitorEndpoint = new MonitorEndpoint();
                 // endpoint asset_id
-                 monitorEndpoint.setAssetId(assetId);
+                monitorEndpoint.setAssetId(assetId);
 
                 AssetAsset assetInfo = assetService.queryAssetInfo(assetId);
+                MonitorModule moduleInfo = monitorModuleService.queryModuleInfo(module.getId());
                 String name = ExcelUtils.getCellValue(row.getCell(2));
                 if (StringUtils.isEmpty(name)) {
-                    MonitorModule module1 = monitorModuleService.queryModuleInfo(module.getId());
-                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), assetInfo, module1);
+                    name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), assetInfo, moduleInfo);
                 }
 
-                List<String> monitorEndpointNameList = moduleIdAndEndpointNamesMap.get(module.getId());
-                String tempName = name;
-                String monitorEndpointName = monitorEndpointNameList.stream().filter(s -> s.equals(tempName)).findAny().orElse(null);
-                if (ToolUtil.isNotEmpty(monitorEndpointName)) {
+                int countByName = this.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, name));
+                if (countByName > 0) {
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ENDPOINT_NAME_DUPLICATE.getMsg());
                     continue;
                 }
 
-                // config 如果为空 则设置 module configs
-                if (StringUtils.isEmpty(configs)) {
-                    configs = module.getConfigs();
-                    monitorEndpoint.setConfigs(configs);
-                }else{
-                    monitorEndpoint.setConfigs(configs);
-                }
-
-                // 设置 host
-                Map map = JSONObject.parseObject(monitorEndpoint.getConfigs(), Map.class);
-                if (ToolUtil.isEmpty(map.get("host"))) {
-                    map.put("host", assetIdAndHostMap.get(monitorEndpoint.getAssetId()));
-                } else {
-                    // 对 host 字段进行渲染重新赋值
-                    String hostStr = (String) map.get("host");
-                    map.put("host", Tool.NzExpressionUtil.renderExpression(hostStr, assetInfo));
-                }
-
-                // 设置 port
-                Map moduleConfigMap = JSONObject.parseObject(module.getConfigs(), Map.class);
-                if(ToolUtil.isEmpty(map.get("port"))){
-                    map.put("port", moduleConfigMap.get("port"));
-                }
-                monitorEndpoint.setConfigs(JSONObject.toJSONString(map));
-
                 monitorEndpoint.setName(name);
-                monitorEndpoint.setModuleId(module.getId());
-                monitorEndpoint.setEnabled(ToolUtil.isEmpty(enabled) ? 1 : Double.valueOf(enabled).intValue());
                 monitorEndpoint.setSeq(seqUUID);
+                monitorEndpoint.setModuleId(module.getId());
 
-                String hash = module.getId() + monitorEndpoint.getAssetId() + monitorEndpoint.getConfigs();
-                monitorEndpoint.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
-
+                // config 如果为空 则设置 module configs
+                if (StringUtils.isEmpty(configStr)) {
+                    String str = Tool.NzExpressionUtil.renderExpression(module.getConfigs(), assetInfo, moduleInfo);
+                    monitorEndpoint.setConfigs(str);
+                }else{
+                    monitorEndpoint.setConfigs(configStr);
+                }
+                DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+                TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
                 try {
                     this.save(monitorEndpoint);
                     // 新增时需要新增 panel chart
                     visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), monitorEndpoint.getId(), monitorEndpoint.getSeq(), chartTemplate);
-                    successNum++;
 
-                    monitorEndpointNameList.add(name);
-                    moduleIdAndEndpointNamesMap.put(module.getId(), monitorEndpointNameList);
+                    // 保存配置信息
+                    this.saveOrUpdateEndpointConfigs(monitorEndpoint, module);
+
+                    // 新增时同时需要新增 module下chart ids关联的模板
+                    this.saveModuleChartTmpl(monitorEndpoint);
+                    dataSourceTransactionManager.commit(transactionStatus);
+                    successNum++;
                 } catch (RuntimeException e) {
-                    log.error(String.format("endpoint 导入保存失败,表达式信息是：%s,错误信息是：%s", monitorEndpoint.toString(), e));
+                    dataSourceTransactionManager.rollback(transactionStatus);
+                    log.error(String.format("endpoint 导入保存失败,表达式信息是：%s,错误信息是：%s", monitorEndpoint.toString(), e.getMessage()),e);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ENDPOINT_IMPORT_ERROR.getMsg());
                 }
             }
@@ -779,52 +752,301 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         failDetails.add(failDetail);
     }
 
-	@Override
-	public List<Map<String, Object>> render(List<Map<String, Object>> params) {
-		List<Map<String,Object>> result =new ArrayList<Map<String,Object>>();
-		
-		for(Map<String,Object> param:params) {
-			String name = (String) param.get("name");
-			Integer moduleId = (Integer) param.get("moduleId");
-			Integer assetId = (Integer) param.get("assetId");
-			Integer enabled = (Integer) param.get("enabled");
-			if(ToolUtil.isEmpty(enabled)) {
-				enabled = 1;
-			}
-			if(ToolUtil.isEmpty(name)) {
-				throw new NZException(RCode.ENDPOINT_NAME_ISNULL);
-			}
-			if(ToolUtil.isEmpty(moduleId)) {
-				throw new NZException(RCode.MODULE_ID_ISNULL);
-			}
-			if(ToolUtil.isEmpty(assetId)) {
-				throw new NZException(RCode.ASSET_ID_ISNULL);
-			}
-			
-			MonitorModule module = monitorModuleService.queryModuleInfo(moduleId);
-			String configs = (String) param.get("configs");
-			if(ToolUtil.isEmpty(configs)) {
-				configs = module.getConfigs();
-			}
-			
-			AssetAsset asset = assetService.queryAssetInfo(assetId);
-			Map<String,Object> map = new HashMap<String,Object>();
-			
-			MonitorEndpoint endpoint = new MonitorEndpoint();
-			endpoint.setAsset(asset);
-			endpoint.setModule(module);
-			map.put("name", Tool.NzExpressionUtil.renderExpression(name, endpoint));
-			map.put("moduleId", moduleId);
-			map.put("assetId", assetId);
-			map.put("configs", Tool.NzExpressionUtil.renderExpression(configs, endpoint));
-			map.put("enabled", enabled);
-			result.add(map);
-		}
-		return result;
-	}
-
     @Override
     public List<MonitorEndpoint> endpointDetailList() {
         return monitorEndpointDao.endpointDetailList();
+    }
+
+    private void validateEndpointInfo(MonitorEndpoint endpoint) {
+        AssetAsset assetById = assetService.getById(endpoint.getAssetId());
+        ValidateUtils.is(assetById).notNull(RCode.ASSET_NOT_EXIST);
+
+        MonitorModule moduleById = monitorModuleService.getById(endpoint.getModuleId());
+        ValidateUtils.is(moduleById).notNull(RCode.MODULE_NOTFOUND);
+
+        // config 格式校验
+        String configStr = (String) endpoint.getConfigs();
+        if (StrUtil.isNotEmpty(configStr)) {
+
+            List<Map> configMapList;
+            try {
+                configMapList = JSONObject.parseArray(configStr, Map.class);
+            } catch (JSONException e) {
+                throw new NZException(RCode.ENDPOINT_CONFIGS_FORMAT);
+            }
+
+            // 每个type 最多包含一个
+            long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
+            if (countByType != configMapList.size()) {
+                throw new NZException(RCode.ENDPOINT_CONFIGS_TYPE_DUPLICATE);
+            }
+
+            List<String> configTypeList = Arrays.asList(Constant.MonitorConfType.values()).stream().map(Constant.MonitorConfType::getValue).collect(Collectors.toList());
+            for (Map map : configMapList) {
+                if (ToolUtil.isEmpty(map.get("type"))) {
+                    throw new NZException(RCode.ENDPOINT_TYPE_ISNULL);
+                }
+                if (!configTypeList.contains(map.get("type").toString())) {
+                    throw new NZException(RCode.ENDPOINT_TYPE_INVALID);
+                }
+            }
+
+            Map metricsConfigMap = configMapList.stream().filter(map -> {
+                String configType = (String) map.get("type");
+                return StrUtil.equals("metrics", configType);
+            }).findFirst().orElse(null);
+
+            if (metricsConfigMap != null) {
+                Map configMap = (Map) metricsConfigMap.get("config");
+                String protocol = (String) configMap.get("protocol");
+                // 校验 type 类型是否在枚举范围内
+                if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                    throw new NZException(RCode.ENDPOINT_PROTOCOL_INVALID);
+                }
+
+                // snmp 类型校验 config
+                if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                    // snmpCredentialsId 必须存在
+                    Object snmpCredentialsId = configMap.get("snmpCredentialsId");
+                    ValidateUtils.is(snmpCredentialsId).notNull(RCode.SNMP_CREDENTIAL_ID_ISNULL);
+
+                    SnmpCredential snmpCredential = snmpCredentialService.getById(snmpCredentialsId.toString());
+                    ValidateUtils.is(snmpCredential).notNull(RCode.SNMP_CREDENTIAL_NOT_FOUND);
+
+                    Object walk = configMap.get("walk");
+                    ValidateUtils.is(walk).notNull(RCode.ENDPOINT_SNMP_WALK_ISNULL);
+
+                    try {
+                        JSONArray.parseArray(JSONObject.toJSONString(walk));
+                    } catch (JSONException e) {
+                        throw new NZException(RCode.ENDPOINT_SNMP_WALK_FORMAT);
+                    }
+                }
+            }
+
+            Map logsConfigMap = configMapList.stream().filter(map -> {
+                String configType = (String) map.get("type");
+                return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
+            }).findFirst().orElse(null);
+
+            if (logsConfigMap != null) {
+                if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
+                    List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
+                    for (Map configMap : configMaps) {
+                        if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
+                            throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer saveEndpoint(MonitorEndpoint endpoint) {
+        // 校验
+        this.validateEndpointInfo(endpoint);
+
+        MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+
+        // config 为 null 则使用 module config
+        if (StrUtil.isEmpty((String) endpoint.getConfigs())) {
+            endpoint.setConfigs(module.getConfigs());
+        }
+
+        // 名称为空 则按照 module endpoint 名称模板生成对应名称
+        if (ToolUtil.isEmpty(endpoint.getName())) {
+            AssetAsset asset = assetService.queryAssetInfo(endpoint.getAssetId());
+            MonitorModule module1 = monitorModuleService.queryModuleInfo(endpoint.getModuleId());
+            String generateEndpointName = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
+            endpoint.setName(generateEndpointName);
+        }
+
+        // 校验名称是否重复
+        int countByName = this.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, endpoint.getName()).eq(MonitorEndpoint::getModuleId, endpoint.getModuleId()));
+        if (countByName > 0) {
+            throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
+        }
+        // 保存
+        this.save(endpoint);
+
+        // 保存配置信息
+        this.saveOrUpdateEndpointConfigs(endpoint, module);
+
+        // 新增时需要新增 panel chart
+        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
+        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
+        visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), endpoint.getSeq(), chartTemplate);
+
+        // 新增时同时需要新增 module下chart ids关联的模板
+        this.saveModuleChartTmpl(endpoint);
+        return endpoint.getId();
+    }
+
+    private void saveOrUpdateEndpointConfigs(MonitorEndpoint endpoint, MonitorModule module) {
+        // config 信息先删后增
+        endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+        AssetAsset asset = assetService.getById(endpoint.getAssetId());
+        List<Map> configMapList = JSONObject.parseArray((String) endpoint.getConfigs(), Map.class);
+
+        List<Map> allConfigs = new ArrayList<>();
+        for (Map configMap : configMapList) {
+            if (StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configMap.get("type").toString())) {
+                List<Map> logConfigList = (List<Map>) configMap.get("config");
+                allConfigs.addAll(logConfigList);
+            } else {
+                allConfigs.add(configMap);
+            }
+        }
+
+        List<String> belongsLogs = new ArrayList<>(Arrays.asList(new String[]{"syslog", "file", "journal"}));
+
+
+        for (Map configMap : allConfigs) {
+            MonitorEndpointConfig endpointConfig = new MonitorEndpointConfig();
+            endpointConfig.setEndpointId(endpoint.getId());
+            if(belongsLogs.contains(configMap.get("type").toString())){
+                endpointConfig.setType(Constant.MonitorConfType.LOGS.getValue());
+            }else{
+                endpointConfig.setType(configMap.get("type").toString());
+            }
+
+            if (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configMap.get("type").toString())) {
+                Map map = (Map) configMap.get("config");
+                if (ToolUtil.isEmpty(map.get("port"))) {
+                    List<Map> moduleConfigMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
+                    Map moduleMetricsMap = moduleConfigMapList.stream().filter(tempMap -> {
+                        String configType = (String) tempMap.get("type");
+                        return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
+                    }).findFirst().orElse(new HashMap());
+                    Map moduleConfigMap = ObjectUtil.defaultIfNull((Map) moduleMetricsMap.get("config"), new HashMap());
+                    map.put("port", moduleConfigMap.get("port"));
+                }
+                if (ToolUtil.isEmpty(map.get("host"))) {
+                    map.put("host", asset.getManageIp());
+                }
+            }
+            endpointConfig.setConfig(JSONObject.toJSONString(configMap));
+
+            Object enable = configMap.get("enable");
+            if (ToolUtil.isNotEmpty(enable)) {
+                endpointConfig.setEnable((Integer) enable);
+            } else {
+                endpointConfig.setEnable(1);
+            }
+
+            // 计算 endpointId + type + config 的 hash 值，用于确保相同配置不重复
+            String hash = endpoint.getId() + endpointConfig.getType() + endpointConfig.getConfig();
+            endpointConfig.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
+            endpointConfig.setSeq(endpoint.getSeq());
+            endpointConfigService.saveOrUpdate(endpointConfig);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer updateEndpoint(MonitorEndpoint endpoint) {
+        // 校验
+        this.validateEndpointInfo(endpoint);
+
+        MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+
+        // config 为 null 则使用 module config
+        if (StrUtil.isEmpty((String) endpoint.getConfigs())) {
+            endpoint.setConfigs(module.getConfigs());
+        }
+
+        // 名称为空 则按照 module endpoint 名称模板生成对应名称
+        if (ToolUtil.isEmpty(endpoint.getName())) {
+            AssetAsset asset = assetService.queryAssetInfo(endpoint.getAssetId());
+            MonitorModule module1 = monitorModuleService.queryModuleInfo(endpoint.getModuleId());
+            String generateEndpointName = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), asset, module1);
+            endpoint.setName(generateEndpointName);
+        }
+
+        // 校验名称是否重复
+        List<MonitorEndpoint> list = this.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getName, endpoint.getName()).eq(MonitorEndpoint::getModuleId, endpoint.getModuleId()));
+        boolean flag = false;
+        // 当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+        if ((list == null || list.size() == 0) || (list != null && list.size() == 1 && list.get(0).getId().equals(endpoint.getId()))) {
+            flag = true;
+        }
+
+        if (!flag) {
+            throw new NZException(RCode.ENDPOINT_NAME_DUPLICATE);
+        }
+
+        // 保存
+        this.updateById(endpoint);
+
+        // 保存配置信息
+        this.saveOrUpdateEndpointConfigs(endpoint, module);
+        return endpoint.getId();
+    }
+
+    @Override
+    public Map saveBatchEndpoint(List<MonitorEndpoint> endpointList) {
+        List<Map> failDetails = new ArrayList<>();
+        String seqUUID = UUID.randomUUID().toString();
+
+        int successNum = 0;
+        for (int i = 0; i < endpointList.size(); i++) {
+            try {
+                MonitorEndpoint endpoint = endpointList.get(i);
+                ValidateUtils.is(endpoint.getName()).notNull(RCode.ENDPOINT_NAME_ISNULL).maxLength(128)
+                        .and(endpoint.getModuleId()).notNull(RCode.ENDPOINT_MODULEID_ISNULL)
+                        .and(endpoint.getAssetId()).notNull(RCode.ENDPOINT_ASSETID_ISNULL);
+
+                endpoint.setSeq(seqUUID);
+                // 保存
+                this.saveEndpoint(endpoint);
+                successNum++;
+            } catch (Exception e) {
+                log.error(e);
+                Map failDetail = new HashMap(4);
+                failDetail.put("lineNo", i + 1);
+                String errorMsg = e instanceof NZException ? ((NZException) e).getMsg() : e.getMessage();
+                failDetail.put("errorMsg", errorMsg);
+                failDetails.add(failDetail);
+            }
+        }
+        int totalNum = endpointList.size();
+
+        Map resultMap = new HashMap(8);
+        resultMap.put("seq", seqUUID);
+        resultMap.put("totalNum", totalNum);
+        resultMap.put("successNum", successNum);
+        resultMap.put("failNum", totalNum - successNum);
+        resultMap.put("failDetail", failDetails);
+        return resultMap;
+    }
+
+    @Override
+    public List<Map> render(Map<String, String> params) {
+        List<Integer> moduleIds = Arrays.stream(params.get("moduleIds").split(StringPool.COMMA)).map(Integer::parseInt).collect(Collectors.toList());
+        List<Integer> assetIds = Arrays.stream(params.get("assetIds").split(StringPool.COMMA)).map(Integer::parseInt).collect(Collectors.toList());
+
+        List<Map> resultMapList = new ArrayList<>();
+        for (Integer moduleId : moduleIds) {
+            MonitorModule moduleDetail = monitorModuleService.queryModuleInfo(moduleId);
+            if (moduleDetail == null) throw new NZException(RCode.MODULE_NOTFOUND);
+            for (Integer assetId : assetIds) {
+                AssetAsset assetDetail = assetService.queryAssetInfo(assetId);
+                if (assetDetail == null) throw new NZException(RCode.ASSET_NOT_EXIST);
+
+                Map tempMap = new HashMap(8);
+                String endpointNameExpression = moduleDetail.getEndpointNameTmpl();
+                String endpointConfigsExpression = moduleDetail.getConfigs();
+
+                tempMap.put("name", Tool.NzExpressionUtil.renderExpression(endpointNameExpression, moduleDetail, assetDetail));
+                tempMap.put("configs", Tool.NzExpressionUtil.renderExpression(endpointConfigsExpression, moduleDetail, assetDetail));
+                tempMap.put("module", moduleDetail);
+                tempMap.put("asset", assetDetail);
+                tempMap.put("project", monitorProjectService.getById(moduleDetail.getProjectId()));
+                resultMapList.add(tempMap);
+            }
+        }
+        return resultMapList;
     }
 }

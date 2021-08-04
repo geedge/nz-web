@@ -198,6 +198,16 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             throw new NZException(RCode.MODULE_CONFIGS_ISNULL);
         }
 
+        List<String> configTypeList = Arrays.asList(Constant.MonitorConfType.values()).stream().map(Constant.MonitorConfType::getValue).collect(Collectors.toList());
+        for (Map map : configMapList) {
+            if(ToolUtil.isEmpty(map.get("type"))){
+                throw new NZException(RCode.MODULE_TYPE_ISNULL);
+            }
+            if(!configTypeList.contains(map.get("type").toString())){
+                throw new NZException(RCode.MODULE_TYPE_INCONSISTENT);
+            }
+        }
+
         // 每个type 最多包含一个
         long countByType = configMapList.stream().map(map -> map.get("type")).distinct().count();
         if (countByType != configMapList.size()) {
@@ -206,8 +216,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
         Map metricsConfigMap = configMapList.stream().filter(map -> {
             String configType = (String) map.get("type");
-            return StrUtil.equals("metrics", configType);
-        }).findFirst().get();
+            return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
+        }).findFirst().orElse(null);
 
         if (metricsConfigMap != null) {
             Map configMap = (Map) metricsConfigMap.get("config");
@@ -224,7 +234,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
             // 校验 type 类型是否在枚举范围内
             if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
-                throw new NZException(RCode.MODULE_TYPE_INVALID);
+                throw new NZException(RCode.MODULE_PROTOCOL_INVALID);
             }
 
             // snmp 类型校验 config
@@ -246,6 +256,22 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 }
             }
         }
+
+        Map logsConfigMap = configMapList.stream().filter(map -> {
+            String configType = (String) map.get("type");
+            return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
+        }).findFirst().orElse(null);
+
+        if (logsConfigMap != null) {
+            if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
+                List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
+                for (Map configMap : configMaps) {
+                    if ("file".equals(configMap.get("type").toString()) && ToolUtil.isEmpty(configMap.get("fileName"))) {
+                        throw new NZException(RCode.MODULE_CONFIG_FILENAME_ISNULL);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -257,7 +283,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         Map metricsConfigMap = configMapList.stream().filter(map -> {
             String configType = (String) map.get("type");
             return StrUtil.equals("metrics", configType);
-        }).findFirst().get();
+        }).findFirst().orElse(null);
 
         if (metricsConfigMap != null) {
             Map configMap = (Map) metricsConfigMap.get("config");
@@ -630,7 +656,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                         String protocol = (String) configMap.get("protocol");
                         if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
                             saveFlag = false;
-                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_TYPE_INVALID.getMsg());
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_PROTOCOL_INVALID.getMsg());
                         }
 
                         if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
@@ -719,7 +745,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
                     Map configMap = (Map) metricsConfigMap.get("config");
                     String protocol = (String) configMap.get("protocol");
-                    if (StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                    if (StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
                         Object port = configMap.get("port");
                         if (ToolUtil.isEmpty(port)) {
                             configMap.put("port", Constant.SNMP_DEFAULT_PORT); // port  缺省值

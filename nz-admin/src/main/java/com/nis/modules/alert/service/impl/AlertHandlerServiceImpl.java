@@ -659,12 +659,12 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			message.setEndpointId(endpointId);
 			moduleId = ep.getModuleId();
 			assetId = ep.getAssetId();
-			Integer enabled = ep.getEnabled();
+			/*Integer enabled = ep.getEnabled();
 			if (Tool.ObjectUtil.equal(enabled, 0)) {// disable直接返回 丢弃告警消息
 				if (log.isDebugEnabled())
 					log.debug("endpoint state : {}", enabled);
 				return null;
-			}
+			}*/
 			message.setEndpointId(endpointId);
 			message.setEndpoint(ep);
 		}
