@@ -157,6 +157,11 @@ public class Constant {
 	public static final String LOKILOG_QUERY_NODE_NUM = "lokilog_query_node_num";
 
 	/**
+	 * LOKI LOG query range 默认 Limit 值
+	 */
+	public static final String LOKI_QUERY_RANGE_DEFAULT_LIMIT = "loki_query_range_default_limit";
+
+	/**
 	 * prometheus server up 也就是endpoint状态 'endpoint'键值对应endpointId
 	 */
 	public static final String PROMSERVERUP_ENDPOINT_LABEL = "endpoint";
