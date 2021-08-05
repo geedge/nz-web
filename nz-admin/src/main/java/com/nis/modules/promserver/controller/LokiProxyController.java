@@ -196,7 +196,7 @@ public class LokiProxyController {
                 // 处理数据格式
                 Map resultData = handleResultData(request, connInputStream);
 
-                byte[] bytes = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect).getBytes();
+                byte[] bytes = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
                 String transfer = response.getHeader("Transfer-Encoding");
                 if (StringUtils.isEmpty(transfer)) {
                     response.setContentLength(bytes.length);
@@ -288,7 +288,7 @@ public class LokiProxyController {
                 map.put("labels", ObjectUtil.clone(stream));
                 map.put("timestamp", timestamp);
                 map.put("message", message);
-                map.put("uuid", MD5.create().digestHex16(timestamp + message + JSONObject.toJSONString(stream)));
+                map.put("uuid", MD5.create().digestHex16(timestamp + message + JSONObject.toJSONString(stream, SerializerFeature.MapSortField)));
                 map.put("level", getLogLevelInfo(message));
                 mapList.add(map);
             }
