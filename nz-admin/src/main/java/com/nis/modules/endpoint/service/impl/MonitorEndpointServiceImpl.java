@@ -796,7 +796,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 return StrUtil.equals("metrics", configType);
             }).findFirst().orElse(null);
 
-            if (metricsConfigMap != null) {
+            if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
                 Map configMap = (Map) metricsConfigMap.get("config");
                 String protocol = (String) configMap.get("protocol");
                 // 校验 type 类型是否在枚举范围内
@@ -829,7 +829,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
             }).findFirst().orElse(null);
 
-            if (logsConfigMap != null) {
+            if (logsConfigMap != null && 1 == (Integer) ObjectUtil.defaultIfNull(logsConfigMap.get("enable"), 1)) {
                 if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                     List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                     for (Map configMap : configMaps) {
@@ -894,6 +894,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         for (Map configMap : configMapList) {
             if (StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configMap.get("type").toString())) {
                 List<Map> logConfigList = (List<Map>) configMap.get("config");
+                for (Map map : logConfigList) {
+                    map.put("enable", configMap.get("enable"));
+                }
                 allConfigs.addAll(logConfigList);
             } else {
                 allConfigs.add(configMap);
