@@ -47,7 +47,7 @@ public class LokiLogController {
 
     @RequestMapping(value = "/logs/loki/export")
     public void logExport(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ValidateUtils.is(request.getParameterValues("logql")).notNull(RCode.PROMSERVER_PARAM_QUERY_ISNULL)
+        ValidateUtils.is(request.getParameterValues("logql[]")).notNull(RCode.PROMSERVER_PARAM_QUERY_ISNULL)
                 .and(request.getParameter("start")).notNull(RCode.PROMSERVER_PARAM_START_ISNULL)
                 .and(request.getParameter("end")).notNull(RCode.PROMSERVER_PARAM_END_ISNULL);
 
@@ -58,7 +58,7 @@ public class LokiLogController {
         }
         log.debug("loki server:{}", JSONUtils.valueToString(server));
 
-        String[] logqls = request.getParameterValues("logql");
+        String[] logqls = request.getParameterValues("logql[]");
         List<String> requestUrlList = new ArrayList<>();
         for (String logql : logqls) {
             String queryString = ReflectUtil.invoke(request, "getQueryString");
