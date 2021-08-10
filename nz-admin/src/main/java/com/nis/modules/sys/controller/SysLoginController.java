@@ -2,15 +2,19 @@ package com.nis.modules.sys.controller;
 
 
 import cn.hutool.core.util.StrUtil;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.code.kaptcha.Constants;
 import com.google.code.kaptcha.Producer;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.*;
+import com.nis.modules.sys.entity.AuthTokenEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.Timezone;
+import com.nis.modules.sys.redis.SysLoginRedis;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.TimezoneService;
@@ -33,10 +37,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 登录相关
@@ -53,6 +59,8 @@ public class SysLoginController extends AbstractController {
 	private SysConfigService configService;
 	@Autowired
 	private SysUserService sysUserService;
+	@Autowired
+	private SysLoginRedis sysLoginRedis;
 
 	@Autowired
 	private TimezoneService timezoneService;
@@ -86,10 +94,53 @@ public class SysLoginController extends AbstractController {
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
 			subject.login(token); //登录
-			String loginToken=CommonUtils.uuid();
-			subject.getSession().setAttribute("token",loginToken);
+			//登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
+			SysUserEntity u = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, username));
+			int mfaLevel = 0;
+			if(u!=null) {
+				u.getMfaLevel();
+			}
+			
+			SysConfigEntity sysConfigEntity = configService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "mfa_auth_enable"));
+			String mfaAuthEnableStr = sysConfigEntity.getParamValue();
+			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
+			
+			int authFlag = 0;
+			String authToken = "";
+			if(mfaLevel>0 || mfaAuthEnable==1) {
+				authFlag = 1;
+				authToken = UUID.randomUUID().toString().substring(0,16);
+				//临时token，储存到redis，过期时间 30min
+				AuthTokenEntity authTokenEntity = new AuthTokenEntity();
+				authTokenEntity.setUserId(u.getId());
+				authTokenEntity.setAuthKey(u.getOtpKey());
+				authTokenEntity.setC(1);
+				authTokenEntity.setMfaLevel(mfaLevel);
+				sysLoginRedis.saveOrUpdate(authTokenEntity,30l*60l,authToken);
+			}
+			
+			
+			//登录成功后: sys_user.otp_key 是否为空，为空则 响应 authBind = 1  
+			int authBind = 0;
+			String otpKey = "";
+			if(StringUtils.isBlank(otpKey)) {
+				authBind = 1;
+			}
+			
 			Map<String, Object> obj = new HashMap<>();
-			obj.put("token", subject.getSession().getId().toString());
+			if(authFlag!=1) {
+				String loginToken=CommonUtils.uuid();
+				subject.getSession().setAttribute("token",loginToken);
+				obj.put("token", subject.getSession().getId().toString());
+			}else {
+				
+				obj.put("authToken", authToken);
+			}
+			
+			obj.put("authFlag", authFlag);
+			obj.put("authBind", authBind);
+			obj.put("mfaAuthEnable", mfaAuthEnable);
+			
 			// 查询系统配置信息
 			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));

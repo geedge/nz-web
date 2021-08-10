@@ -97,6 +97,10 @@ public class SysUserEntity implements Serializable {
 	
 	private Date lastLoginTime;
 	
+	private Integer mfaLevel;
+	private String otpKey;
+	private String recoveryCode;
+	
 	/**
 	 * 用户关联角色列表
 	 */
