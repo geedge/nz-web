@@ -527,6 +527,7 @@ public enum RCode {
     SYS_USER_SCRIPT_ACCOUNT_REPEATED(512020, "System user script id and account cannot be repeated"),
     SYS_USER_STATUS_INVALIDE(514021, "System user status must be 0 or 1"),
     SYS_USER_EMAIL_FORMAT(513022, "System user email format is incorrect"),
+    SYS_USER_DISABLE_MFA_ERROR(513023, "Forced on, unable to close by itself"),
     SYS_MENU_ISNULL(516023, "Menu is not exsits"),
     SYS_MENU_ID_ISNULL(511024, "Menu id is required"),
     SYS_MENU_NAME_ISNULL(511025, "Menu name is required"),
