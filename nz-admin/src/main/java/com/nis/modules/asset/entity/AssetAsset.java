@@ -175,6 +175,11 @@ public class AssetAsset implements Serializable {
      * talon 连接 密码
      */
     private String clientPin;
+    
+    /**
+     * talon 连接 token
+     */
+    private String clientToken;
 
     /**
      * 添加日期

@@ -83,6 +83,7 @@ public class AssetController {
                 .and(asset.getNumber()).maxLength(128)
                 .and(asset.getClientAddress()).maxLength(64)
                 .and(asset.getClientPin()).maxLength(64)
+                .and(asset.getClientToken()).maxLength(64)
                 .and(asset.getClientUser()).maxLength(64);
 
         if(ObjectUtil.equal(asset.getAuthType(), 1)) {
@@ -121,6 +122,7 @@ public class AssetController {
                 .and(asset.getNumber()).maxLength(128)
                 .and(asset.getClientAddress()).maxLength(64)
                 .and(asset.getClientPin()).maxLength(64)
+                .and(asset.getClientToken()).maxLength(64)
                 .and(asset.getClientUser()).maxLength(64);
         
         /*if(ObjectUtil.equal(asset.getAuthType(), 1)) {

@@ -29,7 +29,7 @@
         <result property="clientAddress" column="client_host"/>
         <result property="clientPort" column="client_port"/>
         <result property="clientUser" column="client_user"/>
-
+		<result property="clientToken" column="client_token"/>
         <result property="clientState" column="talon_status"/>
 
         <association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
