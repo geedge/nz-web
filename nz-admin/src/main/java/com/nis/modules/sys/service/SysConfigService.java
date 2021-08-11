@@ -53,6 +53,14 @@ public interface SysConfigService extends IService<SysConfigEntity> {
 	String getValue(String key);
 	
 	/**
+	 * 根据key 获取配置值，为空返回默认值
+	 * @param key
+	 * @param defaultValue
+	 * @return
+	 */
+	String getValueOrDefault(String key,String defaultValue);
+	
+	/**
 	 * 根据key，获取value的Object对象
 	 * @param key    key
 	 * @param clazz  Object对象

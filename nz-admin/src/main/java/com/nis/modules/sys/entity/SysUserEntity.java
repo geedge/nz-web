@@ -97,8 +97,11 @@ public class SysUserEntity implements Serializable {
 	
 	private Date lastLoginTime;
 	
-	private Integer mfaLevel;
+	private Integer mfaLevel;//是否开启认证
+	private Integer mfaAuthEnable;//全局认证开关
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String otpKey;
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	private String recoveryCode;
 	
 	/**

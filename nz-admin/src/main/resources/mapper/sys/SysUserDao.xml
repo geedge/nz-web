@@ -20,6 +20,7 @@
 			su.source,
 			su.name,
 			su.mobile,
+			su.mfa_level,
 			su.last_login_time,
 			su.last_login_ip
 		FROM

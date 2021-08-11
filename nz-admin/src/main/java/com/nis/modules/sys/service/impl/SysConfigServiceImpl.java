@@ -134,6 +134,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 	}
 	
 	@Override
+	public String getValueOrDefault(String key,String defaultValue) {
+		String value = this.getValue(key);
+		return Tool.StrUtil.isEmpty(value) ? defaultValue : value;
+	}
+	
+	@Override
 	public <T> T getConfigObject(String key, Class<T> clazz) {
 		String value = getValue(key);
 		if(StringUtils.isNotBlank(value)){

@@ -1,26 +1,16 @@
 package com.nis.modules.sys.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.sys.dao.SysRoleDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysRoleEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.SysUserRoleEntity;
-import com.nis.modules.sys.service.SysMenuService;
-import com.nis.modules.sys.service.SysRoleService;
-import com.nis.modules.sys.service.SysUserRoleService;
-import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.shiro.ShiroUtils;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.RandomStringUtils;
@@ -38,9 +28,33 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.dao.SysRoleDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysRoleEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.service.SysMenuService;
+import com.nis.modules.sys.service.SysRoleService;
+import com.nis.modules.sys.service.SysUserRoleService;
+import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("sysUserService")
 public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> implements SysUserService {
