@@ -44,7 +44,8 @@ public class MfaUtils {
 	
 	public static int getNowTOTPCode(String secretKey) {
 		Instant now = Instant.now();
-		byte[] key = Tool.DigestUtil.sha256(secretKey);
+		Base32 base32 = new Base32();
+		byte[] key = Tool.DigestUtil.sha256(base32.decode(secretKey));
 		TOTP totp = new TOTP(key);
 		return totp.generate(now);
 	}
@@ -52,7 +53,8 @@ public class MfaUtils {
 	public static int getLastTOTPCode(String secretKey) {
 		Instant now = Instant.now();
 		Instant lastTime = now.minusSeconds(30);
-		byte[] key = Tool.DigestUtil.sha256(secretKey);
+		Base32 base32 = new Base32();
+		byte[] key = Tool.DigestUtil.sha256(base32.decode(secretKey));
 		TOTP totp = new TOTP(key);
 		return totp.generate(lastTime);
 	}
@@ -60,7 +62,8 @@ public class MfaUtils {
 	public static int getNextTOTPCode(String secretKey) {
 		Instant now = Instant.now();
 		Instant nextTime = now.plusSeconds(30);
-		byte[] key = Tool.DigestUtil.sha256(secretKey);
+		Base32 base32 = new Base32();
+		byte[] key = Tool.DigestUtil.sha256(base32.decode(secretKey));
 		TOTP totp = new TOTP(key);
 		return totp.generate(nextTime);
 	}
