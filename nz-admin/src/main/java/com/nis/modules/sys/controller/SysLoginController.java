@@ -1,26 +1,24 @@
 package com.nis.modules.sys.controller;
 
 
-import cn.hutool.core.util.StrUtil;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.google.code.kaptcha.Constants;
-import com.google.code.kaptcha.Producer;
-import com.nis.common.annotation.SysLog;
-import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
-import com.nis.modules.sys.entity.AuthTokenEntity;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysUserEntity;
-import com.nis.modules.sys.entity.Timezone;
-import com.nis.modules.sys.redis.SysLoginRedis;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.service.SysUserService;
-import com.nis.modules.sys.service.TimezoneService;
-import com.nis.modules.sys.shiro.ShiroUtils;
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.authc.*;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.LockedAccountException;
+import org.apache.shiro.authc.UnknownAccountException;
+import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -30,17 +28,34 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.imageio.ImageIO;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.google.code.kaptcha.Constants;
+import com.google.code.kaptcha.Producer;
+import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.HttpContextUtils;
+import com.nis.common.utils.IPUtils;
+import com.nis.common.utils.MfaUtils;
+import com.nis.common.utils.OperationEnum;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.TypeEnum;
+import com.nis.modules.sys.entity.AuthTokenEntity;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.Timezone;
+import com.nis.modules.sys.redis.SysLoginRedis;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.TimezoneService;
+import com.nis.modules.sys.shiro.ShiroUtils;
+
+import cn.hutool.core.util.StrUtil;
 
 /**
  * 登录相关
@@ -88,58 +103,47 @@ public class SysLoginController extends AbstractController {
 	public R login(@RequestBody SysUserEntity sysUser) {
 		String username = sysUser.getUsername();
 		String pin = StrUtil.str(sysUser.getPin());
+		Map<String, Object> result = new HashMap<>();
 		try{
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
 			subject.login(token); //登录
+			String mfaAuthEnableStr = configService.getValueOrDefault("mfa_auth_enable", "0");
+			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
 			//登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
 			SysUserEntity u = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, username));
-			int mfaLevel = 0;
-			String otpKey = "";
-			if(u!=null) {
-				mfaLevel = u.getMfaLevel();
-				otpKey = u.getOtpKey();
-			}
-			
-			//登录成功后: sys_user.otp_key 是否为空，为空则 响应 authBind = 1  
-			int authBind = 0;
-			if(StringUtils.isBlank(otpKey)) {
-				authBind = 1;
-			}
-			
-			SysConfigEntity sysConfigEntity = configService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "mfa_auth_enable"));
-			String mfaAuthEnableStr = sysConfigEntity.getParamValue();
-			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
+			int mfaLevel = u.getMfaLevel();
+			String otpKey = u.getOtpKey();
 			
 			int authFlag = 0;
-			String authToken = "";
-			if(mfaLevel>0 || mfaAuthEnable==1) {
+			int authBind = 0;
+			if(mfaAuthEnable == 1 || mfaLevel > 0) {
 				authFlag = 1;
-				authToken = MfaUtils.getAuthToken();
+				authBind = Tool.StrUtil.isBlank(otpKey)?1:0;
+				String authToken = MfaUtils.getAuthToken();
 				//临时token，储存到redis，过期时间 30min
 				AuthTokenEntity authTokenEntity = new AuthTokenEntity();
 				authTokenEntity.setUserId(u.getId());
 				authTokenEntity.setAuthKey(u.getOtpKey());
 				authTokenEntity.setC(1);
-				authTokenEntity.setMfaLevel(mfaLevel);
 				sysLoginRedis.saveOrUpdate(authTokenEntity,30l*60l,authToken);
-			}
-			
-			Map<String, Object> obj = new HashMap<>();
-			if(authFlag!=1) {
+				//需要mfa 验证
+				result.put("authToken", authToken);
+			}else {
 				String loginToken=CommonUtils.uuid();
 				subject.getSession().setAttribute("token",loginToken);
-				obj.put("token", subject.getSession().getId().toString());
-				if(authBind==1) {
-					obj.put("authToken", authToken);
-				}
-			}else {
-				obj.put("authToken", authToken);
+				result.put("token", subject.getSession().getId().toString());
+				 // 获取request
+	            HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
+	            SysUserEntity userEntity = ShiroUtils.getUserEntity();
+	            userEntity.setLastLoginTime(new Date());
+	            // 设置IP地址
+	            userEntity.setLastLoginIp(IPUtils.getIpAddr(request));
+	            sysUserService.updateById(userEntity);
 			}
-			
-			obj.put("authFlag", authFlag);
-			obj.put("authBind", authBind);
-			obj.put("mfaAuthEnable", mfaAuthEnable);
+			result.put("authFlag", authFlag);
+			result.put("authBind", authBind);
+			result.put("mfaAuthEnable", mfaAuthEnable);
 			
 			// 查询系统配置信息
 			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
@@ -147,19 +151,12 @@ public class SysLoginController extends AbstractController {
 			for (SysConfigEntity configEntity : configEntityList) {
 				if ("timezone".equals(configEntity.getParamKey())) {
 					Timezone timezoneEntity = timezoneService.getOne(new LambdaUpdateWrapper<Timezone>().eq(Timezone::getName, configEntity.getParamValue()));
-					obj.put("offset", timezoneEntity.getOffset());
+					result.put("offset", timezoneEntity.getOffset());
 				}
-				obj.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
+				result.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
 			}
-
-            // 获取request
-            HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
-            SysUserEntity userEntity = ShiroUtils.getUserEntity();
-            userEntity.setLastLoginTime(new Date());
-            // 设置IP地址
-            userEntity.setLastLoginIp(IPUtils.getIpAddr(request));
-            sysUserService.updateById(userEntity);
-            return R.ok(obj);
+           
+            return R.ok(result);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
 		}catch (IncorrectCredentialsException e) {
@@ -189,8 +186,6 @@ public class SysLoginController extends AbstractController {
 		}catch (RuntimeException e){
 				logger.debug("登出操作删除redis信息失败，失败key：{}",requestToken);
 		}
-
-
 		return R.ok();
 	}
 

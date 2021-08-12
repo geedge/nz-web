@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
@@ -32,7 +34,6 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
-import io.swagger.annotations.ApiOperation;
 
 @RestController
 @RequestMapping("/sys/user")
@@ -91,7 +92,7 @@ public class SysUserController extends AbstractController {
 	 * 用户个人中心
 	 * @return
 	 */
-	@RequestMapping("/profile")
+	@GetMapping("/profile")
 	public R profile() {
 		Long userId = this.getUserId();
 		return this.info(userId);
@@ -111,11 +112,24 @@ public class SysUserController extends AbstractController {
 		userEntity.setMfaLevel(0);
 		userEntity.setOtpKey(Tool.StrUtil.EMPTY);
 		userEntity.setRecoveryCode(Tool.StrUtil.EMPTY);
-		sysUserService.update(userEntity);//更新 mfa 配置
+		sysUserService.updateById(userEntity);
 		logger.info("userName:{},mfa disabled",userEntity.getUsername());
 		return R.ok();
 	}
 	
+	@RequestMapping("/resetMfa")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+    @RequiresPermissions("sys:user:update")
+	public R resetMfa(String[] ids) {
+		if(Tool.StrUtil.isAllBlank(ids)) {
+			SysUserEntity entity = new SysUserEntity();
+			entity.setOtpKey(Tool.StrUtil.EMPTY);
+			entity.setRecoveryCode(Tool.StrUtil.EMPTY);
+			boolean result = sysUserService.update(entity, new UpdateWrapper<SysUserEntity>().lambda().in(SysUserEntity::getId, ids));
+			logger.info("reset mfa ids:{},result:{},mfa disabled",ids,result);
+		}
+		return R.ok();
+	}
 	
 	/**
 	 * 保存用户
@@ -158,7 +172,6 @@ public class SysUserController extends AbstractController {
 	 * @return
 	 */
 	@RequestMapping(value = "nameCheck", method = RequestMethod.GET)
-	@ApiOperation(httpMethod = "GET", response = R.class, value = "用户名称校验")
 	public R nameCheck(@RequestParam Map<String, Object> params) {
 		ValidateUtils.is(params.get("name")).notNull();
 		//校验名称重复
