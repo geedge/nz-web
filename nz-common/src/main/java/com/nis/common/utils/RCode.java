@@ -545,6 +545,13 @@ public enum RCode {
     SYS_USER_NAME_ISNULL(511035, "System user name can not be empty"),
     SYS_USER_NAME_DUPLICATE(511036, "System user name duplicate"),
     SYS_MENU_TAB_PARENTTYPE_INVALIDE(513037,"Tab cannot be used as a parent menu"),
+    SYS_TOKEN_OR_AUTHTOKEN_ISNULL(511038,"Token information is null"),
+    SYS_AUTHTOKEN_ISVALID(518039,"Authtoken information is invalid"),
+    SYS_TOKEN_REFRESH_FREQUENT(518040,"More than 10 operations are frequent. Please try again after 30 minutes"),
+    SYS_AUTHCODE_ISNULL(511041,"Authcode information is null"),
+    SYS_AUTHCODE_IS_INVALID(511042,"Authcode information is invalid"),
+    SYS_RECOVERYCODE_IS_INVALID(518043,"Recoverycode is invalid"),
+    SYS_AUTHTOKEN_ISNULL(511044,"Authtoken information is null"),
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
     PROMSERVER_DCID_ISNULL(521001, "Dc id can not be empty"),

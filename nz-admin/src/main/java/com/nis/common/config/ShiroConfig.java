@@ -86,6 +86,7 @@ public class ShiroConfig {
 		filterMap.put("/index.html", "anon");
 		filterMap.put("/login.html", "anon");
 		filterMap.put("/sys/login", "anon");
+		filterMap.put("/mfa/**", "anon");
 		filterMap.put("/healthy", "anon");
 		filterMap.put("/buildInfo", "anon");
 //        filterMap.put("/logout","anon");

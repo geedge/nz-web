@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -97,8 +95,16 @@ public class SysLoginController extends AbstractController {
 			//登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
 			SysUserEntity u = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, username));
 			int mfaLevel = 0;
+			String otpKey = "";
 			if(u!=null) {
-				u.getMfaLevel();
+				mfaLevel = u.getMfaLevel();
+				otpKey = u.getOtpKey();
+			}
+			
+			//登录成功后: sys_user.otp_key 是否为空，为空则 响应 authBind = 1  
+			int authBind = 0;
+			if(StringUtils.isBlank(otpKey)) {
+				authBind = 1;
 			}
 			
 			SysConfigEntity sysConfigEntity = configService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, "mfa_auth_enable"));
@@ -109,7 +115,7 @@ public class SysLoginController extends AbstractController {
 			String authToken = "";
 			if(mfaLevel>0 || mfaAuthEnable==1) {
 				authFlag = 1;
-				authToken = UUID.randomUUID().toString().substring(0,16);
+				authToken = MfaUtils.getAuthToken();
 				//临时token，储存到redis，过期时间 30min
 				AuthTokenEntity authTokenEntity = new AuthTokenEntity();
 				authTokenEntity.setUserId(u.getId());
@@ -119,21 +125,15 @@ public class SysLoginController extends AbstractController {
 				sysLoginRedis.saveOrUpdate(authTokenEntity,30l*60l,authToken);
 			}
 			
-			
-			//登录成功后: sys_user.otp_key 是否为空，为空则 响应 authBind = 1  
-			int authBind = 0;
-			String otpKey = "";
-			if(StringUtils.isBlank(otpKey)) {
-				authBind = 1;
-			}
-			
 			Map<String, Object> obj = new HashMap<>();
 			if(authFlag!=1) {
 				String loginToken=CommonUtils.uuid();
 				subject.getSession().setAttribute("token",loginToken);
 				obj.put("token", subject.getSession().getId().toString());
+				if(authBind==1) {
+					obj.put("authToken", authToken);
+				}
 			}else {
-				
 				obj.put("authToken", authToken);
 			}
 			

@@ -76,6 +76,8 @@ public class SysUserEntity implements Serializable {
 	 */
 	@TableField(exist=false)
 	private List<Long> usergroupIds;
+	@TableField(exist=false)
+	private String userIds;
 	
 	private String mobile;
 	
@@ -115,4 +117,10 @@ public class SysUserEntity implements Serializable {
 
 	@TableField(exist = false)
 	private Integer apiKeyId;
+	
+	@TableField(exist = false)
+	private String authToken;
+	
+	@TableField(exist = false)
+	private String authCode;//验证码
 }
