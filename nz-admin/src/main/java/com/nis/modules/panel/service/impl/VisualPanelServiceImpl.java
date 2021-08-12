@@ -1090,7 +1090,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
                 	groupChart.setSpan(12);
-                	groupChart.setHeight(100);
+                	groupChart.setHeight(12);
                 	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                 	groupChart.setUpdateAt(new Date());
                 	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
