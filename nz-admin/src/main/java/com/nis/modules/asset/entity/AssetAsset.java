@@ -182,6 +182,11 @@ public class AssetAsset implements Serializable {
     private String clientToken;
 
     /**
+     * talon 是否开启
+     */
+    private Integer clientEnable;
+    
+    /**
      * 添加日期
      */
     private Date createAt;

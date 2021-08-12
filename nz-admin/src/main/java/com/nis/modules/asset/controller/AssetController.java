@@ -92,11 +92,14 @@ public class AssetController {
         }else if(ObjectUtil.equal(asset.getAuthType(), 2)){
         	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
         }
+        // client enable =1 开启talon ，token，port不能为空
+        if(Tool.ObjectUtil.equal(asset.getClientEnable(),1)) {
+        	ValidateUtils.is(asset.getClientPort()).notNull(RCode.ASSET_CLIENT_PROT_ISNULL)
+        		.and(asset.getClientToken()).notNull(RCode.ASSET_CLIENT_TOKEN_ISNULL);
+        }
         
-        
-        Map map = new HashMap(2);
-        map.put("id", assetAssetService.saveAsset(asset));
-        return R.ok(map);
+        Integer id = assetAssetService.saveAsset(asset);
+        return R.ok().putData("id", id);
     }
 
 
@@ -132,9 +135,14 @@ public class AssetController {
         	ValidateUtils.is(asset.getAuthPriKey()).notNull(RCode.ASSET_AUTHPRIKEY_ISNULL);
         }*/
         
-        Map map = new HashMap(2);
-        map.put("id", assetAssetService.updateAsset(asset));
-        return R.ok(map);
+        // client enable =1 开启talon ，token，port不能为空
+        if(Tool.ObjectUtil.equal(asset.getClientEnable(),1)) {
+        	ValidateUtils.is(asset.getClientPort()).notNull(RCode.ASSET_CLIENT_PROT_ISNULL)
+        		.and(asset.getClientToken()).notNull(RCode.ASSET_CLIENT_TOKEN_ISNULL);
+        }
+        
+        Integer id = assetAssetService.updateAsset(asset);
+        return R.ok().putData("id", id);
     }
 
 
