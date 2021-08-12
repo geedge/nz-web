@@ -160,7 +160,7 @@ public class MfaController extends AbstractController {
 		if(!r) {
 			return R.error(RCode.SYS_TOKEN_REFRESH_FREQUENT);// 超过10 响应操作频繁，请30分钟后重试
 		}
-		return R.error(RCode.SYS_AUTHCODE_IS_INVALID).putData("authToken", authToken);
+		return R.error(RCode.SYS_AUTHCODE_IS_INVALID).putData("authToken", newAuthToken);
 	}
 
 	@PostMapping(value = "/verify")
