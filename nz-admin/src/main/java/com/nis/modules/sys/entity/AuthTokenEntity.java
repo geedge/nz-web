@@ -13,5 +13,5 @@ public class AuthTokenEntity {
 	private Integer mfaLevel;//非必填
 	private String authKey;
 	private Integer c;//每更新一次 authToken c 加1，超过10 响应操作频繁，请30分钟后重试
-
+	private String token;//用户名密码校验成功后的 token
 }

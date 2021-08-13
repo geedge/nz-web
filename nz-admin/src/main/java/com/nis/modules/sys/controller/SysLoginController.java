@@ -108,6 +108,9 @@ public class SysLoginController extends AbstractController {
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
 			subject.login(token); //登录
+			String loginToken=CommonUtils.uuid();
+			subject.getSession().setAttribute("token",loginToken);
+			String sessionId = subject.getSession().getId().toString();
 			String mfaAuthEnableStr = configService.getValueOrDefault("mfa_auth_enable", "0");
 			int mfaAuthEnable = StrUtil.isEmpty(mfaAuthEnableStr) ? 0 : Integer.valueOf(mfaAuthEnableStr);
 			//登录成功后: sys_user.mfa_level > 0 || sys_config.mfa_auth_enable == 1 则响应 authFlag=1 & 生成 authToken （临时token，储存到redis，过期时间 30min）
@@ -126,12 +129,11 @@ public class SysLoginController extends AbstractController {
 				authTokenEntity.setUserId(u.getId());
 				authTokenEntity.setAuthKey(u.getOtpKey());
 				authTokenEntity.setC(1);
+				authTokenEntity.setToken(sessionId);
 				sysLoginRedis.saveOrUpdate(authTokenEntity,30l*60l,authToken);
 				//需要mfa 验证
 				result.put("authToken", authToken);
 			}else {
-				String loginToken=CommonUtils.uuid();
-				subject.getSession().setAttribute("token",loginToken);
 				result.put("token", subject.getSession().getId().toString());
 				 // 获取request
 	            HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            

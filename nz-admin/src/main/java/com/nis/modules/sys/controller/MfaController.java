@@ -8,7 +8,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +18,6 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.HttpContextUtils;
 import com.nis.common.utils.IPUtils;
 import com.nis.common.utils.MfaUtils;
@@ -214,11 +212,9 @@ public class MfaController extends AbstractController {
 		}
 		sysLoginRedis.delete(authToken);
 		//校验通过，返回登录成功token
-		Subject subject = ShiroUtils.getSubject();
-		String loginToken = CommonUtils.uuid();
-		subject.getSession().setAttribute("token", loginToken);
-		obj.put("token", subject.getSession().getId().toString());
-		
+		String token = authTokenEntity.getToken();
+		obj.put("token", token);
+		SysUserEntity userEntity = ShiroUtils.getUserEntityBySessionId(token);
 		// 查询系统配置信息
 		String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled","mfa_auth_enable"};
 		List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));
@@ -232,7 +228,6 @@ public class MfaController extends AbstractController {
 
         // 获取request
         HttpServletRequest request = HttpContextUtils.getHttpServletRequest();            
-        SysUserEntity userEntity = ShiroUtils.getUserEntity();
         userEntity.setLastLoginTime(new Date());
         // 设置IP地址
         userEntity.setLastLoginIp(IPUtils.getIpAddr(request));

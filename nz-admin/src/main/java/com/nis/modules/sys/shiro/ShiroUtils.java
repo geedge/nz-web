@@ -4,9 +4,14 @@ import com.alibaba.fastjson.JSON;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
+
+import cn.hutool.log.Log;
+
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.crypto.hash.SimpleHash;
 import org.apache.shiro.session.Session;
+import org.apache.shiro.session.UnknownSessionException;
+import org.apache.shiro.session.mgt.DefaultSessionKey;
 import org.apache.shiro.session.mgt.SimpleSession;
 import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
@@ -23,6 +28,7 @@ import java.util.*;
  * Shiro工具类
  */
 public class ShiroUtils {
+	private static final Log log = Log.get();
 	/**  加密算法 */
 	public final static String hashAlgorithmName = "SHA-256";
 	/**  循环次数 */
@@ -39,6 +45,23 @@ public class ShiroUtils {
 		return SecurityUtils.getSubject().getSession();
 	}
 
+	public static Session getSessionById(String sessionId) {
+		return SecurityUtils.getSecurityManager().getSession(new DefaultSessionKey(sessionId));
+	}
+	
+	public static SysUserEntity getUserEntityBySessionId(String sessionId){
+		SysUserEntity result = null;
+        try{
+            Session se = SecurityUtils.getSecurityManager().getSession(new DefaultSessionKey(sessionId));
+            Object obj = se.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+            SimplePrincipalCollection coll = (SimplePrincipalCollection) obj;
+            result = (SysUserEntity)coll.getPrimaryPrincipal();
+        }catch (UnknownSessionException e){
+            log.error("There is no session with id [{}]",sessionId);
+        }
+        return result;
+    }
+	
 	public static Subject getSubject() {
 		return SecurityUtils.getSubject();
 	}
