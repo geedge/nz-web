@@ -467,7 +467,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 if (Tool.CollectionUtil.isNotEmpty(configs)) {
                     String metricsConfStr = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).map(MonitorEndpointConfig::getConfig).findFirst().orElse("");
                     List<String> tempConfigList = new ArrayList<>();
-                    if(StrUtil.isNotEmpty(metricsConfStr)){
+                    if (StrUtil.isNotEmpty(metricsConfStr)) {
                         tempConfigList.add(metricsConfStr);
                     }
 
@@ -479,7 +479,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                         }
                         Map logsMap = new HashMap();
                         logsMap.put("type", Constant.MonitorConfType.LOGS.getValue());
-                        logsMap.put("config",confMaps);
+                        logsMap.put("config", confMaps);
                         tempConfigList.add(JSONObject.toJSONString(logsMap));
                     }
 
@@ -512,8 +512,21 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public List<MonitorEndpoint> getEnableEndpointInfoList() {
-        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableEndpointInfoList();
+    public List<MonitorEndpoint> getEnableMetricsEndpointInfoListForAgent() {
+        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableMetricsEndpointInfoListForAgent();
+        // 如 asset 存在 parent , 则 set parent
+        List<AssetAsset> assetList = assetService.list();
+        Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
+        for (MonitorEndpoint endpoint : enableEndpointInfoList) {
+            AssetAsset relAsset = endpoint.getAsset();
+            relAsset.setParent(assetIdAndEntityMap.get(relAsset.getPid()));
+        }
+        return enableEndpointInfoList;
+    }
+
+    @Override
+    public List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent() {
+        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableLogsEndpointInfoListForAgent();
         // 如 asset 存在 parent , 则 set parent
         List<AssetAsset> assetList = assetService.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
@@ -617,7 +630,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     }
                 }
 
-                Map metricsConfigMap = configMapList.stream().filter(map -> { String configType = (String) map.get("type"); return StrUtil.equals("metrics", configType); }).findFirst().orElse(null);
+                Map metricsConfigMap = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    return StrUtil.equals("metrics", configType);
+                }).findFirst().orElse(null);
                 if (metricsConfigMap != null) {
                     Map configMap = (Map) metricsConfigMap.get("config");
                     String protocol = (String) configMap.get("protocol");
@@ -671,7 +687,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                         }
                     }
                 }
-                Map logsConfigMap = configMapList.stream().filter(map -> { String configType = (String) map.get("type"); return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType); }).findFirst().orElse(null);
+                Map logsConfigMap = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
+                }).findFirst().orElse(null);
                 if (logsConfigMap != null) {
                     if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                         List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
@@ -718,7 +737,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 if (StringUtils.isEmpty(configStr)) {
                     String str = Tool.NzExpressionUtil.renderExpression(module.getConfigs(), assetInfo, moduleInfo);
                     monitorEndpoint.setConfigs(str);
-                }else{
+                } else {
                     monitorEndpoint.setConfigs(configStr);
                 }
                 DefaultTransactionDefinition def = new DefaultTransactionDefinition();
@@ -737,7 +756,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     successNum++;
                 } catch (RuntimeException e) {
                     dataSourceTransactionManager.rollback(transactionStatus);
-                    log.error(String.format("endpoint 导入保存失败,表达式信息是：%s,错误信息是：%s", monitorEndpoint.toString(), e.getMessage()),e);
+                    log.error(String.format("endpoint 导入保存失败,表达式信息是：%s,错误信息是：%s", monitorEndpoint.toString(), e.getMessage()), e);
                     this.addFailDetail(dataFromExcelRowNum, failDetails, "System", RCode.ENDPOINT_IMPORT_ERROR.getMsg());
                 }
             }
@@ -885,65 +904,72 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     private void saveOrUpdateEndpointConfigs(MonitorEndpoint endpoint, MonitorModule module) {
-        // config 信息先删后增
-        endpointConfigService.remove(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
+        List<MonitorEndpointConfig> configList = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
         AssetAsset asset = assetService.getById(endpoint.getAssetId());
         List<Map> configMapList = JSONObject.parseArray((String) endpoint.getConfigs(), Map.class);
+        if (Tool.CollectionUtil.isEmpty(configList)) {
+            // 新增
+            for (Map configMap : configMapList) {
+                MonitorEndpointConfig endpointConfig = new MonitorEndpointConfig();
+                endpointConfig.setEndpointId(endpoint.getId());
 
-        List<Map> allConfigs = new ArrayList<>();
-        for (Map configMap : configMapList) {
-            if (StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configMap.get("type").toString())) {
-                List<Map> logConfigList = (List<Map>) configMap.get("config");
-                for (Map map : logConfigList) {
-                    map.put("enable", configMap.get("enable"));
+                if (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configMap.get("type").toString())) {
+                    Map map = (Map) configMap.get("config");
+                    if (ToolUtil.isEmpty(map.get("port"))) {
+                        List<Map> moduleConfigMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
+                        Map moduleMetricsMap = moduleConfigMapList.stream().filter(tempMap -> {
+                            String configType = (String) tempMap.get("type");
+                            return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
+                        }).findFirst().orElse(new HashMap());
+                        Map moduleConfigMap = ObjectUtil.defaultIfNull((Map) moduleMetricsMap.get("config"), new HashMap());
+                        map.put("port", moduleConfigMap.get("port"));
+                    }
+                    if (ToolUtil.isEmpty(map.get("host"))) {
+                        map.put("host", asset.getManageIp());
+                    }
                 }
-                allConfigs.addAll(logConfigList);
-            } else {
-                allConfigs.add(configMap);
-            }
-        }
+                endpointConfig.setConfig(JSONObject.toJSONString(configMap.get("config")));
 
-        List<String> belongsLogs = new ArrayList<>(Arrays.asList(new String[]{"syslog", "file", "journal"}));
+                Object enable = configMap.get("enable");
+                if (ToolUtil.isNotEmpty(enable)) {
+                    endpointConfig.setEnable((Integer) enable);
+                } else {
+                    endpointConfig.setEnable(-1);
+                }
 
-
-        for (Map configMap : allConfigs) {
-            MonitorEndpointConfig endpointConfig = new MonitorEndpointConfig();
-            endpointConfig.setEndpointId(endpoint.getId());
-            if(belongsLogs.contains(configMap.get("type").toString())){
-                endpointConfig.setType(Constant.MonitorConfType.LOGS.getValue());
-            }else{
+                // 计算 endpointId + type + config 的 hash 值，用于确保相同配置不重复
+                String hash = endpoint.getId() + endpointConfig.getType() + endpointConfig.getConfig();
+                endpointConfig.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
+                endpointConfig.setSeq(endpoint.getSeq());
                 endpointConfig.setType(configMap.get("type").toString());
+                endpointConfigService.save(endpointConfig);
             }
+        } else {
+            // 修改
+            for (MonitorEndpointConfig endpointConfig : configList) {
+                String type = endpointConfig.getType();
+                Map configByType = configMapList.stream().filter(map -> {
+                    String configType = (String) map.get("type");
+                    return StrUtil.equals(type, configType);
+                }).findFirst().orElse(new HashMap());
 
-            if (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configMap.get("type").toString())) {
-                Map map = (Map) configMap.get("config");
-                if (ToolUtil.isEmpty(map.get("port"))) {
-                    List<Map> moduleConfigMapList = JSONObject.parseArray(module.getConfigs(), Map.class);
-                    Map moduleMetricsMap = moduleConfigMapList.stream().filter(tempMap -> {
-                        String configType = (String) tempMap.get("type");
-                        return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
-                    }).findFirst().orElse(new HashMap());
-                    Map moduleConfigMap = ObjectUtil.defaultIfNull((Map) moduleMetricsMap.get("config"), new HashMap());
-                    map.put("port", moduleConfigMap.get("port"));
+                Object enable = configByType.get("enable");
+                if (ToolUtil.isNotEmpty(enable)) {
+                    endpointConfig.setEnable((Integer) enable);
+                } else {
+                    endpointConfig.setEnable(-1);
                 }
-                if (ToolUtil.isEmpty(map.get("host"))) {
-                    map.put("host", asset.getManageIp());
+
+                // 更新中未找到该类型配置 更新状态为未启用状态
+                if (Tool.CollectionUtil.isEmpty(configByType)) {
+                    endpointConfig.setEnable(-1);
+                    endpointConfig.setConfig("{}");
+                } else {
+                    endpointConfig.setConfig(JSONObject.toJSONString(configByType.get("config")));
+                    endpointConfig.setVersion(endpointConfig.getVersion() + 1);
                 }
+                endpointConfigService.updateById(endpointConfig);
             }
-            endpointConfig.setConfig(JSONObject.toJSONString(configMap));
-
-            Object enable = configMap.get("enable");
-            if (ToolUtil.isNotEmpty(enable)) {
-                endpointConfig.setEnable((Integer) enable);
-            } else {
-                endpointConfig.setEnable(1);
-            }
-
-            // 计算 endpointId + type + config 的 hash 值，用于确保相同配置不重复
-            String hash = endpoint.getId() + endpointConfig.getType() + endpointConfig.getConfig();
-            endpointConfig.setHash(String.valueOf(Math.abs(MurmurHash.hash64(hash))));
-            endpointConfig.setSeq(endpoint.getSeq());
-            endpointConfigService.saveOrUpdate(endpointConfig);
         }
     }
 

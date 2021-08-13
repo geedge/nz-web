@@ -152,9 +152,9 @@ public class Constant {
 	public static final String LOKILOG_QUERY_MAX_SERIES = "lokilog_query_max_series";
 
 	/**
-	 * LOKI LOG query range 图表最大点数
+	 * 日志级别折线图数据点
 	 */
-	public static final String LOKILOG_QUERY_NODE_NUM = "lokilog_query_node_num";
+	public static final String LOKI_LOGS_QUERY_STAT_MAX_POINTS = "logs_query_stat_max_points";
 
 	/**
 	 * LOKI LOG query range 默认 Limit 值
@@ -736,8 +736,8 @@ public class Constant {
 	// 配置表中 prometheus rule.yml 模板 Key
 	public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
 
-	// 配置表中 prometheus 本地保存天数配置
-	public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";
+	// 配置表中 prometheus 本地保存天数配置  deprecated
+	// public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";
 
 	// 配置表中 alert_api
 	public static final String SYSCONFIG_KEY_ALERT_API = "alert_api";
@@ -748,6 +748,51 @@ public class Constant {
 	// endpoint state 定时任务执行间隔时间
 	public static final String SYSCONFIG_KEY_ENDPOINT_QUERYINTERVAL = "endpoint_query_interval";
 
+	// metrics object storage 对象存储开关，1: 本地文件存储，2：S3对象存储
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_TYPE = "metrics_storage_type";
+
+	// 指标存储天数，默认30天，单位天
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_RETENTION= "metrics_storage_retention";
+
+	// cortex.yml 配置模板
+	public static final String SYSCONFIG_KEY_CORTEX_YML_TMPL = "cortex_yml_tmpl";
+
+	// loki.yml 配置模板
+	public static final String SYSCONFIG_KEY_LOKI_YML_TMPL = "loki_yml_tmpl";
+
+	// promtail.yml 配置模板
+	public static final String SYSCONFIG_KEY_PROMTAIL_YML_TMPL = "promtail_yml_tmpl";
+
+	/**
+	 * metrics s3 配置
+	 */
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT = "metrics_storage_s3_endpoint";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET = "metrics_storage_s3_bucket";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY = "metrics_storage_s3_access_key";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY = "metrics_storage_s3_secret_access_key";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE = "metrics_storage_s3_insecure";
+
+
+    // 日志存储模式，1: 本地文件存储，2：S3对象存储
+    public static final String SYSCONFIG_KEY_LOGS_STORAGE_TYPE = "logs_storage_type";
+
+    // 日志存储天数，默认7天，单位天
+    public static final String SYSCONFIG_KEY_LOGS_STORAGE_RETENTION = "logs_storage_retention";
+
+    // 日志本地存储路径
+    public static final String SYSCONFIG_KEY_LOGS_STORAGE_LOCAL_PATH= "logs_storage_local_path";
+
+	/**
+	 * logs s3 配置
+	 */
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_ENDPOINT = "logs_storage_s3_endpoint";
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_BUCKET = "logs_storage_s3_bucket";
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY = "logs_storage_s3_access_key";
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY = "logs_storage_s3_secret_access_key";
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE = "logs_storage_s3_insecure";
+
+
+
 	// 邮件告警开关
 	public static final String SYSCONFIG_KEY_EMAIL_ENABLE = "email_enable";
 
@@ -756,7 +801,7 @@ public class Constant {
 
 	// 内置 generator 路径
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
-	// 配置表中 blackbox 源， on 时，通过 global 做 ping 检测，off 时，通过 per-datacenter 检测
+	// 配置表中 blackbox 源， 1: global  2: per-datacenter  默认：1
 	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
 
 	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint

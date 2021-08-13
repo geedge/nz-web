@@ -33,12 +33,19 @@
 
 
     <resultMap type="com.nis.modules.endpoint.entity.MonitorEndpoint" id="endpointInfoByAgent">
-        <result property="id" column="id"/>
-        <result property="name" column="name"/>
-        <result property="moduleId" column="module_id"/>
-        <result property="assetId" column="asset_id"/>
+        <result property="id" column="endpoint_id"/>
+        <result property="name" column="endpoint_name"/>
+        <result property="moduleId" column="endpoint_module_id"/>
+        <result property="assetId" column="endpoint_asset_id"/>
 
-        <association columnPrefix="m_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
+
+        <result property="endpointConfig.id" column="endConf_id"/>
+        <result property="endpointConfig.config" column="endConf_config"/>
+        <result property="endpointConfig.endpointId" column="endConf_endpoint_id"/>
+        <result property="endpointConfig.hash" column="endConf_hash"/>
+        <result property="endpointConfig.version" column="endConf_version"/>
+
+        <association columnPrefix="module_" property="module" javaType="com.nis.modules.module.entity.MonitorModule">
             <id column="id" property="id"/>
             <result column="name" property="name"/>
             <result column="project_id" property="projectId"/>
@@ -46,18 +53,21 @@
             <result column="snmp_yml" property="snmpYml"/>
         </association>
 
-        <association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
+        <association columnPrefix="project_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
             <id column="id" property="id"/>
             <result column="name" property="name"/>
         </association>
 
-        <association columnPrefix="ass_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+        <association columnPrefix="asset_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
             <id column="id" property="id"/>
             <result column="manage_ip" property="manageIp"/>
             <result column="sn" property="sn"/>
             <result column="name" property="name"/>
             <result column="dc_id" property="dcId"/>
             <result column="pid" property="pid"/>
+            <result column="client_host" property="clientAddress"/>
+            <result column="client_port" property="clientPort"/>
+            <result column="client_token" property="clientToken"/>
         </association>
 
         <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
@@ -197,38 +207,101 @@
             </if>
     </select>
 
-    <select id="getEnableEndpointInfoList" resultMap="endpointInfoByAgent">
+    <select id="getEnableMetricsEndpointInfoListForAgent" resultMap="endpointInfoByAgent">
         SELECT
-            e.*,
+            endpoint.id AS endpoint_id,
+            endpoint.name AS endpoint_name,
+            endpoint.module_id AS endpoint_module_id,
+            endpoint.asset_id AS endpoint_asset_id,
 
-            m.id AS m_id,
-            m.project_id AS m_project_id,
-            m.NAME AS m_name,
-            m.configs AS m_configs,
-            m.snmp_yml AS m_snmp_yml,
-            m.type AS m_type,
+            endConf.id AS endConf_id,
+            endConf.endpoint_id AS endConf_endpoint_id,
+            endConf.config AS endConf_config,
+            endConf.hash AS endConf_hash,
+            endConf.version AS endConf_version,
 
-            p.id AS p_id,
-            p.NAME AS p_name,
+            module.id AS module_id,
+            module.project_id AS module_project_id,
+            module.name AS module_name,
+            module.configs AS module_configs,
+            module.snmp_yml AS module_snmp_yml,
 
-            ass.id AS ass_id,
-            ass.sn AS ass_sn,
-            ass.NAME AS ass_name,
-            ass.manage_ip AS ass_manage_ip,
-            ass.dc_id AS ass_dc_id,
-            ass.pid AS ass_pid,
+            project.id AS project_id,
+            project.name AS project_name,
+
+            asset.id AS asset_id,
+            asset.sn AS asset_sn,
+            asset.name AS asset_name,
+            asset.manage_ip AS asset_manage_ip,
+            asset.dc_id AS asset_dc_id,
+            asset.pid AS asset_pid,
+            client_host AS asset_client_host,
+            client_port AS asset_client_port,
+            client_token AS asset_client_token,
 
             dc.id AS dc_id,
-            dc.NAME AS dc_name
+            dc.name AS dc_name
         FROM
-            monitor_endpoint e
-            LEFT JOIN monitor_module m ON e.module_id = m.id
-            LEFT JOIN monitor_project p ON m.project_id = p.id
-            LEFT JOIN asset_asset ass ON e.asset_id = ass.id
-            LEFT JOIN asset_state_conf state ON ass.state_id = state.id
-            LEFT JOIN dc dc ON ass.dc_id = dc.id
+            monitor_endpoint endpoint
+            LEFT JOIN monitor_endpoint_config endConf ON endpoint.id = endConf.endpoint_id
+            LEFT JOIN monitor_module module ON endpoint.module_id = module.id
+            LEFT JOIN monitor_project project ON module.project_id = project.id
+            LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
+            LEFT JOIN asset_state_conf state ON asset.state_id = state.id
+            LEFT JOIN dc dc ON asset.dc_id = dc.id
         WHERE
-            e.enabled = 1 AND state.monitor = 1 AND dc.state = 'ON'
+            endConf.type = "metrics"
+            AND endConf.enable = 1
+            AND state.monitor = 1
+            AND dc.state = 'ON'
+    </select>
+
+    <select id="getEnableLogsEndpointInfoListForAgent" resultMap="endpointInfoByAgent">
+        SELECT
+            endpoint.id AS endpoint_id,
+            endpoint.name AS endpoint_name,
+            endpoint.module_id AS endpoint_module_id,
+            endpoint.asset_id AS endpoint_asset_id,
+
+            endConf.id AS endConf_id,
+            endConf.endpoint_id AS endConf_endpoint_id,
+            endConf.config AS endConf_config,
+            endConf.hash AS endConf_hash,
+            endConf.version AS endConf_version,
+
+            module.id AS module_id,
+            module.project_id AS module_project_id,
+            module.name AS module_name,
+            module.configs AS module_configs,
+            module.snmp_yml AS module_snmp_yml,
+
+            project.id AS project_id,
+            project.name AS project_name,
+
+            asset.id AS asset_id,
+            asset.sn AS asset_sn,
+            asset.name AS asset_name,
+            asset.manage_ip AS asset_manage_ip,
+            asset.dc_id AS asset_dc_id,
+            asset.pid AS asset_pid,
+            client_host AS asset_client_host,
+            client_port AS asset_client_port,
+            client_token AS asset_client_token,
+
+            dc.id AS dc_id,
+            dc.name AS dc_name
+        FROM
+            monitor_endpoint endpoint
+            LEFT JOIN monitor_endpoint_config endConf ON endpoint.id = endConf.endpoint_id
+            LEFT JOIN monitor_module module ON endpoint.module_id = module.id
+            LEFT JOIN monitor_project project ON module.project_id = project.id
+            LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
+            LEFT JOIN dc dc ON asset.dc_id = dc.id
+        WHERE
+            endConf.type = "logs"
+            AND endConf.enable = 1
+            AND asset.client_enable = 1
+            AND dc.state = 'ON'
     </select>
 
 

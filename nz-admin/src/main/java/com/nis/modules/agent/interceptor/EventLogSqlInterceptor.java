@@ -77,25 +77,27 @@ public class EventLogSqlInterceptor implements Interceptor {
                 switch (tableName.getName()) {
                     case "alert_rule":
                     case "alert_severity_conf":
-                        eventLogService.increment("prometheus", "rule");
+                        eventLogService.increment("rule");
                         break;
                     case "dc":
+                    case "monitor_project":
                     case "monitor_endpoint":
-                        eventLogService.increment("prometheus");
+                    case "monitor_endpoint_config":
+                        eventLogService.increment("prometheus", "promtail");
                         break;
                     case "prom_server":
                         this.handlePromServerChange(operationalType.toString(), parameterObject);
                         break;
                     case "asset_asset":
-                        eventLogService.increment("prometheus", "blackbox");
+                        eventLogService.increment("prometheus", "blackbox", "promtail");
                         break;
                     case "monitor_module":
                         // 处理 snmp module
-                        this.handleSnmpModuleChange(operationalType.toString(), parameterObject);
-                        eventLogService.increment("prometheus");
+                        eventLogService.increment("snmp", "prometheus", "promtail");
                         break;
                     case "sys_config":
-                        // cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
+                        eventLogService.increment("loki", "cortex", "cmd", "prometheus");
+                        /*// cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
                         List<SysConfigEntity> sysConfigList = sysConfigService.list();
                         Map<String, String> configMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
@@ -126,7 +128,7 @@ public class EventLogSqlInterceptor implements Interceptor {
                                     if (b2 || b3 || b4) eventLogService.increment("prometheus");
                                 }
                             }
-                        }
+                        }*/
                         break;
                     default:
                         break;
@@ -162,7 +164,7 @@ public class EventLogSqlInterceptor implements Interceptor {
             }
         } else {
             // insert delete
-            eventLogService.increment("prometheus");
+            eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
         }
     }
 
@@ -176,64 +178,8 @@ public class EventLogSqlInterceptor implements Interceptor {
             if (!oldEntity.getType().equals(updateEntity.getType())) flag = true;
             if (!oldEntity.getStatus().equals(updateEntity.getStatus())) flag = true;
             if (flag) {
-                eventLogService.increment("prometheus");
-            }
-        }
-    }
-
-
-    /**
-     * 处理 module snmp 变化
-     *
-     * @param type
-     * @param parameterObject
-     */
-    private void handleSnmpModuleChange(String type, Object parameterObject) {
-        if ("Delete".equals(type)) {
-            // removeById
-            if (parameterObject instanceof Integer) {
-                MonitorModule module = monitorModuleService.getById((Integer) parameterObject);
-                if (module != null && Constant.MODULE_TYPE_SNMP.equals(module.getType())) {
-                    eventLogService.increment("snmp");
-                }
-            }
-            // removeByIds
-            if (parameterObject instanceof Map) {
-                for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
-                    if (map.getValue() instanceof List) {
-                        for (Object o : ((List) map.getValue())) {
-                            MonitorModule module = monitorModuleService.getById((Serializable) o);
-                            if (module != null && Constant.MODULE_TYPE_SNMP.equals(module.getType())) {
-                                eventLogService.increment("snmp");
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            // Insert Update
-            if (parameterObject instanceof MonitorModule) {
-                if (Constant.MODULE_TYPE_SNMP.equals(((MonitorModule) parameterObject).getType())) {
-                    eventLogService.increment("snmp");
-                }
-            }
-            if (parameterObject instanceof Map) {
-                for (Map.Entry<String, Object> map : ((Map<String, Object>) parameterObject).entrySet()) {
-                    if (map.getValue() instanceof MonitorModule) {
-                        MonitorModule monitorModule = (MonitorModule) map.getValue();
-                        if (Constant.MODULE_TYPE_SNMP.equals(monitorModule.getType())) {
-                            eventLogService.increment("snmp");
-                        } else {
-                            // 判断是否变更类型
-                            if (ToolUtil.isNotEmpty(monitorModule.getId())) {
-                                MonitorModule module = monitorModuleService.getById(monitorModule.getId());
-                                if (module != null && Constant.MODULE_TYPE_SNMP.equals(module.getType())) {
-                                    eventLogService.increment("snmp");
-                                }
-                            }
-                        }
-                    }
-                }
+                // 元信息变更 修改 prometheus promtail
+                eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
             }
         }
     }

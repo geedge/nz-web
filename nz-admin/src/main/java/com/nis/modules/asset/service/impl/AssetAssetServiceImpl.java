@@ -547,6 +547,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getClientPort() != null) {
             ValidateUtils.is(asset.getClientPort()).port(RCode.ASSET_CLIENTPORT_ERROR);
         }
+
+        // client enable 为 1 时 token 必填
+        if (ObjectUtil.equal(1, asset.getClientEnable())) {
+            ValidateUtils.is(asset.getClientToken()).port(RCode.ASSET_CLIENT_TOKEN_ISNULL);
+        }
     }
 
     public boolean validateUSizeForImport(Integer start, Integer end, Cabinet cab) {

@@ -1,7 +1,7 @@
 package com.nis.common.job;
 
 import cn.hutool.log.Log;
-import com.nis.modules.agent.job.AgentJob;
+import com.nis.modules.agent.job.AutoConfigAgentJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
@@ -9,7 +9,6 @@ import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.terminal.job.TerminalCleanRecordJob;
-
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +72,7 @@ public class JobConfig {
     private String terminalCleanJobCronName = "TERMINALCLEAN_JOB";
     @Bean
     public JobDetail agentCronJobDetail() {
-        return JobBuilder.newJob(AgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
+        return JobBuilder.newJob(AutoConfigAgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
     }
 
     @Bean

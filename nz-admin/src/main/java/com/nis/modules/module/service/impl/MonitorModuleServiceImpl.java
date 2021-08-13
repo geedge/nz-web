@@ -219,7 +219,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
         }).findFirst().orElse(null);
 
-        if (metricsConfigMap != null) {
+        if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
             Map configMap = (Map) metricsConfigMap.get("config");
             // 端口校验
             Object port = configMap.get("port");
@@ -262,7 +262,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             return StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), configType);
         }).findFirst().orElse(null);
 
-        if (logsConfigMap != null) {
+        if (logsConfigMap != null && 1 == (Integer) ObjectUtil.defaultIfNull(logsConfigMap.get("enable"), 1)) {
             if (ToolUtil.isNotEmpty(logsConfigMap.get("config"))) {
                 List<Map> configMaps = (List<Map>) logsConfigMap.get("config");
                 for (Map configMap : configMaps) {

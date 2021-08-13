@@ -168,7 +168,7 @@ public class AgentJob extends QuartzJobBean {
         } else {
             // 联邦关闭 global 直接进行 black box 采集  , endpoint 信息
             assetIdAndPromIdMap = this.hashAllocationAsset(globalPromServers, blackboxAssetInfoList);
-            endpointList = monitorEndpointService.getEnableEndpointInfoList();
+            endpointList = monitorEndpointService.getEnableMetricsEndpointInfoListForAgent();
             endpointIdAndPromIdMap = this.hashAllocationEndpoind(globalPromServers, endpointList);
 
             // 保存 redis 中 endpointid 和　promserver id对应关系
@@ -488,7 +488,7 @@ public class AgentJob extends QuartzJobBean {
      */
     private Map<String, String> generateCmdLine(Map<String, String> configMap) {
         Map params = new HashMap(2);
-        params.put("storageDays", configMap.get(Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION));
+        // params.put("storageDays", configMap.get(Constant.SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION)); // deprecated
 
         String content = "";
         try {
@@ -529,7 +529,7 @@ public class AgentJob extends QuartzJobBean {
         Map<Integer, List<Promserver>> dcIdAndPromservers = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Promserver::getDcId));
 
         // 用于生成配置的 endpoint 信息
-        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointService.getEnableEndpointInfoList();
+        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointService.getEnableMetricsEndpointInfoListForAgent();
 
         boolean snmpChangeFlag = this.compareDataChanges("snmp");
         log.debug(String.format("conf_event snmp 数据%s发生变化", snmpChangeFlag ? "" : "没有"));

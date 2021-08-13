@@ -36,7 +36,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      * 目前获取的是启用状态的 endpoint
      * @return
      */
-    List<MonitorEndpoint> getEnableEndpointInfoList();
+    // List<MonitorEndpoint> getEnableEndpointInfoList();
 
     // endpoint 列表，包含 asset dc prom_server 数据
     List<MonitorEndpoint> endpointDetailList();
@@ -48,4 +48,18 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
     Map saveBatchEndpoint(List<MonitorEndpoint> endpointList);
 
     List<Map> render(Map<String, String> params);
+
+    /**
+     * agent metrics 组织配置文件所需要的 endpoint 信息,包含 asset module project dc 等
+     * 目前获取的是启用状态的 endpoint
+     * @return
+     */
+    List<MonitorEndpoint> getEnableMetricsEndpointInfoListForAgent();
+
+    /**
+     * agent logs 组织配置文件所需要的 endpoint 信息,包含 asset module project dc 等
+     * 目前获取的是启用状态的 endpoint
+     * @return
+     */
+    List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent();
 }
