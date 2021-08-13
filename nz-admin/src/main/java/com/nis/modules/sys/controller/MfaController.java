@@ -168,8 +168,7 @@ public class MfaController extends AbstractController {
 	public R verify(@RequestBody SysUserEntity sysUser) {
 		String authToken = sysUser.getAuthToken();
 		String authCode = sysUser.getAuthCode();// 验证码（超过6位是 recovery code）
-		ValidateUtils.is(authToken).notNull(RCode.SYS_AUTHTOKEN_ISNULL)
-			.and(authCode).notNull(RCode.SYS_AUTHCODE_ISNULL);
+		ValidateUtils.is(authToken).notNull(RCode.SYS_AUTHTOKEN_ISNULL);
 		
 		AuthTokenEntity authTokenEntity = sysLoginRedis.get(authToken);
 		if (authTokenEntity == null ) {
@@ -178,11 +177,12 @@ public class MfaController extends AbstractController {
 		Long userId = authTokenEntity.getUserId();
 		Map<String, Object> obj = new HashMap<>();
 		String newAuthToken = MfaUtils.getAuthToken();
-		//获取用户信息
-		SysUserEntity user = sysUserService.getById(userId);
-		if(authCode.length() < 6) {
+		
+		if(Tool.StrUtil.isBlank(authCode) || authCode.length() < 6) {
 			return R.error(RCode.SYS_AUTHCODE_IS_INVALID).putData("authToken", newAuthToken);
 		}
+		//获取用户信息
+		SysUserEntity user = sysUserService.getById(userId);
 		if(authCode.length() == 6) {
 			//authKey + authCode 校验
 			boolean validateTOTPCode = MfaUtils.validateTOTPCode(user.getOtpKey(), authCode);
