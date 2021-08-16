@@ -95,9 +95,9 @@ public class EventLogSqlInterceptor implements Interceptor {
                         // 处理 snmp module
                         eventLogService.increment("snmp", "prometheus", "promtail");
                         break;
-                    case "sys_config":
+                    /*case "sys_config":
                         eventLogService.increment("loki", "cortex", "cmd", "prometheus");
-                        /*// cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
+                        // cmd 会造成 prom_server 重启,影响较大,对比值是否发生变化
                         List<SysConfigEntity> sysConfigList = sysConfigService.list();
                         Map<String, String> configMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
@@ -128,8 +128,8 @@ public class EventLogSqlInterceptor implements Interceptor {
                                     if (b2 || b3 || b4) eventLogService.increment("prometheus");
                                 }
                             }
-                        }*/
-                        break;
+                        }
+                        break;*/
                     default:
                         break;
                 }

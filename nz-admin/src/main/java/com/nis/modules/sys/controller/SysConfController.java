@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.TreeMap;
 
 @RestController
 @RequestMapping("/sys/config")
@@ -32,6 +33,23 @@ public class SysConfController {
     public R saveBasic(@RequestBody Map<String,String> params){
 
         sysConfService.saveBasic(params);
+        return R.ok();
+    }
+
+    @GetMapping("/monitor")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    public R monitor(){
+        Map<String,String> result = sysConfService.batchQuery(SysConfServiceImpl.MONITOR_KEYS);
+        result = new TreeMap<>(result);
+        return R.ok(result);
+    }
+
+    @PutMapping("/monitor")
+    @SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.SYSTEM)
+    @RequiresPermissions({"sys:config:update"})
+    public R saveMonitor(@RequestBody Map<String,String> params){
+
+        sysConfService.saveMonitor(params);
         return R.ok();
     }
 

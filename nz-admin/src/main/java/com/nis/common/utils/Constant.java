@@ -144,7 +144,7 @@ public class Constant {
 	/**
 	 * prometheus query range 代理接口 限制查询最大条数
 	 */
-	public static final String QUERY_MAX_SERIES = "query_max_series";
+	public static final String METRICS_QUERY_MAX_SERIES = "metrics_query_max_series";
 
 	/**
 	 * loki log query range 代理接口 限制查询最大条数
@@ -159,7 +159,7 @@ public class Constant {
 	/**
 	 * LOKI LOG query range 默认 Limit 值
 	 */
-	public static final String LOKI_QUERY_RANGE_DEFAULT_LIMIT = "loki_query_range_default_limit";
+	public static final String LOGS_QUERY_RANGE_DEFAULT_LIMIT = "logs_query_range_default_limit";
 
 	/**
 	 * prometheus server up 也就是endpoint状态 'endpoint'键值对应endpointId
@@ -283,7 +283,7 @@ public class Constant {
 		SYSCONFIG_TYPEWITHKEYS_MAP.put("basic",
 				Arrays.asList(new String[] { "alert_api", "asset_ping_switch", "asset_ping_interval",
 						"node_exporter_target_path", "scrape_interval", "storage_local_retention", "system_name",
-						"timezone", "default_cabinet_usize", "query_max_series", "map_center_config",
+						"timezone", "default_cabinet_usize", "metrics_query_max_series", "map_center_config",
 						"unsaved_change" }));
 		SYSCONFIG_TYPEWITHKEYS_MAP.put("email",
 				Arrays.asList(new String[] { "email_enable", "email_smtp_host", "email_smtp_port", "email_smtp_account",

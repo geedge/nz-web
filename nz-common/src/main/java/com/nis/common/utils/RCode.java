@@ -750,6 +750,8 @@ public enum RCode {
     SYS_CONFIG_SESSION_TIMEOUT_INVALID(573013,"Session timeout is not less than 15"),
     SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT(574014, "Prometheus federation enabled must be 0 or 1"),
     SYS_CONFIGI_ASSETPINGFROM_NCORRECT(574015, "Asset ping from must be 1 or 2"),
+    SYS_CONFIGI_METRICSSTORAGETYPE_NCORRECT(574016, "Metrics storage type must be 1 or 2"),
+    SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT(574017, "Logs storage type must be 1 or 2"),
 
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
     SYS_ROLE_ISNULL(586001, "Role is not exsits"),

@@ -28,4 +28,7 @@ public interface SysConfService extends IService<SysConfigEntity> {
     void resetConfig(Map<String, Object> param) throws IOException;
 
     boolean checkHaMode();
+
+    void saveMonitor(Map<String, String> params);
+
 }

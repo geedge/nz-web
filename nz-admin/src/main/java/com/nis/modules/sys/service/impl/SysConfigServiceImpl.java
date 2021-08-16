@@ -49,6 +49,7 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
+import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
@@ -466,12 +467,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 
         this.saveOrUpdateBatch(configs);
 
-        // 更新配置 query_max_series
+        // 更新配置 metrics_query_max_series
         ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
-        SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("query_max_series") ? true : false).findAny().orElse(null);
+        String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
+        SysConfigEntity configEntity = configs.stream().filter(config -> config.getParamKey().equals("metrics_query_max_series") ? true : false).findAny().orElse(null);
         if(configEntity != null && !StrUtil.equals(configEntity.getParamValue(),queryMaxSeries)) {
-            valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
+            valueOperations.set(Constant.METRICS_QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
             logger.info("Prometheus query_range 查询最大条数限制更改为 " + configEntity.getParamValue());
         }
     }
@@ -488,7 +489,7 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         String storageLocalRetention = saveMap.get("storage_local_retention");
         String timezone = saveMap.get("timezone");
         String defaultCabU = saveMap.get("default_cabinet_usize");
-        String queryMaxSeries = saveMap.get("query_max_series");
+        String queryMaxSeries = saveMap.get("metrics_query_max_series");
         String unsavedChange = saveMap.get("unsaved_change");
 
         ValidateUtils.is(saveMap.get("alert_api")).notNull(RCode.SYS_CONFIG_ALERTAPI_ISNULL)
@@ -709,10 +710,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
     }
 
     /**
-     *测试连接是否可用 ldap
+     * 测试连接是否可用 ldap
      * @param dn
-     * @param password
+     * @param pin
      * @param address
+     * @param ou
+     * @return
      */
     public R testConnectionLdapConfig(String dn, String pin, String address, String ou) {
         InitialDirContext initialDirContext = null;

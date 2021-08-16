@@ -130,7 +130,7 @@ public class LokiProxyController {
         if ("/loki/api/v1/query_range".equals(path)) {
             String limit = request.getParameter("limit");
             if (StrUtil.isEmpty(limit)) {
-                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKI_QUERY_RANGE_DEFAULT_LIMIT));
+                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOGS_QUERY_RANGE_DEFAULT_LIMIT));
                 String defaultLimitVal;
                 if (configEntity != null) {
                     defaultLimitVal = configEntity.getParamValue();

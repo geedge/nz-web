@@ -1,9 +1,8 @@
 package com.nis.modules.sys.service.impl;
 
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -11,22 +10,18 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.utils.HttpClientUtils;
 import com.nis.modules.sys.dao.SysConfDao;
-import com.nis.modules.sys.dao.SysDictDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.redis.SysConfigRedis;
 import com.nis.modules.sys.service.SysConfService;
-import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import freemarker.cache.StringTemplateLoader;
-import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.apache.commons.lang.ArrayUtils;
@@ -44,7 +39,6 @@ import javax.naming.Context;
 import javax.naming.NamingException;
 import javax.naming.directory.InitialDirContext;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
@@ -54,13 +48,30 @@ import java.util.stream.Collectors;
 @Service("sysConfServiceImpl")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
 
-    public static final String[] BASIC_KEYS={"system_name","system_logo","alert_api","default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
+    public static final String[] BASIC_KEYS = {"system_name", "system_logo", "default_cabinet_usize", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable"};
 
-    public static final String[] BASIC_REQUIRED={"system_name","alert_api","storage_local_retention","query_max_series","asset_ping_interval","map_center_config","timezone","unsaved_change","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
+    public static final String[] BASIC_REQUIRED = {"system_name", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable"};
 
-    public static final String[] BASIC_INTEGER={"default_scrape_interval","default_scrape_timeout","storage_local_retention","query_max_series","asset_ping_interval","default_cabinet_usize","snmp_trap_listen_port","session_timeout","prometheus_federation_enabled","asset_ping_from"};
+    public static final String[] BASIC_INTEGER = {"default_cabinet_usize", "snmp_trap_listen_port", "session_timeout", "mfa_auth_enable"};
 
-    public static final String[][] BASIC_DEPEND={};
+    public static final String[][]  BASIC_DEPEND={};
+
+    public static final String[] MONITOR_KEYS = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_storage_s3_endpoint", "metrics_storage_s3_bucket", "metrics_storage_s3_access_key", "metrics_storage_s3_secret_access_key", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_storage_s3_endpoint", "logs_storage_s3_bucket", "logs_storage_s3_access_key", "logs_storage_s3_secret_access_key", "logs_query_range_default_limit"};
+
+    public static final String[] MONITOR_REQUIRED = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
+
+    public static final String[] MONITOR_INTEGER = {"prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
+
+    public static final String[][] MONITOR_DEPEND = {
+            {"metrics_storage_s3_endpoint", "metrics_storage_type", "2"},
+            {"metrics_storage_s3_bucket", "metrics_storage_type", "2"},
+            {"metrics_storage_s3_access_key", "metrics_storage_type", "2"},
+            {"metrics_storage_s3_secret_access_key", "metrics_storage_type", "2"},
+            {"logs_storage_s3_endpoint", "logs_storage_type", "2"},
+            {"logs_storage_s3_bucket", "logs_storage_type", "2"},
+            {"logs_storage_s3_access_key", "logs_storage_type", "2"},
+            {"logs_storage_s3_secret_access_key", "logs_storage_type", "2"}
+    };
 
     public static final String[] EMAIL_KEYS={"email_test","email_enable","email_host","email_port","email_timeout","email_auth_account","email_auth_password","email_send_account","email_test_account","email_security_type"};
 
@@ -101,6 +112,9 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
     private MailUtil mailUtil;
     @Autowired
     private SysConfDao sysConfDao;
+
+    @Autowired
+    private MonitorEventLogService eventLogService;
 
     @Override
     public void saveLdap(Map<String, String> params) {
@@ -196,35 +210,10 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         Integer sessionTimeoutIntValue = CommonUtils.toInt(params.get("session_timeout"));
         ValidateUtils.is(sessionTimeoutIntValue).min(15, RCode.SYS_CONFIG_SESSION_TIMEOUT_INVALID);
 
-        Integer queryMaxSeriesIntValue = CommonUtils.toInt(params.get("query_max_series"));
-        if (queryMaxSeriesIntValue < -1 || queryMaxSeriesIntValue > 1000) {
-            throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INTERVAL);
-        }
-
-        Integer promeFedeEnabledIntValue = CommonUtils.toInt(params.get("prometheus_federation_enabled"));
-        if (promeFedeEnabledIntValue != 0 && promeFedeEnabledIntValue != 1) {
-            throw new NZException(RCode.SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT);
-        }
-
-        Integer assetPingFromIntValue = CommonUtils.toInt(params.get("asset_ping_from"));
-        if (assetPingFromIntValue != 1 && assetPingFromIntValue != 2) {
-            throw new NZException(RCode.SYS_CONFIGI_ASSETPINGFROM_NCORRECT);
-        }
-
         //设置默认值
 //        this.setDefaultValue(result,BASIC_DEFAULT);
         //保存
         this.saveOrUpdateConfsBatch(result);
-
-        //更新 缓存中的query_max_series
-        String num = params.get("query_max_series");
-        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
-
-        if(!StrUtil.equals(num,queryMaxSeries)) {
-            valueOperations.set(Constant.QUERY_MAX_SERIES, num, 30, TimeUnit.MINUTES);
-            logger.info("Prometheus query_range 查询最大条数限制更改为 " + num);
-        }
 
         //发布 snmp trap 或者 session过期时间变化 监听端口
         if(ToolUtil.isEmpty(snmpTrapConf)||!StrUtil.equals(snmpTrapConf.getParamValue(),params.get(SNMP_TRAP_KEY))){
@@ -393,7 +382,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 String[] dependKey = Tool.StrUtil.split(depend[1],","); //多个依赖用逗号隔开
                 String[] values = Tool.StrUtil.split(depend[2],",");//多个value用逗号隔开
                 boolean isDepend = true;
-                for (int i=0;i<dependKey.length-1;i++){
+                for (int i = 0; i < dependKey.length; i++) {
                     String dk = dependKey[i]; //
                     String value = values[i];
                     if(!(params.containsKey(dk) && Tool.StrUtil.equals(params.get(dk),value))){ //如果不存在依赖的key 或者依赖的key对应的value 不符合，说明不需要依赖
@@ -542,6 +531,105 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
         return false;
     }
+
+    @Override
+    public void saveMonitor(Map<String, String> params) {
+        // 过滤非法的key
+        Map<String, String> result = this.validateKeys(MONITOR_KEYS, params);
+        // 校验是否缺少必填项
+        this.validateRequired(result, MONITOR_REQUIRED, MONITOR_DEPEND);
+        //校验integer类型
+        this.validateInteger(MONITOR_INTEGER, result);
+
+        Integer queryMaxSeriesIntValue = CommonUtils.toInt(params.get(Constant.METRICS_QUERY_MAX_SERIES));
+        if (queryMaxSeriesIntValue < -1 || queryMaxSeriesIntValue > 1000) {
+            throw new NZException(RCode.SYS_CONFIG_QUERYMAXSERIES_INTERVAL);
+        }
+
+        Integer promeFedeEnabledIntValue = CommonUtils.toInt(params.get("prometheus_federation_enabled"));
+        if (promeFedeEnabledIntValue != 0 && promeFedeEnabledIntValue != 1) {
+            throw new NZException(RCode.SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT);
+        }
+
+        Integer assetPingFromIntValue = CommonUtils.toInt(params.get("asset_ping_from"));
+        if (assetPingFromIntValue != 1 && assetPingFromIntValue != 2) {
+            throw new NZException(RCode.SYS_CONFIGI_ASSETPINGFROM_NCORRECT);
+        }
+
+        Integer metricsStorageTypeIntValue = CommonUtils.toInt(params.get("metrics_storage_type"));
+        if (metricsStorageTypeIntValue != 1 && metricsStorageTypeIntValue != 2) {
+            throw new NZException(RCode.SYS_CONFIGI_METRICSSTORAGETYPE_NCORRECT);
+        }
+
+        Integer logsStorageTypeIntValue = CommonUtils.toInt(params.get("logs_storage_type"));
+        if (logsStorageTypeIntValue != 1 && logsStorageTypeIntValue != 2) {
+            throw new NZException(RCode.SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT);
+        }
+        // 处理 monitor_event_log 数据变动
+        this.handleMoniotEventLog(result);
+        //保存
+        this.saveOrUpdateConfsBatch(result);
+
+        //更新 缓存中的 metrics_query_max_series
+        String metricsQueryMaxSeries = params.get(Constant.METRICS_QUERY_MAX_SERIES);
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
+
+        if (!StrUtil.equals(metricsQueryMaxSeries, queryMaxSeries)) {
+            valueOperations.set(Constant.METRICS_QUERY_MAX_SERIES, metricsQueryMaxSeries, 30, TimeUnit.MINUTES);
+            logger.info("Prometheus query_range 查询最大条数限制更改为 " + metricsQueryMaxSeries);
+        }
+    }
+
+    /**
+     * 处理 monitor_event_log 数据变动
+     * @param updateMap
+     */
+    private void handleMoniotEventLog(Map<String, String> updateMap) {
+        // 1. 查询未修改前 monitor 数据
+        List<String> updateKeys = new ArrayList<>();
+        Map<String, String> beforeUpdateMap = this.batchQuery(SysConfServiceImpl.MONITOR_KEYS);
+        for (Map.Entry<String, String> entry : beforeUpdateMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            // 比对
+            if (!StrUtil.equals(updateMap.get(key), value)) {
+                updateKeys.add(key);
+            }
+        }
+
+        // 根据 key 更新不同 event_log 值
+        if (Tool.CollectionUtil.isNotEmpty(updateKeys)) {
+            Set<String> incrementKeys = new HashSet<>();
+            // prometheus.yml 改动
+            if (updateKeys.contains("alert_api") || updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout") || updateKeys.contains("prometheus_federation_enabled")) {
+                incrementKeys.add("prometheus");
+            }
+            // prometheus config.conf 启动项改动
+            if (updateKeys.contains("metrics_storage_retention")) {
+                incrementKeys.add("prometheus");
+                incrementKeys.add("cmd");
+            }
+            // loki.yml 改动
+            if (updateKeys.contains("logs_storage_retention") || updateKeys.contains("logs_storage_s3_access_key") || updateKeys.contains("logs_storage_s3_bucket") || updateKeys.contains("logs_storage_s3_endpoint") || updateKeys.contains("logs_storage_s3_secret_access_key")) {
+                incrementKeys.add("loki");
+            }
+            // promtail 下发方式改变
+            if (updateKeys.contains("logs_storage_type")) {
+                incrementKeys.add("promtail");
+            }
+            // cortex.yml 改动
+            if (updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
+                incrementKeys.add("cortex");
+            }
+            // metrics 下发方式改变
+            if (updateKeys.contains("metrics_storage_type")) {
+                incrementKeys.add("prometheus");
+            }
+            eventLogService.increment(ArrayUtil.toArray(incrementKeys, String.class));
+        }
+    }
+
     /**
      *测试连接是否可用 ldap
      */

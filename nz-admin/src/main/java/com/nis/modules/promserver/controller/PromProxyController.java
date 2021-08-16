@@ -255,10 +255,10 @@ public class PromProxyController {
 
 			// 查询结果集超过系统设置最大限制 , -1 表示不做限制
 			ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-			String queryMaxSeries = valueOperations.get(Constant.QUERY_MAX_SERIES);
+			String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
 			if (StringUtils.isEmpty(queryMaxSeries)) {
-				SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.QUERY_MAX_SERIES));
-				valueOperations.set(Constant.QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
+				SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.METRICS_QUERY_MAX_SERIES));
+				valueOperations.set(Constant.METRICS_QUERY_MAX_SERIES, configEntity.getParamValue(), 30, TimeUnit.MINUTES);
 				queryMaxSeries = configEntity.getParamValue();
 			}
 
