@@ -550,7 +550,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // client enable 为 1 时 token 必填
         if (ObjectUtil.equal(1, asset.getClientEnable())) {
-            ValidateUtils.is(asset.getClientToken()).port(RCode.ASSET_CLIENT_TOKEN_ISNULL);
+            ValidateUtils.is(asset.getClientToken()).notNull(RCode.ASSET_CLIENT_TOKEN_ISNULL);
         }
     }
 
@@ -699,6 +699,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         if (asset.getBrandId() == null) {
             AssetModel model = modelService.getById(asset.getModelId());
             asset.setBrandId(model.getBrandId());
+        }
+
+        if (asset.getClientAddress() == null) {
+            asset.setClientAddress(asset.getManageIp());
         }
 
         // 保存
@@ -1896,7 +1900,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
                 asset.setClientUser(ObjectUtil.defaultIfEmpty(clientUser, null));
                 asset.setClientPin(ObjectUtil.defaultIfEmpty(clientPin, null));
-                asset.setClientAddress(ObjectUtil.defaultIfEmpty(clientAddress, null));
+                asset.setClientAddress(ObjectUtil.defaultIfEmpty(clientAddress, asset.getManageIp()));
                 asset.setClientPort(StringUtils.isNotEmpty(clientPort) ? Integer.valueOf(clientPort) : null);
                 saveEntitys.put("asset", asset);
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
