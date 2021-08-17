@@ -532,9 +532,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     private void updateLokiConf(List<Promserver> healthyPromServers) {
         // 生成 loki 配置模板
         Map lokiYml = configUtil.generateLokiYml();
-        // 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置   Expired
-        // List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        for (Promserver promserver : healthyPromServers) {
+        // 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置
+        List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
+        for (Promserver promserver : globalPromServerList) {
             UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("loki").appendPath("config");
 
             Map<String, Object> lokiConfigBody = new HashMap<>(2);
