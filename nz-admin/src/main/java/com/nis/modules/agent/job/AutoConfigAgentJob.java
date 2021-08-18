@@ -213,7 +213,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
                 AssetAsset asset = endpoint.getAsset();
                 talonConfig.put("assetId", asset.getId());
-                talonConfig.put("target", String.format("%s:%s", asset.getClientAddress(), asset.getClientPort()));
+                talonConfig.put("target", String.format("%s:%s", asset.getManageIp(), asset.getClientPort()));
                 talonConfig.put("token", asset.getClientToken());
                 Map params = new HashMap(2);
                 params.put("config", promtailYml);
@@ -278,7 +278,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
                 AssetAsset asset = endpoint.getAsset();
                 talonConfig.put("assetId", asset.getId());
-                talonConfig.put("target", String.format("%s:%s", asset.getClientAddress(), asset.getClientPort()));
+                talonConfig.put("target", String.format("%s:%s", asset.getManageIp(), asset.getClientPort()));
                 talonConfig.put("token", asset.getClientToken());
                 Map params = new HashMap(2);
                 params.put("config", promtailYml);

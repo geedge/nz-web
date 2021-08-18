@@ -115,7 +115,7 @@ public class LokiProxyController {
                 break;
         }
         // 随机 可用 loki
-        Promserver server = promserverService.getOneAvaPromServer(promId, null, Constant.PromserverType.LOKI.getValue());
+        Promserver server = promserverService.getOneAvaPromServer(promId, null, Constant.PromserverType.GLOBAL.getValue());
         if (ToolUtil.isEmpty(server)) {
             ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
         }
