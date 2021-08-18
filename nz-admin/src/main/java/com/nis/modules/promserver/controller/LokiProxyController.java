@@ -19,8 +19,8 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import net.sf.json.util.JSONUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -85,7 +85,7 @@ public class LokiProxyController {
     private PromserverService promserverService;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private SysConfigService sysConfigService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -121,6 +121,8 @@ public class LokiProxyController {
         }
         log.debug("path:{},loki server:{}", proxyPath, JSONUtils.valueToString(server));
         // 请求 prometheus server
+        String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+        proxyPath = agentPath + "/loki/proxy" + proxyPath;
         requestProm(server.getHost(), server.getPort(), proxyPath, server.getToken(), request, response);
     }
 
@@ -130,18 +132,12 @@ public class LokiProxyController {
         if ("/loki/api/v1/query_range".equals(path)) {
             String limit = request.getParameter("limit");
             if (StrUtil.isEmpty(limit)) {
-                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOGS_QUERY_RANGE_DEFAULT_LIMIT));
-                String defaultLimitVal;
-                if (configEntity != null) {
-                    defaultLimitVal = configEntity.getParamValue();
-                } else {
-                    defaultLimitVal = "1000";
-                }
-                queryString = String.format("limit=%s&%s", defaultLimitVal, queryString);
+                String defaultLimitVal = sysConfigService.getValue(Constant.LOGS_QUERY_RANGE_DEFAULT_LIMIT);
+                queryString = String.format("limit=%s&%s", StrUtil.emptyToDefault(defaultLimitVal,"1000"), queryString);
             }
         }
 
-        String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(path, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
+        String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(path, Charset.forName("UTF-8"))).toURL().toString() + "?" + StrUtil.emptyToDefault(queryString, "");
         log.debug("loki url: {}", url);
         String method = request.getMethod();
         HttpURLConnection conn = null;
@@ -255,7 +251,7 @@ public class LokiProxyController {
 
                 List<Object> valuesList = resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
                 // 查询结果集超过系统设置最大限制 , -1 表示不做限制
-                SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
+                SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
                 Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
                 if (!queryMaxSeriesIntVal.equals(-1) && valuesList.size() > queryMaxSeriesIntVal) {
                     data.put("result", Collections.emptyList());
@@ -300,7 +296,7 @@ public class LokiProxyController {
             mapList = mapList.stream().sorted((s1, s2) -> Long.valueOf(s1.get("timestamp").toString()).compareTo(Long.valueOf(s2.get("timestamp").toString()))).collect(Collectors.toList());
         }
 
-        SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKI_LOGS_QUERY_STAT_MAX_POINTS));
+        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKI_LOGS_QUERY_STAT_MAX_POINTS));
         Integer nodeNum = Integer.valueOf(configEntity.getParamValue());
 
         Long first, end;

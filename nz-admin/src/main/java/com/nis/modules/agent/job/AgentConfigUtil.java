@@ -348,7 +348,7 @@ public class AgentConfigUtil {
         List<Map> clientsMapList = new ArrayList<>();
         // 不开启联邦只需要配置分配的 per-datacenter agent
         Map clientEntity = new HashMap(4);
-        clientEntity.put("url", String.format("http://%s:%s%s%s", currentAgent.getHost(), currentAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/api/v1/push"));
+        clientEntity.put("url", String.format("http://%s:%s%s%s", currentAgent.getHost(), currentAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
         clientEntity.put("token", currentAgent.getToken());
         clientsMapList.add(clientEntity);
 
@@ -648,7 +648,7 @@ public class AgentConfigUtil {
                 } else {
                     // 指向其他 agent
                     map.put("token", globalPromServer.getToken());
-                    map.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    map.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                     map.put("mode", "remote");
                 }
                 lokiPushUrls.add(map);
@@ -657,7 +657,7 @@ public class AgentConfigUtil {
             // s3 存储 global 推向自己
             Map tempMap = new HashMap(4);
             tempMap.put("token", promserver.getToken());
-            tempMap.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+            tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
             tempMap.put("mode", "local");
             lokiPushUrls.add(tempMap);
         }
@@ -681,7 +681,7 @@ public class AgentConfigUtil {
             Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
             Map tempMap = new HashMap(4);
             tempMap.put("token", firstGlobalAgent.getToken());
-            tempMap.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+            tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
             tempMap.put("mode", "remote");
             lokiPushUrls.add(tempMap);
         } else {
@@ -689,7 +689,7 @@ public class AgentConfigUtil {
             for (Promserver globalPromServer : globalPromServers) {
                 Map tempMap = new HashMap(4);
                 tempMap.put("token", globalPromServer.getToken());
-                tempMap.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                 tempMap.put("mode", "remote");
                 lokiPushUrls.add(tempMap);
             }
