@@ -776,6 +776,21 @@ public class Constant {
     // 日志存储模式，1: 本地文件存储，2：S3对象存储
     public static final String SYSCONFIG_KEY_LOGS_STORAGE_TYPE = "logs_storage_type";
 
+	/**
+	 * 日志代理模式 logs_proxy_push_type
+	 *  1: 全部使用 agent proxy 方式
+	 *  2: 联邦开启模式下，promtail 先推送至 per-datacenter agent 代理接口，再 push global loki
+	 *  3: promtail push global loki
+	 */
+	public static final String SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE = "logs_proxy_push_type";
+
+	/**
+	 * 指标代理模式 metrics_proxy_push_type
+	 * 1: 经过 agent 代理推送 cortex
+	 * 2: 直接推送 cortex
+	 */
+	public static final String SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE = "metrics_proxy_push_type";
+
     // 日志存储天数，默认7天，单位天
     public static final String SYSCONFIG_KEY_LOGS_STORAGE_RETENTION = "logs_storage_retention";
 

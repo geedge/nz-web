@@ -48,6 +48,12 @@ public class AgentConfigUtil {
 
     private static Log log = Log.get();
 
+    @Value("${nezha.lokiDefaultPort:13100}")
+    private Integer lokiDefaultPort;
+
+    @Value("${nezha.cortexDefaultPort:10093}")
+    private Integer cortexDefaultPort;
+
     @Value("${nezha.virtualAgentNum}")
     private Integer virtualAgentNum;
 
@@ -323,10 +329,11 @@ public class AgentConfigUtil {
      * 生成 promtail.yml
      *
      * @param currentAgent
+     * @param globalAgentList
      * @param logEndpointConfigInfoEntity
      * @return
      */
-    public Map generatePromtailYml(Promserver currentAgent, MonitorEndpoint logEndpointConfigInfoEntity) {
+    public Map generatePromtailYml(Promserver currentAgent, List<Promserver> globalAgentList, MonitorEndpoint logEndpointConfigInfoEntity) {
         log.debug("promtail.yml 开始生成");
         Map<String, Object> params = new LinkedHashMap();
 
@@ -346,11 +353,28 @@ public class AgentConfigUtil {
         params.put("endpointList", endpointList);
 
         List<Map> clientsMapList = new ArrayList<>();
-        // 不开启联邦只需要配置分配的 per-datacenter agent
-        Map clientEntity = new HashMap(4);
-        clientEntity.put("url", String.format("http://%s:%s%s%s", currentAgent.getHost(), currentAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
-        clientEntity.put("token", currentAgent.getToken());
-        clientsMapList.add(clientEntity);
+        // 日志代理推送模式
+        String logsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE);
+        switch (StrUtil.emptyToDefault(logsProxyPushType, "1")) {
+            case "1":  // 全部使用 agent proxy 方式
+            case "2": {// 联邦开启模式下，promtail 先推送至 per-datacenter agent 代理接口，再 push global loki
+                Map clientEntity = new HashMap(4);
+                clientEntity.put("url", String.format("http://%s:%s%s%s", currentAgent.getHost(), currentAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
+                clientEntity.put("token", currentAgent.getToken());
+                clientsMapList.add(clientEntity);
+                break;
+            }
+            case "3": {
+                // promtail push global loki
+                for (Promserver globalAgent : globalAgentList) {
+                    Map clientEntity = new HashMap(4);
+                    clientEntity.put("url", String.format("http://%s:%s%s", globalAgent.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+                    clientEntity.put("token", globalAgent.getToken());
+                    clientsMapList.add(clientEntity);
+                }
+                break;
+            }
+        }
 
         params.put("clientsMapList", clientsMapList);
 
@@ -537,6 +561,15 @@ public class AgentConfigUtil {
         params.put("agentPort", currentAgent.getPort());
         params.put("agentToken", currentAgent.getToken());
 
+        /**
+         * 指标代理模式 metrics_proxy_push_type
+         * 1: 经过 agent 代理推送 cortex
+         * 2: 直接推送 cortex
+         */
+        String metricsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
+        params.put("metricsProxyPushType", StrUtil.emptyToDefault(metricsProxyPushType, "1"));
+        params.put("cortexDefaultPort", cortexDefaultPort);
+
         // 处理 endpoint 配置项 为了适应模板
         this.handleDataConfigForTmpl(currentAgent, endpointList, assetList);
 
@@ -639,27 +672,38 @@ public class AgentConfigUtil {
         // 对象存储开启  global 都需要下发 lokiPushUrls config 指向自己
         // 对象存储关闭  global 都需要下发 lokiPushUrls config 指向自己 和 remote 其他 global
         String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
-        if (StrUtil.equals("1", logsStorageType)) {
-            for (Promserver globalPromServer : globalPromServers) {
-                Map map = new HashMap(4);
-                // 指向自己 agent
-                if (globalPromServer.getId().equals(promserver.getId())) {
-                    map.put("mode", "local");
+        String logsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE);
+        switch (StrUtil.emptyToDefault(logsProxyPushType, "1")) {
+            // 全部使用 agent proxy 方式
+            case "1": {
+                if (StrUtil.equals("1", logsStorageType)) {
+                    for (Promserver globalPromServer : globalPromServers) {
+                        Map map = new HashMap(4);
+                        // 指向自己 agent
+                        if (globalPromServer.getId().equals(promserver.getId())) {
+                            map.put("mode", "local");
+                        } else {
+                            // 指向其他 agent
+                            map.put("token", globalPromServer.getToken());
+                            map.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                            map.put("mode", "remote");
+                        }
+                        lokiPushUrls.add(map);
+                    }
                 } else {
-                    // 指向其他 agent
-                    map.put("token", globalPromServer.getToken());
-                    map.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
-                    map.put("mode", "remote");
+                    // s3 存储 global 推向自己
+                    Map tempMap = new HashMap(4);
+                    tempMap.put("token", promserver.getToken());
+                    tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    tempMap.put("mode", "local");
+                    lokiPushUrls.add(tempMap);
                 }
-                lokiPushUrls.add(map);
+                break;
             }
-        } else {
-            // s3 存储 global 推向自己
-            Map tempMap = new HashMap(4);
-            tempMap.put("token", promserver.getToken());
-            tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
-            tempMap.put("mode", "local");
-            lokiPushUrls.add(tempMap);
+            case "2":
+            case "3":
+                // 啥也不做 per-datecenter / promtail 推送到 loki
+                break;
         }
         Map<String, Object> lokiPushUrlConfigBody = new LinkedHashMap(4);
         lokiPushUrlConfigBody.put("lokiPushUrls", lokiPushUrls);
@@ -676,22 +720,61 @@ public class AgentConfigUtil {
         List<Map> lokiPushUrls = new ArrayList<>();
         // 判断是否开启 对象存储
         String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
+        // 日志代理推送模式
+        String logsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE);
         if (StrUtil.equals("2", logsStorageType)) {
             // 开启 /  per-datacenter 选择任意一个 global 推送即可
             Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
-            Map tempMap = new HashMap(4);
-            tempMap.put("token", firstGlobalAgent.getToken());
-            tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
-            tempMap.put("mode", "remote");
-            lokiPushUrls.add(tempMap);
+            switch (StrUtil.emptyToDefault(logsProxyPushType, "1")) {
+                case "1": {
+                    // 全部使用 agent proxy 方式 agent 推送 global proxy
+                    Map tempMap = new HashMap(4);
+                    tempMap.put("token", firstGlobalAgent.getToken());
+                    tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    tempMap.put("mode", "remote");
+                    lokiPushUrls.add(tempMap);
+                    break;
+                }
+                case "2": {
+                    // promtail 先推送至 per-datacenter agent 代理接口，agent 推送 global loki
+                    Map tempMap = new HashMap(4);
+                    tempMap.put("token", firstGlobalAgent.getToken());
+                    tempMap.put("target", String.format("http://%s:%s%s", firstGlobalAgent.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+                    tempMap.put("mode", "remote");
+                    lokiPushUrls.add(tempMap);
+                    break;
+                }
+                case "3":  // 啥也不做 promtail 直接推送到 global loki
+                    break;
+            }
         } else {
             // 关闭 / per-datacenter 给所有 global  推送
-            for (Promserver globalPromServer : globalPromServers) {
-                Map tempMap = new HashMap(4);
-                tempMap.put("token", globalPromServer.getToken());
-                tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
-                tempMap.put("mode", "remote");
-                lokiPushUrls.add(tempMap);
+            switch (StrUtil.emptyToDefault(logsProxyPushType, "1")) {
+                case "1": {
+                    // 全部使用 agent proxy 方式 agent 推送 global proxy
+                    for (Promserver globalPromServer : globalPromServers) {
+                        Map tempMap = new HashMap(4);
+                        tempMap.put("token", globalPromServer.getToken());
+                        tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                        tempMap.put("mode", "remote");
+                        lokiPushUrls.add(tempMap);
+                    }
+                    break;
+                }
+                case "2": {
+                    // promtail 先推送至 per-datacenter agent 代理接口，agent 推送 global loki
+                    for (Promserver globalPromServer : globalPromServers) {
+                        Map tempMap = new HashMap(4);
+                        tempMap.put("token", globalPromServer.getToken());
+                        tempMap.put("target", String.format("http://%s:%s%s", globalPromServer.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+                        tempMap.put("mode", "remote");
+                        lokiPushUrls.add(tempMap);
+                    }
+                    break;
+                }
+                // 啥也不做 promtail 直接推送到 global loki
+                case "3":
+                    break;
             }
         }
         Map<String, Object> lokiPushUrlConfigBody = new LinkedHashMap(4);

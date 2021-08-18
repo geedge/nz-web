@@ -209,7 +209,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 Map talonConfig = new HashMap();
                 Promserver promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
 
-                Map promtailYml = configUtil.generatePromtailYml(promserver, endpoint);
+                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, endpoint);
 
                 AssetAsset asset = endpoint.getAsset();
                 talonConfig.put("assetId", asset.getId());
@@ -274,7 +274,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 // endpoint 对应的 per-datacenter
                 Promserver promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
                 // 以 asset endpoint 为维度去生成 promtail.yml
-                Map promtailYml = configUtil.generatePromtailYml(promserver, endpoint);
+                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, endpoint);
 
                 AssetAsset asset = endpoint.getAsset();
                 talonConfig.put("assetId", asset.getId());
