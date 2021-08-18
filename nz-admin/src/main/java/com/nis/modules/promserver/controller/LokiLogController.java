@@ -17,6 +17,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
 import net.sf.json.util.JSONUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
@@ -43,6 +44,9 @@ public class LokiLogController {
     @Autowired
     private PromserverService promserverService;
 
+    @Autowired
+    private SysConfigService sysConfigService;
+
     private static ExecutorService exec = Executors.newCachedThreadPool();
 
     @RequestMapping(value = "/logs/loki/export")
@@ -52,18 +56,21 @@ public class LokiLogController {
                 .and(request.getParameter("end")).notNull(RCode.PROMSERVER_PARAM_END_ISNULL);
 
         // 随机 可用 loki
-        Promserver server = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.LOKI.getValue());
+        Promserver server = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
         if (ToolUtil.isEmpty(server)) {
             ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
         }
         log.debug("loki server:{}", JSONUtils.valueToString(server));
+
+        String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+        agentPath = agentPath + "/loki/proxy";
 
         String[] logqls = request.getParameterValues("logql[]");
         List<String> requestUrlList = new ArrayList<>();
         for (String logql : logqls) {
             String queryString = ReflectUtil.invoke(request, "getQueryString");
             logql = logql.replaceAll("&quot;", "\"");
-            String url = UrlBuilder.create().setScheme("http").setHost(server.getHost()).setPort(server.getPort()).setPath(UrlPath.of("/loki/api/v1/query_range", Charset.forName("UTF-8"))).toURL().toString() + "?query=" + URLEncoder.encode(logql) + "&" + queryString;
+            String url = UrlBuilder.create().setScheme("http").setHost(server.getHost()).setPort(server.getPort()).setPath(UrlPath.of(agentPath + "/loki/api/v1/query_range", Charset.forName("UTF-8"))).toURL().toString() + "?query=" + URLEncoder.encode(logql) + "&" + queryString;
             requestUrlList.add(url);
         }
 
