@@ -641,12 +641,16 @@ public class AgentConfigUtil {
         String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
         if (StrUtil.equals("1", logsStorageType)) {
             for (Promserver globalPromServer : globalPromServers) {
-                // 排除自己
-                if (globalPromServer.getId().equals(promserver.getId()) && globalPromServers.size() > 1) continue;
                 Map map = new HashMap(4);
-                map.put("token", globalPromServer.getToken());
-                map.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
-                map.put("mode", "remote");
+                // 指向自己 agent
+                if (globalPromServer.getId().equals(promserver.getId())) {
+                    map.put("mode", "local");
+                } else {
+                    // 指向其他 agent
+                    map.put("token", globalPromServer.getToken());
+                    map.put("target", String.format("%s:%s%s/loki/proxy/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    map.put("mode", "remote");
+                }
                 lokiPushUrls.add(map);
             }
         } else {
