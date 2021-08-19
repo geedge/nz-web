@@ -200,6 +200,10 @@ public class AgentConfigUtil {
         params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY));
         params.put("secret", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY));
         params.put("insecure", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE));
+        //  object storage 标识  1: 本地文件存储，2：S3对象存储
+        String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+        boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
+        params.put("isLocalStorage", isLocalStorage);
 
         List<String> joinMemberIpList = new ArrayList<>();
         joinMemberIpList = globalPromServerList.stream().filter(entity -> !entity.getId().equals(promserver.getId())).map(Promserver::getHost).collect(Collectors.toList());

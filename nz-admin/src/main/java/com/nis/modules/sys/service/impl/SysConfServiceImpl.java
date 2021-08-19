@@ -617,6 +617,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             // promtail 下发方式改变
             if (updateKeys.contains("logs_storage_type")) {
                 incrementKeys.add("promtail");
+                incrementKeys.add("loki");
             }
             // cortex.yml 改动
             if (updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
@@ -625,6 +626,8 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             // metrics 下发方式改变
             if (updateKeys.contains("metrics_storage_type")) {
                 incrementKeys.add("prometheus");
+                incrementKeys.add("rule");
+                incrementKeys.add("cortex");
             }
             eventLogService.increment(ArrayUtil.toArray(incrementKeys, String.class));
         }
