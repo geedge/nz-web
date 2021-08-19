@@ -904,6 +904,7 @@ public class AgentConfigUtil {
      */
     public List<Promserver> updateAgentStatus() {
         List<Promserver> allPromServers = promService.list();
+        allPromServers.stream().forEach(promserver -> promserver.setStatus(null));
         String agentPrefixPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 
         List<Callable<Promserver>> tasks = new ArrayList<>();
@@ -937,15 +938,29 @@ public class AgentConfigUtil {
                                 String cortexState = (String) data.get("cortex");
                                 String lokiState = (String) data.get("loki");
                                 String authState = (String) data.get("auth");
-                                if ("UP".equals(prometheusState) && "UP".equals(confagentState) && "UP".equals(snmpExporterState) && "UP".equals(blackboxExporterState) && "UP".equals(cortexState) && "UP".equals(lokiState) && "TRUE".equals(authState)) {
-                                    // 服务正常  认证成功
-                                    promServer.setStatus(1);
-                                } else if ("UP".equals(prometheusState) && "UP".equals(confagentState) && "UP".equals(snmpExporterState) && "UP".equals(blackboxExporterState) && "UP".equals(cortexState) && "UP".equals(lokiState) && "FALSE".equals(authState)) {
-                                    // 服务正常  认证失败
-                                    promServer.setStatus(-1);
-                                } else {
+                                String unavailable = "UNAVAILABLE", up = "UP", down = "DOWN";
+                                if (down.equals(prometheusState) || down.equals(confagentState) || down.equals(snmpExporterState) || down.equals(blackboxExporterState) || down.equals(cortexState) || down.equals(lokiState)) {
                                     // 异常
                                     promServer.setStatus(0);
+                                } else {
+                                    if ("FALSE".equals(authState)) {
+                                        // 认证失败
+                                        promServer.setStatus(-1);
+                                    } else {
+                                        // 状态不为 down ，继续判断 可用状态
+                                        if (unavailable.equals(cortexState)) {
+                                            Boolean cortexUpdateExist = redisTemplate.hasKey(Constant.REDIS_KEY_CORTEX_UPDATE);
+                                            // 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
+                                            if (!cortexUpdateExist) promServer.setStatus(0);
+                                        }
+                                        if (unavailable.equals(lokiState)) {
+                                            Boolean lokiUpdateExist = redisTemplate.hasKey(Constant.REDIS_KEY_LOKI_UPDATE);
+                                            // 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
+                                            if (!lokiUpdateExist) promServer.setStatus(0);
+                                        }
+                                        // 服务可用
+                                        if (promServer.getStatus() == null) promServer.setStatus(1);
+                                    }
                                 }
                                 data.remove("auth");
                                 promServer.setStatusInfo(JSONObject.toJSONString(data));

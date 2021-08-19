@@ -27,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -552,6 +553,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
             }
         }
+
+        // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
+        String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT), "300");
+        redisTemplate.opsForValue().set(Constant.REDIS_KEY_LOKI_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
     }
 
     /**
@@ -657,6 +662,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
             }
         }
+
+        // 配置下发后向 redis 记录配置更新  默认五分钟 单位 s
+        String cortexUpdateTimeout = Tool.ObjectUtil.defaultIfNull(sysConfigMap.get(Constant.SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT), "300");
+        redisTemplate.opsForValue().set(Constant.REDIS_KEY_CORTEX_UPDATE, "1", Integer.valueOf(cortexUpdateTimeout), TimeUnit.SECONDS);
         /*} else {
             // 没有开启 对象存储 啥也不做
         }*/

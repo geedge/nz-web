@@ -142,6 +142,12 @@ public class Constant {
 	public static final String REDIS_KEY_EMAIL_ALERT_MESSAGE = "alert_message_list";
 
 	/**
+	 * agent 配置下发 cortex/loke redis 下发标识
+	 */
+	public static final String REDIS_KEY_CORTEX_UPDATE = "cortex_update";
+	public static final String REDIS_KEY_LOKI_UPDATE = "loki_update";
+
+	/**
 	 * prometheus query range 代理接口 限制查询最大条数
 	 */
 	public static final String METRICS_QUERY_MAX_SERIES = "metrics_query_max_series";
@@ -805,6 +811,13 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY = "logs_storage_s3_access_key";
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY = "logs_storage_s3_secret_access_key";
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE = "logs_storage_s3_insecure";
+
+
+	/**
+	 * agent 配置下发 cortex / loki 重启超时时间设置 （在多少 秒 内返回 503 仍视为可用）
+	 */
+	public static final String SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT = "cortex_update_timeout";
+	public static final String SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT = "loki_update_timeout";
 
 
 
