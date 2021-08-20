@@ -57,11 +57,11 @@ public class LokiProxyController {
 
     static {
         Map<String, String> logLevel = new LinkedHashMap<>();
-        logLevel.put("emerg", "critical");
-        logLevel.put("fatal", "critical");
-        logLevel.put("alert", "critical");
-        logLevel.put("crit", "critical");
-        logLevel.put("critical", "critical");
+        logLevel.put("emerg", "fatal");
+        logLevel.put("fatal", "fatal");
+        logLevel.put("alert", "fatal");
+        logLevel.put("crit", "fatal");
+        logLevel.put("critical", "fatal");
         logLevel.put("warn", "warning");
         logLevel.put("warning", "warning");
         logLevel.put("err", "error");
