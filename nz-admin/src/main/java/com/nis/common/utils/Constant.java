@@ -953,8 +953,9 @@ public class Constant {
 	// 图表singleStat 类型 paramkey名称
 	public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
 
-	// IDC traffic中tags key正则校验表达式 注：同 prometheus 标签正则
-	public static final Pattern PROMETHEUS_LABELSKEY_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
+	// prometheus loki labelname 正则校验表达式
+	public static final String PROMETHEUS_LABELNAME_EXPRESSION = "[a-zA-Z_][a-zA-Z0-9_]*";
+
 	// node_exporter shell 脚本中 替换路径的名称
 	public static final String NODEEXPORTER_SHELLREPLACE_PATH = "target_path";
 

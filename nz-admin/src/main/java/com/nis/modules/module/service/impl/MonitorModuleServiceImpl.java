@@ -1,6 +1,8 @@
 package com.nis.modules.module.service.impl;
 
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -253,6 +255,23 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                     JSONArray.parseArray(JSONObject.toJSONString(walk));
                 } catch (JSONException e) {
                     throw new NZException(RCode.MODULE_SNMP_WALK_FORMAT);
+                }
+            }
+
+            Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
+            for (String labelKey : labels.keySet()) {
+                ValidateUtils.is(labelKey).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
+            }
+
+            List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
+            for (Map map : relabelConfigList) {
+                List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
+                for (String sourceLabel : sourceLabels) {
+                    ValidateUtils.is(sourceLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
+                }
+                String targetLabel = (String) map.get("target_label");
+                if (StrUtil.isNotEmpty(targetLabel)) {
+                    ValidateUtils.is(targetLabel).regex(Constant.PROMETHEUS_LABELNAME_EXPRESSION, RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR);
                 }
             }
         }
@@ -644,7 +663,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                         String configType = (String) map.get("type");
                         return StrUtil.equals("metrics", configType);
                     }).findFirst().get();
-                    if (metricsConfigMap != null) {
+                    if (metricsConfigMap != null && (1 == (Integer) ObjectUtil.defaultIfNull(metricsConfigMap.get("enable"), 1))) {
                         Map configMap = (Map) metricsConfigMap.get("config");
                         Object port = configMap.get("port");
                         if (ToolUtil.isNotEmpty(port)) {
@@ -682,6 +701,32 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                             } catch (JSONException e) {
                                 saveFlag = false;
                                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_SNMP_WALK_FORMAT.getMsg());
+                            }
+                        }
+
+                        Map<String, Object> labels = MapUtil.defaultIfEmpty((Map) configMap.get("labels"), Collections.emptyMap());
+                        for (String labelKey : labels.keySet()) {
+                            if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, labelKey)) {
+                                saveFlag = false;
+                                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
+                            }
+                        }
+
+                        List<Map> relabelConfigList = ObjectUtil.defaultIfNull((List) configMap.get("relabel_config"), Collections.emptyList());
+                        for (Map map : relabelConfigList) {
+                            List<String> sourceLabels = ObjectUtil.defaultIfNull((List) map.get("source_labels"), Collections.emptyList());
+                            for (String sourceLabel : sourceLabels) {
+                                if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, sourceLabel)) {
+                                    saveFlag = false;
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
+                                }
+                            }
+                            String targetLabel = (String) map.get("target_label");
+                            if (StrUtil.isNotEmpty(targetLabel)) {
+                                if (!ReUtil.isMatch(Constant.PROMETHEUS_LABELNAME_EXPRESSION, targetLabel)) {
+                                    saveFlag = false;
+                                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.PROMETHEUS_LABELNAME_FORMAT_ERROR.getMsg());
+                                }
                             }
                         }
                     }
