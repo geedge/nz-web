@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetStateConf;
+import com.nis.modules.asset.entity.Dc;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -72,5 +75,14 @@ public class MonitorEndpointConfig implements Serializable {
 	 */
 	@TableField(exist = false)
 	private Date lastUpdate;
+
+	@TableField(exist = false)
+	private AssetAsset asset;
+
+	@TableField(exist = false)
+	private Dc dc;
+
+	@TableField(exist = false)
+	private AssetStateConf stateConf;
 
 }

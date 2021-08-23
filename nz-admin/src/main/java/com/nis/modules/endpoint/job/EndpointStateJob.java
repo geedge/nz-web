@@ -1,18 +1,23 @@
 package com.nis.modules.endpoint.job;
 
+import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.Tool;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
@@ -24,6 +29,10 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
@@ -41,20 +50,26 @@ public class EndpointStateJob extends QuartzJobBean {
     private MonitorEndpointService endpointService;
 
     @Autowired
+    private MonitorEndpointConfigService endpointConfigService;
+
+    @Autowired
     private MonitorEndpointStateDao endpointStateDao;
 
     @Autowired
     private MonitorEndpointStateService endpointStateService;
 
     @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
     private RedisTemplate redisTemplate;
-    
+
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
     	// 检查 haMode
     	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
         if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
-
+        log.info("Endpoint state job 开始执行");
         StopWatch sw = new StopWatch();
         sw.start();
         try {
@@ -64,7 +79,7 @@ public class EndpointStateJob extends QuartzJobBean {
         } finally {
             sw.stop();
         }
-        log.info("Endpoint 状态定时任务执行时长: {}", sw.toString());
+        log.info("Endpoint state 执行结束，Run Time: {}", sw.toString());
     }
 
     /**
@@ -73,77 +88,152 @@ public class EndpointStateJob extends QuartzJobBean {
     @Transactional(rollbackFor = Exception.class)
     public void updateEndpointStatus() {
         // 随机获取一个 Global Prometheus
-        /*Promserver promserver = promserverService.getOneAvaPromServer(null, null, 1);
+        Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
         if (promserver == null) {
             log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 promserver");
             this.allEndpointStateDown();
             return;
         }
 
-        SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-        String confagentPath = configEntity.getParamValue();
-        String urlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=up";
+        // 所有的 endpoint config
+        List<MonitorEndpointConfig> endpointConfigList = endpointConfigService.getEndpointConfigInfoList();
 
-        Map<Integer, String> endpointIdAndState = getEndpointIdAndStateMapByPath(promserver, urlPath);
+        // up 的 metrics / logs endpoint
+        List<MonitorEndpointState> upMetricsEndpointStateList = this.getUpMetricsEndpointStateList(promserver, endpointConfigList);
+        List<MonitorEndpointState> upLogsEndpointStateList = this.getUpLogsEndpointStateList(endpointConfigList);
 
-        List<MonitorEndpointState> upEndpointStateList = new ArrayList<>();
-        for (Map.Entry<Integer, String> entry : endpointIdAndState.entrySet()) {
-            Integer endpointId = entry.getKey();
-            String stateStr = entry.getValue();
-            if ("1".equals(stateStr)) {
-                upEndpointStateList.add(new MonitorEndpointState(endpointId, 1, new Date()));
-            }
-        }
-
-        // 所有的 endpoint
-        List<MonitorEndpoint> allEndpointList = endpointService.endpointDetailList();
-        // down 掉的 endpoint
-        List<Integer> upIdList = upEndpointStateList.stream().map(MonitorEndpointState::getEndpointId).distinct().collect(Collectors.toList());
-        List<MonitorEndpoint> downEndpointList = allEndpointList.stream().filter(entity -> !upIdList.contains(entity.getId())).collect(Collectors.toList());
+        // 处理 Down 掉的 endpoint / 设置对应的状态
+        Set<Integer> upMetricsConfId = upMetricsEndpointStateList.stream().map(MonitorEndpointState::getConfigId).collect(Collectors.toSet());
+        Set<Integer> upLogsConfId = upLogsEndpointStateList.stream().map(MonitorEndpointState::getConfigId).collect(Collectors.toSet());
+        List<MonitorEndpointConfig> downEndpointList = endpointConfigList.stream().filter(conf -> !upMetricsConfId.contains(conf.getId()) && !upLogsConfId.contains(conf.getId())).collect(Collectors.toList());
 
         // 设置 down state
         List<MonitorEndpointState> downEndpointStateList = new ArrayList<>();
-        for (MonitorEndpoint endpoint : downEndpointList) {
+        for (MonitorEndpointConfig conf : downEndpointList) {
             Integer state = 0;
             // 0：关闭 1：开启
-            Integer monitor = endpoint.getAsset().getState().getMonitor();
+            Integer monitor = conf.getStateConf().getMonitor();
+            // 0：关闭 1：开启
+            Integer clientEnable = conf.getAsset().getClientEnable();
             // 0：停用 1：启用
-            Integer enabled = endpoint.getEnabled();
+            Integer enabled = conf.getEnable();
             // 开启：ON, 关闭：OFF
-            String dcStateStr = endpoint.getDc().getState();
+            String dcStateStr = conf.getDc().getState();
             boolean dcState = dcStateStr.equals("ON") ? true : false;
-            if (!dcState && monitor.equals(0) && enabled.equals(1)) {
+            if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(1)) {
                 state = 2;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(0)) {
+            } else if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(0)) {
                 state = 4;
-            } else if (dcState && monitor.equals(0) && enabled.equals(0)) {
+            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(0)) {
                 state = 8;
-            } else if (!dcState && monitor.equals(1) && enabled.equals(1)) {
+            } else if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(1)) {
                 state = 6;
-            } else if (dcState && monitor.equals(0) && enabled.equals(1)) {
+            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(1)) {
                 state = 10;
-            } else if (dcState && monitor.equals(1) && enabled.equals(0)) {
+            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(0)) {
                 state = 12;
             }
-            downEndpointStateList.add(new MonitorEndpointState(endpoint.getId(), state, new Date()));
+            downEndpointStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, conf.getVersion(), new Date()));
         }
 
-        upEndpointStateList.addAll(downEndpointStateList);
-
+        List allState = new ArrayList();
+        allState.addAll(upMetricsEndpointStateList);
+        allState.addAll(upLogsEndpointStateList);
+        allState.addAll(downEndpointStateList);
         // 保存
         endpointStateDao.deleteAll();
-        endpointStateService.saveBatch(upEndpointStateList);*/
+        endpointStateService.saveBatch(allState);
+    }
+
+    /**
+     * 返回 up logs endpoint state list
+     *
+     * @param endpointConfigList
+     * @return
+     */
+    private List<MonitorEndpointState> getUpLogsEndpointStateList(List<MonitorEndpointConfig> endpointConfigList) {
+        List<MonitorEndpoint> endpointList = endpointService.endpointDetailList();
+        Map<Integer, Integer> endpointIdAndAssetIdMap = endpointList.stream().collect(Collectors.toMap(MonitorEndpoint::getId, MonitorEndpoint::getAssetId));
+        List<AssetAsset> assetList = assetAssetService.list();
+        Map<Integer, AssetAsset> assetMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
+
+        List<MonitorEndpointConfig> enableLogsConfigList = endpointConfigList.stream().filter(conf -> StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), conf.getType()) && 1 == conf.getEnable()).collect(Collectors.toList());
+        List<MonitorEndpointState> upLogsEndpointStateList = new ArrayList<>();
+        for (MonitorEndpointConfig endpointConfig : enableLogsConfigList) {
+            Integer assetId = endpointIdAndAssetIdMap.get(endpointConfig.getEndpointId());
+            AssetAsset asset = assetMap.get(assetId);
+            if (asset.getClientEnable() == 0) continue;
+            Callable task = new Callable() {
+                @Override
+                public Boolean call() throws Exception {
+                    UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(asset.getManageIp()).setPort(asset.getClientPort()).appendPath("nz-talon").appendPath("healthy");
+                    String result = null;
+                    try {
+                        result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(asset.getClientToken()).execute().body();
+                    } catch (RuntimeException e) {
+                        log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+                    }
+                    log.debug("请求 talon 返回结果" + result);
+                    if (result == null) {
+                        return false;
+                    } else {
+                        R parseObject = JSONObject.parseObject(result, R.class);
+                        Map<String, String> data = (Map<String, String>) parseObject.get("data");
+                        if (StrUtil.equals("UP", data.get("promtail"))) {
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+            };
+            Future<Boolean> f = Tool.ThreadUtil.execAsync(task);
+            try {
+                Boolean aBoolean = f.get(5, TimeUnit.SECONDS);
+                if (aBoolean) {
+                    upLogsEndpointStateList.add(new MonitorEndpointState(endpointConfig.getEndpointId(), endpointConfig.getId(), Constant.MonitorConfType.LOGS.getValue(), 1, endpointConfig.getVersion(), new Date()));
+                }
+            } catch (Exception e) {
+                log.error(e);
+            }
+        }
+        return upLogsEndpointStateList;
+    }
+
+    /**
+     * 返回 up metrics endpoint state list
+     *
+     * @param promserver
+     * @param endpointConfigList
+     * @return
+     */
+    private List<MonitorEndpointState> getUpMetricsEndpointStateList(Promserver promserver, List<MonitorEndpointConfig> endpointConfigList) {
+        String confagentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+        String urlPath = confagentPath + "/cortex/proxy/prometheus/api/v1/query?query=up";
+
+        Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath(promserver, urlPath);
+
+        List<MonitorEndpointState> upMetricsEndpointStateList = new ArrayList<>();
+        for (Map.Entry<Integer, String> entry : metricsEndpointIdAndState.entrySet()) {
+            Integer endpointId = entry.getKey();
+            String stateStr = entry.getValue();
+            if ("1".equals(stateStr)) {
+                MonitorEndpointConfig endpointConfig = endpointConfigList.stream().filter(conf -> conf.getEndpointId().equals(endpointId) && StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType())).findFirst().get();
+                if (endpointConfig == null) continue;
+                upMetricsEndpointStateList.add(new MonitorEndpointState(endpointId, endpointConfig.getId(), Constant.MonitorConfType.METRICS.getValue(), 1, endpointConfig.getVersion(), new Date()));
+            }
+        }
+        return upMetricsEndpointStateList;
     }
 
     /**
      * 全部 endpoint 状态为 down
      */
     private void allEndpointStateDown() {
-        /*endpointStateDao.deleteAll();
-        List<MonitorEndpoint> endpointList = endpointService.list();
-        List<MonitorEndpointState> stateList = new ArrayList<>(endpointList.size());
-        endpointList.forEach(endpoint -> stateList.add(new MonitorEndpointState(endpoint.getId(), 0, new Date())));
-        endpointStateService.saveBatch(stateList);*/
+        endpointStateDao.deleteAll();
+        List<MonitorEndpointConfig> endpointConfigList = endpointConfigService.list();
+        List<MonitorEndpointState> stateList = new ArrayList<>(endpointConfigList.size());
+        endpointConfigList.forEach(conf -> stateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), 0, conf.getVersion(), new Date())));
+        endpointStateService.saveBatch(stateList);
     }
 
     /**
@@ -153,7 +243,7 @@ public class EndpointStateJob extends QuartzJobBean {
      * @param urlPath
      * @return
      */
-    private Map<Integer, String> getEndpointIdAndStateMapByPath(Promserver promserver, String urlPath) {
+    private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath(Promserver promserver, String urlPath) {
         JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
@@ -168,83 +258,4 @@ public class EndpointStateJob extends QuartzJobBean {
         }
         return map;
     }
-
-    /*private void getEndpointStatusFromPrometheus() {
-        try {
-            JSONObject jsonObject = HttpClientUtils.httpGet(url.toString());
-
-            if (jsonObject == null) {
-                log.debug("Endpoint 状态获取失败,URL: " + url.toString());
-            } else {
-                Object status = jsonObject.get("status");
-                if (status != null && "success".equalsIgnoreCase(status.toString())) {
-                    Object data = jsonObject.get("data");
-                    Map dataMap = JSONObject.parseObject(data.toString(), Map.class);
-
-                    List<EndpointState> saveEndpointStateList = new ArrayList<>();
-                    List<Map> result = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
-                    EndpointState endpointState;
-                    Map metricMap;
-                    List<String> timeAndState;
-                    // 用于判断 endpoint id 是否重复
-                    Set<Integer> tempEndpointIds = new HashSet<>();
-                    // 根据 asset 停用状态 获取对应 endpoint ids
-                    List<Integer> suspendedEndpointIds = endpointDao.getSuspendedEndpointIdsByAssetState();
-                    // 停用的 endpoint ids
-                    List<Integer> disabledEndpointIds = endpointDao.getDisabledEndpointIds();
-                    suspendedEndpointIds.addAll(disabledEndpointIds);
-                    suspendedEndpointIds = suspendedEndpointIds.stream().distinct().collect(Collectors.toList());
-                    for (Map pojo : result) {
-
-                        metricMap = (Map) pojo.get("metric");
-                        Object endpoint = metricMap.get(Constant.PROMSERVERUP_ENDPOINT_LABEL);
-
-                        if (endpoint == null) continue;
-
-                        Integer endpointId = Integer.valueOf(endpoint.toString());
-                        // endpoint 未重复 并且 不是停用状态
-                        if (!tempEndpointIds.contains(endpointId) && !suspendedEndpointIds.contains(endpointId)) {
-                            endpointState = new EndpointState();
-                            endpointState.setCreateTime(new Date());
-
-                            timeAndState = (List<String>) pojo.get("value");
-                            endpointState.setState(Integer.valueOf(timeAndState.get(1)));
-
-                            endpointState.setId(endpointId);
-                            endpointState.setEndpointId(endpointId);
-                            saveEndpointStateList.add(endpointState);
-
-                            tempEndpointIds.add(endpointId);
-                        }
-                    }
-
-                    // 停用状态 endpoint
-                    for (Integer suspendedEndpointId : suspendedEndpointIds) {
-                        endpointState = new EndpointState(suspendedEndpointId, suspendedEndpointId, new Date(), 2);
-                        saveEndpointStateList.add(endpointState);
-                    }
-
-                    List<EndpointState> list = endpointStateService.list();
-                    Map<Integer, Integer> idAndStateMap = list.stream().collect(Collectors.toMap(EndpointState::getId, EndpointState::getState));
-
-                    Iterator<EndpointState> iterator = saveEndpointStateList.iterator();
-                    while (iterator.hasNext()){
-                        EndpointState pojo = iterator.next();
-
-                        Integer state = idAndStateMap.get(pojo.getId());
-                        // 状态没有改变就不进行修改
-                        if(state != null && state.equals(pojo.getState())){
-                            iterator.remove();
-                        }
-                    }
-                    if (CollectionUtils.isNotEmpty(saveEndpointStateList))
-                        endpointStateService.saveOrUpdateBatch(saveEndpointStateList);
-                } else {
-                    log.error(String.format("Endpoint 状态信息获取失败,URL: %s, 查询状态是: %s, 查询结果是: ", url.toString(), status == null ? "null" : status.toString(), jsonObject));
-                }
-            }
-        } catch (IOException e) {
-            logger.error(e);
-        }
-    }*/
 }

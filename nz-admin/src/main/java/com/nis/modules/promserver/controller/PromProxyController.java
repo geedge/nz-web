@@ -4,6 +4,7 @@ import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpConnection;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
@@ -125,8 +126,9 @@ public class PromProxyController {
 //		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
 		// String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
 
+		// 代理 agent cortex/prometheus/api/**
 		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-		String proxyPath = String.format("%s%s%s", configEntity.getParamValue(), "/prometheus/proxy", path);
+		String proxyPath = String.format("%s%s%s", configEntity.getParamValue(), "/cortex/proxy/prometheus", path);
 
 		String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
 
@@ -185,17 +187,19 @@ public class PromProxyController {
 			String nullType = request.getParameter("nullType");
 			if ("/api/v1/query_range".equals(promPath) && responseCode < 400) {
 				// 处理缺失时间数据
-				Map map = handleResultData(request, connInputStream);
+				String contentEncoding = response.getHeader("Content-Encoding");
+				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
+				Map map = handleResultData(request, connInputStream, isGzipStream);
 
 				// 压缩
-				byte[] gzipBytes = compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8");
+				byte[] bytes = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
 
 				String transfer = response.getHeader("Transfer-Encoding");
 				if (StringUtils.isEmpty(transfer)) {
-					response.setContentLength(gzipBytes.length);
+					response.setContentLength(bytes.length);
 				}
 
-				resOutputStream.write(gzipBytes);
+				resOutputStream.write(bytes);
 				resOutputStream.flush();//flush 输出流
 			} else {
 				IOUtils.copy(connInputStream, resOutputStream);
@@ -216,12 +220,12 @@ public class PromProxyController {
 		}
 	}
 
-	private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
+	private Map handleResultData(HttpServletRequest request, InputStream connInputStream, Boolean isGzipStream) {
 		StringBuffer resultStr = new StringBuffer();
 		InputStreamReader inputStreamReader = null;
 		BufferReaderWrapper bufferedReader = null;
 		try {
-			inputStreamReader = new InputStreamReader(new GZIPInputStream(connInputStream), "UTF-8");
+			inputStreamReader = new InputStreamReader(isGzipStream ? new GZIPInputStream(connInputStream) : connInputStream, "UTF-8");
 			bufferedReader = new BufferReaderWrapper(inputStreamReader);
 			String str = null;
 			while ((str = bufferedReader.load()) != null) {

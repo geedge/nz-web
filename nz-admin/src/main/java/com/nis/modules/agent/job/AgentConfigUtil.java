@@ -209,6 +209,7 @@ public class AgentConfigUtil {
         List<String> joinMemberIpList = new ArrayList<>();
         joinMemberIpList = globalPromServerList.stream().filter(entity -> !entity.getId().equals(promserver.getId())).map(Promserver::getHost).collect(Collectors.toList());
         params.put("joinMemberList", joinMemberIpList);
+        params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 
         Map map = new HashMap();
         String content = "";

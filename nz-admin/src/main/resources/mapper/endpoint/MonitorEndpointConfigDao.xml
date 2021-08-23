@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.modules.endpoint.dao.MonitorEndpointConfigDao">
+
+
+    <resultMap type="com.nis.modules.endpoint.entity.MonitorEndpointConfig" id="endpointConfigInfo">
+        <result property="id" column="id"/>
+        <result property="endpointId" column="endpoint_id"/>
+        <result property="version" column="version"/>
+        <result property="type" column="type"/>
+        <result property="enable" column="enable"/>
+
+        <association columnPrefix="asset_" property="asset" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <id column="id" property="id"/>
+            <result column="client_enable" property="clientEnable"/>
+        </association>
+
+        <association columnPrefix="state_" property="stateConf" javaType="com.nis.modules.asset.entity.AssetStateConf">
+            <result column="state_monitor" property="monitor"/>
+        </association>
+
+        <association columnPrefix="dc_" property="dc" javaType="com.nis.modules.asset.entity.Dc">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="state" property="state"/>
+        </association>
+    </resultMap>
+
+
+    <select id="queryEndpointConfigInfoList" resultMap="endpointConfigInfo">
+        SELECT
+            endConf.id AS id,
+            endConf.type AS type,
+            endConf.enable AS enable,
+            endConf.endpoint_id AS endpoint_id,
+            endConf.version AS version,
+
+            asset.id AS asset_id,
+            asset.client_enable AS asset_client_enable,
+
+            state.monitor AS state_state_monitor,
+
+            dc.id AS dc_id,
+            dc.name AS dc_name,
+            dc.state AS dc_state
+        FROM
+            monitor_endpoint endpoint
+            LEFT JOIN monitor_endpoint_config endConf ON endpoint.id = endConf.endpoint_id
+            LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
+            LEFT JOIN asset_state_conf state ON asset.state_id = state.id
+            LEFT JOIN dc dc ON asset.dc_id = dc.id
+    </select>
+
+</mapper>

@@ -296,7 +296,7 @@ public enum RCode {
     ASSET_CLIENTPORT_ERROR(315067,"Asset client port is incorrect"),
     ASSET_CLIENT_PROT_ISNULL(311068,"Asset client port can not be empty"),
     ASSET_CLIENT_TOKEN_ISNULL(311069,"Asset client token can not be empty"),
-    
+
     ASSET_MODELNAME_ISNULL(321000, "Asset model name can not be null"),  // 资产型号名称不能为空
     ASSET_MODELID_ISNULL(321001, "Asset model id can not be null"),      // 资产型号ID不能为空
     ASSET_MODELNAME_DUPLICATE(322002, "Asset model name duplicate"),     // 资产型号名称重复
@@ -814,6 +814,12 @@ public enum RCode {
     EXCELFILE_IMPORT_FILE_ISNULL(904, "Import file is null"),
     EXCELFILE_HEADER_LANGUAGE_ISNULL(905, "Language can not be empty"),
     EXCELFILE_IMPORT_ERROR(906, "File import error"),
+
+
+    /**
+     * Prometheus 相关错误
+     */
+    PROMETHEUS_LABELNAME_FORMAT_ERROR(910,"Label name does not comply with Prometheus labelname format"),
 
     NOT_NULL_ERROR(990, "not null error"), //not null错误
     NOT_NUMBER_ERROR(991, "not number error"), //not number错误

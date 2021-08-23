@@ -91,8 +91,8 @@ public class AssetPingStatusJob extends QuartzJobBean {
         // 减去 半个 asset ping interval 周期，保证数据的完整性
         long time = (currentTimeMillis - Long.valueOf(assetPingIntervalStr) * 1000 / 2) / 1000;
 
-        String pingStateUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_success&time=" + time;
-        String rttUrlPath = confagentPath + "/prometheus/proxy/api/v1/query?query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time;
+        String pingStateUrlPath = confagentPath + "/cortex/proxy/prometheus/api/v1/query?query=probe_success&time=" + time;
+        String rttUrlPath = confagentPath + "/cortex/proxy/prometheus/api/v1/query?query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time;
 
         Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, pingStateUrlPath);
         Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, rttUrlPath);
