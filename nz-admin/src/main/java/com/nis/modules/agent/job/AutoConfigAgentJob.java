@@ -336,9 +336,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      */
     private void updatePrometheusConf(List<Promserver> healthyPromServers) {
         List<Promserver> perDataCenterPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.PER_DATACENTER.getValue().equals(promserver.getType())).collect(Collectors.toList());
-        this.handlePerDatacenterMtericsConf(perDataCenterPromServers);
-
         List<Promserver> globalPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
+
+        this.handlePerDatacenterMtericsConf(perDataCenterPromServers, globalPromServers);
         this.handleGlobalMtericsConf(globalPromServers, perDataCenterPromServers);
     }
 
@@ -392,7 +392,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 log.debug("支持告警的 agent :" + JSONObject.toJSONString(promserver));
             }
 
-            Map gloablAgentYmlMap = configUtil.generateGlobalYml(promserver, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert);
+            Map gloablAgentYmlMap = configUtil.generateGlobalYml(promserver, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert, i == 0);
 
             globalConfigBody.put("config", gloablAgentYmlMap);
             if (isAlert) {
@@ -431,8 +431,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * per-datacenter metrics 配置下发
      *
      * @param perDataCenterPromServers
+     * @param globalPromServers
      */
-    private void handlePerDatacenterMtericsConf(List<Promserver> perDataCenterPromServers) {
+    private void handlePerDatacenterMtericsConf(List<Promserver> perDataCenterPromServers, List<Promserver> globalPromServers) {
         String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
@@ -467,7 +468,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 生成 per-datacenter 配置信息,并下发配置
-            this.updatePerDatacenterYml(promserverListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap);
+            this.updatePerDatacenterYml(promserverListByDc, endpointListByDc, endpointIdAndPromIdMap, assetListByDc, assetIdAndPromIdMap, globalPromServers);
 
             updateRedisEndpointPromMap.putAll(endpointIdAndPromIdMap);
         }
@@ -483,8 +484,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param endpointIdAndPromIdMap
      * @param assets
      * @param assetIdAndPromIdMap
+     * @param globalPromServers
      */
-    private void updatePerDatacenterYml(List<Promserver> promservers, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> assets, Map<Integer, Integer> assetIdAndPromIdMap) {
+    private void updatePerDatacenterYml(List<Promserver> promservers, List<MonitorEndpoint> endpoints, Map<Integer, Integer> endpointIdAndPromIdMap, List<AssetAsset> assets, Map<Integer, Integer> assetIdAndPromIdMap, List<Promserver> globalPromServers) {
         for (Promserver promserver : promservers) {
             List<Integer> endpointIdListForThisAgent = endpointIdAndPromIdMap.entrySet().stream().filter(entry -> promserver.getId().equals(entry.getValue())).map(Map.Entry::getKey).collect(Collectors.toList());
             List<MonitorEndpoint> endpointListForThisAgent = endpoints.stream().filter(endpoint -> endpointIdListForThisAgent.contains(endpoint.getId())).collect(Collectors.toList());
@@ -495,7 +497,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             Map<String, Object> perDatacenterConfigBody = new HashMap<>(4);
 
             // 生成配置模板
-            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(promserver, endpointListForThisAgent, assetListForThisAgent);
+            Map perdatacenterYmlMap = configUtil.generatePerdatacenterYml(promserver, endpointListForThisAgent, assetListForThisAgent, globalPromServers);
             perDatacenterConfigBody.put("config", perdatacenterYmlMap);
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();

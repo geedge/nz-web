@@ -403,9 +403,10 @@ public class AgentConfigUtil {
      * @param promserver
      * @param endpointList
      * @param assetList
+     * @param globalPromServers
      * @return
      */
-    public Map generatePerdatacenterYml(Promserver promserver, List<MonitorEndpoint> endpointList, List<AssetAsset> assetList) {
+    public Map generatePerdatacenterYml(Promserver promserver, List<MonitorEndpoint> endpointList, List<AssetAsset> assetList, List<Promserver> globalPromServers) {
         log.debug("per-datacenter prometheus.yml 开始生成");
         Map<String, Object> params = new LinkedHashMap();
         params.put("scrape_interval", sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
@@ -423,6 +424,55 @@ public class AgentConfigUtil {
         this.handleDataConfigForTmpl(promserver, endpointList, assetList);
 
         params.put("endpointList", endpointList);
+        // remote_write url and token
+        List<Map> remoteWriteUrlInfoMapList = new ArrayList<>();
+        //  object storage 标识  1: 本地文件存储，2：S3对象存储
+        String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+        boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
+
+        String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+
+        // 指标代理模式 metrics_proxy_push_type 1: 经过 agent 代理推送 cortex 2: 直接推送 cortex
+        String metricsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
+        switch (StrUtil.emptyToDefault(metricsProxyPushType, "1")) {
+            case "1": {
+                if (isLocalStorage) {
+                    // 本地存储 and agent 代理，per-datacenter 配置 remote_write 所有 global agent
+                    for (Promserver globalPromServer : globalPromServers) {
+                        Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
+                        map.put("url", String.format("http://%s:%s%s/cortex/proxy/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), agentPath));
+                        map.put("token", globalPromServer.getToken());
+                        remoteWriteUrlInfoMapList.add(map);
+                    }
+                } else {
+                    // s3 存储 and agent 代理，任选一个 global 即可
+                    Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
+                    map.put("url", String.format("http://%s:%s%s/cortex/proxy/api/v1/push", globalPromServers.get(0).getHost(), globalPromServers.get(0).getPort(), agentPath));
+                    map.put("token", globalPromServers.get(0).getToken());
+                    remoteWriteUrlInfoMapList.add(map);
+                }
+                break;
+            }
+            case "2": {
+                if (isLocalStorage) {
+                    // 本地存储 and cortex，per-datacenter 配置 remote_write 所有 global cortex
+                    for (Promserver globalPromServer : globalPromServers) {
+                        Map map = new HashMap();// http://127.0.0.1:${cortexDefaultPort?c}/api/v1/push
+                        map.put("url", String.format("http://%s:%s/api/v1/push", globalPromServer.getHost(), cortexDefaultPort));
+                        map.put("token", globalPromServer.getToken());
+                        remoteWriteUrlInfoMapList.add(map);
+                    }
+                } else {
+                    // s3 存储 and cortex，任选一个 global cortex 即可
+                    Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
+                    map.put("url", String.format("http://%s:%s/api/v1/push", globalPromServers.get(0).getHost(), cortexDefaultPort));
+                    map.put("token", globalPromServers.get(0).getToken());
+                    remoteWriteUrlInfoMapList.add(map);
+                }
+                break;
+            }
+        }
+        params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
         Map map = null;
         String content = "";
@@ -446,9 +496,10 @@ public class AgentConfigUtil {
      * @param assetList
      * @param endpointList
      * @param isAlert
+     * @param isSupportSysteMetrics
      * @return
      */
-    public Map generateGlobalYml(Promserver currentAgent, List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList, Boolean isAlert) {
+    public Map generateGlobalYml(Promserver currentAgent, List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers, List<AssetAsset> assetList, List<MonitorEndpoint> endpointList, Boolean isAlert, Boolean isSupportSysteMetrics) {
         log.debug("global prometheus.yml 开始生成");
         // sys_config 配置表信息
         List<SysConfigEntity> configEntityList = sysConfigService.list();
@@ -464,7 +515,7 @@ public class AgentConfigUtil {
 
         // agent 代理接口前缀
         String proxyPath = configMap.get(Constant.CONFAGENT_PATH) + "/prometheus/proxy";
-        // federate
+        // federate 废弃
         List<Map> federateMapList = new ArrayList<>();
         // blackbox job  1: global   2: per-datacenter
         String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
@@ -485,7 +536,7 @@ public class AgentConfigUtil {
             Map federateMap = new LinkedHashMap();
             federateMap.put("job_name", "federate_" + server.getId());
             federateMap.put("metrics_path", proxyPath + "/federate");
-            federateMap.put("isFederate", true);
+            federateMap.put("isFederate", false);
             // global 做 ping 检测，且 当前角色为 global
             if ("1".equals(assetPingFrom) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
                 federateMap.put("scrapePing", true);
@@ -562,10 +613,8 @@ public class AgentConfigUtil {
         //  object storage 标识  1: 本地文件存储，2：S3对象存储
         String objStroageEnable = configMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
         boolean isLocalStorage = StrUtil.equals("1", objStroageEnable);
-        params.put("isLocalStorage", isLocalStorage);
-        params.put("agentPath", configMap.get(Constant.CONFAGENT_PATH));
-        params.put("agentPort", currentAgent.getPort());
-        params.put("agentToken", currentAgent.getToken());
+
+        List<Map> jobList = new ArrayList<>();
 
         /**
          * 指标代理模式 metrics_proxy_push_type
@@ -573,8 +622,52 @@ public class AgentConfigUtil {
          * 2: 直接推送 cortex
          */
         String metricsProxyPushType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE);
-        params.put("metricsProxyPushType", StrUtil.emptyToDefault(metricsProxyPushType, "1"));
-        params.put("cortexDefaultPort", cortexDefaultPort);
+        boolean isProxyPush = StrUtil.equalsIgnoreCase("1", StrUtil.emptyToDefault(metricsProxyPushType, "1"));
+
+        // remote_write url and token
+        List<Map> remoteWriteUrlInfoMapList = new ArrayList<>();
+        if (fedeEnabled) {
+            // 联邦开启
+            // 本地存储  global 接收 per-datacenter 推过来得数据，每一个 global 支持 nzweb 系统指标
+            // s3 对象存储 global 接收 per-datacenter 推过来得数据,第一个支持 nzweb 系统模板即可
+            Map map = new HashMap();
+            map.put("url", String.format("http://%s:%s%s", currentAgent.getHost(), isProxyPush ? currentAgent.getPort() : cortexDefaultPort, isProxyPush ? configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push" : "/api/v1/push"));
+            map.put("token", currentAgent.getToken());
+            remoteWriteUrlInfoMapList.add(map);
+            if (isLocalStorage) {
+                jobList.add(nezhaMetricsMap);
+                jobList.add(promMetricsMap);
+            } else {
+                if (isSupportSysteMetrics) {
+                    jobList.add(nezhaMetricsMap);
+                    jobList.add(promMetricsMap);
+                }
+            }
+        } else {
+            // 联邦关闭
+            if (isLocalStorage) {
+                // 本地配置所有 global remote_write info
+                for (Promserver promserver : globalPromServers) {
+                    Map map = new HashMap();
+                    map.put("url", String.format("http://%s:%s%s", promserver.getHost(), isProxyPush ? promserver.getPort() : cortexDefaultPort, isProxyPush ? configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push" : "/api/v1/push"));
+                    map.put("token", currentAgent.getToken());
+                    remoteWriteUrlInfoMapList.add(map);
+                }
+            } else {
+                // s3 配置 配置自己即可
+                Map map = new HashMap();
+                map.put("url", String.format("http://%s:%s%s", currentAgent.getHost(), isProxyPush ? currentAgent.getPort() : cortexDefaultPort, isProxyPush ? configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push" : "/api/v1/push"));
+                map.put("token", currentAgent.getToken());
+                remoteWriteUrlInfoMapList.add(map);
+            }
+            // 不论 本地还是对象存储 ，有一个支持 nzweb 系统指标即可
+            if (isSupportSysteMetrics) {
+                jobList.add(nezhaMetricsMap);
+                jobList.add(promMetricsMap);
+            }
+        }
+
+        params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
         // 处理 endpoint 配置项 为了适应模板
         this.handleDataConfigForTmpl(currentAgent, endpointList, assetList);
@@ -582,15 +675,11 @@ public class AgentConfigUtil {
         params.put("assetList", assetList);
         params.put("endpointList", endpointList);
 
-        List<Map> jobList = new ArrayList<>();
-        // federate
-        for (Map map : federateMapList) {
+        // federate 废弃
+        /*for (Map map : federateMapList) {
             jobList.add(map);
-        }
-        // prometheus_metric
-        jobList.add(promMetricsMap);
-        // nezha_metrics
-        jobList.add(nezhaMetricsMap);
+        }*/
+
         params.put("jobList", jobList);
 
         Map map = null;
