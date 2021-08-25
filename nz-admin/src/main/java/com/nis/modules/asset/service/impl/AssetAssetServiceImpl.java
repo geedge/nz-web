@@ -1439,7 +1439,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             Map<String, String> exportHeader = (Map) map.get(language);
 
             String sheetName = "Assets";
-            workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
+            workbook = ExcelUtils.createExcel07(exportHeader, sheetName, true);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -1854,12 +1854,24 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             String clientUser = ExcelUtils.getCellValue(row.getCell(22));
             String clientPin = ExcelUtils.getCellValue(row.getCell(23));
-            String clientAddress = ExcelUtils.getCellValue(row.getCell(24));
+            String clientToken = ExcelUtils.getCellValue(row.getCell(24));
             String clientPort = ExcelUtils.getCellValue(row.getCell(25));
             if (StringUtils.isNotEmpty(clientPort)) {
                 if (!CommonUtils.checkPort(clientPort)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(25), RCode.ASSET_CLIENTPORT_ERROR.getMsg());
+                }
+            }
+            String clientEnable = ExcelUtils.getCellValue(row.getCell(26));
+            if (StrUtil.isNotEmpty(clientEnable)) {
+                if (!StrUtil.equals("0", clientEnable) && !StrUtil.equals("1", clientEnable)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(26), RCode.TYPECONF_CLIENTENABLE_INCORRECT.getMsg());
+                }
+                // client enable 为 1 时 token 必填
+                if (StrUtil.equals("1", clientEnable) && StrUtil.isEmpty(clientToken)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(26), RCode.ASSET_CLIENT_TOKEN_ISNULL.getMsg());
                 }
             }
 
@@ -1900,8 +1912,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
                 asset.setClientUser(ObjectUtil.defaultIfEmpty(clientUser, null));
                 asset.setClientPin(ObjectUtil.defaultIfEmpty(clientPin, null));
-                asset.setClientAddress(ObjectUtil.defaultIfEmpty(clientAddress, asset.getManageIp()));
+                asset.setClientAddress(asset.getManageIp());
                 asset.setClientPort(StringUtils.isNotEmpty(clientPort) ? Integer.valueOf(clientPort) : null);
+                asset.setClientToken(clientToken);
+                asset.setClientEnable(Integer.valueOf(StrUtil.emptyToDefault(clientEnable, "0")));
                 saveEntitys.put("asset", asset);
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -2239,10 +2253,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             row.createCell(22).setCellValue(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
 //            row.createCell(23).setCellValue(asset.getClientPin());
-            row.createCell(24).setCellValue(ObjectUtil.defaultIfNull(asset.getClientAddress(), ""));
+            row.createCell(24).setCellValue(ObjectUtil.defaultIfNull(asset.getClientToken(), ""));
             row.createCell(25).setCellValue(ObjectUtil.defaultIfNull(asset.getClientPort(), "").toString());
+            row.createCell(26).setCellValue(ObjectUtil.defaultIfNull(asset.getClientEnable(), "").toString());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 25);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 26);
         }
     }
 
