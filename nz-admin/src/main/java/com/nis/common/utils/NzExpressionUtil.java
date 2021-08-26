@@ -1,6 +1,13 @@
 package com.nis.common.utils;
 
-import java.util.ArrayList;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.project.entity.MonitorProject;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -8,17 +15,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetFieldMeta;
-import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.module.entity.MonitorModule;
-import com.nis.modules.project.entity.MonitorProject;
-import com.nis.modules.asset.entity.Dc;
-
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
-
 
 public class NzExpressionUtil {
 	 
@@ -79,6 +75,7 @@ public class NzExpressionUtil {
 						String key=null;
 						Integer index=null;
 						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
+						Map<String, String> keyTypeMap = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getType));
 						if(expre.contains(StrUtil.DOT)) {
 							expre = StrUtil.split(expre, StrUtil.DOT)[1];
 						}
@@ -94,13 +91,23 @@ public class NzExpressionUtil {
 						}catch(NumberFormatException e) {
 					        
 					    }
-						if(ToolUtil.isNotEmpty(map)&&ToolUtil.isNotEmpty(key)&&ToolUtil.isNotEmpty(index)) {
-							List<String> list = map.get(key);
-							if(ToolUtil.isNotEmpty(list)) {
-								result = list.get(index);
+						// 用来取值的 metakey
+						String valueKey = Tool.StrUtil.isEmpty(key) ? expre : key;
+						String type = keyTypeMap.get(valueKey);
+						// 当类型为 MULTITEXT CHECKBOX 需要通过下标进行取值
+						if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
+							if (ToolUtil.isNotEmpty(map) && ToolUtil.isNotEmpty(key) && ToolUtil.isNotEmpty(index)) {
+								List<String> list = map.get(key);
+								if (ToolUtil.isNotEmpty(list)) {
+									result = index >= list.size() ? "" : list.get(index);
+								}
+							} else {
+								result = map.get(expre);
 							}
-						}else{
-							result = map.get(expre);
+						} else {
+							// 其他类型为 一对一 直接取第一个即可
+							List<String> list = map.get(valueKey);
+							result = list.get(0);
 						}
 					}
 				}
@@ -116,6 +123,7 @@ public class NzExpressionUtil {
 						String key=null;
 						Integer index=null;
 						Map<String, List<String>> map = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getValue));
+						Map<String, String> keyTypeMap = fields.stream().collect(Collectors.toMap(AssetFieldMeta::getMetaKey, AssetFieldMeta::getType));
 						if(expre.contains(StrUtil.DOT)) {
 							expre = StrUtil.split(expre, StrUtil.DOT)[1];
 						}
@@ -131,13 +139,23 @@ public class NzExpressionUtil {
 						}catch(NumberFormatException e) {
 					        
 					    }
-						if(ToolUtil.isNotEmpty(map)&&ToolUtil.isNotEmpty(key)&&ToolUtil.isNotEmpty(index)) {
-							List<String> list = map.get(key);
-							if(ToolUtil.isNotEmpty(list)) {
-								result = list.get(index);
+						// 用来取值的 metakey
+						String valueKey = Tool.StrUtil.isEmpty(key) ? expre : key;
+						String type = keyTypeMap.get(valueKey);
+						// 当类型为 MULTITEXT CHECKBOX 需要通过下标进行取值
+						if (Tool.StrUtil.equalsIgnoreCase("MULTITEXT", type) || Tool.StrUtil.equalsIgnoreCase("CHECKBOX", type) || Tool.StrUtil.equalsIgnoreCase("DATETIME", type)) {
+							if (ToolUtil.isNotEmpty(map) && ToolUtil.isNotEmpty(key) && ToolUtil.isNotEmpty(index)) {
+								List<String> list = map.get(key);
+								if (ToolUtil.isNotEmpty(list)) {
+									result = index >= list.size() ? "" : list.get(index);
+								}
+							} else {
+								result = map.get(expre);
 							}
-						}else{
-							result = map.get(expre);
+						} else {
+							// 其他类型为 一对一 直接取第一个即可
+							List<String> list = map.get(valueKey);
+							result = list.get(0);
 						}
 					}
 				}
