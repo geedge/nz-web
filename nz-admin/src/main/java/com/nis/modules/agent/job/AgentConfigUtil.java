@@ -716,20 +716,16 @@ public class AgentConfigUtil {
             Map endpointConfigFieldMap = JSONObject.parseObject(endpoint.getEndpointConfig().getConfig(), Map.class);
             endpoint.setConfig(endpointConfigFieldMap);
 
-            List endpointRelabelConfig = ObjectUtil.defaultIfNull((List<Map>) endpointConfigFieldMap.get("relabel_config"), Collections.emptyList());
-            if (CollectionUtil.isEmpty(endpointRelabelConfig)) {
-                List<Map> moduleConfigs = JSONObject.parseArray(endpoint.getModule().getConfigs(), Map.class);
-                Map moduleMetricsConfigMap = moduleConfigs.stream().filter(map -> {
-                    String configType = (String) map.get("type");
-                    return StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), configType);
-                }).findFirst().orElse(Collections.emptyMap());
-
-                Map moduleConfigMap = (Map) moduleMetricsConfigMap.get("config");
-                moduleConfigMap = ObjectUtil.defaultIfNull(moduleConfigMap, Collections.emptyMap());
-                endpoint.setRelabelConfigListJsonString(JSONObject.toJSONString(ObjectUtil.defaultIfNull((List<Map>) moduleConfigMap.get("relabel_config"), Collections.emptyList())));
-            } else {
-                endpoint.setRelabelConfigListJsonString(JSONObject.toJSONString(endpointRelabelConfig));
-            }
+            List<Map> endpointRelabelConfig = ObjectUtil.defaultIfNull((List<Map>) endpointConfigFieldMap.get("relabel_config"), new ArrayList<>());
+            Map jobLabeldrop = new HashMap();
+            jobLabeldrop.put("regex", "job");
+            jobLabeldrop.put("action", "labeldrop");
+            endpointRelabelConfig.add(jobLabeldrop);
+            Map instanceLabeldrop = new HashMap();
+            instanceLabeldrop.put("regex", "instance");
+            instanceLabeldrop.put("action", "labeldrop");
+            endpointRelabelConfig.add(instanceLabeldrop);
+            endpoint.setRelabelConfigListJsonString(JSONObject.toJSONString(endpointRelabelConfig));
 
             // project name 处理
             MonitorProject project = endpoint.getProject();
