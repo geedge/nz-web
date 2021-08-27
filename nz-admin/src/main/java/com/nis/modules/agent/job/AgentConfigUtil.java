@@ -781,7 +781,7 @@ public class AgentConfigUtil {
                         } else {
                             // 指向其他 agent
                             map.put("token", globalPromServer.getToken());
-                            map.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                            map.put("target", String.format("http://%s:%s%s/loki/proxy", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                             map.put("mode", "remote");
                         }
                         lokiPushUrls.add(map);
@@ -790,7 +790,7 @@ public class AgentConfigUtil {
                     // s3 存储 global 推向自己
                     Map tempMap = new HashMap(4);
                     tempMap.put("token", promserver.getToken());
-                    tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    tempMap.put("target", String.format("http://%s:%s%s/loki/proxy", promserver.getHost(), promserver.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                     tempMap.put("mode", "local");
                     lokiPushUrls.add(tempMap);
                 }
@@ -826,7 +826,7 @@ public class AgentConfigUtil {
                     // 全部使用 agent proxy 方式 agent 推送 global proxy
                     Map tempMap = new HashMap(4);
                     tempMap.put("token", firstGlobalAgent.getToken());
-                    tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                    tempMap.put("target", String.format("http://%s:%s%s/loki/proxy", firstGlobalAgent.getHost(), firstGlobalAgent.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                     tempMap.put("mode", "remote");
                     lokiPushUrls.add(tempMap);
                     break;
@@ -835,7 +835,7 @@ public class AgentConfigUtil {
                     // promtail 先推送至 per-datacenter agent 代理接口，agent 推送 global loki
                     Map tempMap = new HashMap(4);
                     tempMap.put("token", firstGlobalAgent.getToken());
-                    tempMap.put("target", String.format("http://%s:%s%s", firstGlobalAgent.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+                    tempMap.put("target", String.format("http://%s:%s", firstGlobalAgent.getHost(), lokiDefaultPort));
                     tempMap.put("mode", "remote");
                     lokiPushUrls.add(tempMap);
                     break;
@@ -851,7 +851,7 @@ public class AgentConfigUtil {
                     for (Promserver globalPromServer : globalPromServers) {
                         Map tempMap = new HashMap(4);
                         tempMap.put("token", globalPromServer.getToken());
-                        tempMap.put("target", String.format("%s:%s%s/loki/proxy/loki/api/v1/push", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
+                        tempMap.put("target", String.format("http://%s:%s%s/loki/proxy", globalPromServer.getHost(), globalPromServer.getPort(), sysConfigService.getValue(Constant.CONFAGENT_PATH)));
                         tempMap.put("mode", "remote");
                         lokiPushUrls.add(tempMap);
                     }
@@ -862,7 +862,7 @@ public class AgentConfigUtil {
                     for (Promserver globalPromServer : globalPromServers) {
                         Map tempMap = new HashMap(4);
                         tempMap.put("token", globalPromServer.getToken());
-                        tempMap.put("target", String.format("http://%s:%s%s", globalPromServer.getHost(), lokiDefaultPort, "/loki/api/v1/push"));
+                        tempMap.put("target", String.format("http://%s:%s", globalPromServer.getHost(), lokiDefaultPort));
                         tempMap.put("mode", "remote");
                         lokiPushUrls.add(tempMap);
                     }
