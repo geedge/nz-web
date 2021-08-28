@@ -18,6 +18,7 @@
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
         <result property="buildIn" column="buildIn"/>
+        <result property="state" column="state"/>
         <result property="alertNum" column="alertNum"/>
         <association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
             <result property="id" column="id"/>
@@ -41,6 +42,7 @@
         ar.description,
         ar.receiver,
         ar.method,
+        ar.state,
         alsc.id as alsc_id,
         alsc.name as alsc_name,
         alsc.color as alsc_color,
@@ -89,6 +91,10 @@
 
             <if test="params.buildIn != null and params.buildIn != ''">
                 AND ar.build_in = #{params.buildIn}
+            </if>
+
+            <if test="params.state != null and params.state != ''">
+                AND ar.state = #{params.state}
             </if>
 
             <if test="receivers != null and receivers.size > 0">

@@ -1,6 +1,7 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -196,6 +197,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
         // 入库
         if (alertRule.getId() == null) {
+            // 默认开启
+            if (alertRule.getState() == null) {
+                alertRule.setState(1);
+            }
             this.save(alertRule);
         } else {
             // 校验内置规则
@@ -416,6 +421,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
 
+            String stateStr = ExcelUtils.getCellValue(row.getCell(11));
+            if (StrUtil.isNotEmpty(stateStr)) {
+                if (!StrUtil.equals("1", stateStr) && !StrUtil.equals("0", stateStr)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.ALERTRULE_STATE_INCORRECT.getMsg());
+                }
+            }
+
             if (saveFlag) {
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
                 ruleEntity.setName(alertName);
@@ -430,6 +443,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setReceiver(receiver);
                 ruleEntity.setMethod(method);
                 ruleEntity.setSeq(seqUUID);
+                ruleEntity.setState(Integer.valueOf(StrUtil.emptyToDefault(stateStr, "1")));
                 try {
                     boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
                     if (!b) {
@@ -542,7 +556,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         SXSSFWorkbook workbook = null;
         try {
             String sheetName = "AlterRule";
-            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
+            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, true);
             SXSSFSheet sheet = workbook.getSheet(sheetName);
 
             // 填充数据
@@ -612,9 +626,10 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
                 row.createCell(10).setCellValue(methodNames);
             }
+            row.createCell(11).setCellValue(rule.getState());
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 11);
         }
     }
 
@@ -673,6 +688,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     throw new NZException(RCode.ALERTRULE_METHOD_NOTFOUND);
                 }
             });
+        }
+
+        Integer state = alertRule.getState();
+        if (state != null) {
+            List<Integer> switchList = Arrays.asList(new Integer[]{1, 0});
+            if (!switchList.contains(state)) {
+                throw new NZException(RCode.ALERTRULE_STATE_INCORRECT);
+            }
         }
     }
 

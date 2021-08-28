@@ -602,7 +602,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         if (Tool.CollectionUtil.isNotEmpty(updateKeys)) {
             Set<String> incrementKeys = new HashSet<>();
             // prometheus.yml 改动
-            if (updateKeys.contains("alert_api") || updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout") || updateKeys.contains("prometheus_federation_enabled")) {
+            if (updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout") || updateKeys.contains("prometheus_federation_enabled")) {
                 incrementKeys.add("prometheus");
             }
             // prometheus config.conf 启动项改动
@@ -620,7 +620,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 incrementKeys.add("loki");
             }
             // cortex.yml 改动
-            if (updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
+            if (updateKeys.contains("alert_api") || updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
                 incrementKeys.add("cortex");
             }
             // metrics 下发方式改变

@@ -457,6 +457,7 @@ public enum RCode {
     ALERTRULE_IMPORT_ERROR(423031, "Alert import error"),
     ALERTRULE_METHOD_ISNULL(421027, "Alert rule method can not be null"),
     ALERTRULE_METHOD_NOTFOUND(426028, "Alert rule method not found"),
+    ALERTRULE_STATE_INCORRECT(424029,"Alert rule state must be 0 or 1"),
 
     /**
      * 告警通知脚本

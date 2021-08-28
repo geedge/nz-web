@@ -599,6 +599,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @param healthyPromServers
      */
     private void justUpdateRuleConf(Map alertYmlMap, List<Promserver> healthyPromServers) {
+        // 先判断 redis 中是否存在 alert 告警标识
+        Boolean aBoolean = redisTemplate.hasKey(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID);
         Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
         Promserver promserver = promService.getById(supportAlertPromId);
 
@@ -616,10 +618,12 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
         Map<String, Object> updateRuleConfigBody = new HashMap<>(2);
         updateRuleConfigBody.put("rule", alertYmlMap);
-        // 因为 cortex 配置文件必填，所以 set cortex config
-        List<Promserver> globalPromServerList = healthyPromServers.stream().filter(agentEntity -> Constant.PromserverType.GLOBAL.getValue().equals(agentEntity.getType())).collect(Collectors.toList());
-        Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList);
-        updateRuleConfigBody.put("config", cortexYml);
+        // 告警标识不存在 则需要同时下发 cortex 配置
+        if (!aBoolean) {
+            List<Promserver> globalPromServerList = healthyPromServers.stream().filter(agentEntity -> Constant.PromserverType.GLOBAL.getValue().equals(agentEntity.getType())).collect(Collectors.toList());
+            Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, true);
+            updateRuleConfigBody.put("config", cortexYml);
+        }
         String result = null;
         try {
             result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(updateRuleConfigBody), "application/json;charset=UTF-8").execute().body();
@@ -651,8 +655,9 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         for (Promserver promserver : globalPromServerList) {
             UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
 
+            Boolean isAlert = promserver.getId().equals(supportAlertPromId) ? true : false;
             // 生成 cortex 配置模板
-            Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList);
+            Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, isAlert);
 
             Map<String, Object> cortexConfigBody = new HashMap<>(4);
             cortexConfigBody.put("config", cortexYml);

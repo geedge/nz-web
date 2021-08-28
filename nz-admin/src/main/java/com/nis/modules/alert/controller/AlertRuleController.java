@@ -40,6 +40,21 @@ public class AlertRuleController {
     private AlertRuleService alertRuleService;
 
     /**
+     * 详情
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
+    public R queryAlertRule(@PathVariable Integer id) {
+        ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
+
+        AlertRuleEntity alertRule = alertRuleService.queryAlertRule(id);
+
+        return R.ok(alertRule);
+    }
+
+    /**
      * 列表
      */
     @RequestMapping(value = "", method = RequestMethod.GET)
@@ -120,14 +135,4 @@ public class AlertRuleController {
         return R.ok();
     }
     
-    
-    @GetMapping("/{id}")
-    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTRULE)
-    public R queryAlertRule(@PathVariable Integer id) {
-    	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
-    	
-    	AlertRuleEntity alertRule = alertRuleService.queryAlertRule(id);
-    	
-    	return R.ok(alertRule);
-    }
 }

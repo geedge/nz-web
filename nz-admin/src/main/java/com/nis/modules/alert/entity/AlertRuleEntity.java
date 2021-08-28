@@ -87,6 +87,14 @@ public class AlertRuleEntity implements Serializable {
 	private String seq;
 
 	/**
+	 * 告警规则状态
+	 * 默认：开启
+	 * 0：关闭
+	 * 1：开启
+	 */
+	private Integer state;
+
+	/**
 	 * 告警消息统计
 	 */
 	@TableField(exist = false)

@@ -139,7 +139,7 @@ public class AgentConfigUtil {
         List<SysConfigEntity> configEntityList = sysConfigService.list();
         Map<String, String> configMap = configEntityList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-        List<AlertRuleEntity> alertRuleEntities = ruleService.list(new LambdaQueryWrapper<AlertRuleEntity>().ne(AlertRuleEntity::getBuildIn, 1));
+        List<AlertRuleEntity> alertRuleEntities = ruleService.list(new LambdaQueryWrapper<AlertRuleEntity>().ne(AlertRuleEntity::getBuildIn, 1).eq(AlertRuleEntity::getState, 1));
         List<AlertSeverityConf> severityConfs = alertSeverityService.list();
         Map<Integer, String> alertSeverityIdAndNameMap = severityConfs.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
 
@@ -189,9 +189,10 @@ public class AgentConfigUtil {
      *
      * @param promserver
      * @param globalPromServerList
+     * @param isAlert
      * @return
      */
-    public Map generateCortexYml(Promserver promserver, List<Promserver> globalPromServerList) {
+    public Map generateCortexYml(Promserver promserver, List<Promserver> globalPromServerList, Boolean isAlert) {
         log.debug("cortex.yml 开始生成");
         Map params = new LinkedHashMap(8);
 
@@ -214,6 +215,8 @@ public class AgentConfigUtil {
         List<SysConfigEntity> sysConfigList = sysConfigService.list();
         Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
         params.put("systemConfig", sysConfiMap);
+
+        params.put("isAlert", isAlert);
 
         Map map = new HashMap();
         String content = "";
@@ -283,7 +286,7 @@ public class AgentConfigUtil {
         // 当前支持 alert 的 agent ， 判断是否存在,不存在则重新 找一个 agent 下发配置
         if (StrUtil.isNotEmpty(supportAlertPromId.toString())) {
             Promserver promServerById = promService.getById(supportAlertPromId.toString());
-            if (promServerById == null) {
+            if (promServerById == null || promServerById.getStatus() != 1) {
                 supportAlertPromId = "";
             }
         }
