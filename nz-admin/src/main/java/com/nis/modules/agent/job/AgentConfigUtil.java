@@ -211,6 +211,10 @@ public class AgentConfigUtil {
         params.put("joinMemberList", joinMemberIpList);
         params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 
+        List<SysConfigEntity> sysConfigList = sysConfigService.list();
+        Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        params.put("systemConfig", sysConfiMap);
+
         Map map = new HashMap();
         String content = "";
         try {
@@ -247,6 +251,10 @@ public class AgentConfigUtil {
         params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_ACCESS_KEY));
         params.put("secret", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY));
         params.put("insecure", sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE));
+
+        List<SysConfigEntity> sysConfigList = sysConfigService.list();
+        Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        params.put("systemConfig", sysConfiMap);
 
         Map map = new HashMap();
         String content = "";
@@ -474,6 +482,10 @@ public class AgentConfigUtil {
         }
         params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
+        List<SysConfigEntity> sysConfigList = sysConfigService.list();
+        Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        params.put("systemConfig", sysConfiMap);
+
         Map map = null;
         String content = "";
         try {
@@ -681,6 +693,10 @@ public class AgentConfigUtil {
         }*/
 
         params.put("jobList", jobList);
+
+        List<SysConfigEntity> sysConfigList = sysConfigService.list();
+        Map<String, String> sysConfiMap = sysConfigList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
+        params.put("systemConfig", sysConfiMap);
 
         Map map = null;
         String content = "";

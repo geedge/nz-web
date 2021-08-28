@@ -29,7 +29,7 @@ import javax.tools.JavaFileObject;
 import cn.hutool.core.date.DateTime;
 
 public class Tool {
-	public static final Pattern REGEX_SPECIAL_DATE = Pattern.compile("(\\d{4}-\\d{1,2}-\\d{1,2}[T]\\d{1,2}:\\d{1,2}:\\d{1,2})(.\\d{1,10})(\\+\\d{1,2}:\\d{1,2})");
+	public static final Pattern REGEX_SPECIAL_DATE = Pattern.compile("(\\d{4}-\\d{1,2}-\\d{1,2}[T]\\d{1,2}:\\d{1,2}:\\d{1,2})(.\\d{1,10})((\\+\\d{1,2}:\\d{1,2})|(Z))");
 	/**
 	 * 数据库操作工具类
 	 */

@@ -113,14 +113,20 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             if (ruleChangeFlag) {
                 // 生成 alert.yml
                 Map alertYmlMap = configUtil.generateRuleYml();
-                // Prometheus cortex 支持 rule
-                if (prometheusChangeFlag) {
+                agentConfigMap.put("alertYml", alertYmlMap);
+                // Prometheus cortex 不支持 rule 由 cortex 支持告警
+                /*if (prometheusChangeFlag) {
                     // 1. prometheus 改变，在 prometheus 配置下发的时候进行 rule 下发
                     agentConfigMap.put("alertYml", alertYmlMap);
                 }
 
                 if (!prometheusChangeFlag && !cortexChangeFlag) {
                     // 2. prometheus cortex 都没有变更 只有 alert 变更，查询 redis supportAlertPromId 进行下发 alert rule 配置变化
+                    this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
+                }*/
+
+                // 如果 cortex 没有变更 就只更新 rule
+                if(!cortexChangeFlag){
                     this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
                 }
             }
@@ -387,10 +393,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
             Boolean isAlert = false;
             // prometheus 本地存储 && alert rule.yml 配置变更 && first global
-            if (isLocalStorage && agentConfigMap.get("alertYml") != null && i == 0) {
+            /*if (isLocalStorage && agentConfigMap.get("alertYml") != null && i == 0) {
                 isAlert = true;
                 log.debug("支持告警的 agent :" + JSONObject.toJSONString(promserver));
-            }
+            }*/
 
             Map gloablAgentYmlMap = configUtil.generateGlobalYml(promserver, globalPromServers, perDataCenterPromServers, assetListForThisAgent, endpointListForThisAgent, isAlert, i == 0);
 
@@ -596,7 +602,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
         Promserver promserver = promService.getById(supportAlertPromId);
 
-        String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+       /* String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
         UrlBuilder urlBuilder;
         if (StrUtil.equals("2", objStroageEnable)) {
             // 开启对象存储 更新  cortex rule 配置
@@ -604,8 +610,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         } else {
             // 没有开启对象存储 更新  prometheus rule 配置
             urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("prometheus").appendPath("config");
-        }
+        }*/
 
+       // 无论对象存储与否  全部由于 cortex 支持 rule
+        UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
         Map<String, Object> updateRuleConfigBody = new HashMap<>(2);
         updateRuleConfigBody.put("rule", alertYmlMap);
         // 因为 cortex 配置文件必填，所以 set cortex config
