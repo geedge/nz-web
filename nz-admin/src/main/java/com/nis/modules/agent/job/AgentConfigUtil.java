@@ -430,6 +430,51 @@ public class AgentConfigUtil {
         params.put("isLocalStorage", false);
 
         params.put("assetList", assetList);
+        List<Map> jobList = new ArrayList<>();
+
+        // prometheus_metric
+        Map promMetricsMap = new LinkedHashMap();
+        promMetricsMap.put("job_name", "prometheus_metric");
+        promMetricsMap.put("metrics_path", sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy" + "/metrics");
+
+        List promMetricsStaticConfigList = new ArrayList();
+        Map promMetricsStaticConfig = new LinkedHashMap(2);
+        List<String> promMetricsTargets = new ArrayList();
+        promMetricsTargets.add(promserver.getHost() + ":" + promserver.getPort());
+        promMetricsStaticConfig.put("targets", promMetricsTargets);
+
+        Map labels = new LinkedHashMap(4);
+        Dc dc = dcService.getById(promserver.getDcId());
+        labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+        labels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+        labels.put("application", "prometheus");
+        promMetricsStaticConfig.put("labels", labels);
+        promMetricsStaticConfigList.add(promMetricsStaticConfig);
+        promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
+        promMetricsMap.put("instanceRelabel", true);
+
+        // agent metrics
+        Map agentMetricsMap = new LinkedHashMap();
+        agentMetricsMap.put("job_name", "agent_metrics");
+        agentMetricsMap.put("metrics_path", sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+
+        List agentMetricsStaticConfigList = new ArrayList();
+        Map agentMetricsStaticConfig = new LinkedHashMap(2);
+        List agentMetricsTargets = new ArrayList();
+        agentMetricsTargets.add(String.format("%s:%s", promserver.getHost(), promserver.getPort()));
+        agentMetricsStaticConfig.put("targets", agentMetricsTargets);
+
+        Map agentLabels = new LinkedHashMap(4);
+        agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+        agentLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
+        agentMetricsStaticConfig.put("labels", labels);
+
+        agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
+        agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
+        agentMetricsMap.put("instanceRelabel", false);
+        jobList.add(agentMetricsMap);
+        jobList.add(promMetricsMap);
+        params.put("jobList", jobList);
 
         // 处理 endpoint 配置项 为了适应模板
         this.handleDataConfigForTmpl(promserver, endpointList, assetList);
@@ -581,10 +626,10 @@ public class AgentConfigUtil {
         promMetricsMap.put("job_name", "prometheus_metric");
         promMetricsMap.put("metrics_path", proxyPath + "/metrics");
         promMetricsMap.put("isFederate", false);
-        promMetricsMap.put("instanceRelabel", false);
+        promMetricsMap.put("instanceRelabel", true);
 
         List promMetricsStaticConfigList = new ArrayList();
-        for (Promserver entity : allPromserverList) {
+        /*for (Promserver entity : allPromserverList) {
             Map promMetricsStaticConfig = new LinkedHashMap(2);
             List<String> promMetricsTargets = new ArrayList();
             promMetricsTargets.add(entity.getHost() + ":" + entity.getPort());
@@ -598,7 +643,19 @@ public class AgentConfigUtil {
             promMetricsStaticConfig.put("labels", labels);
 
             promMetricsStaticConfigList.add(promMetricsStaticConfig);
-        }
+        }*/
+        Map promMetricsStaticConfig = new LinkedHashMap(2);
+        List<String> promMetricsTargets = new ArrayList();
+        promMetricsTargets.add(currentAgent.getHost() + ":" + currentAgent.getPort());
+        promMetricsStaticConfig.put("targets", promMetricsTargets);
+
+        Map labels = new LinkedHashMap(4);
+        Dc dc = dcService.getById(currentAgent.getDcId());
+        labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+        labels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
+        labels.put("application", "prometheus");
+        promMetricsStaticConfig.put("labels", labels);
+        promMetricsStaticConfigList.add(promMetricsStaticConfig);
         promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
 
         // nezha_metrics
@@ -616,6 +673,25 @@ public class AgentConfigUtil {
         nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
         nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
         nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
+
+        // agent metrics
+        Map agentMetricsMap = new LinkedHashMap();
+        agentMetricsMap.put("job_name", "agent_metrics");
+        agentMetricsMap.put("metrics_path", configMap.get(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+        agentMetricsMap.put("isFederate", false);
+        agentMetricsMap.put("instanceRelabel", true);
+
+        List agentMetricsStaticConfigList = new ArrayList();
+        Map agentMetricsStaticConfig = new LinkedHashMap(2);
+        List agentMetricsTargets = new ArrayList();
+        agentMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), currentAgent.getPort()));
+        agentMetricsStaticConfig.put("targets", agentMetricsTargets);
+        Map agentLabels = new LinkedHashMap(4);
+        agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
+        agentLabels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
+        agentMetricsStaticConfig.put("labels", labels);
+        agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
+        agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
 
         Map<String, Object> params = new LinkedHashMap();
         params.put("scrape_interval", configMap.get(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
@@ -651,11 +727,11 @@ public class AgentConfigUtil {
             remoteWriteUrlInfoMapList.add(map);
             if (isLocalStorage) {
                 jobList.add(nezhaMetricsMap);
-                jobList.add(promMetricsMap);
+                // jobList.add(promMetricsMap);
             } else {
                 if (isSupportSysteMetrics) {
                     jobList.add(nezhaMetricsMap);
-                    jobList.add(promMetricsMap);
+                    // jobList.add(promMetricsMap);
                 }
             }
         } else {
@@ -678,9 +754,12 @@ public class AgentConfigUtil {
             // 不论 本地还是对象存储 ，有一个支持 nzweb 系统指标即可
             if (isSupportSysteMetrics) {
                 jobList.add(nezhaMetricsMap);
-                jobList.add(promMetricsMap);
+                // jobList.add(promMetricsMap);
             }
         }
+
+        jobList.add(promMetricsMap);
+        jobList.add(agentMetricsMap);
 
         params.put("remoteWriteUrlInfos", remoteWriteUrlInfoMapList);
 
