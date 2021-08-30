@@ -87,8 +87,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         AssetBrand brand = brandService.getById(model.getBrandId());
         String chartIds = model.getChartIds();
     	if(!StrUtil.isBlank(chartIds)) {
-    		List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
-        	model.setCharts(charts);
+            List<VisualChart> charts = new ArrayList<>();
+            for (String chartId : Arrays.asList(chartIds.split(","))) {
+                VisualChart chartById = visualChartService.getById(chartId);
+                charts.add(chartById);
+            }
+            model.setCharts(charts);
     	}
     	//获取资产数量
     	List<AssetAsset> list = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getModelId, model.getId()));
@@ -113,10 +117,14 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         List<AssetModel> modelList = assetModelDao.queryList(page, params);
         for(AssetModel model : modelList) {
         	String chartIds = model.getChartIds();
-        	if(!StrUtil.isBlank(chartIds)) {
-        		List<VisualChart> charts = visualChartService.list(new QueryWrapper<VisualChart>().lambda().in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
-            	model.setCharts(charts);
-        	}
+            if (!StrUtil.isBlank(chartIds)) {
+                List<VisualChart> charts = new ArrayList<>();
+                for (String id : Arrays.asList(chartIds.split(","))) {
+                    VisualChart chartById = visualChartService.getById(id);
+                    charts.add(chartById);
+                }
+                model.setCharts(charts);
+            }
         }
         page.setRecords(modelList);
         return new PageUtils(page);
