@@ -6,6 +6,7 @@ import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
+import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.terminal.job.TerminalCleanRecordJob;
@@ -42,6 +43,9 @@ public class JobConfig {
     @Value("${nezha.assetPingJobCron:0 0/1 * * * ? *}")
     private String assetPingJobCron;
 
+    @Value("${nezha.assetTalonJobCron:0 0/1 * * * ? *}")
+    private String assetTalonJobCron;
+
     @Value("${nezha.assetFeatureJobCron:0 0/5 * 1 * ? *}")
     private String assetFeatureJobCron;
 
@@ -66,6 +70,7 @@ public class JobConfig {
     private String alertMessageExpiredJobName = "ALERTMESSAGEEXPIRED_JOB";
     private String assetFeatureJobName = "ASSETFEATURE_JOB";
     private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
+    private String assetTalonStatusJobName = "ASSETTALONSTATUS_JOB";
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
     private String haJobName = "HA_JOB";
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
@@ -88,6 +93,11 @@ public class JobConfig {
     @Bean
     public JobDetail assetPingStatusCronJobDetail() {
         return JobBuilder.newJob(AssetPingStatusJob.class).withIdentity(JOB_NAME + assetPingStatusJobName).storeDurably().build();
+    }
+
+    @Bean
+    public JobDetail assetTalonStatusCronJobDetail() {
+        return JobBuilder.newJob(AssetTalonStatusJob.class).withIdentity(JOB_NAME + assetTalonStatusJobName).storeDurably().build();
     }
 
     @Bean
@@ -118,6 +128,10 @@ public class JobConfig {
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
+
+        // asset talon state 如果配置文件没有配置定时周期  默认为1分钟执行一次
+        createCronScheduleJob(assetTalonStatusJobName, assetTalonStatusCronJobDetail(), StringUtils.isEmpty(assetTalonJobCron) ? "0 0/1 * * * ? *" : assetTalonJobCron, scheduler);
+
 
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
         createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron, scheduler);

@@ -661,7 +661,7 @@ public class AgentConfigUtil {
         // nezha_metrics
         Map nezhaMetricsMap = new LinkedHashMap();
         nezhaMetricsMap.put("job_name", "nezha_metrics");
-        nezhaMetricsMap.put("metrics_path", configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/metrics");
+        nezhaMetricsMap.put("metrics_path", configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
         nezhaMetricsMap.put("isFederate", false);
         nezhaMetricsMap.put("instanceRelabel", true);
 

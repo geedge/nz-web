@@ -71,6 +71,7 @@ public class ShiroConfig {
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
 		filterMap.put("/metrics", "anon");
+		filterMap.put("/actuator/prometheus", "anon");
 		filterMap.put("/prometheus", "anon");
 		filterMap.put("/prom/**", "anon");
 		filterMap.put("/swagger/**", "anon");

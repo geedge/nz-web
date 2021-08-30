@@ -12,7 +12,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RestController
 public class MetricsController extends AbstractController {
 
-    @Autowired
+    /*@Autowired
     private NezhaMetrics nezhaMetrics;
 
     @Autowired
@@ -24,5 +24,5 @@ public class MetricsController extends AbstractController {
         ModelAndView mv = new ModelAndView();
         mv.setViewName("redirect:/prometheus");
         return mv;
-    }
+    }*/
 }

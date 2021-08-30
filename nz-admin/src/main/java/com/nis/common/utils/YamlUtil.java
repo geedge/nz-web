@@ -93,7 +93,7 @@ public class YamlUtil {
 		rules.add(rule);
 		
 		Map labels = new HashMap();
-		labels.put("severity", alertRule.getSeverity());
+		labels.put("severity", alertRule.getSeverityId());
 		Map annotations = new HashMap();
 		annotations.put("summary", alertRule.getSummary());
 		annotations.put("description", alertRule.getDescription());

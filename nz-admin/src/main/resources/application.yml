@@ -112,22 +112,17 @@ mybatis-plus:
     jdbc-type-for-null: 'null'
 
 management:
-   metrics:
-    binders:
-      jvm:
-        enabled: false
-      files:
-        enabled: false
-      integration:
-        enabled: false
-      logback:
-        enabled: false
-      processor:
-        enabled: false
-      uptime:
-        enabled: false
-   endpoints:
+  endpoints:
     web:
       exposure:
-        include: ["prometheus"]
-      base-path: "/"
+        include: '*' # [info,health,heapdump,threaddump,env,mappings,prometheus]    #允许访问的endpoint:*所有,info,health,beans,env,loggers等
+        exclude: beans
+      base-path: /actuator  # http访问路径,默认：actuator
+      path-mapping:
+        prometheus: /prometheus
+  endpoint:
+    health:
+      show-details: always  # always允许访问详细数据
+  metrics:
+    tags:
+      application: nz-web # prometheus application tag ，标志一个应用
