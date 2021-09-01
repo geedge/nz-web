@@ -886,6 +886,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					syncChart.setUpdateBy(ShiroUtils.getUserId().intValue());
 					syncChart.setName(NzExpressionUtil.renderExpression(tmpChart.getName(),data));
 					syncChart.setRemark(NzExpressionUtil.renderExpression(tmpChart.getRemark(),data));
+					syncChart.setParam(ToolUtil.isNotEmpty(tmpChart.getParam()) ? Tool.NzExpressionUtil.renderExpression(tmpChart.getParam().toString(), data) : null);
 					// 获取各自的panelId信息
 					VisualPanel panel = visualPanelService.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, type).eq(VisualPanel::getLink, varId));
 					syncChart.setPanelId(panel.getId());
@@ -947,6 +948,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		
 		syncChart.setName(NzExpressionUtil.renderExpression(temp.getName(),obj));
 		syncChart.setRemark(NzExpressionUtil.renderExpression(temp.getRemark(),obj));
+		syncChart.setParam(ToolUtil.isNotEmpty(temp.getParam()) ? Tool.NzExpressionUtil.renderExpression(temp.getParam().toString(), obj) : null);
 		syncChart.setPanelId(instance.getPanelId());
 		syncChart.setGroupId(instance.getGroupId());
 		List<VisualChartElement> elements = temp.getElements();
