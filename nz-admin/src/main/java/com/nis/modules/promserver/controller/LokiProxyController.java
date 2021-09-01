@@ -249,7 +249,7 @@ public class LokiProxyController {
                     return result;
                 }
 
-                List<Object> valuesList = resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
+                List<Object> valuesList = (List<Object>) resultArray.stream().map(map -> (List) map.get("values")).flatMap(Collection::stream).collect(Collectors.toList());
                 // 查询结果集超过系统设置最大限制 , -1 表示不做限制
                 SysConfigEntity configEntity = sysConfigService.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.LOKILOG_QUERY_MAX_SERIES));
                 Integer queryMaxSeriesIntVal = Integer.valueOf(configEntity.getParamValue());
