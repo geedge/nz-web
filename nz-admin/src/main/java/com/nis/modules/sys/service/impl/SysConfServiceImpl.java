@@ -601,8 +601,16 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         // 根据 key 更新不同 event_log 值
         if (Tool.CollectionUtil.isNotEmpty(updateKeys)) {
             Set<String> incrementKeys = new HashSet<>();
+            // 联邦开关
+            if (updateKeys.contains("prometheus_federation_enabled")) {
+                incrementKeys.add("prometheus");
+                incrementKeys.add("promtail");
+                incrementKeys.add("loki");
+                incrementKeys.add("cortex");
+                incrementKeys.add("rule");
+            }
             // prometheus.yml 改动
-            if (updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout") || updateKeys.contains("prometheus_federation_enabled")) {
+            if (updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout")) {
                 incrementKeys.add("prometheus");
             }
             // prometheus config.conf 启动项改动
