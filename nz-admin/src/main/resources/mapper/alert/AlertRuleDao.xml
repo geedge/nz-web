@@ -7,6 +7,9 @@
     <resultMap type="com.nis.modules.alert.entity.AlertRuleEntity" id="alertRuleMap">
         <result property="id" column="id"/>
         <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="inr" column="inr"/>
+        <result property="timeout" column="timeout"/>
         <result property="expr" column="expr"/>
         <result property="operator" column="operator"/>
         <result property="threshold" column="threshold"/>
@@ -32,6 +35,9 @@
         SELECT
         ar.id,
         ar.name AS name,
+        ar.type,
+        ar.inr,
+        ar.timeout,
         ar.expr,
         ar.operator,
         ar.threshold,
@@ -64,6 +70,10 @@
 
             <if test="params.name != null and params.name != ''">
                 AND ar.name LIKE CONCAT('%', #{params.name}, '%')
+            </if>
+
+            <if test="params.type != null and params.type != ''">
+                AND ar.type = #{params.type}
             </if>
 
             <if test="params.expr != null and params.expr != ''">

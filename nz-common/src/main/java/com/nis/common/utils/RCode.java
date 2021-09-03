@@ -433,7 +433,7 @@ public enum RCode {
     ALERTRULE_SEVERITY_ISNULL(421007, "Severity is required"),               //告警级别不能为空
     ALERTRULE_SEVERITY_INCORRECT(424008, "Severity is not exists"),
     ALERTRULE_LINK_OBJECT_ISNULL(426009, "Association object does not exist"),
-    ALERTRULE_TYPE_ISNULL(421010, "Alarm type is empty"),
+    ALERTRULE_TYPE_ISNULL(421010, "Alert rule type is empty"),
     ALERTRULE_TYPE_INVALIDE(424011, "Alarm type is invalide"),
     ALERTRULE_BUILDIN_CAN_NOT_REMOVE(427012, "This rule is built-in and cannot be deleted"),
     ALERTRULE_TOPN_ISNULL(421013, "TopN is required"), //告警信息topn不能为空
@@ -458,6 +458,7 @@ public enum RCode {
     ALERTRULE_METHOD_ISNULL(421027, "Alert rule method can not be null"),
     ALERTRULE_METHOD_NOTFOUND(426028, "Alert rule method not found"),
     ALERTRULE_STATE_INCORRECT(424029,"Alert rule state must be 0 or 1"),
+    ALERTRULE_TYPE_INCORRECT(424030, "Alert rule type must be 1 ,2 or 3"),
 
     /**
      * 告警通知脚本

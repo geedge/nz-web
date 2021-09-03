@@ -32,6 +32,30 @@ public class AlertRuleEntity implements Serializable {
 	private String name;
 
 	/**
+	 *	类型
+	 * 1：Metrics
+	 * 2：Logs
+	 * 3：SNMP TRAP
+	 */
+	private Integer type;
+
+	/**
+	 *执行周期
+	 * 默认值：0，单位：s
+	 * 不小于 15
+	 * 当 < 15, 则为 Scrape interval
+	 */
+	private Integer inr;
+
+	/**
+	 *执行周期超时时间
+	 * 默认值：0，单位：s
+	 * 不小于 15
+	 * 当 < 15, 则为 Scrape timeout
+	 */
+	private Integer timeout;
+
+	/**
 	 * 运算表达式
 	 */
 	private String expr;
