@@ -19,6 +19,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1148,5 +1149,41 @@ public class Tool {
 	    	return file.getAbsolutePath();
 	    }
 	    
+	}
+	
+	/**
+	 * 告警相关 工具类
+	 * @author ThinkPad
+	 *
+	 */
+	public static class AlertUtil {
+		private static final Pattern VAR_PATTERN = Pattern.compile("\\{\\{\\s*\\$(\\S+)\\s*\\}\\}");
+		/**
+		 * 渲染 alert rule annotations
+		 * @param tpl
+		 * 		# To insert a firing element's label values:
+		 * 		{{ $labels.<labelname> }}
+		 * 		# To insert the numeric expression value of the firing element:
+		 * {{ $value }}
+		 * @param contex 
+		 *        label:{}
+		 *        alertRule:{}
+		 *        value:111
+		 * @return
+		 */
+		public static String renderAlertRuleAnnotations(String tpl,Map<String,Object> context) {
+			if(Tool.StrUtil.isBlank(tpl)) {
+				return Tool.StrUtil.EMPTY;
+			}
+			StringBuffer stringBuffer = new StringBuffer();
+			Matcher matcher = VAR_PATTERN.matcher(tpl);
+			while (matcher.find()) {
+				String var = matcher.group(1).trim();
+				Object value = Tool.BeanUtil.getProperty(context, var);
+				matcher.appendReplacement(stringBuffer, value== null? Tool.StrUtil.EMPTY:value.toString());
+			}
+			matcher.appendTail(stringBuffer);
+			return stringBuffer.toString();
+		}
 	}
 }

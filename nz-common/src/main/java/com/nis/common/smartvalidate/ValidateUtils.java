@@ -63,6 +63,14 @@ public class ValidateUtils {
         return this;
     }
 
+    public ValidateUtils equalsIgnoreCase(CharSequence sequence) {
+    	return equalsIgnoreCase(sequence, null);
+    }
+    
+    public ValidateUtils equalsIgnoreCase(CharSequence sequence,RCode code) {
+    	ValidateHandler.equalsIgnoreCase(value, sequence, code);
+    	return this;
+    }
     /**
      * 正则校验
      *

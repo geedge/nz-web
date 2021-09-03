@@ -1,15 +1,12 @@
 package com.nis.modules.alert.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 
-import java.util.List;
-
 /**
  * 
- * @author song
- * @email 
- * @date 2019-11-25 10:11:01
  */
 public interface AlertMessageService extends IService<AlertMessageEntity> {
 
@@ -30,5 +27,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	Integer getAactiveAlertCountByProjectId(Integer projectId);
 	
 	void removeAllData();
+
+	void leftPushAlertMessageToRedis(String messages);
 }
 

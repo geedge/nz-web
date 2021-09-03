@@ -7,4 +7,6 @@ public interface MonitorEventLogService extends IService<MonitorEventLog> {
 
 	void increment(String... keys);
 
+	Integer getByEvent(String event);
+
 }

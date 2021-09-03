@@ -3,10 +3,8 @@ package com.nis;
 
 import java.util.TimeZone;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -26,7 +24,6 @@ import com.nis.AdminApplication.SetupAutoConfiguration;
 import com.nis.modules.terminal.config.TerminalHandler;
 
 import cn.hutool.core.util.StrUtil;
-import io.micrometer.core.instrument.MeterRegistry;
 
 @SpringBootApplication(scanBasePackages = { "com.nis.setup" })
 @Import(SetupAutoConfiguration.class)

@@ -33,4 +33,10 @@ public interface PromserverService extends IService<Promserver> {
 	Promserver queryPromServerDetails(Integer id);
 
 	JSONObject requestAgent(Promserver promServer, String urlPath);
+
+	/**
+	 * 获取一个 可用的 global agent
+	 * @return
+	 */
+	Promserver getOneAvaliableGlobalAgent();
 }

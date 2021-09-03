@@ -503,6 +503,14 @@ public enum RCode {
     ALERTNOTIFY_ID_ISNULL(461006,"Alert notify method ID can not be null"),
     ALERTNOTIFY_FILEPATH_ISNULL(461007,"Alert notify method file path can not be null"),
     ALERTNOTIFY_NAME_DUPLICATE(462008, "Alert notify method name duplicate"),
+    
+    /**
+     * 告警判断
+     */
+    ALERT_JUDGE_RESULT_ISNULL(461001,"query result is null"),
+    ALERT_JUDGE_RESULT_FAILE(465002,"query result status is not success"),
+    ALERT_JUDGE_RESULT_TYPE_ERROR(465003,"query result type is not vetor"),
+    
     /**
      * setting菜单项相关
      */

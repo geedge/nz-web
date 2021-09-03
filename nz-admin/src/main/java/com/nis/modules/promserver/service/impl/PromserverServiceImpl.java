@@ -101,7 +101,19 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 			throw new NZException(RCode.PROMSERVER_TYPE_INVALIDE);
 		}
 	}
-
+	
+	@Override
+	@SuppressWarnings("unchecked")
+	public Promserver getOneAvaliableGlobalAgent() {
+		Integer type = Constant.PromserverType.GLOBAL.getValue();
+		//按照id 排序，暂时 使用相对固定的 健康 global
+		return this.getOne(new QueryWrapper<Promserver>().lambda()
+				.eq(Promserver::getStatus, 1)
+				.eq(Promserver::getType, type)
+				.orderByAsc(Promserver::getId)
+				.last("limit 1"));
+	}
+	
 	@Override
 	public Promserver getOneAvaPromServer(Integer promId,Integer idcId,Integer type) {
 		type = (type == null) ? 1 :type;

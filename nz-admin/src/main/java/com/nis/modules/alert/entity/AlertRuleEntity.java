@@ -3,6 +3,7 @@ package com.nis.modules.alert.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
@@ -95,6 +96,24 @@ public class AlertRuleEntity implements Serializable {
 	private Integer state;
 
 	/**
+	 * 告警 规则类型
+	 * 1：metrics
+	 * 2：logs
+	 * 3：snmp trap
+	 */
+	private Integer type;
+	
+	/**
+	 * 执行周期
+	 */
+	private Integer inr;
+	
+	/**
+	 * 执行超时时间
+	 */
+	private Integer timeout;
+	
+	/**
 	 * 告警消息统计
 	 */
 	@TableField(exist = false)
@@ -114,4 +133,22 @@ public class AlertRuleEntity implements Serializable {
 	@TableField(exist = false)
 	private AlertSeverityConf severity;
 
+	
+	/**
+	 * 计算 alert rule hash id
+	 * @param entity
+	 * @return
+	 */
+	public  String getAlertRuleHashId() {
+		return Tool.DigestUtil.md5Hex(this.toString());
+	}
+	
+	/**
+	 * 获取 完整表达式 内容
+	 * @return
+	 */
+	public String getExpression() {
+		return String.format("%s %s %s", this.getExpr(),this.getOperator(),this.getThreshold());
+	}
+	
 }

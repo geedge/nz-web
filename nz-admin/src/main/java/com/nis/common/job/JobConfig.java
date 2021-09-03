@@ -1,8 +1,25 @@
 package com.nis.common.job;
 
-import cn.hutool.log.Log;
+import javax.annotation.PostConstruct;
+
+import org.apache.commons.lang.StringUtils;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.CronTrigger;
+import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.TriggerBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+
 import com.nis.modules.agent.job.AutoConfigAgentJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
+import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
@@ -10,15 +27,8 @@ import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.terminal.job.TerminalCleanRecordJob;
-import org.apache.commons.lang.StringUtils;
-import org.quartz.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
-import javax.annotation.PostConstruct;
+import cn.hutool.log.Log;
 
 /**
  * JobConfig 统一管理 job config
@@ -39,7 +49,10 @@ public class JobConfig {
     
     @Value("${nezha.alertMessageExpiredJobCron:0/10 * * * * ?}")
     private String alertMessageExpiredJobCron;
-
+    
+    @Value("${nezha.alertRuleManagerJobCron:0/10 * * * * ?}")
+    private String alertRuleManagerJobCron;
+    
     @Value("${nezha.assetPingJobCron:0 0/1 * * * ? *}")
     private String assetPingJobCron;
 
@@ -68,6 +81,7 @@ public class JobConfig {
     private String agentJobName = "AGENT_JOB";
     private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
     private String alertMessageExpiredJobName = "ALERTMESSAGEEXPIRED_JOB";
+    private String alertRuleManagerJobName = "ALERTRULEMANAGER_JOB";
     private String assetFeatureJobName = "ASSETFEATURE_JOB";
     private String assetPingStatusJobName = "ASSETPINGSTATUS_JOB";
     private String assetTalonStatusJobName = "ASSETTALONSTATUS_JOB";
@@ -75,6 +89,7 @@ public class JobConfig {
     private String haJobName = "HA_JOB";
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
     private String terminalCleanJobCronName = "TERMINALCLEAN_JOB";
+   
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AutoConfigAgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
@@ -125,13 +140,17 @@ public class JobConfig {
 	    return JobBuilder.newJob(TerminalCleanRecordJob.class).withIdentity(JOB_NAME + terminalCleanJobCronName).storeDurably().build();
 	}
 	
+    @Bean
+    public JobDetail alertRuleManagerJobDetail() {
+        return JobBuilder.newJob(AlertRuleManagerJob.class).withIdentity(JOB_NAME + alertRuleManagerJobName).storeDurably().build();
+    }
+	
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
 
         // asset talon state 如果配置文件没有配置定时周期  默认为1分钟执行一次
         createCronScheduleJob(assetTalonStatusJobName, assetTalonStatusCronJobDetail(), StringUtils.isEmpty(assetTalonJobCron) ? "0 0/1 * * * ? *" : assetTalonJobCron, scheduler);
-
 
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
         createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron, scheduler);
@@ -154,6 +173,10 @@ public class JobConfig {
         
         // 告警消息超时判断线程
         createCronScheduleJob(alertMessageExpiredJobName, alertMessageExpiredDetail(), StringUtils.isEmpty(alertMessageExpiredJobCron) ? "0/10 * * * * ?" : alertMessageExpiredJobCron, scheduler);
+        
+        //告警规则管理线程
+        createCronScheduleJob(alertRuleManagerJobName, alertRuleManagerJobDetail(), StringUtils.isEmpty(alertRuleManagerJobCron) ? "0/10 * * * * ?" : alertRuleManagerJobCron, scheduler);
+        
         // session time out job 如果配置文件没有配置定时周期  默认为5分钟执行一次
         createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron, scheduler);
         

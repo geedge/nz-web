@@ -31,6 +31,15 @@ public class ValidateHandler {
         }
     }
 
+    public static void equalsIgnoreCase(Object value,CharSequence sequence,RCode code) {
+    	try {
+    		ValidateProcess.equalsIgnoreCase(value, sequence);
+        } catch (NZException e) {
+            errorMsgHandler(e, code);
+        }
+    	
+    }
+    
     public static void regex(String regex, Object value, RCode code) {
         try {
             if (null == value) {

@@ -15,6 +15,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
+import com.nis.modules.alert.service.AlertMessageService;
 
 import cn.hutool.log.Log;
 
@@ -30,12 +31,8 @@ import cn.hutool.log.Log;
 public class AlertMessageReceiveController {
 
 	private final static Log logger = Log.get();
-
 	@Autowired
-	private RedisTemplate<String, String> redisTemplate;
-	
-	@Value("${redis.maxQueueLength:100}")
-    private Long maxQueueLength;//redis队列长度
+	private AlertMessageService alertMessageService;
 	
 	/**
 	 * 接收 prometheus 推送过来的告警消息
@@ -49,16 +46,7 @@ public class AlertMessageReceiveController {
     		if(logger.isDebugEnabled()) {
     			logger.debug("alert receive: {}", receiveStr);
     		}
-    		ListOperations<String, String> operations = redisTemplate.opsForList();
-    		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
-    		Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
-    		//判断是否超出所设置的队列最大长度
-    		if(size > maxQueueLength) {
-    			redisTemplate.opsForList().trim(Constant.ALERT_MESSAGE_RECV, 0, maxQueueLength-1);
-    			logger.debug("alert_message_recv size : {}",maxQueueLength);
-    		}else {
-    			logger.debug("alert_message_recv size : {}",size);
-    		}
+    		alertMessageService.leftPushAlertMessageToRedis(receiveStr);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);
@@ -72,16 +60,7 @@ public class AlertMessageReceiveController {
     		if(logger.isDebugEnabled()) {
     			logger.debug("alert receive: {}", receiveStr);
     		}
-    		ListOperations<String, String> operations = redisTemplate.opsForList();
-    		operations.leftPush(Constant.ALERT_MESSAGE_RECV, receiveStr);
-    		Long size = operations.size(Constant.ALERT_MESSAGE_RECV);
-    		//判断是否超出所设置的队列最大长度
-    		if(size > maxQueueLength) {
-    			redisTemplate.opsForList().trim(Constant.ALERT_MESSAGE_RECV, 0, maxQueueLength-1);
-    			logger.debug("alert_message_recv size : {}",maxQueueLength);
-    		}else {
-    			logger.debug("alert_message_recv size : {}",size);
-    		}
+    		alertMessageService.leftPushAlertMessageToRedis(receiveStr);
     	} catch (RuntimeException e) {
     		logger.error(e, "alert message receive error,host:{}, msg:{}", request.getRemoteAddr(),receiveStr);
 			throw new NZException(RCode.ALERTMSG_PARSE_ERROR);

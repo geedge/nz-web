@@ -336,6 +336,17 @@ class ValidateProcess {
         regex(REGEX_EMAIL, value, EmailErrorMsg + ", value:" + value);
     }
 
+    static void equalsIgnoreCase(Object src,CharSequence sequence) {
+    	if(src == null && sequence == null ) {
+    		return ;
+    	}
+    	if(sequence != null && src != null 
+    			&& sequence.toString().equalsIgnoreCase(src.toString())) {
+    		return;
+    	}
+    	throw new NZException(String.format("Equals ignore case error,result: %s != %s ", src,sequence));
+    }
+    
     public static void isPort(String value) {
         regex(REGEX_PORT, value, IpErrorMsg + ", value:" + value);
     }
