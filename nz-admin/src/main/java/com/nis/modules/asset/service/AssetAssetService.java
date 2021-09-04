@@ -57,4 +57,11 @@ public interface AssetAssetService extends IService<AssetAsset> {
     List<AssetAsset> getBlackboxAssetInfoList();
 
     List<VisualChart> getAssetsWithTagByChartIds(List<Integer> idList);
+
+    /**
+     * 根据ip获取 asset
+     * @param ip
+     * @return
+     */
+    AssetAsset getAssetByIP(String ip);
 }

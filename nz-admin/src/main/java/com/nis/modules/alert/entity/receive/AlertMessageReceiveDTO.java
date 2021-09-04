@@ -32,7 +32,7 @@ public class AlertMessageReceiveDTO implements Serializable {
 
     private String generatorURL;
 
-    private Boolean snmptrap;
+//    private Boolean snmptrap;
 
     public String genHashKey() {
     	

@@ -143,7 +143,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					if (timestamp - firstTime > alertRuleEntity.getLast() * 1000) {
 						// 直接将 告警消息 放到 redis 缓存 endTime + 5min
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
-								this.formatMessageDate(firstTime), null);
+								Tool.AlertUtil.formatMessageDate(firstTime), null);
 						messages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: active,content : {}",
@@ -170,7 +170,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 						// 说明之前发送过 告警消息，需要发送已经失效的告警消息，endAt < now
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(
 								Tool.JSONUtil.parseObj(activeHash), Tool.StrUtil.EMPTY,
-								this.formatMessageDate(firstTime), this.formatMessageDate(nowTs));
+								Tool.AlertUtil.formatMessageDate(firstTime), Tool.AlertUtil.formatMessageDate(nowTs));
 						messages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: expired,content : {}",
@@ -266,8 +266,9 @@ public class AlertRuleJudgeRunnable implements Runnable {
 	private AlertMessageReceiveDTO genAlertMessageFromVector(Map labels, String value, String startAt, String endAt) {
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
 		// 添加label
+		String ruleType = this.alertRuleEntity.getType() == 1?"metrics":"logs";
+		labels.put("rule_type", ruleType);
 		labels.put("alertname", this.alertRuleEntity.getId().toString());
-//		labels.put("type", this.alertRuleEntity.getType().toString());
 		if (alertRuleEntity.getSeverity() != null) {
 			labels.put("severity", this.alertRuleEntity.getSeverity().getName());
 		}
@@ -297,11 +298,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 	 * @param time
 	 * @return
 	 */
-	private String formatMessageDate(Long time) {
-		DateTime date = Tool.DateUtil.date(time);
-		String format = Tool.DateUtil.format(date, DatePattern.UTC_MS_FORMAT);
-		return format;
-	}
+
 
 	public String getRedisCacheKey() {
 		return String.format(ALERT_FOR_STATE_KEY_FORMAT, this.alertRuleEntity.getId());

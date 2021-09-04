@@ -19,6 +19,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.regex.Matcher;
@@ -27,6 +28,7 @@ import java.util.regex.Pattern;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 
 public class Tool {
@@ -1179,11 +1181,36 @@ public class Tool {
 			Matcher matcher = VAR_PATTERN.matcher(tpl);
 			while (matcher.find()) {
 				String var = matcher.group(1).trim();
-				Object value = Tool.BeanUtil.getProperty(context, var);
+				Object value = null;
+				try {
+					//snmp trap variables 特殊处理
+					if(var.startsWith("variables")) {
+						var = var.replace("variables[", "").replace("]", "");
+						Map variables = (Map)context.get("variables");
+						value = variables.get(var);
+						if(value instanceof List) {
+							List<Object> vlist = (List<Object>)value;
+							value = vlist.size() == 1 ? vlist.get(0) : Tool.StrUtil.join(",", vlist.toArray());
+						}
+					}else {
+						value = Tool.BeanUtil.getProperty(context, var);
+					}
+				} catch (Exception e) {}
 				matcher.appendReplacement(stringBuffer, value== null? Tool.StrUtil.EMPTY:value.toString());
 			}
 			matcher.appendTail(stringBuffer);
 			return stringBuffer.toString();
+		}
+		
+		/**
+		 * 时间戳格式化为 utc ms format
+		 * @param time
+		 * @return
+		 */
+		public static String formatMessageDate(Long time) {
+			DateTime date = Tool.DateUtil.date(time);
+			String format = Tool.DateUtil.format(date, DatePattern.UTC_MS_FORMAT);
+			return format;
 		}
 	}
 }

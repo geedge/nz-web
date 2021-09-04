@@ -2345,4 +2345,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 		}
 	}
 
+	public AssetAsset getAssetByIP(String ip) {
+		if(Tool.StrUtil.isBlank(ip)) {
+			return null;
+		}
+		return this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ip));
+	}
 }

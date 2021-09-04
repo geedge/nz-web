@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.nis.common.utils.Tool;
+import com.nis.modules.alert.entity.AlertRuleEntity;
 
 import cn.hutool.log.Log;
 
@@ -15,12 +16,13 @@ public class AlertContext {
 	/**
 	 * 当前生效 event_log.rule
 	 */
-	private static Integer currentIndex;
+	private static volatile Integer currentIndex;
 	/**
 	 * 注册当前生效的 alert rule
 	 */
-	private final static Map<String, AlertRuleJudgeRunnable> ALERT_RULE_TABLE = Tool.MapUtil.newConcurrentHashMap();
+	private  final static Map<String, AlertRuleJudgeRunnable> ALERT_RULE_TABLE = Tool.MapUtil.newConcurrentHashMap();
 
+	public final static Map<String,AlertRuleEntity> ALL_SNMP_ALERT_RULE = Tool.MapUtil.newConcurrentHashMap();
 	private final static ScheduledExecutorService EXECUTORS = Executors
 			.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
