@@ -1,6 +1,7 @@
 package com.nis.modules.asset.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -25,4 +26,7 @@ public class AssetTalonStatus implements Serializable {
     private String msg;
 
     private Date lastUpdate;
+
+    @TableField(exist = false)
+    private Integer version;
 }

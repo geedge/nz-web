@@ -2,13 +2,17 @@ package com.nis.modules.agent.job;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.modules.agent.entity.MonitorEventLog;
+import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -61,8 +65,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     @Autowired
     private MonitorEndpointService endpointService;
 
-
-    static Map agentConfigMap = new HashMap();
+    @Autowired
+    private MonitorEventLogService eventLogService;
 
     // sys_config map
     Map<String, String> sysConfigMap = new HashMap();
@@ -77,8 +81,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         StopWatch sw = new StopWatch();
         sw.start();
         try {
-            // prom_server 状态更新
-            List<Promserver> healthyPromServers = configUtil.updateAgentStatus();
+            // 获取健康的 agent
+            List<Promserver> healthyPromServers = promService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
             log.debug("健康的 Promservers: " + JSONObject.toJSONString(healthyPromServers));
 
             // 没有可用的 global 不下发配置
@@ -95,91 +99,88 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             log.error("agent 同步异常", e);
         } finally {
             sw.stop();
+            log.info("agent 执行结束，Run Time: {}", sw.toString());
         }
-        log.info("agent 执行结束，Run Time: {}", sw.toString());
     }
 
     // 配置下发
     public void setUpAgentConfig(List<Promserver> healthyPromServers) {
-        try {
+        ThreadUtil.execAsync(() -> {
+            boolean versionChangeFlag = configUtil.comparePromtailVersionChanges();
+            boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
+            log.debug(String.format("conf_event promtail 数据 %s 发生变化", (promtailChangeFlag || versionChangeFlag) ? "" : "没有"));
+            if (promtailChangeFlag || versionChangeFlag) {
+                MonitorEventLog monitorEventLog = eventLogService.getOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
+                this.udpatePromtailsConf(healthyPromServers, monitorEventLog.getCounter());
+            }
+        });
+
+        ThreadUtil.execAsync(() -> {
+            boolean snmpChangeFlag = configUtil.compareDataChanges("snmp");
+            log.debug(String.format("conf_event snmp 数据 %s 发生变化", snmpChangeFlag ? "" : "没有"));
+            if (snmpChangeFlag)
+                this.updateSnmpExporterConf(healthyPromServers);
+        });
+
+        ThreadUtil.execAsync(() -> {
             boolean prometheusChangeFlag = configUtil.compareDataChanges("prometheus");
             log.debug(String.format("conf_event prometheus 数据 %s 发生变化", prometheusChangeFlag ? "" : "没有"));
+            if (prometheusChangeFlag)
+                this.updatePrometheusConf(healthyPromServers);
+        });
 
+        ThreadUtil.execAsync(() -> {
+            boolean lokiChangeFlag = configUtil.compareDataChanges("loki");
+            log.debug(String.format("conf_event loki 数据 %s 发生变化", lokiChangeFlag ? "" : "没有"));
+            if (lokiChangeFlag)
+                this.updateLokiConf(healthyPromServers);
+        });
+
+
+        ThreadUtil.execAsync(() -> {
             boolean cortexChangeFlag = configUtil.compareDataChanges("cortex");
             log.debug(String.format("conf_event cortex 数据 %s 发生变化", cortexChangeFlag ? "" : "没有"));
 
             boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
             log.debug(String.format("conf_event rule 数据 %s 发生变化", ruleChangeFlag ? "" : "没有"));
-            if (ruleChangeFlag) {
+
+            // 是否更新 rule.yml 配置，默认为1   1：更新  0：不更新
+            String alertConfUpdate = sysConfigMap.get("nz_alert_rule_eval_enable");
+            Map alertYmlMap = configUtil.generateRuleYml();
+            if (ruleChangeFlag && StrUtil.equals("1", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
                 // 生成 alert.yml
-                Map alertYmlMap = configUtil.generateRuleYml();
-                agentConfigMap.put("alertYml", alertYmlMap);
-                // Prometheus cortex 不支持 rule 由 cortex 支持告警
-                /*if (prometheusChangeFlag) {
-                    // 1. prometheus 改变，在 prometheus 配置下发的时候进行 rule 下发
-                    agentConfigMap.put("alertYml", alertYmlMap);
-                }
-
-                if (!prometheusChangeFlag && !cortexChangeFlag) {
-                    // 2. prometheus cortex 都没有变更 只有 alert 变更，查询 redis supportAlertPromId 进行下发 alert rule 配置变化
-                    this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
-                }*/
-
                 // 如果 cortex 没有变更 就只更新 rule
-                if(!cortexChangeFlag){
+                if (!cortexChangeFlag) {
                     this.justUpdateRuleConf(alertYmlMap, healthyPromServers);
                 }
             }
             if (cortexChangeFlag) {
-                // 4. cortex 改变 alert 没有改变
-                this.updateCortexConf((Map) agentConfigMap.get("alertYml"), healthyPromServers);
+                this.updateCortexConf(alertYmlMap, healthyPromServers);
             }
-
-            boolean snmpChangeFlag = configUtil.compareDataChanges("snmp");
-            log.debug(String.format("conf_event snmp 数据 %s 发生变化", snmpChangeFlag ? "" : "没有"));
-            // 更新 snmp_exporter 组件 snmp.yml 配置
-            if (snmpChangeFlag)
-                this.updateSnmpExporterConf(healthyPromServers);
-
-            boolean lokiChangeFlag = configUtil.compareDataChanges("loki");
-            log.debug(String.format("conf_event loki 数据 %s 发生变化", lokiChangeFlag ? "" : "没有"));
-            // 更新 loki 组件 loki.yml 配置
-            if (lokiChangeFlag)
-                this.updateLokiConf(healthyPromServers);
-
-            // 更新 prometheus 组件 prometheus.yml 配置
-            if (prometheusChangeFlag)
-                this.updatePrometheusConf(healthyPromServers);
-
-            boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
-            log.debug(String.format("conf_event promtail 数据 %s 发生变化", promtailChangeFlag ? "" : "没有"));
-            // 更新 promtail 组件 promtail.yml 配置
-            if (promtailChangeFlag)
-                this.udpatePromtailsConf(healthyPromServers);
-        } finally {
-            MapUtil.clear(agentConfigMap);
-        }
+        });
     }
 
     /**
      * 更新 promtail 配置
      *
      * @param healthyPromServers
+     * @param version
      */
-    private void udpatePromtailsConf(List<Promserver> healthyPromServers) {
+    private void udpatePromtailsConf(List<Promserver> healthyPromServers, Integer version) {
         List<Promserver> perDataCenterPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.PER_DATACENTER.getValue().equals(promserver.getType())).collect(Collectors.toList());
         List<Promserver> globalPromServers = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
 
-        this.handlePerDatacenterLogs(globalPromServers, perDataCenterPromServers);
-        this.handleGlobalLogs(globalPromServers);
+        this.handlePerDatacenterLogs(globalPromServers, perDataCenterPromServers, version);
+        this.handleGlobalLogs(globalPromServers, version);
     }
 
     /**
      * global logs 配置
      *
      * @param globalPromServers
+     * @param version
      */
-    private void handleGlobalLogs(List<Promserver> globalPromServers) {
+    private void handleGlobalLogs(List<Promserver> globalPromServers, Integer version) {
         // 对象存储开启  global 都需要下发 lokiPushUrls config 指向自己
         // 对象存储关闭  global 都需要下发 lokiPushUrls config 指向自己 和 remote 其他 global
         for (Promserver globalProm : globalPromServers) {
@@ -208,24 +209,31 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent();
 
             // 联邦关闭 由 global 负载 promtail 配置下发
-            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, enableEndpointInfoList);
+            List<MonitorEndpoint> distinctByAssetId = enableEndpointInfoList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(MonitorEndpoint::getAssetId))), ArrayList::new));
+            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, distinctByAssetId);
 
             Map<Integer, Promserver> promserverIdAndEntityMap = globalPromServers.stream().collect(Collectors.toMap(Promserver::getId, Function.identity()));
             List talonConfigList = new ArrayList();
-            for (MonitorEndpoint endpoint : enableEndpointInfoList) {
+            Map<Integer, List<MonitorEndpoint>> endpointThroughAssetGroupMap = enableEndpointInfoList.stream().collect(Collectors.groupingBy(MonitorEndpoint::getAssetId));
+            for (Map.Entry<Integer, List<MonitorEndpoint>> entry : endpointThroughAssetGroupMap.entrySet()) {
+                List<MonitorEndpoint> logsEndpointForAsset = entry.getValue();
                 Map talonConfig = new HashMap();
-                Promserver promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                Promserver promserver = null;
+                for (MonitorEndpoint endpoint : logsEndpointForAsset) {
+                    promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                    if (promserver != null) break;
+                }
 
-                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, endpoint);
+                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, logsEndpointForAsset);
 
-                AssetAsset asset = endpoint.getAsset();
+                AssetAsset asset = logsEndpointForAsset.get(0).getAsset();
                 talonConfig.put("assetId", asset.getId());
                 talonConfig.put("target", String.format("%s:%s", asset.getManageIp(), asset.getClientPort()));
                 talonConfig.put("token", asset.getClientToken());
                 Map params = new HashMap(2);
                 params.put("config", promtailYml);
-                // 请求 talon promtail config version 必填
-                params.put("version", endpoint.getEndpointConfig().getVersion());
+                // 当前 promtail 值
+                params.put("version", version);
                 talonConfig.put("params", params);
                 talonConfigList.add(talonConfig);
             }
@@ -251,11 +259,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
     /**
      * per-datacenter logs 配置
-     *
-     * @param globalPromServers
+     *  @param globalPromServers
      * @param perDataCenterPromServers
+     * @param version
      */
-    private void handlePerDatacenterLogs(List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers) {
+    private void handlePerDatacenterLogs(List<Promserver> globalPromServers, List<Promserver> perDataCenterPromServers, Integer version) {
         String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         // 联邦关闭 禁用所有 per-datacenter 角色配置
@@ -274,22 +282,32 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             List<Promserver> promserverListByDc = entry.getValue();
             Map<Integer, Promserver> promserverIdAndEntityMap = promserverListByDc.stream().collect(Collectors.toMap(Promserver::getId, Function.identity()));
 
-            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(promserverListByDc, enableEndpointInfoList);
+            List<MonitorEndpoint> distinctByAssetId = endpointListByDc.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(MonitorEndpoint::getAssetId))), ArrayList::new));
+            Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(promserverListByDc, distinctByAssetId);
+
+            Map<Integer, List<MonitorEndpoint>> endpointThroughAssetGroupMap = endpointListByDc.stream().collect(Collectors.groupingBy(MonitorEndpoint::getAssetId));
+
             List talonConfigList = new ArrayList();
-            for (MonitorEndpoint endpoint : endpointListByDc) {
+            for (Map.Entry<Integer, List<MonitorEndpoint>> logConfEnery : endpointThroughAssetGroupMap.entrySet()) {
+                List<MonitorEndpoint> logsEndpointForAsset = logConfEnery.getValue();
+
                 Map talonConfig = new HashMap();
                 // endpoint 对应的 per-datacenter
-                Promserver promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                Promserver promserver = null;
+                for (MonitorEndpoint endpoint : logsEndpointForAsset) {
+                    promserver = promserverIdAndEntityMap.get(endpointIdAndPromIdMap.get(endpoint.getId()));
+                    if (promserver != null) break;
+                }
                 // 以 asset endpoint 为维度去生成 promtail.yml
-                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, endpoint);
+                Map promtailYml = configUtil.generatePromtailYml(promserver, globalPromServers, logsEndpointForAsset);
 
-                AssetAsset asset = endpoint.getAsset();
+                AssetAsset asset = logsEndpointForAsset.get(0).getAsset();
                 talonConfig.put("assetId", asset.getId());
                 talonConfig.put("target", String.format("%s:%s", asset.getManageIp(), asset.getClientPort()));
                 talonConfig.put("token", asset.getClientToken());
                 Map params = new HashMap(2);
                 params.put("config", promtailYml);
-                params.put("version", endpoint.getEndpointConfig().getVersion());
+                params.put("version", version);
                 talonConfig.put("params", params);
                 talonConfigList.add(talonConfig);
             }
@@ -402,8 +420,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
             globalConfigBody.put("config", gloablAgentYmlMap);
             if (isAlert) {
-                globalConfigBody.put("rule", (Map) agentConfigMap.get("alertYml"));
-                redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID, promserver.getId().toString());
+                // globalConfigBody.put("rule", (Map) agentConfigMap.get("alertYml"));
+                // redisTemplate.opsForValue().set(Constant.REDIS_KEY_SUPPORT_ALERT_PROMSERVER_ID, promserver.getId().toString());
             }
 
             Map<String, String> sysCmdLineMap = configUtil.generatePrometheusCmdLine();

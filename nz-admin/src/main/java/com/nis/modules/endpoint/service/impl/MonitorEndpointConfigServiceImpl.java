@@ -16,7 +16,7 @@ public class MonitorEndpointConfigServiceImpl extends ServiceImpl<MonitorEndpoin
     private  MonitorEndpointConfigDao endpointConfigDao;
 
     @Override
-    public List<MonitorEndpointConfig> getEndpointConfigInfoList() {
-        return endpointConfigDao.queryEndpointConfigInfoList();
+    public List<MonitorEndpointConfig> getEndpointConfigInfoListByType(String type){
+        return endpointConfigDao.getEndpointConfigInfoListByType(type);
     }
 }

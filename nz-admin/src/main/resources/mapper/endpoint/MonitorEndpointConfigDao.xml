@@ -27,7 +27,7 @@
     </resultMap>
 
 
-    <select id="queryEndpointConfigInfoList" resultMap="endpointConfigInfo">
+    <select id="getEndpointConfigInfoListByType" resultMap="endpointConfigInfo">
         SELECT
             endConf.id AS id,
             endConf.type AS type,
@@ -49,6 +49,8 @@
             LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
             LEFT JOIN asset_state_conf state ON asset.state_id = state.id
             LEFT JOIN dc dc ON asset.dc_id = dc.id
+        WHERE
+            type = #{type}
     </select>
 
 </mapper>

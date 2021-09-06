@@ -1,22 +1,7 @@
 package com.nis.common.job;
 
-import javax.annotation.PostConstruct;
-
-import org.apache.commons.lang.StringUtils;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.CronTrigger;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.TriggerBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-
+import cn.hutool.log.Log;
+import com.nis.modules.agent.job.AgentHealthCheckJob;
 import com.nis.modules.agent.job.AutoConfigAgentJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
@@ -27,8 +12,15 @@ import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
 import com.nis.modules.terminal.job.TerminalCleanRecordJob;
+import org.apache.commons.lang.StringUtils;
+import org.quartz.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
-import cn.hutool.log.Log;
+import javax.annotation.PostConstruct;
 
 /**
  * JobConfig 统一管理 job config
@@ -43,6 +35,9 @@ public class JobConfig {
 
     @Value("${nezha.agentJobCron:0/30 * * * * ?}")
     private String agentJobCron;
+
+    @Value("${nezha.agentHealthyJobCron:0/30 * * * * ?}")
+    private String agentHealthyJobCron;
 
     @Value("${nezha.alertSilenceJobCron:0/10 * * * * ?}")
     private String alertSilenceJobCron;
@@ -79,6 +74,7 @@ public class JobConfig {
     private SchedulerFactoryBean schedulerFactoryBean;
     private static final String JOB_NAME = "NZJOB";
     private String agentJobName = "AGENT_JOB";
+    private String agentHealthCheckJobName = "AGENTHEALTHY_JOB";
     private String alertSilenceStatusJobName = "ALERTSILENCESTATUS_JOB";
     private String alertMessageExpiredJobName = "ALERTMESSAGEEXPIRED_JOB";
     private String alertRuleManagerJobName = "ALERTRULEMANAGER_JOB";
@@ -93,6 +89,11 @@ public class JobConfig {
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AutoConfigAgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
+    }
+
+    @Bean
+    public JobDetail agentHealthyCronJobDetail() {
+        return JobBuilder.newJob(AgentHealthCheckJob.class).withIdentity(JOB_NAME + agentHealthCheckJobName).storeDurably().build();
     }
 
     @Bean
@@ -148,6 +149,8 @@ public class JobConfig {
     @PostConstruct
     public void init() throws SchedulerException {
         Scheduler scheduler = schedulerFactoryBean.getScheduler();
+
+        createCronScheduleJob(agentHealthCheckJobName, agentHealthyCronJobDetail(), StringUtils.isEmpty(agentHealthyJobCron) ? "0 0/1 * * * ? *" : agentHealthyJobCron, scheduler);
 
         // asset talon state 如果配置文件没有配置定时周期  默认为1分钟执行一次
         createCronScheduleJob(assetTalonStatusJobName, assetTalonStatusCronJobDetail(), StringUtils.isEmpty(assetTalonJobCron) ? "0 0/1 * * * ? *" : assetTalonJobCron, scheduler);

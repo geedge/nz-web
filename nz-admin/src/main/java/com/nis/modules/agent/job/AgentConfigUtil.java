@@ -3,12 +3,12 @@ package com.nis.modules.agent.job;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.hash.MurmurHash;
-import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.dao.MonitorEventLogDao;
@@ -23,6 +23,8 @@ import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
@@ -41,7 +43,6 @@ import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -57,9 +58,6 @@ public class AgentConfigUtil {
 
     @Value("${nezha.virtualAgentNum}")
     private Integer virtualAgentNum;
-
-    @Value("${connect.timeout:30000}")
-    private Integer connectTimeout;
 
     @Autowired
     private DcService dcService;
@@ -85,7 +83,8 @@ public class AgentConfigUtil {
     @Autowired
     private MonitorModuleService monitorModuleService;
 
-    private static ExecutorService exec = Executors.newCachedThreadPool();
+    @Autowired
+    private MonitorEndpointStateService endpointStateService;
 
     /**
      * 判断配置相关信息是否发生改变
@@ -125,6 +124,22 @@ public class AgentConfigUtil {
         Map<String, String> map = eventList.stream().collect(Collectors.toMap(MonitorEventLog::getEvent, monitorConfEvent -> String.valueOf(monitorConfEvent.getCounter())));
         opsForHash.delete(Constant.REDIS_KEY_CONF_EVENT, map.keySet().toArray());
         opsForHash.putAll(Constant.REDIS_KEY_CONF_EVENT, map);
+        return flag;
+    }
+
+
+    /**
+     * 对比 promtail 版本号是否发生变化
+     *
+     * @return
+     */
+    public boolean comparePromtailVersionChanges() {
+        boolean flag = false;
+        MonitorEventLog monitorEventLog = confEventDao.selectOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
+        int count = endpointStateService.count(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getType, Constant.MonitorConfType.LOGS.getValue()).eq(MonitorEndpointState::getState, 1).ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
+        if (count > 0) {
+            flag = true;
+        }
         return flag;
     }
 
@@ -347,23 +362,29 @@ public class AgentConfigUtil {
      *
      * @param currentAgent
      * @param globalAgentList
-     * @param logEndpointConfigInfoEntity
+     * @param logsEndpointConfigListForAsset
      * @return
      */
-    public Map generatePromtailYml(Promserver currentAgent, List<Promserver> globalAgentList, MonitorEndpoint logEndpointConfigInfoEntity) {
+    public Map generatePromtailYml(Promserver currentAgent, List<Promserver> globalAgentList,  List<MonitorEndpoint> logsEndpointConfigListForAsset) {
         log.debug("promtail.yml 开始生成");
         Map<String, Object> params = new LinkedHashMap();
-
         List<MonitorEndpoint> endpointList = new ArrayList<>();
-        String configStr = logEndpointConfigInfoEntity.getEndpointConfig().getConfig();
-        List<Map> logConfigs = JSONObject.parseArray(configStr, Map.class);
-        for (Map configMap : logConfigs) {
-            MonitorEndpoint clone = ObjectUtil.cloneByStream(logEndpointConfigInfoEntity);
-            MonitorEndpointConfig endpointConfig = clone.getEndpointConfig();
-            endpointConfig.setConfig(JSONObject.toJSONString(configMap));
-            endpointList.add(clone);
+
+        for (MonitorEndpoint logEndpointConfigInfoEntity : logsEndpointConfigListForAsset) {
+            String configStr = logEndpointConfigInfoEntity.getEndpointConfig().getConfig();
+            List<Map> logConfigs = JSONObject.parseArray(configStr, Map.class);
+            for (Map configMap : logConfigs) {
+                configMap = new TreeMap<>(configMap);
+                MonitorEndpoint clone = ObjectUtil.cloneByStream(logEndpointConfigInfoEntity);
+                MonitorEndpointConfig endpointConfig = clone.getEndpointConfig();
+                endpointConfig.setConfig(JSONObject.toJSONString(configMap, SerializerFeature.MapSortField));
+                endpointList.add(clone);
+            }
         }
 
+        // 避免重复 配置项目 下发 / 根据 endpoint config 配置字段去重
+        endpointList = endpointList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(o -> o.getEndpointConfig().getConfig()))), ArrayList::new));
+        endpointList = endpointList.stream().sorted(Comparator.comparing(MonitorEndpoint::getId)).collect(Collectors.toList());
         // 处理 endpoint 配置项 为了适应模板
         this.handleDataConfigForTmpl(currentAgent, endpointList, Collections.emptyList());
 
@@ -1089,108 +1110,6 @@ public class AgentConfigUtil {
 
         redisTemplate.delete(Constant.REDIS_KEY_ENDPOINT_PROM);
         redisTemplate.opsForHash().putAll(Constant.REDIS_KEY_ENDPOINT_PROM, tempStringMap);
-    }
-
-    /**
-     * 调用 agent、healthy 更新 prom_server 数据状态
-     *
-     * @return healthy prom_server
-     */
-    public List<Promserver> updateAgentStatus() {
-        List<Promserver> allPromServers = promService.list();
-        allPromServers.stream().forEach(promserver -> promserver.setStatus(null));
-        String agentPrefixPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-
-        List<Callable<Promserver>> tasks = new ArrayList<>();
-        allPromServers.stream().forEach(promServer -> {
-            Callable<Promserver> task = new Callable<Promserver>() {
-                @Override
-                public Promserver call() throws Exception {
-                    UrlBuilder urlBuilder = UrlBuilder.create();
-                    urlBuilder.setScheme("http").setHost(promServer.getHost()).setPort(promServer.getPort()).appendPath(agentPrefixPath).appendPath("healthy");
-                    String result = null;
-                    try {
-                        result = Tool.HttpUtil.createGet(urlBuilder.build()).timeout(connectTimeout).auth(promServer.getToken()).execute().body();
-                    } catch (RuntimeException e) {
-                        log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
-                    }
-                    log.debug(String.format("请求接口是%s，相应内容是:%s", urlBuilder.toString(), result));
-                    // 接口请求失败
-                    if (result == null) {
-                        promServer.setStatus(0);
-                        promServer.setStatusInfo(getPromStatusInfoErrorMsg());
-                    } else {
-                        try {
-                            R resultObj = JSONObject.parseObject(result, R.class);
-                            if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
-                                Map<String, Object> data = (Map) resultObj.get("data");
-
-                                String prometheusState = (String) data.get("prometheus");
-                                String confagentState = (String) data.get("confagent");
-                                String snmpExporterState = (String) data.get("snmp_exporter");
-                                String blackboxExporterState = (String) data.get("blackbox_exporter");
-                                String cortexState = (String) data.get("cortex");
-                                String lokiState = (String) data.get("loki");
-                                String authState = (String) data.get("auth");
-                                String unavailable = "UNAVAILABLE", up = "UP", down = "DOWN";
-                                if (down.equals(prometheusState) || down.equals(confagentState) || down.equals(snmpExporterState) || down.equals(blackboxExporterState) || down.equals(cortexState) || down.equals(lokiState)) {
-                                    // 异常
-                                    promServer.setStatus(0);
-                                } else {
-                                    if ("FALSE".equals(authState)) {
-                                        // 认证失败
-                                        promServer.setStatus(-1);
-                                    } else {
-                                        // 状态不为 down ，继续判断 可用状态
-                                        if (unavailable.equals(cortexState)) {
-                                            Boolean cortexUpdateExist = redisTemplate.hasKey(Constant.REDIS_KEY_CORTEX_UPDATE);
-                                            // 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
-                                            if (!cortexUpdateExist) promServer.setStatus(0);
-                                        }
-                                        if (unavailable.equals(lokiState)) {
-                                            Boolean lokiUpdateExist = redisTemplate.hasKey(Constant.REDIS_KEY_LOKI_UPDATE);
-                                            // 返回为 UNAVAILABLE 但不存在更新标识，认为其不可用
-                                            if (!lokiUpdateExist) promServer.setStatus(0);
-                                        }
-                                        // 服务可用
-                                        if (promServer.getStatus() == null) promServer.setStatus(1);
-                                    }
-                                }
-                                data.remove("auth");
-                                promServer.setStatusInfo(JSONObject.toJSONString(data));
-                            } else {
-                                promServer.setStatus(0);
-                                promServer.setStatusInfo(getPromStatusInfoErrorMsg());
-                            }
-                        } catch (Exception e) {
-                            log.error(String.format("%s 接口相应内容有误", urlBuilder.toString()), e);
-                            promServer.setStatus(0);
-                            promServer.setStatusInfo(getPromStatusInfoErrorMsg());
-                        }
-                    }
-                    promServer.setCheckTime(new Date());
-                    return promServer;
-                }
-            };
-            tasks.add(task);
-        });
-
-        List<Promserver> healthyPromServers = new ArrayList<>();
-        try {
-            List<Future<Promserver>> futures = exec.invokeAll(tasks);
-            for (Future<Promserver> future : futures) {
-                if (!future.isCancelled()) {
-                    Promserver promserver = future.get();
-                    if (promserver.getStatus().equals(1)) {
-                        healthyPromServers.add(promserver);
-                    }
-                    promService.updateStatusInfo(promserver);
-                }
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            log.error(e);
-        }
-        return healthyPromServers;
     }
 
     /**

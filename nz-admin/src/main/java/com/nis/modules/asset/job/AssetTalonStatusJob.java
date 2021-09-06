@@ -11,6 +11,11 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
+import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -41,6 +46,16 @@ public class AssetTalonStatusJob extends QuartzJobBean {
     private AssetTalonStatusService talonStatusService;
 
     @Autowired
+    private MonitorEndpointConfigService endpointConfigService;
+
+    @Autowired
+    private MonitorEndpointStateDao endpointStateDao;
+
+    @Autowired
+    private MonitorEndpointStateService endpointStateService;
+
+
+    @Autowired
     private RedisTemplate redisTemplate;
 
     private static ExecutorService executorService = Executors.newCachedThreadPool();
@@ -60,8 +75,8 @@ public class AssetTalonStatusJob extends QuartzJobBean {
             log.error("asset talon 状态更新异常", e);
         } finally {
             sw.stop();
+            log.info("asset talon state Run Time: {}", sw.toString());
         }
-        log.info("asset talon state Run Time: {}", sw.toString());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -73,13 +88,13 @@ public class AssetTalonStatusJob extends QuartzJobBean {
 
         List<AssetTalonStatus> abnormalTalonList = new ArrayList<>();
         for (AssetAsset talonCloseAsset : talonCloseAssetList) {
-            abnormalTalonList.add(new AssetTalonStatus(talonCloseAsset.getId(), 0, "DISABLE", new Date()));
+            abnormalTalonList.add(new AssetTalonStatus(talonCloseAsset.getId(), 0, "DISABLE", new Date(), 0));
         }
 
-        List<AssetTalonStatus> talonUpStatusList = new ArrayList<>();
-        List< Callable<Map<String, Object>>> tasks = new ArrayList<>();
+        List<AssetTalonStatus> talonUpdateStatusList = new ArrayList<>();
+        List<Callable<Map<String, Object>>> tasks = new ArrayList<>();
         for (AssetAsset talonOpenAsset : talonOpenAssetList) {
-            Callable<Map<String, Object>> task = new Callable() {
+            Callable task = new Callable() {
                 @Override
                 public Map<String, Object> call() throws Exception {
                     UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(talonOpenAsset.getManageIp()).setPort(talonOpenAsset.getClientPort()).appendPath("nz-talon").appendPath("healthy");
@@ -100,8 +115,17 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                             return map;
                         }
                         // UP
-                        map.put("state", 1);
-                        map.put("msg", "UP");
+                        String promtailState = data.get("promtail");
+                        if (StrUtil.equals("UP", promtailState)) {
+                            map.put("state", 1);
+                            map.put("msg", "UP");
+                        } else {
+                            map.put("state", 0);
+                            map.put("msg", "DOWN");
+                        }
+                        String s = data.get("version");
+                        s = s.replaceAll("\\n", "");
+                        map.put("version", Integer.valueOf(s));
                         return map;
                     } catch (Exception e) {
                         log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
@@ -131,10 +155,14 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                 if (!future.isCancelled()) {
                     Map<String, Object> result = future.get();
                     Integer state = (Integer) result.get("state");
-                    if(1 == state){
-                        talonUpStatusList.add(new AssetTalonStatus((Integer) result.get("id"), (Integer) result.get("state"), result.get("msg").toString(), new Date()));
-                    }else{
-                        abnormalTalonList.add(new AssetTalonStatus((Integer) result.get("id"), (Integer) result.get("state"), result.get("msg").toString(), new Date()));
+                    Integer version = (Integer) result.get("version");
+                    if (version == null) {
+                        version = -1;
+                    }
+                    if (1 == state) {
+                        talonUpdateStatusList.add(new AssetTalonStatus((Integer) result.get("id"), (Integer) result.get("state"), result.get("msg").toString(), new Date(), version));
+                    } else {
+                        abnormalTalonList.add(new AssetTalonStatus((Integer) result.get("id"), (Integer) result.get("state"), result.get("msg").toString(), new Date(), version));
                     }
                 }
             }
@@ -152,8 +180,43 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                 talonStatus.setLastUpdate(temp.getLastUpdate());
         }
 
-        talonUpStatusList.addAll(abnormalTalonList);
+        talonUpdateStatusList.addAll(abnormalTalonList);
         talonStatusService.remove(null);
-        talonStatusService.saveBatch(talonUpStatusList);
+        talonStatusService.saveBatch(talonUpdateStatusList);
+
+
+        Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
+        // 更新 endpoint state 表数据
+        List<MonitorEndpointState> logStateList = new ArrayList<>();
+        List<MonitorEndpointConfig> logsEndpointConfigList = endpointConfigService.getEndpointConfigInfoListByType(Constant.MonitorConfType.LOGS.getValue());
+        for (MonitorEndpointConfig conf : logsEndpointConfigList) {
+            Integer assetId = conf.getAsset().getId();
+            AssetTalonStatus talonStatus = map.get(assetId);
+            Integer state = talonStatus.getStatus() == 1 ? 1 : 0;
+            // 0：关闭 1：开启
+            Integer clientEnable = conf.getAsset().getClientEnable();
+            // 0：停用 1：启用
+            Integer enabled = conf.getEnable();
+            // 开启：ON, 关闭：OFF
+            String dcStateStr = conf.getDc().getState();
+            boolean dcState = dcStateStr.equals("ON") ? true : false;
+            if (!dcState && clientEnable.equals(0) && enabled.equals(1)) {
+                state = 2;
+            } else if (!dcState && clientEnable.equals(1) && enabled.equals(0)) {
+                state = 4;
+            } else if (dcState && clientEnable.equals(0) && enabled.equals(0)) {
+                state = 8;
+            } else if (!dcState && clientEnable.equals(1) && enabled.equals(1)) {
+                state = 6;
+            } else if (dcState && clientEnable.equals(0) && enabled.equals(1)) {
+                state = 10;
+            } else if (dcState && clientEnable.equals(1) && enabled.equals(0)) {
+                state = 12;
+            }
+            logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), new Date()));
+        }
+        // 更新 endpoint state
+        endpointStateDao.deleteConfStateByType(Constant.MonitorConfType.LOGS.getValue());
+        endpointStateService.saveBatch(logStateList);
     }
 }

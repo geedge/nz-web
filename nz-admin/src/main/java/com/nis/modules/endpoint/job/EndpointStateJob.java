@@ -1,20 +1,14 @@
 package com.nis.modules.endpoint.job;
 
-import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.Tool;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
-import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
-import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -29,10 +23,6 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
@@ -47,9 +37,6 @@ public class EndpointStateJob extends QuartzJobBean {
     private PromserverService promserverService;
 
     @Autowired
-    private MonitorEndpointService endpointService;
-
-    @Autowired
     private MonitorEndpointConfigService endpointConfigService;
 
     @Autowired
@@ -59,16 +46,13 @@ public class EndpointStateJob extends QuartzJobBean {
     private MonitorEndpointStateService endpointStateService;
 
     @Autowired
-    private AssetAssetService assetAssetService;
-
-    @Autowired
     private RedisTemplate redisTemplate;
 
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
     	// 检查 haMode
-    	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+        if (!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
         log.info("Endpoint state job 开始执行");
         StopWatch sw = new StopWatch();
         sw.start();
@@ -78,8 +62,8 @@ public class EndpointStateJob extends QuartzJobBean {
             log.error(e);
         } finally {
             sw.stop();
+            log.info("Endpoint state 执行结束，Run Time: {}", sw.toString());
         }
-        log.info("Endpoint state 执行结束，Run Time: {}", sw.toString());
     }
 
     /**
@@ -91,21 +75,19 @@ public class EndpointStateJob extends QuartzJobBean {
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
         if (promserver == null) {
             log.debug("Endpoint 状态为全部为 0 (DOWN),当前暂无可用 promserver");
-            this.allEndpointStateDown();
+            this.allMetricsEndpointStateDown();
             return;
         }
 
-        // 所有的 endpoint config
-        List<MonitorEndpointConfig> endpointConfigList = endpointConfigService.getEndpointConfigInfoList();
+        // 所有的 metrics endpoint config
+        List<MonitorEndpointConfig> metricsEndpointConfigList = endpointConfigService.getEndpointConfigInfoListByType(Constant.MonitorConfType.METRICS.getValue());
 
         // up 的 metrics / logs endpoint
-        List<MonitorEndpointState> upMetricsEndpointStateList = this.getUpMetricsEndpointStateList(promserver, endpointConfigList);
-        List<MonitorEndpointState> upLogsEndpointStateList = this.getUpLogsEndpointStateList(endpointConfigList);
+        List<MonitorEndpointState> upMetricsEndpointStateList = this.getUpMetricsEndpointStateList(promserver, metricsEndpointConfigList);
 
         // 处理 Down 掉的 endpoint / 设置对应的状态
         Set<Integer> upMetricsConfId = upMetricsEndpointStateList.stream().map(MonitorEndpointState::getConfigId).collect(Collectors.toSet());
-        Set<Integer> upLogsConfId = upLogsEndpointStateList.stream().map(MonitorEndpointState::getConfigId).collect(Collectors.toSet());
-        List<MonitorEndpointConfig> downEndpointList = endpointConfigList.stream().filter(conf -> !upMetricsConfId.contains(conf.getId()) && !upLogsConfId.contains(conf.getId())).collect(Collectors.toList());
+        List<MonitorEndpointConfig> downEndpointList = metricsEndpointConfigList.stream().filter(conf -> !upMetricsConfId.contains(conf.getId())).collect(Collectors.toList());
 
         // 设置 down state
         List<MonitorEndpointState> downEndpointStateList = new ArrayList<>();
@@ -113,24 +95,22 @@ public class EndpointStateJob extends QuartzJobBean {
             Integer state = 0;
             // 0：关闭 1：开启
             Integer monitor = conf.getStateConf().getMonitor();
-            // 0：关闭 1：开启
-            Integer clientEnable = conf.getAsset().getClientEnable();
             // 0：停用 1：启用
             Integer enabled = conf.getEnable();
             // 开启：ON, 关闭：OFF
             String dcStateStr = conf.getDc().getState();
             boolean dcState = dcStateStr.equals("ON") ? true : false;
-            if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(1)) {
+            if (!dcState && monitor.equals(0) && enabled.equals(1)) {
                 state = 2;
-            } else if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(0)) {
+            } else if (!dcState && monitor.equals(1) && enabled.equals(0)) {
                 state = 4;
-            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(0)) {
+            } else if (dcState && monitor.equals(0) && enabled.equals(0)) {
                 state = 8;
-            } else if (!dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(1)) {
+            } else if (!dcState && monitor.equals(1) && enabled.equals(1)) {
                 state = 6;
-            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(0) : clientEnable.equals(0)) && enabled.equals(1)) {
+            } else if (dcState && monitor.equals(0) && enabled.equals(1)) {
                 state = 10;
-            } else if (dcState && (StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType()) ? monitor.equals(1) : clientEnable.equals(1)) && enabled.equals(0)) {
+            } else if (dcState && monitor.equals(1) && enabled.equals(0)) {
                 state = 12;
             }
             downEndpointStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, conf.getVersion(), new Date()));
@@ -138,65 +118,10 @@ public class EndpointStateJob extends QuartzJobBean {
 
         List allState = new ArrayList();
         allState.addAll(upMetricsEndpointStateList);
-        allState.addAll(upLogsEndpointStateList);
         allState.addAll(downEndpointStateList);
         // 保存
-        endpointStateDao.deleteAll();
+        endpointStateDao.deleteConfStateByType(Constant.MonitorConfType.METRICS.getValue());
         endpointStateService.saveBatch(allState);
-    }
-
-    /**
-     * 返回 up logs endpoint state list
-     *
-     * @param endpointConfigList
-     * @return
-     */
-    private List<MonitorEndpointState> getUpLogsEndpointStateList(List<MonitorEndpointConfig> endpointConfigList) {
-        List<MonitorEndpoint> endpointList = endpointService.endpointDetailList();
-        Map<Integer, Integer> endpointIdAndAssetIdMap = endpointList.stream().collect(Collectors.toMap(MonitorEndpoint::getId, MonitorEndpoint::getAssetId));
-        List<AssetAsset> assetList = assetAssetService.list();
-        Map<Integer, AssetAsset> assetMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
-
-        List<MonitorEndpointConfig> enableLogsConfigList = endpointConfigList.stream().filter(conf -> StrUtil.equals(Constant.MonitorConfType.LOGS.getValue(), conf.getType()) && 1 == conf.getEnable()).collect(Collectors.toList());
-        List<MonitorEndpointState> upLogsEndpointStateList = new ArrayList<>();
-        for (MonitorEndpointConfig endpointConfig : enableLogsConfigList) {
-            Integer assetId = endpointIdAndAssetIdMap.get(endpointConfig.getEndpointId());
-            AssetAsset asset = assetMap.get(assetId);
-            if (asset.getClientEnable() == 0) continue;
-            Callable task = new Callable() {
-                @Override
-                public Boolean call() throws Exception {
-                    UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(asset.getManageIp()).setPort(asset.getClientPort()).appendPath("nz-talon").appendPath("healthy");
-                    String result = null;
-                    try {
-                        result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(asset.getClientToken()).execute().body();
-                    } catch (RuntimeException e) {
-                        log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
-                    }
-                    log.debug("请求 talon 返回结果" + result);
-                    if (result == null) {
-                        return false;
-                    } else {
-                        R parseObject = JSONObject.parseObject(result, R.class);
-                        Map<String, String> data = (Map<String, String>) parseObject.get("data");
-                        if (StrUtil.equals("UP", data.get("promtail"))) {
-                            return true;
-                        }
-                        return false;
-                    }
-                }
-            };
-            Future<Boolean> f = Tool.ThreadUtil.execAsync(task);
-            try {
-                Boolean aBoolean = f.get(5, TimeUnit.SECONDS);
-                if (aBoolean) {
-                    upLogsEndpointStateList.add(new MonitorEndpointState(endpointConfig.getEndpointId(), endpointConfig.getId(), Constant.MonitorConfType.LOGS.getValue(), 1, endpointConfig.getVersion(), new Date()));
-                }
-            } catch (Exception e) {
-                log.error(e);
-            }
-        }
-        return upLogsEndpointStateList;
     }
 
     /**
@@ -226,13 +151,13 @@ public class EndpointStateJob extends QuartzJobBean {
     }
 
     /**
-     * 全部 endpoint 状态为 down
+     * 全部 metrics endpoint 状态为 down
      */
-    private void allEndpointStateDown() {
-        endpointStateDao.deleteAll();
-        List<MonitorEndpointConfig> endpointConfigList = endpointConfigService.list();
-        List<MonitorEndpointState> stateList = new ArrayList<>(endpointConfigList.size());
-        endpointConfigList.forEach(conf -> stateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), 0, conf.getVersion(), new Date())));
+    private void allMetricsEndpointStateDown() {
+        endpointStateDao.deleteConfStateByType(Constant.MonitorConfType.METRICS.getValue());
+        List<MonitorEndpointConfig> metricsEndpointConfigList = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getType, Constant.MonitorConfType.METRICS.getValue()));
+        List<MonitorEndpointState> stateList = new ArrayList<>(metricsEndpointConfigList.size());
+        metricsEndpointConfigList.forEach(conf -> stateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), 0, conf.getVersion(), new Date())));
         endpointStateService.saveBatch(stateList);
     }
 
