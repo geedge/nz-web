@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
@@ -353,10 +354,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             String timeoutStr = ExcelUtils.getCellValue(row.getCell(3));
 
             String expr = ExcelUtils.getCellValue(row.getCell(4));
-            if (StringUtils.isEmpty(expr)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4),RCode.ALERTRULE_EXPR_ISNULL.getMsg());
-            }
             String operator = ExcelUtils.getCellValue(row.getCell(5));
             if (StringUtils.isEmpty(operator)) {
                 saveFlag = false;
@@ -369,26 +366,41 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
             String threshold = ExcelUtils.getCellValue(row.getCell(6));
-            if (StringUtils.isEmpty(threshold)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
-            } else {
-                try {
-                    Double.valueOf(threshold);
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
-                }
-            }
             String unit = ExcelUtils.getCellValue(row.getCell(7));
-            if (StringUtils.isEmpty(unit)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
-            } else {
-                Integer integer = Constant.ALERT_RULE_UNIT_MAP.get(unit);
-                if (ToolUtil.isEmpty(integer)) {
+
+            if (saveFlag) {
+                if (StringUtils.isEmpty(expr)) {
                     saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ISNULL.getMsg());
+                }
+
+                if (StrUtil.equals("3", typeStr)) {
+                    if (!RegexUtil.test("^(\\d{1,9}\\.){0,}[\\d]+$", expr)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_OIDFORMAT_ERROR.getMsg());
+                    }
+                } else {
+                    if (StringUtils.isEmpty(threshold)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_ISNULL.getMsg());
+                    } else {
+                        try {
+                            Double.valueOf(threshold);
+                        } catch (NumberFormatException e) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.ALERTRULE_THRESHOLD_FORMAT.getMsg());
+                        }
+                    }
+                    if (StringUtils.isEmpty(unit)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_ISNULL.getMsg());
+                    } else {
+                        Integer integer = Constant.ALERT_RULE_UNIT_MAP.get(unit);
+                        if (ToolUtil.isEmpty(integer)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
+                        }
+                    }
                 }
             }
             String last = ExcelUtils.getCellValue(row.getCell(8));
@@ -699,8 +711,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
                 .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
                 .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL)
-                .and(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
-                .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
                 .and(alertRule.getDescription()).maxLength(512)
                 .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
 
@@ -711,9 +721,26 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
         }
 
-        List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
-        if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
-            throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+        List<Integer> typeList = Arrays.asList(new Integer[]{1, 2, 3});
+        if (!typeList.contains(alertRule.getType())) {
+            throw new NZException(RCode.ALERTRULE_TYPE_INCORRECT);
+        }
+
+        // snmp trap type
+        if (3 == alertRule.getType()) {
+            String oid = alertRule.getExpr();
+            if (!RegexUtil.test("^(\\d{1,9}\\.){0,}[\\d]+$", oid)) {
+                throw new NZException(RCode.ALERTRULE_OIDFORMAT_ERROR);
+            }
+        } else {
+            // 除 snmp trap 类型外，threshold unit 必填
+            ValidateUtils.is(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
+                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
+
+            List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
+            if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
+                throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+            }
         }
 
         // 校验 method 是否存在
@@ -743,11 +770,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             if (!switchList.contains(state)) {
                 throw new NZException(RCode.ALERTRULE_STATE_INCORRECT);
             }
-        }
-
-        List<Integer> typeList = Arrays.asList(new Integer[]{1, 2, 3});
-        if (!typeList.contains(alertRule.getType())) {
-            throw new NZException(RCode.ALERTRULE_TYPE_INCORRECT);
         }
     }
 

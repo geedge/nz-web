@@ -1346,6 +1346,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     public List<VisualChart> queryChartsByPanelId(String panelId, String chartId, Map<String, Object> params) {
         params.put("panelId", panelId);
+        // 加上原有 ids
+        String ids = (String) params.get("ids");
+        if (StrUtil.isNotEmpty(ids)) {
+            chartId = StrUtil.emptyToDefault(chartId, "");
+            chartId += chartId.endsWith(",") ? ids : "," + ids;
+        }
         params.put("ids", chartId);
         params.put("returnChildren", "1");
         params.put("groupId", 0);

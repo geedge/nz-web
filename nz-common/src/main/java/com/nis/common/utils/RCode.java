@@ -459,6 +459,7 @@ public enum RCode {
     ALERTRULE_METHOD_NOTFOUND(426028, "Alert rule method not found"),
     ALERTRULE_STATE_INCORRECT(424029,"Alert rule state must be 0 or 1"),
     ALERTRULE_TYPE_INCORRECT(424030, "Alert rule type must be 1 ,2 or 3"),
+    ALERTRULE_OIDFORMAT_ERROR(424031, "OID format is incorrect"),
 
     /**
      * 告警通知脚本

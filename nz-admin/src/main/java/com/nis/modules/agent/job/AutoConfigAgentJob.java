@@ -144,10 +144,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             boolean ruleChangeFlag = configUtil.compareDataChanges("rule");
             log.debug(String.format("conf_event rule 数据 %s 发生变化", ruleChangeFlag ? "" : "没有"));
 
-            // 是否更新 rule.yml 配置，默认为1   1：更新  0：不更新
+            // 是否更新 rule.yml 配置
             String alertConfUpdate = sysConfigMap.get("nz_alert_rule_eval_enable");
             Map alertYmlMap = configUtil.generateRuleYml();
-            if (ruleChangeFlag && StrUtil.equals("1", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
+            if (ruleChangeFlag && StrUtil.equals("0", StrUtil.emptyToDefault(alertConfUpdate, "1"))) {
                 // 生成 alert.yml
                 // 如果 cortex 没有变更 就只更新 rule
                 if (!cortexChangeFlag) {
