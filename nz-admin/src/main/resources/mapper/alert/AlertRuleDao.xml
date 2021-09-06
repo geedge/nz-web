@@ -122,6 +122,10 @@
             </if>
         </where>
         GROUP BY ar.id
+
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY ar.id
+        </if>
     </select>
 
     <select id="nzAlertMumsMetric" resultType="com.nis.modules.metric.dto.MetricsDto">
