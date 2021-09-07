@@ -246,6 +246,8 @@ public class LokiProxyController {
             if (format == 1 && "streams".equals(resultType)) {
                 List<Map> resultArray = (List<Map>) data.get("result");
                 if (ToolUtil.isEmpty(resultArray)) {
+                    data.put("resultType", "streamsFormat");
+                    result.put("data", data);
                     return result;
                 }
 
