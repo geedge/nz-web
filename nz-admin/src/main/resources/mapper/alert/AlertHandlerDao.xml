@@ -22,6 +22,8 @@
 		<association columnPrefix="r_" property="alertRule" javaType="com.nis.modules.alert.entity.AlertRuleEntity">
 			<id column="id" property="id"/>
 			<result column="name" property="name"/>
+			<result column="type" property="type"/>
+			<result column="trb_shot" property="trbShot"/>
 		</association>
 		<association columnPrefix="p_" property="project" javaType="com.nis.modules.project.entity.MonitorProject">
 			<id column="id" property="id"/>
@@ -155,6 +157,8 @@
 			am.*,
 			ar.id as r_id ,
 			ar.name as r_name,
+			ar.type as r_type,
+			ar.trb_shot as r_trb_shot,
 			p.id as p_id,
 			p.name as p_name,
 			m.id as m_id,
