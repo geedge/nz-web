@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 
 import javax.annotation.PostConstruct;
 
@@ -70,8 +69,9 @@ public class JobConfig {
 	private String terminalCleanJobCron;
 	
     @Autowired
+    private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
-    private SchedulerFactoryBean schedulerFactoryBean;
+    //private SchedulerFactoryBean schedulerFactoryBean;
     private static final String JOB_NAME = "NZJOB";
     private String agentJobName = "AGENT_JOB";
     private String agentHealthCheckJobName = "AGENTHEALTHY_JOB";
@@ -148,43 +148,42 @@ public class JobConfig {
 	
     @PostConstruct
     public void init() throws SchedulerException {
-        Scheduler scheduler = schedulerFactoryBean.getScheduler();
-
-        createCronScheduleJob(agentHealthCheckJobName, agentHealthyCronJobDetail(), StringUtils.isEmpty(agentHealthyJobCron) ? "0 0/1 * * * ? *" : agentHealthyJobCron, scheduler);
+        // agent 健康检查定时任务
+        createCronScheduleJob(agentHealthCheckJobName, agentHealthyCronJobDetail(), StringUtils.isEmpty(agentHealthyJobCron) ? "0 0/1 * * * ? *" : agentHealthyJobCron);
 
         // asset talon state 如果配置文件没有配置定时周期  默认为1分钟执行一次
-        createCronScheduleJob(assetTalonStatusJobName, assetTalonStatusCronJobDetail(), StringUtils.isEmpty(assetTalonJobCron) ? "0 0/1 * * * ? *" : assetTalonJobCron, scheduler);
+        createCronScheduleJob(assetTalonStatusJobName, assetTalonStatusCronJobDetail(), StringUtils.isEmpty(assetTalonJobCron) ? "0 0/1 * * * ? *" : assetTalonJobCron);
 
         // agent  如果配置文件没有配置定时周期  默认为 30s 执行一次
-        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron, scheduler);
+        createCronScheduleJob(agentJobName, agentCronJobDetail(), StringUtils.isEmpty(agentJobCron) ? "0/30 * * * * ?" : agentJobCron);
 
         // assetFeatureJob 如果配置文件没有配置定时周期 默认为5分钟执行一次
-        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * 1 * ? *" : assetFeatureJobCron, scheduler);
+        createCronScheduleJob(assetFeatureJobName, assetFeatureCronJobDetail(), StringUtils.isEmpty(assetFeatureJobCron) ? "0 0/5 * 1 * ? *" : assetFeatureJobCron);
 
         // asset pingJob 如果配置文件没有配置定时周期  默认为1分钟执行一次
-        createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron, scheduler);
+        createCronScheduleJob(assetPingStatusJobName, assetPingStatusCronJobDetail(), StringUtils.isEmpty(assetPingJobCron) ? "0 0/1 * * * ? *" : assetPingJobCron);
 
         // HA Job 如果配置文件没有配置定时周期  默认为5s执行一次
-        createCronScheduleJob(haJobName, haJobDetail(), StringUtils.isEmpty(haJobCron) ? "0/5 * * * * ?" : haJobCron, scheduler);
-        
+        createCronScheduleJob(haJobName, haJobDetail(), StringUtils.isEmpty(haJobCron) ? "0/5 * * * * ?" : haJobCron);
+
         // endpoint state job 如果配置文件没有配置定时周期  默认为1分钟执行一次
-        createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 * * * ? *" : endpointStateJobCron, scheduler);
+        createCronScheduleJob(endpointStateJobName, endpointStateJobDetail(), StringUtils.isEmpty(endpointStateJobCron) ? "0 0/1 * * * ? *" : endpointStateJobCron);
 
         // 告警静默状态变更线程
         //alertSilenceStatusJob 配置    如果配置文件没有配置定时周期 每5秒检测一次静默配置
-        createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), StringUtils.isEmpty(alertSilenceJobCron) ? "0/10 * * * * ?" : alertSilenceJobCron, scheduler);
-        
+        createCronScheduleJob(alertSilenceStatusJobName, alertSilenceStatusJobDetail(), StringUtils.isEmpty(alertSilenceJobCron) ? "0/10 * * * * ?" : alertSilenceJobCron);
+
         // 告警消息超时判断线程
-        createCronScheduleJob(alertMessageExpiredJobName, alertMessageExpiredDetail(), StringUtils.isEmpty(alertMessageExpiredJobCron) ? "0/10 * * * * ?" : alertMessageExpiredJobCron, scheduler);
-        
+        createCronScheduleJob(alertMessageExpiredJobName, alertMessageExpiredDetail(), StringUtils.isEmpty(alertMessageExpiredJobCron) ? "0/10 * * * * ?" : alertMessageExpiredJobCron);
+
         //告警规则管理线程
-        createCronScheduleJob(alertRuleManagerJobName, alertRuleManagerJobDetail(), StringUtils.isEmpty(alertRuleManagerJobCron) ? "0/10 * * * * ?" : alertRuleManagerJobCron, scheduler);
-        
+        createCronScheduleJob(alertRuleManagerJobName, alertRuleManagerJobDetail(), StringUtils.isEmpty(alertRuleManagerJobCron) ? "0/10 * * * * ?" : alertRuleManagerJobCron);
+
         // session time out job 如果配置文件没有配置定时周期  默认为5分钟执行一次
-        createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron, scheduler);
-        
+        createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron);
+
         // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
-        createCronScheduleJob(terminalCleanJobCronName, terminalCleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron, scheduler);
+        createCronScheduleJob(terminalCleanJobCronName, terminalCleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
     }
     
     /**
@@ -192,10 +191,9 @@ public class JobConfig {
      * @param jobName
      * @param jobDetail
      * @param jobCronExpression
-     * @param scheduler
      * @throws Exception
      */
-    public static void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression, Scheduler scheduler) throws SchedulerException {
+    public void createCronScheduleJob(String jobName, JobDetail jobDetail, String jobCronExpression) throws SchedulerException {
         CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(jobCronExpression);
 
         CronTrigger cronTrigger = TriggerBuilder.newTrigger()

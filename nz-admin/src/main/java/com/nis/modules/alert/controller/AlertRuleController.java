@@ -72,9 +72,8 @@ public class AlertRuleController {
 	@SysLog(operation = OperationEnum.ADD,type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:save"})
     public R save(@RequestBody AlertRuleEntity alertRule) {
-    	
-    	alertRuleService.saveOrUpdateAlertRule(alertRule);
-        return R.ok();
+
+        return R.ok().putData("id", alertRuleService.saveOrUpdateAlertRule(alertRule));
     }
 
     /**
@@ -86,8 +85,7 @@ public class AlertRuleController {
     public R update(@RequestBody AlertRuleEntity alertRule){
         ValidateUtils.is(alertRule.getId()).notNull(RCode.ALERTRULE_ID_ISNULL);
 
-	    alertRuleService.saveOrUpdateAlertRule(alertRule);
-        return R.ok();
+        return R.ok().putData("id", alertRuleService.saveOrUpdateAlertRule(alertRule));
     }
 
     /**

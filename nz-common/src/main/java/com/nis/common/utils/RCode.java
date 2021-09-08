@@ -460,6 +460,18 @@ public enum RCode {
     ALERTRULE_STATE_INCORRECT(424029,"Alert rule state must be 0 or 1"),
     ALERTRULE_TYPE_INCORRECT(424030, "Alert rule type must be 1 ,2 or 3"),
     ALERTRULE_OIDFORMAT_ERROR(424031, "OID format is incorrect"),
+    ALERTRULE_AUTOEXPIRED_INCORRECT(424032,"Alert rule autoExpired must be 0 or 1"),
+    ALERTRULE_SCHEDENABLE_INCORRECT(424033,"Alert rule schedEnable must be 0 or 1"),
+    ALERTRULE_SCHEDDAYS_ISNULL(421034, "Alert rule schedDays can not be null"),
+    ALERTRULE_SCHEDSTIME_ISNULL(421035, "Alert rule schedStime can not be null"),
+    ALERTRULE_SCHEDETIME_ISNULL(421036, "Alert rule schedEtime can not be null"),
+    ALERTRULE_SCHEDDAYS_INCORRECT(424037,"Alert rule schedDays must be 1-7"),
+    ALERTRULE_SCHEDSTIME_INCORRECT(424038,"Alert rule schedStime format is HH:mm"),
+    ALERTRULE_SCHEDETIME_INCORRECT(424039,"Alert rule schedEtime format is HH:mm"),
+    ALERTRULE_SCHEDETIME_ERROR(424040,"Alert rule schedEtime should be late than schedEtime"),
+    ALERTRULE_NOTIFYACTIVE_INCORRECT(424041,"Alert rule notifyActive must be 0 or 1"),
+    ALERTRULE_NOTIFYEXPIRED_INCORRECT(424042,"Alert rule notifyExpired must be 0 or 1"),
+
 
     /**
      * 告警通知脚本

@@ -20,8 +20,18 @@
         <result property="summary" column="summary"/>
         <result property="description" column="description"/>
         <result property="receiver" column="receiver"/>
-        <result property="buildIn" column="buildIn"/>
+        <result property="buildIn" column="build_in"/>
         <result property="state" column="state"/>
+
+        <result property="autoExpired" column="auto_expired"/>
+        <result property="schedEnable" column="sched_enable"/>
+        <result property="schedDays" column="sched_days"/>
+        <result property="schedStime" column="sched_stime"/>
+        <result property="schedEtime" column="sched_etime"/>
+        <result property="notifyActive" column="notify_active"/>
+        <result property="notifyExpired" column="notify_expired"/>
+        <result property="trbShot" column="trb_shot"/>
+
         <result property="alertNum" column="alertNum"/>
         <association property="severity" javaType="com.nis.modules.alert.entity.AlertSeverityConf" columnPrefix="alsc_">
             <result property="id" column="id"/>
@@ -33,27 +43,11 @@
 
     <select id="queryList" resultMap="alertRuleMap">
         SELECT
-        ar.id,
-        ar.name AS name,
-        ar.type,
-        ar.inr,
-        ar.timeout,
-        ar.expr,
-        ar.operator,
-        ar.threshold,
-        ar.unit,
-        ar.last,
-        ar.severity_id,
-        ar.summary,
-        ar.description,
-        ar.receiver,
-        ar.method,
-        ar.state,
+        ar.*,
         alsc.id as alsc_id,
         alsc.name as alsc_name,
         alsc.color as alsc_color,
         alsc.remark as alsc_remark,
-        ar.build_in AS buildIn,
         COUNT(am.id) AS alertNum
         FROM alert_rule ar
         LEFT JOIN alert_message_active am ON ar.id = am.rule_id

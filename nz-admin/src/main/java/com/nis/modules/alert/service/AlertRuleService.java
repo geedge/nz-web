@@ -22,7 +22,7 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 
 	void validateBulitinRule(List<Integer> id);
 
-	void saveOrUpdateAlertRule(AlertRuleEntity alertRule);
+	Integer saveOrUpdateAlertRule(AlertRuleEntity alertRule);
 
 	void delete(Integer[] ids);
 

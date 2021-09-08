@@ -69,6 +69,58 @@ public class AlertRuleEntity implements Serializable {
 	private String description;
 
 	/**
+	 * 是否自动失效	默认：1
+	 * 1：开启自动失效判断
+	 * 0：关闭自动失效判断
+	 */
+	private Integer autoExpired;
+
+	/**
+	 *定时是否开启	默认：0
+	 * 1：开启
+	 * 0：关闭
+	 */
+	private Integer schedEnable;
+
+	/**
+	 *定时开启天（星期几）
+	 * 默认："1,2,3,4,5,6,7"
+	 * 多个逗号分隔
+	 * 例：1,2,3,4,5,6,7
+	 * sched_enable = 1 时，不能为空
+	 */
+	private String schedDays;
+
+	/**
+	 * 定时开启 开始时间 默认：00:00
+	 */
+	private String schedStime;
+
+	/**
+	 *定时开启 关闭时间 默认：23:59
+	 */
+	private String schedEtime;
+
+	/**
+	 *active通知开关 默认：1
+	 * 1：开启
+	 * 0：关闭
+	 */
+	private Integer notifyActive;
+
+	/**
+	 *expired通知开关	    默认：1
+	 * 1：开启
+	 * 0：关闭
+	 */
+	private Integer notifyExpired;
+
+	/**
+	 *trouble shooting
+	 */
+	private String trbShot;
+
+	/**
 	 * 通知用户ids 可多个
 	 */
 	private String receiver;

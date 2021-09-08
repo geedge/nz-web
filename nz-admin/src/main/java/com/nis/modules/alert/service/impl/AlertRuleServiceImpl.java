@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -40,6 +41,9 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -166,7 +170,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     @Override
-    public void saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
+    public Integer saveOrUpdateAlertRule(AlertRuleEntity alertRule) {
         // 校验参数
         this.validateParam(alertRule);
 
@@ -223,6 +227,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
             this.updateById(alertRule);
         }
+        return alertRule.getId();
     }
 
     @Override
@@ -467,6 +472,72 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
 
+            String autoExpiredStr = ExcelUtils.getCellValue(row.getCell(15));
+            // 默认开启 进行校验 day start end format
+            String schedEnableStr = ExcelUtils.getCellValue(row.getCell(16));
+            schedEnableStr = StrUtil.emptyToDefault(schedEnableStr, "1");
+            String schedDaysStr = ExcelUtils.getCellValue(row.getCell(17));
+            schedDaysStr = StrUtil.emptyToDefault(schedDaysStr, "1,2,3,4,5,6,7");
+            String schedStimeStr = ExcelUtils.getCellValue(row.getCell(18));
+            schedStimeStr = StrUtil.emptyToDefault(schedStimeStr, "00:00");
+            String schedEtimeStr = ExcelUtils.getCellValue(row.getCell(19));
+            schedEtimeStr = StrUtil.emptyToDefault(schedEtimeStr, "23:59");
+            String notifyActiveStr = ExcelUtils.getCellValue(row.getCell(20));
+            String notifyExpiredStr = ExcelUtils.getCellValue(row.getCell(21));
+            String trbShotStr = ExcelUtils.getCellValue(row.getCell(22));
+
+            List<String> enableList = Arrays.asList(new String[]{"0", "1"});
+            if (StrUtil.isNotEmpty(autoExpiredStr) && !enableList.contains(autoExpiredStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ALERTRULE_AUTOEXPIRED_INCORRECT.getMsg());
+            }
+
+            if (StrUtil.isNotEmpty(notifyActiveStr) && !enableList.contains(notifyActiveStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(20), RCode.ALERTRULE_NOTIFYACTIVE_INCORRECT.getMsg());
+            }
+
+            if (StrUtil.isNotEmpty(notifyExpiredStr) && !enableList.contains(notifyExpiredStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(21), RCode.ALERTRULE_NOTIFYEXPIRED_INCORRECT.getMsg());
+            }
+
+            if (!enableList.contains(schedEnableStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(16), RCode.ALERTRULE_SCHEDENABLE_INCORRECT.getMsg());
+            }
+
+            if (StrUtil.isNotEmpty(schedDaysStr)) {
+                List<String> tempList = Arrays.asList(schedDaysStr.split(","));
+                for (String s : tempList) {
+                    if (!RegexUtil.test("^[1-7]$", s)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(17), RCode.ALERTRULE_SCHEDDAYS_INCORRECT.getMsg());
+                    }
+                }
+            }
+
+            if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedStimeStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(18), RCode.ALERTRULE_SCHEDSTIME_INCORRECT.getMsg());
+            }
+            if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", schedEtimeStr)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_INCORRECT.getMsg());
+            }
+            try {
+                DateFormat formatter = new SimpleDateFormat("HH:mm");
+                Date schedStimeDate = formatter.parse(schedStimeStr);
+                Date schedEtimeDate = formatter.parse(schedEtimeStr);
+                // 结束时间应该晚于开始时间
+                if (DateUtil.compare(schedStimeDate, schedEtimeDate) > 0) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(19), RCode.ALERTRULE_SCHEDETIME_ERROR.getMsg());
+                }
+            } catch (ParseException e) {
+                log.error(e);
+            }
+
             if (saveFlag) {
                 AlertRuleEntity ruleEntity = new AlertRuleEntity();
                 ruleEntity.setName(alertName);
@@ -482,6 +553,15 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setMethod(method);
                 ruleEntity.setSeq(seqUUID);
                 ruleEntity.setState(Integer.valueOf(StrUtil.emptyToDefault(stateStr, "1")));
+
+                ruleEntity.setAutoExpired(Integer.valueOf(StrUtil.emptyToDefault(autoExpiredStr, "1")));
+                ruleEntity.setSchedEnable(Integer.valueOf(schedEnableStr));
+                ruleEntity.setSchedDays(schedDaysStr);
+                ruleEntity.setSchedStime(schedStimeStr);
+                ruleEntity.setSchedEtime(schedEtimeStr);
+                ruleEntity.setNotifyActive(Integer.valueOf(StrUtil.emptyToDefault(notifyActiveStr, "1")));
+                ruleEntity.setNotifyExpired(Integer.valueOf(StrUtil.emptyToDefault(notifyExpiredStr, "1")));
+                ruleEntity.setTrbShot(trbShotStr);
 
                 ruleEntity.setType(Integer.valueOf(typeStr));
                 if (StrUtil.isNotEmpty(intervalStr)) {
@@ -685,9 +765,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 row.createCell(13).setCellValue(methodNames);
             }
             row.createCell(14).setCellValue(rule.getState());
+            row.createCell(15).setCellValue(rule.getAutoExpired());
+            row.createCell(16).setCellValue(rule.getSchedEnable());
+            row.createCell(17).setCellValue(rule.getSchedDays());
+            row.createCell(18).setCellValue(rule.getSchedStime());
+            row.createCell(19).setCellValue(rule.getSchedEtime());
+            row.createCell(20).setCellValue(rule.getNotifyActive());
+            row.createCell(21).setCellValue(rule.getNotifyExpired());
+            row.createCell(22).setCellValue(StrUtil.emptyToDefault(rule.getTrbShot(), ""));
 
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 14);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 22);
         }
     }
 
@@ -769,6 +857,60 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             List<Integer> switchList = Arrays.asList(new Integer[]{1, 0});
             if (!switchList.contains(state)) {
                 throw new NZException(RCode.ALERTRULE_STATE_INCORRECT);
+            }
+        }
+
+        // 校验 开关相关参数是否正确
+        List<Integer> enableList = Arrays.asList(new Integer[]{0, 1});
+        Integer autoExpired = alertRule.getAutoExpired();
+        if (autoExpired != null && !enableList.contains(autoExpired)) {
+            throw new NZException(RCode.ALERTRULE_AUTOEXPIRED_INCORRECT);
+        }
+        Integer notifyActive = alertRule.getNotifyActive();
+        if (notifyActive != null && !enableList.contains(notifyActive)) {
+            throw new NZException(RCode.ALERTRULE_NOTIFYACTIVE_INCORRECT);
+        }
+
+        Integer notifyExpired = alertRule.getNotifyExpired();
+        if (notifyExpired != null && !enableList.contains(notifyExpired)) {
+            throw new NZException(RCode.ALERTRULE_NOTIFYEXPIRED_INCORRECT);
+        }
+
+        Integer schedEnable = alertRule.getSchedEnable();
+        if (schedEnable != null) {
+            if (!enableList.contains(schedEnable)) {
+                throw new NZException(RCode.ALERTRULE_SCHEDENABLE_INCORRECT);
+            }
+            if (1 == schedEnable) {
+                // 校验 schedDays schedStime schedEtime
+                ValidateUtils.is(alertRule.getSchedDays()).notNull(RCode.ALERTRULE_SCHEDDAYS_ISNULL)
+                        .and(alertRule.getSchedStime()).notNull(RCode.ALERTRULE_SCHEDSTIME_ISNULL)
+                        .and(alertRule.getSchedEtime()).notNull(RCode.ALERTRULE_SCHEDETIME_ISNULL);
+                List<String> tempList = Arrays.asList(alertRule.getSchedDays().split(","));
+                for (String s : tempList) {
+                    if (!RegexUtil.test("^[1-7]$", s)) {
+                        throw new NZException(RCode.ALERTRULE_SCHEDDAYS_INCORRECT);
+                    }
+                }
+
+                // 时间格式
+                DateFormat formatter = new SimpleDateFormat("HH:mm");
+                if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", alertRule.getSchedStime())) {
+                    throw new NZException(RCode.ALERTRULE_SCHEDSTIME_INCORRECT);
+                }
+                if (!RegexUtil.test("^(?:[01]\\d|2[0-3])(?::[0-5]\\d)$", alertRule.getSchedEtime())) {
+                    throw new NZException(RCode.ALERTRULE_SCHEDETIME_INCORRECT);
+                }
+                try {
+                    Date schedStimeDate = formatter.parse(alertRule.getSchedStime());
+                    Date schedEtimeDate = formatter.parse(alertRule.getSchedEtime());
+                    // 结束时间应该晚于开始时间
+                    if (DateUtil.compare(schedStimeDate, schedEtimeDate) > 0) {
+                        throw new NZException(RCode.ALERTRULE_SCHEDETIME_ERROR);
+                    }
+                } catch (ParseException e) {
+                    log.error(e);
+                }
             }
         }
     }
