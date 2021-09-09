@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -102,6 +103,12 @@ public interface AlertHandlerService  {
 	 * @param fromState
 	 */
 	void handleMessageExpiredBatch(List<AlertMessageEntity> msgList, Integer fromState);
+
+	/**
+	 * 更新 auto expired = 0 的告警消息 endat
+	 * @param endAt
+	 */
+	void updateCloseExpiredMessageEndAt(String tableName,Date endAt);
 	
 }
 

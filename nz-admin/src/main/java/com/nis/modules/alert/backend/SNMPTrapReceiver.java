@@ -275,10 +275,17 @@ public class SNMPTrapReceiver implements CommandResponder,ApplicationRunner {
 		}
 		labels.put("alertname", rule.getId().toString());
 		labels.put("oid", trapOID);
-		dto.setLabels(labels);
-		dto.setStartsAt(Tool.AlertUtil.formatMessageDate(trap.getTimestamp()));
-		dto.setEndsAt(Tool.AlertUtil.formatMessageDate(trap.getTimestamp() + rule.getLast() * 1000 ));
 		
+		dto.setStartsAt(Tool.AlertUtil.formatMessageDate(trap.getTimestamp()));
+		int expiredTimeout = rule.getExpiredTimeout();
+		//用户如果设置了 自动失效 且 有 timeout值
+		if(expiredTimeout > 0) {
+			dto.setEndsAt(Tool.AlertUtil.formatMessageDate(trap.getTimestamp() + expiredTimeout * 1000 ));
+		}else {
+			//关闭自动 expired 需要确保 每次label 不一致，才不会匹配到
+			labels.put("timestamp", String.valueOf(trap.getTimestamp()));
+		}
+		dto.setLabels(labels);
 		Map<String,String> annotations = Tool.MapUtil.newHashMap();
 		String summary = rule.getSummary();
 		String description = rule.getDescription();

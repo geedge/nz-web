@@ -145,4 +145,10 @@ public interface AlertHandlerDao {
 	 * @return
 	 */
 	List<Long> selectAlertSilencMessageIdByRuleIds(@Param("ids") List ruleIds);
+	
+	/**
+	 * 更新 不同表中 auto expired = 0 的 message 的endAt 时间 
+	 * @param message
+	 */
+	void updateCloseExpiredMessageEndAt(@Param("tableName")String tableName,@Param("endAt")Date endAt);
 }

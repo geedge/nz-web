@@ -740,4 +740,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		message.setLabels(Tool.JSONUtil.toJsonStr(labels));
 		return message;
 	}
+	
+	@Override
+	public void updateCloseExpiredMessageEndAt(String tableName,Date endAt) {
+		msgHandlerDao.updateCloseExpiredMessageEndAt(tableName, endAt);
+	}
 }

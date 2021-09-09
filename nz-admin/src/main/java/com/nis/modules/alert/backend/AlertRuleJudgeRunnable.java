@@ -121,6 +121,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 
 			Set<String> newAlertHash = Tool.CollUtil.newHashSet();
 			List<AlertMessageReceiveDTO> messages = Tool.ListUtil.list(true);
+			int timeout = this.alertRuleEntity.getExpiredTimeout();
 			if (dataArr != null && dataArr.size() > 0) {
 				Iterator<Object> ite = dataArr.iterator();
 				while (runFlag && ite.hasNext()) {
@@ -141,9 +142,10 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					 */
 					Long firstTime = Tool.NumberUtil.parseLong(hashOperations.get(ruleCacheKey, hash));
 					if (timestamp - firstTime > alertRuleEntity.getLast() * 1000) {
-						// 直接将 告警消息 放到 redis 缓存 endTime + 5min
+						// 用户设置了 开启了自动失效，且 设置了 timeout 
+						String et  = (timeout > 0) ? Tool.AlertUtil.formatMessageDate(timestamp + timeout*1000) : null;
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
-								Tool.AlertUtil.formatMessageDate(firstTime), null);
+								Tool.AlertUtil.formatMessageDate(firstTime), et);
 						messages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: active,content : {}",

@@ -63,9 +63,9 @@
 		select * from alert_message_active 
 	</select>
 	
-	<!-- 查询 状态未及时 修改的 alert message -->
+	<!-- 查询 开启自动 失效 状态未及时 修改的 alert message -->
 	<select id="selectMessageEndAtltNow" resultMap="alertMessageMap">
-		select * from ${tableName} where end_at &lt; #{now}
+		select * from ${tableName} am left join alert_rule ar on am.rule_id = ar.id where ar.auto_expired = 1 and end_at &lt; #{now}
 	</select>
 	
 	<!-- 根据id批量删除 alert message -->
@@ -79,6 +79,11 @@
 	<!-- 更新 alert message endat时间 -->
 	<update id="updateMessageEndAt" >
 		update ${tableName} set end_at = #{endAt} where id = #{id}
+	</update>
+	
+	<!-- 更新 关闭 auto expired 功能的 告警消息 结束时间 -->
+	<update id="updateCloseExpiredMessageEndAt" >
+		update ${tableName} am left join alert_rule ar on am.rule_id = ar.id set end_at = #{endAt} where ar.auto_expired = 0
 	</update>
 	
 	<!-- 保存silence 与匹配的 告警消息的 关联关系 -->

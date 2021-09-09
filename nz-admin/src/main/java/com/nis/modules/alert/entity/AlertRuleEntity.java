@@ -203,4 +203,13 @@ public class AlertRuleEntity implements Serializable {
 		return String.format("%s %s %s", this.getExpr(),this.getOperator(),this.getThreshold());
 	}
 	
+	public int getExpiredTimeout() {
+		Integer autoExpired = this.getAutoExpired();//是否开启自动失效
+		autoExpired = (autoExpired == null) ? 0 : autoExpired;
+		Integer timeout = this.getTimeout();//自动失效超时时间
+		timeout = (timeout == null) ? 0 : timeout*autoExpired;
+		return timeout;
+	}
+	
+	
 }

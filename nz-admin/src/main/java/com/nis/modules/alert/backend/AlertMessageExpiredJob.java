@@ -1,5 +1,6 @@
 package com.nis.modules.alert.backend;
 
+import java.util.Date;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
@@ -62,6 +63,12 @@ public class AlertMessageExpiredJob extends QuartzJobBean{
         	messageHandlerService.handleMessageExpiredBatch(messageList, Constant.ALERT_MESSAGE_SILENCE_STATE);
         	log.info("处理已经expired未正常清除的silence数据,总条数:{}", messageList.size());
         }
+        sw.stop();
+        sw.start("message close expired update endat");
+        // 5、 更新 auto expired = 0 的告警消息endat ，否则前端展示为 duration 显示有歧义
+        Date endAt = Tool.DateUtil.date();
+        messageHandlerService.updateCloseExpiredMessageEndAt(Constant.ALERT_MESSAGE_ACTIVE_TABLE,endAt);
+        messageHandlerService.updateCloseExpiredMessageEndAt(Constant.ALERT_MESSAGE_SILENCE_TABLE,endAt);
         sw.stop();
         if(log.isDebugEnabled()) {
         	log.debug("耗时统计:{}", sw.prettyPrint());
