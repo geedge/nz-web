@@ -458,11 +458,16 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                 camelToUnderlineMap.put("priv_password", camelToUnderlineMap.get("priv_pin"));
             }
         }
+        // contextname 最终需要格式为 context_name , 因原本不是 驼峰格式 ，这里特殊处理下
+        if (camelToUnderlineMap.get("contextname") != null && StrUtil.isNotEmpty(camelToUnderlineMap.get("contextname").toString())) {
+            camelToUnderlineMap.put("context_name", camelToUnderlineMap.get("contextname").toString());
+        }
         // 删除多余的 keys
         camelToUnderlineMap.remove("auth_pin");
         camelToUnderlineMap.remove("priv_pin");
         camelToUnderlineMap.remove("read_community");
         camelToUnderlineMap.remove("write_community");
+        camelToUnderlineMap.remove("contextname");
 
         gengrateParams.put("auth", camelToUnderlineMap);
         return gengrateParams;
