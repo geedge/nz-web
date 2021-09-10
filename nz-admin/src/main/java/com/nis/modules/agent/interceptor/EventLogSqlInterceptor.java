@@ -139,6 +139,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 			}
 		} else {
 			// insert delete
+
+			//eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
 			eventLogService.increment("prometheus", "promtail", "cortex", "loki");
 		}
 	}
@@ -159,6 +161,8 @@ public class EventLogSqlInterceptor implements Interceptor {
 				flag = true;
 			if (flag) {
 				// 元信息变更 修改 prometheus promtail
+
+				// eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
 				eventLogService.increment("prometheus", "promtail", "cortex", "loki");
 			}
 		}

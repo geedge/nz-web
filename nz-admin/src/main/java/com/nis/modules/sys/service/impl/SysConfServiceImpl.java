@@ -58,7 +58,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] MONITOR_KEYS = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_storage_s3_endpoint", "metrics_storage_s3_bucket", "metrics_storage_s3_access_key", "metrics_storage_s3_secret_access_key", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_storage_s3_endpoint", "logs_storage_s3_bucket", "logs_storage_s3_access_key", "logs_storage_s3_secret_access_key", "logs_query_range_default_limit"};
 
-    public static final String[] MONITOR_REQUIRED = {"alert_api", "prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
+    public static final String[] MONITOR_REQUIRED = {"prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
 
     public static final String[] MONITOR_INTEGER = {"prometheus_federation_enabled", "default_scrape_interval", "default_scrape_timeout", "asset_ping_interval", "asset_ping_from", "metrics_storage_retention", "metrics_storage_type", "metrics_query_max_series", "logs_storage_retention", "logs_storage_type", "logs_query_range_default_limit"};
 
@@ -607,7 +607,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 incrementKeys.add("promtail");
                 incrementKeys.add("loki");
                 incrementKeys.add("cortex");
-                incrementKeys.add("rule");
+                // incrementKeys.add("rule");
             }
             // prometheus.yml 改动
             if (updateKeys.contains("asset_ping_from") || updateKeys.contains("asset_ping_interval") || updateKeys.contains("default_scrape_interval") || updateKeys.contains("default_scrape_timeout")) {
@@ -634,7 +634,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             // metrics 下发方式改变
             if (updateKeys.contains("metrics_storage_type")) {
                 incrementKeys.add("prometheus");
-                incrementKeys.add("rule");
+                // incrementKeys.add("rule");
                 incrementKeys.add("cortex");
             }
             eventLogService.increment(ArrayUtil.toArray(incrementKeys, String.class));

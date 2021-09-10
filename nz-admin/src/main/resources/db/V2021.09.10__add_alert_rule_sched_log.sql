@@ -14,3 +14,11 @@ CREATE TABLE `alert_rule_sched_log`  (
   INDEX `idx_rule_id`(`rule_id`) USING BTREE,
   INDEX `idx_state`(`state`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+
+/**
+ *  1. 修改 sys_user username 字段长度限制
+ */
+
+ALTER TABLE  `sys_user`
+MODIFY COLUMN `username` varchar(64) NOT NULL COMMENT '用户名';
