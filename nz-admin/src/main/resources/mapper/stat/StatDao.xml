@@ -525,7 +525,10 @@
 		<if test="params.stateId != null">
 			and aa.state_id = #{params.stateId}
 		</if>
-    </select>
+		<if test="params.children != null and  params.children  != '' and params.children == 0">
+			and aa.pid = -1
+		</if>
+	</select>
     
     
     <select id="selectDcAssetUnhealthy" resultMap="statAnalysis">
