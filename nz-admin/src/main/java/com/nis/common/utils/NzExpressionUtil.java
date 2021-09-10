@@ -107,7 +107,11 @@ public class NzExpressionUtil {
 						} else {
 							// 其他类型为 一对一 直接取第一个即可
 							List<String> list = map.get(valueKey);
-							result = list.get(0);
+							if (Tool.CollectionUtil.isNotEmpty(list)) {
+								result = list.get(0);
+							} else {
+								result = null;
+							}
 						}
 					}
 				}
@@ -155,7 +159,11 @@ public class NzExpressionUtil {
 						} else {
 							// 其他类型为 一对一 直接取第一个即可
 							List<String> list = map.get(valueKey);
-							result = list.get(0);
+							if (Tool.CollectionUtil.isNotEmpty(list)) {
+								result = list.get(0);
+							} else {
+								result = null;
+							}
 						}
 					}
 				}

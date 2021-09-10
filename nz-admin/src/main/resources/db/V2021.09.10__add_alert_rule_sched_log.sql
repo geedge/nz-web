@@ -18,7 +18,15 @@ CREATE TABLE `alert_rule_sched_log`  (
 
 /**
  *  1. 修改 sys_user username 字段长度限制
+ *  2. 修改 alert_rule operator 字段
+ *  3. 修改 asset_field_meta remark 字段长度限制
  */
 
 ALTER TABLE  `sys_user`
 MODIFY COLUMN `username` varchar(64) NOT NULL COMMENT '用户名';
+
+ALTER TABLE  `alert_rule`
+MODIFY COLUMN  `operator` varchar(64) CHARACTER SET utf8mb4 NOT NULL DEFAULT '' COMMENT '比较符号';
+
+ALTER TABLE  `asset_field_meta`
+MODIFY COLUMN  `remark` varchar(256) NOT NULL DEFAULT '';

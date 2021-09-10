@@ -180,16 +180,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
 
 
-        // 校验expr
-        boolean checkRule = false;
-        try {
-            checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
-        } catch (IOException e) {
-            log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
-        }
+        // snmp trap 不校验 表达式
+        if (3 != alertRule.getType()) {
+            // 校验expr
+            boolean checkRule = false;
+            try {
+                checkRule = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(alertRule));
+            } catch (IOException e) {
+                log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", alertRule.toString(), e));
+            }
 
-        if (!checkRule) {
-            throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
+            if (!checkRule) {
+                throw new NZException(RCode.ALERTRULE_EXPR_ERROR);
+            }
         }
 
         // 校验关联用户
@@ -360,16 +363,6 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
             String expr = ExcelUtils.getCellValue(row.getCell(4));
             String operator = ExcelUtils.getCellValue(row.getCell(5));
-            if (StringUtils.isEmpty(operator)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
-            } else {
-                operator = operator.replaceAll(" ", "");
-                if (!Constant.RULE_OPERATORS.contains(operator)) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
-                }
-            }
             String threshold = ExcelUtils.getCellValue(row.getCell(6));
             String unit = ExcelUtils.getCellValue(row.getCell(7));
 
@@ -404,6 +397,16 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                         if (ToolUtil.isEmpty(integer)) {
                             saveFlag = false;
                             this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), RCode.ALERTRULE_UNIT_INVALIDE.getMsg());
+                        }
+                    }
+                    if (StringUtils.isEmpty(operator)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_ISNULL.getMsg());
+                    } else {
+                        operator = operator.replaceAll(" ", "");
+                        if (!Constant.RULE_OPERATORS.contains(operator)) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
                         }
                     }
                 }
@@ -579,15 +582,18 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     }
                     ruleEntity.setTimeout(timeoutVal);
                 }
-                try {
-                    boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
-                    if (!b) {
+                // snmp trap 类型不校验 表达式
+                if (!StrUtil.equals("3", typeStr)) {
+                    try {
+                        boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
+                        if (!b) {
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ERROR.getMsg());
+                            continue;
+                        }
+                    } catch (IOException e) {
+                        log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ERROR.getMsg());
-                        continue;
                     }
-                } catch (IOException e) {
-                    log.error(String.format("expr校验失败,rule信息是：%s,错误信息是：%s", ruleEntity.toString(), e));
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ALERTRULE_EXPR_ERROR.getMsg());
                 }
                 try {
                     this.save(ruleEntity);
@@ -798,16 +804,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 .and(alertRule.getLast()).notNull(RCode.ALERTRULE_LAST_ISNULL).min(1, RCode.ALERTRULE_LAST_ISNOTPOSITIVE)
                 .and(alertRule.getSeverityId()).notNull(RCode.ALERTRULE_SEVERITY_ISNULL)
                 .and(alertRule.getSummary()).notNull(RCode.ALERTRULE_SUMMARY_ISNULL).maxLength(512)
-                .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL)
                 .and(alertRule.getDescription()).maxLength(512)
                 .and(alertRule.getType()).notNull(RCode.ALERTRULE_TYPE_ISNULL);
-
-        operator = operator.replaceAll(" ", "");
-        alertRule.setOperator(operator);
-
-        if(!Constant.RULE_OPERATORS.contains(operator)){
-            throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
-        }
 
         List<Integer> typeList = Arrays.asList(new Integer[]{1, 2, 3});
         if (!typeList.contains(alertRule.getType())) {
@@ -823,11 +821,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         } else {
             // 除 snmp trap 类型外，threshold unit 必填
             ValidateUtils.is(alertRule.getThreshold()).notNull(RCode.ALERTRULE_THRESHOLD_ISNULL).maxLength(20)
-                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL);
+                    .and(unit).notNull(RCode.ALERTRULE_UNIT_ISNULL)
+                    .and(operator).notNull(RCode.ALERTRULE_OPERATOR_ISNULL);
 
             List<Integer> unitList = new ArrayList(Constant.ALERT_RULE_UNIT_MAP.values());
             if (unit < Collections.min(unitList) || unit > Collections.max(unitList)) {
                 throw new NZException(RCode.ALERTRULE_UNIT_INVALIDE);
+            }
+
+            operator = operator.replaceAll(" ", "");
+            alertRule.setOperator(operator);
+
+            if (!Constant.RULE_OPERATORS.contains(operator)) {
+                throw new NZException(RCode.ALERTRULE_OPERATOR_INVALIDE);
             }
         }
 
