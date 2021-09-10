@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -652,11 +653,21 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		}
 		// 判断endpoint id 是否存在
 		Integer endpointId = null, moduleId = null, projectId = null, dcId = null, assetId = null, ruleId = null;
-		if (Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ENDPOINT_ID_KEY))) {
+		// 确定 endpoint 两种途径  1 ，根据 endpoint id 获取  2. 根据 module name + endpoint name 获取 ， 因为 module name 唯一  endpoint name 同一个 Module 下唯一
+		if (Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ENDPOINT_ID_KEY)) || (Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_ENDPOINT_NAME_KEY)) && Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_MODULE_NAME_KEY)))) {
 			endpointId = Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ENDPOINT_ID_KEY));
+			MonitorEndpoint ep = null;
+			if (endpointId != null) {
+				ep = endpointService.getById(endpointId);
+			}
+			String endpointName = labels.get(Constant.LABEL_ENDPOINT_NAME_KEY);
+			String moduleName = labels.get(Constant.LABEL_MODULE_NAME_KEY);
+			if (Tool.StrUtil.isNotEmpty(endpointName) && Tool.StrUtil.isNotEmpty(moduleName) && ep == null) {
+				MonitorModule module = moduleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getName, moduleName));
+				ep = endpointService.getOne(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()).eq(MonitorEndpoint::getName, endpointName));
+			}
 			// 当 moduleid 不存在，但是 endpoint id存在时，通过库表查询赋值
-			MonitorEndpoint ep = endpointService.getById(endpointId);
-			message.setEndpointId(endpointId);
+			message.setEndpointId(ep.getId());
 			moduleId = ep.getModuleId();
 			assetId = ep.getAssetId();
 			/*Integer enabled = ep.getEnabled();
@@ -665,14 +676,22 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 					log.debug("endpoint state : {}", enabled);
 				return null;
 			}*/
-			message.setEndpointId(endpointId);
+			message.setEndpointId(ep.getId());
 			message.setEndpoint(ep);
 		}
 
 		// 获取 asset id
-		if (assetId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ASSET_ID_KEY))) {
+		if (assetId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ASSET_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_ASSET_NAME_KEY))) {
 			assetId = assetId != null ? assetId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ASSET_ID_KEY));
-			AssetAsset asset = assetAssetService.getById(assetId);
+			AssetAsset asset = null;
+			if (assetId != null) {
+				asset = assetAssetService.getById(assetId);
+			}
+			// 通过 assetId 找不到的，在尝试用 assetNameStr 获取 ，因为 assetNameStr 同样唯一
+			String assetNameStr = labels.get(Constant.LABEL_ASSET_NAME_KEY);
+			if (Tool.StrUtil.isNotEmpty(assetNameStr) && asset == null) {
+				asset = assetAssetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, assetNameStr));
+			}
 			dcId = asset.getDcId();
 			Integer stateId = asset.getStateId();
 			AssetStateConf stateConf = assetStateService.getById(stateId);
@@ -682,36 +701,61 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 					log.debug("asset state : {}", alert);
 				return null;
 			}
-			message.setAssetId(assetId);
+			message.setAssetId(asset.getId());
 			message.setAsset(asset);
 		}
 		// 获取dc
-		if (dcId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_DC_ID_KEY))) {
+		if (dcId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_DC_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_DC_NAME_KEY))) {
 			dcId = (dcId != null) ? dcId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_DC_ID_KEY));
-			Dc dc = dcService.getById(dcId);
+			Dc dc = null;
+			if (dcId != null) {
+				dc = dcService.getById(dcId);
+			}
+			// 通过 dcId 找不到的，在尝试用 dcname 获取 ，因为 dc name 同样唯一
+			String dcNameStr = labels.get(Constant.LABEL_DC_NAME_KEY);
+			if (Tool.StrUtil.isNotEmpty(dcNameStr) && dc == null) {
+				dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcNameStr));
+			}
+
 			String state = dc.getState();
 			if (Tool.StrUtil.equalsIgnoreCase(state, "OFF")) {// disable直接返回 丢弃告警消息
 				if (log.isDebugEnabled())
 					log.debug("dc state : {}", state);
 				return null;
 			}
-			message.setDcId(dcId);
+			message.setDcId(dc.getId());
 			message.setDc(dc);
 		}
 		// 判断 module id 是否存在
-		if (moduleId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY))) {
+		if (moduleId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_MODULE_NAME_KEY))) {
 			moduleId = (moduleId != null) ? moduleId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_MODULE_ID_KEY));
-			MonitorModule module = moduleService.getById(moduleId);
+			MonitorModule module = null;
+			if (moduleId != null) {
+				module = moduleService.getById(moduleId);
+			}
+			// 通过 moduleId 找不到的，在尝试用 moduleName 获取 ，因为 module name 同样唯一
+			String moduelNameStr = labels.get(Constant.LABEL_MODULE_NAME_KEY);
+			if (Tool.StrUtil.isNotEmpty(moduelNameStr) && module == null) {
+				module = moduleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getName, moduelNameStr));
+			}
 			projectId = module.getProjectId();
-			message.setModuleId(moduleId);
+			message.setModuleId(module.getId());
 			message.setModule(module);
 		}
 		// 判断 module id 是否存在
-		if (projectId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_PROJECT_ID_KEY))) {
+		if (projectId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_PROJECT_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_PROJECT_NAME_KEY))) {
 			projectId = (projectId != null) ? projectId
 					: Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_PROJECT_ID_KEY));
-			MonitorProject project = projectService.getById(projectId);
-			message.setProjectId(projectId);
+			MonitorProject project = null;
+			if (projectId != null) {
+				project = projectService.getById(projectId);
+			}
+			// 通过 projectId 找不到的，在尝试用 projectName 获取 ，因为 projectName 同样唯一
+			String projectNameStr = labels.get(Constant.LABEL_PROJECT_NAME_KEY);
+			if (Tool.StrUtil.isNotEmpty(projectNameStr) && project == null) {
+				project = projectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getName, projectNameStr));
+			}
+			message.setProjectId(project.getId());
 			message.setProject(project);
 		}
 		// 获取alertrule

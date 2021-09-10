@@ -1052,6 +1052,12 @@ public class Constant {
 	public static final String LABEL_RULE_ID_KEY = "alertname";
 	public static final String LABEL_SEVERITY_ID_KEY = "severity_id";
 
+	public static final String LABEL_MODULE_NAME_KEY = "module";
+	public static final String LABEL_PROJECT_NAME_KEY = "project";
+	public static final String LABEL_ASSET_NAME_KEY = "asset";
+	public static final String LABEL_ENDPOINT_NAME_KEY = "endpoint";
+	public static final String LABEL_DC_NAME_KEY = "datacenter";
+
 	public static final String ALERT_API = "alert_api";
 	public static final String ALERT_PATH_PREFIX = "alert_path_prefix";
 
