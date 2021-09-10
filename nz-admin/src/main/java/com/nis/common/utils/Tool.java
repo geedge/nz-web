@@ -1184,6 +1184,10 @@ public class Tool {
 				Object value = null;
 				try {
 					//snmp trap variables 特殊处理
+					if(Tool.StrUtil.equalsIgnoreCase(var, "variables")) {
+						value = context.get("variables");
+						continue;
+					}
 					if(var.startsWith("variables")) {
 						var = var.replace("variables[", "").replace("]", "");
 						Map variables = (Map)context.get("variables");
@@ -1192,9 +1196,9 @@ public class Tool {
 							List<Object> vlist = (List<Object>)value;
 							value = vlist.size() == 1 ? vlist.get(0) : Tool.StrUtil.join(",", vlist.toArray());
 						}
-					}else {
-						value = Tool.BeanUtil.getProperty(context, var);
+						continue;
 					}
+					value = Tool.BeanUtil.getProperty(context, var);
 				} catch (Exception e) {}
 				matcher.appendReplacement(stringBuffer, value== null? Tool.StrUtil.EMPTY:value.toString());
 			}
