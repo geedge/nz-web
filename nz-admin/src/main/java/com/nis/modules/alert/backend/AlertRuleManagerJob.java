@@ -1,9 +1,11 @@
 package com.nis.modules.alert.backend;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 
 import org.quartz.CronScheduleBuilder;
 import org.quartz.CronTrigger;
@@ -75,7 +77,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 		// 只要 event_log.rule 变化就更新 首先更新 snmp trap rule,目前所有设备都参与 snmp rule 规则判断
 		this.updateSnmptrapRule();
 		// nezha alert rule 规则判断是否启用
-		String enable = configService.getValueOrDefault("nz_alert_rule_eval_enable", "0");
+		String enable = configService.getValueOrDefault("nz_alert_rule_eval_enable", "1");
 		log.info("nz alert rule eval enable : {}", enable);
 		if (!StrUtil.equals(serverId, Constant.SERVER_ID) || !Tool.StrUtil.equals(enable, "1")) {
 			log.debug("serverId is not me");
@@ -283,10 +285,21 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 	public String genCron(String time, String days) {
 		if (Tool.StrUtil.isAllNotBlank(time, days)) {
 			String[] split = time.split(":");
+			//将定时时间 根据系统设置 转换为 utc 对应时间
+			String value = configService.getValue("timezone");
+			TimeZone timezone = TimeZone.getTimeZone(value);
+			Calendar cal = Calendar.getInstance();
+			int hourOfDay = Tool.NumberUtil.parseInt(split[0]);
+			int minute = Tool.NumberUtil.parseInt(split[1]);
+			cal.set(1997, 7, 1, hourOfDay, minute);
+			cal.add(Calendar.MILLISECOND, 0-timezone.getRawOffset());
+			hourOfDay = cal.get(Calendar.HOUR_OF_DAY);
+			minute = cal.get(Calendar.MINUTE);
 			// 0 1 2 0 0 1,2,4
-			return String.format("0 %s %s ? * %s *", Tool.NumberUtil.parseInt(split[1]),
-					Tool.NumberUtil.parseInt(split[0]), days);
+			return String.format("0 %s %s ? * %s *",minute ,hourOfDay, days);
 		}
 		return null;
 	}
+	
+	
 }

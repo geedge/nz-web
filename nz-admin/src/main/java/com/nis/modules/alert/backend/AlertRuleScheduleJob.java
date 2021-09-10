@@ -11,7 +11,10 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleSchedLog;
+import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.alert.service.AlertRuleService;
 
 import cn.hutool.core.date.StopWatch;
@@ -32,7 +35,8 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 	private AlertRuleService alertRuleService;
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
-
+	@Autowired
+	private AlertRuleSchedLogService alertRuleSchedLogService;
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
 		// 检查 haMode
@@ -43,6 +47,12 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 		log.debug("alert rule schedule job start,key:{}", key);
 		// key格式：hash-id-state，例：adcdaed-12-1
 		String[] split = key.getName().split("-");
+		AlertRuleSchedLog schedLog = new AlertRuleSchedLog();
+		schedLog.setRuleId(Integer.valueOf(split[1]));
+		schedLog.setRuleState(Integer.valueOf(split[2]));
+		schedLog.setTs(Tool.DateUtil.current());
+		schedLog.setState(1);
+		schedLog.setMsg("success");
 		try {
 			StopWatch sw = new StopWatch("AlertRuleScheduleJob");
 			sw.start();
@@ -54,9 +64,13 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 			if (log.isDebugEnabled()) {
 				log.debug("耗时统计:{}", sw.prettyPrint());
 			}
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
+			schedLog.setState(0);
+			schedLog.setMsg(Tool.StrUtil.sub(e.getMessage(), 0, 128));
 			log.error(e, "alert rule schedule manager job error");
 		}
+		//save schedule log
+		alertRuleSchedLogService.save(schedLog);
 		log.debug("alert rule schedule manager job end,key:{}", key);
 	}
 }

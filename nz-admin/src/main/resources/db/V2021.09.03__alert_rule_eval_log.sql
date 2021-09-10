@@ -16,8 +16,8 @@ CREATE TABLE `alert_rule_eval_log`  (
   `stts` bigint(20) NOT NULL,
   `etts` bigint(20) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_message_id`(`rule_id`) USING BTREE,
-  INDEX `idx_state`(`etts`) USING BTREE
+  INDEX `idx_rule_id`(`rule_id`) USING BTREE,
+  INDEX `idx_state`(`state`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
