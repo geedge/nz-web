@@ -1,8 +1,8 @@
 package com.nis.modules.alert.dao;
 
+import cn.hutool.core.date.DateTime;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.metric.dto.MetricsDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -40,4 +40,7 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     Integer getAactiveAlertCountByProjectId(@Param("projectId")Integer projectId);
     
     void removeAllData();
+
+    void cleanExpiredDataByTime(@Param("startCleanAlertMessageTime") DateTime startCleanAlertMessageTime);
+
 }

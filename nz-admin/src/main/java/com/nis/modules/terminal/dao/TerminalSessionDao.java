@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.dao;
 
+import cn.hutool.core.date.DateTime;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.terminal.entity.TerminalSessionEntity;
@@ -14,4 +15,5 @@ public interface TerminalSessionDao extends BaseMapper<TerminalSessionEntity>{
 
     List<TerminalSessionEntity> queryList(IPage page, @Param("params") Map<String, Object> params);
 
+    void cleanExpiredDataByTime(@Param("startCleanTerminalTime") DateTime startCleanTerminalTime);
 }

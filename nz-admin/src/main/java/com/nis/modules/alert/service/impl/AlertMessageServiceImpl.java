@@ -1,5 +1,6 @@
 package com.nis.modules.alert.service.impl;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Constant;
@@ -7,7 +8,6 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertMessageService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -142,4 +142,9 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
 		}
 		log.debug("alert_message_recv size : {}",size);
 	}
+
+    @Override
+    public void cleanExpiredDataByTime(DateTime startCleanAlertMessageTime) {
+        alertMessageDao.cleanExpiredDataByTime(startCleanAlertMessageTime);
+    }
 }

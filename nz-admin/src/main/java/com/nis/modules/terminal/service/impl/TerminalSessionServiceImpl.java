@@ -1,5 +1,6 @@
 package com.nis.modules.terminal.service.impl;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.log.Log;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -125,5 +126,10 @@ public class TerminalSessionServiceImpl extends ServiceImpl<TerminalSessionDao, 
 
         // kill 之后，将剩余文件写到数据库中
         TerminalHandler.handleRecodeAfterClientClose(uuid, terminalRecordService);
+    }
+
+    @Override
+    public void cleanExpiredDataByTime(DateTime startCleanTerminalTime) {
+        terminalSessionDao.cleanExpiredDataByTime(startCleanTerminalTime);
     }
 }

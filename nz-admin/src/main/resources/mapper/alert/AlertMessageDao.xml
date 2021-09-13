@@ -111,4 +111,8 @@
 		delete from alert_message_silence;
 	</select>
 
+	<delete id="cleanExpiredDataByTime">
+		delete from alert_message_history where start_at &lt;= #{startCleanAlertMessageTime}
+	</delete>
+
 </mapper>

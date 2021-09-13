@@ -10,8 +10,8 @@ import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
+import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
-import com.nis.modules.terminal.job.TerminalCleanRecordJob;
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +84,7 @@ public class JobConfig {
     private String endpointStateJobName = "ENDPOINTSTATE_JOB";
     private String haJobName = "HA_JOB";
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
-    private String terminalCleanJobCronName = "TERMINALCLEAN_JOB";
+    private String cleanJobCronName = "CLEAN_JOB";
    
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -135,11 +135,11 @@ public class JobConfig {
 	public JobDetail sessionTimeOutJobDetail() {
 	    return JobBuilder.newJob(SessionTimeOutJob.class).withIdentity(JOB_NAME + sessionTimeOutJobName).storeDurably().build();
 	}
-    
-	@Bean
-	public JobDetail terminalCleanJobDetail() {
-	    return JobBuilder.newJob(TerminalCleanRecordJob.class).withIdentity(JOB_NAME + terminalCleanJobCronName).storeDurably().build();
-	}
+
+    @Bean
+    public JobDetail cleanJobDetail() {
+        return JobBuilder.newJob(CleanJob.class).withIdentity(JOB_NAME + cleanJobCronName).storeDurably().build();
+    }
 	
     @Bean
     public JobDetail alertRuleManagerJobDetail() {
@@ -183,7 +183,7 @@ public class JobConfig {
         createCronScheduleJob(sessionTimeOutJobName, sessionTimeOutJobDetail(), StringUtils.isEmpty(sessionTimeOutJobCron) ? "0 0/5 * * * ? *" : sessionTimeOutJobCron);
 
         // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
-        createCronScheduleJob(terminalCleanJobCronName, terminalCleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
+        createCronScheduleJob(cleanJobCronName, cleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
     }
     
     /**

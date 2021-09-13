@@ -2,6 +2,7 @@ package com.nis.modules.alert.service;
 
 import java.util.List;
 
+import cn.hutool.core.date.DateTime;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 
@@ -29,5 +30,7 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 	void removeAllData();
 
 	void leftPushAlertMessageToRedis(String messages);
+
+	void cleanExpiredDataByTime(DateTime startCleanAlertMessageTime);
 }
 
