@@ -246,18 +246,35 @@ public class StatServiceImpl implements StatService{
 	public StatAnalysis queryAssetHealthy(Map<String, Object> params) {
 		List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda()
 				.in(ObjectUtil.isNotEmpty(params.get("dcId")), AssetAsset::getDcId, ObjectUtil.isNotEmpty(params.get("dcId")) ? Arrays.asList(params.get("dcId").toString().split(",")) : null)
-				.in(ObjectUtil.isNotEmpty(params.get("typeId")),AssetAsset::getTypeId,ObjectUtil.isNotEmpty(params.get("typeId")) ? Arrays.asList(params.get("typeId").toString().split(",")) : null)
-				.in(ObjectUtil.isNotEmpty(params.get("modelId")),AssetAsset::getModelId,ObjectUtil.isNotEmpty(params.get("modelId")) ? Arrays.asList(params.get("modelId").toString().split(",")) : null)
-				.in(ObjectUtil.isNotEmpty(params.get("stateId")),AssetAsset::getStateId,ObjectUtil.isNotEmpty(params.get("stateId")) ? Arrays.asList(params.get("stateId").toString().split(",")) : null));
+				.in(ObjectUtil.isNotEmpty(params.get("typeId")), AssetAsset::getTypeId, ObjectUtil.isNotEmpty(params.get("typeId")) ? Arrays.asList(params.get("typeId").toString().split(",")) : null)
+				.in(ObjectUtil.isNotEmpty(params.get("modelId")), AssetAsset::getModelId, ObjectUtil.isNotEmpty(params.get("modelId")) ? Arrays.asList(params.get("modelId").toString().split(",")) : null)
+				.in(ObjectUtil.isNotEmpty(params.get("stateId")), AssetAsset::getStateId, ObjectUtil.isNotEmpty(params.get("stateId")) ? Arrays.asList(params.get("stateId").toString().split(",")) : null));
 		String childrenFlag = ObjectUtil.isNotEmpty(params.get("children")) ? params.get("children").toString() : "1";
-		if (StrUtil.equals("0", childrenFlag)) {
-			// 不包括子资产, pid = -1 为 顶级资产
+
+		int total, alerm, ok;
+		// ping不通 或 有告警的设备
+		List<StatAnalysis> statAnalysis = statDao.selectAssetUnhealthy(params);
+		Set<Integer> alermAssetIdSet = statAnalysis.stream().map(StatAnalysis::getAsset).collect(Collectors.toSet());
+		if (StrUtil.equals("1", childrenFlag)) {
+			// 包括子资产告警
 			assets = assets.stream().filter(asset -> asset.getPid() == -1).collect(Collectors.toList());
+			total = assets.size();
+			Set<Integer> alermAssetPidSet = statAnalysis.stream().map(StatAnalysis::getPid).filter(tempPid -> tempPid != -1).collect(Collectors.toSet());
+			alermAssetIdSet.addAll(alermAssetPidSet);
+			alerm = (int) assets.stream().filter(asset -> alermAssetIdSet.contains(asset.getId())).count();
+			ok = (int) assets.stream().filter(asset -> !alermAssetIdSet.contains(asset.getId())).count();
+		} else {
+			// 不包括子资产告警
+			total = assets.size();
+			alerm = alermAssetIdSet.size();
+			ok = total - alerm;
 		}
-		StatAnalysis statAnalysis = statDao.selectAssetUnhealthy(params);
-		statAnalysis.setTotal(assets.size());
-		statAnalysis.setOk(assets.size()-statAnalysis.getAlarm());
-		return statAnalysis;
+
+		StatAnalysis reslut = new StatAnalysis();
+		reslut.setTotal(total);
+		reslut.setOk(ok);
+		reslut.setAlarm(alerm);
+		return reslut;
 	}
 
 	@Override

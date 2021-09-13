@@ -53,7 +53,7 @@ public interface StatDao {
 	
 	StatAnalysis selectEndpointTotal(@Param("params") Map<String, Object> params);
 	
-	StatAnalysis selectAssetUnhealthy(@Param("params") Map<String, Object> params);
+	List<StatAnalysis> selectAssetUnhealthy(@Param("params") Map<String, Object> params);
 	
 	List<StatAnalysis> selectDcAssetUnhealthy();
 	

@@ -14,6 +14,7 @@
     	<result column="alert" property="alert"/>
     	<result column="endpoint" property="endpoint"/>
     	<result column="asset" property="asset"/>
+    	<result column="pid" property="pid"/>
     </resultMap>
     
     <select id="selectAssetTypeAnalysis" resultMap="statAnalysis">
@@ -509,10 +510,16 @@
     </select>
     
     <select id="selectAssetUnhealthy" resultMap="statAnalysis">
-    	select count(DISTINCT aa.id) alarm
-		from asset_asset aa left join asset_ping ap on aa.manage_ip = ap.host
-		left join alert_message_active am on aa.id = am.asset_id
-		where (ap.`status`=0 or ap.status is null or am.state=1)
+		SELECT
+			count( DISTINCT aa.id ) AS alarm,
+			aa.pid AS pid,
+			aa.id AS asset
+		FROM
+			asset_asset aa
+		LEFT JOIN asset_ping ap ON aa.manage_ip = ap.host
+		LEFT JOIN alert_message_active am ON aa.id = am.asset_id
+		WHERE
+			( ap.`status` = 0 OR ap.STATUS IS NULL OR am.state = 1 )
 		<if test="params.dcId != null">
 			and aa.dc_id = #{params.dcId}
 		</if>
@@ -525,9 +532,8 @@
 		<if test="params.stateId != null">
 			and aa.state_id = #{params.stateId}
 		</if>
-		<if test="params.children != null and  params.children  != '' and params.children == 0">
-			and aa.pid = -1
-		</if>
+		GROUP BY
+			aa.id;
 	</select>
     
     

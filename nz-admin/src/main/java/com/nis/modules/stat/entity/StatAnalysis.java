@@ -31,4 +31,6 @@ public class StatAnalysis {
 	private Integer endpoint;
 	
 	private Integer asset;
+
+	private Integer pid;
 }
