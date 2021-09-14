@@ -124,8 +124,10 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                             map.put("msg", "DOWN");
                         }
                         String s = data.get("version");
-                        s = s.replaceAll("\\n", "");
-                        map.put("version", Integer.valueOf(s));
+                        if (StrUtil.isNotEmpty(s)) {
+                            s = s.replaceAll("\\n", "");
+                            map.put("version", Integer.valueOf(s));
+                        }
                         return map;
                     } catch (Exception e) {
                         log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
