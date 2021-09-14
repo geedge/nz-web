@@ -52,8 +52,8 @@ public interface StatDao {
 	List<StatAnalysis> selectModuleTopN(@Param("params") Map<String, Object> params);
 	
 	StatAnalysis selectEndpointTotal(@Param("params") Map<String, Object> params);
-	
-	List<StatAnalysis> selectAssetUnhealthy(@Param("params") Map<String, Object> params);
+
+	List<StatAnalysis> selectAssetUnhealthy();
 	
 	List<StatAnalysis> selectDcAssetUnhealthy();
 	

@@ -520,18 +520,6 @@
 		LEFT JOIN alert_message_active am ON aa.id = am.asset_id
 		WHERE
 			( ap.`status` = 0 OR ap.STATUS IS NULL OR am.state = 1 )
-		<if test="params.dcId != null">
-			and aa.dc_id = #{params.dcId}
-		</if>
-		<if test="params.typeId != null">
-			and aa.type_id = #{params.typeId}
-		</if>
-		<if test="params.modelId != null">
-			and aa.model_id = #{params.modelId}
-		</if>
-		<if test="params.stateId != null">
-			and aa.state_id = #{params.stateId}
-		</if>
 		GROUP BY
 			aa.id;
 	</select>

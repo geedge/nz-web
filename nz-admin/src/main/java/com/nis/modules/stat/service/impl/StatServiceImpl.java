@@ -1,19 +1,12 @@
 package com.nis.modules.stat.service.impl;
 
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetPing;
@@ -22,7 +15,6 @@ import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetPingService;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
-import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
 import com.nis.modules.module.entity.MonitorModule;
@@ -35,9 +27,13 @@ import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -244,29 +240,30 @@ public class StatServiceImpl implements StatService{
 
 	@Override
 	public StatAnalysis queryAssetHealthy(Map<String, Object> params) {
+		// 按条件查询 asset
 		List<AssetAsset> assets = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda()
 				.in(ObjectUtil.isNotEmpty(params.get("dcId")), AssetAsset::getDcId, ObjectUtil.isNotEmpty(params.get("dcId")) ? Arrays.asList(params.get("dcId").toString().split(",")) : null)
 				.in(ObjectUtil.isNotEmpty(params.get("typeId")), AssetAsset::getTypeId, ObjectUtil.isNotEmpty(params.get("typeId")) ? Arrays.asList(params.get("typeId").toString().split(",")) : null)
 				.in(ObjectUtil.isNotEmpty(params.get("modelId")), AssetAsset::getModelId, ObjectUtil.isNotEmpty(params.get("modelId")) ? Arrays.asList(params.get("modelId").toString().split(",")) : null)
 				.in(ObjectUtil.isNotEmpty(params.get("stateId")), AssetAsset::getStateId, ObjectUtil.isNotEmpty(params.get("stateId")) ? Arrays.asList(params.get("stateId").toString().split(",")) : null));
 		String childrenFlag = ObjectUtil.isNotEmpty(params.get("children")) ? params.get("children").toString() : "1";
-
-		int total, alerm, ok;
-		// ping不通 或 有告警的设备
-		List<StatAnalysis> statAnalysis = statDao.selectAssetUnhealthy(params);
+		// 总数: 按条件查询出的 asset 数量
+		int total = assets.size();
+		int alerm, ok;
+		// ping 不通 或 有告警的设备，所有 asset 包含子资产的 告警
+		List<StatAnalysis> statAnalysis = statDao.selectAssetUnhealthy();
 		Set<Integer> alermAssetIdSet = statAnalysis.stream().map(StatAnalysis::getAsset).collect(Collectors.toSet());
+		// children = 1 , 如果 子资产存在告警 则 关联父资产也 标识 告警
 		if (StrUtil.equals("1", childrenFlag)) {
-			// 包括子资产告警
-			assets = assets.stream().filter(asset -> asset.getPid() == -1).collect(Collectors.toList());
-			total = assets.size();
+			// 子资产存在告警的父资产 id set
 			Set<Integer> alermAssetPidSet = statAnalysis.stream().map(StatAnalysis::getPid).filter(tempPid -> tempPid != -1).collect(Collectors.toSet());
 			alermAssetIdSet.addAll(alermAssetPidSet);
 			alerm = (int) assets.stream().filter(asset -> alermAssetIdSet.contains(asset.getId())).count();
 			ok = (int) assets.stream().filter(asset -> !alermAssetIdSet.contains(asset.getId())).count();
 		} else {
 			// 不包括子资产告警
-			total = assets.size();
-			alerm = alermAssetIdSet.size();
+			List<Integer> assetIdList = assets.stream().map(AssetAsset::getId).collect(Collectors.toList());
+			alerm = (int) alermAssetIdSet.stream().filter(integer -> assetIdList.contains(integer)).count();
 			ok = total - alerm;
 		}
 

@@ -52,6 +52,7 @@ public class CleanJob extends QuartzJobBean {
 
         //  terminal_*
         String terminalRecordLocalRetention = sysConfigService.getValue("terminal_record_local_retention");
+        terminalRecordLocalRetention = Tool.StrUtil.emptyToDefault(terminalRecordLocalRetention, "365");
         DateTime startCleanTerminalTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(terminalRecordLocalRetention));
         sw.start();
         try {
@@ -66,6 +67,7 @@ public class CleanJob extends QuartzJobBean {
 
         // alert_rule_eval_log
         String ruleEvalLogLocalRetention = sysConfigService.getValue("alert_rule_eval_log_local_retention");
+        ruleEvalLogLocalRetention = Tool.StrUtil.emptyToDefault(ruleEvalLogLocalRetention, "30");
         DateTime startCleanRuleEvalLogTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(ruleEvalLogLocalRetention));
         sw.reset();
         sw.start();
@@ -81,6 +83,7 @@ public class CleanJob extends QuartzJobBean {
 
         // alert_rule_sched_log
         String ruleSchedLogLocalRetention = sysConfigService.getValue("alert_rule_sched_log_local_retention");
+        ruleSchedLogLocalRetention = Tool.StrUtil.emptyToDefault(ruleSchedLogLocalRetention, "30");
         DateTime startCleanRuleSchedLogTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(ruleSchedLogLocalRetention));
         sw.reset();
         sw.start();
@@ -96,8 +99,10 @@ public class CleanJob extends QuartzJobBean {
 
         // 告警消息清理开关
         String cleanAlertMessageEnable = sysConfigService.getValue("clean_alert_message_enable");
+        cleanAlertMessageEnable = Tool.StrUtil.emptyToDefault(cleanAlertMessageEnable, "0");
         if (Tool.StrUtil.equals("1", cleanAlertMessageEnable)) {
             String alertMessageLocalRetention = sysConfigService.getValue("alert_message_local_retention");
+            alertMessageLocalRetention = Tool.StrUtil.emptyToDefault(alertMessageLocalRetention, "365");
             DateTime startCleanAlertMessageTime = Tool.DateUtil.offsetDay(now, -Integer.valueOf(alertMessageLocalRetention));
             sw.reset();
             sw.start();
