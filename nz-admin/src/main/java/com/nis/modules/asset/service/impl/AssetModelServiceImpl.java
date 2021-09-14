@@ -403,9 +403,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             String chartIds = model.getChartIds();
             String chartNames = "";
             if (StrUtil.isNotEmpty(chartIds)) {
-                List<VisualChart> chartList = visualChartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, 0).in(VisualChart::getId, Arrays.asList(chartIds.split(","))));
-                for (VisualChart chart : chartList) {
-                    chartNames += chart.getName() + ",";
+                List<String> chartIdList = Arrays.asList(chartIds.split(","));
+                for (String chartIdStr : chartIdList) {
+                    VisualChart chartServiceById = visualChartService.getById(chartIdStr);
+                    if (chartServiceById != null) {
+                        chartNames += chartServiceById.getName() + ",";
+                    }
                 }
                 chartNames = StrUtil.isNotEmpty(chartNames) ? chartNames.substring(0, chartNames.length() - 1) : chartNames;
             }
