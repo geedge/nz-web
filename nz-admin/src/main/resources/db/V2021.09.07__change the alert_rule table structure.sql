@@ -2,6 +2,8 @@
  *  1. 修改 alert rule 表结构
  *  2. 修改 alert rule 导入导出表头信息
  */
+UPDATE alert_rule set method = "" where method is NULL;
+UPDATE alert_rule set receiver = "" where receiver is NULL;
 
 ALTER TABLE  `alert_rule`
 MODIFY COLUMN `summary` varchar(512) NOT NULL DEFAULT '' COMMENT '告警摘要',
