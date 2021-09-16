@@ -127,6 +127,15 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
             if (ToolUtil.isNotEmpty(dc.getPrincipal())) {
                 dc.setAdminUser(userIdAndEntityMap.get(dc.getPrincipal().longValue()));
             }
+            if (dc.getAssetNum() == null) {
+                dc.setAssetNum(0);
+            }
+            if (dc.getCabinetNum() == null) {
+                dc.setCabinetNum(0);
+            }
+            if (dc.getAlertNum() == null) {
+                dc.setAlertNum(0);
+            }
         }
     }
 
