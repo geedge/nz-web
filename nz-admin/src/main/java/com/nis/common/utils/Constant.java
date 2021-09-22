@@ -836,6 +836,10 @@ public class Constant {
 	// 配置信息 hash 分布到 global prometheus）
 	public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED = "prometheus_federation_enabled";
 
+	// prometheus 数据采集模式，只在 metrics 本地存储时有效
+	// 1：global 使用 federation job 集中收集各个 per-datacenter 数据, 2：global 使用 remote_write 集中收集各个 per-datacenter数据
+	public static final String SYSCONFIG_KEY_PROM_FEDER_MODE = "prometheus_fed_mode";
+
 	// 机柜默认大小
 	public static final String SYSCONFIG_KEY_DEFAULT_CABINETU = "default_cabinet_usize";
 
