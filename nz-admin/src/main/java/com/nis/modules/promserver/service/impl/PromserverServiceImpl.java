@@ -3,6 +3,7 @@ package com.nis.modules.promserver.service.impl;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -14,6 +15,9 @@ import com.nis.modules.asset.service.DcService;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +41,8 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 
 	@Autowired
 	private PromserverDao promserverDao;
+	@Autowired
+	private SysConfigService configService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -133,6 +139,21 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 		return server;
 	}
 
+	/**
+	 * 获取 prometheus 请求路径前缀
+	 * 本地存储使用prometheus，直接请求prometheus
+	 * @return
+	 */
+	@Override
+	public String getPromPathPrefix() {
+		String storageType = configService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+		String agentPath = configService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+		String prePath = "1".equals(storageType) ? "/prometheus/proxy" :"/cortex/proxy/prometheus";
+		String proxyPath = String.format("%s%s",agentPath, prePath);
+		return proxyPath;
+	}
+	
+	
 	@Override
 	public Integer saveOrUpdatePromserver(Promserver promserverEntity, boolean modify) {
         // 校验

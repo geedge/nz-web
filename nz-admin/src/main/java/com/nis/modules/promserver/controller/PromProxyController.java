@@ -121,14 +121,12 @@ public class PromProxyController {
 	public void requestProm(String host, int port, String path, String token, HttpServletRequest request, HttpServletResponse response) {
 //		String queryString = request.getQueryString();
 		String queryString = ReflectUtil.invoke(request, "getQueryString");
-
-		// 请求 prometheus url
-//		String url = String.format("http://%s:%s%s?%s", host, port, path, queryString);
-		// String  url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).appendPath(path).toString()+"?"+queryString;
-
+		path = path.startsWith("/") ? path : String.format("/%s", path);
+		
 		// 代理 agent cortex/prometheus/api/**
+		String promPathPrefix = promserverService.getPromPathPrefix();
 		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-		String proxyPath = String.format("%s%s%s", configEntity.getParamValue(), "/cortex/proxy/prometheus", path);
+		String proxyPath = String.format("%s%s", promPathPrefix, path);
 
 		String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
 
