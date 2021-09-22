@@ -73,7 +73,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 	 * query path 模板
 	 */
 	private final static Map<Integer, String> QUERY_PATH_FORMAT = Tool.MapUtil
-			.builder(1, "%s/cortex/proxy/prometheus/api/v1/query?query=%s&time=%s") // 指标查询 path 模板
+			.builder(1, "/api/v1/query?query=%s&time=%s") // 指标查询 path 模板
 			.put(2, "%s/loki/proxy/loki/api/v1/query?query=%s&limit=1&time=%s").build(); // 日志查询path 模板
 
 	public AlertRuleJudgeRunnable() {}
@@ -248,10 +248,16 @@ public class AlertRuleJudgeRunnable implements Runnable {
 				queryTime = queryTime * 1000 * 1000;
 			}
 		}
-
-		String agentPathPrex = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
-		String path = String.format(QUERY_PATH_FORMAT.get(type), agentPathPrex, expression,
-				queryTime == null ? "" : queryTime);
+		
+		String path = null;
+		if(type == 1) {
+			String promPathPrefix = promService.getPromPathPrefix();
+			path = String.format("%s/api/v1/query?query=%s&time=%s", promPathPrefix, expression, queryTime == null ? "" : queryTime);
+		}else if (type == 2) {
+			String agentPathPrex = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+			path = String.format("%s/loki/proxy/loki/api/v1/query?query=%s&limit=1&time=%s", agentPathPrex, expression,
+					queryTime == null ? "" : queryTime);
+		}
 		JSONObject jsonObject = promService.requestAgent(agent, path);
 		return jsonObject;
 	}

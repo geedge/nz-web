@@ -132,8 +132,8 @@ public class EndpointStateJob extends QuartzJobBean {
      * @return
      */
     private List<MonitorEndpointState> getUpMetricsEndpointStateList(Promserver promserver, List<MonitorEndpointConfig> endpointConfigList) {
-        String confagentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-        String urlPath = confagentPath + "/cortex/proxy/prometheus/api/v1/query?query=up";
+    	String promPathPrefix = promserverService.getPromPathPrefix();
+        String urlPath = promPathPrefix + "/api/v1/query?query=up";
 
         Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath(promserver, urlPath);
 
