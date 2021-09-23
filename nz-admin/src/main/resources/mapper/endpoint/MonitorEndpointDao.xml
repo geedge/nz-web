@@ -107,33 +107,32 @@
 
 	
 	<select id="queryPage" resultMap="endpoint">
-        SELECT
-        e.*,
-        m.id AS m_id,
-        m.name AS m_name,
-        m.type AS m_type,
-        a.id AS a_id,
-        a.manage_ip AS a_manage_ip,
-        a.sn AS a_sn,
-        a.purchase_date AS a_purchase_date,
-        a.dc_id AS a_dc_id,
-        a.model_id AS a_model_id,
-        a.cabinet_id AS a_cabinet_id,
-        a.NAME AS a_name,
-        p.id AS p_id,
-        p.NAME AS p_name,
-        es.state AS es_state,
-        count( DISTINCT msg.id ) AS alertNum
-        FROM
-        monitor_endpoint e
-        LEFT JOIN monitor_module m ON e.module_id = m.id
-        LEFT JOIN monitor_project p ON m.project_id = p.id
-        LEFT JOIN asset_asset a ON e.asset_id = a.id
-        LEFT JOIN monitor_endpoint_state es ON e.id = es.endpoint_id
-        LEFT JOIN alert_message_active msg ON e.id = msg.endpoint_id
+		SELECT
+			e.*,
+			m.id AS m_id,
+			m.NAME AS m_name,
+			m.type AS m_type,
+			a.id AS a_id,
+			a.manage_ip AS a_manage_ip,
+			a.sn AS a_sn,
+			a.purchase_date AS a_purchase_date,
+			a.dc_id AS a_dc_id,
+			a.model_id AS a_model_id,
+			a.cabinet_id AS a_cabinet_id,
+			a.NAME AS a_name,
+			p.id AS p_id,
+			p.NAME AS p_name,
+			es.state AS es_state,
+			msg.alertNum 
+		FROM
+			monitor_endpoint e
+			LEFT JOIN monitor_module m ON e.module_id = m.id
+			LEFT JOIN monitor_project p ON m.project_id = p.id
+			LEFT JOIN asset_asset a ON e.asset_id = a.id
+			LEFT JOIN monitor_endpoint_state es ON e.id = es.endpoint_id
+			LEFT JOIN (select endpoint_id ,count(1) as alertNum from  alert_message_active where endpoint_id is not null group by endpoint_id) msg ON e.id = msg.endpoint_id
 
         <where>
-
            <if test="params.ids != null and params.ids.length > 0">
                e.id IN
                <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">

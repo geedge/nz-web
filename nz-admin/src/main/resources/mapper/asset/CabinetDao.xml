@@ -37,15 +37,14 @@
     <select id="queryPage" resultMap="cabinetDeatil">
         SELECT
             cab.*,
-
             dc.name as dc_name,
-            count( DISTINCT asset.id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
+            asset.assetNum,
+            msg.alertNum
         FROM
             cabinet cab
         LEFT JOIN dc ON dc.id = cab.dc_id
-        LEFT JOIN asset_asset asset ON asset.cabinet_id = cab.id
-        LEFT JOIN alert_message_active msg ON asset.id = msg.asset_id
+        LEFT JOIN (select cabinet_id,count(1) as assetNum from asset_asset group by cabinet_id) asset ON asset.cabinet_id = cab.id
+        LEFT JOIN (select cabinet_id,count(1) as alertNum  from alert_message_active ama left join asset_asset aa on ama.asset_id = aa.id where ama.asset_id is not null group by aa.cabinet_id) msg ON msg.cabinet_id = cab.id
         <where>
             <if test="params.ids != null">
                 cab.id in

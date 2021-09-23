@@ -29,14 +29,14 @@
             p.id AS p_id,
             p.NAME AS p_name,
             p.remark AS p_remark,
-            count( DISTINCT me.id ) AS endpointNum,
-            count( DISTINCT me.asset_id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
+            me.endpointNum,
+            me.assetNum,
+            msg.alertNum
         FROM
             monitor_module m
         LEFT JOIN monitor_project p ON m.project_id = p.id
-        LEFT JOIN monitor_endpoint me ON m.id = me.module_id
-        LEFT JOIN alert_message_active msg ON m.id = msg.module_id
+        LEFT JOIN (select module_id ,count(1) as endpointNum,count(DISTINCT asset_id) as assetNum from monitor_endpoint group by module_id) me ON m.id = me.module_id
+        LEFT JOIN (select module_id ,count(1) as alertNum from alert_message_active where module_id is not null group by module_id) msg ON m.id = msg.module_id
         <where>
 
             <if test="params.ids != null and params.ids.length > 0">

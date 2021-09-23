@@ -20,15 +20,14 @@
     <select id="queryDcList" resultMap="dcDetail">
         SELECT
             dc.*,
-            count( DISTINCT cab.id ) AS cabinetNum,
-            count( DISTINCT asset.id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
+            cab.cabinetNum,
+            asset.assetNum,
+            msg.alertNum
         FROM
             dc dc
-            LEFT JOIN cabinet cab ON cab.dc_id = dc.id
-            LEFT JOIN asset_asset asset ON asset.dc_id = dc.id
-            LEFT JOIN alert_message_active msg ON dc.id = msg.dc_id
-
+            LEFT JOIN (select dc_id,count(1) cabinetNum from cabinet group by dc_id) cab ON cab.dc_id = dc.id
+            LEFT JOIN (select dc_id,count(1) assetNum from asset_asset group by dc_id) asset ON asset.dc_id = dc.id
+            LEFT JOIN (select dc_id,count(1) alertNum from alert_message_active where dc_id is not null group by dc_id) msg ON dc.id = msg.dc_id
         <where>
             <if test="params.ids != null">
                 dc.id in
