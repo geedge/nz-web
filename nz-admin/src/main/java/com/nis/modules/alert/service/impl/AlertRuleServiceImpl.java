@@ -365,7 +365,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
             String operator = ExcelUtils.getCellValue(row.getCell(5));
             String threshold = ExcelUtils.getCellValue(row.getCell(6));
             String unit = ExcelUtils.getCellValue(row.getCell(7));
-
+            String last = ExcelUtils.getCellValue(row.getCell(8));
             if (saveFlag) {
                 if (StringUtils.isEmpty(expr)) {
                     saveFlag = false;
@@ -409,18 +409,17 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                             this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ALERTRULE_OPERATOR_INVALIDE.getMsg());
                         }
                     }
-                }
-            }
-            String last = ExcelUtils.getCellValue(row.getCell(8));
-            if (StringUtils.isEmpty(last)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNULL.getMsg());
-            } else {
-                try {
-                    Double.valueOf(last).intValue();
-                } catch (NumberFormatException e) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
+                    if (StringUtils.isEmpty(last)) {
+                        saveFlag = false;
+                        this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNULL.getMsg());
+                    } else {
+                        try {
+                            Double.valueOf(last).intValue();
+                        } catch (NumberFormatException e) {
+                            saveFlag = false;
+                            this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), RCode.ALERTRULE_LAST_ISNOTPOSITIVE.getMsg());
+                        }
+                    }
                 }
             }
             String severity = ExcelUtils.getCellValue(row.getCell(9));
@@ -546,9 +545,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 ruleEntity.setName(alertName);
                 ruleEntity.setExpr(expr);
                 ruleEntity.setOperator(operator);
-                ruleEntity.setThreshold(Double.valueOf(threshold));
-                ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
-                ruleEntity.setLast(Double.valueOf(last).intValue());
+                ruleEntity.setThreshold(StrUtil.isNotEmpty(threshold) ? Double.valueOf(threshold) : null);
+                ruleEntity.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(StrUtil.emptyToDefault(unit,"none")));
+                ruleEntity.setLast(StrUtil.isNotEmpty(last) ? Double.valueOf(last).intValue() : null);
                 ruleEntity.setSeverityId(alertSeverityConf.getId());
                 ruleEntity.setSummary(summary);
                 ruleEntity.setDescription(description);
