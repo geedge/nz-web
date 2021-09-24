@@ -718,7 +718,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
                 	groupChart.setSpan(12);
-                	groupChart.setHeight(100);
+                	groupChart.setHeight(12);
                 	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                 	groupChart.setUpdateAt(new Date());
                 	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
@@ -1073,11 +1073,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             
             Integer groupId=0;
             String groupName = ExcelUtils.getCellValue(row.getCell(0));
+            String varType = ExcelUtils.getCellValue(row.getCell(3));
             if(StrUtil.isNotBlank(groupName)) {
                 VisualChart groupChart;
                 if (templateFlag) {
                     // template 类型，panel = 0 为 template
-                    groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+                    groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE).eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
                 } else {
                     // asset endpoint 类型，通过指定 panel group name 查找 group
                     groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
@@ -1089,13 +1090,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
                 	groupChart.setSpan(12);
-                	groupChart.setHeight(100);
+                	groupChart.setHeight(12);
                 	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                 	groupChart.setUpdateAt(new Date());
                 	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
                 	groupChart.setUnit(2);
                 	groupChart.setBuildIn(0);
                 	groupChart.setRemark("");
+                	if(templateFlag) {
+                		groupChart.setVarType(varTypeAndValMap.get(varType.trim()));
+                	}
                     groupChart.setSeq(seqUUID);
                 	visualChartService.save(groupChart);
                 }
@@ -1122,7 +1126,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
             VisualChart groupChart = null;
             if (templateFlag) {
-                groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+                groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE).eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
             } else {
                 groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
             }
@@ -1133,7 +1137,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
 
             // varType, type = template required
-            String varType = ExcelUtils.getCellValue(row.getCell(3));
+            
             if(templateFlag){
                 if (StringUtils.isEmpty(varType)) {
                     saveFlag = typeFlag = false;
