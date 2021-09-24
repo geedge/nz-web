@@ -28,7 +28,7 @@
         <select id="queryList" resultMap="sysLogEntity">
                 SELECT
                     sl.*,
-                    su.username AS username,
+                    su.name AS username,
                     sak.id AS sak_id,
                     sak.name AS sak_name
                 FROM

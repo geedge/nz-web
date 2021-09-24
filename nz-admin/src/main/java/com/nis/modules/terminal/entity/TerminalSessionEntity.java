@@ -104,6 +104,12 @@ public class TerminalSessionEntity implements Serializable {
 	@TableField(exist = false)
 	private String killUserName;
 
+	/**
+	 * 命令数量
+	 */
+	@TableField(exist = false)
+	private Integer cmdNum;
+	
 	@Override
 	public String toString() {
 		return "TerminalSessionEntity{" +

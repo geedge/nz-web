@@ -15,17 +15,27 @@
 
 
 	<select id="queryProjectList" resultMap="project">
-        SELECT
-            mp.*,
-            count( DISTINCT mm.id ) AS moduleNum,
-            count( DISTINCT me.id ) AS endpointNum,
-            count( DISTINCT me.asset_id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
-        FROM
-            monitor_project mp
-            LEFT JOIN monitor_module mm ON mp.id = mm.project_id
-            LEFT JOIN monitor_endpoint me ON mm.id = me.module_id
-            LEFT JOIN alert_message_active msg ON mp.id = msg.project_id
+		SELECT
+			mp.*,
+			IFNULL( mm.moduleNum, 0 ) AS moduleNum,
+			IFNULL( me.endpointNum, 0 ) AS endpointNum,
+			IFNULL( me.assetNum, 0 ) AS assetNum,
+			IFNULL( msg.alertNum, 0 ) AS alertNum 
+		FROM
+			monitor_project mp
+			LEFT JOIN ( SELECT project_id, count( 1 ) AS moduleNum FROM monitor_module GROUP BY project_id ) mm ON mm.project_id = mp.id
+			LEFT JOIN (
+			SELECT
+				m.project_id,
+				count( 1 ) AS endpointNum,
+				count( DISTINCT e.asset_id ) AS assetNum 
+			FROM
+				monitor_endpoint e
+				LEFT JOIN monitor_module m ON e.module_id = m.id 
+			GROUP BY
+				m.project_id 
+			) me ON mp.id = me.project_id
+			LEFT JOIN ( SELECT project_id, count( 1 ) AS alertNum FROM alert_message_active WHERE project_id IS NOT NULL GROUP BY project_id ) msg ON mp.id = msg.project_id
         <where>
             <if test="params.ids != null">
                 mp.id in
@@ -38,9 +48,9 @@
                 AND mp.name like CONCAT('%', #{params.name}, '%')
             </if>
         </where>
-
-        GROUP BY
-            mp.id
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY mp.id
+        </if>
     </select>
 	
 </mapper>

@@ -3,12 +3,14 @@
 <mapper namespace="com.nis.modules.terminal.dao.TerminalSessionDao">
 
     <select id="queryList" resultType="com.nis.modules.terminal.entity.TerminalSessionEntity">
-        SELECT
-            ts.*,su.username
-        FROM
-            terminal_session ts
-        LEFT JOIN sys_user su ON ts.user_id = su.id
-
+		SELECT
+			ts.*,
+			su.name as username,
+			cmd.cmdNum 
+		FROM
+			terminal_session ts
+			LEFT JOIN sys_user su ON ts.user_id = su.id
+			LEFT JOIN ( SELECT uuid, ( count( 1 ) - 1 ) AS cmdNum FROM terminal_cmd GROUP BY uuid ) cmd ON cmd.uuid = ts.uuid
         <where>
             <if test="params.protocol != null and params.protocol != ''">
                 ts.protocol = #{params.protocol}
@@ -55,7 +57,6 @@
             </if>
 
         </where>
-
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY ts.id DESC
         </if>

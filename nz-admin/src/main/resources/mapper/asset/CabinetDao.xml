@@ -35,17 +35,27 @@
     </resultMap>
 
     <select id="queryPage" resultMap="cabinetDeatil">
-        SELECT
-            cab.*,
-
-            dc.name as dc_name,
-            count( DISTINCT asset.id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
-        FROM
-            cabinet cab
-        LEFT JOIN dc ON dc.id = cab.dc_id
-        LEFT JOIN asset_asset asset ON asset.cabinet_id = cab.id
-        LEFT JOIN alert_message_active msg ON asset.id = msg.asset_id
+		SELECT
+			cab.*,
+			dc.NAME AS dc_name,
+			IFNULL( asset.assetNum, 0 ) AS assetNum,
+			IFNULL( msg.alertNum, 0 ) AS alertNum 
+		FROM
+			cabinet cab
+			LEFT JOIN dc ON dc.id = cab.dc_id
+			LEFT JOIN ( SELECT cabinet_id, count( 1 ) AS assetNum FROM asset_asset GROUP BY cabinet_id ) asset ON asset.cabinet_id = cab.id
+			LEFT JOIN (
+			SELECT
+				cabinet_id,
+				count( 1 ) AS alertNum 
+			FROM
+				alert_message_active ama
+				LEFT JOIN asset_asset aa ON ama.asset_id = aa.id 
+			WHERE
+				ama.asset_id IS NOT NULL 
+			GROUP BY
+			aa.cabinet_id 
+			) msg ON msg.cabinet_id = cab.id
         <where>
             <if test="params.ids != null">
                 cab.id in
@@ -65,8 +75,9 @@
                 AND cab.name LIKE CONCAT('%', #{params.name}, '%')
             </if>
         </where>
-
-        GROUP BY cab.id
+		<if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY cab.id
+        </if>
     </select>
 
     <select id="getCabinetMaxXY" resultType="java.util.Map">

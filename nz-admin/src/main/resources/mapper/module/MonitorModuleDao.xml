@@ -23,21 +23,20 @@
     </resultMap>
 
     <select id="queryPage" resultMap="module">
-        SELECT
-            m.*,
-            p.id AS p_id,
-            p.NAME AS p_name,
-            p.remark AS p_remark,
-            count( DISTINCT me.id ) AS endpointNum,
-            count( DISTINCT me.asset_id ) AS assetNum,
-            count( DISTINCT msg.id ) AS alertNum
-        FROM
-            monitor_module m
-        LEFT JOIN monitor_project p ON m.project_id = p.id
-        LEFT JOIN monitor_endpoint me ON m.id = me.module_id
-        LEFT JOIN alert_message_active msg ON m.id = msg.module_id
+		SELECT
+			m.*,
+			p.id AS p_id,
+			p.NAME AS p_name,
+			p.remark AS p_remark,
+			IFNULL( me.endpointNum, 0 ) AS endpointNum,
+			IFNULL( me.assetNum, 0 ) AS assetNum,
+			IFNULL( msg.alertNum, 0 ) AS alertNum 
+		FROM
+			monitor_module m
+			LEFT JOIN monitor_project p ON m.project_id = p.id
+			LEFT JOIN ( SELECT module_id, count( 1 ) AS endpointNum, count( DISTINCT asset_id ) AS assetNum FROM monitor_endpoint GROUP BY module_id ) me ON m.id = me.module_id
+			LEFT JOIN ( SELECT module_id, count( 1 ) AS alertNum FROM alert_message_active WHERE module_id IS NOT NULL GROUP BY module_id ) msg ON m.id = msg.module_id
         <where>
-
             <if test="params.ids != null and params.ids.length > 0">
                 m.id IN
                 <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
@@ -56,9 +55,9 @@
                 AND m.name LIKE CONCAT('%', #{params.name}, '%')
             </if>
         </where>
-
-        GROUP BY
-            m.id
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY m.id
+        </if>
     </select>
 
 

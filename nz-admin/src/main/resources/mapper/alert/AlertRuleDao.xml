@@ -42,17 +42,17 @@
     </resultMap>
 
     <select id="queryList" resultMap="alertRuleMap">
-        SELECT
-        ar.*,
-        alsc.id as alsc_id,
-        alsc.name as alsc_name,
-        alsc.color as alsc_color,
-        alsc.remark as alsc_remark,
-        COUNT(am.id) AS alertNum
-        FROM alert_rule ar
-        LEFT JOIN alert_message_active am ON ar.id = am.rule_id
-        LEFT JOIN alert_severity_conf alsc on ar.severity_id = alsc.id
-
+		SELECT
+			ar.*,
+			alsc.id AS alsc_id,
+			alsc.NAME AS alsc_name,
+			alsc.color AS alsc_color,
+			alsc.remark AS alsc_remark,
+			IFNULL( am.alertNum, 0 ) AS alertNum 
+		FROM
+			alert_rule ar
+			LEFT JOIN ( SELECT rule_id, count( 1 ) AS alertNum FROM alert_message_active GROUP BY rule_id ) am ON ar.id = am.rule_id
+			LEFT JOIN alert_severity_conf alsc ON ar.severity_id = alsc.id
         <where>
 
             <if test="params.ids != null and params.ids != ''">
@@ -115,8 +115,6 @@
                 </choose>
             </if>
         </where>
-        GROUP BY ar.id
-
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY ar.id
         </if>
