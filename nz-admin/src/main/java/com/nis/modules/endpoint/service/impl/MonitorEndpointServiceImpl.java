@@ -467,25 +467,26 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 // config
                 List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
                 if (Tool.CollectionUtil.isNotEmpty(configs)) {
-                    String metricsConfStr = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).map(MonitorEndpointConfig::getConfig).findFirst().orElse("");
-                    List<String> tempConfigList = new ArrayList<>();
-                    if (StrUtil.isNotEmpty(metricsConfStr)) {
-                        tempConfigList.add(metricsConfStr);
+                    MonitorEndpointConfig metricsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
+                    List<Map> tempConfigList = new ArrayList<>();
+                    if (metricsEndpointConf != null) {
+                        Map metricsMap = new HashMap();
+                        metricsMap.put("type", Constant.MonitorConfType.METRICS.getValue());
+                        metricsMap.put("config", JSONObject.parseObject(StrUtil.emptyToDefault(metricsEndpointConf.getConfig(), "")));
+                        metricsMap.put("enable", metricsEndpointConf.getEnable());
+                        tempConfigList.add(metricsMap);
                     }
 
-                    List<String> logsConfigsMap = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.LOGS.getValue().equals(monitorEndpointConfig.getType())).map(MonitorEndpointConfig::getConfig).collect(Collectors.toList());
-                    if (Tool.CollectionUtil.isNotEmpty(logsConfigsMap)) {
-                        List<Map> confMaps = new ArrayList<>();
-                        for (String confStr : logsConfigsMap) {
-                            confMaps.add(JSONObject.parseObject(confStr));
-                        }
+                    MonitorEndpointConfig logsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.LOGS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
+                    if (logsEndpointConf != null) {
                         Map logsMap = new HashMap();
                         logsMap.put("type", Constant.MonitorConfType.LOGS.getValue());
-                        logsMap.put("config", confMaps);
-                        tempConfigList.add(JSONObject.toJSONString(logsMap));
+                        logsMap.put("config", JSONObject.parseArray(StrUtil.emptyToDefault(logsEndpointConf.getConfig(), "")));
+                        logsMap.put("enable", logsEndpointConf.getEnable());
+                        tempConfigList.add(logsMap);
                     }
 
-                    row1.createCell(4).setCellValue(tempConfigList.toString());
+                    row1.createCell(4).setCellValue(JSONObject.toJSONString(tempConfigList));
                 }
 
                 // 设置单元格样式
