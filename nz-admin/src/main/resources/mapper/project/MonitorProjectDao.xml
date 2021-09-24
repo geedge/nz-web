@@ -48,9 +48,6 @@
                 AND mp.name like CONCAT('%', #{params.name}, '%')
             </if>
         </where>
-
-        GROUP BY
-            mp.id
     </select>
 	
 </mapper>

@@ -182,9 +182,6 @@
            </if>
 
        </where>
-
-        GROUP BY
-            e.id
     </select>
 
     <select id="getSuspendedEndpointIdList" resultType="java.lang.Integer">

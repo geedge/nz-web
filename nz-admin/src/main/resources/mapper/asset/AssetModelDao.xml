@@ -45,8 +45,6 @@
 		       		#{id}
 			    </foreach>
             </if>
-
-        GROUP BY model.id
     </select>
 
     <select id="nzAssetNumsMetric" resultType="com.nis.modules.metric.dto.MetricsDto">

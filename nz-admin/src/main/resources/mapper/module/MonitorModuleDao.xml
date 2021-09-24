@@ -61,9 +61,6 @@
                 AND m.type = #{params.type}
             </if>
         </where>
-
-        GROUP BY
-            m.id
     </select>
 
 

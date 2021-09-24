@@ -56,9 +56,6 @@
                 AND dc.principal = #{params.principal}
             </if>
         </where>
-
-        GROUP BY
-            dc.id
     </select>
 
 </mapper>

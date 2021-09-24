@@ -64,8 +64,6 @@
                 AND cab.name LIKE CONCAT('%', #{params.name}, '%')
             </if>
         </where>
-
-        GROUP BY cab.id
     </select>
 
     <select id="getCabinetMaxXY" resultType="java.util.Map">

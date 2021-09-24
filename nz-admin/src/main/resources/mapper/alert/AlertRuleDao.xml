@@ -105,7 +105,6 @@
                 </choose>
             </if>
         </where>
-        GROUP BY ar.id
     </select>
 
     <select id="nzAlertMumsMetric" resultType="com.nis.modules.metric.dto.MetricsDto">
