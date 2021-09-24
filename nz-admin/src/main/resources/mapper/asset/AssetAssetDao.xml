@@ -102,8 +102,8 @@
 			assp.STATUS AS assp_status,
 			assp.rtt AS assp_rtt,
 			assp.last_update AS assp_lastUpdate,
-			me.endpointNum,
-			msg.alertNum 
+			IFNULL(me.endpointNum,0) AS endpointNum,
+			IFNULL(msg.alertNum,0)  AS alertNum 
 		FROM
 			asset_asset asset
 			LEFT JOIN asset_state_conf state ON asset.state_id = state.id

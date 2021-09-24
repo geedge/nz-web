@@ -23,7 +23,7 @@
 			model.*,
 			brand.id AS b_id,
 			brand.NAME AS b_name,
-			asset.assetNum 
+			IFNULL(asset.assetNum ,0) AS assetNum
 		FROM
 			asset_model model
 			LEFT JOIN asset_brand brand ON model.brand_id = brand.id

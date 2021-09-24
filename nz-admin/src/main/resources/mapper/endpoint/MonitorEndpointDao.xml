@@ -123,7 +123,7 @@
 			p.id AS p_id,
 			p.NAME AS p_name,
 			es.state AS es_state,
-			msg.alertNum 
+			IFNULL(msg.alertNum,0) AS alertNum
 		FROM
 			monitor_endpoint e
 			LEFT JOIN monitor_module m ON e.module_id = m.id

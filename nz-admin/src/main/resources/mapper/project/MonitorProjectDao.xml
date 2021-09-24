@@ -17,10 +17,10 @@
 	<select id="queryProjectList" resultMap="project">
         SELECT
 			mp.*,
-			mm.moduleNum,
-			me.endpointNum,
-			me.assetNum,
-			msg.alertNum 
+			IFNULL(mm.moduleNum,0) AS moduleNum,
+			IFNULL(me.endpointNum,0) AS endpointNum,
+			IFNULL(me.assetNum,0) AS assetNum,
+			IFNULL(msg.alertNum,0) AS alertNum
 		FROM
 			monitor_project mp
 			LEFT JOIN ( SELECT project_id, count( 1 ) AS moduleNum FROM monitor_module GROUP BY project_id ) mm ON mm.project_id = mp.id

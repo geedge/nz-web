@@ -46,7 +46,7 @@
 			alsc.color AS alsc_color,
 			alsc.remark AS alsc_remark,
 			ar.build_in AS buildIn,
-			am.alertNum 
+			IFNULL(am.alertNum,0)  AS alertNum
 		FROM
 			alert_rule ar
 			LEFT JOIN (select rule_id,count(1) as alertNum from alert_message_active GROUP BY rule_id) am ON ar.id = am.rule_id

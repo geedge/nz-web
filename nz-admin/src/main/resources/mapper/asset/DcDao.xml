@@ -20,9 +20,9 @@
     <select id="queryDcList" resultMap="dcDetail">
         SELECT
             dc.*,
-            cab.cabinetNum,
-            asset.assetNum,
-            msg.alertNum
+            IFNULL(cab.cabinetNum,0) AS cabinetNum,
+            IFNULL(asset.assetNum,0) AS assetNum,
+            IFNULL(msg.alertNum,0) AS alertNum
         FROM
             dc dc
             LEFT JOIN (select dc_id,count(1) cabinetNum from cabinet group by dc_id) cab ON cab.dc_id = dc.id

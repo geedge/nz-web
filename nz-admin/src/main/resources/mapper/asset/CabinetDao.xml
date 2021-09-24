@@ -38,8 +38,8 @@
         SELECT
             cab.*,
             dc.name as dc_name,
-            asset.assetNum,
-            msg.alertNum
+            IFNULL(asset.assetNum,0) AS assetNum,
+            IFNULL(msg.alertNum,0) AS alertNum
         FROM
             cabinet cab
         LEFT JOIN dc ON dc.id = cab.dc_id
