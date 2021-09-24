@@ -120,7 +120,7 @@
 			LEFT JOIN cabinet cab ON asset.cabinet_id = cab.id
 			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
 			LEFT JOIN asset_talon_status talon ON asset.id = talon.asset_id
-			LEFT JOIN ( SELECT asset_id, count( 1 ) AS endpointNum FROM monitor_endpoint GROUP BY asset_id ) me ON asset.id = me.asset_id
+			LEFT JOIN ( SELECT asset_id, count( 1 ) AS endpointNum, GROUP_CONCAT(DISTINCT module_id ) module_ids FROM monitor_endpoint GROUP BY asset_id ) me ON asset.id = me.asset_id
 			LEFT JOIN ( SELECT asset_id, count( 1 ) AS alertNum FROM alert_message_active WHERE asset_id IS NOT NULL GROUP BY asset_id ) msg ON asset.id = msg.asset_id
         <where>
 
@@ -186,16 +186,16 @@
              </if>
 
             <if test="params.moduleIds != null and params.moduleIds.size > 0">
-                AND me.module_id IN
-                <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator="," close=")">
-                    #{moduleId}
+                AND
+                <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator=" OR " close=")">
+                	FIND_IN_SET(#{moduleId},me.module_ids )
                 </foreach>
             </if>
 
             <if test="params.innerModuleIdsByPorjects != null and params.innerModuleIdsByPorjects.size > 0">
-                AND me.module_id IN
-                <foreach collection="params.innerModuleIdsByPorjects" item="moduleId" index="no" open="(" separator="," close=")">
-                    #{moduleId}
+                AND
+                <foreach collection="params.innerModuleIdsByPorjects" item="moduleId" index="no" open="(" separator=" OR " close=")">
+                    FIND_IN_SET(#{moduleId},me.module_ids )
                 </foreach>
             </if>
 
