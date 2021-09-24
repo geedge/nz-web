@@ -62,7 +62,6 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
-    
 	@Autowired
     private TransactionDefinition transactionDefinition;
     
@@ -98,11 +97,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         
         // 查询当前panel下的chart数量并且进行赋值
-        Map<Integer, Integer> chartNums = visualChartService.queryChartNum();
-        for(VisualPanel visualPanel : panelList) {
-        	Integer chartNum = ObjectUtil.isEmpty(chartNums.get(visualPanel.getId()))?0:chartNums.get(visualPanel.getId());
-        	visualPanel.setChartNum(chartNum);
-        }
+//        Map<Integer, Integer> chartNums = visualChartService.queryChartNum();
+//        for(VisualPanel visualPanel : panelList) {
+//        	Integer chartNum = ObjectUtil.isEmpty(chartNums.get(visualPanel.getId()))?0:chartNums.get(visualPanel.getId());
+//        	visualPanel.setChartNum(chartNum);
+//        }
         return panelList;
     }
 

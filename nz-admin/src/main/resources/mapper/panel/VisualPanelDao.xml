@@ -24,7 +24,7 @@
 			childPanel.*,
 			fatherPanel.id AS parent_id,
 			fatherPanel.NAME AS parent_name,
-			IFNULL( chart.chartNum, 0 ) AS chartNum 
+			IFNULL( chart.chartNum, 0 ) AS chart_num 
 		FROM
 			visual_panel childPanel
 			LEFT JOIN visual_panel fatherPanel ON childPanel.pid = fatherPanel.id
@@ -39,7 +39,7 @@
 			fatherPanel.id AS parent_id,
 			fatherPanel.NAME AS parent_name,
 			childrenPanel.*,
-			IFNULL( chart.chartNum, 0 ) AS chartNum 
+			IFNULL( chart.chartNum, 0 ) AS chart_num 
 		FROM
 			visual_panel pan
 			LEFT JOIN visual_panel fatherPanel ON pan.pid = fatherPanel.id
