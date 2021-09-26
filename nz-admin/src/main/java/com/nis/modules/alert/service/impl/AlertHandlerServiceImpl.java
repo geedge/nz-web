@@ -1,7 +1,27 @@
 package com.nis.modules.alert.service.impl;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -9,10 +29,22 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.*;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
-import com.nis.modules.alert.entity.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertSeverityConf;
+import com.nis.modules.alert.entity.AlertSilenceConf;
+import com.nis.modules.alert.entity.AlertSilenceMatcher;
+import com.nis.modules.alert.entity.AlertSilenceMessageRel;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertHandlerService;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -31,22 +63,9 @@ import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.log.Log;
 
 @Service("alertMessageHandlerService")
 public class AlertHandlerServiceImpl implements AlertHandlerService {
@@ -448,24 +467,54 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@SuppressWarnings("all")
 	public Map<String,List> queryMessageGroupBy(Map<String,Object> params) {
 		Map<String,List> result = Tool.MapUtil.newHashMap();
+		QueryWrapper wrapper = new QueryWrapper().select("id","name");
+		wrapper.orderByAsc("name");
 		//dc
-		List<Map> dcList = msgHandlerDao.queryAlertMessageGroupBy("am.dc_id", "dc.name", params);
+		List<Map<String, Object>> dcList = dcService.listMaps(wrapper);
+		List<Map<String, Object>> dcGroupList = msgHandlerDao.queryAlertMessageGroupBy("am.dc_id", "dc.name", params);
+		this.alertMessageGroupBysetNum(dcList, dcGroupList);
 		result.put("dc", dcList);
 		//project
-		List<Map> projectList = msgHandlerDao.queryAlertMessageGroupBy("am.project_id", "p.name", params);
+		List<Map<String, Object>> projectList = projectService.listMaps(wrapper);
+		List<Map<String, Object>> projecGrouptList = msgHandlerDao.queryAlertMessageGroupBy("am.project_id", "p.name", params);
+		this.alertMessageGroupBysetNum(projectList, projecGrouptList);
 		result.put("project", projectList);
 		//module
-		List<Map> moduleList = msgHandlerDao.queryAlertMessageGroupBy("am.module_id", "m.name", params);
+		List<Map<String, Object>> moduleList = moduleService.listMaps(wrapper);
+		List<Map<String, Object>> moduleGroupList = msgHandlerDao.queryAlertMessageGroupBy("am.module_id", "m.name", params);
+		this.alertMessageGroupBysetNum(moduleList, moduleGroupList);
 		result.put("module", moduleList);
 		//rule
-		List<Map> ruleList = msgHandlerDao.queryAlertMessageGroupBy("am.rule_id", "ar.name", params);
+		List<Map<String, Object>> ruleList = alertRuleService.listMaps(wrapper);
+		List<Map<String, Object>> ruleGroupList = msgHandlerDao.queryAlertMessageGroupBy("am.rule_id", "ar.name", params);
+		this.alertMessageGroupBysetNum(ruleList, ruleGroupList);
 		result.put("rule", ruleList);
 		//priority
-		List<Map> priorityList = msgHandlerDao.queryAlertMessageGroupBy("am.severity_id", "alsc.name", params);
-		result.put("severity", priorityList);	
+		wrapper.select("id","name","color");
+		List<Map<String, Object>> severityList = alertSeverityService.listMaps(wrapper);
+		List<Map<String, Object>> severityGroupList = msgHandlerDao.queryAlertMessageGroupBy("am.severity_id", "alsc.name", params);
+		this.alertMessageGroupBysetNum(severityList, severityGroupList);
+		result.put("severity", severityList);	
 		return result;
 	}
 	
+    private void alertMessageGroupBysetNum(List<Map<String,Object>> allList,List<Map<String,Object>> groupList) {
+    	if(Tool.CollUtil.isEmpty(groupList)) {
+    		return;
+    	}
+    	Map<String,Object> groupMap = new HashMap<String, Object>();
+    	for(Map<String,Object> m : groupList) {
+    		groupMap.put(String.valueOf(m.get("id")), m.get("num"));
+    	}
+    	for(Map<String,Object> m : allList) {
+    		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
+    	}
+    	allList.sort((Map<String,Object> m1, Map<String,Object> m2) -> {
+    		Integer i1 = Integer.valueOf(String.valueOf(m1.getOrDefault("num", 0)));
+    		Integer i2 = Integer.valueOf(String.valueOf(m2.getOrDefault("num", 0)));
+    		return Integer.compare(i2, i1);
+    	});
+    }
 	/**
 	 * 删除告警消息
 	 */

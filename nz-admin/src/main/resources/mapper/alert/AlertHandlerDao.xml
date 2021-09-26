@@ -277,10 +277,6 @@
 	<select id="queryAlertMessageGroupBy" resultType="java.util.Map">
 		SELECT
 			${columnId} AS id,
-			${columnName} AS name,
-			<if test="columnId == 'am.severity_id'">
-				alsc.color AS color,
-			</if>
 			count(1) AS num
 		FROM
 			${params.tableName} am

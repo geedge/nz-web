@@ -382,13 +382,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     @Override
     public Map<String,List> queryAssetGroupBy(Map<String, Object> params){
     	Map<String,List> result = new HashMap<String, List>();
+    	QueryWrapper wrapper = new QueryWrapper().select("id","name");
+		wrapper.orderByAsc("name");
     	//dc
-    	List<Map<String, Object>> dcList = dcService.listMaps();
+    	List<Map<String, Object>> dcList = dcService.listMaps(wrapper);
     	List<Map<String,Object>> dcGroupList = assetDao.queryAssetGroupBy("asset.dc_id", params);
     	this.assetGroupBysetNum(dcList, dcGroupList);
     	result.put("dc", dcList);
     	//type
-    	List<Map<String, Object>> typeList = typeConfService.listMaps();
+    	List<Map<String, Object>> typeList = typeConfService.listMaps(wrapper);
     	List<Map<String,Object>> typeGroupList = assetDao.queryAssetGroupBy("asset.type_id", params);
     	this.assetGroupBysetNum(typeList, typeGroupList);
     	result.put("type", typeList);
@@ -398,7 +400,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	brandList.forEach(brand -> {
     		brandMap.put(brand.getId().toString(), brand);
     	});
-    	List<Map<String, Object>> modelList = modelService.listMaps();
+    	QueryWrapper modelWrapper = new QueryWrapper().select("id","name","brand_id");
+    	modelWrapper.orderByAsc("name");
+    	List<Map<String, Object>> modelList = modelService.listMaps(modelWrapper);
     	modelList.forEach(model -> {
     		AssetBrand brand = brandMap.get(String.valueOf(model.get("brand_id")));
     		model.put("brand", brand);
@@ -413,7 +417,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	Map<String, Object> downMap = Tool.MapUtil.newHashMap();
     	downMap.put("id", 0);
     	downMap.put("name", "down");
-    	List<Map<String, Object>> pingList = Tool.ListUtil.of(upMap,downMap);
+    	List<Map<String, Object>> pingList = Tool.ListUtil.toList(upMap,downMap);
     	List<Map<String,Object>> pingGroupList = assetDao.queryAssetGroupBy("assp.status", params);
     	this.assetGroupBysetNum(pingList, pingGroupList);
     	result.put("ping", pingList);
@@ -435,6 +439,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	for(Map<String,Object> m : allList) {
     		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
     	}
+    	//排序
+    	allList.sort((Map<String,Object> m1, Map<String,Object> m2) -> {
+    		Integer i1 = Integer.valueOf(String.valueOf(m1.getOrDefault("num", 0)));
+    		Integer i2 = Integer.valueOf(String.valueOf(m2.getOrDefault("num", 0)));
+    		return Integer.compare(i2, i1);
+    	});
     }
     
     private void handleResuleList(List<AssetAsset> assetList) {
