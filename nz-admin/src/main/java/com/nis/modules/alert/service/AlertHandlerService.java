@@ -72,7 +72,13 @@ public interface AlertHandlerService  {
 	 * @return
 	 */
 	PageUtils queryMessagePage(Map<String, Object> params);
-
+	
+	/**
+	 * 根据查询条件 返回告警消息统计
+	 * @param params
+	 * @return
+	 */
+	Map<String,List> queryMessageGroupBy(Map<String,Object> params);
 
 	void exportMessage(HttpServletResponse response, Map<String, Object> params);
 

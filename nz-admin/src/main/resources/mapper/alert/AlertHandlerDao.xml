@@ -273,6 +273,110 @@
 		</if>
 	</select>
 
+<!-- 页面查询告警消息 -->
+	<select id="queryAlertMessageGroupBy" resultType="java.util.Map">
+		SELECT
+			${columnId} AS id,
+			${columnName} AS name,
+			<if test="columnId == 'severity_id'">
+				alsc.color AS color,
+			</if>
+			count(1) AS num
+		FROM
+			${params.tableName} am
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN monitor_project p on am.project_id = p.id
+		LEFT JOIN monitor_module m on am.module_id = m.id
+		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
+		LEFT JOIN asset_asset ass on am.asset_id = ass.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		LEFT JOIN dc dc on am.dc_id = dc.id
+		<where>
+			${columnId} is not null
+			<if test="params.ruleName != null and params.ruleName != ''">
+				AND ar.name like concat('%', #{params.ruleName}, '%')
+			</if>
+			<if test="params.severityIds != null and params.severity != ''">
+				AND am.severity_id in
+				<foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.summary != null and params.summary != ''">
+				AND am.summary like concat('%', #{params.summary}, '%')
+			</if>
+
+			<if test="params.description != null and params.description != ''">
+				AND am.description like concat('%', #{params.description}, '%')
+			</if>
+
+			<if test="params.ids != null and params.ids != ''">
+				am.id in
+				<foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+            <if test="params.state != null and params.state != ''">
+                AND am.state=#{params.state}
+            </if>
+			<if test="params.startAt != null">
+				AND am.start_at &gt;= #{params.startAt}
+			</if>
+			<if test="params.endAt != null">
+				AND am.start_at &lt;= #{params.endAt}
+			</if>
+			<if test="params.ruleIds != null and params.ruleIds != ''">
+				AND am.rule_id in
+				<foreach collection="params.ruleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.projectIds != null and params.projectIds != ''">
+				AND am.project_id in
+				<foreach collection="params.projectIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.moduleIds != null and params.moduleIds != ''">
+				AND am.module_id in
+				<foreach collection="params.moduleIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.endpointIds != null and params.endpointIds != ''">
+				AND am.endpoint_id in
+				<foreach collection="params.endpointIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.assetIds != null and params.assetIds != ''">
+				AND am.asset_id in
+				<foreach collection="params.assetIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.dcIds != null and params.dcIds != ''">
+				AND am.dc_id in
+				<foreach collection="params.dcIds.split(',')" item="id" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</if>
+			<if test="params.labels != null and params.labels != ''">
+				AND am.labels like concat('%', #{params.labels}, '%')
+			</if>
+			<if test="params.endpointName != null and params.endpointName != ''">
+				AND e.name LIKE concat('%', #{params.endpointName}, '%')
+			</if>
+			<if test="params.assetName != null and params.assetName != ''">
+				AND ass.name LIKE CONCAT('%', #{params.assetName}, '%')
+			</if>
+			<if test="params.asset != null and params.asset != ''">
+				AND ass.name LIKE CONCAT('%', #{params.asset}, '%')
+			</if>
+		</where>
+		GROUP BY ${columnId}
+		ORDER BY num DESC
+	</select>
 
 	<select id="selectAlertSilencMessageIdByDcIds" resultType="java.lang.Long">
 		SELECT id FROM alert_message_silence WHERE dc_id IN
