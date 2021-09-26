@@ -1,15 +1,17 @@
 package com.nis.modules.asset.service;
 
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.panel.entity.VisualChart;
-import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletResponse;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 资产 service
@@ -23,6 +25,8 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     PageUtils queryAssetPage(Map<String, Object> params);
 
+    Map<String,List> queryAssetGroupBy(Map<String, Object> params);
+    
     Integer saveAsset(AssetAsset asset);
 
     Integer updateAsset(AssetAsset asset);

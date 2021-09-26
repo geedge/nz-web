@@ -1,8 +1,47 @@
 package com.nis.modules.asset.service.impl;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.snmp4j.smi.TimeTicks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -10,20 +49,51 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.RuntimeUtil;
+import com.nis.common.utils.SnmpUtil;
+import com.nis.common.utils.SshUtil;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
 import com.nis.modules.asset.dao.CabinetDao;
-import com.nis.modules.asset.entity.*;
-import com.nis.modules.asset.service.*;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetBrand;
+import com.nis.modules.asset.entity.AssetFeature;
+import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.asset.entity.AssetFieldValue;
+import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.entity.AssetPing;
+import com.nis.modules.asset.entity.AssetStateConf;
+import com.nis.modules.asset.entity.AssetTypeConf;
+import com.nis.modules.asset.entity.Cabinet;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetBrandService;
+import com.nis.modules.asset.service.AssetFeatureService;
+import com.nis.modules.asset.service.AssetFieldMetaService;
+import com.nis.modules.asset.service.AssetFieldValueService;
+import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.asset.service.AssetPingService;
+import com.nis.modules.asset.service.AssetStateConfService;
+import com.nis.modules.asset.service.AssetTypeConfService;
+import com.nis.modules.asset.service.CabinetService;
+import com.nis.modules.asset.service.DcService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -43,31 +113,10 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.snmp4j.smi.TimeTicks;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 /**
  * 资产    serviceImpl
@@ -330,6 +379,64 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return new PageUtils(page);
     }
 
+    @Override
+    public Map<String,List> queryAssetGroupBy(Map<String, Object> params){
+    	Map<String,List> result = new HashMap<String, List>();
+    	//dc
+    	List<Map<String, Object>> dcList = dcService.listMaps();
+    	List<Map<String,Object>> dcGroupList = assetDao.queryAssetGroupBy("asset.dc_id", params);
+    	this.assetGroupBysetNum(dcList, dcGroupList);
+    	result.put("dc", dcList);
+    	//type
+    	List<Map<String, Object>> typeList = typeConfService.listMaps();
+    	List<Map<String,Object>> typeGroupList = assetDao.queryAssetGroupBy("asset.type_id", params);
+    	this.assetGroupBysetNum(typeList, typeGroupList);
+    	result.put("type", typeList);
+    	//model
+    	List<AssetBrand> brandList = brandService.list();
+    	Map<String,AssetBrand> brandMap = Tool.MapUtil.newHashMap();
+    	brandList.forEach(brand -> {
+    		brandMap.put(brand.getId().toString(), brand);
+    	});
+    	List<Map<String, Object>> modelList = modelService.listMaps();
+    	modelList.forEach(model -> {
+    		AssetBrand brand = brandMap.get(String.valueOf(model.get("brand_id")));
+    		model.put("brand", brand);
+    	});
+    	List<Map<String,Object>> modelGroupList = assetDao.queryAssetGroupBy("asset.model_id", params);
+    	this.assetGroupBysetNum(modelList, modelGroupList);
+    	result.put("model", modelList);
+    	//ping
+    	Map<String, Object> upMap = Tool.MapUtil.newHashMap();
+    	upMap.put("id", 1);
+    	upMap.put("name", "up");
+    	Map<String, Object> downMap = Tool.MapUtil.newHashMap();
+    	downMap.put("id", 0);
+    	downMap.put("name", "down");
+    	List<Map<String, Object>> pingList = Tool.ListUtil.of(upMap,downMap);
+    	List<Map<String,Object>> pingGroupList = assetDao.queryAssetGroupBy("assp.status", params);
+    	this.assetGroupBysetNum(pingList, pingGroupList);
+    	result.put("ping", pingList);
+    	//label
+    	List<Map<String,Object>> metaGroupList = assetDao.queryAssetGroupBy("fvm.meta_id", params);
+    	metaGroupList = metaGroupList.stream().filter(map -> map.get("id") != null).collect(Collectors.toList());
+    	result.put("meta", metaGroupList);
+		return result;
+    }
+    
+    private void assetGroupBysetNum(List<Map<String,Object>> allList,List<Map<String,Object>> groupList) {
+    	if(Tool.CollUtil.isEmpty(groupList)) {
+    		return;
+    	}
+    	Map<String,Object> groupMap = new HashMap<String, Object>();
+    	for(Map<String,Object> m : groupList) {
+    		groupMap.put(String.valueOf(m.get("id")), m.get("num"));
+    	}
+    	for(Map<String,Object> m : allList) {
+    		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
+    	}
+    }
+    
     private void handleResuleList(List<AssetAsset> assetList) {
         List<SysUserEntity> userList = sysUserDao.selectList(null);
         Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));

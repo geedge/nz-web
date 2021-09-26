@@ -238,6 +238,125 @@
         </if>
     </select>
     
+    <select id="queryAssetGroupBy" resultType="java.util.Map">
+		SELECT
+			${column} AS id,
+			<if test="column == 'fvm.meta_id'">
+				fvm.name AS name,
+				fvm.val AS option,
+			</if>
+			count(DISTINCT asset.id) AS num 
+		FROM
+			asset_asset asset
+			LEFT JOIN asset_ping assp ON asset.id = assp.asset_id
+			LEFT JOIN asset_field_value fv ON asset.id = fv.asset_id
+			LEFT JOIN (select fv.meta_id,fv.`value` as val,fm.name, fv.asset_id from asset_field_value fv LEFT JOIN asset_field_meta fm on fv.meta_id = fm.id where fm.search = 1 AND fv.value != '' GROUP BY fv.meta_id,fv.`value`,fv.asset_id ) fvm ON asset.id = fvm.asset_id
+        <where>
+             <if test="params.ids != null">
+                 asset.id in 
+					<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+			       		#{id}
+				     </foreach>
+             </if>
+             <if test="params.sn != null and params.sn != ''">
+                 AND asset.sn like CONCAT('%', #{params.sn}, '%')
+             </if>
+             <if test="params.name != null and params.name != ''">
+                 AND asset.name like CONCAT('%', #{params.name}, '%')
+             </if>
+             <if test="params.manageIp != null and params.manageIp != ''">
+                 AND asset.manage_ip like CONCAT('%', #{params.manageIp}, '%')
+             </if>
+             <if test="params.brandIds != null and params.brandIds.size > 0">
+                 AND asset.brand_id IN
+                 <foreach collection="params.brandIds" item="brandId" index="no" open="(" separator="," close=")">
+                     #{brandId}
+                 </foreach>
+             </if>
+             <if test="params.modelIds != null and params.modelIds.size > 0">
+                 AND asset.model_id IN
+                 <foreach collection="params.modelIds" item="modelId" index="no" open="(" separator="," close=")">
+                     #{modelId}
+                 </foreach>
+             </if>
+             <if test="params.dcIds != null and params.dcIds.size > 0">
+                 AND asset.dc_id IN
+                 <foreach collection="params.dcIds" item="dcId" index="no" open="(" separator="," close=")">
+                     #{dcId}
+                 </foreach>
+             </if>
+             <if test="params.cabinetIds != null and params.cabinetIds.size > 0">
+                 AND asset.cabinet_id IN
+                 <foreach collection="params.cabinetIds" item="cabId" index="no" open="(" separator="," close=")">
+                     #{cabId}
+                 </foreach>
+             </if>
+             <if test="params.typeIds != null and params.typeIds.size > 0">
+                 AND asset.type_id IN
+                 <foreach collection="params.typeIds" item="typeId" index="no" open="(" separator="," close=")">
+                     #{typeId}
+                 </foreach>
+             </if>
+             <if test="params.stateIds != null and params.stateIds.size > 0">
+                 AND asset.state_id IN
+                 <foreach collection="params.stateIds" item="stateId" index="no" open="(" separator="," close=")">
+                     #{stateId}
+                 </foreach>
+             </if>
+            <if test="params.moduleIds != null and params.moduleIds.size > 0">
+                AND
+                <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator=" OR " close=")">
+                	FIND_IN_SET(#{moduleId},me.module_ids )
+                </foreach>
+            </if>
+            <if test="params.innerModuleIdsByPorjects != null and params.innerModuleIdsByPorjects.size > 0">
+                AND
+                <foreach collection="params.innerModuleIdsByPorjects" item="moduleId" index="no" open="(" separator=" OR " close=")">
+                    FIND_IN_SET(#{moduleId},me.module_ids )
+                </foreach>
+            </if>
+            <if test="params.innerAssetIdsByFields != null and params.innerAssetIdsByFields.size > 0">
+                AND asset.id IN
+                <foreach collection="params.innerAssetIdsByFields" item="tmplId" index="no" open="(" separator="," close=")">
+                    #{tmplId}
+                </foreach>
+            </if>
+
+            <if test="params.ping != null and params.ping.size > 0">
+                AND assp.status IN
+                 <foreach collection="params.ping" item="ps" index="no" open="(" separator="," close=")">
+                     #{ps}
+                 </foreach>
+            </if>
+            
+            <if test="params.pids != null and params.pids.size > 0">
+                AND asset.pid IN
+                 <foreach collection="params.pids" item="pid" index="no" open="(" separator="," close=")">
+                     #{pid}
+                 </foreach>
+            </if>
+            
+            <if test="params.authProtocol != null">
+                AND type.auth_protocol = #{params.authProtocol}
+            </if>
+
+            <if test="params.vmh != null and params.vmh != ''">
+                AND type.vmh = #{params.vmh}
+            </if>
+
+            <if test="params.vm != null and params.vm != ''">
+                AND type.vm = #{params.vm}
+            </if>
+         </where>
+         GROUP BY  
+         <if test="column != 'fvm.meta_id'">
+         	${column}
+         </if>
+         
+         <if test="column == 'fvm.meta_id'">
+			fvm.meta_id,fvm.val
+		 </if>
+    </select>
     <update id="updateAssetStateBatch">
     	update asset_asset
     	<set>
