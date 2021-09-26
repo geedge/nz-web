@@ -1,6 +1,6 @@
 package com.nis.modules.alert.controller;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -57,7 +57,13 @@ public class AlertMessageController {
     		throw new NZException(RCode.ERROR);
     	}
         PageUtils page = handlerService.queryMessagePage(params);
-		return R.ok(page);
+        R result = R.ok(page);
+        Object statFlag = params.getOrDefault("statistics", 0);
+        if(Tool.ObjectUtil.equal("1", String.valueOf(statFlag))) {
+        	Map<String, List> messageGroupBy = handlerService.queryMessageGroupBy(params);
+        	result.put("statistics", messageGroupBy);
+        }
+		return result;
     }
 
 

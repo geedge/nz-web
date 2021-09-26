@@ -440,6 +440,33 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	}
 
 	/**
+	 * 根据查询条件 返回告警消息统计
+	 * @param params
+	 * @return
+	 */
+	@Override
+	@SuppressWarnings("all")
+	public Map<String,List> queryMessageGroupBy(Map<String,Object> params) {
+		Map<String,List> result = Tool.MapUtil.newHashMap();
+		//dc
+		List<Map> dcList = msgHandlerDao.queryAlertMessageGroupBy("am.dc_id", "dc.name", params);
+		result.put("dc", dcList);
+		//project
+		List<Map> projectList = msgHandlerDao.queryAlertMessageGroupBy("am.project_id", "p.name", params);
+		result.put("project", projectList);
+		//module
+		List<Map> moduleList = msgHandlerDao.queryAlertMessageGroupBy("am.module_id", "m.name", params);
+		result.put("module", moduleList);
+		//rule
+		List<Map> ruleList = msgHandlerDao.queryAlertMessageGroupBy("am.rule_id", "ar.name", params);
+		result.put("rule", ruleList);
+		//priority
+		List<Map> priorityList = msgHandlerDao.queryAlertMessageGroupBy("am.severity_id", "alsc.name", params);
+		result.put("severity", priorityList);	
+		return result;
+	}
+	
+	/**
 	 * 删除告警消息
 	 */
 	@Override

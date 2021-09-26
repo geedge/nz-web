@@ -104,6 +104,7 @@ public interface AlertHandlerDao {
 	 */
 	List<AlertMessageEntity> queryList(IPage page, Map<String, Object> params);
 
+	List<Map> queryAlertMessageGroupBy(@Param("columnId") String columnId,@Param("columnName") String columnName,@Param("params") Map<String,Object> params);
 	/**
 	 * 根据 dc_id 查询 alert_message_silence 静默的 message ids
 	 * @param dcIds
