@@ -43,7 +43,7 @@ public class SetupController  {
     private String nezhaConfigPath;
     @Value("${spring.datasource.druid.driver-class-name}")
     private String driver;
-    @Value("${nezha.restart.command:systemctl restart nzweb.service}")
+    @Value("${nezha.restart.command:systemctl restart nz-web.service}")
     private String restartCommand;
     @Value("${database.loginTimeout:10}")
     private Integer dbLoginTimeouot;//数据库登录超时时间
