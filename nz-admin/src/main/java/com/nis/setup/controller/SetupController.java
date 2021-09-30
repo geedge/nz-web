@@ -3,6 +3,7 @@ package com.nis.setup.controller;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 
 import cn.hutool.core.io.IORuntimeException;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.symmetric.AES;
 import cn.hutool.db.Db;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
@@ -90,18 +92,24 @@ public class SetupController  {
                 boolean newFile = configFile.createNewFile();
                 log.info("set up config new file {}", newFile);
             }
+    		/*
+    		 * 数据库密码加密
+    		 */
+    		AES aes = Tool.SecureUtil.aes();
+    		String dbPinHex = aes.encryptHex(setup.getDatabase().getPin());
+    		
     		prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
     		prop.put("nezha.inited", "1");
     		prop.put("database.host",setup.getDatabase().getHost());
     		prop.put("database.port",Tool.StrUtil.utf8Str(setup.getDatabase().getPort()));
     		prop.put("database.name",setup.getDatabase().getName());
     		prop.put("database.user",setup.getDatabase().getUsername());
-    		prop.put("database.pin",setup.getDatabase().getPin());
+    		prop.put("database.pin",dbPinHex);
     		prop.put("redis.host",setup.getRedis().getHost());
     		prop.put("redis.port",Tool.StrUtil.utf8Str(setup.getRedis().getPort()));
     		prop.put("redis.pin",setup.getRedis().getPin());
     		if(Tool.StrUtil.isBlank(prop.getStr("server.port"))) {
-    			prop.put("server.port","8080");
+    			prop.put("server.port","80");
     		}
     		//保存配置文件
     		prop.store(configFile.getAbsolutePath());
@@ -140,11 +148,24 @@ public class SetupController  {
         }
         ValidateUtils.is(setup.getDatabase().getHost()).notNull(RCode.SYS_CONFIG_DB_PARAM_INVALID)
                 .and(setup.getDatabase().getUsername()).notNull(RCode.SYS_CONFIG_DB_USERNAME_ISNULL)
-                .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL);
+                .and(setup.getDatabase().getPin()).notNull(RCode.SYS_CONFIG_DB_PASSWORD_ISNULL)
+                .and(setup.getDatabase().getName()).notNull(RCode.SYS_CONFIG_DB_NAME_ISNULL);
+        String dbName = setup.getDatabase().getName();
+        SimpleDataSource dataSource = null;
         try{
-        	SimpleDataSource ds = new SimpleDataSource(setup.getDatabase().getUrl(), setup.getDatabase().getUsername(), setup.getDatabase().getPin(), driver);
-        	ds.setLoginTimeout(dbLoginTimeouot);
-        	Db db = DbUtil.use(ds);
+        	dataSource = new SimpleDataSource(setup.getDatabase().getUrl(), setup.getDatabase().getUsername(), setup.getDatabase().getPin(), driver);
+        	dataSource.setLoginTimeout(dbLoginTimeouot);
+        	Db db = DbUtil.use(dataSource);
+        	//没有自动创建 数据库
+			List<String> dbNames = db.query("show databases;", String.class);
+			if(dbNames != null) {
+				boolean match = dbNames.stream().anyMatch(dbName::equalsIgnoreCase);
+				if(!match) {
+					int execute = db.execute("create database if not exists `" + dbName + "` default character set utf8mb4 COLLATE utf8mb4_general_ci");
+					log.info("database {} not exists,auto create database,result:{}",dbName,execute);
+				}
+			}
+        	
             String result = db.queryString("select 1");
         	if(Tool.StrUtil.isNotBlank(result)) {
         		 return R.ok();
@@ -153,7 +174,9 @@ public class SetupController  {
         }catch (SQLException | RuntimeException e){
             log.error(e);
             return R.error(RCode.SYS_CONFIG_DB_PARAM_INVALID);
-        } 
+        } finally {
+        	Tool.IoUtil.close(dataSource);
+		}
     }
 
     @PostMapping("/checkRedis")

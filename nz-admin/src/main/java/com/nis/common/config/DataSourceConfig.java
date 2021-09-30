@@ -1,5 +1,7 @@
 package com.nis.common.config;
 
+import java.util.List;
+
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -14,6 +16,9 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.nis.common.utils.Tool;
 
+import cn.hutool.crypto.symmetric.AES;
+import cn.hutool.db.Db;
+import cn.hutool.db.ds.simple.SimpleDataSource;
 import cn.hutool.log.Log;
 
 @Configuration
@@ -65,6 +70,12 @@ public class DataSourceConfig {
 		if(!Tool.StrUtil.isAllNotBlank(this.databaseHost,this.databaseUser,this.databaseName)) {
         	return null;
         }
+		/* 数据库密码解密 */
+		AES aes = Tool.SecureUtil.aes();
+		databasePin = aes.decryptStr(this.databasePin);
+		
+		//初始化时创建 数据库
+		this.createDatabase();
 		log.info("datasource config,user:{}, url: {}",this.databaseUser,this.getDbUrl());
         DruidDataSource dataSource = new DruidDataSource();
         dataSource.setUrl(this.getDbUrl());
@@ -123,5 +134,31 @@ public class DataSourceConfig {
 		return this.urlPattern.replace("{{host}}", this.databaseHost)
 				.replace("{{port}}", String.valueOf(this.databasePort))
 				.replace("{{dbName}}",  this.databaseName);
+	}
+	
+	/**
+	 * 没有数据库时自动创建
+	 */
+	@SuppressWarnings("all")
+	private void createDatabase() {
+		SimpleDataSource dataSource = null;
+		try {
+			String url = this.urlPattern.replace("{{host}}", this.databaseHost)
+					.replace("{{port}}", String.valueOf(this.databasePort)).replace("/{{dbName}}", "");
+			dataSource = new SimpleDataSource(url, this.databaseUser, this.databasePin, this.driver);
+			Db db = Tool.DbUtil.use(dataSource);
+			List<String> dbNames = db.query("show databases;", String.class);
+			if(dbNames != null) {
+				boolean match = dbNames.stream().anyMatch(databaseName::equalsIgnoreCase);
+				if(!match) {
+					int execute = db.execute("create database if not exists `" + this.databaseName + "` default character set utf8mb4 COLLATE utf8mb4_general_ci");
+					log.info("database {} not exists,auto create database,result:{}",databaseName,execute);
+				}
+			}
+		} catch (Exception e) {
+			log.error("init database error",e);
+		}finally {
+			Tool.DbUtil.close(dataSource);
+		}
 	}
 }

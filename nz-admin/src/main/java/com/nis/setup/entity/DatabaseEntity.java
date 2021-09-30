@@ -13,7 +13,7 @@ public class DatabaseEntity implements Serializable {
     private String pin;
 
     public String getUrl(){
-        return "jdbc:mysql://"+this.getHost()+":"+this.getPort()+"/"+this.getName()+"?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false";
+        return "jdbc:mysql://"+this.getHost()+":"+this.getPort()+"/"+"?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false";
     }
 
 }
