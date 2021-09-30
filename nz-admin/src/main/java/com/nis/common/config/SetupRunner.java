@@ -55,7 +55,7 @@ public class SetupRunner implements CommandLineRunner{
 			log.info("start inited setup");
 			String jsonStr = Tool.FileUtil.readUtf8String(file);
 	        SetupEntity setupEntity = Tool.JSONUtil.toBean(jsonStr, SetupEntity.class);
-	        sysConfigService.updateValueByKey("alert_api",setupEntity.getSystem().getAlertPath());
+	        sysConfigService.updateValueByKey("alert_api",setupEntity.getSystem().getAlertPath()==null ? "":setupEntity.getSystem().getAlertPath());
 //	        sysConfigService.updateValueByKey("alert_path_prefix",setupEntity.getSystem().getAlertPrefix());
 	        sysConfigService.updateValueByKey("prometheus_federation_enabled",setupEntity.getSystem().getFederationEnabled());
 	        log.info("update db config");
