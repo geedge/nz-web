@@ -1,9 +1,11 @@
 package com.nis.modules.agent.controller;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -106,10 +108,24 @@ public class AgentController {
 		log.info("download agent package to {}", os);
 		String json = sysConfigService.getValue("confagent_name");
 		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
+		//配置的正则
 		String confagentName = (String) confagentNames.get(os);
-		File file = CommonUtils.getResourceFile(installPath+confagentName);
-		log.info("file exist: {}", file.exists());
+		Pattern confagentPattern = Pattern.compile(confagentName);
 		try {
+			File installPathFile = CommonUtils.getResourceFile(installPath);
+			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false:installPathFile.exists(),installPathFile == null ? false:installPathFile.isDirectory());
+			if(installPathFile == null || !installPathFile.isDirectory()) {
+				throw new NZException("file download error", 500);
+			}
+			
+			File[] listFiles = installPathFile.listFiles((file, name) ->{
+				return confagentPattern.matcher(name).find();
+			});
+			
+			if(Tool.ArrayUtil.isEmpty(listFiles)) {
+				throw new NZException("file download error", 500);
+			}
+			File file = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
 			Tool.ResponseUtil.downloadFile(response, file);
 		} catch (IORuntimeException | IOException e) {
 			log.error("file download error", e);
