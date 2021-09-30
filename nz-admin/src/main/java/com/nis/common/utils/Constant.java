@@ -1069,6 +1069,9 @@ public class Constant {
 	public static final String SYSCONFIG_SESSION_TIMEOUT_KEY = "session_timeout";
 
 	public static final String SETUP_FILE_NAME = "setup.json";
-	
+	/**
+	 * aes 对称加密 密钥
+	 */
+	public static final byte[] AES_SECRET_KEY = Tool.HexUtil.decodeHex("bde5430614b21baf1c53bd6f616d1a39");
 	
 }

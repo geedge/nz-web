@@ -14,6 +14,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 
 import cn.hutool.crypto.symmetric.AES;
@@ -71,7 +72,7 @@ public class DataSourceConfig {
         	return null;
         }
 		/* 数据库密码解密 */
-		AES aes = Tool.SecureUtil.aes();
+		AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
 		databasePin = aes.decryptStr(this.databasePin);
 		
 		//初始化时创建 数据库

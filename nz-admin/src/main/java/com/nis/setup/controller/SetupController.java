@@ -95,7 +95,7 @@ public class SetupController  {
     		/*
     		 * 数据库密码加密
     		 */
-    		AES aes = Tool.SecureUtil.aes();
+    		AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
     		String dbPinHex = aes.encryptHex(setup.getDatabase().getPin());
     		
     		prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
