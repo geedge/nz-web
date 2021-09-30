@@ -8,18 +8,19 @@
 
 package com.nis.common.utils;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.util.TempFile;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import org.apache.ibatis.mapping.DatabaseIdProvider;
-import org.apache.poi.util.TempFile;
-
-import javax.sql.DataSource;
-import java.io.File;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * 常量
@@ -100,10 +101,6 @@ public class Constant {
 		}
 	}
 
-	/**
-	 * 当前数据库类型
-	 */
-	public static final String DB_TYPE;
 
 	public static final String ORACLE = "oracle";
 	public static final String MYSQL = "mysql";
@@ -256,17 +253,6 @@ public class Constant {
 	public static final Map<String, Map<String, String>> TABLE_NAME_ORDER_FIELD_MAPPING = Tool.MapUtil.newHashMap();
 
 	static {
-		DatabaseIdProvider databaseIdProvider = SpringContextUtils.getBean("getDatabaseIdProvider",
-				DatabaseIdProvider.class);
-		DataSource dataSource = SpringContextUtils.getBean("dataSource", DataSource.class);
-		String databaseId = null;
-		try {
-			databaseId = databaseIdProvider.getDatabaseId(dataSource);
-		} catch (SQLException e) {
-			logger.error(e);
-		}
-		DB_TYPE = databaseId;
-
 		File tempPath = FileUtil.file(TEMP_PATH);
 		if (!tempPath.isDirectory()) {
 			boolean mkdir = tempPath.mkdir();
