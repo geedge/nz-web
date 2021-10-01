@@ -184,7 +184,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // 对象存储开启  global 都需要下发 lokiPushUrls config 指向自己
         // 对象存储关闭  global 都需要下发 lokiPushUrls config 指向自己 和 remote 其他 global
         for (Promserver globalProm : globalPromServers) {
-            Map<String, Object> lokiPushUrlConfigMap = configUtil.getGlobalLokiPushConfig(globalProm, globalPromServers);
+            Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(globalProm, globalPromServers);
 
             UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(globalProm.getHost()).setPort(globalProm.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("config");
             String result = null;
@@ -312,10 +312,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 talonConfigList.add(talonConfig);
             }
 
-            Map<String, Object> lokiPushUrlConfigMap = configUtil.getPerdatacenterLokiPushConfig(globalPromServers);
-
             // 1. 更新 per-datacenter 角色 lokiPushUrls config
             for (Promserver perDataCenterPromServer : perDataCenterPromServers) {
+            	//获取 lokipushurl config
+            	Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(perDataCenterPromServer,globalPromServers);
                 UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(perDataCenterPromServer.getHost()).setPort(perDataCenterPromServer.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("config");
                 String result = null;
                 try {
