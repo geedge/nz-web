@@ -544,8 +544,7 @@ public class AgentConfigUtil {
 		// agent metrics
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
-		agentMetricsMap.put("metrics_path",
-				sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+		agentMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
 
 		List agentMetricsStaticConfigList = new ArrayList();
 		Map agentMetricsStaticConfig = new LinkedHashMap(2);
@@ -831,7 +830,7 @@ public class AgentConfigUtil {
 		Map agentLabels = new LinkedHashMap(4);
 		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		agentLabels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
-		agentMetricsStaticConfig.put("labels", labels);
+		agentMetricsStaticConfig.put("labels", agentLabels);
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
 		agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
 
