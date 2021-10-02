@@ -1,10 +1,25 @@
 package com.nis.modules.agent.job;
 
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpMethod;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
@@ -13,6 +28,7 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.MonitorEventLogService;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -21,19 +37,12 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import lombok.Data;
-import org.apache.commons.lang3.time.StopWatch;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import lombok.Data;
 
 /**
  * AgentJob
@@ -186,19 +195,18 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         for (Promserver globalProm : globalPromServers) {
             Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(globalProm, globalPromServers);
 
-            UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(globalProm.getHost()).setPort(globalProm.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("config");
             String result = null;
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(globalProm.getToken()).body(JSONObject.toJSONString(lokiPushUrlConfigMap), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(globalProm, HttpMethod.POST, "/config", null, lokiPushUrlConfigMap, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,agent:{}",Tool.JSONUtil.toJsonStr(globalProm));
             }
-
+            
             if (result == null) {
                 configUtil.updatePromServerStatus(globalProm, 0);
                 continue;
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, globalProm);
+                configUtil.afterRequestApi("/config", result, globalProm);
             }
         }
 
@@ -240,19 +248,21 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
             // 下发 promtail 配置
             Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
-            UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(firstGlobalAgent.getHost()).setPort(firstGlobalAgent.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("talon").appendPath("proxy").appendPath("promtail").appendPath("config");
+            
             String result = null;
+            String path = "/talon/proxy/promtail/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(firstGlobalAgent.getToken()).body(JSONObject.toJSONString(talonConfigList), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(firstGlobalAgent, HttpMethod.POST, "/talon/proxy/promtail/config", null, talonConfigList, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,agent:{}",Tool.JSONUtil.toJsonStr(firstGlobalAgent));
             }
+            
             log.debug("Promtail 下发结果 " + result);
 
             if (result == null) {
                 configUtil.updatePromServerStatus(firstGlobalAgent, 0);
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, firstGlobalAgent);
+                configUtil.afterRequestApi(path, result, firstGlobalAgent);
             }
         }
     }
@@ -316,39 +326,40 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             for (Promserver perDataCenterPromServer : perDataCenterPromServers) {
             	//获取 lokipushurl config
             	Map<String, Object> lokiPushUrlConfigMap = configUtil.getLokiPushConfig(perDataCenterPromServer,globalPromServers);
-                UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(perDataCenterPromServer.getHost()).setPort(perDataCenterPromServer.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("config");
-                String result = null;
-                try {
-                    result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(perDataCenterPromServer.getToken()).body(JSONObject.toJSONString(lokiPushUrlConfigMap), "application/json;charset=UTF-8").execute().body();
-                } catch (RuntimeException e) {
-                    log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
-                }
 
+                String result = null;
+                String path = "/config";
+                try {
+                	result = AgentUtil.request(perDataCenterPromServer, HttpMethod.POST,path, null, lokiPushUrlConfigMap, String.class);
+                } catch (RuntimeException e) {
+                	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(perDataCenterPromServer));
+                }
+                
                 if (result == null) {
                     configUtil.updatePromServerStatus(perDataCenterPromServer, 0);
                     continue;
                 } else {
-                    configUtil.afterRequestApi(urlBuilder.toString(), result, perDataCenterPromServer);
+                    configUtil.afterRequestApi(path, result, perDataCenterPromServer);
                 }
             }
             // 2. global lokipushurl 更新  TODO handleGlobal logs handle
 
             // 3. 选任意一台 global agent 进行下发 promtail 配置
             Promserver firstGlobalAgent = globalPromServers.stream().findFirst().get();
-            UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(firstGlobalAgent.getHost()).setPort(firstGlobalAgent.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("talon").appendPath("proxy").appendPath("promtail").appendPath("config");
-
             String result = null;
+            String path = "/talon/proxy/promtail/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(firstGlobalAgent.getToken()).body(JSONObject.toJSONString(talonConfigList), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(firstGlobalAgent, HttpMethod.POST,path, null, talonConfigList, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(firstGlobalAgent));
             }
+            
             log.debug("Promtail 下发结果 " + result);
 
             if (result == null) {
                 configUtil.updatePromServerStatus(firstGlobalAgent, 0);
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, firstGlobalAgent);
+                configUtil.afterRequestApi(path, result, firstGlobalAgent);
             }
         }
     }
@@ -431,22 +442,21 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 globalConfigBody.put("cmdline", sysCmdLineMap);
             }
 
-            UrlBuilder urlBuilder = UrlBuilder.create();
-            urlBuilder.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("prometheus").appendPath("config");
 
             String result = null;
+            String path = "/prometheus/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(globalConfigBody), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, globalConfigBody, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
-
+            
             // 下发失败,更新 prom 状态，造成conf_event 变更，下个周期继续下发配置
             if (result == null) {
                 configUtil.updatePromServerStatus(promserver, 0);
                 continue;
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+                configUtil.afterRequestApi(path, result, promserver);
             }
         }
     }
@@ -533,20 +543,19 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             }
 
             // 调用 config 接口 下发 perdatacenter 配置
-            UrlBuilder urlBuilder = UrlBuilder.create();
-            urlBuilder.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("prometheus").appendPath("config");
             String result = null;
+            String path = "/prometheus/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(perDatacenterConfigBody), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, perDatacenterConfigBody, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
-
+            
             if (result == null) {
                 configUtil.updatePromServerStatus(promserver, 0);
                 continue;
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+                configUtil.afterRequestApi(path, result, promserver);
             }
         }
     }
@@ -562,21 +571,22 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // 无论联邦与否 最终数据都会存在  Global  所以 per-datacenter 不必下发 loki 配置
         List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
         for (Promserver promserver : globalPromServerList) {
-            UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("loki").appendPath("config");
-
             Map<String, Object> lokiConfigBody = new HashMap<>(2);
             lokiConfigBody.put("config", lokiYml);
+            
             String result = null;
+            String path = "/loki/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(lokiConfigBody), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, lokiConfigBody, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
+            
             // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
             if (result == null) {
                 configUtil.updatePromServerStatus(promserver, 0);
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+                configUtil.afterRequestApi(path, result, promserver);
             }
         }
 
@@ -593,19 +603,20 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     private void updateSnmpExporterConf(List<Promserver> healthyPromServers) {
         Map snmpYml = configUtil.generateSnmpYml();
         for (Promserver promserver : healthyPromServers) {
-            UrlBuilder urlBuilder = UrlBuilder.create();
-            urlBuilder.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("snmpExporter").appendPath("config");
-            String snmpConfResult = null;
+            
+            String result = null;
+            String path = "/snmpExporter/config";
             try {
-                snmpConfResult = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(snmpYml)).execute().body();
+            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, snmpYml, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
-            log.debug("snmpExporter 请求返回结果 {}", snmpConfResult);
-            if (snmpConfResult == null) {
+            
+            log.debug("snmpExporter 请求返回结果 {}", result);
+            if (result == null) {
                 configUtil.updatePromServerStatus(promserver, 0);
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), snmpConfResult, promserver);
+                configUtil.afterRequestApi(path, result, promserver);
             }
         }
     }
@@ -622,18 +633,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         Integer supportAlertPromId = configUtil.getSupportAlertPromId(healthyPromServers);
         Promserver promserver = promService.getById(supportAlertPromId);
 
-       /* String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
-        UrlBuilder urlBuilder;
-        if (StrUtil.equals("2", objStroageEnable)) {
-            // 开启对象存储 更新  cortex rule 配置
-            urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
-        } else {
-            // 没有开启对象存储 更新  prometheus rule 配置
-            urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("prometheus").appendPath("config");
-        }*/
 
        // 无论对象存储与否  全部由于 cortex 支持 rule
-        UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
         Map<String, Object> updateRuleConfigBody = new HashMap<>(2);
         updateRuleConfigBody.put("rule", alertYmlMap);
         // 告警标识不存在 则需要同时下发 cortex 配置
@@ -642,17 +643,20 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, true);
             updateRuleConfigBody.put("config", cortexYml);
         }
+        
         String result = null;
+        String path = "/cortex/config";
         try {
-            result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(updateRuleConfigBody), "application/json;charset=UTF-8").execute().body();
+        	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, updateRuleConfigBody, String.class);
         } catch (RuntimeException e) {
-            log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+        	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
         }
+        
         log.debug("rule 更新请求返回结果 {}", result);
         if (result == null) {
             configUtil.updatePromServerStatus(promserver, 0);
         } else {
-            configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+            configUtil.afterRequestApi(path, result, promserver);
         }
     }
 
@@ -671,8 +675,6 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         // 调用 agent/cortex 接口 更新 cortex config and rule.yml
         List<Promserver> globalPromServerList = healthyPromServers.stream().filter(promserver -> Constant.PromserverType.GLOBAL.getValue().equals(promserver.getType())).collect(Collectors.toList());
         for (Promserver promserver : globalPromServerList) {
-            UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("cortex").appendPath("config");
-
             Boolean isAlert = promserver.getId().equals(supportAlertPromId) ? true : false;
             // 生成 cortex 配置模板
             Map cortexYml = configUtil.generateCortexYml(promserver, globalPromServerList, isAlert);
@@ -683,16 +685,17 @@ public class AutoConfigAgentJob extends QuartzJobBean {
                 cortexConfigBody.put("rule", alertYmlMap);
             }
             String result = null;
+            String path = "/cortex/config";
             try {
-                result = Tool.HttpUtil.createPost(urlBuilder.build()).auth(promserver.getToken()).body(JSONObject.toJSONString(cortexConfigBody), "application/json;charset=UTF-8").execute().body();
+            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, cortexConfigBody, String.class);
             } catch (RuntimeException e) {
-                log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+            	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
             // 下发失败,更新 prom 状态，造成 conf_event 变更，下个周期继续下发配置
             if (result == null) {
                 configUtil.updatePromServerStatus(promserver, 0);
             } else {
-                configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+                configUtil.afterRequestApi(path, result, promserver);
             }
         }
 
@@ -713,22 +716,19 @@ public class AutoConfigAgentJob extends QuartzJobBean {
      * @return
      */
     private boolean compareCmdLineChanges(Promserver promserver, Map<String, String> sysCmdLineMap) {
-        UrlBuilder urlBuilder = UrlBuilder.create();
-        urlBuilder.setScheme("http").setHost(promserver.getHost()).setPort(promserver.getPort()).appendPath(sysConfigMap.get(Constant.CONFAGENT_PATH)).appendPath("prometheus").appendPath("config");
-        //  调用 /config 接口
         String result = null;
+        String path ="/prometheus/config";
         try {
-            result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(promserver.getToken()).execute().body();
+        	result = AgentUtil.requestGet(promserver,path, null, String.class);
         } catch (RuntimeException e) {
-            log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
+        	log.error(e,"request error,agent:{}",Tool.JSONUtil.toJsonStr(promserver));
         }
-
         // 请求接口失败 返回 false 表示本次启动项对比成功，修改 promserver 状态，造成下次继续执行对比
         if (result == null) {
             configUtil.updatePromServerStatus(promserver, 0);
             return false;
         } else {
-            configUtil.afterRequestApi(urlBuilder.toString(), result, promserver);
+            configUtil.afterRequestApi(path, result, promserver);
 
             R resultObj = JSONObject.parseObject(result, R.class);
             if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {

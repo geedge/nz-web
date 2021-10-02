@@ -1,12 +1,41 @@
 package com.nis.modules.promserver.controller;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpConnection;
-import cn.hutool.log.Log;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.client.RestTemplate;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -14,34 +43,19 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
 
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Controller
 @SuppressWarnings("all")
@@ -60,6 +74,9 @@ public class PromProxyController {
 
 	@Value("${connect.timeout:30000}")
 	private Integer connectTimeout;
+	
+	@Autowired
+	private RestTemplate restTemplate;
 	
 	@RequestMapping(value = "/prom/**")
 	public void promProxy(HttpServletRequest request, HttpServletResponse response) {
@@ -90,8 +107,7 @@ public class PromProxyController {
 		default:
 			break;
 		}
-		// type 优先使用 thanos_query
-		// type = (type == null) ? PromConstant.PROMSERVER_THANOS_QUERY : type;
+
 		Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
 		if (ToolUtil.isEmpty(server)) {
 			// type 其次使用 global
@@ -99,122 +115,66 @@ public class PromProxyController {
 			server = promserverService.getOneAvaPromServer(promId, idcId, type);
 			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
 		}
-		// type 默认为 global
-		// type = (type == null) ? PROMSERVER_GLOBAL : type;
-		// Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
-//			logger.debug("path:{},prometheus server:{}", promPath, JSONUtils.valueToString(server));
-		// 请求 prometheus server
-		requestProm(server.getHost(), server.getPort(), promPath, server.getToken(), request, response);
-	}
-
-	/**
-	 * 请求 prometheus
-	 * 
-	 * @param host
-	 * @param port
-	 * @param path
-	 * @param request
-	 * @param response
-	 * @throws IOException
-	 * @throws MalformedURLException
-	 */
-	public void requestProm(String host, int port, String path, String token, HttpServletRequest request, HttpServletResponse response) {
-//		String queryString = request.getQueryString();
-		String queryString = ReflectUtil.invoke(request, "getQueryString");
-		path = path.startsWith("/") ? path : String.format("/%s", path);
-		
-		// 代理 agent cortex/prometheus/api/**
-		String promPathPrefix = promserverService.getPromPathPrefix();
-		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-		String proxyPath = String.format("%s%s", promPathPrefix, path);
-
-		String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8"))).toURL().toString() + "?" + queryString;
-
-		logger.debug("prometheus url: {}", url);
-		String method = request.getMethod();
-		HttpURLConnection conn = null;
-		ServletInputStream reqInputStream = null;
-		ServletOutputStream resOutputStream = null;
-		OutputStream connOutputStream = null;
-		InputStream connInputStream = null;
+		ByteArrayInputStream bais = null;
 		try {
-//			conn = (HttpURLConnection) new URL(url).openConnection();
-//			conn = (HttpURLConnection) URLUtil.toUrlForHttp(url).openConnection();
-			conn = HttpConnection.create(url, null).getHttpURLConnection();
-			reqInputStream = request.getInputStream();
-			resOutputStream = response.getOutputStream();
-			conn.setRequestMethod(method);
-			// 复制请求头
-			Enumeration<String> headerNames = request.getHeaderNames();
-			while (headerNames.hasMoreElements()) {
-				String hn = headerNames.nextElement();
-				/*conn.addRequestProperty(XssUtil.stripXSS(hn), XssUtil.stripXSS(request.getHeader(hn)));*/
-				if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
-					continue;
+        	// 复制请求头
+    		HttpHeaders headers = new HttpHeaders();
+    		Enumeration<String> headerNames = request.getHeaderNames();
+    		while (headerNames.hasMoreElements()) {
+    			String hn = headerNames.nextElement();
+    			if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
+    				headers.add(hn, request.getHeader(hn));
 				}
-				ReflectUtil.invoke(conn,"addRequestProperty",hn,request.getHeader(hn));
-			}
-
-			ReflectUtil.invoke(conn, "addRequestProperty", Constant.AUTH_TOKEN_CODE, token);
-
-			if (!"GET".equalsIgnoreCase(method)) {
-				conn.setDoOutput(true);
-				conn.setDoInput(true);
-				conn.setUseCaches(false);
-				connOutputStream = conn.getOutputStream();
-				IOUtils.copy(reqInputStream, connOutputStream);
-			}
-			conn.setConnectTimeout(connectTimeout);
-			conn.connect();
-			int responseCode = conn.getResponseCode();
-			connInputStream = (responseCode < 400)? conn.getInputStream():conn.getErrorStream();
-			String responseMessage = conn.getResponseMessage();
-			Map<String, List<String>> responseHeaders = conn.getHeaderFields();
-			//复制响应头
-			for(Entry<String, List<String>> en : responseHeaders.entrySet()) {
-				String key = en.getKey();
-				if (StringUtils.isEmpty(key)) continue;
-				List<String> value = en.getValue();
-//				response.addHeader(XssUtil.stripXSS(key), XssUtil.stripXSS(StringUtils.join(value, "; ")));
-				ReflectUtil.invoke(response,"addHeader",key,StringUtils.join(value, "; "));
-			}
-//			response.setStatus(responseCode, responseMessage);
-			response.setStatus(responseCode);
-			
-			String promPath = request.getServletPath().substring(5);
-			String nullType = request.getParameter("nullType");
-			if ("/api/v1/query_range".equals(promPath) && responseCode < 400) {
+    		}
+    		headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
+    		// 复制 body
+    		byte[] body = Tool.IoUtil.readBytes(request.getInputStream());
+    		// 重新构造请求参数内容
+    		HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
+    		String queryString = request.getQueryString();
+            queryString = StrUtil.isNotBlank(queryString)?queryString:"";
+            // 构造请求路径
+    		String promPathPrefix = promserverService.getPromPathPrefix();
+    		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
+            String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+            		.setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")))
+            		.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toURL().toString();
+            String method = request.getMethod();
+            //发送 请求
+    		ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
+    		//响应码
+    		int statusCode = exchange.getStatusCodeValue();
+    		//响应头
+    		HttpHeaders httpHeaders = exchange.getHeaders();
+    		byte[] responseBody = exchange.getBody();
+    		response.reset();
+    		response.setStatus(statusCode);
+    		Set<Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
+    		for(Entry<String,List<String>> en : entrySet) {
+    			String name = en.getKey();
+    			List<String> value = en.getValue();
+    			response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
+    		}
+    		/*
+    		 * query_range 补零
+    		 */
+    		if ("/api/v1/query_range".equals(promPath) && statusCode < 300) {
 				// 处理缺失时间数据
-				String contentEncoding = response.getHeader("Content-Encoding");
+    			List<String> list = httpHeaders.get(HttpHeaders.CONTENT_ENCODING);
+				String contentEncoding = list.size()==1?list.get(0):"";
 				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
-				Map map = handleResultData(request, connInputStream, isGzipStream);
-
+				bais = new ByteArrayInputStream(responseBody);
+				Map map = handleResultData(request,bais,isGzipStream);
 				// 压缩
-				byte[] bytes = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
-
-				String transfer = response.getHeader("Transfer-Encoding");
-				if (StringUtils.isEmpty(transfer)) {
-					response.setContentLength(bytes.length);
-				}
-
-				resOutputStream.write(bytes);
-				resOutputStream.flush();//flush 输出流
-			} else {
-				IOUtils.copy(connInputStream, resOutputStream);
-				resOutputStream.flush();//flush 输出流
-			}
-		} catch (IOException e) {
-			try {
-				response.sendError(500, "request error");
-			} catch (IOException e1) {
-				logger.error("proxy request error",e1);
-			}
-			logger.error("request error : ",e);
-		}finally {
-			IOUtils.closeQuietly(reqInputStream,resOutputStream,connOutputStream,connInputStream);
-			if(ObjectUtil.isNotEmpty(conn)) {
-				conn.disconnect();
-			}
+				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
+			} 
+    		response.setContentLength(responseBody.length);
+    		response.getOutputStream().write(responseBody);
+    		response.flushBuffer();
+		} catch (Exception e) {
+			logger.error(e, "prometheus proxy error,path : {}", promPath);
+		} finally {
+			Tool.IoUtil.close(bais);
 		}
 	}
 
@@ -232,12 +192,8 @@ public class PromProxyController {
 		} catch (IOException e) {
 			logger.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e));
 		} finally {
-			if(bufferedReader != null){
-				IOUtils.closeQuietly(bufferedReader);
-			}
-			if(inputStreamReader != null){
-				IOUtils.closeQuietly(inputStreamReader);
-			}
+			Tool.IoUtil.close(bufferedReader);
+			Tool.IoUtil.close(inputStreamReader);
 		}
 
 		Map result = new HashMap();

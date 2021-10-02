@@ -1,35 +1,44 @@
 package com.nis.modules.promserver.service.impl;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.DcService;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.promserver.dao.PromserverDao;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
+
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
@@ -43,7 +52,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	private PromserverDao promserverDao;
 	@Autowired
 	private SysConfigService configService;
-
+	@Autowired
+	private RestTemplate restTemplate;
+	
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String ids = (String) params.get("ids");
@@ -191,16 +202,20 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public JSONObject requestAgent(Promserver promServer, String urlPath) {
-		URL url = null;
-		try {
-			url = new URL("http", promServer.getHost(), promServer.getPort(), urlPath);
-		} catch (MalformedURLException e) {
-			log.error(e);
-			throw new NZException(RCode.ERROR);
+	public JSONObject requestAgent(Promserver server, String urlPath) {
+		String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+        		.setPort(server.getPort()).setPath(UrlPath.of(urlPath, Charset.forName("UTF-8")))
+        		.toURL().toString();
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
+		HttpEntity httpEntity = new HttpEntity(headers);
+		ResponseEntity<JSONObject> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class);
+		log.info("agent request url:{},responseStatus:{}",url,responseEntity.getStatusCodeValue());
+		if (log.isDebugEnabled()) {
+			log.debug("agent request body:{}",url,responseEntity.getStatusCodeValue(),responseEntity.getBody());
 		}
-		String result = Tool.HttpUtil.createGet(url.toString()).auth(promServer.getToken()).execute().body();
-		if (log.isDebugEnabled()) log.debug(String.format("请求 %s 接口，相应内容为 %s", url.toString(), result));
-		return JSONObject.parseObject(result);
+		return responseEntity.getBody();
 	}
+	
 }

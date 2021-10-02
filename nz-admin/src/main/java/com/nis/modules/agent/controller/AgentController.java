@@ -1,7 +1,6 @@
 package com.nis.modules.agent.controller;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,11 +9,6 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.*;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +23,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.TemplateUtil;
+import com.nis.common.utils.Tool;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -49,9 +50,6 @@ public class AgentController {
 	private String installPath;
 
 	@Autowired
-	private SysConfigDao sysConfigDao;
-
-	@Autowired
 	private PromserverService promserverService;
 
 	@Autowired
@@ -68,8 +66,8 @@ public class AgentController {
 		ValidateUtils.is(dcId).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(type)
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS);
 		// 读取sh脚本内容
-		File shFile = CommonUtils.getResourceFile(installPath+"install.sh.template");
-		if(shFile != null &&shFile.exists()){
+		File shFile = CommonUtils.getResourceFile(installPath + "install.sh.template");
+		if (shFile != null && shFile.exists()) {
 			// 组织变量内容
 			String scriptContent = Tool.FileUtil.readUtf8String(shFile);
 			String localhost = request.getLocalAddr(); // web component ip
@@ -81,7 +79,7 @@ public class AgentController {
 			map.put("remotePort", String.valueOf(localPort));
 			map.put("localhost", remoteHost); // to install.sh is local
 			map.put("webToken", webToken);
-			map.put("datacenterID",String.valueOf(dcId));
+			map.put("datacenterID", String.valueOf(dcId));
 			map.put("type", String.valueOf(type));
 			try {
 				// 根据模板文件生成 sh文件
@@ -92,7 +90,7 @@ public class AgentController {
 				return "echo 'Internal server error'";
 			}
 			return scriptContent;
-		}else{
+		} else {
 			return "load script failed !";
 		}
 	}
@@ -108,21 +106,22 @@ public class AgentController {
 		log.info("download agent package to {}", os);
 		String json = sysConfigService.getValue("confagent_name");
 		JSONObject confagentNames = Tool.JSONUtil.parseObj(json);
-		//配置的正则
+		// 配置的正则
 		String confagentName = (String) confagentNames.get(os);
 		Pattern confagentPattern = Pattern.compile(confagentName);
 		try {
 			File installPathFile = CommonUtils.getResourceFile(installPath);
-			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false:installPathFile.exists(),installPathFile == null ? false:installPathFile.isDirectory());
-			if(installPathFile == null || !installPathFile.isDirectory()) {
+			log.info("installPath exist: {},isDir:{}", installPathFile == null ? false : installPathFile.exists(),
+					installPathFile == null ? false : installPathFile.isDirectory());
+			if (installPathFile == null || !installPathFile.isDirectory()) {
 				throw new NZException("file download error", 500);
 			}
-			
-			File[] listFiles = installPathFile.listFiles((file, name) ->{
+
+			File[] listFiles = installPathFile.listFiles((file, name) -> {
 				return confagentPattern.matcher(name).find();
 			});
-			
-			if(Tool.ArrayUtil.isEmpty(listFiles)) {
+
+			if (Tool.ArrayUtil.isEmpty(listFiles)) {
 				throw new NZException("file download error", 500);
 			}
 			File file = CommonUtils.getResourceFile(listFiles[0].getAbsolutePath());
@@ -139,12 +138,12 @@ public class AgentController {
 	 * @Date 2021/4/2
 	 */
 	@PostMapping("/register")
-	@RequiresPermissions({"promserver:save"})
+	@RequiresPermissions({ "promserver:save" })
 	public R autoRegister(HttpServletRequest request, @RequestBody Promserver promserver) {
 		if (Tool.StrUtil.isEmpty(promserver.getHost())) {
 			promserver.setHost(request.getRemoteAddr());
 		}
-		//保存 agent 
+		// 保存 agent
 		Integer id = promserverService.saveOrUpdatePromserver(promserver, false);
 		return R.ok().putData("id", id);
 	}
@@ -156,21 +155,23 @@ public class AgentController {
 	 */
 	@PostMapping("/token/refresh")
 	public R refreshToken(HttpServletResponse response, @RequestBody Map<String, Object> params) {
+		String protocol = (String) params.get("protocol");
 		String host = (String) params.get("host");
 		String token = (String) params.get("token");
 		Integer port = (Integer) params.get("port");
-		//校验参数
+		// 校验参数
 		ValidateUtils.is(host).notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(token)
 				.notNull(RCode.AGENT_INSTALL_PARAM_MISS).and(port).notNull(RCode.AGENT_INSTALL_PARAM_MISS);
-		//拼接url
+		protocol = Tool.StrUtil.isBlank(protocol) ? "http" : "https";
+		// 拼接url
 		UrlBuilder urlBuilder = UrlBuilder.create();
-		SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-		urlBuilder.setScheme("http").setHost(host).setPort(port).appendPath(configEntity.getParamValue()).appendPath("auth")
+		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
+		urlBuilder.setScheme(protocol).setHost(host).setPort(port).appendPath(agentPath).appendPath("auth")
 				.appendPath("refresh");
-		//调用 confagent接口 获取结果
-		String result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(token).execute().body();
+		// 调用 confagent接口 获取结果
+		String result = AgentUtil.requestGet(urlBuilder.build(), token, String.class);
 		log.info("result:{}", result);
-		//响应结果
+		// 响应结果
 		if (Tool.StrUtil.isNotEmpty(result)) {
 			return Tool.JSONUtil.toBean(result, R.class);
 		} else {

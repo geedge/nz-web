@@ -2,6 +2,7 @@ package com.nis.modules.promserver.controller;
 
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -16,9 +17,11 @@ import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.BufferReaderWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import net.sf.json.util.JSONUtils;
@@ -27,13 +30,20 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +61,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("all")
 public class LokiProxyController {
 
+	
     private static final Log log = Log.get();
 
     static Map<Pattern, String> logPatternAndLevelMap = new LinkedHashMap<>();
@@ -90,6 +101,8 @@ public class LokiProxyController {
     @Autowired
     private RedisTemplate redisTemplate;
 
+	@Autowired
+	private RestTemplate restTemplate;
     @Value("${connect.timeout:30000}")
     private Integer connectTimeout;
 
@@ -120,102 +133,67 @@ public class LokiProxyController {
             ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
         }
         log.debug("path:{},loki server:{}", proxyPath, JSONUtils.valueToString(server));
-        // 请求 prometheus server
-        String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
-        proxyPath = agentPath + "/loki/proxy" + proxyPath;
-        requestProm(server.getHost(), server.getPort(), proxyPath, server.getToken(), request, response);
+        
+		ByteArrayInputStream bais = null;
+		try {
+        	// 复制请求头
+    		HttpHeaders headers = new HttpHeaders();
+    		Enumeration<String> headerNames = request.getHeaderNames();
+    		while (headerNames.hasMoreElements()) {
+    			String hn = headerNames.nextElement();
+    			if(Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)){
+    				headers.add(hn, request.getHeader(hn));
+				}
+    		}
+    		headers.add(Constant.AUTH_TOKEN_CODE, server.getToken());
+    		// 复制 body
+    		byte[] body = Tool.IoUtil.readBytes(request.getInputStream());
+    		// 重新构造请求参数内容
+    		HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
+    		String queryString = request.getQueryString();
+            queryString = StrUtil.isNotBlank(queryString)?queryString:"";
+            // 构造请求路径
+         // 请求 prometheus server
+            String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+            String realPath = agentPath + "/loki/proxy" + proxyPath;
+            String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+            		.setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
+            		.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toURL().toString();
+            String method = request.getMethod();
+            //发送 请求
+    		ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
+    		//响应码
+    		int statusCode = exchange.getStatusCodeValue();
+    		//响应头
+    		HttpHeaders httpHeaders = exchange.getHeaders();
+    		byte[] responseBody = exchange.getBody();
+    		response.reset();
+    		response.setStatus(statusCode);
+    		Set<Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
+    		for(Entry<String,List<String>> en : entrySet) {
+    			String name = en.getKey();
+    			List<String> value = en.getValue();
+    			response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
+    		}
+    		/*
+    		 * query_range 补零
+    		 */
+    		if (("/loki/api/v1/query".equals(proxyPath) || "/loki/api/v1/query_range".equals(proxyPath)) && statusCode < 300) {
+    			// 处理数据格式
+    			bais = new ByteArrayInputStream(responseBody);
+                Map resultData = handleResultData(request, bais);
+                responseBody = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
+			} 
+    		response.setContentLength(responseBody.length);
+    		response.getOutputStream().write(responseBody);
+    		response.flushBuffer();
+		} catch (Exception e) {
+			log.error(e, "loki proxy error,path : {}", proxyPath);
+		} finally {
+			Tool.IoUtil.close(bais);
+		}
     }
 
-    public void requestProm(String host, int port, String path, String token, HttpServletRequest request, HttpServletResponse response) {
-        String queryString = ReflectUtil.invoke(request, "getQueryString");
-
-        if ("/loki/api/v1/query_range".equals(path)) {
-            String limit = request.getParameter("limit");
-            if (StrUtil.isEmpty(limit)) {
-                String defaultLimitVal = sysConfigService.getValue(Constant.LOGS_QUERY_RANGE_DEFAULT_LIMIT);
-                queryString = String.format("limit=%s&%s", StrUtil.emptyToDefault(defaultLimitVal,"1000"), queryString);
-            }
-        }
-
-        String url = UrlBuilder.create().setScheme("http").setHost(host).setPort(port).setPath(UrlPath.of(path, Charset.forName("UTF-8"))).toURL().toString() + "?" + StrUtil.emptyToDefault(queryString, "");
-        log.debug("loki url: {}", url);
-        String method = request.getMethod();
-        HttpURLConnection conn = null;
-        ServletInputStream reqInputStream = null;
-        ServletOutputStream resOutputStream = null;
-        OutputStream connOutputStream = null;
-        InputStream connInputStream = null;
-        try {
-            conn = HttpConnection.create(url, null).getHttpURLConnection();
-            reqInputStream = request.getInputStream();
-            resOutputStream = response.getOutputStream();
-            conn.setRequestMethod(method);
-
-            // 复制请求头
-            Enumeration<String> headerNames = request.getHeaderNames();
-            while (headerNames.hasMoreElements()) {
-                String hn = headerNames.nextElement();
-
-                if (Constant.AUTH_TOKEN_CODE.equalsIgnoreCase(hn)) {
-                    continue;
-                }
-                ReflectUtil.invoke(conn, "addRequestProperty", hn, request.getHeader(hn));
-            }
-
-            ReflectUtil.invoke(conn, "addRequestProperty", Constant.AUTH_TOKEN_CODE, token);
-
-            if (!"GET".equalsIgnoreCase(method)) {
-                conn.setDoOutput(true);
-                conn.setDoInput(true);
-                conn.setUseCaches(false);
-                connOutputStream = conn.getOutputStream();
-                IOUtils.copy(reqInputStream, connOutputStream);
-            }
-            conn.setConnectTimeout(connectTimeout);
-            conn.connect();
-            int responseCode = conn.getResponseCode();
-            connInputStream = (responseCode < 400) ? conn.getInputStream() : conn.getErrorStream();
-            String responseMessage = conn.getResponseMessage();
-            Map<String, List<String>> responseHeaders = conn.getHeaderFields();
-
-            //复制响应头
-            for (Entry<String, List<String>> en : responseHeaders.entrySet()) {
-                String key = en.getKey();
-                if (StringUtils.isEmpty(key)) continue;
-                List<String> value = en.getValue();
-                ReflectUtil.invoke(response, "addHeader", key, StringUtils.join(value, "; "));
-            }
-            response.setStatus(responseCode);
-
-            String proxyPath = request.getServletPath().substring(5);
-            if (("/loki/api/v1/query".equals(proxyPath) || "/loki/api/v1/query_range".equals(proxyPath)) && responseCode < 400) {
-                // 处理数据格式
-                Map resultData = handleResultData(request, connInputStream);
-
-                byte[] bytes = JSONObject.toJSONString(resultData, SerializerFeature.DisableCircularReferenceDetect, SerializerFeature.MapSortField).getBytes();
-                String transfer = response.getHeader("Transfer-Encoding");
-                if (StringUtils.isEmpty(transfer)) {
-                    response.setContentLength(bytes.length);
-                }
-
-                resOutputStream.write(bytes);
-                resOutputStream.flush();
-            } else {
-                IOUtils.copy(connInputStream, resOutputStream);
-                resOutputStream.flush();
-            }
-        } catch (IOException e) {
-            try {
-                response.sendError(500, "request error");
-            } catch (IOException e1) {
-                log.error("proxy request error", e1);
-            }
-            log.error("request error : ", e);
-        } finally {
-            IOUtils.closeQuietly(reqInputStream, resOutputStream, connOutputStream, connInputStream);
-            if (ObjectUtil.isNotEmpty(conn)) conn.disconnect();
-        }
-    }
 
     private Map handleResultData(HttpServletRequest request, InputStream connInputStream) {
         StringBuffer resultStr = new StringBuffer();
@@ -231,8 +209,8 @@ public class LokiProxyController {
         } catch (IOException e) {
             log.error(String.format("从流中获取JSON字符串失败，错误信息是：%s", e.getMessage()), e);
         } finally {
-            if (bufferedReader != null) IOUtils.closeQuietly(bufferedReader);
-            if (inputStreamReader != null) IOUtils.closeQuietly(inputStreamReader);
+        	Tool.IoUtil.close(bufferedReader);
+			Tool.IoUtil.close(inputStreamReader);
         }
 
         Map result = StrUtil.isNotEmpty(resultStr.toString()) ? JSONObject.parseObject(resultStr.toString(), Map.class) : new HashMap();

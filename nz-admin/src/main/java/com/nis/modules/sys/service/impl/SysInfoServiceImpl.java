@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.sys.dao.SysConfigDao;
@@ -85,13 +86,9 @@ public class SysInfoServiceImpl implements SysInfoService {
         List<Promserver> healthyPromserverList = promserverDao.selectList(new QueryWrapper<Promserver>().lambda().eq(true, Promserver::getStatus, 1));
         if (CollectionUtils.isNotEmpty(healthyPromserverList)) {
             Promserver server = healthyPromserverList.get(RandomUtils.nextInt(0, healthyPromserverList.size()));
-            SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH));
-            String proxyPath = configEntity.getParamValue() + "/prometheus/proxy" + "/api/v1/status/buildinfo";
-
-            UrlBuilder urlBuilder = UrlBuilder.create();
-            urlBuilder.setScheme("http").setHost(server.getHost()).setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")));
+            String path = "/prometheus/proxy/api/v1/status/buildinfo";
             try {
-                String result = Tool.HttpUtil.createGet(urlBuilder.build()).auth(server.getToken()).execute().body();
+            	String result = AgentUtil.requestGet(server,path, null, String.class);
                 R resultObj = JSONObject.parseObject(result, R.class);
                 if (RCode.SUCCESS.getCode().equals((Integer) resultObj.get("code"))) {
                     Object data = resultObj.get("data");

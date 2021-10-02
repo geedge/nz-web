@@ -22,6 +22,11 @@ public class Promserver {
 	private Integer type;
 	private Integer port;
 	/**
+	 * agent 请求协议
+	 * http/https
+	 */
+	private String protocol;
+	/**
 	 * 默认：1
 	 * 1：正常
 	 * 0：异常
@@ -57,6 +62,7 @@ public class Promserver {
 				", host='" + host + '\'' +
 				", type=" + type +
 				", port=" + port +
+				", protocol=" + protocol +
 				", status=" + status +
 				", checkTime=" + checkTime +
 				", statusInfo='" + statusInfo + '\'' +

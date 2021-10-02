@@ -1,18 +1,29 @@
 package com.nis.modules.endpoint.service.impl;
 
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.DigestUtils;
+import com.nis.common.utils.Tool;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.endpoint.entity.MetadataMetric;
 import com.nis.modules.endpoint.service.MetadataMetricService;
-import com.nis.modules.promserver.service.impl.PromserverProxyServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
 
-import java.io.IOException;
-import java.util.*;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.log.Log;
 
 @Service
 public class MetadataMetricServiceImpl implements MetadataMetricService {
@@ -20,17 +31,32 @@ public class MetadataMetricServiceImpl implements MetadataMetricService {
 	private static Log logger = Log.get();
 
 	@Autowired
-	private PromserverProxyServiceImpl promserverProxyService;
-
+	private RedisTemplate<String, String> redisTemplate;
+	@Autowired
+	private PromserverService promService;
+	
 	@Override
-	public List<MetadataMetric> metadata(Integer endpointId) throws IOException{
+	public List<MetadataMetric> metadata(Integer endpointId) throws IOException {
 		// 返回结果
 		List<MetadataMetric> metrics = new ArrayList<>();
-		Map<String,Object> queryParam = new HashMap<String,Object>();
 		String endpoint = "{" + Constant.PROMSERVERUP_ENDPOINT_LABEL + "=\"" + endpointId + "\"}";
-		queryParam.put("match_target", DigestUtils.urlEncode(endpoint));
 		String url = "/api/v1/targets/metadata";
-		JSONObject result = promserverProxyService.promRequest(url, "GET",queryParam, null, null, 2, endpointId);
+		Promserver server = null;
+		Integer pid = null;
+		if (endpointId != null) {// endpointId 不为空则通过 redis key 获取prometheus id
+			HashOperations<String, String, String> opsForHash = redisTemplate.opsForHash();
+			String pidStr = opsForHash.get(Constant.REDIS_KEY_ENDPOINT_PROM, endpointId.toString());
+			pid = Tool.NumberUtil.parseInt(pidStr);
+		}
+		server = server != null ? server
+				: promService.getOneAvaPromServer(pid, null, Constant.PromserverType.GLOBAL.getValue());
+		String promPathPrefix = promService.getPromPathPrefix();
+		String proxyPath = String.format("%s%s", promPathPrefix, url);
+		proxyPath = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+				.setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")))
+				.addQuery("match_target", endpoint).toURL().toString();
+		// 发送请求
+		JSONObject result = AgentUtil.requestGet(url, server.getToken(), JSONObject.class);
 		if (result != null && "success".equals(result.get("status"))) {
 			JSONArray array = (JSONArray) result.get("data");
 			JSONObject jsonObject;

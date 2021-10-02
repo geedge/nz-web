@@ -1,21 +1,18 @@
 package com.nis.modules.asset.job;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.R;
-import com.nis.common.utils.Tool;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetTalonStatus;
-import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetTalonStatusService;
-import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
-import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
-import com.nis.modules.endpoint.entity.MonitorEndpointState;
-import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
-import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -25,14 +22,23 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.ConnectException;
-import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetTalonStatus;
+import com.nis.modules.asset.service.AssetAssetService;
+import com.nis.modules.asset.service.AssetTalonStatusService;
+import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
+import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
+import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
+import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @DisallowConcurrentExecution
 public class AssetTalonStatusJob extends QuartzJobBean {
@@ -100,7 +106,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                     UrlBuilder urlBuilder = UrlBuilder.create().setScheme("http").setHost(talonOpenAsset.getManageIp()).setPort(talonOpenAsset.getClientPort()).appendPath("nz-talon").appendPath("healthy");
                     String result = null;
                     try {
-                        result = Tool.HttpUtil.createGet(urlBuilder.build()).setConnectionTimeout(5000).auth(talonOpenAsset.getClientToken()).execute().body();
+                    	result = AgentUtil.requestGet(urlBuilder.build(), talonOpenAsset.getClientToken(), String.class);
                         if (log.isDebugEnabled()) {
                             log.debug("请求 talon 返回结果" + result);
                         }
