@@ -447,12 +447,12 @@ public class AgentConfigUtil {
 		case "1": // 全部使用 agent proxy 方式
 		case "2": // 联邦开启模式下，promtail 先推送至 per-datacenter agent 代理接口，再 push global loki
 			Map clientEntity = new HashMap(4);
-			clientEntity.put("url", String.format("http://%s:%s%s%s", currentAgent.getHost(), currentAgent.getPort(),
+			clientEntity.put("url", String.format("%s://%s:%s%s%s", currentAgent.getProtocol(), currentAgent.getHost(), currentAgent.getPort(),
 					sysConfigService.getValue(Constant.CONFAGENT_PATH), "/loki/proxy/loki/api/v1/push"));
 			clientEntity.put("token", currentAgent.getToken());
 			clientsMapList.add(clientEntity);
 			break;
-		case "3":
+		case "3"://直接推送到 loki
 			// 1、本地存储，2、s3
 			String logsStorageType = sysConfigService.getValueOrDefault(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE, "1");
 
@@ -582,17 +582,6 @@ public class AgentConfigUtil {
 		switch (StrUtil.emptyToDefault(metricsProxyPushType, "1")) {
 		case "1": {
 			if (isLocalStorage) {
-				// 本地存储 and agent 代理，per-datacenter 配置 remote_write 所有 global agent --
-				// deprecated
-				/*
-				 * for (Promserver globalPromServer : globalPromServers) { Map map = new
-				 * HashMap();//
-				 * http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
-				 * map.put("url", String.format("http://%s:%s%s/cortex/proxy/api/v1/push",
-				 * globalPromServer.getHost(), globalPromServer.getPort(), agentPath));
-				 * map.put("token", globalPromServer.getToken());
-				 * remoteWriteUrlInfoMapList.add(map); }
-				 */
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
@@ -604,7 +593,7 @@ public class AgentConfigUtil {
 					// global使用 remote_write 集中收集各个 per-datacenter数据
 					for (Promserver globalPromServer : globalPromServers) {
 						Map map = new HashMap();
-						map.put("url", String.format("http://%s:%s%s/prometheus/proxy/api/v1/write",
+						map.put("url", String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",globalPromServer.getProtocol(),
 								globalPromServer.getHost(), globalPromServer.getPort(), agentPath));
 						map.put("token", globalPromServer.getToken());
 						remoteWriteUrlInfoMapList.add(map);
@@ -613,7 +602,7 @@ public class AgentConfigUtil {
 			} else {
 				// s3 存储 and agent 代理，任选一个 global 即可
 				Map map = new HashMap();// http://127.0.0.1:${agentPort?c}${agentPath}/cortex/proxy/api/v1/push
-				map.put("url", String.format("http://%s:%s%s/cortex/proxy/api/v1/push",
+				map.put("url", String.format("%s://%s:%s%s/cortex/proxy/api/v1/push",globalPromServers.get(0).getProtocol(),
 						globalPromServers.get(0).getHost(), globalPromServers.get(0).getPort(), agentPath));
 				map.put("token", globalPromServers.get(0).getToken());
 				remoteWriteUrlInfoMapList.add(map);
@@ -622,14 +611,6 @@ public class AgentConfigUtil {
 		}
 		case "2": {
 			if (isLocalStorage) {
-				// 本地存储 and cortex，per-datacenter 配置 remote_write 所有 global cortex -- deprecated
-				/*
-				 * for (Promserver globalPromServer : globalPromServers) { Map map = new
-				 * HashMap();// http://127.0.0.1:${cortexDefaultPort?c}/api/v1/push
-				 * map.put("url", String.format("http://%s:%s/api/v1/push",
-				 * globalPromServer.getHost(), cortexDefaultPort)); map.put("token",
-				 * globalPromServer.getToken()); remoteWriteUrlInfoMapList.add(map); }
-				 */
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
@@ -880,11 +861,14 @@ public class AgentConfigUtil {
 			} else {
 				// s3 对象存储 global 接收 per-datacenter 推过来得数据,第一个支持 nzweb 系统模板即可
 				Map map = new HashMap();
-				map.put("url",
-						String.format("http://%s:%s%s", currentAgent.getHost(),
-								isProxyPush ? currentAgent.getPort() : cortexDefaultPort,
-								isProxyPush ? configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"
-										: "/api/v1/push"));
+				if(isProxyPush) {
+					map.put("url", String.format("%s://%s:%s%s",currentAgent.getProtocol(), 
+							currentAgent.getHost(),currentAgent.getPort(),
+							configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
+				}else {
+					map.put("url", String.format("http://%s:%s%s", currentAgent.getHost(), cortexDefaultPort, "/api/v1/push"));
+				}
+				
 				map.put("token", currentAgent.getToken());
 				remoteWriteUrlInfoMapList.add(map);
 				if (isSupportSysteMetrics) {
@@ -895,15 +879,6 @@ public class AgentConfigUtil {
 		} else {
 			// 联邦关闭
 			if (isLocalStorage) {
-				// 本地配置所有 global remote_write info
-				/*
-				 * for (Promserver promserver : globalPromServers) { Map map = new HashMap();
-				 * map.put("url", String.format("http://%s:%s%s", promserver.getHost(),
-				 * isProxyPush ? promserver.getPort() : cortexDefaultPort, isProxyPush ?
-				 * configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push" :
-				 * "/api/v1/push")); map.put("token", currentAgent.getToken());
-				 * remoteWriteUrlInfoMapList.add(map); }
-				 */
 				// metrics 本地存储，弃用 cortex ，直接采用 prometheus , 根据 sys_config prometheus_fed_mode
 				// 确定 pull/push
 				// 1: pull 2:push 默认 push
@@ -923,7 +898,8 @@ public class AgentConfigUtil {
 						Map map = new HashMap();
 						String remoteWriteUrl;
 						if (isProxyPush) {
-							remoteWriteUrl = String.format("http://%s:%s%s/prometheus/proxy/api/v1/write",
+							remoteWriteUrl = String.format("%s://%s:%s%s/prometheus/proxy/api/v1/write",
+									globalPromServer.getProtocol(),
 									globalPromServer.getHost(), globalPromServer.getPort(),
 									configMap.get(Constant.CONFAGENT_PATH));
 						} else {
@@ -938,11 +914,14 @@ public class AgentConfigUtil {
 			} else {
 				// s3 配置 配置自己即可
 				Map map = new HashMap();
-				map.put("url",
-						String.format("http://%s:%s%s", currentAgent.getHost(),
-								isProxyPush ? currentAgent.getPort() : cortexDefaultPort,
-								isProxyPush ? configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"
-										: "/api/v1/push"));
+				if(isProxyPush) {
+					map.put("url",
+							String.format("%s://%s:%s%s", currentAgent.getProtocol(), currentAgent.getHost(),currentAgent.getPort(),
+									configMap.get(Constant.CONFAGENT_PATH) + "/cortex/proxy/api/v1/push"));
+				}else {
+					map.put("url",
+							String.format("http://%s:%s%s", currentAgent.getHost(), cortexDefaultPort,"/api/v1/push"));
+				}
 				map.put("token", currentAgent.getToken());
 				remoteWriteUrlInfoMapList.add(map);
 			}
@@ -1092,7 +1071,7 @@ public class AgentConfigUtil {
 						Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
 						push.put("token", prom.getToken());
 						String target = Tool.StrUtil.equals("2", logsProxyPushType)
-								? String.format("http://%s:%s%s/loki/proxy", prom.getHost(), prom.getPort(), agentPath)
+								? String.format("%s://%s:%s%s/loki/proxy",prom.getProtocol(), prom.getHost(), prom.getPort(), agentPath)
 								: String.format("http://%s:%s", prom.getHost(), lokiDefaultPort);
 						push.put("target", target);
 						lokiPushUrls.add(push);
@@ -1103,7 +1082,7 @@ public class AgentConfigUtil {
 					Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
 					push.put("token", prom.getToken());
 					String target = Tool.StrUtil.equals("2", logsProxyPushType)
-							? String.format("http://%s:%s%s/loki/proxy", prom.getHost(), prom.getPort(), agentPath)
+							? String.format("%s://%s:%s%s/loki/proxy", prom.getProtocol(), prom.getHost(), prom.getPort(), agentPath)
 							: String.format("http://%s:%s", prom.getHost(), lokiDefaultPort);
 					push.put("target", target);
 					lokiPushUrls.add(push);
@@ -1122,7 +1101,7 @@ public class AgentConfigUtil {
 						if (Tool.ObjectUtil.notEqual(promserver.getId(), prom.getId())) {
 							Map<String, String> remote = Tool.MapUtil.builder("mode", "remote").build();
 							remote.put("token", prom.getToken());
-							remote.put("target", String.format("http://%s:%s%s/loki/proxy", prom.getHost(),
+							remote.put("target", String.format("%s://%s:%s%s/loki/proxy",prom.getProtocol(), prom.getHost(),
 									prom.getPort(), agentPath));
 							lokiPushUrls.add(remote);
 						}

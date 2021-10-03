@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
@@ -43,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -386,8 +388,8 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
      * 重置metric
      */
     private void resetMetric() throws IOException{
-        String seriesUri = "/api/v1/admin/tsdb/delete_series";
-        String tombstonesUri = "/api/v1/admin/tsdb/clean_tombstones";
+        String seriesUri = "/prometheus/proxy/api/v1/admin/tsdb/delete_series";
+        String tombstonesUri = "/prometheus/proxy/api/v1/admin/tsdb/clean_tombstones";
         // 获取正常的监控服务列表
         List<Promserver> promserverList = promserverService.list(
                 new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus,1));
@@ -395,12 +397,13 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
         	final String key=URLEncoder.encode("{__name__=~'.+'}","UTF-8");
             promserverList.forEach(promserver -> {
                 try{
-                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),seriesUri).toString(),"match[]="+key);
-                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),tombstonesUri).toString(),"");
-                }catch (IOException e){
+                	String request = AgentUtil.request(promserver, HttpMethod.POST, seriesUri, String.format("match[]=%s", key), null, String.class);
+                	logger.info("request result: {}",request);
+                	request = AgentUtil.request(promserver, HttpMethod.POST, tombstonesUri, String.format("match[]=%s", key), null, String.class);
+                	logger.info("request result: {}",request);
+                }catch (Exception e){
                     logger.error(e);
                 }
-
             });
         }
     }

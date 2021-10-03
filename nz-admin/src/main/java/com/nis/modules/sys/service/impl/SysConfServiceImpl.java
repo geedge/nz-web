@@ -11,6 +11,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.agent.service.MonitorEventLogService;
+import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.promserver.entity.Promserver;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -276,13 +278,10 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         if(ToolUtil.isNotEmpty(promserverList)){
             final String key= URLEncoder.encode("{__name__=~'.+'}","UTF-8");
             promserverList.forEach(promserver -> {
-                try{
-                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),seriesUri).toString(),"match[]="+key);
-                    HttpClientUtils.httpPost(new URL("http",promserver.getHost(),promserver.getPort(),tombstonesUri).toString(),"");
-                }catch (IOException e){
-                    logger.error(e);
-                }
-
+            	String result = AgentUtil.request(promserver, HttpMethod.POST, seriesUri, String.format("match[]=%s", key), null, String.class);
+            	logger.info("request result: {}",result);
+            	result = AgentUtil.request(promserver, HttpMethod.POST, tombstonesUri, null, null, String.class);
+            	logger.info("request result: {}",result);
             });
         }
     }
