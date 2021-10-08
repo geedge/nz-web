@@ -1075,7 +1075,7 @@ public class AgentConfigUtil {
 					globalPromServers.forEach(prom -> {
 						Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
 						push.put("token", prom.getToken());
-						String target = Tool.StrUtil.equals("2", logsProxyPushType)
+						String target = Tool.StrUtil.equals("1", logsProxyPushType)
 								? String.format("%s://%s:%s%s/loki/proxy",prom.getProtocol(), prom.getHost(), prom.getPort(), agentPath)
 								: String.format("http://%s:%s", prom.getHost(), lokiDefaultPort);
 						push.put("target", target);
@@ -1086,7 +1086,7 @@ public class AgentConfigUtil {
 					Promserver prom = globalPromServers.get(randomInt);
 					Map<String, String> push = Tool.MapUtil.builder("mode", "remote").build();
 					push.put("token", prom.getToken());
-					String target = Tool.StrUtil.equals("2", logsProxyPushType)
+					String target = Tool.StrUtil.equals("1", logsProxyPushType)
 							? String.format("%s://%s:%s%s/loki/proxy", prom.getProtocol(), prom.getHost(), prom.getPort(), agentPath)
 							: String.format("http://%s:%s", prom.getHost(), lokiDefaultPort);
 					push.put("target", target);
