@@ -175,6 +175,7 @@ public class PromProxyController {
 				// 压缩
 				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
 			}
+    		response.setContentLength(Tool.ArrayUtil.length(responseBody));
     		response.getOutputStream().write(responseBody);
     		response.flushBuffer();
 		} catch (Exception e) {
