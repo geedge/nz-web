@@ -522,9 +522,9 @@ public class AgentConfigUtil {
 		// prometheus_metric
 		Map promMetricsMap = new LinkedHashMap();
 		promMetricsMap.put("job_name", "prometheus_metric");
-		promMetricsMap.put("metrics_path",
-				sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy" + "/metrics");
-
+		promMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/prometheus/proxy/metrics");
+		promMetricsMap.put("scheme",promserver.getProtocol());
+		
 		List promMetricsStaticConfigList = new ArrayList();
 		Map promMetricsStaticConfig = new LinkedHashMap(2);
 		List<String> promMetricsTargets = new ArrayList();
@@ -545,7 +545,8 @@ public class AgentConfigUtil {
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
 		agentMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
-
+		agentMetricsMap.put("scheme",promserver.getProtocol());
+		
 		List agentMetricsStaticConfigList = new ArrayList();
 		Map agentMetricsStaticConfig = new LinkedHashMap(2);
 		List agentMetricsTargets = new ArrayList();
@@ -717,6 +718,8 @@ public class AgentConfigUtil {
 			Map federateMap = new LinkedHashMap();
 			federateMap.put("job_name", "federate_" + server.getId());
 			federateMap.put("metrics_path", proxyPath + "/federate");
+			federateMap.put("scheme", server.getProtocol());
+			
 			federateMap.put("isFederate", false);
 			// global 做 ping 检测，且 当前角色为 global
 			if ("1".equals(assetPingFrom) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
@@ -746,6 +749,7 @@ public class AgentConfigUtil {
 		Map promMetricsMap = new LinkedHashMap();
 		promMetricsMap.put("job_name", "prometheus_metric");
 		promMetricsMap.put("metrics_path", proxyPath + "/metrics");
+		promMetricsMap.put("scheme", currentAgent.getProtocol());
 		promMetricsMap.put("isFederate", false);
 		promMetricsMap.put("instanceRelabel", true);
 
@@ -800,6 +804,7 @@ public class AgentConfigUtil {
 		Map agentMetricsMap = new LinkedHashMap();
 		agentMetricsMap.put("job_name", "agent_metrics");
 		agentMetricsMap.put("metrics_path", configMap.get(Constant.CONFAGENT_PATH) + "/actuator/prometheus");
+		agentMetricsMap.put("scheme", currentAgent.getProtocol());
 		agentMetricsMap.put("isFederate", false);
 		agentMetricsMap.put("instanceRelabel", true);
 
