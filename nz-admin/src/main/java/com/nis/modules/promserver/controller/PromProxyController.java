@@ -55,6 +55,7 @@ import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.Header;
 import cn.hutool.log.Log;
 
 @Controller
@@ -153,6 +154,12 @@ public class PromProxyController {
     		for(Entry<String,List<String>> en : entrySet) {
     			String name = en.getKey();
     			List<String> value = en.getValue();
+    			if(en.getKey().equalsIgnoreCase(Header.CONTENT_LENGTH.getValue())) {
+    				continue;
+    			}
+    			if(en.getKey().equalsIgnoreCase(Header.TRANSFER_ENCODING.getValue())) {
+    				continue;
+    			}
     			response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
     		}
     		/*
@@ -167,8 +174,7 @@ public class PromProxyController {
 				Map map = handleResultData(request,bais,isGzipStream);
 				// 压缩
 				responseBody = isGzipStream ? compressedIntoGzipBytes(JSONObject.toJSONString(map), "UTF-8") : JSONObject.toJSONString(map).getBytes("UTF-8");
-			} 
-    		response.setContentLength(responseBody.length);
+			}
     		response.getOutputStream().write(responseBody);
     		response.flushBuffer();
 		} catch (Exception e) {
