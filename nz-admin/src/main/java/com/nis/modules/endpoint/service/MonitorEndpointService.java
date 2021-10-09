@@ -14,7 +14,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     MonitorEndpoint queryEndpointEntity(Integer id);
 
-    PageUtils queryPage(Map<String, Object> params);
+    Map<String,Object> queryPage(Map<String, Object> params);
 
     List<MonitorProject> queryEndpointTree(String name);
 

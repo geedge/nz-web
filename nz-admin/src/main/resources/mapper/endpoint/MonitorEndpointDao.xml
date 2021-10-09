@@ -102,7 +102,6 @@
         </association>
     </resultMap>
 
-	
 	<select id="queryPage" resultMap="endpoint">
 		SELECT
 			e.*,
@@ -120,11 +119,61 @@
 			p.NAME AS p_name,
 			IFNULL( msg.alertNum, 0 ) AS alertNum 
 		FROM
-			monitor_endpoint e
+			(select e.* from  monitor_endpoint e left join monitor_endpoint_state es on e.id = es.endpoint_id
+		<where>
+			<if test="params.states != null and params.states.length > 0">
+					 AND es.state IN
+					 <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
+							 #{state}
+					 </foreach>
+		
+						<if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+								OR es.state >= 2
+						</if>
+			 </if>
+			 
+			 <if test="params.types != null and params.types.length > 0">
+					AND es.type IN
+					<foreach collection="params.types" item="type" index="no" open="(" separator="," close=")">
+							#{type}
+					</foreach>
+			</if>
+			 
+			 <if test="params.metricsStates != null and params.metricsStates.length > 0">
+		                AND es.state IN
+		                <foreach collection="params.metricsStates" item="metricsState" index="no" open="(" separator="," close=")">
+		                    #{metricsState}
+		                </foreach>
+		                
+		                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+		                    OR es.state > 1
+		                </if>
+		                AND es.type = 'metrics'
+		            </if>
+		            
+		            <if test="params.logsStates != null and params.logsStates.length > 0">
+		                <choose>
+				            <when test="params.metricsStates != null and params.metricsStates.length > 0">
+				                OR
+				            </when>
+				            <otherwise>
+				                AND
+				            </otherwise>
+				        </choose>
+		                (es.state IN
+		                <foreach collection="params.logsStates" item="logsState" index="no" open="(" separator="," close=")">
+		                    #{logsState}
+		                </foreach>
+		                
+		                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+		                    OR es.state > 1
+		                </if>
+                AND es.type = 'logs')
+            </if>
+			</where>
+			group by e.id ) e
 			LEFT JOIN monitor_module m ON e.module_id = m.id
 			LEFT JOIN monitor_project p ON m.project_id = p.id
-			LEFT JOIN monitor_endpoint_config ec ON e.id = ec.endpoint_id
-			LEFT JOIN monitor_endpoint_state es ON es.endpoint_id = ec.endpoint_id  AND es.config_id = ec.id
 			LEFT JOIN asset_asset a ON e.asset_id = a.id
 			LEFT JOIN ( SELECT endpoint_id, count( 1 ) AS alertNum FROM alert_message_active WHERE endpoint_id IS NOT NULL GROUP BY endpoint_id ) msg ON e.id = msg.endpoint_id
         <where>
@@ -157,17 +206,6 @@
                 </foreach>
             </if>
 
-            <if test="params.states != null and params.states.length > 0">
-               AND es.state IN
-               <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
-                   #{state}
-               </foreach>
-
-                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
-                    OR es.state >= 2
-                </if>
-           </if>
-
            <if test="params.name != null and params.name != ''">
                AND e.name like CONCAT('%', #{params.name}, '%')
            </if>
@@ -177,19 +215,12 @@
                AND a.name like CONCAT('%', #{params.assetName}, '%')
            </if>
 
-            <if test="params.types != null and params.types.length > 0">
-                AND ec.type IN
-                <foreach collection="params.types" item="type" index="no" open="(" separator="," close=")">
-                    #{type}
-                </foreach>
-            </if>
-
        </where>
         <if test="params.orderBy == null or params.orderBy == ''">
             ORDER BY e.id
         </if>
     </select>
-
+	
     <select id="getSuspendedEndpointIdList" resultType="java.lang.Integer">
         SELECT DISTINCT
             me.id

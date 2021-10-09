@@ -792,7 +792,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 					Map<String,Object> endpointMap =new HashMap<String,Object>();
 					endpointMap.put("moduleIds", monitorModule.getId()+"");
 					endpointMap.put("pageSize", "-1");
-					PageUtils endpointPage = monitorEndpointService.queryPage(endpointMap);
+					PageUtils endpointPage = (PageUtils) monitorEndpointService.queryPage(endpointMap).get("page");
 					List<MonitorEndpoint> monitorEndpoints = (List<MonitorEndpoint>) endpointPage.getList();
 					if(ToolUtil.isEmpty(monitorEndpoints)) {
 						return 0;

@@ -155,7 +155,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public PageUtils queryPage(Map<String, Object> params) {
+    public Map<String,Object> queryPage(Map<String, Object> params) {
+    	Map<String,Object> result = new HashMap<String,Object>();
         // 处理请求参数
         this.handleQueryParam(params);
 
@@ -164,14 +165,18 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 查询结果不为空时处理返回结果
         if (CollectionUtils.isNotEmpty(datas)) {
-            this.handleResuleList(datas);
+            this.handleResuleList(datas,params,result);
         }
 
         page.setRecords(datas);
-        return new PageUtils(page);
+        PageUtils pageUtils = new PageUtils(page);
+        
+        result.put("page", pageUtils);
+        return result;
     }
 
-    private void handleResuleList(List<MonitorEndpoint> endpointList) {
+    @SuppressWarnings("unlikely-arg-type")
+	private void handleResuleList(List<MonitorEndpoint> endpointList,Map<String, Object> params,Map<String,Object> result) {
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
 
         for (MonitorEndpoint endpoint : endpointList) {
@@ -186,6 +191,82 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
             }
             endpoint.setConfigs(configsByEndpointId);
+        }
+        
+        if(ToolUtil.isNotEmpty(params.get("statistics")) && Integer.valueOf((String)params.get("statistics")).equals(1)) {
+        	Map<String,Object> statistics =new HashMap<String,Object>();
+        	// project module state
+        	Map<Integer,Object> projects = new HashMap<Integer,Object>();
+        	Map<Integer,Object> modules = new HashMap<Integer,Object>();
+        	Map<String,Object> states = new HashMap<String,Object>();
+        	for (MonitorEndpoint endpoint : endpointList) {
+        		Integer projectId = endpoint.getProject().getId();
+        		if(ToolUtil.isEmpty(projects.get(projectId))) {
+        			Map <String,Object> project = new HashMap<String,Object>();
+        			project.put("id", projectId);
+        			project.put("name", endpoint.getProject().getName());
+        			project.put("num", 1);
+        			projects.put(projectId,project);
+        		}else {
+        			Map<String,Object> project = (Map<String, Object>) projects.get(projectId);
+        			project.put("num", (Integer)project.get("num")+1);
+        		}
+        		
+        		Integer moduleId = endpoint.getModule().getId();
+        		if(ToolUtil.isEmpty(modules.get(moduleId))) {
+        			Map <String,Object> module = new HashMap<String,Object>();
+        			module.put("id", moduleId);
+        			module.put("name", endpoint.getModule().getName());
+        			module.put("num", 1);
+        			modules.put(moduleId,module);
+        		}else {
+        			Map<String,Object> module = (Map<String, Object>) modules.get(moduleId);
+        			module.put("num", (Integer)module.get("num")+1);
+        		}
+        		
+        		List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
+        		String types=null;
+        		if(ToolUtil.isNotEmpty(params.get("type"))) {
+        			types = (String) params.get("type");
+        		}
+        		for(MonitorEndpointConfig config : configs) {
+        			Integer state = config.getState();
+        			String type = config.getType();
+					if(ToolUtil.isNotEmpty(types) && !types.contains(type)) {
+						continue;
+					}
+        			if(state > 1) {
+        				if(ToolUtil.isEmpty(states.get(config.getType()+2))) {
+        					Map<String,Object> stateObject = new HashMap<String,Object>();
+        					stateObject.put("id",2);
+        					stateObject.put("type", config.getType());
+        					stateObject.put("name","suspended");
+        					stateObject.put("num",1);
+        					states.put(config.getType()+2, stateObject);
+        				}else{
+        					Map<String,Object> stateObject = (Map<String, Object>) states.get(config.getType()+2);
+        					stateObject.put("num", (Integer)stateObject.get("num")+1);
+        				}
+        			}else {
+        				if(ToolUtil.isEmpty(states.get(config.getType()+config.getState()))) {
+        					Map<String,Object> stateObject = new HashMap<String,Object>();
+        					stateObject.put("id",state);
+        					stateObject.put("type", config.getType());
+        					stateObject.put("name",ToolUtil.equals(state, 0)?"down":"up");
+        					stateObject.put("num",1);
+        					states.put(config.getType()+config.getState(), stateObject);
+        				}else{
+        					Map<String,Object> stateObject = (Map<String, Object>) states.get(config.getType()+config.getState());
+        					stateObject.put("num", (Integer)stateObject.get("num")+1);
+        				}
+        			}
+        		}
+        	}
+
+        	statistics.put("project", projects.values());
+        	statistics.put("module", modules.values());
+        	statistics.put("state", states.values());
+        	result.put("statistics", statistics);
         }
     }
 
@@ -222,6 +303,32 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         if (ToolUtil.isNotEmpty(params.get("type"))) {
             params.put("types", String.valueOf(params.get("type")).split(StringPool.COMMA));
         }
+        
+        
+        // metricsStates
+        if (ToolUtil.isNotEmpty(params.get("metricsStates"))) {
+        	String[] metricsStates = String.valueOf(params.get("metricsStates")).split(StringPool.COMMA);
+            params.put("metricsStates", metricsStates);
+            for (String metricsState : metricsStates) {
+                if ("2".equalsIgnoreCase(metricsState)) {
+                    params.put("suspendedStatus", "2");
+                    break;
+                }
+            }
+        }
+        
+        // logsStates
+        if (ToolUtil.isNotEmpty(params.get("logsStates"))) {
+        	String[] logsStates = String.valueOf(params.get("logsStates")).split(StringPool.COMMA);
+            params.put("logsStates", logsStates);
+            for (String logsState : logsStates) {
+                if ("2".equalsIgnoreCase(logsState)) {
+                    params.put("suspendedStatus", "2");
+                    break;
+                }
+            }
+        }
+        
     }
 
     @Override
@@ -428,7 +535,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
 
-        PageUtils page = this.queryPage(params);
+        PageUtils page = (PageUtils) this.queryPage(params).get("page");
         List<MonitorEndpoint> list = (List<MonitorEndpoint>) page.getList();
 
         SXSSFWorkbook workbook = null;

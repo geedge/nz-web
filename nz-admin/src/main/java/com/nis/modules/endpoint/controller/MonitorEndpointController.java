@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +41,15 @@ public class MonitorEndpointController {
     @GetMapping("/endpoint")
     @SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ENDPOINT)
     public R queryEndpointPage(@RequestParam Map<String, Object> params) {
-        PageUtils page = monitorEndpointService.queryPage(params);
-        return R.ok(page);
+        Map result = monitorEndpointService.queryPage(params);
+        Object page = result.get("page");
+        R r =new R();
+        r.put("data", page);
+		r.put("time", new Date());
+        if(ToolUtil.isNotEmpty(result.get("statistics"))) {
+        	r.put("statistics",result.get("statistics"));
+        }
+        return r;
     }
 
     /**
