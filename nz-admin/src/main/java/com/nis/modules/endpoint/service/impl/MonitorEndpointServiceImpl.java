@@ -748,7 +748,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                     Map configMap = (Map) metricsConfigMap.get("config");
                     String protocol = (String) configMap.get("protocol");
                     // 校验 type 类型是否在枚举范围内
-                    if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                    if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)
+                    		&& !StrUtil.equals(Constant.MODULE_TYPE_HTTPS, protocol)) {
                         saveFlag = false;
                         this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ENDPOINT_PROTOCOL_INVALID.getMsg());
                     }
@@ -955,7 +956,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 Map configMap = (Map) metricsConfigMap.get("config");
                 String protocol = (String) configMap.get("protocol");
                 // 校验 type 类型是否在枚举范围内
-                if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)) {
+                if (!StrUtil.equals(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equals(Constant.MODULE_TYPE_SNMP, protocol)
+                		&& !StrUtil.equals(Constant.MODULE_TYPE_HTTPS, protocol)) {
                     throw new NZException(RCode.ENDPOINT_PROTOCOL_INVALID);
                 }
 

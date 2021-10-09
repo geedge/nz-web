@@ -185,6 +185,7 @@ public class Constant {
 	// module 类型 可选值 http、snmp
 	public static final String MODULE_TYPE_HTTP = "http";
 	public static final String MODULE_TYPE_SNMP = "snmp";
+	public static final String MODULE_TYPE_HTTPS = "https";
 
 	// module http 类型默认 path
 	public static final String MODULE_HTTP_DEFAULT_PATH = "/metrics";

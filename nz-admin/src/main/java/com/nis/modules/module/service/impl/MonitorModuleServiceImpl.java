@@ -235,7 +235,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
             String protocol = (String) configMap.get("protocol");
 
             // 校验 type 类型是否在枚举范围内
-            if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+            if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)
+            		&& !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTPS, protocol)) {
                 throw new NZException(RCode.MODULE_PROTOCOL_INVALID);
             }
 
@@ -678,7 +679,8 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
                             }
                         }
                         String protocol = (String) configMap.get("protocol");
-                        if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)) {
+                        if (!StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTP, protocol) && !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_SNMP, protocol)
+                        		&& !StrUtil.equalsIgnoreCase(Constant.MODULE_TYPE_HTTPS, protocol)) {
                             saveFlag = false;
                             this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.MODULE_PROTOCOL_INVALID.getMsg());
                         }
