@@ -28,6 +28,7 @@ import com.nis.common.utils.Tool;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -42,7 +43,8 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 
 	@Autowired
 	private PromserverService promService;
-
+	@Autowired
+	private SysConfigService configService;
 	@Autowired
 	private RedisTemplate redisTemplate;
 	private static ExecutorService exec = Executors.newCachedThreadPool();
@@ -73,6 +75,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	 */
 	public void updateAgentStatus() {
 		List<Promserver> allPromServers = promService.list();
+		String metricsStorageType = configService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
 		allPromServers.stream().forEach(promserver -> promserver.setStatus(null));
 
 		List<Callable<Promserver>> tasks = new ArrayList<>();
@@ -108,8 +111,10 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 								String authState = (String) data.get("auth");
 								String unavailable = "UNAVAILABLE", up = "UP", down = "DOWN";
 								if (down.equals(prometheusState) || down.equals(confagentState)
-										|| down.equals(snmpExporterState) || down.equals(blackboxExporterState)
-										|| down.equals(cortexState) || down.equals(lokiState)) {
+										|| down.equals(snmpExporterState) 
+										|| down.equals(blackboxExporterState)
+										|| (down.equals(cortexState) && promServer.getType() == Constant.PromserverType.GLOBAL.getValue() && "2".equals(metricsStorageType))
+										|| (down.equals(lokiState) && promServer.getType() == Constant.PromserverType.GLOBAL.getValue() )) {
 									// 异常
 									promServer.setStatus(0);
 								} else {
