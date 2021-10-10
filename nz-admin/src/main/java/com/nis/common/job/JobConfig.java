@@ -12,6 +12,8 @@ import com.nis.modules.asset.job.AssetTalonStatusJob;
 import com.nis.modules.endpoint.job.EndpointStateJob;
 import com.nis.modules.sys.job.CleanJob;
 import com.nis.modules.sys.job.SessionTimeOutJob;
+import com.nis.modules.sys.job.SysComponentJob;
+
 import org.apache.commons.lang.StringUtils;
 import org.quartz.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +70,10 @@ public class JobConfig {
 	@Value("${nezha.terminalCleanJobCron:0 0 1 * * ?}")
 	private String terminalCleanJobCron;
 	
-    @Autowired
+	@Value("${nezha.sysComponentJobCron:0/30 * * * * ?}")
+	private String sysComponentJobCron;
+
+	@Autowired
     private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
     //private SchedulerFactoryBean schedulerFactoryBean;
@@ -85,6 +90,7 @@ public class JobConfig {
     private String haJobName = "HA_JOB";
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
     private String cleanJobCronName = "CLEAN_JOB";
+    private String sysComponentJobName = "SYSCOMPONENT_JOB";
    
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -146,6 +152,11 @@ public class JobConfig {
         return JobBuilder.newJob(AlertRuleManagerJob.class).withIdentity(JOB_NAME + alertRuleManagerJobName).storeDurably().build();
     }
 	
+    @Bean
+    public JobDetail sysComponentJobDetail() {
+        return JobBuilder.newJob(SysComponentJob.class).withIdentity(JOB_NAME + sysComponentJobName).storeDurably().build();
+    }
+    
     @PostConstruct
     public void init() throws SchedulerException {
         // agent 健康检查定时任务
@@ -184,6 +195,9 @@ public class JobConfig {
 
         // terminal clean job 如果配置文件没有配置定时周期  每天凌晨1点执行一次
         createCronScheduleJob(cleanJobCronName, cleanJobDetail(), StringUtils.isEmpty(terminalCleanJobCron) ? "0 0 1 * * ?" : terminalCleanJobCron);
+        
+        //sys component 状态更新线程
+        createCronScheduleJob(sysComponentJobName, sysComponentJobDetail(), StringUtils.isEmpty(sysComponentJobCron) ? "0/30 * * * * ?" : sysComponentJobCron);
     }
     
     /**

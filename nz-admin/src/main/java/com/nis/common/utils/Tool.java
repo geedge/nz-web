@@ -11,6 +11,7 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.time.LocalDateTime;
@@ -491,9 +492,22 @@ public class Tool {
 	/**
 	 * 网络相关工具
 	 *
-	 * @author xiaoleilu
 	 */
-	public static class NetUtil extends cn.hutool.core.net.NetUtil {}
+	public static class NetUtil extends cn.hutool.core.net.NetUtil {
+		
+		public static String getLocalIPBySocket(String host,Integer port) {
+			Socket socket = null;
+			try {
+				socket = new Socket(host, port);
+				return socket.getLocalAddress().getHostAddress();
+			} catch (Exception e) {
+				return Tool.NetUtil.getLocalhostStr();
+			} finally {
+				Tool.IoUtil.close(socket);
+			}
+		}
+		
+	}
 	/**
 	 * 源码编译工具类，主要封装{@link JavaCompiler} 相关功能
 	 *
