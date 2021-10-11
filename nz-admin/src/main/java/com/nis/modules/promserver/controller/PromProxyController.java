@@ -168,7 +168,7 @@ public class PromProxyController {
     		if ("/api/v1/query_range".equals(promPath) && statusCode < 300) {
 				// 处理缺失时间数据
     			List<String> list = httpHeaders.get(HttpHeaders.CONTENT_ENCODING);
-				String contentEncoding = list.size()==1?list.get(0):"";
+				String contentEncoding = Tool.CollUtil.isNotEmpty(list)?list.get(0):"";
 				boolean isGzipStream = StrUtil.equalsIgnoreCase("gzip", contentEncoding);
 				bais = new ByteArrayInputStream(responseBody);
 				Map map = handleResultData(request,bais,isGzipStream);
