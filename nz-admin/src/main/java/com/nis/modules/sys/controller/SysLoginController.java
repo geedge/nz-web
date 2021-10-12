@@ -146,7 +146,7 @@ public class SysLoginController extends AbstractController {
 			result.put("authFlag", authFlag);
 			result.put("authBind", authBind);
 			result.put("mfaAuthEnable", mfaAuthEnable);
-			
+			result.put("user", u);
 			// 查询系统配置信息
 			String[] paramkeys = {"system_name", "system_logo", "timezone", "default_cabinet_usize", "map_center_config", "unsaved_change","prometheus_federation_enabled"};
 			List<SysConfigEntity> configEntityList = configService.list(new LambdaUpdateWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, paramkeys));

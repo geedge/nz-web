@@ -163,7 +163,12 @@ public class EventLogSqlInterceptor implements Interceptor {
 				// 元信息变更 修改 prometheus promtail
 
 				// eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
-				eventLogService.increment("prometheus", "promtail", "cortex", "loki");
+				if(updateEntity.getType().equals(Constant.PromserverType.GLOBAL.getValue())) {
+					eventLogService.increment("prometheus", "promtail", "cortex", "loki");
+				}else {
+					eventLogService.increment("prometheus", "promtail");
+				}
+				
 			}
 		}
 	}

@@ -22,7 +22,8 @@
 			su.mobile,
 			su.mfa_level,
 			su.last_login_time,
-			su.last_login_ip
+			su.last_login_ip,
+			su.lang
 		FROM
 			sys_user su
 		<where>
