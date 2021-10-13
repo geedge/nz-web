@@ -133,16 +133,17 @@ public class EndpointStateJob extends QuartzJobBean {
      */
     private List<MonitorEndpointState> getUpMetricsEndpointStateList(Promserver promserver, List<MonitorEndpointConfig> endpointConfigList) {
     	String promPathPrefix = promserverService.getPromPathPrefix();
-        String urlPath = promPathPrefix + "/api/v1/query?query=up";
+        String urlPath = promPathPrefix + "/api/v1/query";
+        String queryString = "query=up";
 
-        Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath(promserver, urlPath);
+        Map<Integer, String> metricsEndpointIdAndState = getMetricsEndpointIdAndStateMapByPath(promserver, urlPath, queryString);
 
         List<MonitorEndpointState> upMetricsEndpointStateList = new ArrayList<>();
         for (Map.Entry<Integer, String> entry : metricsEndpointIdAndState.entrySet()) {
             Integer endpointId = entry.getKey();
             String stateStr = entry.getValue();
             if ("1".equals(stateStr)) {
-                MonitorEndpointConfig endpointConfig = endpointConfigList.stream().filter(conf -> conf.getEndpointId().equals(endpointId) && StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType())).findFirst().get();
+                MonitorEndpointConfig endpointConfig = endpointConfigList.stream().filter(conf -> conf.getEndpointId().equals(endpointId) && StrUtil.equals(Constant.MonitorConfType.METRICS.getValue(), conf.getType())).findFirst().orElse(null);
                 if (endpointConfig == null) continue;
                 upMetricsEndpointStateList.add(new MonitorEndpointState(endpointId, endpointConfig.getId(), Constant.MonitorConfType.METRICS.getValue(), 1, endpointConfig.getVersion(), new Date()));
             }
@@ -166,10 +167,11 @@ public class EndpointStateJob extends QuartzJobBean {
      *
      * @param promserver
      * @param urlPath
+     * @param queryString
      * @return
      */
-    private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath(Promserver promserver, String urlPath) {
-        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath);
+    private Map<Integer, String> getMetricsEndpointIdAndStateMapByPath(Promserver promserver, String urlPath, String queryString) {
+        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath, queryString);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

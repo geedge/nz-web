@@ -248,17 +248,18 @@ public class AlertRuleJudgeRunnable implements Runnable {
 				queryTime = queryTime * 1000 * 1000;
 			}
 		}
-		
-		String path = null;
-		if(type == 1) {
+
+		String path = null, queryString = null;
+		if (type == 1) {
 			String promPathPrefix = promService.getPromPathPrefix();
-			path = String.format("%s/api/v1/query?query=%s&time=%s", promPathPrefix, expression, queryTime == null ? "" : queryTime);
-		}else if (type == 2) {
+			path = String.format("%s/api/v1/query", promPathPrefix);
+			queryString = String.format("query=%s&time=%s", expression, queryTime == null ? "" : queryTime);
+		} else if (type == 2) {
 			String agentPathPrex = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
-			path = String.format("%s/loki/proxy/loki/api/v1/query?query=%s&limit=1&time=%s", agentPathPrex, expression,
-					queryTime == null ? "" : queryTime);
+			path = String.format("%s/loki/proxy/loki/api/v1/query", agentPathPrex);
+			queryString = String.format("query=%s&limit=1&time=%s", expression, queryTime == null ? "" : queryTime);
 		}
-		JSONObject jsonObject = promService.requestAgent(agent, path);
+		JSONObject jsonObject = promService.requestAgent(agent, path, queryString);
 		return jsonObject;
 	}
 

@@ -86,18 +86,16 @@ public class AssetPingStatusJob extends QuartzJobBean {
         List<SysConfigEntity> configList = sysConfigService.list(new LambdaQueryWrapper<SysConfigEntity>().in(SysConfigEntity::getParamKey, Constant.CONFAGENT_PATH, Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL));
         Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
 
-        String confagentPath = configMap.get(Constant.CONFAGENT_PATH);
         long currentTimeMillis = System.currentTimeMillis();
         // 单位 s
         String assetPingIntervalStr = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_INTERVAL);
         // 减去 半个 asset ping interval 周期，保证数据的完整性
         long time = (currentTimeMillis - Long.valueOf(assetPingIntervalStr) * 1000 / 2) / 1000;
         String promPathPrefix = promService.getPromPathPrefix();
-        String pingStateUrlPath = promPathPrefix + "/api/v1/query?query=probe_success&time=" + time;
-        String rttUrlPath = promPathPrefix + "/api/v1/query?query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time;
+        String queryPath = promPathPrefix + "/api/v1/query";
 
-        Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, pingStateUrlPath);
-        Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, rttUrlPath);
+        Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_success&time=" + time);
+        Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time);
 
         // 如果当前未查询到数据，放弃本次更新
         if (ToolUtil.isEmpty(assetHostAndStateMap) || ToolUtil.isEmpty(assetHostAndRttMap)) return;
@@ -160,10 +158,11 @@ public class AssetPingStatusJob extends QuartzJobBean {
      *
      * @param promserver
      * @param urlPath
+     * @param queryString
      * @return
      */
-    private Map<String, String> getMetricsDatabByPath(Promserver promserver, String urlPath) {
-        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath);
+    private Map<String, String> getMetricsDatabByPath(Promserver promserver, String urlPath,String queryString) {
+        JSONObject jsonObject = promserverService.requestAgent(promserver, urlPath, queryString);
         Map dataMap = (Map) jsonObject.get("data");
         List<Map> resultList = JSONObject.parseArray(JSONObject.toJSONString(dataMap.get("result")), Map.class);
 

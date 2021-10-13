@@ -2,6 +2,7 @@ package com.nis.modules.promserver.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import cn.hutool.core.net.url.UrlQuery;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,8 +97,9 @@ public class LokiLogController {
 			logql = logql.replaceAll("&quot;", "\"");
 			String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 					.setPort(server.getPort())
-					.setPath(UrlPath.of(agentPath + "/loki/api/v1/query_range", Charset.forName("UTF-8"))).toURL()
-					.toString() + "?query=" + URLEncoder.encode(logql) + "&" + queryString;
+					.setPath(UrlPath.of(agentPath + "/loki/api/v1/query_range", Charset.forName("UTF-8")))
+					.setQuery(UrlQuery.of("query=" + URLEncoder.encode(logql) + "&" + queryString, Charset.forName("UTF-8")))
+					.toString();
 			requestUrlList.add(url);
 		}
 
@@ -200,8 +203,7 @@ public class LokiLogController {
 					HttpHeaders headers = new HttpHeaders();
 					headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
 					HttpEntity httpEntity = new HttpEntity(headers);
-					ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity,
-							String.class);
+					ResponseEntity<String> responseEntity = restTemplate.exchange(new URI(url), HttpMethod.GET, httpEntity, String.class);
 					boolean ok = responseEntity.getStatusCode().is2xxSuccessful();
 					if (ok) {
 						return responseEntity.getBody();

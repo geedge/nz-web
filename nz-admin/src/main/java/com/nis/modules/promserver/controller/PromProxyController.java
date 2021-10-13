@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,12 +138,12 @@ public class PromProxyController {
             // 构造请求路径
     		String promPathPrefix = promserverService.getPromPathPrefix();
     		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
-            String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+            String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
             		.setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")))
-            		.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toURL().toString();
+            		.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
             String method = request.getMethod();
             //发送 请求
-    		ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
+			ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlStr), HttpMethod.resolve(method), httpEntity, byte[].class);
     		//响应码
     		int statusCode = exchange.getStatusCodeValue();
     		//响应头

@@ -1,5 +1,7 @@
 package com.nis.modules.agent.util;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,14 +59,14 @@ public class AgentUtil {
 			Class<T> responseType) {
 		String agentPath = sysConfigService.getValueOrDefault(Constant.CONFAGENT_PATH, "");
 		path = path.startsWith("/") ? (String.format("%s%s", agentPath,path)) :(String.format("%s/%s", agentPath,path));
-		String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+		String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(path, Charset.forName("UTF-8")))
-				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toURL().toString();
+				.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
 		HttpEntity httpEntity = body == null ? new HttpEntity(headers) : new HttpEntity(body, headers);
 		// 发送 请求
-		return request(url, method, server.getToken(), body, responseType);
+		return request(urlString, method, server.getToken(), body, responseType);
 	}
 
 	
@@ -74,7 +76,12 @@ public class AgentUtil {
 		headers.add(HttpHeaders.AUTHORIZATION, token);
 		HttpEntity httpEntity = body == null ? new HttpEntity(headers) : new HttpEntity(body, headers);
 		// 发送 请求
-		ResponseEntity<T> exchange = restTemplate.exchange(url, method, httpEntity, responseType);
+		ResponseEntity<T> exchange = null;
+		try {
+			exchange = restTemplate.exchange(new URI(url), method, httpEntity, responseType);
+		} catch (URISyntaxException e) {
+			log.error(e);
+		}
 		return exchange.getBody();
 	}
 

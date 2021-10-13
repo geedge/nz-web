@@ -1,5 +1,7 @@
 package com.nis.modules.promserver.service.impl;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.net.url.UrlQuery;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -202,20 +205,25 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 	@Override
-	public JSONObject requestAgent(Promserver server, String urlPath) {
-		String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-        		.setPort(server.getPort()).setPath(UrlPath.of(urlPath, Charset.forName("UTF-8")))
-        		.toURL().toString();
-		
+	public JSONObject requestAgent(Promserver server, String urlPath, String requestAgent) {
+		String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+				.setPort(server.getPort()).setPath(UrlPath.of(urlPath, Charset.forName("UTF-8")))
+				.setQuery(UrlQuery.of(requestAgent, Charset.forName("UTF-8"))).toString();
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
 		HttpEntity httpEntity = new HttpEntity(headers);
-		ResponseEntity<JSONObject> responseEntity = restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class);
-		log.info("agent request url:{},responseStatus:{}",url,responseEntity.getStatusCodeValue());
-		if (log.isDebugEnabled()) {
-			log.debug("agent request body:{}",url,responseEntity.getStatusCodeValue(),responseEntity.getBody());
+		ResponseEntity<String> responseEntity = null;
+		try {
+			responseEntity = restTemplate.exchange(new URI(urlStr), HttpMethod.GET, httpEntity, String.class);
+		} catch (URISyntaxException e) {
+			log.error(e);
 		}
-		return responseEntity.getBody();
+		log.info("agent request url:{},responseStatus:{}",urlStr,responseEntity.getStatusCodeValue());
+		if (log.isDebugEnabled()) {
+			log.debug("agent request body:{}",urlStr,responseEntity.getStatusCodeValue(),responseEntity.getBody());
+		}
+		return JSONObject.parseObject(responseEntity.getBody());
 	}
 	
 }
