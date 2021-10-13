@@ -98,6 +98,19 @@ public class SysUserController extends AbstractController {
 		return this.info(userId);
 	}
 	
+	/**
+	 * 用户修改个人信息
+	 * @return
+	 */
+	@PutMapping("/profile")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	public R profile(@RequestBody SysUserEntity user) {
+		Long userId = this.getUserId();
+		user.setId(userId);
+		Integer id = sysUserService.update(user);
+		return R.ok().putData("id", id);
+	}
+	
 	@RequestMapping("/disableMfa")
 	public R disableMfa() {
 		Long userId = this.getUserId();
