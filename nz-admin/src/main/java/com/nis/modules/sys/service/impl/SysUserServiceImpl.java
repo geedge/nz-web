@@ -40,6 +40,7 @@ import com.nis.common.utils.Constant;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysRoleDao;
 import com.nis.modules.sys.dao.SysUserDao;
@@ -156,7 +157,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		ValidateUtils.is(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64);
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
-
+		if(Tool.StrUtil.isBlank(user.getLang())) {
+			user.setLang("en");
+		}
 		user.setCreateAt(new Date());
 		//sha256加密
 		String salt = RandomStringUtils.randomAlphanumeric(20);
@@ -178,7 +181,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
-
+		if(Tool.StrUtil.isBlank(user.getLang())) {
+			user.setLang("en");
+		}
 		if (StringUtils.isBlank(user.getPin())) {
 			user.setPin(null);
 		} else {
@@ -192,7 +197,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			user.setPin(ShiroUtils.sha256(user.getPin(), userEntity.getSalt()));
 		}
 
-		user.setCreateBy(ShiroUtils.getUserId().intValue());
 		this.updateById(user);
 
 		// 处理用户角色关系
