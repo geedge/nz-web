@@ -784,18 +784,20 @@ public class AgentConfigUtil {
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
 
 		// nezha_metrics
+		String alertApi = configMap.get(Constant.SYSCONFIG_KEY_ALERT_API);
+		String scheme = Tool.StrUtil.isBlank(alertApi) ? "http": alertApi.split("://")[0];
+		String target = Tool.StrUtil.isBlank(alertApi) ? "" : alertApi.replace(scheme + "://", "");
 		Map nezhaMetricsMap = new LinkedHashMap();
+		String[] split = alertApi.split("://");
 		nezhaMetricsMap.put("job_name", "nezha_metrics");
-		nezhaMetricsMap.put("metrics_path",
-				configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
+		nezhaMetricsMap.put("metrics_path",configMap.get(Constant.SYSCONFIG_KEY_ALERT_PATH_PREFIX) + "/actuator/prometheus");
 		nezhaMetricsMap.put("isFederate", false);
+		nezhaMetricsMap.put("scheme", scheme); // 协议
 		nezhaMetricsMap.put("instanceRelabel", true);
-
 		List nezhaMetricsStaticConfigList = new ArrayList();
-
 		Map nezhaMetricsStaticConfig = new LinkedHashMap(2);
 		List nezhaMetricsTargets = new ArrayList();
-		nezhaMetricsTargets.add(configMap.get(Constant.SYSCONFIG_KEY_ALERT_API));
+		nezhaMetricsTargets.add(target); // ip:port
 		nezhaMetricsStaticConfig.put("targets", nezhaMetricsTargets);
 		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
 		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
