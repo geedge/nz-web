@@ -4,29 +4,21 @@ import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
-import cn.hutool.http.HttpConnection;
+import cn.hutool.http.Header;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.BufferReaderWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
 import net.sf.json.util.JSONUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -38,18 +30,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.Map.Entry;
@@ -156,12 +144,13 @@ public class LokiProxyController {
          // 请求 prometheus server
             String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
             String realPath = agentPath + "/loki/proxy" + proxyPath;
-            String url = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
-            		.setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
-            		.setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toURL().toString();
+            String urlString = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
+                    .setPort(server.getPort()).setPath(UrlPath.of(realPath, Charset.forName("UTF-8")))
+                    .setQuery(UrlQuery.of(queryString, Charset.forName("UTF-8"))).toString();
             String method = request.getMethod();
             //发送 请求
-    		ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
+            // ResponseEntity<byte[]> exchange = restTemplate.exchange(url, HttpMethod.resolve(method), httpEntity, byte[].class);
+            ResponseEntity<byte[]> exchange = restTemplate.exchange(new URI(urlString), HttpMethod.resolve(method), httpEntity, byte[].class);
     		//响应码
     		int statusCode = exchange.getStatusCodeValue();
     		//响应头
@@ -173,6 +162,12 @@ public class LokiProxyController {
     		for(Entry<String,List<String>> en : entrySet) {
     			String name = en.getKey();
     			List<String> value = en.getValue();
+                if(en.getKey().equalsIgnoreCase(Header.CONTENT_LENGTH.getValue())) {
+                    continue;
+                }
+                if(en.getKey().equalsIgnoreCase(Header.TRANSFER_ENCODING.getValue())) {
+                    continue;
+                }
     			response.setHeader(name, Tool.StrUtil.join(",", value.toArray()));
     		}
     		/*

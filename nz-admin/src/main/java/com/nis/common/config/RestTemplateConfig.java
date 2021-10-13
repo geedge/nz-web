@@ -1,10 +1,5 @@
 package com.nis.common.config;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.SSLContext;
-
 import org.apache.http.HeaderElement;
 import org.apache.http.HeaderElementIterator;
 import org.apache.http.HttpResponse;
@@ -27,9 +22,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * Http resttemplate 配置
@@ -70,8 +73,25 @@ public class RestTemplateConfig {
 
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder, ClientHttpRequestFactory requestFactory) {
-		RestTemplate restTemplate = builder.build();
+		RestTemplate restTemplate =  builder.build();
 		restTemplate.setRequestFactory(requestFactory);
+		restTemplate.setErrorHandler(new DefaultResponseErrorHandler() {
+			@Override
+			public boolean hasError(ClientHttpResponse response) throws IOException {
+				int rawStatusCode = response.getRawStatusCode();
+				HttpStatus statusCode = HttpStatus.resolve(rawStatusCode);
+				return (statusCode != null ? statusCode.isError() : hasError(rawStatusCode));
+			}
+
+			protected boolean hasError(int unknownStatusCode) {
+				HttpStatus.Series series = HttpStatus.Series.resolve(unknownStatusCode);
+				return (series == HttpStatus.Series.CLIENT_ERROR || series == HttpStatus.Series.SERVER_ERROR);
+			}
+
+			@Override
+			public void handleError(ClientHttpResponse response) throws IOException {
+			}
+		});
 		return restTemplate;
 	}
 
