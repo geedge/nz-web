@@ -700,7 +700,7 @@ public class AgentConfigUtil {
 		String assetPingFrom = configMap.get(Constant.SYSCONFIG_KEY_ASSET_PING_FROM);
 		for (Promserver server : allPromserverList) {
 			// 联邦开启
-			if (fedeEnabled) {
+			/*if (fedeEnabled) {
 				// global 做 ping 检测，联邦排除自己
 				if ("1".equals(assetPingFrom)) {
 					if (server.getId().equals(currentAgent.getId()))
@@ -714,13 +714,17 @@ public class AgentConfigUtil {
 				// 联邦关闭
 				if (server.getId().equals(currentAgent.getId()))
 					continue;
-			}
+			}*/
+
+			if (server.getId().equals(currentAgent.getId()))
+				continue;
+
 			Map federateMap = new LinkedHashMap();
 			federateMap.put("job_name", "federate_" + server.getId());
 			federateMap.put("metrics_path", proxyPath + "/federate");
 			federateMap.put("scheme", server.getProtocol());
 			
-			federateMap.put("isFederate", false);
+			federateMap.put("isFederate", true);
 			// global 做 ping 检测，且 当前角色为 global
 			if ("1".equals(assetPingFrom) && Constant.PromserverType.GLOBAL.getValue().equals(server.getType())) {
 				federateMap.put("scrapePing", true);
@@ -863,7 +867,16 @@ public class AgentConfigUtil {
 						jobList.add(map);
 					}
 				} else if (StrUtil.equals("2", prometheusFedMode)) {
-					// global使用 remote_write 集中收集各个 per-datacenter数据 -- do nothing
+					// global使用 remote_write 集中收集各个 per-datacenter数据 , 通过 联邦 job 收集其他 global 数据（global 负责任务采集，如 ping prometheus 等）
+					// 只采集 其他 global 即可
+					List<Integer> globalPromServerIdList = globalPromServers.stream().map(Promserver::getId).collect(Collectors.toList());
+					for (Map map : federateMapList) {
+						String jobName = (String) map.get("job_name");
+						Integer serverId = Integer.valueOf(jobName.replaceAll("federate_", ""));
+						if (globalPromServerIdList.contains(serverId) && !serverId.equals(currentAgent.getId())) {
+							jobList.add(map);
+						}
+					}
 				}
 			} else {
 				// s3 对象存储 global 接收 per-datacenter 推过来得数据,第一个支持 nzweb 系统模板即可
