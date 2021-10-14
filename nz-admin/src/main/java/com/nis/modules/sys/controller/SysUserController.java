@@ -105,8 +105,6 @@ public class SysUserController extends AbstractController {
 	@PutMapping("/profile")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
 	public R profile(@RequestBody SysUserEntity user) {
-		Long userId = this.getUserId();
-		user.setId(userId);
 		Integer id = sysUserService.update(user);
 		return R.ok().putData("id", id);
 	}
