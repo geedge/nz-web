@@ -458,7 +458,7 @@ public class CommonUtils {
     /**
      * Valid characters for IRI label defined in RFC 3987.
      */
-    private static final String LABEL_CHAR = "a-zA-Z0-9";
+    private static final String LABEL_CHAR = "a-zA-Z0-9\\s";
 
     /**
      * Valid characters for IRI TLD defined in RFC 3987.
