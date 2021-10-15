@@ -159,6 +159,10 @@ public class LokiProxyController {
     		response.reset();
     		response.setStatus(statusCode);
     		Set<Entry<String,List<String>>> entrySet = httpHeaders.entrySet();
+    		//设置cors响应头
+    		Constant.CORS_HEADER.forEach((k,v)->{
+    			response.setHeader(k, v);
+    		});
     		for(Entry<String,List<String>> en : entrySet) {
     			String name = en.getKey();
     			List<String> value = en.getValue();

@@ -101,7 +101,6 @@ public class Constant {
 		}
 	}
 
-
 	public static final String ORACLE = "oracle";
 	public static final String MYSQL = "mysql";
 	public static final String POSTGRESQL = "postgresql";
@@ -243,13 +242,13 @@ public class Constant {
 	 */
 	public static final Map<Integer, String> ALERT_MESSAGE_STATE_TABLE_MAPPING = Tool.MapUtil.newHashMap();
 
-    /**
-     * alert message 状态 与 名称 对应关系 KEY :state
-     */
+	/**
+	 * alert message 状态 与 名称 对应关系 KEY :state
+	 */
 	public static final Map<Integer, String> ALERT_MESSAGE_STATE_NAME_MAPPING = Tool.MapUtil.newHashMap();
 
 	/**
-	 * 表名 和 排序字段对应关系  KEY: tablename
+	 * 表名 和 排序字段对应关系 KEY: tablename
 	 */
 	public static final Map<String, Map<String, String>> TABLE_NAME_ORDER_FIELD_MAPPING = Tool.MapUtil.newHashMap();
 
@@ -403,9 +402,9 @@ public class Constant {
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, ALERT_MESSAGE_SILENCE_TABLE);
 		ALERT_MESSAGE_STATE_TABLE_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, ALERT_MESSAGE_HISTORY_TABLE);
 
-        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_ACTIVE_STATE, "active");
-        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, "silence");
-        ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, "expired");
+		ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_ACTIVE_STATE, "active");
+		ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_SILENCE_STATE, "silence");
+		ALERT_MESSAGE_STATE_NAME_MAPPING.put(ALERT_MESSAGE_HISTORY_STATE, "expired");
 
 		Map<String, String> assetOrderFieldMap = new HashMap<>();
 		assetOrderFieldMap.put("name", "asset.name");
@@ -472,7 +471,7 @@ public class Constant {
 		alertMsgOrderFieldMap.put("alertRule", "ar.name");
 		alertMsgOrderFieldMap.put("labels", "am.labels");
 		alertMsgOrderFieldMap.put("startAt", "am.start_at");
-		alertMsgOrderFieldMap.put("severityId","am.severity_id");
+		alertMsgOrderFieldMap.put("severityId", "am.severity_id");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_message_active", alertMsgOrderFieldMap);
 
 		Map<String, String> alertRuleOrderFieldMap = new HashMap<>();
@@ -607,7 +606,7 @@ public class Constant {
 
 	public enum PanelType {
 		DASHBOARD("dashboard"), ASSET("asset"), PROJECT("project"), MODULE("module"), ENDPOINT("endpoint"),
-		MODEL("model"),TEMPLATE("template");
+		MODEL("model"), TEMPLATE("template");
 
 		private String value;
 
@@ -625,14 +624,9 @@ public class Constant {
 	}
 
 	public enum PromserverType {
-		GLOBAL("global", 1),
-		PER_DATACENTER("per_datacenter", 2),
-		THANOS_QUERY("thanos_query", 3),
-		THANOS_RULE("thanos_rule", 4),
-		THANOS_SIDECAR("thanos_sidecar", 5),
-		THANOS_STORE("thanos_store", 6),
-		THANOS_COMPACTOR("thanos_compactor", 7),
-		LOKI("loki", 11);
+		GLOBAL("global", 1), PER_DATACENTER("per_datacenter", 2), THANOS_QUERY("thanos_query", 3),
+		THANOS_RULE("thanos_rule", 4), THANOS_SIDECAR("thanos_sidecar", 5), THANOS_STORE("thanos_store", 6),
+		THANOS_COMPACTOR("thanos_compactor", 7), LOKI("loki", 11);
 
 		private String name;
 		private Integer value;
@@ -669,9 +663,7 @@ public class Constant {
 	}
 
 	public enum MonitorConfType {
-		METRICS("metrics"),
-		LOGS("logs"),
-		TRACE("trace");
+		METRICS("metrics"), LOGS("logs"), TRACE("trace");
 
 		private String value;
 
@@ -729,8 +721,9 @@ public class Constant {
 	// 配置表中 prometheus rule.yml 模板 Key
 	public static final String SYSCONFIG_KEY_PROM_RULE_TMPL = "prom_rule_tmpl";
 
-	// 配置表中 prometheus 本地保存天数配置  deprecated
-	// public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION = "storage_local_retention";
+	// 配置表中 prometheus 本地保存天数配置 deprecated
+	// public static final String SYSCONFIG_KEY_STORAGE_LOCAL_RETENTION =
+	// "storage_local_retention";
 
 	// 配置表中 alert_api
 	public static final String SYSCONFIG_KEY_ALERT_API = "alert_api";
@@ -745,7 +738,7 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_TYPE = "metrics_storage_type";
 
 	// 指标存储天数，默认30天，单位天
-	public static final String SYSCONFIG_KEY_METRICS_STORAGE_RETENTION= "metrics_storage_retention";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_RETENTION = "metrics_storage_retention";
 
 	// cortex.yml 配置模板
 	public static final String SYSCONFIG_KEY_CORTEX_YML_TMPL = "cortex_yml_tmpl";
@@ -765,30 +758,25 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY = "metrics_storage_s3_secret_access_key";
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE = "metrics_storage_s3_insecure";
 
-
-    // 日志存储模式，1: 本地文件存储，2：S3对象存储
-    public static final String SYSCONFIG_KEY_LOGS_STORAGE_TYPE = "logs_storage_type";
+	// 日志存储模式，1: 本地文件存储，2：S3对象存储
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_TYPE = "logs_storage_type";
 
 	/**
-	 * 日志代理模式 logs_proxy_push_type
-	 *  1: 全部使用 agent proxy 方式
-	 *  2: 联邦开启模式下，promtail 先推送至 per-datacenter agent 代理接口，再 push global loki
-	 *  3: promtail push global loki
+	 * 日志代理模式 logs_proxy_push_type 1: 全部使用 agent proxy 方式 2: 联邦开启模式下，promtail 先推送至
+	 * per-datacenter agent 代理接口，再 push global loki 3: promtail push global loki
 	 */
 	public static final String SYSCONFIG_KEY_LOGS_PROXY_PUSH_TYPE = "logs_proxy_push_type";
 
 	/**
-	 * 指标代理模式 metrics_proxy_push_type
-	 * 1: 经过 agent 代理推送 cortex
-	 * 2: 直接推送 cortex
+	 * 指标代理模式 metrics_proxy_push_type 1: 经过 agent 代理推送 cortex 2: 直接推送 cortex
 	 */
 	public static final String SYSCONFIG_KEY_METRICS_PROXY_PUSH_TYPE = "metrics_proxy_push_type";
 
-    // 日志存储天数，默认7天，单位天
-    public static final String SYSCONFIG_KEY_LOGS_STORAGE_RETENTION = "logs_storage_retention";
+	// 日志存储天数，默认7天，单位天
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_RETENTION = "logs_storage_retention";
 
-    // 日志本地存储路径
-    public static final String SYSCONFIG_KEY_LOGS_STORAGE_LOCAL_PATH= "logs_storage_local_path";
+	// 日志本地存储路径
+	public static final String SYSCONFIG_KEY_LOGS_STORAGE_LOCAL_PATH = "logs_storage_local_path";
 
 	/**
 	 * logs s3 配置
@@ -799,14 +787,11 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_SECRET_ACCESS_KEY = "logs_storage_s3_secret_access_key";
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_S3_INSECURE = "logs_storage_s3_insecure";
 
-
 	/**
 	 * agent 配置下发 cortex / loki 重启超时时间设置 （在多少 秒 内返回 503 仍视为可用）
 	 */
 	public static final String SYSCONFIG_KEY_CORTEX_UPDATE_TIMEOUT = "cortex_update_timeout";
 	public static final String SYSCONFIG_KEY_LOKI_UPDATE_TIMEOUT = "loki_update_timeout";
-
-
 
 	// 邮件告警开关
 	public static final String SYSCONFIG_KEY_EMAIL_ENABLE = "email_enable";
@@ -816,7 +801,7 @@ public class Constant {
 
 	// 内置 generator 路径
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
-	// 配置表中 blackbox 源， 1: global  2: per-datacenter  默认：1
+	// 配置表中 blackbox 源， 1: global 2: per-datacenter 默认：1
 	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
 
 	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint
@@ -824,7 +809,8 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED = "prometheus_federation_enabled";
 
 	// prometheus 数据采集模式，只在 metrics 本地存储时有效
-	// 1：global 使用 federation job 集中收集各个 per-datacenter 数据, 2：global 使用 remote_write 集中收集各个 per-datacenter数据
+	// 1：global 使用 federation job 集中收集各个 per-datacenter 数据, 2：global 使用 remote_write
+	// 集中收集各个 per-datacenter数据
 	public static final String SYSCONFIG_KEY_PROM_FEDER_MODE = "prometheus_fed_mode";
 
 	// 机柜默认大小
@@ -970,7 +956,7 @@ public class Constant {
 
 	// 图表类型为 assetInfo
 	public static final String CHART_ASSETINFO_TYPE = "assetInfo";
-	
+
 	// 图表类型为 endpointInfo
 	public static final String CHART_ENDPOINTINFO_TYPE = "endpointInfo";
 
@@ -1060,6 +1046,12 @@ public class Constant {
 	 * aes 对称加密 密钥
 	 */
 	public static final byte[] AES_SECRET_KEY = Tool.HexUtil.decodeHex("bde5430614b21baf1c53bd6f616d1a39");
-	
+
 	public static final String NZ_WEB_COMPONENT_NAME = "nz-web";
+
+	public static final Map<String, String> CORS_HEADER = Tool.MapUtil
+			.builder("Access-Control-Allow-Credentials", "true")
+			.put("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS")
+			.put("Access-Control-Max-Age", "18000")
+			.put("Access-Control-Allow-Origin", "*").build();
 }
