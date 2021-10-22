@@ -19,6 +19,8 @@
         <result property="buildIn" column="build_in"></result>
         <result property="remark" column="remark"></result>
         <result property="seq" column="seq"></result>
+        <result property="x" column="x"></result>
+        <result property="y" column="y"></result>
         <result property="varType" column="var_type"/>
         <result property="varId" column="var_id"/>
         <result property="varName" column="var_name"/>
@@ -166,6 +168,12 @@
                 weight = #{chart.weight},
                 <if test="chart.groupId !=null">
                 	group_id = #{chart.groupId},
+                </if>
+                <if test="chart.x !=null">
+                    x = #{chart.x},
+                </if>
+                <if test="chart.y !=null">
+                    y = #{chart.y},
                 </if>
                 panel_id = #{panelId}
             WHERE

@@ -43,7 +43,11 @@ public class VisualChart {
 	private String remark;
 	
 	private String seq;
-	
+
+	private Integer x;
+
+	private Integer y;
+
 	@TableField(exist = false)
     private List<VisualChartElement> elements;
 
