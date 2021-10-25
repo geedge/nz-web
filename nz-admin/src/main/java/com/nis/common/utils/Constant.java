@@ -1017,7 +1017,8 @@ public class Constant {
 	public static final String GUI_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/webRoot";
 	public static final String RESOURCE_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/resource";// nzagent.rpm,install.sh.template,
 	public static final String BIN_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/bin";// promtool,generator
-
+	
+	public static final String BACKUP_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/backup";
 	/*
 	 * alert message label 中自定义key
 	 */
