@@ -11,4 +11,5 @@ public interface SysBackupService {
 
 	List<Object> queryBackupList();
 	
+	void backupData();
 }

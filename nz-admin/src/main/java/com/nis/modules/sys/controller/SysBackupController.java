@@ -50,4 +50,9 @@ public class SysBackupController {
 		List<Object> result = sysBackupService.queryBackupList();
 		return R.ok(result);
 	}
+	
+	@PostMapping
+	public void backupData() {
+		sysBackupService.backupData();
+	}
 }
