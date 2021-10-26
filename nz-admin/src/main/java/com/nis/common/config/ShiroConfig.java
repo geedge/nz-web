@@ -25,6 +25,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.LicenseShiroFilter;
 import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
@@ -61,7 +62,10 @@ public class ShiroConfig {
 
 	@Autowired
 	private SysApiKeyDao sysApiKeyDao;
-
+	
+	@Autowired
+	private LicenseShiroFilter licenseFilter;
+	
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -106,6 +110,7 @@ public class ShiroConfig {
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,
 				sysApiKeyDao);
+		cumstomFilterMap.put("licenseFilter", licenseFilter);
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);

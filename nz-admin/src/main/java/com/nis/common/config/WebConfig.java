@@ -18,14 +18,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.nis.common.interceptor.LicenseInterceptor;
 import com.nis.common.interceptor.SysMenuInterceptor;
-import com.nis.common.utils.Constant;
 import com.nis.common.utils.SQLUtils;
 import com.nis.common.utils.SpringContextUtils;
 import com.nis.common.utils.SqlHelper.MysqlHelper;
-import com.nis.common.utils.SqlHelper.OracleHelper;
-import com.nis.common.utils.SqlHelper.PostgresqlHelper;
 import com.nis.modules.sys.service.SysConfigService;
 
 /**
@@ -60,20 +56,8 @@ public class WebConfig implements WebMvcConfigurer {
     	return new MysqlHelper();
     }
 
-    /**
-     * license校验拦截器
-     * @return
-     */
-    @Bean
-    LicenseInterceptor licenseInterceptor() {
-        return new LicenseInterceptor();
-    }
-    
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-    	//添加license 拦截器，排除 license 接口
-    	registry.addInterceptor(licenseInterceptor()).excludePathPatterns("/sys/license/**","/api/v1/alerts","/api/v2/alerts","/setup/**");
-    	
         SysConfigService sysConfigService = (SysConfigService) SpringContextUtils.getBean("sysConfigService");
         registry.addInterceptor(new SysMenuInterceptor(sysConfigService)).addPathPatterns("/sys/menu/**");
     }
