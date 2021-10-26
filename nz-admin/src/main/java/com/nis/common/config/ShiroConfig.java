@@ -1,10 +1,20 @@
 package com.nis.common.config;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import javax.servlet.Filter;
-
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.LicenseShiroFilter;
+import com.nis.common.interceptor.MetricsShiroFilter;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -24,21 +34,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.LicenseShiroFilter;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
-
-import cn.hutool.core.util.StrUtil;
+import javax.servlet.Filter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Shiro的配置文件
@@ -65,7 +63,10 @@ public class ShiroConfig {
 	
 	@Autowired
 	private LicenseShiroFilter licenseFilter;
-	
+
+	@Autowired
+	private MetricsShiroFilter metricsShiroFilter;
+
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -104,6 +105,7 @@ public class ShiroConfig {
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
 		filterMap.put("/setup/**", "anon");// license 相关接口
 //        filterMap.put("/**", "authc");
+		filterMap.put("/actuator/prometheus", "metricsFilter");
 		filterMap.put("/**", "tokenCheckFilter");
 
 		Integer loginExpiration = getTimeOutData();
@@ -112,6 +114,7 @@ public class ShiroConfig {
 				sysApiKeyDao);
 		cumstomFilterMap.put("licenseFilter", licenseFilter);
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
+		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);
 
