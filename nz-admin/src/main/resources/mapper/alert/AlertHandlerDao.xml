@@ -205,7 +205,7 @@
 			</if>
 
 			<if test="params.ids != null and params.ids != ''">
-				am.id in
+				AND am.id in
 				<foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
 					#{id}
 				</foreach>
@@ -307,7 +307,7 @@
 			</if>
 
 			<if test="params.ids != null and params.ids != ''">
-				am.id in
+				AND am.id in
 				<foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
 					#{id}
 				</foreach>
