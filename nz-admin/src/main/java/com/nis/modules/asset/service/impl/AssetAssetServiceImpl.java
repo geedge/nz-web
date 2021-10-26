@@ -711,7 +711,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 throw new NZException(RCode.ASSET_POSITION_INVALID);
             }
         } else {
-            return false;
+            asset.setCabinetStart(null);
+            asset.setCabinetEnd(null);
+            return true;
         }
 
         // 校验 开始和结束位置占用的机柜是否符合 关联 model 的 usize值
