@@ -1,11 +1,14 @@
 package com.nis.modules.alert.service.impl;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Tool;
 import com.nis.modules.alert.dao.AlertRuleEvalLogDao;
@@ -30,6 +33,12 @@ public class AlertRuleEvalLogServiceImpl extends ServiceImpl<AlertRuleEvalLogDao
 			listOperations.trim(ruleId, 0, alertRuleEvalLogSize-1);
 		}
 		return true;
+	}
+
+	@Override
+	public List<AlertRuleEvalLog> queryListByRuleId(Integer id) {
+		List<AlertRuleEvalLog> alertRuleEvalLogs = this.baseMapper.selectList(new QueryWrapper<AlertRuleEvalLog>().lambda().eq(AlertRuleEvalLog::getRuleId, id));
+		return alertRuleEvalLogs;
 	}
 	
 }

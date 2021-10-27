@@ -1,5 +1,6 @@
 package com.nis.modules.alert.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -27,6 +28,10 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
 import com.nis.common.utils.TypeEnum;
 import com.nis.modules.alert.entity.AlertRuleEntity;
+import com.nis.modules.alert.entity.AlertRuleEvalLog;
+import com.nis.modules.alert.entity.AlertRuleSchedLog;
+import com.nis.modules.alert.service.AlertRuleEvalLogService;
+import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.alert.service.AlertRuleService;
 
 /**
@@ -38,7 +43,12 @@ public class AlertRuleController {
 	
     @Autowired
     private AlertRuleService alertRuleService;
-
+    
+    @Autowired
+    private AlertRuleEvalLogService alertRuleEvalLogService;
+    
+    @Autowired
+    private AlertRuleSchedLogService alertRuleSchedLogService;
     /**
      * 详情
      * @param id
@@ -133,4 +143,17 @@ public class AlertRuleController {
         return R.ok();
     }
     
+    @GetMapping("/{id}/evalLog")
+    public R queryEvalLog(@PathVariable Integer id) {
+    	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
+    	List<AlertRuleEvalLog> alertRuleEvalLogs = alertRuleEvalLogService.queryListByRuleId(id);
+    	return R.ok(alertRuleEvalLogs);
+    }
+    
+    @GetMapping("/{id}/schedLog")
+    public R querySchedLog(@PathVariable Integer id) {
+    	ValidateUtils.is(id).notNull(RCode.ALERTRULE_ID_ISNULL);
+    	List<AlertRuleSchedLog> alertRuleSchedLogs = alertRuleSchedLogService.queryListByRuleId(id);
+    	return R.ok(alertRuleSchedLogs);
+    }
 }
