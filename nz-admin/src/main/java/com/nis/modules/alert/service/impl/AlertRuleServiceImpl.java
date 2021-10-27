@@ -8,12 +8,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.additional.query.impl.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.RegexUtil;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertRuleDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertNotifyMethod;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertSeverityConf;
@@ -924,6 +926,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	public AlertRuleEntity queryAlertRule(Integer id) {
 		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
 		
+		int alertNum = alertMessageService.count(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getRuleId,id));
+		alertRule.setAlertNum(alertNum);
 		if(ObjectUtil.isNotEmpty(alertRule)) {
 			// 获取所有用户
 	        List<SysUserEntity> userList = sysUserService.list();
