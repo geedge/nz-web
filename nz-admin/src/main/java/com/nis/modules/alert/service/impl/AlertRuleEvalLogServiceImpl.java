@@ -1,6 +1,8 @@
 package com.nis.modules.alert.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,12 +10,16 @@ import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertRuleEvalLogDao;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
+
+import cn.hutool.json.JSONArray;
 
 @Service("alertRuleEvalLogService")
 public class AlertRuleEvalLogServiceImpl extends ServiceImpl<AlertRuleEvalLogDao,AlertRuleEvalLog> implements AlertRuleEvalLogService{
@@ -37,8 +43,14 @@ public class AlertRuleEvalLogServiceImpl extends ServiceImpl<AlertRuleEvalLogDao
 
 	@Override
 	public List<AlertRuleEvalLog> queryListByRuleId(Integer id) {
-		List<AlertRuleEvalLog> alertRuleEvalLogs = this.baseMapper.selectList(new QueryWrapper<AlertRuleEvalLog>().lambda().eq(AlertRuleEvalLog::getRuleId, id));
-		return alertRuleEvalLogs;
+		ListOperations<String, String> opsForList = redisTemplate.opsForList();
+		String key = String.format("alertRuleEvalLog:%s", id);
+		List<String> datas = opsForList.range(key, 0, -1);
+		if(ToolUtil.isNotEmpty(datas)) {
+			List<AlertRuleEvalLog> results = datas.stream().map(data -> JSONObject.parseObject(data, AlertRuleEvalLog.class)).collect(Collectors.toList());
+			return results;
+		}else {
+			return new ArrayList<AlertRuleEvalLog>();
+		}
 	}
-	
 }

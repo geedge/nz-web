@@ -15,7 +15,8 @@ public class AlertRuleSchedLogServiceImpl extends ServiceImpl<AlertRuleSchedLogD
 
 	@Override
 	public List<AlertRuleSchedLog> queryListByRuleId(Integer id) {
-		List<AlertRuleSchedLog> alertRuleSchedLogs = this.baseMapper.selectList(new QueryWrapper<AlertRuleSchedLog>().lambda().eq(AlertRuleSchedLog::getRuleId, id));
+		List<AlertRuleSchedLog> alertRuleSchedLogs = this.baseMapper.selectList(new QueryWrapper<AlertRuleSchedLog>().lambda()
+				.eq(AlertRuleSchedLog::getRuleId, id).orderByDesc(AlertRuleSchedLog::getTs).last("limit 100"));
 		return alertRuleSchedLogs;
 	}
 	
