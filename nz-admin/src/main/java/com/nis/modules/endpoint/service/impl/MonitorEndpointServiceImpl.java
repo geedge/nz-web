@@ -262,7 +262,62 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         			}
         		}
         	}
-
+        	
+        	// 查询所有project module数据
+        	Set<Integer> projectIds = projects.keySet();
+        	List<MonitorProject> otherProjects = monitorProjectService.list(new QueryWrapper<MonitorProject>().lambda().notIn(MonitorProject::getId, projectIds));
+        	for(MonitorProject otherProject : otherProjects) {
+        		Map <String,Object> project = new HashMap<String,Object>();
+    			project.put("id", otherProject.getId());
+    			project.put("name", otherProject.getName());
+    			project.put("num", 0);
+    			projects.put(otherProject.getId(),project);
+        	}
+        	
+        	Set<Integer> moduleIds = modules.keySet();
+        	List<MonitorModule> otherModules = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda().notIn(MonitorModule::getId, moduleIds));
+        	for(MonitorModule otherModule : otherModules) {
+        		Map <String,Object> module = new HashMap<String,Object>();
+    			module.put("id", otherModule.getId());
+    			module.put("name", otherModule.getName());
+    			module.put("num", 0);
+    			modules.put(otherModule.getId(),module);
+        	}
+        	
+        	// 组装state数据 将返回结果中未涉及的状态添加进去
+        	for(int i = 0;i<3;i++) {
+        		Object metricsObject = states.get("metrics"+i);
+        		if(ToolUtil.isEmpty(metricsObject)) {
+        			Map<String,Object> stateObject = new HashMap<String,Object>();
+					stateObject.put("id",i);
+					stateObject.put("type", "metrics");
+					if(i==0) {
+						stateObject.put("name","down");
+					}else if(i==1) {
+						stateObject.put("name","up");
+					}else {
+						stateObject.put("name","suspended");
+					}
+					stateObject.put("num",0);
+					states.put("metrics"+i, stateObject);
+        		}
+        		
+        		Object logsObject = states.get("logs"+i);
+        		if(ToolUtil.isEmpty(logsObject)) {
+        			Map<String,Object> stateObject = new HashMap<String,Object>();
+					stateObject.put("id",i);
+					stateObject.put("type", "logs");
+					if(i==0) {
+						stateObject.put("name","down");
+					}else if(i==1) {
+						stateObject.put("name","up");
+					}else {
+						stateObject.put("name","suspended");
+					}
+					stateObject.put("num",0);
+					states.put("logs"+i, stateObject);
+        		}
+        	}
         	statistics.put("project", projects.values());
         	statistics.put("module", modules.values());
         	statistics.put("state", states.values());
