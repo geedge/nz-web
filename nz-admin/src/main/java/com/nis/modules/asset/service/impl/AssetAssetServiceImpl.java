@@ -439,12 +439,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     	for(Map<String,Object> m : allList) {
     		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
     	}
-    	//排序
-    	allList.sort((Map<String,Object> m1, Map<String,Object> m2) -> {
-    		Integer i1 = Integer.valueOf(String.valueOf(m1.getOrDefault("num", 0)));
-    		Integer i2 = Integer.valueOf(String.valueOf(m2.getOrDefault("num", 0)));
-    		return Integer.compare(i2, i1);
-    	});
+		/* 排序会导致筛选条件跳动 先注释
+		allList.sort((Map<String,Object> m1, Map<String,Object> m2) -> {
+			Integer i1 = Integer.valueOf(String.valueOf(m1.getOrDefault("num", 0)));
+			Integer i2 = Integer.valueOf(String.valueOf(m2.getOrDefault("num", 0)));
+			return Integer.compare(i2, i1);
+		});*/
     }
     
     private void handleResuleList(List<AssetAsset> assetList) {
