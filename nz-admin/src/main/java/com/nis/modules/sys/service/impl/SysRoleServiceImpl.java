@@ -115,11 +115,6 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
         // 校验 角色 相关信息
         this.validateRoleInfo(role);
 
-        // i18n 默认与 name 保持一致
-        if (ToolUtil.isEmpty(role.getI18n())) {
-            role.setI18n(role.getName());
-        }
-
         this.save(role);
 
         sysRoleMenuService.saveOrUpdate(role.getId(), role.getMenuIds());
