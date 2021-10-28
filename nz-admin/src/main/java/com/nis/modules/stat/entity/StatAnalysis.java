@@ -33,4 +33,6 @@ public class StatAnalysis {
 	private Integer asset;
 
 	private Integer pid;
+	
+	private String time;
 }

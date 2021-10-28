@@ -331,4 +331,10 @@ public class StatController extends AbstractController {
 		List<StatAnalysis> result = statService.queryModuleAbnormal(params);
 		return R.ok().putData("list", result);
 	}
+	
+	@GetMapping("/alertMessage/trend")
+	public R alertMessageTrend(@RequestParam Map<String,Object> params) {
+		Map<String,Object> result = statService.queryAlertMessageTrend(params);
+		return R.ok(result);
+	}
 }

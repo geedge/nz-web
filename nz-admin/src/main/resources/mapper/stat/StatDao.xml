@@ -15,6 +15,7 @@
     	<result column="endpoint" property="endpoint"/>
     	<result column="asset" property="asset"/>
     	<result column="pid" property="pid"/>
+    	<result column="time" property="time"/>
     </resultMap>
     
     <select id="selectAssetTypeAnalysis" resultMap="statAnalysis">
@@ -630,5 +631,46 @@
 		<if test="params.moduleId!=null">
 			and mm.id = #{params.moduleId}
 		</if>
+    </select>
+    
+    <select id="selectAlertMessageTrend" resultMap="statAnalysis">
+    	SELECT
+			date_format(start_at, #{params.step}) AS time,
+			COUNT(1) as num
+		FROM
+			alert_message_history  amh
+		<where>
+			<if test="params.stime!=null">
+				and start_at > #{params.stime}
+			</if>
+			<if test="params.etime!=null">
+				and start_at &lt; #{params.etime}
+			</if>
+			<if test="params.dcId!=null">
+				and amh.dc_id = #{params.dcId}
+			</if>
+			<if test="params.projectId!=null">
+				and amh.project_id = #{params.projectId}
+			</if>
+			<if test="params.moduleId!=null">
+				and amh.module_id = #{params.moduleId}
+			</if>
+			<if test="params.assetId!=null">
+				and amh.asset_id = #{params.assetId}
+			</if>
+			<if test="params.endpointId!=null">
+				and amh.endpoint_id = #{params.endpointId}
+			</if>
+			<if test="params.ruleId!=null">
+				and amh.rule_id = #{params.ruleId}
+			</if>
+			<if test="params.severityId!=null">
+				and amh.severity_id = #{params.severityId}
+			</if>
+		</where>
+		GROUP BY
+			TIME 
+		ORDER BY
+			TIME
     </select>
 </mapper>

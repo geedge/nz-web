@@ -61,4 +61,7 @@ public interface StatService{
 	List<Map> queryOverviewMap();
 	
 	List<StatAnalysis> queryModuleAbnormal(Map<String,Object> params);
+	
+	Map<String,Object> queryAlertMessageTrend(Map<String,Object> params);
+	
 }

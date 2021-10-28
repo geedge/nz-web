@@ -1,10 +1,13 @@
 package com.nis.modules.stat.service.impl;
 
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -457,6 +460,47 @@ public class StatServiceImpl implements StatService{
 				result.add(data);
 			}
 		}
+		return result;
+	}
+
+	@Override
+	public Map<String,Object> queryAlertMessageTrend(Map<String, Object> params) {
+		Map<String,Object> result = new HashMap<String,Object>(); 
+		if(ToolUtil.isEmpty(params.get("stime"))) {
+			params.put("stime", DateUtil.offsetDay(new Date(), -7));
+		}
+		if(ToolUtil.isEmpty(params.get("etime"))) {
+			params.put("etime",new Date());
+		}
+		
+		String formatStep = "%Y-%m-%d %H:00:00";
+		if(ToolUtil.isNotEmpty(params.get("step"))) {
+			String step = (String)params.get("step");
+			if(StringUtils.isEquals(step, "d")) {
+				formatStep = "%Y-%m-%d";
+			}
+		}
+		params.put("step", formatStep);
+		
+		List<StatAnalysis> datas = statDao.selectAlertMessageTrend(params);
+		
+		if(ToolUtil.isNotEmpty(datas)) {
+			List<Object> values =new ArrayList<Object>();
+			for(StatAnalysis data : datas) {
+				List<Object> value = new ArrayList<Object>();
+				value.add(DateUtil.parse(data.getTime()).getTime());
+				value.add(data.getNum());
+				values.add(value);
+			}
+			
+			Map<String,List<Object>> handleData = new HashMap<String,List<Object>>();
+			handleData.put("values", values);
+			List<Map<String,List<Object>>> handleMapData = new ArrayList<Map<String,List<Object>>>();
+			handleMapData.add(handleData);
+			result.put("resultType", "matrix");
+			result.put("result", handleMapData);
+		}
+		
 		return result;
 	}
 }
