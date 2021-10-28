@@ -104,9 +104,11 @@ public class SysBackupServiceImpl implements SysBackupService {
 
     public void backupData() {
     	String sqlFilename = null;
+    	Connection conn = null;
+    	Statement stmtInfo = null, stmtData = null;
+	    ResultSet rsInfo = null, rsData = null;
     	try {
-    		
-			Connection conn = dataSource.getConnection();
+			conn = dataSource.getConnection();
 			String dbName = conn.getCatalog();
 			//存放文件目录
 	        SysConfigEntity config = sysConfigDao.queryByKey("backup_file_path");
@@ -118,9 +120,6 @@ public class SysBackupServiceImpl implements SysBackupService {
 	        //文件名
 	        sqlFilename = path + File.separator +  String.format("%s_%s.sql", dbName, DateUtil.format(new Date() , "yyyyMMdd_hh_mm_ss"));
 	        BufferedWriter writer = FileUtil.getWriter(sqlFilename, "UTF-8", false);
-			Statement stmtInfo = null, stmtData = null;
-		    ResultSet rsInfo = null, rsData = null;
-		    
 		    stmtInfo = conn.createStatement();
 		    /*
 	         * 获取所有表名称 
@@ -132,12 +131,9 @@ public class SysBackupServiceImpl implements SysBackupService {
 	            String tableName = rsInfo.getString(1);
 	            tableNames.add(tableName);
 	        }    //end for tables
-	        if(null != rsInfo) {
-	            rsInfo.close();
-	        }
-	        if(null != stmtInfo) {
-	            stmtInfo.close();
-	        }
+	        
+	        Tool.IoUtil.close(rsInfo);
+            Tool.IoUtil.close(stmtInfo);
 		    
 		    if(ToolUtil.isNotEmpty(tableNames)) {
 		    	
@@ -189,12 +185,9 @@ public class SysBackupServiceImpl implements SysBackupService {
 		            writer.append("/*!50003 ").append(rsData.getString(3)).append(" */$$");
 		            writer.newLine();
 		            writer.write("DELIMITER ;");
-		            if(null != rsData) {
-		                rsData.close();
-		            }
-		            if(null != stmtData) {
-		                stmtData.close();
-		            }
+		            
+		            Tool.IoUtil.close(rsData);
+		            Tool.IoUtil.close(stmtData);
 		        }
 		        
 		        /*
@@ -207,24 +200,18 @@ public class SysBackupServiceImpl implements SysBackupService {
 		        writer.close();
 		    }
 	        
-	        if(null != stmtData) {
-	            stmtData.close();
-	        }
-	        if(null != rsData) {
-	            rsData.close();
-	        }
-	        if(null != stmtInfo) {
-	            stmtInfo.close();
-	        }
-	        if(null != rsInfo) {
-	            rsInfo.close();
-	        }
 	    } catch (Exception e) {
 	    	e.printStackTrace();
 			log.error("nezha data backup error", e);
 			if(StringUtils.isNotEmpty(sqlFilename)) {
 				FileUtil.del(sqlFilename);
 			}
+		} finally {
+			Tool.IoUtil.close(stmtData);
+			Tool.IoUtil.close(rsData);
+			Tool.IoUtil.close(stmtInfo);
+			Tool.IoUtil.close(rsInfo);
+			Tool.IoUtil.close(conn);
 		}
     	
     	this.removeBackupFile();
@@ -287,12 +274,8 @@ public class SysBackupServiceImpl implements SysBackupService {
         writer.newLine();                
         writer.write(rs.getString(2) + ";");
         writer.newLine();
-        if(null != rs) {
-            rs.close();
-        }
-        if(null != stmt) {
-            stmt.close();
-        }
+        Tool.IoUtil.close(rs);
+        Tool.IoUtil.close(stmt);
         
         /* 导出表数据 */
         // 先获取记录数
@@ -374,13 +357,8 @@ public class SysBackupServiceImpl implements SysBackupService {
                 writer.flush();
             }    //end for table records
         }
-        
-        if(null != rs) {
-            rs.close();
-        }
-        if(null != stmt) {
-            stmt.close();
-        }
+        Tool.IoUtil.close(rs);
+        Tool.IoUtil.close(stmt);
     }
         
     /**
