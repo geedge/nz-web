@@ -124,4 +124,9 @@ public class SysUserEntity implements Serializable {
 	
 	@TableField(exist = false)
 	private String authCode;//验证码
+	
+	/**
+	 * 主题
+	 */
+	private Integer theme; 
 }

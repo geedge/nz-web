@@ -23,7 +23,8 @@
 			su.mfa_level,
 			su.last_login_time,
 			su.last_login_ip,
-			su.lang
+			su.lang,
+			su.theme
 		FROM
 			sys_user su
 		<where>

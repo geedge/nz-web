@@ -148,6 +148,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		    if (!roleIdList.contains(Integer.valueOf(roleId)))
 			    throw new NZException(RCode.SYS_ROLE_ISNULL);
 	    }
+	    
+	    if(ObjectUtil.isEmpty(user.getTheme())) {
+        	user.setTheme(1);
+        }
     }
 
 	@Override
