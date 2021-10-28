@@ -1,27 +1,8 @@
 package com.nis.modules.asset.job;
 
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.time.StopWatch;
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
@@ -35,10 +16,23 @@ import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointConfigService;
 import com.nis.modules.endpoint.service.MonitorEndpointStateService;
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.quartz.QuartzJobBean;
+import org.springframework.transaction.annotation.Transactional;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
 public class AssetTalonStatusJob extends QuartzJobBean {
@@ -140,15 +134,15 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                         // 连接异常
                         Map<String, Object> map = new HashMap(4);
                         map.put("id", talonOpenAsset.getId());
-                        if (e.getCause() instanceof ConnectException) {
+                        if (e.getCause() != null && e.getCause() instanceof ConnectTimeoutException) {
                             map.put("state", 2);
-                            map.put("msg", e.getMessage());
+                            map.put("msg", StrUtil.subWithLength(e.getCause().getMessage(), 0, 256));
                             return map;
 
                         } else {
                             // 未知异常
                             map.put("state", 4);
-                            map.put("msg", e.getMessage());
+                            map.put("msg", StrUtil.subWithLength(e.getMessage(), 0, 256));
                             return map;
                         }
                     }
