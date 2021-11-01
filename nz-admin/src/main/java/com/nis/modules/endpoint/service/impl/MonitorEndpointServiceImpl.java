@@ -232,6 +232,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         		for(MonitorEndpointConfig config : configs) {
         			Integer state = config.getState();
         			String type = config.getType();
+        			// endpoint刚新增时 还没有状态需要赋值初始 默认为down 等定时任务完成改变state为正确状态
+        			if(ToolUtil.isEmpty(state)) {
+        				state = 0;
+        			}
 					if(ToolUtil.isNotEmpty(types) && !types.contains(type)) {
 						continue;
 					}

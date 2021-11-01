@@ -76,7 +76,6 @@ public class ShiroConfig {
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
 		filterMap.put("/metrics", "anon");
-		filterMap.put("/actuator/prometheus", "anon");
 		filterMap.put("/prometheus", "anon");
 		filterMap.put("/prom/**", "anon");
 		filterMap.put("/swagger/**", "anon");
@@ -84,7 +83,6 @@ public class ShiroConfig {
 		filterMap.put("/swagger-ui.html", "anon");
 		filterMap.put("/webjars/**", "anon");
 		filterMap.put("/swagger-resources/**", "anon");
-//        filterMap.put("/statics/**", "anon");
 		filterMap.put("/static/**", "anon");
 		filterMap.put("/nezha/**", "anon");
 		filterMap.put("/", "anon");
@@ -95,7 +93,6 @@ public class ShiroConfig {
 		filterMap.put("/mfa/**", "anon");
 		filterMap.put("/healthy", "anon");
 		filterMap.put("/buildInfo", "anon");
-//        filterMap.put("/logout","anon");
 		filterMap.put("/favicon.ico", "anon");
 		filterMap.put("/captcha.jpg", "anon");
 		filterMap.put("/api/**", "anon");
@@ -104,7 +101,6 @@ public class ShiroConfig {
 		filterMap.put("/terminal/monitor.ws", "anon");
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
 		filterMap.put("/setup/**", "anon");// license 相关接口
-//        filterMap.put("/**", "authc");
 		filterMap.put("/actuator/prometheus", "metricsFilter");
 		filterMap.put("/**", "tokenCheckFilter");
 
