@@ -1,4 +1,5 @@
 #!/bin/bash
+source /etc/profile
 { # this ensures the entire script is downloaded #
 
 #auto replace parameter start
