@@ -11,13 +11,20 @@ import java.util.Map;
 /**
  * i18n信息表
  *
- * @author song
- * @email 
- * @date 2019-08-05 14:35:21
  */
 public interface SysI18nService extends IService<SysI18nEntity> {
 
-    PageUtils queryPage(Map<String, Object> params);
+	PageUtils queryPage(Map<String, Object> params);
+
+	SysI18nEntity queryInfo(Long id);
+	
+	void saveI18n(SysI18nEntity sysI18nEntity);
+	
+	void updateI18n(SysI18nEntity sysI18nEntity);
+	
+	void validateData(SysI18nEntity sysI18nEntity);
+	
+	Map selectLang(String l);
 
 	boolean check(SysI18nEntity sysI18n);
 

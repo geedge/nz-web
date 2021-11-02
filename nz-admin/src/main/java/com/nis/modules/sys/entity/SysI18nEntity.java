@@ -9,14 +9,9 @@ import java.util.Date;
 
 /**
  * i18n信息表
- * 
- * @author song
- * @email 
- * @date 2019-08-05 14:35:21
  */
 @Data
 @TableName("sys_i18n")
-@KeySequence(value="seq_sys_i18n")
 public class SysI18nEntity implements Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -25,6 +20,11 @@ public class SysI18nEntity implements Serializable {
 	 */
 	@TableId(type=IdType.INPUT)
 	private Long id;
+	
+	/**
+	 * 名称
+	 */
+	private String name;
 	/**
 	 * i18n code
 	 */
@@ -44,15 +44,13 @@ public class SysI18nEntity implements Serializable {
 	/**
 	 * 操作人
 	 */
-	@JsonIgnore
-	private Long operator;
+	private Long uby;
 	/**
 	 * 操作时间
 	 */
-	@JsonIgnore
-	private Date opTime;
-	@JsonIgnore
-	@TableLogic
-	private String delFlag;
+	private Date utime;
+	
+	@TableField(exist = false)
+	private SysUserEntity uuser;
 
 }

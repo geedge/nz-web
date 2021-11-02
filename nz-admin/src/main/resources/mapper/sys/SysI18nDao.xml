@@ -10,9 +10,41 @@
         <result property="lang" column="lang"/>
         <result property="value" column="value"/>
         <result property="remark" column="remark"/>
-        <result property="operator" column="operator"/>
-        <result property="opTime" column="op_time"/>
+        <result property="uby" column="tby"/>
+        <result property="utime" column="utime"/>
+        
+        <association property="uuser" columnPrefix="u_" javaType="com.nis.modules.sys.entity.SysUserEntity">
+            <result property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
     </resultMap>
 
+	<select id="selectSysI18nListWithPage" resultMap="sysI18nMap">
+		select si.*,
+		su.id as u_id,
+		su.name as u_name 
+		from sys_i18n si
+		left join sys_user su on si.uby = su.id
+		<where>
+			<if test="params.q != null and params.q != ''">
+				and (si.lang like CONCAT('%', #{params.q}, '%') or si.code like CONCAT('%', #{params.q}, '%') or si.value like CONCAT('%', #{params.q}, '%') or si.remark like CONCAT('%', #{params.q}, '%') )
+			</if>
+			<if test="params.ids != null">
+                and si.id in 
+					<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
+			       		#{id}
+				    </foreach>
+            </if>
+			<if test="params.code != null and params.code != ''">
+				and si.code = #{params.code}
+			</if>
+			<if test="params.lang != null and params.lang != ''">
+				and si.lang = #{params.lang}
+			</if>
+			<if test="params.value != null and params.value != ''">
+				and si.value = #{params.value}
+			</if>
+		</where>
+	</select>
 
 </mapper>
