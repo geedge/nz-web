@@ -52,7 +52,7 @@ public class RestTemplateConfig {
 	/**
 	 * 指客户端从服务器读取数据包的间隔超时时间,不是总读取时间,也就是socket timeout,ms
 	 */
-	@Value("${http-pool.socket-timeout:5000}")
+	@Value("${http-pool.socket-timeout:180000}")
 	private int socketTimeout;
 	/**
 	 * #每个路由的最大连接数,如果只调用一个地址,可以将其设置为最大连接数

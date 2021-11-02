@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSON;
@@ -50,6 +51,9 @@ public class SysBackupServiceImpl implements SysBackupService {
     
     @Autowired
     private DataSource dataSource;
+    
+    @Value("${nezha.exportMaxSize:10000}")
+    private Integer exportMaxSize;
     
 	@Override
 	public Object queryInfo() {
@@ -292,70 +296,90 @@ public class SysBackupServiceImpl implements SysBackupService {
         stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(Integer.MIN_VALUE);
         stmt.setFetchDirection(ResultSet.FETCH_REVERSE);
-        rs = stmt.executeQuery(String.format("SELECT * FROM `%s`", tableName));
-        int colCount = 0;
-        Object colValue = null;
-        // 所有数据用","连接
-        if(!bulkFlag) {
-            while(rs.next()) {
-                colCount = rs.getMetaData().getColumnCount();
-                
-                writer.write(String.format("INSERT INTO `%s` VALUES (", tableName));
-                // 获取表每一列数据
-                for(int j = 0; j < colCount; j ++) {
-                    if(j > 0) {
-                        writer.write(',');    
-                    }
-                    colValue = rs.getObject(j + 1);
-                    if(null != colValue) {
-                        writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
-                    } else {
-                        writer.write("NULL");
-                    }
-                }    //end for one record columns
-                writer.write(");");
-                writer.newLine();
-                writer.flush();
-            }    //end for table records
-        }
-        // 每行数据独立分开
-        else {
-            ResultSetMetaData rsMetaData = null;
-            int counter = 0;
-            while(rs.next()) {
-                ++ counter;
-                rsMetaData = rs.getMetaData();
-                colCount = rsMetaData.getColumnCount();
-
-                // 第一条记录，则列出列名
-                if(1 == counter) {
-                    writer.write(String.format("INSERT INTO `%s` (", tableName));
-                    for(int i = 0; i < colCount; i ++) {
-                        if(i > 0) {
-                            writer.write(",");
+        
+        Integer start = 0;
+        Integer end = exportMaxSize;
+        boolean flag = true;
+        while(flag) {
+        	if(rowCount < exportMaxSize) {
+            	end = rowCount;
+            }
+        	
+        	if(end == rowCount) {
+        		flag = false;
+        	}
+        	
+            rs = stmt.executeQuery(String.format("SELECT * FROM `%s` limit %d , %d", tableName,start,end));
+            int colCount = 0;
+            Object colValue = null;
+            // 所有数据用","连接
+            if(!bulkFlag) {
+                while(rs.next()) {
+                    colCount = rs.getMetaData().getColumnCount();
+                    
+                    writer.write(String.format("INSERT INTO `%s` VALUES (", tableName));
+                    // 获取表每一列数据
+                    for(int j = 0; j < colCount; j ++) {
+                        if(j > 0) {
+                            writer.write(',');    
                         }
-                        writer.append('`').append(rsMetaData.getColumnName(i + 1)).append('`');
-                    }
-                    writer.append(") VALUES ");
-                }
-                // 获取表每一列数据
-                for(int j = 0; j < colCount; j ++) {
-                    writer.write((0 >= j) ? '(' : ',');                        
-                    colValue = rs.getObject(j + 1);
-                    if(null != colValue) {
-                        writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
-                    } else {
-                        writer.write("NULL");
-                    }
-                }    //end for one record columns
-                // 是否是最后记录
-                if(rowCount > counter) {
-                    writer.write("),");
-                } else {
+                        colValue = rs.getObject(j + 1);
+                        if(null != colValue) {
+                            writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
+                        } else {
+                            writer.write("NULL");
+                        }
+                    }    //end for one record columns
                     writer.write(");");
-                }
-                writer.flush();
-            }    //end for table records
+                    writer.newLine();
+                    writer.flush();
+                }    //end for table records
+            }
+            // 每行数据独立分开
+            else {
+                ResultSetMetaData rsMetaData = null;
+                int counter = 0;
+                while(rs.next()) {
+                    ++ counter;
+                    rsMetaData = rs.getMetaData();
+                    colCount = rsMetaData.getColumnCount();
+
+                    // 第一条记录，则列出列名
+                    if(1 == counter) {
+                        writer.write(String.format("INSERT INTO `%s` (", tableName));
+                        for(int i = 0; i < colCount; i ++) {
+                            if(i > 0) {
+                                writer.write(",");
+                            }
+                            writer.append('`').append(rsMetaData.getColumnName(i + 1)).append('`');
+                        }
+                        writer.append(") VALUES ");
+                    }
+                    // 获取表每一列数据
+                    for(int j = 0; j < colCount; j ++) {
+                        writer.write((0 >= j) ? '(' : ',');                        
+                        colValue = rs.getObject(j + 1);
+                        if(null != colValue) {
+                            writer.write(String.format("'%s'", this.escapeString(colValue.toString())));
+                        } else {
+                            writer.write("NULL");
+                        }
+                    }    //end for one record columns
+                    // 是否是最后记录
+                    if(rowCount > counter) {
+                        writer.write("),");
+                    } else {
+                        writer.write(");");
+                    }
+                    writer.flush();
+                }    //end for table records
+            }
+            
+            start = end;
+            end = end + exportMaxSize;
+            if(end > rowCount) {
+            	end = rowCount;
+            }
         }
         Tool.IoUtil.close(rs);
         Tool.IoUtil.close(stmt);
