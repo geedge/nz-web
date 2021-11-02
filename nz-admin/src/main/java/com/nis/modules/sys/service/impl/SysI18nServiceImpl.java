@@ -180,8 +180,16 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 	
 	@Override
 	public Map selectLang(String l) {
+		List<String> langs = null;
+		if(ToolUtil.isEmpty(l)) {
+			List<SysDictEntity> list = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, "lang"));
+			if(ToolUtil.isNotEmpty(list)) {
+				langs = list.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+			}
+		}else {
+			langs = StrUtil.split(l, StrUtil.C_COMMA);
+		}
 		Map result =new HashMap();
-		List<String> langs = StrUtil.split(l, StrUtil.C_COMMA);
 		if(ToolUtil.isNotEmpty(langs)) {
 			for(String lang:langs) {
 				List<SysI18nEntity> datas = this.list(new QueryWrapper<SysI18nEntity>().lambda().eq(SysI18nEntity::getLang, lang));

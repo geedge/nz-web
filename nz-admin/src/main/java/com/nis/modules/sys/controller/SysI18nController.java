@@ -78,8 +78,7 @@ public class SysI18nController {
     }
     
     @GetMapping("/lang")
-    public R lang(@RequestParam String l) {
-    	ValidateUtils.is(l).notNull();
+    public R lang(@RequestParam(required = false) String l) {
     	Map result = sysI18nService.selectLang(l);
     	return R.ok(result);
     }
