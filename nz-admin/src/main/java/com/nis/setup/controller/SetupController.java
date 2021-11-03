@@ -1,36 +1,29 @@
 package com.nis.setup.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
-
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.RuntimeUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.db.Db;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.log.Log;
+import cn.hutool.setting.dialect.Props;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.setup.entity.SetupEntity;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.RuntimeUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.db.Db;
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.log.Log;
-import cn.hutool.setting.dialect.Props;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
 import redis.clients.jedis.Jedis;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/setup")
@@ -95,10 +88,11 @@ public class SetupController  {
     		/*
     		 * 数据库密码加密
     		 */
-    		AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
-    		String dbPinHex = aes.encryptHex(setup.getDatabase().getPin());
-    		
-    		prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
+    		// AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
+    		// String dbPinHex = aes.encryptHex(setup.getDatabase().getPin());
+            String dbPinHex = Tool.AesUtil.encrypt(setup.getDatabase().getPin(), Constant.AES_SECRET_KEY);
+
+            prop = new Props(configFile, Constant.DEFAULT_CHARTSET_NAME);
     		prop.put("nezha.inited", "1");
     		prop.put("database.host",setup.getDatabase().getHost());
     		prop.put("database.port",Tool.StrUtil.utf8Str(setup.getDatabase().getPort()));

@@ -1,36 +1,32 @@
 package com.nis.common.utils;
 
-import java.awt.Graphics;
-import java.awt.Robot;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import java.awt.*;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
+import java.lang.ref.*;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAccessor;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Spliterator;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
 
 public class Tool {
 	public static final Pattern REGEX_SPECIAL_DATE = Pattern.compile("(\\d{4}-\\d{1,2}-\\d{1,2}[T]\\d{1,2}:\\d{1,2}:\\d{1,2})(.\\d{1,10})((\\+\\d{1,2}:\\d{1,2})|(Z))");
@@ -1231,4 +1227,68 @@ public class Tool {
 			return format;
 		}
 	}
+
+
+	public static class AesUtil {
+
+		private static final String KEY_ALGORITHM = "AES";
+		private static final String DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding";//默认的加密算法
+
+		public static String encrypt(String content, byte[] key) {
+			try {
+				Cipher cipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);// 创建密码器
+
+				byte[] byteContent = content.getBytes("utf-8");
+
+				cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(key));// 初始化为加密模式的密码器
+
+				byte[] result = cipher.doFinal(byteContent);// 加密
+
+				return cn.hutool.core.util.HexUtil.encodeHexStr(result);
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+
+			return null;
+		}
+
+		public static String decrypt(String content, byte[] key) {
+
+			try {
+				//实例化
+				Cipher cipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);
+
+				//使用密钥初始化，设置为解密模式
+				cipher.init(Cipher.DECRYPT_MODE, getSecretKey(key));
+
+				//执行操作
+				byte[] result = cipher.doFinal(cn.hutool.core.util.HexUtil.decodeHex(content));
+				String s = new String(result, "utf-8");
+				return s;
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			return null;
+		}
+
+		private static SecretKeySpec getSecretKey(byte[] key) {
+			//返回生成指定算法密钥生成器的 KeyGenerator 对象
+			KeyGenerator kg = null;
+			try {
+				kg = KeyGenerator.getInstance(KEY_ALGORITHM);
+				SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+				random.setSeed(key);
+				//AES 要求密钥长度为 128
+				kg.init(128, random);
+				//生成一个密钥
+				SecretKey secretKey = kg.generateKey();
+				return new SecretKeySpec(secretKey.getEncoded(), KEY_ALGORITHM);// 转换为AES专用密钥
+			} catch (NoSuchAlgorithmException ex) {
+				ex.printStackTrace();
+			}
+			return null;
+		}
+
+	}
+
 }

@@ -1,9 +1,11 @@
 package com.nis.common.config;
 
-import java.util.List;
-
-import javax.sql.DataSource;
-
+import cn.hutool.db.Db;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.log.Log;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers;
@@ -13,14 +15,8 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import com.alibaba.druid.pool.DruidDataSource;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-
-import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.db.Db;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.log.Log;
+import javax.sql.DataSource;
+import java.util.List;
 
 @Configuration
 public class DataSourceConfig {
@@ -72,9 +68,9 @@ public class DataSourceConfig {
         	return null;
         }
 		/* 数据库密码解密 */
-		AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
-		databasePin = aes.decryptStr(this.databasePin);
-		
+		// AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
+		// databasePin = aes.decryptStr(this.databasePin);
+		databasePin = Tool.AesUtil.decrypt(this.databasePin, Constant.AES_SECRET_KEY);
 		//初始化时创建 数据库
 		this.createDatabase();
 		log.info("datasource config,user:{}, url: {}",this.databaseUser,this.getDbUrl());
