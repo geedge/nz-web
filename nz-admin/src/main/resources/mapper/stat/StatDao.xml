@@ -576,7 +576,7 @@
 		from 
 		monitor_module mm left join monitor_endpoint  me on mm.id = me.module_id
 		left join monitor_endpoint_state mes on me.id = mes.endpoint_id
-		where me.id is not null and mes.state!=1
+		where me.id is not null and mes.state &lt; 1
 		<if test="params.projectId!=null">
 			and mm.project_id = #{params.projectId}
 		</if>
