@@ -14,9 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
+import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.SysI18nEntity;
 import com.nis.modules.sys.service.SysI18nService;
 
@@ -53,6 +56,7 @@ public class SysI18nController {
      * 保存
      */
     @PostMapping
+    @SysLog(operation = OperationEnum.ADD, type = TypeEnum.I18N)
     public R save(@ApiParam @RequestBody SysI18nEntity sysI18n){
     	sysI18nService.saveI18n(sysI18n);
     	return R.ok();
@@ -62,6 +66,7 @@ public class SysI18nController {
      * 修改
      */
     @PutMapping
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.I18N)
     public R update(@RequestBody SysI18nEntity sysI18n){
 		sysI18nService.updateI18n(sysI18n);
 		return R.ok();
@@ -71,6 +76,7 @@ public class SysI18nController {
      * 删除
      */
     @DeleteMapping
+    @SysLog(operation = OperationEnum.DELETE, type = TypeEnum.I18N)
     public R delete(@RequestParam String ids){
     	ValidateUtils.is(ids).notNull();
     	sysI18nService.removeByIds(Arrays.asList(ids.split(",")));

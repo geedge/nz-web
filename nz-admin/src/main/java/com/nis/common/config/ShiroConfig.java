@@ -75,7 +75,6 @@ public class ShiroConfig {
 		shiroFilter.setUnauthorizedUrl("/");
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
-		filterMap.put("/sys/i18n/**", "anon");
 		filterMap.put("/metrics", "anon");
 		filterMap.put("/prometheus", "anon");
 		filterMap.put("/prom/**", "anon");
@@ -104,7 +103,8 @@ public class ShiroConfig {
 		filterMap.put("/setup/**", "anon");// license 相关接口
 		filterMap.put("/actuator/prometheus", "metricsFilter");
 		filterMap.put("/**", "tokenCheckFilter");
-
+		filterMap.put("/sys/i18n/**", "anon");
+		
 		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,
