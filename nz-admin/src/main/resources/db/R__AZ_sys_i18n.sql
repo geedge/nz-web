@@ -4,6 +4,12 @@
  * 
  */
 
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for sys_i18n
+-- ----------------------------
 DROP TABLE IF EXISTS `sys_i18n`;
 CREATE TABLE `sys_i18n`  (
   `id` int(10) NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -16,7 +22,7 @@ CREATE TABLE `sys_i18n`  (
   `uby` int(10) NOT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_lang_code`(`lang`, `code`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4719 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_i18n
@@ -3829,8 +3835,6 @@ INSERT INTO `sys_i18n` VALUES (3805, '715002', 'en', 'LICENSE_TOKEN_INVALID', 'I
 INSERT INTO `sys_i18n` VALUES (3806, '715003', 'en', 'LICENSE_MAXIMUMASSETS_INVALID', 'The number of assets exceeds the maximumAssets', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3807, '715004', 'en', 'LICENSE_VERSION_INVALID', 'The version is not valid', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3808, '999', 'en', 'ERROR', 'error', '', '2021-11-02 00:00:00', 1);
-
-
 INSERT INTO `sys_i18n` VALUES (3810, '200', 'zh', 'SUCCESS', '成功', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3811, '121000', 'zh', 'PANEL_NAME_ISNULL', '面板名称不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (3812, '121001', 'zh', 'PANEL_ID_ISNULL', '面板ID不能为空', '', '2021-11-03 16:28:05', 1);
@@ -4565,4 +4569,180 @@ INSERT INTO `sys_i18n` VALUES (4540, '711002', 'zh', 'LICENSE_PARAM_IS_NULL', 'l
 INSERT INTO `sys_i18n` VALUES (4541, '715002', 'zh', 'LICENSE_TOKEN_INVALID', 'license token无效', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4542, '715003', 'zh', 'LICENSE_MAXIMUMASSETS_INVALID', 'license 资产数量超过最大资产', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4543, '715004', 'zh', 'LICENSE_VERSION_INVALID', 'license版本无效', '', '2021-11-03 16:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (4544, 'el.image.error', 'en', 'el.image.error', 'FAILED', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4545, 'el.select.noMatch', 'en', 'el.select.noMatch', 'No matching data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4546, 'el.select.noData', 'en', 'el.select.noData', 'No data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4547, 'el.select.placeholder', 'en', 'el.select.placeholder', 'Select', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4548, 'el.select.loading', 'en', 'el.select.loading', 'Loading', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4549, 'el.pagination.total', 'en', 'el.pagination.total', 'Total {total}', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4550, 'el.pagination.goto', 'en', 'el.pagination.goto', 'Go to', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4551, 'el.pagination.pagesize', 'en', 'el.pagination.pagesize', '/page', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4552, 'el.pagination.pageClassifier', 'en', 'el.pagination.pageClassifier', '', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4553, 'el.upload.preview', 'en', 'el.upload.preview', 'Preview', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4554, 'el.upload.continue', 'en', 'el.upload.continue', 'Continue', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4555, 'el.upload.delete', 'en', 'el.upload.delete', 'Delete', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4556, 'el.upload.deleteTip', 'en', 'el.upload.deleteTip', 'press delete to remove', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4557, 'el.tree.emptyText', 'en', 'el.tree.emptyText', 'No Data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4558, 'el.pageHeader.title', 'en', 'el.pageHeader.title', 'Back', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4559, 'el.datepicker.cancel', 'en', 'el.datepicker.cancel', 'Cancel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4560, 'el.datepicker.nextMonth', 'en', 'el.datepicker.nextMonth', 'Next Month', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4561, 'el.datepicker.week', 'en', 'el.datepicker.week', 'week', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4562, 'el.datepicker.weeks.thu', 'en', 'el.datepicker.weeks.thu', 'Thu', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4563, 'el.datepicker.weeks.tue', 'en', 'el.datepicker.weeks.tue', 'Tue', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4564, 'el.datepicker.weeks.wed', 'en', 'el.datepicker.weeks.wed', 'Wed', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4565, 'el.datepicker.weeks.sat', 'en', 'el.datepicker.weeks.sat', 'Sat', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4566, 'el.datepicker.weeks.fri', 'en', 'el.datepicker.weeks.fri', 'Fri', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4567, 'el.datepicker.weeks.sun', 'en', 'el.datepicker.weeks.sun', 'Sun', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4568, 'el.datepicker.weeks.mon', 'en', 'el.datepicker.weeks.mon', 'Mon', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4569, 'el.datepicker.endDate', 'en', 'el.datepicker.endDate', 'End Date', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4570, 'el.datepicker.year', 'en', 'el.datepicker.year', '', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4571, 'el.datepicker.selectDate', 'en', 'el.datepicker.selectDate', 'Select date', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4572, 'el.datepicker.month12', 'en', 'el.datepicker.month12', 'December', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4573, 'el.datepicker.prevMonth', 'en', 'el.datepicker.prevMonth', 'Previous Month', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4574, 'el.datepicker.month11', 'en', 'el.datepicker.month11', 'November', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4575, 'el.datepicker.now', 'en', 'el.datepicker.now', 'Now', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4576, 'el.datepicker.today', 'en', 'el.datepicker.today', 'Today', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4577, 'el.datepicker.startTime', 'en', 'el.datepicker.startTime', 'Start Time', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4578, 'el.datepicker.prevYear', 'en', 'el.datepicker.prevYear', 'Previous Year', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4579, 'el.datepicker.month1', 'en', 'el.datepicker.month1', 'January', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4580, 'el.datepicker.month2', 'en', 'el.datepicker.month2', 'February', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4581, 'el.datepicker.month3', 'en', 'el.datepicker.month3', 'March', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4582, 'el.datepicker.months.jul', 'en', 'el.datepicker.months.jul', 'Jul', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4583, 'el.datepicker.months.oct', 'en', 'el.datepicker.months.oct', 'Oct', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4584, 'el.datepicker.months.feb', 'en', 'el.datepicker.months.feb', 'Feb', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4585, 'el.datepicker.months.apr', 'en', 'el.datepicker.months.apr', 'Apr', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4586, 'el.datepicker.months.jun', 'en', 'el.datepicker.months.jun', 'Jun', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4587, 'el.datepicker.months.aug', 'en', 'el.datepicker.months.aug', 'Aug', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4588, 'el.datepicker.months.dec', 'en', 'el.datepicker.months.dec', 'Dec', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4589, 'el.datepicker.months.may', 'en', 'el.datepicker.months.may', 'May', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4590, 'el.datepicker.months.nov', 'en', 'el.datepicker.months.nov', 'Nov', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4591, 'el.datepicker.months.jan', 'en', 'el.datepicker.months.jan', 'Jan', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4592, 'el.datepicker.months.mar', 'en', 'el.datepicker.months.mar', 'Mar', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4593, 'el.datepicker.months.sep', 'en', 'el.datepicker.months.sep', 'Sep', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4594, 'el.datepicker.month4', 'en', 'el.datepicker.month4', 'April', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4595, 'el.datepicker.selectTime', 'en', 'el.datepicker.selectTime', 'Select time', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4596, 'el.datepicker.month5', 'en', 'el.datepicker.month5', 'May', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4597, 'el.datepicker.month6', 'en', 'el.datepicker.month6', 'June', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4598, 'el.datepicker.month7', 'en', 'el.datepicker.month7', 'July', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4599, 'el.datepicker.clear', 'en', 'el.datepicker.clear', 'Clear', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4600, 'el.datepicker.month8', 'en', 'el.datepicker.month8', 'August', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4601, 'el.datepicker.month9', 'en', 'el.datepicker.month9', 'September', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4602, 'el.datepicker.month10', 'en', 'el.datepicker.month10', 'October', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4603, 'el.datepicker.confirm', 'en', 'el.datepicker.confirm', 'OK', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4604, 'el.datepicker.nextYear', 'en', 'el.datepicker.nextYear', 'Next Year', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4605, 'el.datepicker.endTime', 'en', 'el.datepicker.endTime', 'End Time', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4606, 'el.datepicker.startDate', 'en', 'el.datepicker.startDate', 'Start Date', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4607, 'el.popconfirm.confirmButtonText', 'en', 'el.popconfirm.confirmButtonText', 'Yes', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4608, 'el.popconfirm.cancelButtonText', 'en', 'el.popconfirm.cancelButtonText', 'No', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4609, 'el.empty.description', 'en', 'el.empty.description', 'No Data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4610, 'el.cascader.noMatch', 'en', 'el.cascader.noMatch', 'No matching data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4611, 'el.cascader.noData', 'en', 'el.cascader.noData', 'No data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4612, 'el.cascader.placeholder', 'en', 'el.cascader.placeholder', 'Select', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4613, 'el.cascader.loading', 'en', 'el.cascader.loading', 'Loading', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4614, 'el.transfer.noCheckedFormat', 'en', 'el.transfer.noCheckedFormat', '{total} items', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4615, 'el.transfer.noMatch', 'en', 'el.transfer.noMatch', 'No matching data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4616, 'el.transfer.hasCheckedFormat', 'en', 'el.transfer.hasCheckedFormat', '{checked}/{total} checked', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4617, 'el.transfer.filterPlaceholder', 'en', 'el.transfer.filterPlaceholder', 'Enter keyword', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4618, 'el.transfer.noData', 'en', 'el.transfer.noData', 'No data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4619, 'el.transfer.titles[0]', 'en', 'el.transfer.titles[0]', 'List 1', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4620, 'el.transfer.titles[1]', 'en', 'el.transfer.titles[1]', 'List 2', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4621, 'el.colorpicker.confirm', 'en', 'el.colorpicker.confirm', 'OK', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4622, 'el.colorpicker.clear', 'en', 'el.colorpicker.clear', 'Clear', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4623, 'el.messagebox.confirm', 'en', 'el.messagebox.confirm', 'OK', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4624, 'el.messagebox.cancel', 'en', 'el.messagebox.cancel', 'Cancel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4625, 'el.messagebox.title', 'en', 'el.messagebox.title', 'Message', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4626, 'el.messagebox.error', 'en', 'el.messagebox.error', 'Illegal input', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4627, 'el.table.resetFilter', 'en', 'el.table.resetFilter', 'Reset', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4628, 'el.table.sumText', 'en', 'el.table.sumText', 'Sum', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4629, 'el.table.emptyText', 'en', 'el.table.emptyText', 'No Data', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4630, 'el.table.clearFilter', 'en', 'el.table.clearFilter', 'All', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4631, 'el.table.confirmFilter', 'en', 'el.table.confirmFilter', 'Confirm', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4632, 'el.image.error', 'zh', 'el.image.error', '加载失败', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4633, 'el.select.noMatch', 'zh', 'el.select.noMatch', '无匹配数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4634, 'el.select.noData', 'zh', 'el.select.noData', '无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4635, 'el.select.placeholder', 'zh', 'el.select.placeholder', '请选择', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4636, 'el.select.loading', 'zh', 'el.select.loading', '加载中', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4637, 'el.pagination.total', 'zh', 'el.pagination.total', '共 {total} 条', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4638, 'el.pagination.goto', 'zh', 'el.pagination.goto', '前往', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4639, 'el.pagination.pagesize', 'zh', 'el.pagination.pagesize', '条/页', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4640, 'el.pagination.pageClassifier', 'zh', 'el.pagination.pageClassifier', '页', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4641, 'el.upload.preview', 'zh', 'el.upload.preview', '查看图片', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4642, 'el.upload.continue', 'zh', 'el.upload.continue', '继续上传', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4643, 'el.upload.delete', 'zh', 'el.upload.delete', '删除', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4644, 'el.upload.deleteTip', 'zh', 'el.upload.deleteTip', '按 delete 键可删除', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4645, 'el.tree.emptyText', 'zh', 'el.tree.emptyText', '暂无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4646, 'el.pageHeader.title', 'zh', 'el.pageHeader.title', '返回', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4647, 'el.datepicker.cancel', 'zh', 'el.datepicker.cancel', '取消', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4648, 'el.datepicker.nextMonth', 'zh', 'el.datepicker.nextMonth', '下个月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4649, 'el.datepicker.weeks.thu', 'zh', 'el.datepicker.weeks.thu', '四', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4650, 'el.datepicker.weeks.tue', 'zh', 'el.datepicker.weeks.tue', '二', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4651, 'el.datepicker.weeks.wed', 'zh', 'el.datepicker.weeks.wed', '三', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4652, 'el.datepicker.weeks.sat', 'zh', 'el.datepicker.weeks.sat', '六', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4653, 'el.datepicker.weeks.fri', 'zh', 'el.datepicker.weeks.fri', '五', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4654, 'el.datepicker.weeks.sun', 'zh', 'el.datepicker.weeks.sun', '日', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4655, 'el.datepicker.weeks.mon', 'zh', 'el.datepicker.weeks.mon', '一', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4656, 'el.datepicker.endDate', 'zh', 'el.datepicker.endDate', '结束日期', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4657, 'el.datepicker.year', 'zh', 'el.datepicker.year', '年', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4658, 'el.datepicker.selectDate', 'zh', 'el.datepicker.selectDate', '选择日期', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4659, 'el.datepicker.month12', 'zh', 'el.datepicker.month12', '12 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4660, 'el.datepicker.prevMonth', 'zh', 'el.datepicker.prevMonth', '上个月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4661, 'el.datepicker.month11', 'zh', 'el.datepicker.month11', '11 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4662, 'el.datepicker.now', 'zh', 'el.datepicker.now', '此刻', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4663, 'el.datepicker.today', 'zh', 'el.datepicker.today', '今天', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4664, 'el.datepicker.startTime', 'zh', 'el.datepicker.startTime', '开始时间', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4665, 'el.datepicker.prevYear', 'zh', 'el.datepicker.prevYear', '前一年', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4666, 'el.datepicker.month1', 'zh', 'el.datepicker.month1', '1 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4667, 'el.datepicker.month2', 'zh', 'el.datepicker.month2', '2 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4668, 'el.datepicker.month3', 'zh', 'el.datepicker.month3', '3 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4669, 'el.datepicker.months.jul', 'zh', 'el.datepicker.months.jul', '七月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4670, 'el.datepicker.months.oct', 'zh', 'el.datepicker.months.oct', '十月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4671, 'el.datepicker.months.feb', 'zh', 'el.datepicker.months.feb', '二月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4672, 'el.datepicker.months.apr', 'zh', 'el.datepicker.months.apr', '四月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4673, 'el.datepicker.months.jun', 'zh', 'el.datepicker.months.jun', '六月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4674, 'el.datepicker.months.aug', 'zh', 'el.datepicker.months.aug', '八月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4675, 'el.datepicker.months.dec', 'zh', 'el.datepicker.months.dec', '十二月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4676, 'el.datepicker.months.may', 'zh', 'el.datepicker.months.may', '五月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4677, 'el.datepicker.months.nov', 'zh', 'el.datepicker.months.nov', '十一月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4678, 'el.datepicker.months.jan', 'zh', 'el.datepicker.months.jan', '一月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4679, 'el.datepicker.months.mar', 'zh', 'el.datepicker.months.mar', '三月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4680, 'el.datepicker.months.sep', 'zh', 'el.datepicker.months.sep', '九月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4681, 'el.datepicker.month4', 'zh', 'el.datepicker.month4', '4 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4682, 'el.datepicker.selectTime', 'zh', 'el.datepicker.selectTime', '选择时间', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4683, 'el.datepicker.month5', 'zh', 'el.datepicker.month5', '5 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4684, 'el.datepicker.month6', 'zh', 'el.datepicker.month6', '6 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4685, 'el.datepicker.month7', 'zh', 'el.datepicker.month7', '7 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4686, 'el.datepicker.clear', 'zh', 'el.datepicker.clear', '清空', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4687, 'el.datepicker.month8', 'zh', 'el.datepicker.month8', '8 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4688, 'el.datepicker.month9', 'zh', 'el.datepicker.month9', '9 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4689, 'el.datepicker.month10', 'zh', 'el.datepicker.month10', '10 月', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4690, 'el.datepicker.confirm', 'zh', 'el.datepicker.confirm', '确定', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4691, 'el.datepicker.nextYear', 'zh', 'el.datepicker.nextYear', '后一年', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4692, 'el.datepicker.endTime', 'zh', 'el.datepicker.endTime', '结束时间', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4693, 'el.datepicker.startDate', 'zh', 'el.datepicker.startDate', '开始日期', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4694, 'el.popconfirm.confirmButtonText', 'zh', 'el.popconfirm.confirmButtonText', '确定', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4695, 'el.popconfirm.cancelButtonText', 'zh', 'el.popconfirm.cancelButtonText', '取消', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4696, 'el.empty.description', 'zh', 'el.empty.description', '暂无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4697, 'el.cascader.noMatch', 'zh', 'el.cascader.noMatch', '无匹配数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4698, 'el.cascader.noData', 'zh', 'el.cascader.noData', '暂无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4699, 'el.cascader.placeholder', 'zh', 'el.cascader.placeholder', '请选择', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4700, 'el.cascader.loading', 'zh', 'el.cascader.loading', '加载中', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4701, 'el.transfer.noCheckedFormat', 'zh', 'el.transfer.noCheckedFormat', '共 {total} 项', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4702, 'el.transfer.noMatch', 'zh', 'el.transfer.noMatch', '无匹配数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4703, 'el.transfer.hasCheckedFormat', 'zh', 'el.transfer.hasCheckedFormat', '已选 {checked}/{total} 项', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4704, 'el.transfer.filterPlaceholder', 'zh', 'el.transfer.filterPlaceholder', '请输入搜索内容', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4705, 'el.transfer.noData', 'zh', 'el.transfer.noData', '无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4706, 'el.transfer.titles[0]', 'zh', 'el.transfer.titles[0]', '列表 1', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4707, 'el.transfer.titles[1]', 'zh', 'el.transfer.titles[1]', '列表 2', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4708, 'el.colorpicker.confirm', 'zh', 'el.colorpicker.confirm', '确定', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4709, 'el.colorpicker.clear', 'zh', 'el.colorpicker.clear', '清空', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4710, 'el.messagebox.confirm', 'zh', 'el.messagebox.confirm', '确定', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4711, 'el.messagebox.cancel', 'zh', 'el.messagebox.cancel', '取消', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4712, 'el.messagebox.title', 'zh', 'el.messagebox.title', '提示', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4713, 'el.messagebox.error', 'zh', 'el.messagebox.error', '输入的数据不合法!', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4714, 'el.table.resetFilter', 'zh', 'el.table.resetFilter', '重置', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4715, 'el.table.sumText', 'zh', 'el.table.sumText', '合计', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4716, 'el.table.emptyText', 'zh', 'el.table.emptyText', '暂无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4717, 'el.table.clearFilter', 'zh', 'el.table.clearFilter', '全部', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4718, 'el.table.confirmFilter', 'zh', 'el.table.confirmFilter', '筛选', '', '2021-11-02 00:00:00', 1);
 
+SET FOREIGN_KEY_CHECKS = 1;
