@@ -8,15 +8,20 @@
 
 package com.nis.common.exception;
 
-import cn.hutool.log.Log;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
 import org.apache.shiro.authz.AuthorizationException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.service.SysI18nService;
+
+import cn.hutool.log.Log;
 
 /**
  * 异常处理器
@@ -27,6 +32,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class NZExceptionHandler {
 	private Log logger = Log.get();
 
+	@Autowired
+	private SysI18nService sysI18nService;
+	
 	/**
 	 * 处理自定义异常
 	 */
@@ -35,7 +43,12 @@ public class NZExceptionHandler {
 	public R handleNZException(NZException e){
 		R r = new R();
 		r.put("code", e.getCode());
-		r.put("msg", e.getMsg());
+		String msg = sysI18nService.queryValue(e.getRCode().toString(),e.getParam());
+		if(ToolUtil.equals(msg, e.getRCode().toString())) {
+			r.put("msg",e.getMsg());
+		}else {
+			r.put("msg",msg);
+		}
 		return r;
 	}
 

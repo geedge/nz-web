@@ -1,20 +1,10 @@
 package com.nis.common.config;
 
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.LicenseShiroFilter;
-import com.nis.common.interceptor.MetricsShiroFilter;
-import com.nis.common.interceptor.TokenCheckFilter;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.modules.sys.dao.SysApiKeyDao;
-import com.nis.modules.sys.dao.SysUserDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import com.nis.modules.sys.shiro.MySessionManager;
-import com.nis.modules.sys.shiro.ShiroUtils;
-import com.nis.modules.sys.shiro.UserRealm;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.servlet.Filter;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
@@ -34,9 +24,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import javax.servlet.Filter;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.interceptor.LicenseShiroFilter;
+import com.nis.common.interceptor.MetricsShiroFilter;
+import com.nis.common.interceptor.TokenCheckFilter;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.dao.SysApiKeyDao;
+import com.nis.modules.sys.dao.SysUserDao;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.shiro.MySessionManager;
+import com.nis.modules.sys.shiro.ShiroUtils;
+import com.nis.modules.sys.shiro.UserRealm;
+
+import cn.hutool.core.util.StrUtil;
 
 /**
  * Shiro的配置文件
@@ -75,6 +78,7 @@ public class ShiroConfig {
 		shiroFilter.setUnauthorizedUrl("/");
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
+		filterMap.put("/sys/i18n/lang", "anon");
 		filterMap.put("/metrics", "anon");
 		filterMap.put("/prometheus", "anon");
 		filterMap.put("/prom/**", "anon");
@@ -103,7 +107,7 @@ public class ShiroConfig {
 		filterMap.put("/setup/**", "anon");// license 相关接口
 		filterMap.put("/actuator/prometheus", "metricsFilter");
 		filterMap.put("/**", "tokenCheckFilter");
-		filterMap.put("/sys/i18n/**", "anon");
+		
 		
 		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
@@ -114,7 +118,7 @@ public class ShiroConfig {
 		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);
-
+		
 		return shiroFilter;
 	}
 

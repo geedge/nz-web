@@ -18,7 +18,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.springframework.web.util.WebUtils;
 
-import com.alibaba.druid.util.StringUtils;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -93,15 +92,20 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 	 * 根据code查询国际化值，自动获取当前语言
 	 */
 	public String queryValue(String code) {
-		return queryValue(code, getLocale());
+		return queryValue(code,getLocale());
+	}
+	
+	@Override
+	public String queryValue(String code, Object... param) {
+		return queryValue(code,getLocale(),param);
 	}
 			
 	public String queryValue(String code, String lang) {
-		return queryValue(code, new Locale(lang));
+		return queryValue(code,new Locale(lang));
 	}
 	
-	public String queryValue(String code, Locale locale) {
-		return i18nConfig.getSourceFromCache(code, locale);
+	public String queryValue(String code,Locale locale,Object...param) {
+		return i18nConfig.getSourceFromCache(code, locale,param);
 	}
 	
 	public Map<String, String> getCurrLang() {
@@ -198,5 +202,10 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 			}
 		}
 		return result;
+	}
+
+	@Override
+	public void clearCache() {
+		i18nConfig.reload();
 	}
 }

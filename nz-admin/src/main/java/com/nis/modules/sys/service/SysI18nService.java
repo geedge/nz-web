@@ -1,12 +1,12 @@
 package com.nis.modules.sys.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.common.utils.PageUtils;
-import com.nis.modules.sys.entity.SysI18nEntity;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
+import com.nis.modules.sys.entity.SysI18nEntity;
 
 /**
  * i18n信息表
@@ -30,14 +30,18 @@ public interface SysI18nService extends IService<SysI18nEntity> {
 
 	String queryValue(String code);
 	
+	String queryValue(String code, Object...param);
+	
 	public String queryValue(String code, String lang);
 	
-	String queryValue(String code, Locale locale);
+	String queryValue(String code, Locale locale,Object...param);
 	
 	List<SysI18nEntity> queryAll();
 	
 	Map<String, String> getCurrLang();
 	
 	Locale getLocale();
+	
+	void clearCache();
 }
 

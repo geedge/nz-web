@@ -88,4 +88,15 @@ public class SysI18nController {
     	Map result = sysI18nService.selectLang(l);
     	return R.ok(result);
     }
+    
+    /**
+     * 清除缓存
+     */
+    @PutMapping("/clearCache")
+    @SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.I18N)
+    public R clearCache(){
+		sysI18nService.clearCache();
+		return R.ok();
+    }
+    
 }

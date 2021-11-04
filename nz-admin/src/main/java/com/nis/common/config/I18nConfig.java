@@ -1,11 +1,13 @@
 package com.nis.common.config;
 
-import cn.hutool.log.Log;
-import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.modules.sys.entity.SysI18nEntity;
-import com.nis.modules.sys.service.SysDictService;
-import com.nis.modules.sys.service.SysI18nService;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.support.AbstractMessageSource;
@@ -13,12 +15,13 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.nis.common.smartvalidate.utils.CommonUtil;
+import com.nis.common.utils.Constant;
+import com.nis.modules.sys.entity.SysI18nEntity;
+import com.nis.modules.sys.service.SysDictService;
+import com.nis.modules.sys.service.SysI18nService;
+
+import cn.hutool.log.Log;
 
 @Service("messageSource")
 public class I18nConfig extends AbstractMessageSource implements ResourceLoaderAware {
@@ -57,10 +60,10 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
     public void loadAllMessageResourcesFromDB() {
         List<SysI18nEntity> list = sysI18nService.queryAll();
         if (!CommonUtil.isNull(list)) {
-        	if (CommonUtil.isNull(Constant.langList)) { //语言种类列表
-    			sysDictService.updateLangCache();
-    		}
-//        	try {
+			if (CommonUtil.isNull(Constant.langList)) { //语言种类列表
+				sysDictService.updateLangCache();
+			}
+        	try {
 				for (Map<String, String> l : Constant.langList) {
 					Map<String, String> langMap = I18N_CACHE.get(l.get("value"));
 					if (CommonUtil.isNull(langMap)) {
@@ -73,9 +76,9 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
 						}
 					}
 				}
-/*			} catch (Exception e) {
+			} catch (Exception e) {
 				logger.error(e);
-			}*/
+			}
         }
     }
 
@@ -86,22 +89,23 @@ public class I18nConfig extends AbstractMessageSource implements ResourceLoaderA
      * @param locale
      * @return
      */
-    public String getSourceFromCache(String code, Locale locale) {
+    public String getSourceFromCache(String code, Locale locale,Object... param) {
         String language = locale.getLanguage();
         if (CommonUtil.isNull(I18N_CACHE)) {
         	loadAllMessageResourcesFromDB();
         }
         Map<String, String> props = I18N_CACHE.get(language);
         if (null != props && props.containsKey(code)) {
-            return props.get(code);
+        	String msg = props.get(code);
+            return MessageFormat.format(msg, param);
         } else {
-//            try {
+        	try {
                 if (null != this.getParentMessageSource()) {
-                    return this.getParentMessageSource().getMessage(code, null, locale);
+                    return this.getParentMessageSource().getMessage(code, param, locale);
                 }
-				/*            } catch (Exception ex) {
-				    logger.error(ex);
-				}*/
+			} catch (Exception ex) {
+				logger.error(ex);
+			}
             return code;
         }
     }

@@ -20,11 +20,14 @@ public class NZException extends RuntimeException {
 	
     private String msg;
     private int code = RCode.ERROR.getCode();
+    private Object[] param = new Object[]{};
+    private RCode rCode;
     
     public NZException(RCode rCode) {
     	this.code = rCode.getCode();
     	this.msg = rCode.getMsg();
-    	
+    	this.param = rCode.getParam();
+    	this.rCode = rCode;
     }
     
     public NZException(String msg) {
@@ -65,4 +68,19 @@ public class NZException extends RuntimeException {
 		this.code = code;
 	}
 	
+	public Object[] getParam() {
+		return param;
+	}
+
+	public void setParam(Object[] param) {
+		this.param = param;
+	}
+
+	public RCode getRCode() {
+		return rCode;
+	}
+
+	public void setrCode(RCode rCode) {
+		this.rCode = rCode;
+	}
 }

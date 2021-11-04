@@ -1,5 +1,7 @@
 package com.nis.common.utils;
 
+import java.text.MessageFormat;
+
 public enum RCode {
 
     /**
@@ -863,7 +865,6 @@ public enum RCode {
 	LICENSE_VERSION_INVALID(715004, "The version is not valid"),
 
     ERROR(999, "error"); //通用错误/未知错误
-
 	
 	
 	private RCode(Integer code, String msg) {
@@ -873,7 +874,18 @@ public enum RCode {
 
 	private Integer code;
 	private String msg;
-
+	private Object[] param;
+	
+	public RCode setParam(Object... param) {
+		this.param = param;
+		this.msg = MessageFormat.format(msg, param);
+		return this;
+	}
+	
+	public Object[] getParam() {
+		return param;
+	}
+	
 	public Integer getCode() {
 		return code;
 	}
