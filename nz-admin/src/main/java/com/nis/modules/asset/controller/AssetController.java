@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -251,9 +253,8 @@ public class AssetController {
      * @param language
      */
     @GetMapping("/asset/template")
-    public void getAssetExcelTemplateByLanguage(HttpServletResponse response, String language) {
-        ValidateUtils.is(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
-
+    public void getAssetExcelTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
         assetAssetService.getExportTemplateByLanguage(response, language);
     }
 
@@ -265,9 +266,9 @@ public class AssetController {
     @PostMapping("/asset/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:save"})
-    public R importAssets(MultipartFile excelFile,String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public R importAssets(MultipartFile excelFile,HttpServletRequest request) {
+        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
+        String language = request.getHeader(Constant.LANGUAGE);
         Map map = assetAssetService.importAssetsFromExcel(excelFile, language);
         return R.ok(map);
     }

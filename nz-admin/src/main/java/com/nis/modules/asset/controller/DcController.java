@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
@@ -118,8 +119,8 @@ public class DcController {
 
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         dcService.getExportTemplateByLanguage(response, language);
     }
@@ -128,9 +129,9 @@ public class DcController {
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
     @RequiresPermissions({"dc:save"})
-    public R importDatacentersFromExcel(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public R importDatacentersFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
 
         Map info = dcService.importDatacentersFromExcel(excelFile, language);
         return R.ok(info);
@@ -254,8 +255,8 @@ public class DcController {
 
 
     @GetMapping("/cabinet/template")
-    public void getCabinetExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public void getCabinetExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         cabinetService.getCabinetExportTemplateByLanguage(response, language);
     }
@@ -263,9 +264,9 @@ public class DcController {
     @PostMapping("/cabinet/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.DATACENTER)
     @RequiresPermissions({"cabinet:save"})
-    public R importCabinetsFromExcel(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public R importCabinetsFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
 
         Map info = cabinetService.importCabinetsFromExcel(excelFile, language);
         return R.ok(info);

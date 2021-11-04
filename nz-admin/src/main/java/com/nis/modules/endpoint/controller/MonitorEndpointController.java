@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Date;
@@ -107,8 +108,8 @@ public class MonitorEndpointController {
     }
 
     @GetMapping("/endpoint/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         monitorEndpointService.getExportTemplateByLanguage(response, language);
     }
@@ -131,9 +132,9 @@ public class MonitorEndpointController {
     @PostMapping("/endpoint/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ENDPOINT)
     @RequiresPermissions({"endpoint:save"})
-    public R importEndpoint(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public R importEndpoint(MultipartFile excelFile, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
 
         Map map = monitorEndpointService.importEndpoint(excelFile, language);
         return R.ok(map);

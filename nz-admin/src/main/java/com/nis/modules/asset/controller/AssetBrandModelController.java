@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
 
@@ -128,9 +129,8 @@ public class AssetBrandModelController {
 
 
     @GetMapping("/asset/model/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
-
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
         modelService.getExportTemplateByLanguage(response, language);
     }
 
@@ -138,10 +138,9 @@ public class AssetBrandModelController {
     @PostMapping("/asset/model/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:save"})
-    public R importAssetModelFromExcel(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
-
+    public R importAssetModelFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        String language = request.getHeader(Constant.LANGUAGE);
         Map info = modelService.importAssetModelFromExcel(excelFile, language);
         return R.ok(info);
     }

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,8 +105,8 @@ public class MonitorModuleController {
 
 
     @GetMapping("/module/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         monitorModuleService.getExportTemplateByLanguage(response, language);
     }
@@ -114,9 +115,9 @@ public class MonitorModuleController {
     @PostMapping("/module/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODULE)
     @RequiresPermissions({"module:save"})
-    public R importModulesFromExcel(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.EXCELFILE_HEADER_LANGUAGE_ISNULL);
+    public R importModulesFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
 
         Map info = monitorModuleService.importDatacentersFromExcel(excelFile, language);
         return R.ok(info);

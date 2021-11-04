@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
@@ -84,8 +85,8 @@ public class VisualPanelController {
 	}
 	
 	@GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language, String type) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public void getExportTemplateByLanguage(HttpServletResponse response, String type,HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         visualPanelService.getExportTemplateByLanguage(response, language, type);
     }
@@ -93,10 +94,10 @@ public class VisualPanelController {
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
 	@RequiresPermissions({ "visual:panel:save"})
-    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
+    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId,HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
         ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
-                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL)
-                .and(language).notNull(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ISNULL);
+                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
 
         return R.ok(visualPanelService.importChartFromExcelFile(excelFile, type, linkId, language));
     }

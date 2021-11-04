@@ -570,7 +570,7 @@ public class Constant {
 	public static final Integer AUTH_CERTIFICATE = 2;// 私钥证书认证
 
 	public static final String AUTH_TOKEN_CODE = "Authorization";
-
+	public static final String LANGUAGE = "language";
 	public static final Integer SNMPV1 = 1;
 	public static final Integer SNMPV2 = 2;
 	public static final Integer SNMPV3 = 3;

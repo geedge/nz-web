@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
@@ -101,10 +102,8 @@ public class ExpreTmplController {
     }
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) {
-            throw new NZException(RCode.EXPRETMPL_EXPORT_HEADER_LANGUAGE_ISNULL);
-        }
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         expreTmplService.getExportTemplateByLanguage(response, language);
     }
@@ -112,9 +111,9 @@ public class ExpreTmplController {
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:save"})
-    public R importTmplsFromExcel(MultipartFile excelFile, String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXPRETMPL_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.EXPRETMPL_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public R importTmplsFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.EXPRETMPL_IMPORT_FILE_ISNULL);
 
         Map info = expreTmplService.importExpreTmplsFromExcel(excelFile, language);
         return R.ok(info);

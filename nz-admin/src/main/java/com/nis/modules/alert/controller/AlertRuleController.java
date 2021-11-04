@@ -3,6 +3,7 @@ package com.nis.modules.alert.controller;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.R;
@@ -112,8 +114,8 @@ public class AlertRuleController {
 
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        if (ToolUtil.isEmpty(language)) throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
 
         alertRuleService.getExportTemplateByLanguage(response, language);
     }
@@ -121,9 +123,9 @@ public class AlertRuleController {
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:save"})
-    public R importAlertFromExcelFile(MultipartFile excelFile,String language) {
-        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL)
-                .and(language).notNull(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ISNULL);
+    public R importAlertFromExcelFile(MultipartFile excelFile,HttpServletRequest request) {
+        String language = request.getHeader(Constant.LANGUAGE);
+        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL);
 
         return R.ok(alertRuleService.importAlertFromExcelFile(excelFile, language));
     }
