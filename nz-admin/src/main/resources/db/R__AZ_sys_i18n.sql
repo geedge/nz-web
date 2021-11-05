@@ -4676,7 +4676,6 @@ INSERT INTO `sys_i18n` VALUES (4729, 'overall.alertRuleEvalLog', 'en', 'overall.
 INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', 'Eval log', '', '2021-11-04 06:32:42', 1);
 INSERT INTO `sys_i18n` VALUES (4731, 'alert.alertRuleMessage', 'en', 'alert.alertRuleMessage', 'Message', '', '2021-11-04 06:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4732, 'alert.alertRuleMessage', 'zh', 'alert.alertRuleMessage', '信息', '', '2021-11-04 06:28:14', 1);
-INSERT INTO `sys_i18n` VALUES (4734, 'overall.active', 'en', 'overall.active', 'Active', '', '2021-11-05 02:18:08', 1);
 INSERT INTO `sys_i18n` VALUES (4735, 'overall.allData', 'en', 'overall.allData', 'All data', '', '2021-11-05 02:28:44', 1);
 INSERT INTO `sys_i18n` VALUES (4736, 'overall.selectRecords', 'en', 'overall.selectRecords', 'Select records', '', '2021-11-05 02:29:18', 1);
 INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current', '', '2021-11-05 02:29:42', 1);
