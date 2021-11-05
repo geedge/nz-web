@@ -259,7 +259,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     	List<Map<String,Object>> stateList = new ArrayList<Map<String,Object>>();
     	List<Map<String,Object>> stateGroupList = this.baseMapper.queryEndpointGroupBy("e.state", params);
     	for(Map<String,Object> state : stateGroupList) {
-    		Long val = (Long) state.get("state");
+            Object objVal = Tool.ObjectUtil.defaultIfNull(state.get("state"), 0);
+            Long val = Long.valueOf(objVal.toString());
     		if(val.equals(0L)) {
     			stateMap.get("metricsDownMap").put("num", state.get("metricsDown"));
     			stateMap.get("logsDownMap").put("num", state.get("logsDown"));
