@@ -4664,5 +4664,24 @@ INSERT INTO `sys_i18n` VALUES (4629, 'el.table.emptyText', 'en', 'el.table.empty
 INSERT INTO `sys_i18n` VALUES (4630, 'el.table.clearFilter', 'en', 'el.table.clearFilter', 'All', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4631, 'el.table.confirmFilter', 'en', 'el.table.confirmFilter', 'Confirm', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (4696, 'el.empty.description', 'zh', 'el.empty.description', '暂无数据', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (4721, 'config.menus.lang', 'en', 'config.menus.lang', 'Lang', '', '2021-11-04 05:59:15', 1);
+INSERT INTO `sys_i18n` VALUES (4722, 'config.menus.lang', 'zh', 'config.menus.lang', '语言', '', '2021-11-04 05:59:36', 1);
+INSERT INTO `sys_i18n` VALUES (4723, 'config.menus.value', 'en', 'config.menus.value', 'Value', '', '2021-11-04 05:59:58', 1);
+INSERT INTO `sys_i18n` VALUES (4724, 'config.menus.value', 'zh', 'config.menus.value', '内容', '', '2021-11-04 06:00:16', 1);
+INSERT INTO `sys_i18n` VALUES (4725, 'config.menus.createI18n', 'en', 'config.menus.createI18n', 'New I18N', '', '2021-11-04 06:01:40', 1);
+INSERT INTO `sys_i18n` VALUES (4726, 'config.menus.editI18n', 'en', 'config.menus.editI18n', 'Edit I18N', '', '2021-11-04 06:01:48', 1);
+INSERT INTO `sys_i18n` VALUES (4727, 'config.menus.editI18n', 'zh', 'config.menus.editI18n', '编辑 I18N', '', '2021-11-04 06:02:09', 1);
+INSERT INTO `sys_i18n` VALUES (4728, 'config.menus.createI18n', 'zh', 'config.menus.createI18n', '新增 I18N', '', '2021-11-04 06:31:38', 1);
+INSERT INTO `sys_i18n` VALUES (4729, 'overall.alertRuleEvalLog', 'en', 'overall.alertRuleEvalLog', 'Eval log', '', '2021-11-04 06:32:52', 1);
+INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', 'Eval log', '', '2021-11-04 06:32:42', 1);
+INSERT INTO `sys_i18n` VALUES (4731, 'alert.alertRuleMessage', 'en', 'alert.alertRuleMessage', 'Message', '', '2021-11-04 06:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (4732, 'alert.alertRuleMessage', 'zh', 'alert.alertRuleMessage', '信息', '', '2021-11-04 06:28:14', 1);
+INSERT INTO `sys_i18n` VALUES (4734, 'overall.active', 'en', 'overall.active', 'Active', '', '2021-11-05 02:18:08', 1);
+INSERT INTO `sys_i18n` VALUES (4735, 'overall.allData', 'en', 'overall.allData', 'All data', '', '2021-11-05 02:28:44', 1);
+INSERT INTO `sys_i18n` VALUES (4736, 'overall.selectRecords', 'en', 'overall.selectRecords', 'Select records', '', '2021-11-05 02:29:18', 1);
+INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current', '', '2021-11-05 02:29:42', 1);
+INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前', '', '2021-11-05 02:30:52', 1);
+INSERT INTO `sys_i18n` VALUES (4739, 'overall.selectRecords', 'zh', 'overall.selectRecords', '选择记录', '', '2021-11-05 02:31:13', 1);
+INSERT INTO `sys_i18n` VALUES (4740, 'overall.allData', 'zh', 'overall.allData', '所有数据', '', '2021-11-05 02:31:32', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
