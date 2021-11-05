@@ -31,4 +31,7 @@ public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
      * @return
      */
     List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent();
+    
+    List<Map<String,Object>> queryEndpointGroupBy(@Param("column") String column,@Param("params") Map<String, Object> params);
+    
 }

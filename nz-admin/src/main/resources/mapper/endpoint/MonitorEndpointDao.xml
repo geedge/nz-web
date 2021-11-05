@@ -221,6 +221,151 @@
         </if>
     </select>
 	
+	<select id="queryEndpointGroupBy" resultType="java.util.Map">
+		SELECT
+			<if test='column !="e.state"'>
+				${column} AS id,
+				count(DISTINCT e.id) AS num 
+			</if>
+			<if test='column =="e.state"'>
+				e.state as state,
+				ifnull(sum(case  when e.state=0 and e.type='metrics' then 1 end),0) metricsDown,
+				ifnull(sum(case  when e.state=1 and e.type='metrics' then 1 end),0) metricsUp,
+				ifnull(sum(case  when e.state>1 and e.type='metrics' then 1 end),0) metricsSuspended,
+				ifnull(sum(case  when e.state=0 and e.type='logs' then 1 end),0) logsDown,
+				ifnull(sum(case  when e.state=1 and e.type='logs' then 1 end),0) logsUp,
+				ifnull(sum(case  when e.state>1 and e.type='logs' then 1 end),0) logsSuspended
+			</if>
+		FROM
+			(select e.*,es.type,(case when es.state > 1 then 2 else es.state end) state from  monitor_endpoint e left join monitor_endpoint_state es on e.id = es.endpoint_id
+		<where>
+			<if test="params.states != null and params.states.length > 0">
+					 AND es.state IN
+					 <foreach collection="params.states" item="state" index="no" open="(" separator="," close=")">
+							 #{state}
+					 </foreach>
+		
+						<if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+								OR es.state >= 2
+						</if>
+			 </if>
+			 
+			 <if test="params.types != null and params.types.length > 0">
+					AND es.type IN
+					<foreach collection="params.types" item="type" index="no" open="(" separator="," close=")">
+							#{type}
+					</foreach>
+			</if>
+			 
+			 <if test="params.metricsStates != null and params.metricsStates.length > 0">
+		                AND es.state IN
+		                <foreach collection="params.metricsStates" item="metricsState" index="no" open="(" separator="," close=")">
+		                    #{metricsState}
+		                </foreach>
+		                
+		                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+		                    OR es.state > 1
+		                </if>
+		                AND es.type = 'metrics'
+		            </if>
+		            
+		            <if test="params.logsStates != null and params.logsStates.length > 0">
+		                <choose>
+				            <when test="params.metricsStates != null and params.metricsStates.length > 0">
+				                OR
+				            </when>
+				            <otherwise>
+				                AND
+				            </otherwise>
+				        </choose>
+		                (es.state IN
+		                <foreach collection="params.logsStates" item="logsState" index="no" open="(" separator="," close=")">
+		                    #{logsState}
+		                </foreach>
+		                
+		                <if test="params.suspendedStatus != null and params.suspendedStatus != ''">
+		                    OR es.state > 1
+		                </if>
+                AND es.type = 'logs')
+            </if>
+			</where>
+			<if test='column !="e.state"'>
+				group by e.id 
+			</if>
+			) e
+			LEFT JOIN monitor_module m ON e.module_id = m.id
+			LEFT JOIN monitor_project p ON m.project_id = p.id
+		<where>
+        	<if test="params.ids != null and params.ids.length > 0">
+               e.id IN
+               <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+                   #{id}
+               </foreach>
+           </if>
+
+           <if test="params.projectIds != null and params.projectIds.length > 0">
+               AND p.id IN
+               <foreach collection="params.projectIds" item="projectId" index="no" open="(" separator="," close=")">
+                   #{projectId}
+               </foreach>
+           </if>
+
+           <if test="params.moduleIds != null and params.moduleIds.length > 0">
+               AND e.module_id IN
+               <foreach collection="params.moduleIds" item="moduleId" index="no" open="(" separator="," close=")">
+                   #{moduleId}
+               </foreach>
+           </if>
+
+            <if test="params.assetIds != null and params.assetIds.length > 0">
+                AND a.id IN
+                <foreach collection="params.assetIds" item="assetId" index="no" open="(" separator="," close=")">
+                    #{assetId}
+                </foreach>
+            </if>
+
+           <if test="params.name != null and params.name != ''">
+               AND e.name like CONCAT('%', #{params.name}, '%')
+           </if>
+
+           <if test="params.assetName != null and params.assetName != ''">
+               AND a.name like CONCAT('%', #{params.assetName}, '%')
+           </if>
+        </where>
+        GROUP BY 
+        <if test="column != 'e.state'">
+         	${column}
+         </if>
+         <if test="column == 'e.state'">
+         	e.state
+         </if>
+    </select>
+	
+	<select id="analyseEndpointState"  resultType="java.util.Map">
+		select 
+			e.state,
+			sum(case  when e.state=0 and e.type='metrics' then 1 end) metricsdown,
+			sum(case  when e.state=1 and e.type='metrics' then 1 end) metricsup,
+			sum(case  when e.state>1 and e.type='metrics' then 1 end) metricssuspended,
+			sum(case  when e.state=0 and e.type='logs' then 1 end) logsdown,
+			sum(case  when e.state=1 and e.type='logs' then 1 end) logsup,
+			sum(case  when e.state>1 and e.type='logs' then 1 end) logssuspended
+			from (
+				select mes.type,(case when mes.state > 1 then 2 else mes.state end) state 
+				from monitor_endpoint me left join monitor_endpoint_state mes on me.id = mes.endpoint_id
+			<where>
+			<if test="endpointIds != null and endpointIds.size > 0">
+               me.id IN
+               <foreach collection="endpointIds" item="id" index="no" open="(" separator="," close=")">
+                   #{id}
+               </foreach>
+           </if> 
+           </where>
+            ) e
+			group by e.state
+	</select>
+	
+	
     <select id="getSuspendedEndpointIdList" resultType="java.lang.Integer">
         SELECT DISTINCT
             me.id

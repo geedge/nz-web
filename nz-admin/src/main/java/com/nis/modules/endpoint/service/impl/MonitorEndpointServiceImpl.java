@@ -1,11 +1,39 @@
 package com.nis.modules.endpoint.service.impl;
 
-import cn.hutool.core.lang.hash.MurmurHash;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -17,7 +45,15 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.ExcelUtils;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -45,28 +81,13 @@ import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service
 public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, MonitorEndpoint> implements MonitorEndpointService {
@@ -165,7 +186,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 查询结果不为空时处理返回结果
         if (CollectionUtils.isNotEmpty(datas)) {
-            this.handleResuleList(datas,params,result);
+            this.handleResuleList(datas);
         }
 
         page.setRecords(datas);
@@ -175,8 +196,105 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return result;
     }
 
+    @Override
+	public Map<String, List> queryEndpointGroupBy(Map<String, Object> params) {
+    	Map<String,List> result = new HashMap<String, List>();
+    	QueryWrapper wrapper = new QueryWrapper().select("id","name");
+		wrapper.orderByAsc("name");
+    	//project
+    	List<Map<String, Object>> projectList = monitorProjectService.listMaps(wrapper);
+    	List<Map<String,Object>> projectGroupList = this.baseMapper.queryEndpointGroupBy("p.id", params);
+    	this.assetGroupBysetNum(projectList, projectGroupList);
+    	result.put("project", projectList);
+    	//module
+    	List<Map<String, Object>> moduleList = monitorModuleService.listMaps(wrapper);
+    	List<Map<String,Object>> moduleGroupList = this.baseMapper.queryEndpointGroupBy("m.id", params);
+    	this.assetGroupBysetNum(moduleList, moduleGroupList);
+    	result.put("module", moduleList);
+    	
+    	//state
+    	Map<String,Map<String,Object>> stateMap =new HashMap<String,Map<String,Object>>();
+    	Map<String,Object> metricsDownMap =new HashMap<String,Object>();
+		metricsDownMap.put("id", 0);
+		metricsDownMap.put("name", "down");
+		metricsDownMap.put("type", "metrics");
+		metricsDownMap.put("num", 0);
+		stateMap.put("metricsDownMap", metricsDownMap);
+		
+		Map<String,Object> logsDownMap =new HashMap<String,Object>();
+		logsDownMap.put("id", 0);
+		logsDownMap.put("name", "down");
+		logsDownMap.put("type", "logs");
+		logsDownMap.put("num", 0);
+		stateMap.put("logsDownMap", logsDownMap);
+		
+		Map<String,Object> metricsUpMap =new HashMap<String,Object>();
+		metricsUpMap.put("id",1);
+		metricsUpMap.put("name", "up");
+		metricsUpMap.put("type", "metrics");
+		metricsUpMap.put("num", 0);
+		stateMap.put("metricsUpMap", metricsUpMap);
+		
+		Map<String,Object> logsUpMap =new HashMap<String,Object>();
+		logsUpMap.put("id",1);
+		logsUpMap.put("name", "up");
+		logsUpMap.put("type", "logs");
+		logsUpMap.put("num", 0);
+		stateMap.put("logsUpMap", logsUpMap);
+		
+		Map<String,Object> metricsSuspendedMap =new HashMap<String,Object>();
+		metricsSuspendedMap.put("id",2);
+		metricsSuspendedMap.put("name", "suspended");
+		metricsSuspendedMap.put("type", "metrics");
+		metricsSuspendedMap.put("num", 0);
+		stateMap.put("metricsSuspendedMap", metricsSuspendedMap);
+		
+		Map<String,Object> logsSuspendedMap =new HashMap<String,Object>();
+		logsSuspendedMap.put("id",2);
+		logsSuspendedMap.put("name", "suspended");
+		logsSuspendedMap.put("type", "logs");
+		logsSuspendedMap.put("num", 0);
+		stateMap.put("logsSuspendedMap", logsSuspendedMap);
+		
+    	List<Map<String,Object>> stateList = new ArrayList<Map<String,Object>>();
+    	List<Map<String,Object>> stateGroupList = this.baseMapper.queryEndpointGroupBy("e.state", params);
+    	for(Map<String,Object> state : stateGroupList) {
+    		Long val = (Long) state.get("state");
+    		if(val.equals(0L)) {
+    			stateMap.get("metricsDownMap").put("num", state.get("metricsDown"));
+    			stateMap.get("logsDownMap").put("num", state.get("logsDown"));
+    		}else if(val.equals(1L)){
+    			stateMap.get("metricsUpMap").put("num", state.get("metricsUp"));
+    			stateMap.get("logsUpMap").put("num", state.get("logsUp"));
+    		}else {
+    			stateMap.get("metricsSuspendedMap").put("num", state.get("metricsSuspended"));
+    			stateMap.get("logsSuspendedMap").put("num", state.get("logsSuspended"));
+    		}
+    	}
+    	
+    	for(Map<String, Object> value :stateMap.values()) {
+    		stateList.add(value);
+    	}
+    	
+    	result.put("state", stateList);
+		return result;
+	}
+
+    private void assetGroupBysetNum(List<Map<String,Object>> allList,List<Map<String,Object>> groupList) {
+    	if(Tool.CollUtil.isEmpty(groupList)) {
+    		return;
+    	}
+    	Map<String,Object> groupMap = new HashMap<String, Object>();
+    	for(Map<String,Object> m : groupList) {
+    		groupMap.put(String.valueOf(m.get("id")), m.get("num"));
+    	}
+    	for(Map<String,Object> m : allList) {
+    		m.put("num", groupMap.getOrDefault(String.valueOf(m.get("id")), 0));
+    	}
+    }
+    
     @SuppressWarnings("unlikely-arg-type")
-	private void handleResuleList(List<MonitorEndpoint> endpointList,Map<String, Object> params,Map<String,Object> result) {
+	private void handleResuleList(List<MonitorEndpoint> endpointList) {
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
 
         for (MonitorEndpoint endpoint : endpointList) {
@@ -191,141 +309,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 endpointConfig.setLastUpdate(endpointStateByConfigId.getTime());
             }
             endpoint.setConfigs(configsByEndpointId);
-        }
-        
-        if(ToolUtil.isNotEmpty(params.get("statistics")) && Integer.valueOf((String)params.get("statistics")).equals(1)) {
-        	Map<String,Object> statistics =new HashMap<String,Object>();
-        	// project module state
-        	Map<Integer,Object> projects = new HashMap<Integer,Object>();
-        	Map<Integer,Object> modules = new HashMap<Integer,Object>();
-        	Map<String,Object> states = new HashMap<String,Object>();
-        	for (MonitorEndpoint endpoint : endpointList) {
-        		Integer projectId = endpoint.getProject().getId();
-        		if(ToolUtil.isEmpty(projects.get(projectId))) {
-        			Map <String,Object> project = new HashMap<String,Object>();
-        			project.put("id", projectId);
-        			project.put("name", endpoint.getProject().getName());
-        			project.put("num", 1);
-        			projects.put(projectId,project);
-        		}else {
-        			Map<String,Object> project = (Map<String, Object>) projects.get(projectId);
-        			project.put("num", (Integer)project.get("num")+1);
-        		}
-        		
-        		Integer moduleId = endpoint.getModule().getId();
-        		if(ToolUtil.isEmpty(modules.get(moduleId))) {
-        			Map <String,Object> module = new HashMap<String,Object>();
-        			module.put("id", moduleId);
-        			module.put("name", endpoint.getModule().getName());
-        			module.put("num", 1);
-        			modules.put(moduleId,module);
-        		}else {
-        			Map<String,Object> module = (Map<String, Object>) modules.get(moduleId);
-        			module.put("num", (Integer)module.get("num")+1);
-        		}
-        		
-        		List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
-        		String types=null;
-        		if(ToolUtil.isNotEmpty(params.get("type"))) {
-        			types = (String) params.get("type");
-        		}
-        		for(MonitorEndpointConfig config : configs) {
-        			Integer state = config.getState();
-        			String type = config.getType();
-        			// endpoint刚新增时 还没有状态需要赋值初始 默认为down 等定时任务完成改变state为正确状态
-        			if(ToolUtil.isEmpty(state)) {
-        				state = 0;
-        			}
-					if(ToolUtil.isNotEmpty(types) && !types.contains(type)) {
-						continue;
-					}
-        			if(state > 1) {
-        				if(ToolUtil.isEmpty(states.get(config.getType()+2))) {
-        					Map<String,Object> stateObject = new HashMap<String,Object>();
-        					stateObject.put("id",2);
-        					stateObject.put("type", config.getType());
-        					stateObject.put("name","suspended");
-        					stateObject.put("num",1);
-        					states.put(config.getType()+2, stateObject);
-        				}else{
-        					Map<String,Object> stateObject = (Map<String, Object>) states.get(config.getType()+2);
-        					stateObject.put("num", (Integer)stateObject.get("num")+1);
-        				}
-        			}else {
-        				if(ToolUtil.isEmpty(states.get(config.getType()+config.getState()))) {
-        					Map<String,Object> stateObject = new HashMap<String,Object>();
-        					stateObject.put("id",state);
-        					stateObject.put("type", config.getType());
-        					stateObject.put("name",ToolUtil.equals(state, 0)?"down":"up");
-        					stateObject.put("num",1);
-        					states.put(config.getType()+config.getState(), stateObject);
-        				}else{
-        					Map<String,Object> stateObject = (Map<String, Object>) states.get(config.getType()+config.getState());
-        					stateObject.put("num", (Integer)stateObject.get("num")+1);
-        				}
-        			}
-        		}
-        	}
-        	
-        	// 查询所有project module数据
-        	Set<Integer> projectIds = projects.keySet();
-        	List<MonitorProject> otherProjects = monitorProjectService.list(new QueryWrapper<MonitorProject>().lambda().notIn(MonitorProject::getId, projectIds));
-        	for(MonitorProject otherProject : otherProjects) {
-        		Map <String,Object> project = new HashMap<String,Object>();
-    			project.put("id", otherProject.getId());
-    			project.put("name", otherProject.getName());
-    			project.put("num", 0);
-    			projects.put(otherProject.getId(),project);
-        	}
-        	
-        	Set<Integer> moduleIds = modules.keySet();
-        	List<MonitorModule> otherModules = monitorModuleService.list(new QueryWrapper<MonitorModule>().lambda().notIn(MonitorModule::getId, moduleIds));
-        	for(MonitorModule otherModule : otherModules) {
-        		Map <String,Object> module = new HashMap<String,Object>();
-    			module.put("id", otherModule.getId());
-    			module.put("name", otherModule.getName());
-    			module.put("num", 0);
-    			modules.put(otherModule.getId(),module);
-        	}
-        	
-        	// 组装state数据 将返回结果中未涉及的状态添加进去
-        	for(int i = 0;i<3;i++) {
-        		Object metricsObject = states.get("metrics"+i);
-        		if(ToolUtil.isEmpty(metricsObject)) {
-        			Map<String,Object> stateObject = new HashMap<String,Object>();
-					stateObject.put("id",i);
-					stateObject.put("type", "metrics");
-					if(i==0) {
-						stateObject.put("name","down");
-					}else if(i==1) {
-						stateObject.put("name","up");
-					}else {
-						stateObject.put("name","suspended");
-					}
-					stateObject.put("num",0);
-					states.put("metrics"+i, stateObject);
-        		}
-        		
-        		Object logsObject = states.get("logs"+i);
-        		if(ToolUtil.isEmpty(logsObject)) {
-        			Map<String,Object> stateObject = new HashMap<String,Object>();
-					stateObject.put("id",i);
-					stateObject.put("type", "logs");
-					if(i==0) {
-						stateObject.put("name","down");
-					}else if(i==1) {
-						stateObject.put("name","up");
-					}else {
-						stateObject.put("name","suspended");
-					}
-					stateObject.put("num",0);
-					states.put("logs"+i, stateObject);
-        		}
-        	}
-        	statistics.put("project", projects.values());
-        	statistics.put("module", modules.values());
-        	statistics.put("state", states.values());
-        	result.put("statistics", statistics);
         }
     }
 

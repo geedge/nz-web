@@ -47,8 +47,10 @@ public class MonitorEndpointController {
         R r =new R();
         r.put("data", page);
 		r.put("time", new Date());
-        if(ToolUtil.isNotEmpty(result.get("statistics"))) {
-        	r.put("statistics",result.get("statistics"));
+		Object statFlag = params.getOrDefault("statistics", 0);
+        if(Tool.ObjectUtil.equal("1", String.valueOf(statFlag))) {
+        	Map<String, List> endpointGroupBy = monitorEndpointService.queryEndpointGroupBy(params);
+        	r.put("statistics", endpointGroupBy);
         }
         return r;
     }

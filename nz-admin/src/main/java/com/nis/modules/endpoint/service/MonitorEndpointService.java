@@ -62,4 +62,6 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      * @return
      */
     List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent();
+    
+    Map<String,List> queryEndpointGroupBy(Map<String, Object> params);
 }
