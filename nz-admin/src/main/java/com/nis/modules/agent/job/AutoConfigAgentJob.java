@@ -607,7 +607,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
             String result = null;
             String path = "/snmpExporter/config";
             try {
-            	result = AgentUtil.request(promserver, HttpMethod.POST,path, null, snmpYml, String.class);
+                result = AgentUtil.request(promserver, HttpMethod.POST, path, null, JSONObject.toJSONString(snmpYml), String.class);
             } catch (RuntimeException e) {
             	log.error(e,"request error,path:{},agent:{}",path,Tool.JSONUtil.toJsonStr(promserver));
             }
