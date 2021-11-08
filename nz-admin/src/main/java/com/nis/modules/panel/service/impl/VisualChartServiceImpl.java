@@ -856,9 +856,12 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 				if(temp.getType().equals(Constant.CHART_GROUP_TYPE)) {
 					instanceChart.setGroupId(groupChartId);
 					List<VisualChart> children = groupIdAndChildren.get(temp.getId());
-					for(VisualChart child : children) {
-						handlerSyncGroupChart(child,instanceChart,resultCharts);
+					if(ToolUtil.isNotEmpty(children)) {
+						for(VisualChart child : children) {
+							handlerSyncGroupChart(child,instanceChart,resultCharts);
+						}
 					}
+					
 				}
 			}
 		}else if(ToolUtil.isNotEmpty(obj) && instanceCharts==null){
