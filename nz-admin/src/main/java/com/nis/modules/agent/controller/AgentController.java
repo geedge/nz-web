@@ -49,6 +49,9 @@ public class AgentController {
 	@Value("${nezha.installPath:install/}")
 	private String installPath;
 
+	@Value("${server.ssl.enabled}")
+	private String sslEnabled;
+
 	@Autowired
 	private PromserverService promserverService;
 
@@ -81,6 +84,7 @@ public class AgentController {
 			map.put("webToken", webToken);
 			map.put("datacenterID", String.valueOf(dcId));
 			map.put("type", String.valueOf(type));
+			map.put("sslEnabled",sslEnabled);
 			try {
 				// 根据模板文件生成 sh文件
 				Template template = TemplateUtil.stringToTemplate(scriptContent, "installTemplate");
