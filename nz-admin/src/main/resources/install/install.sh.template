@@ -26,6 +26,8 @@ REMOTE_IP=${remoteIP}
 
 REMOTE_PORT=${remotePort}
 
+SSL_ENABLED=${sslEnabled}
+
 if [ ! -z "$REMOTE_PORT" ];then
   REMOTE_IP=$REMOTE_IP:$REMOTE_PORT
 fi
@@ -96,10 +98,18 @@ function downloadPackaget() {
   cd $WORK_PATH;
   log yellow "current os is $CURRENT_OS ,download package from http://$REMOTE_IP/agent/download?os=$CURRENT_OS"
   if command -v wget >/dev/null 2>&1;then
-    wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    if $SSL_ENABLED ;then
+      wget -O $PACKAGE_NAME --no-check-certificate --header="Authorization:"$WEB_TOKEN "https://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    else
+      wget -O $PACKAGE_NAME --header="Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    fi
     return 0
   elif command -v curl >/dev/null 2>&1;then
-    curl -o $PACKAGE_NAME -H "Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    if $SSL_ENABLED ;then
+      curl -o $PACKAGE_NAME -k -H "Authorization:"$WEB_TOKEN "https://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    else
+      curl -o $PACKAGE_NAME -H "Authorization:"$WEB_TOKEN "http://$REMOTE_IP/agent/download?os="$CURRENT_OS
+    fi
     return 0
   else
     log red "The wget/curl command is required"
@@ -127,7 +137,11 @@ function installPackage() {
 EOF
     log yellow 'now regist agent to system with information :'
     cat $WORK_PATH/param.tmp
-    local msg=`curl -s -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "http://$REMOTE_IP/agent/register"`
+    if $SSL_ENABLED ;then
+      local msg=`curl -s -k -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "https://$REMOTE_IP/agent/register"`
+    else
+      local msg=`curl -s -X POST -H "Content-Type:application/json" -H "Authorization:"$WEB_TOKEN -d @$WORK_PATH/param.tmp  "http://$REMOTE_IP/agent/register"`
+    fi
     local code=`echo $msg |grep -E -o '"code":[0-9]+'|grep -E -o '[0-9]+'`
     rm -rf $WORK_PATH/param.tmp
     if [ 200 -eq $code ];then
@@ -152,3 +166,4 @@ fi
 
 
 } # this ensures the entire script is downloaded #
+
