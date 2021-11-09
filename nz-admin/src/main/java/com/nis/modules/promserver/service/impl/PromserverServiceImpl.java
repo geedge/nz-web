@@ -1,15 +1,24 @@
 package com.nis.modules.promserver.service.impl;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import cn.hutool.core.net.URLEncoder;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.*;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.promserver.dao.PromserverDao;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,28 +29,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.DcService;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
-
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
@@ -208,7 +203,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	public JSONObject requestAgent(Promserver server, String urlPath, String requestAgent) {
 		String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
 				.setPort(server.getPort()).setPath(UrlPath.of(urlPath, Charset.forName("UTF-8")))
-				.setQuery(UrlQuery.of(requestAgent, Charset.forName("UTF-8"))).toString();
+				.setQuery(UrlQuery.of(URLEncoder.createQuery().encode(requestAgent, Charset.forName("UTF-8")), Charset.forName("UTF-8"))).toString();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.AUTHORIZATION, server.getToken());
