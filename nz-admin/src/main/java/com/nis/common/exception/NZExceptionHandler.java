@@ -43,8 +43,11 @@ public class NZExceptionHandler {
 	public R handleNZException(NZException e){
 		R r = new R();
 		r.put("code", e.getCode());
-		String msg = sysI18nService.queryValue(e.getRCode().toString(),e.getParam());
-		if(ToolUtil.equals(msg, e.getRCode().toString())) {
+		String msg = "";
+		if(ToolUtil.isNotEmpty(e.getRCode())) {
+			msg = sysI18nService.queryValue(e.getRCode().toString(),e.getParam());
+		}
+		if(ToolUtil.isEmpty(e.getRCode()) || ToolUtil.equals(msg, e.getRCode().toString())) {
 			r.put("msg",e.getMsg());
 		}else {
 			r.put("msg",msg);
