@@ -110,7 +110,7 @@ INSERT INTO `sys_i18n` VALUES (74, 'project.endpoint.bearer_token', 'en', 'proje
 INSERT INTO `sys_i18n` VALUES (75, 'project.endpoint.basicTypeSyslog', 'en', 'project.endpoint.basicTypeSyslog', 'Listen address', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (76, 'project.endpoint.stateInfo_230011', 'en', 'project.endpoint.stateInfo_230011', 'Endpoint connection refused', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (77, 'project.endpoint.stateInfo_230010', 'en', 'project.endpoint.stateInfo_230010', 'Promserver can be used', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (78, 'project.endpoint.auth', 'en', 'project.endpoint.auth', 'Auth', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (78, 'project.endpoint.auth', 'en', 'project.endpoint.auth', 'Authentication', '', '2021-11-09 08:11:48', 1);
 INSERT INTO `sys_i18n` VALUES (79, 'project.endpoint.endpointName', 'en', 'project.endpoint.endpointName', 'Endpoint name', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (80, 'project.endpoint.type', 'en', 'project.endpoint.type', 'Type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (81, 'project.endpoint.editEndpoint', 'en', 'project.endpoint.editEndpoint', 'Edit endpoint', '', '2021-11-02 00:00:00', 1);
@@ -151,7 +151,7 @@ INSERT INTO `sys_i18n` VALUES (115, 'project.endpoint.authTypeNull', 'en', 'proj
 INSERT INTO `sys_i18n` VALUES (116, 'project.endpoint.authTypeWord', 'en', 'project.endpoint.authTypeWord', 'basic auth', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (117, 'project.endpoint.value', 'en', 'project.endpoint.value', 'Value', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (118, 'project.endpoint.scrape_interval_placeholder', 'en', 'project.endpoint.scrape_interval_placeholder', 'default global scrape interval', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (119, 'project.endpoint.relabel', 'en', 'project.endpoint.relabel', 'Relabel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (119, 'project.endpoint.relabel', 'en', 'project.endpoint.relabel', 'Metric relabel', '', '2021-11-09 08:10:35', 1);
 INSERT INTO `sys_i18n` VALUES (120, 'project.endpoint.promExpr', 'en', 'project.endpoint.promExpr', 'Please input expression', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (121, 'project.endpoint.endpoints', 'en', 'project.endpoint.endpoints', 'Endpoint', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (122, 'project.endpoint.endpointId', 'en', 'project.endpoint.endpointId', 'Endpoint ID', '', '2021-11-02 00:00:00', 1);
@@ -1688,7 +1688,7 @@ INSERT INTO `sys_i18n` VALUES (1652, 'project.endpoint.bearer_token', 'zh', 'pro
 INSERT INTO `sys_i18n` VALUES (1653, 'project.endpoint.basicTypeSyslog', 'zh', 'project.endpoint.basicTypeSyslog', '监听地址', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1654, 'project.endpoint.stateInfo_230011', 'zh', 'project.endpoint.stateInfo_230011', 'Endpoint 连接错误', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1655, 'project.endpoint.stateInfo_230010', 'zh', 'project.endpoint.stateInfo_230010', 'Prometheus服务可用', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1656, 'project.endpoint.auth', 'zh', 'project.endpoint.auth', '作者', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1656, 'project.endpoint.auth', 'zh', 'project.endpoint.auth', '认证', '', '2021-11-09 08:11:57', 1);
 INSERT INTO `sys_i18n` VALUES (1657, 'project.endpoint.endpointName', 'zh', 'project.endpoint.endpointName', 'Endpoint 名称', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1658, 'project.endpoint.type', 'zh', 'project.endpoint.type', '类型', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1659, 'project.endpoint.editEndpoint', 'zh', 'project.endpoint.editEndpoint', '修改 Endpoint', '', '2021-11-02 00:00:00', 1);
@@ -1729,7 +1729,7 @@ INSERT INTO `sys_i18n` VALUES (1693, 'project.endpoint.authTypeNull', 'zh', 'pro
 INSERT INTO `sys_i18n` VALUES (1694, 'project.endpoint.authTypeWord', 'zh', 'project.endpoint.authTypeWord', '基础认证', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1695, 'project.endpoint.value', 'zh', 'project.endpoint.value', '值', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1696, 'project.endpoint.scrape_interval_placeholder', 'zh', 'project.endpoint.scrape_interval_placeholder', '默认全局时间间隔', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1697, 'project.endpoint.relabel', 'zh', 'project.endpoint.relabel', 'Relabel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1697, 'project.endpoint.relabel', 'zh', 'project.endpoint.relabel', 'Metric relabel', '', '2021-11-09 08:10:40', 1);
 INSERT INTO `sys_i18n` VALUES (1698, 'project.endpoint.promExpr', 'zh', 'project.endpoint.promExpr', '请输入表达式', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1699, 'project.endpoint.endpoints', 'zh', 'project.endpoint.endpoints', 'Endpoint', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1700, 'project.endpoint.endpointId', 'zh', 'project.endpoint.endpointId', 'Endpoint ID', '', '2021-11-02 00:00:00', 1);
@@ -4682,5 +4682,14 @@ INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current',
 INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前', '', '2021-11-05 02:30:52', 1);
 INSERT INTO `sys_i18n` VALUES (4739, 'overall.selectRecords', 'zh', 'overall.selectRecords', '选择记录', '', '2021-11-05 02:31:13', 1);
 INSERT INTO `sys_i18n` VALUES (4740, 'overall.allData', 'zh', 'overall.allData', '所有数据', '', '2021-11-05 02:31:32', 1);
+INSERT INTO `sys_i18n` VALUES (4743, 'overall.more', 'en', 'overall.more', 'More', '', '2021-11-08 07:34:35', 1);
+INSERT INTO `sys_i18n` VALUES (4744, 'overall.more', 'zh', 'overall.more', '更多', '', '2021-11-08 07:34:58', 1);
+INSERT INTO `sys_i18n` VALUES (4747, 'project.endpoint.item', 'en', 'project.endpoint.item', 'Item', '', '2021-11-09 07:32:08', 1);
+INSERT INTO `sys_i18n` VALUES (4748, 'project.endpoint.item', 'zh', 'project.endpoint.item', '项目', '', '2021-11-09 07:32:29', 1);
+INSERT INTO `sys_i18n` VALUES (4749, 'overall.addParameter', 'en', 'overall.addParameter', 'Add parameter', '', '2021-11-09 07:35:41', 1);
+INSERT INTO `sys_i18n` VALUES (4750, 'overall.addParameter', 'zh', 'overall.addParameter', '添加参数', '', '2021-11-09 07:35:58', 1);
+INSERT INTO `sys_i18n` VALUES (4751, 'project.endpoint.action', 'en', 'project.endpoint.action', 'Action', '', '2021-11-09 07:39:59', 1);
+INSERT INTO `sys_i18n` VALUES (4752, 'project.endpoint.action', 'zh', 'project.endpoint.action', '处理方式', '', '2021-11-09 07:40:09', 1);
+
 
 SET FOREIGN_KEY_CHECKS = 1;
