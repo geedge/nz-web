@@ -59,8 +59,12 @@ public class SysUserController extends AbstractController {
 	/**
 	 * 修改登录用户密码
 	 */
-	@RequestMapping("/pin")
-	public R password(Integer id,String oldPin, String newPin){
+	@PutMapping("/pin")
+	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
+	public R password(@RequestBody Map<String,Object> params){
+		Integer id = (Integer) params.get("id");
+		String newPin = (String) params.get("newPin");
+		String oldPin = (String) params.get("oldPin");
 		Assert.isBlank(newPin, "新密码不为能空");
 		SysUserEntity user = (id== null)? this.getUser() : sysUserService.getById(id);
 		//原密码

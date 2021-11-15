@@ -4690,6 +4690,8 @@ INSERT INTO `sys_i18n` VALUES (4749, 'overall.addParameter', 'en', 'overall.addP
 INSERT INTO `sys_i18n` VALUES (4750, 'overall.addParameter', 'zh', 'overall.addParameter', '添加参数', '', '2021-11-09 07:35:58', 1);
 INSERT INTO `sys_i18n` VALUES (4751, 'project.endpoint.action', 'en', 'project.endpoint.action', 'Action', '', '2021-11-09 07:39:59', 1);
 INSERT INTO `sys_i18n` VALUES (4752, 'project.endpoint.action', 'zh', 'project.endpoint.action', '处理方式', '', '2021-11-09 07:40:09', 1);
+INSERT INTO `sys_i18n` VALUES (4753, 'overall.selectColumns', 'en', 'overall.selectColumns', 'Select columns', '', '2021-11-10 09:37:10', 1);
+INSERT INTO `sys_i18n` VALUES (4754, 'overall.selectColumns', 'zh', 'overall.selectColumns', '选择列', '', '2021-11-10 09:37:23', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
