@@ -159,9 +159,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	    if(ObjectUtil.isEmpty(user.getTheme())) {
         	user.setTheme(1);
         }
-	    
-	    
-	    this.checkPin(user);
+	    this.checkPin(user,false);
     }
 
 	@Override
@@ -399,14 +397,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void checkPin(SysUserEntity user) {
+	public void checkPin(SysUserEntity user,boolean isLogin) {
 		String pin = user.getPin();
 		Date pinTime = user.getPinTime();
-		if(StrUtil.isBlank(pin)) {
-			throw new NZException(RCode.NOT_NULL_ERROR);
-		}
 		String pinPolicy = sysConfigService.getValue("pin_policy");
-		if(ToolUtil.isNotEmpty(pinPolicy)) {
+		if(ToolUtil.isNotEmpty(pinPolicy) && StrUtil.isNotBlank(pin)) {
 			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
 			Integer enable = (Integer) pinPolicyInfo.get("enable");
 			Integer length = (Integer) pinPolicyInfo.get("length");
@@ -419,25 +414,23 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			Integer lockTime = (Integer) pinPolicyInfo.get("lockTime");
 			if(ToolUtil.isNotEmpty(enable) && enable.equals(1)) {
 				// 校验密码长度是否合法
-				if(ToolUtil.isNotEmpty(length)&&length>0&&(length > pin.length())) {
-					RCode sysUserPinTooShort = RCode.SYS_USER_PIN_TOO_SHORT;
-					sysUserPinTooShort.getMsg();
+				if(ToolUtil.isNotEmpty(length)&&length>0&&(length > pin.length())&&!isLogin) {
 					throw new NZException(RCode.SYS_USER_PIN_TOO_SHORT.setParam(length));
 				}
 				// 校验密码是否包含字母
-				if(ToolUtil.isNotEmpty(num)&&num.equals(1)&&!CommonUtils.checkPinCorrect(pin,1)) {
+				if(ToolUtil.isNotEmpty(num)&&num.equals(1)&&!CommonUtils.checkPinCorrect(pin,1)&&!isLogin) {
 					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_NUMBER);
 				}
 				// 校验密码是否包含小写字母
-				if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)) {
+				if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)&&!isLogin) {
 					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);		
 				}
 				// 校验密码是否包含大写字母
-				if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)) {
+				if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)&&!isLogin) {
 					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS);
 				}
 				// 校验密码包含特殊字符是否合法
-				if(ToolUtil.isNotEmpty(spec)&&spec.equals(1)&&!CommonUtils.checkPinCorrect(pin,4)) {
+				if(ToolUtil.isNotEmpty(spec)&&spec.equals(1)&&!CommonUtils.checkPinCorrect(pin,4)&&!isLogin) {
 					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS);
 				}
 				// 校验密码修改天数是否合法

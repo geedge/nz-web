@@ -115,7 +115,7 @@ public class SysLoginController extends AbstractController {
 			}else {
 				sysUser.setPinTime(new Date());
 			}
-			sysUserService.checkPin(sysUser);
+			sysUserService.checkPin(sysUser,true);
 			Subject subject = ShiroUtils.getSubject();
 			UsernamePasswordToken token = new UsernamePasswordToken(username, pin);
 			subject.login(token); //登录

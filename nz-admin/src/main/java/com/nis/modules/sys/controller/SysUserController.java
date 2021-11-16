@@ -67,11 +67,12 @@ public class SysUserController extends AbstractController {
 		String oldPin = (String) params.get("oldPin");
 		Assert.isBlank(newPin, "新密码不为能空");
 		SysUserEntity user = (id== null)? this.getUser() : sysUserService.getById(id);
+		user.setPin(newPin);
+		sysUserService.checkPin(user,false);
 		//原密码
 		oldPin = ShiroUtils.sha256(oldPin, user.getSalt());
 		//新密码
 		newPin = ShiroUtils.sha256(newPin, user.getSalt());
-
 		//更新密码
 		boolean flag = sysUserService.updatePassword(user.getId(), oldPin, newPin);
 		if(!flag){

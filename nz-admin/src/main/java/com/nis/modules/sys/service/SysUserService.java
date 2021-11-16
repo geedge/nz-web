@@ -62,7 +62,7 @@ public interface SysUserService extends IService<SysUserEntity> {
 	// 根据角色ID 获取所属用户
     List<SysUserEntity> getUserListByRoleId(Integer roleId);
     
-    void checkPin(SysUserEntity user);
+    void checkPin(SysUserEntity user,boolean isLogin);
     
     void checkRedisRetry(SysUserEntity user);
 }
