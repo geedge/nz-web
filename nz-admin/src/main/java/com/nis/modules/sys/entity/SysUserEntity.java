@@ -129,4 +129,6 @@ public class SysUserEntity implements Serializable {
 	 * 主题
 	 */
 	private Integer theme; 
+	
+	private Date pinTime;
 }

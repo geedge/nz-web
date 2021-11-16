@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.support.DefaultSubjectContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
@@ -28,6 +30,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -47,6 +50,7 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysRoleEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.entity.SysUserRoleEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysMenuService;
 import com.nis.modules.sys.service.SysRoleService;
 import com.nis.modules.sys.service.SysUserRoleService;
@@ -79,6 +83,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Autowired
 	private RedisConnectionFactory factory;
+	
+	@Autowired
+	private SysConfigService sysConfigService;
 
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
@@ -152,6 +159,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	    if(ObjectUtil.isEmpty(user.getTheme())) {
         	user.setTheme(1);
         }
+	    
+	    
+	    this.checkPin(user);
     }
 
 	@Override
@@ -159,6 +169,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 	public Integer saveUser(SysUserEntity user) {
 
 		ValidateUtils.is(user.getPin()).notNull(RCode.SYS_USER_PASSWORD_ISNULL).maxLength(64);
+		user.setPinTime(new Date());
 		// 校验 user 相关信息
 		this.validateUserInfo(user);
 		if(Tool.StrUtil.isBlank(user.getLang())) {
@@ -263,8 +274,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 
 	@Override
 	public boolean updatePassword(Long userId, String pin, String newPin) {
-        SysUserEntity userEntity = new SysUserEntity();
+        SysUserEntity userEntity = this.baseMapper.selectById(userId);
         userEntity.setPin(newPin);
+        userEntity.setPinTime(new Date());
         return this.update(userEntity,
         	new LambdaUpdateWrapper<SysUserEntity>()
 					.eq(ToolUtil.isNotEmpty(userId),SysUserEntity::getId, userId)
@@ -383,5 +395,101 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		List<SysRoleEntity> roles = sysRoleService.list(new QueryWrapper<SysRoleEntity>().lambda().in(SysRoleEntity::getId, roleIdList));
 		user.setRoles(roles);
 		return user;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void checkPin(SysUserEntity user) {
+		String pin = user.getPin();
+		Date pinTime = user.getPinTime();
+		if(StrUtil.isBlank(pin)) {
+			throw new NZException(RCode.NOT_NULL_ERROR);
+		}
+		String pinPolicy = sysConfigService.getValue("pin_policy");
+		if(ToolUtil.isNotEmpty(pinPolicy)) {
+			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
+			Integer enable = (Integer) pinPolicyInfo.get("enable");
+			Integer length = (Integer) pinPolicyInfo.get("length");
+			Integer num = (Integer) pinPolicyInfo.get("num");
+			Integer lower = (Integer) pinPolicyInfo.get("lower");
+			Integer upper = (Integer) pinPolicyInfo.get("upper");
+			Integer spec = (Integer) pinPolicyInfo.get("spec");
+			Integer valid = (Integer) pinPolicyInfo.get("valid");
+			Integer retry = (Integer) pinPolicyInfo.get("retry");
+			Integer lockTime = (Integer) pinPolicyInfo.get("lockTime");
+			if(ToolUtil.isNotEmpty(enable) && enable.equals(1)) {
+				// 校验密码长度是否合法
+				if(ToolUtil.isNotEmpty(length)&&length>0&&(length > pin.length())) {
+					RCode sysUserPinTooShort = RCode.SYS_USER_PIN_TOO_SHORT;
+					sysUserPinTooShort.getMsg();
+					throw new NZException(RCode.SYS_USER_PIN_TOO_SHORT.setParam(length));
+				}
+				// 校验密码是否包含字母
+				if(ToolUtil.isNotEmpty(num)&&num.equals(1)&&!CommonUtils.checkPinCorrect(pin,1)) {
+					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_NUMBER);
+				}
+				// 校验密码是否包含小写字母
+				if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)) {
+					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);		
+				}
+				// 校验密码是否包含大写字母
+				if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)) {
+					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS);
+				}
+				// 校验密码包含特殊字符是否合法
+				if(ToolUtil.isNotEmpty(spec)&&spec.equals(1)&&!CommonUtils.checkPinCorrect(pin,4)) {
+					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS);
+				}
+				// 校验密码修改天数是否合法
+				if(ToolUtil.isNotEmpty(valid)&&valid>0&&Tool.DateUtil.betweenDay(pinTime, new Date(), false)>valid) {
+					throw new NZException(RCode.SYS_USER_PIN_LONGTIME_NO_MODIFY.setParam(valid));
+				}
+				if(retry>0 && lockTime>0) {
+					// 校验用户登录次数以及封锁时间
+					ValueOperations<String,String> opsForValue = redisTemplate.opsForValue();
+					String redisKey = String.format("sysUserLogin_%s", user.getUsername());
+					String redisValue = opsForValue.get(redisKey);
+					if(StrUtil.isNotBlank(redisValue)) {
+						Integer redisRetry = Integer.valueOf(redisValue);
+						Long time = redisTemplate.getExpire(redisKey)/60;
+						if(redisRetry >= retry) {
+							throw new NZException(RCode.SYS_USER_PIN_RETRY_ERROR.setParam(retry,time));
+						}
+					}
+				}
+			}
+		}
+		
+	}
+
+	@Override
+	public void checkRedisRetry(SysUserEntity user) {
+		Integer retry = 0;
+		Integer lockTime = 30;
+		String pinPolicy = sysConfigService.getValue("pin_policy");
+		if(ToolUtil.isNotEmpty(pinPolicy)) {
+			Map<String,Object> pinPolicyInfo = (Map<String, Object>) JSON.parse(pinPolicy);
+			retry = (Integer) pinPolicyInfo.get("retry");
+			lockTime = (Integer) pinPolicyInfo.get("lockTime");
+		}
+		ValueOperations<String,String> opsForValue = redisTemplate.opsForValue();
+		String redisKey = String.format("sysUserLogin_%s", user.getUsername());
+		String redisValue = opsForValue.get(redisKey);
+		if(ToolUtil.isNotEmpty(redisValue)&&retry!=0) {
+			Integer redisRetry = Integer.valueOf(redisValue);
+			if(retry<=redisRetry) {
+				return;
+			}
+			redisRetry+=1;
+			opsForValue.set(redisKey, redisRetry.toString());
+			if(retry.equals(redisRetry)) {
+				redisTemplate.expire(redisKey, lockTime, TimeUnit.MINUTES);	
+			}else{
+				redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);	
+			}
+		}else {
+			opsForValue.set(redisKey, "1");
+			redisTemplate.expire(redisKey, 5, TimeUnit.MINUTES);	
+		}
 	}
 }

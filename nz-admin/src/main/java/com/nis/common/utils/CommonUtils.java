@@ -496,4 +496,53 @@ public class CommonUtils {
     private static final String PATH_AND_QUERY = "[/\\?](?:(?:[" + LABEL_CHAR
             + ";/\\?:@&=#~"  // plus optional query params
             + "\\-\\.\\+!\\*'\\(\\),_\\$])|(?:%[a-fA-F0-9]{2}))*";
+    
+    public static boolean checkPinCorrect(String pin,int code) {
+    	if(ToolUtil.isEmpty(pin)) {
+    		return false;
+    	}
+    	switch(code){
+    		// 校验字符中是否包含数字
+    		case 1:
+    			for(int i=0; i<pin.length();i++) {
+		    		char charAt = pin.charAt(i);
+		    		Integer ascii = Integer.valueOf(charAt);
+		    		if(ascii>=48&&ascii<=57) {
+		    			return true;
+		    		}
+		    	}
+		    	break;
+		    // 校验字符中是否包含小写字母
+    		case 2:
+    			for(int i=0; i<pin.length();i++) {
+		    		char charAt = pin.charAt(i);
+		    		Integer ascii = Integer.valueOf(charAt);
+		    		if(ascii>=97&&ascii<=122) {
+		    			return true;
+		    		}
+		    	}
+    			break;
+    		// 校验字符中是否包含大写字母
+    		case 3:
+    			for(int i=0; i<pin.length();i++) {
+		    		char charAt = pin.charAt(i);
+		    		Integer ascii = Integer.valueOf(charAt);
+		    		if(ascii>=65&&ascii<=90) {
+		    			return true;
+		    		}
+		    	}
+    			break;
+    		// 校验字符中是否包含特殊字符
+    		case 4:
+    			for(int i=0; i<pin.length();i++) {
+		    		char charAt = pin.charAt(i);
+		    		Integer ascii = Integer.valueOf(charAt);
+		    		if((ascii>=33&&ascii<=47)||(ascii>=58&&ascii<=64)||(ascii>=91&&ascii<=96)||(ascii>=123&&ascii<=126)) {
+		    			return true;
+		    		}
+		    	}
+    			break;
+    	}
+    	return false;
+    }
 }

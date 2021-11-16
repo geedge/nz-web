@@ -555,6 +555,13 @@ public enum RCode {
     SYS_USER_STATUS_INVALIDE(514021, "System user status must be 0 or 1"),
     SYS_USER_EMAIL_FORMAT(513022, "System user email format is incorrect"),
     SYS_USER_DISABLE_MFA_ERROR(513023, "Forced on, unable to close by itself"),
+    SYS_USER_PIN_TOO_SHORT(513024,"The System user password must contain at least {0} characters"),
+    SYS_USER_PIN_NOT_CONTAIN_NUMBER(513025,"System user pin must contain number"),
+    SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS(513026,"System user pin must contain lowercase letters"),
+    SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS(513027,"System user pin must contain uppercase letters"),
+    SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS(513028,"System user pin must contain special letters"),
+    SYS_USER_PIN_LONGTIME_NO_MODIFY(513029,"System user pin has not been modified for a long time more than {0}"),
+    SYS_USER_PIN_RETRY_ERROR(513030,"System user pin too many errors more than {0} , please try again after {1} minutes"),
     SYS_MENU_ISNULL(516023, "Menu is not exsits"),
     SYS_MENU_ID_ISNULL(511024, "Menu id is required"),
     SYS_MENU_NAME_ISNULL(511025, "Menu name is required"),
@@ -878,7 +885,7 @@ public enum RCode {
 	
 	public RCode setParam(Object... param) {
 		this.param = param;
-		this.msg = MessageFormat.format(msg, param);
+//		this.msg = MessageFormat.format(msg, param);
 		return this;
 	}
 	
@@ -891,6 +898,6 @@ public enum RCode {
 	}
 
 	public String getMsg() {
-		return msg;
+		return MessageFormat.format(msg, param);
 	}
 }
