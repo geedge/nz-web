@@ -290,7 +290,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		String description = alertRuleEntity.getDescription();
 		HashMap<String, String> anno = Tool.MapUtil.newHashMap(2);
 		Map<String, Object> context = Tool.MapUtil.newHashMap();
-		context.put("label", labels);
+		context.put("labels", labels);
 		context.put("alertRule", this.alertRuleEntity);
 		context.put("value", value);
 		summary = Tool.AlertUtil.renderAlertRuleAnnotations(summary, context);
