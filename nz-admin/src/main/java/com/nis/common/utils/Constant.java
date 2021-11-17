@@ -889,7 +889,22 @@ public class Constant {
 	public static final String CONFAGENT_PORT = "confagent_port";
 	// confagent项目名称
 	public static final String CONFAGENT_PATH = "confagent_path";
-
+	// snmp exporter prometheus采集路径
+	public static final String SNMP_EXPORTER_MONITOR_PATH = "snmp_exporter_prometheus_path";
+	// snmp exporter 端口
+	public static final String SNMP_EXPORTER_MONITOR_PORT = "snmp_exporter_prometheus_port";
+	// blackbox exporter prometheus采集路径
+	public static final String BLACKBOX_EXPORTER_MONITOR_PATH = "blackbox_exporter_prometheus_path";
+	// blackbox exporter prometheus端口
+	public static final String BLACKBOX_EXPORTER_MONITOR_PORT = "blackbox_exporter_prometheus_port";
+	// loki prometheus采集路径
+	public static final String LOKI_MONITOR_PATH = "loki_prometheus_path";
+	// loki prometheus端口
+	public static final String LOKI_MONITOR_PORT = "loki_prometheus_port";
+	// cortex prometheus采集路径
+	public static final String CORTEX_MONITOR_PATH = "cortex_prometheus_path";
+	// cortex prometheus端口
+	public static final String CORTEX_MONITOR_PORT = "cortex_prometheus_port";
 	// 开关开启状态
 	public static final String SWITCH_OPEN = "on";
 
