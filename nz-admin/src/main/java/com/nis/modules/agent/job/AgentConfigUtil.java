@@ -572,7 +572,7 @@ public class AgentConfigUtil {
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?promserver.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(4);
@@ -594,7 +594,7 @@ public class AgentConfigUtil {
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?promserver.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(4);
@@ -890,7 +890,7 @@ public class AgentConfigUtil {
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(2);
@@ -911,7 +911,7 @@ public class AgentConfigUtil {
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(2);
@@ -931,7 +931,7 @@ public class AgentConfigUtil {
 		List lokiMetricsStaticConfigList = new ArrayList();
 		Map lokiMetricsStaticConfig = new LinkedHashMap(2);
 		List lokiMetricsTargets = new ArrayList();
-		lokiMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.LOKI_MONITOR_HOST), sysConfigService.getValue(Constant.LOKI_MONITOR_PORT)));
+		lokiMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.LOKI_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.LOKI_MONITOR_HOST), sysConfigService.getValue(Constant.LOKI_MONITOR_PORT)));
 		lokiMetricsStaticConfig.put("targets", lokiMetricsTargets);
 		Map lokiLabels = new LinkedHashMap(2);
 		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
@@ -950,7 +950,7 @@ public class AgentConfigUtil {
 		List cortexMetricsStaticConfigList = new ArrayList();
 		Map cortexMetricsStaticConfig = new LinkedHashMap(2);
 		List cortexMetricsTargets = new ArrayList();
-		cortexMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfigService.getValue(Constant.CORTEX_MONITOR_PORT)));
+		cortexMetricsTargets.add(String.format("%s:%s", StrUtil.isBlank(sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST))?currentAgent.getHost():sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfigService.getValue(Constant.CORTEX_MONITOR_PORT)));
 		cortexMetricsStaticConfig.put("targets", cortexMetricsTargets);
 		Map cortexLabels = new LinkedHashMap(2);
 		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
