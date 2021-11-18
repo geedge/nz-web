@@ -893,18 +893,34 @@ public class Constant {
 	public static final String SNMP_EXPORTER_MONITOR_PATH = "snmp_exporter_prometheus_path";
 	// snmp exporter 端口
 	public static final String SNMP_EXPORTER_MONITOR_PORT = "snmp_exporter_prometheus_port";
+	// snmp exporter prometheus采集协议
+	public static final String SNMP_EXPORTER_MONITOR_SCHEME = "snmp_exporter_prometheus_scheme";
+	// snmp exporter ip
+	public static final String SNMP_EXPORTER_MONITOR_HOST = "snmp_exporter_prometheus_host";
 	// blackbox exporter prometheus采集路径
 	public static final String BLACKBOX_EXPORTER_MONITOR_PATH = "blackbox_exporter_prometheus_path";
 	// blackbox exporter prometheus端口
 	public static final String BLACKBOX_EXPORTER_MONITOR_PORT = "blackbox_exporter_prometheus_port";
+	// blackbox exporter prometheus采集协议
+	public static final String BLACKBOX_EXPORTER_MONITOR_SCHEME = "blackbox_exporter_prometheus_scheme";
+	// blackbox exporter prometheus采集ip
+	public static final String BLACKBOX_EXPORTER_MONITOR_HOST = "blackbox_exporter_prometheus_host";
 	// loki prometheus采集路径
 	public static final String LOKI_MONITOR_PATH = "loki_prometheus_path";
 	// loki prometheus端口
 	public static final String LOKI_MONITOR_PORT = "loki_prometheus_port";
+	// loki prometheus采集协议
+	public static final String LOKI_MONITOR_SCHEME = "loki_prometheus_scheme";
+	// loki prometheus ip
+	public static final String LOKI_MONITOR_HOST = "loki_prometheus_host";
 	// cortex prometheus采集路径
 	public static final String CORTEX_MONITOR_PATH = "cortex_prometheus_path";
 	// cortex prometheus端口
 	public static final String CORTEX_MONITOR_PORT = "cortex_prometheus_port";
+	// cortex prometheus采集协议
+	public static final String CORTEX_MONITOR_SCHEME = "cortex_prometheus_scheme";
+	// cortex prometheus ip
+	public static final String CORTEX_MONITOR_HOST = "cortex_prometheus_host";
 	// 开关开启状态
 	public static final String SWITCH_OPEN = "on";
 

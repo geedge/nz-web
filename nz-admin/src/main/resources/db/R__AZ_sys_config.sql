@@ -47,3 +47,11 @@ REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) 
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'loki_prometheus_port', '13100', 1, NULL);
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'cortex_prometheus_path', '/metrics', 1, NULL);
 REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'cortex_prometheus_port', '10093', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'loki_prometheus_scheme', 'http', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'loki_prometheus_host', '127.0.0.1', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'cortex_prometheus_scheme', 'http', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'cortex_prometheus_host', '127.0.0.1', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'snmp_exporter_prometheus_scheme', 'http', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'snmp_exporter_prometheus_host', '127.0.0.1', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'blackbox_exporter_prometheus_scheme', 'http', 1, NULL);
+REPLACE INTO `sys_config`(`id`, `param_key`, `param_value`, `status`, `remark`) VALUES (null, 'blackbox_exporter_prometheus_host', '127.0.0.1', 1, NULL);

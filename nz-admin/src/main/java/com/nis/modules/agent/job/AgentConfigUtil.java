@@ -567,12 +567,12 @@ public class AgentConfigUtil {
 		Map snmpExporterMetricsMap = new LinkedHashMap();
 		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
 		snmpExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT));
+		snmpExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
 		
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", promserver.getHost(), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(4);
@@ -589,12 +589,12 @@ public class AgentConfigUtil {
 		Map blackboxExporterMetricsMap = new LinkedHashMap();
 		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
 		blackboxExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT));
+		blackboxExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
 		
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", promserver.getHost(), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(4);
@@ -883,14 +883,14 @@ public class AgentConfigUtil {
 		Map snmpExporterMetricsMap = new LinkedHashMap();
 		snmpExporterMetricsMap.put("job_name", "snmp_exporter_metrics");
 		snmpExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PATH));
-		snmpExporterMetricsMap.put("scheme",currentAgent.getProtocol());
+		snmpExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_SCHEME));
 		snmpExporterMetricsMap.put("isFederate", false);
 		snmpExporterMetricsMap.put("instanceRelabel", true);
 		
 		List snmpExporterMetricsStaticConfigList = new ArrayList();
 		Map snmpExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List snmpExporterMetricsTargets = new ArrayList();
-		snmpExporterMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
+		snmpExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.SNMP_EXPORTER_MONITOR_PORT)));
 		snmpExporterMetricsStaticConfig.put("targets", snmpExporterMetricsTargets);
 
 		Map snmpExporterLabels = new LinkedHashMap(2);
@@ -904,14 +904,14 @@ public class AgentConfigUtil {
 		Map blackboxExporterMetricsMap = new LinkedHashMap();
 		blackboxExporterMetricsMap.put("job_name", "blackbox_exporter_metrics");
 		blackboxExporterMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PATH));
-		blackboxExporterMetricsMap.put("scheme",currentAgent.getProtocol());
+		blackboxExporterMetricsMap.put("scheme",sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_SCHEME));
 		blackboxExporterMetricsMap.put("isFederate", false);
 		blackboxExporterMetricsMap.put("instanceRelabel", true);
 		
 		List blackboxExporterMetricsStaticConfigList = new ArrayList();
 		Map blackboxExporterMetricsStaticConfig = new LinkedHashMap(2);
 		List blackboxExporterMetricsTargets = new ArrayList();
-		blackboxExporterMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
+		blackboxExporterMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_HOST), sysConfigService.getValue(Constant.BLACKBOX_EXPORTER_MONITOR_PORT)));
 		blackboxExporterMetricsStaticConfig.put("targets", blackboxExporterMetricsTargets);
 
 		Map blackboxExporterLabels = new LinkedHashMap(2);
@@ -925,13 +925,13 @@ public class AgentConfigUtil {
 		Map lokiMetricsMap = new LinkedHashMap();
 		lokiMetricsMap.put("job_name", "loki_metrics");
 		lokiMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.LOKI_MONITOR_PATH));
-		lokiMetricsMap.put("scheme",currentAgent.getProtocol());
+		lokiMetricsMap.put("scheme",sysConfigService.getValue(Constant.LOKI_MONITOR_SCHEME));
 		lokiMetricsMap.put("isFederate", false);
 		lokiMetricsMap.put("instanceRelabel", true);
 		List lokiMetricsStaticConfigList = new ArrayList();
 		Map lokiMetricsStaticConfig = new LinkedHashMap(2);
 		List lokiMetricsTargets = new ArrayList();
-		lokiMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), sysConfigService.getValue(Constant.LOKI_MONITOR_PORT)));
+		lokiMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.LOKI_MONITOR_HOST), sysConfigService.getValue(Constant.LOKI_MONITOR_PORT)));
 		lokiMetricsStaticConfig.put("targets", lokiMetricsTargets);
 		Map lokiLabels = new LinkedHashMap(2);
 		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
@@ -944,13 +944,13 @@ public class AgentConfigUtil {
 		Map cortexMetricsMap = new LinkedHashMap();
 		cortexMetricsMap.put("job_name", "cortex_metrics");
 		cortexMetricsMap.put("metrics_path",sysConfigService.getValue(Constant.CORTEX_MONITOR_PATH));
-		cortexMetricsMap.put("scheme",currentAgent.getProtocol());
+		cortexMetricsMap.put("scheme",sysConfigService.getValue(Constant.CORTEX_MONITOR_SCHEME));
 		cortexMetricsMap.put("isFederate", false);
 		cortexMetricsMap.put("instanceRelabel", true);
 		List cortexMetricsStaticConfigList = new ArrayList();
 		Map cortexMetricsStaticConfig = new LinkedHashMap(2);
 		List cortexMetricsTargets = new ArrayList();
-		cortexMetricsTargets.add(String.format("%s:%s", currentAgent.getHost(), sysConfigService.getValue(Constant.CORTEX_MONITOR_PORT)));
+		cortexMetricsTargets.add(String.format("%s:%s", sysConfigService.getValue(Constant.CORTEX_MONITOR_HOST), sysConfigService.getValue(Constant.CORTEX_MONITOR_PORT)));
 		cortexMetricsStaticConfig.put("targets", cortexMetricsTargets);
 		Map cortexLabels = new LinkedHashMap(2);
 		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
