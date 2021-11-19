@@ -141,7 +141,7 @@ public class EventLogSqlInterceptor implements Interceptor {
 			// insert delete
 
 			//eventLogService.increment("prometheus", "promtail", "cortex", "loki", "rule");
-			eventLogService.increment("prometheus", "promtail", "cortex", "loki");
+			eventLogService.increment("prometheus", "promtail", "cortex", "loki", "snmp");
 		}
 	}
 
