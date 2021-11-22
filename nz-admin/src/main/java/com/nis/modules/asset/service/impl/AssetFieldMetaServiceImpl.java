@@ -74,10 +74,10 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
 		
-		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key).ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId()));
+		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key).or().eq(AssetFieldMeta::getName,assetFieldMeta.getName()).ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId()));
 		
 		if(ObjectUtil.isNotEmpty(list)) {
-			throw new NZException(RCode.ASSET_FIELD_META_KEY_DUPLICATE);
+			throw new NZException(RCode.ASSET_FIELD_META_KEY_NAME_DUPLICATE);
 		}
 		
 		if(ObjectUtil.isEmpty(assetFieldMeta.getParam())){
