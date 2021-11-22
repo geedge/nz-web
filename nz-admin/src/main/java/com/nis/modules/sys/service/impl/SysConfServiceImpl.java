@@ -93,7 +93,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] TERMINAL_INTEGER={"terminal_timeout","terminal_record_local_retention"};
 
-    public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout"};
+    public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout","ldap_enable"};
 
     public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
 
