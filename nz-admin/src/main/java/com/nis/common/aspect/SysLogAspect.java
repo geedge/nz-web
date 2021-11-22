@@ -1,6 +1,7 @@
 package com.nis.common.aspect;
 
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -212,6 +213,9 @@ public class SysLogAspect {
 		if ("delete".equals(operationType)) {
 			oepraId = JSON.toJSONString(params.get(0)).replace("\"", "");
 		}
+		if (oepraId.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
+			oepraId = StringUtils.cutString(oepraId, Constant.MYSQL_TEXT_MAXLENGTH);
+		}
 		sysLog.setOperaId(oepraId);
 		// 获取request
 		HttpServletRequest request = HttpContextUtils.getHttpServletRequest();
@@ -220,7 +224,7 @@ public class SysLogAspect {
 		paramResult = this.handleLogParam(request.getRequestURI(), paramResult);
 		if (paramResult.getBytes().length > Constant.MYSQL_TEXT_MAXLENGTH) {
 			paramResult = StringUtils.cutString(paramResult, Constant.MYSQL_TEXT_MAXLENGTH);
-		}
+		}		
 		sysLog.setParams(paramResult);
 
 		Long userId = null;
@@ -299,7 +303,10 @@ public class SysLogAspect {
 			if (arg instanceof List) {
 				list = (List<Object>) arg;
 				for (Object o : list) {
-					oepraId += getEntityId(o) + ",";
+					String entityId = getEntityId(o);
+					if(StrUtil.isNotBlank(entityId)) {
+						oepraId += entityId + ",";
+					}
 				}
 				if (ToolUtil.isNotEmpty(oepraId)) {
 					oepraId = oepraId.substring(0, oepraId.length() - 1);
