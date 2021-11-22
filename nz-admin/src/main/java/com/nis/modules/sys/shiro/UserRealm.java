@@ -75,7 +75,7 @@ public class UserRealm extends AuthorizingRealm {
 	@Autowired
 	private SysUserRoleDao sysUserRoleDao;
 
-	@Value("${ldap.default.mapping:{\"email\":\"mail\",\"username\":\"uid|sAMAccountName|cn\"}}")
+	@Value("${ldap.default.mapping:{\"email\":\"mail\",\"name\":\"uid|sAMAccountName|cn\",\"mobile\":\"mobile\",\"username\":\"uid|sAMAccountName|cn\"}}")
 	private String defaultMappingStr;
 
 	private static final String LDAP_MAPPING_USERNAME_KEY = "username";
@@ -162,6 +162,7 @@ public class UserRealm extends AuthorizingRealm {
 			}
 			user.setSource("ldap");
 			user.setStatus(1);
+			user.setPinTime(new Date());
 			sysUserDao.insert(user);
 
 			// ldap 登录用户默认分配 common 角色
