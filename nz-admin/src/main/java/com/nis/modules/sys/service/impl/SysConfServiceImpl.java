@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 @Service("sysConfServiceImpl")
 public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity> implements SysConfService {
 
-    public static final String[] BASIC_KEYS = {"system_name", "system_logo", "default_cabinet_usize", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable","pin_policy"};
+    public static final String[] BASIC_KEYS = {"system_name","theme","language","date_format","system_bgImg","system_favicon","system_logo", "default_cabinet_usize", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable","pin_policy"};
 
     public static final String[] BASIC_REQUIRED = {"system_name", "map_center_config", "timezone", "session_timeout", "snmp_trap_listen_port", "unsaved_change", "mfa_auth_enable","pin_policy"};
 
