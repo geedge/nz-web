@@ -93,7 +93,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
 
     public static final String[] TERMINAL_INTEGER={"terminal_timeout","terminal_record_local_retention"};
 
-    public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout"};
+    public static final String[] LDAP_KEYS={"ldap_address","ldap_dn","ldap_password","ldap_ou","ldap_user_filter","ldap_mapping","ldap_timeout","ldap_enable"};
 
     public static final String[] LDAP_REQUIRED={"ldap_address","ldap_dn","ldap_user_filter","ldap_mapping","ldap_enable","ldap_timeout"};
 
@@ -127,7 +127,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             throw new NZException(String.format("%s can not be null","ldap_enable"),573011);
         }
         //过滤非法的key
-        if(StrUtil.equals(enable,"true")){
+        if(StrUtil.equals(enable,"on")){
             this.validateRequired(result,LDAP_REQUIRED,null);
             //校验开关值是否合法
             if(!Arrays.asList(SWITCH_TYPES).contains(params.get("ldap_enable"))){
@@ -135,8 +135,11 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
             }
 
             this.testConnectionLdapConfig(params);
+           	// ldap密码入库前进行加密
+            String pin = result.get("ldap_password");
+            result.put("ldap_password", StrUtil.str(Base64.getEncoder().encode(pin.getBytes()),"UTF-8"));
+              
         }
-
         this.saveOrUpdateConfsBatch(result);
     }
 

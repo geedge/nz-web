@@ -413,29 +413,32 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 			Integer retry = (Integer) pinPolicyInfo.get("retry");
 			Integer lockTime = (Integer) pinPolicyInfo.get("lockTime");
 			if(ToolUtil.isNotEmpty(enable) && enable.equals(1)) {
-				// 校验密码长度是否合法
-				if(ToolUtil.isNotEmpty(length)&&length>0&&(length > pin.length())&&!isLogin) {
-					throw new NZException(RCode.SYS_USER_PIN_TOO_SHORT.setParam(length));
-				}
-				// 校验密码是否包含字母
-				if(ToolUtil.isNotEmpty(num)&&num.equals(1)&&!CommonUtils.checkPinCorrect(pin,1)&&!isLogin) {
-					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_NUMBER);
-				}
-				// 校验密码是否包含小写字母
-				if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)&&!isLogin) {
-					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);		
-				}
-				// 校验密码是否包含大写字母
-				if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)&&!isLogin) {
-					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS);
-				}
-				// 校验密码包含特殊字符是否合法
-				if(ToolUtil.isNotEmpty(spec)&&spec.equals(1)&&!CommonUtils.checkPinCorrect(pin,4)&&!isLogin) {
-					throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS);
-				}
-				// 校验密码修改天数是否合法
-				if(ToolUtil.isNotEmpty(valid)&&valid>0&&Tool.DateUtil.betweenDay(pinTime, new Date(), false)>valid) {
-					throw new NZException(RCode.SYS_USER_PIN_LONGTIME_NO_MODIFY.setParam(valid));
+				 // ldap用户不进行密码策略认证 但是会进行错误认证校验
+				if(!StrUtil.equals("ldap", user.getSource())) {
+					// 校验密码长度是否合法
+					if(ToolUtil.isNotEmpty(length)&&length>0&&(length > pin.length())&&!isLogin) {
+						throw new NZException(RCode.SYS_USER_PIN_TOO_SHORT.setParam(length));
+					}
+					// 校验密码是否包含字母
+					if(ToolUtil.isNotEmpty(num)&&num.equals(1)&&!CommonUtils.checkPinCorrect(pin,1)&&!isLogin) {
+						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_NUMBER);
+					}
+					// 校验密码是否包含小写字母
+					if(ToolUtil.isNotEmpty(lower)&&lower.equals(1)&&!CommonUtils.checkPinCorrect(pin,2)&&!isLogin) {
+						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_LOWERCASE_LETTERS);		
+					}
+					// 校验密码是否包含大写字母
+					if(ToolUtil.isNotEmpty(upper)&&upper.equals(1)&&!CommonUtils.checkPinCorrect(pin,3)&&!isLogin) {
+						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_UPPERCASE_LETTERS);
+					}
+					// 校验密码包含特殊字符是否合法
+					if(ToolUtil.isNotEmpty(spec)&&spec.equals(1)&&!CommonUtils.checkPinCorrect(pin,4)&&!isLogin) {
+						throw new NZException(RCode.SYS_USER_PIN_NOT_CONTAIN_SPECIAL_LETTERS);
+					}
+					// 校验密码修改天数是否合法
+					if(ToolUtil.isNotEmpty(valid)&&valid>0&&Tool.DateUtil.betweenDay(pinTime, new Date(), false)>valid) {
+						throw new NZException(RCode.SYS_USER_PIN_LONGTIME_NO_MODIFY.setParam(valid));
+					}
 				}
 				if(retry>0 && lockTime>0) {
 					// 校验用户登录次数以及封锁时间
@@ -452,7 +455,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 				}
 			}
 		}
-		
 	}
 
 	@Override

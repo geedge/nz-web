@@ -1,8 +1,10 @@
 package com.nis.modules.alert.entity;
 
 import java.io.Serializable;
+import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 
 import lombok.Data;
 
@@ -22,4 +24,6 @@ public class AlertRuleEvalLog implements Serializable {
     private Long stts;
     
     private Long etts;
+    
+    private List<AlertMessageReceiveDTO> messages;
 }

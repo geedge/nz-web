@@ -410,9 +410,8 @@ public enum RCode {
     ASSET_FIELD_META_TYPE_ISNULL(371007,"Asset field meta type can not be empty"),
     ASSET_FIELD_META_TYPE_ERROR(375008,"Asset field type value out of range"),
     ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
-    ASSET_FIELD_META_KEY_DUPLICATE(372010,"Asset field key value duplicate"),
+    ASSET_FIELD_META_KEY_NAME_DUPLICATE(372010,"Asset field key value or name duplicate"),
     ASSET_FIELD_META_NOT_FOUND(376011, "Asset field meta not found"),
-
     /**
      * alerts菜单栏相关
      */

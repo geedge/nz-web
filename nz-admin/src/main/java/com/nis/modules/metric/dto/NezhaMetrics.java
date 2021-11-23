@@ -42,7 +42,7 @@ public class NezhaMetrics implements MeterBinder {
     @Override
     public void bindTo(MeterRegistry meterRegistry) {
         // 清空指标数据
-        this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums", "nz_asset_nums", "nz_endpoint_nums", "nz_prometheus_status");
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums", "nz_asset_nums", "nz_endpoint_nums", "nz_agent_status");
 
         /**
          * alert_nums指标 / 根据告警规则 id 统计激活状态的告警消息数量
@@ -82,7 +82,7 @@ public class NezhaMetrics implements MeterBinder {
         }
 
         /**
-         * nz_prometheus_status
+         * nz_agent_status
          */
         List<Promserver> promserverList = promserverService.list();
         List<Dc> dcList = dcDao.selectList(null);
@@ -90,7 +90,7 @@ public class NezhaMetrics implements MeterBinder {
 
         for (int i = 0; i < promserverList.size(); i++) {
             Promserver promserver = promserverList.get(i);
-            Gauge.builder("nz_prometheus_status", promserver,value -> promserver.getStatus())
+            Gauge.builder("nz_agent_status", promserver,value -> promserver.getStatus())
                     .tags("datacenter", idcIdAndNameMap.get(promserver.getDcId()) == null ? "null" : idcIdAndNameMap.get(promserver.getDcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
                     .description("Prometheus statistics info")
                     .register(meterRegistry);

@@ -732,7 +732,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Integer endpointId = null, moduleId = null, projectId = null, dcId = null, assetId = null, ruleId = null;
 		// 确定 endpoint 两种途径  1 ，根据 endpoint id 获取  2. 根据 module name + endpoint name 获取 ， 因为 module name 唯一  endpoint name 同一个 Module 下唯一
 		if (Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ENDPOINT_ID_KEY)) || (Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_ENDPOINT_NAME_KEY)) && Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_MODULE_NAME_KEY)))) {
-			endpointId = Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ENDPOINT_ID_KEY));
+			endpointId = Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ENDPOINT_ID_KEY)) ? Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ENDPOINT_ID_KEY)) : null;
 			MonitorEndpoint ep = null;
 			if (endpointId != null) {
 				ep = endpointService.getById(endpointId);
@@ -743,23 +743,28 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 				MonitorModule module = moduleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getName, moduleName));
 				ep = endpointService.getOne(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()).eq(MonitorEndpoint::getName, endpointName));
 			}
-			// 当 moduleid 不存在，但是 endpoint id存在时，通过库表查询赋值
-			message.setEndpointId(ep.getId());
-			moduleId = ep.getModuleId();
-			assetId = ep.getAssetId();
-			/*Integer enabled = ep.getEnabled();
-			if (Tool.ObjectUtil.equal(enabled, 0)) {// disable直接返回 丢弃告警消息
-				if (log.isDebugEnabled())
-					log.debug("endpoint state : {}", enabled);
-				return null;
-			}*/
-			message.setEndpointId(ep.getId());
-			message.setEndpoint(ep);
+			
+			if(ep != null) {
+				// 当 moduleid 不存在，但是 endpoint id存在时，通过库表查询赋值
+				message.setEndpointId(ep.getId());
+				moduleId = ep.getModuleId();
+				assetId = ep.getAssetId();
+				/*Integer enabled = ep.getEnabled();
+				if (Tool.ObjectUtil.equal(enabled, 0)) {// disable直接返回 丢弃告警消息
+					if (log.isDebugEnabled())
+						log.debug("endpoint state : {}", enabled);
+					return null;
+				}*/
+				message.setEndpointId(ep.getId());
+				message.setEndpoint(ep);
+			}
+			
 		}
 
 		// 获取 asset id
 		if (assetId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ASSET_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_ASSET_NAME_KEY))) {
-			assetId = assetId != null ? assetId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ASSET_ID_KEY));
+			Integer aid = Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_ASSET_ID_KEY)) ? Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_ASSET_ID_KEY)) : null;
+			assetId = (aid != null) ? aid : assetId;
 			AssetAsset asset = null;
 			if (assetId != null) {
 				asset = assetAssetService.getById(assetId);
@@ -769,21 +774,24 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			if (Tool.StrUtil.isNotEmpty(assetNameStr) && asset == null) {
 				asset = assetAssetService.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getName, assetNameStr));
 			}
-			dcId = asset.getDcId();
-			Integer stateId = asset.getStateId();
-			AssetStateConf stateConf = assetStateService.getById(stateId);
-			Integer alert = stateConf.getAlert();
-			if (Tool.ObjectUtil.equal(alert, 0)) {// disable直接返回 丢弃告警消息
-				if (log.isDebugEnabled())
-					log.debug("asset state : {}", alert);
-				return null;
+			if(asset != null) {
+				dcId = asset.getDcId();
+				Integer stateId = asset.getStateId();
+				AssetStateConf stateConf = assetStateService.getById(stateId);
+				Integer alert = stateConf.getAlert();
+				if (Tool.ObjectUtil.equal(alert, 0)) {// disable直接返回 丢弃告警消息
+					if (log.isDebugEnabled())
+						log.debug("asset state : {}", alert);
+					return null;
+				}
+				message.setAssetId(asset.getId());
+				message.setAsset(asset);
 			}
-			message.setAssetId(asset.getId());
-			message.setAsset(asset);
 		}
 		// 获取dc
 		if (dcId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_DC_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_DC_NAME_KEY))) {
-			dcId = (dcId != null) ? dcId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_DC_ID_KEY));
+			Integer did = Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_DC_ID_KEY)) ? Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_DC_ID_KEY)) : null;
+			dcId = (did != null) ? did : dcId;
 			Dc dc = null;
 			if (dcId != null) {
 				dc = dcService.getById(dcId);
@@ -793,19 +801,22 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			if (Tool.StrUtil.isNotEmpty(dcNameStr) && dc == null) {
 				dc = dcService.getOne(new LambdaQueryWrapper<Dc>().eq(Dc::getName, dcNameStr));
 			}
-
-			String state = dc.getState();
-			if (Tool.StrUtil.equalsIgnoreCase(state, "OFF")) {// disable直接返回 丢弃告警消息
-				if (log.isDebugEnabled())
-					log.debug("dc state : {}", state);
-				return null;
+			
+			if(dc != null) {
+				String state = dc.getState();
+				if (Tool.StrUtil.equalsIgnoreCase(state, "OFF")) {// disable直接返回 丢弃告警消息
+					if (log.isDebugEnabled())
+						log.debug("dc state : {}", state);
+					return null;
+				}
+				message.setDcId(dc.getId());
+				message.setDc(dc);
 			}
-			message.setDcId(dc.getId());
-			message.setDc(dc);
 		}
 		// 判断 module id 是否存在
 		if (moduleId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_MODULE_NAME_KEY))) {
-			moduleId = (moduleId != null) ? moduleId : Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_MODULE_ID_KEY));
+			Integer mid = Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_MODULE_ID_KEY)) ? Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_MODULE_ID_KEY)) : null;
+			moduleId = (mid != null) ? mid : moduleId;
 			MonitorModule module = null;
 			if (moduleId != null) {
 				module = moduleService.getById(moduleId);
@@ -815,14 +826,16 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			if (Tool.StrUtil.isNotEmpty(moduelNameStr) && module == null) {
 				module = moduleService.getOne(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getName, moduelNameStr));
 			}
-			projectId = module.getProjectId();
-			message.setModuleId(module.getId());
-			message.setModule(module);
+			if(module != null) {
+				projectId = module.getProjectId();
+				message.setModuleId(module.getId());
+				message.setModule(module);
+			}
 		}
 		// 判断 module id 是否存在
 		if (projectId != null || Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_PROJECT_ID_KEY)) || Tool.StrUtil.isNotEmpty(labels.get(Constant.LABEL_PROJECT_NAME_KEY))) {
-			projectId = (projectId != null) ? projectId
-					: Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_PROJECT_ID_KEY));
+			Integer pid = Tool.NumberUtil.isNumber(labels.get(Constant.LABEL_PROJECT_ID_KEY)) ? Tool.NumberUtil.parseInt(labels.get(Constant.LABEL_PROJECT_ID_KEY)) : null;
+			projectId = (pid != null) ? pid : projectId;
 			MonitorProject project = null;
 			if (projectId != null) {
 				project = projectService.getById(projectId);
@@ -832,12 +845,14 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			if (Tool.StrUtil.isNotEmpty(projectNameStr) && project == null) {
 				project = projectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getName, projectNameStr));
 			}
-			message.setProjectId(project.getId());
-			message.setProject(project);
+			if(project != null) {
+				message.setProjectId(project.getId());
+				message.setProject(project);
+			}
 		}
 		// 获取alertrule
 		String ruleIdStr = labels.get(Constant.LABEL_RULE_ID_KEY);
-		if (Tool.StrUtil.isNotBlank(ruleIdStr)) {
+		if (Tool.NumberUtil.isNumber(ruleIdStr)) {
 			ruleId = Tool.NumberUtil.parseInt(ruleIdStr);
 			AlertRuleEntity ruleEntity = alertRuleService.getById(ruleId);
 			message.setRuleId(ruleId);

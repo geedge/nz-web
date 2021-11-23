@@ -295,6 +295,7 @@
 			) e
 			LEFT JOIN monitor_module m ON e.module_id = m.id
 			LEFT JOIN monitor_project p ON m.project_id = p.id
+			LEFT JOIN asset_asset a ON e.asset_id = a.id
 		<where>
         	<if test="params.ids != null and params.ids.length > 0">
                e.id IN
