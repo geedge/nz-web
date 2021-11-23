@@ -1676,6 +1676,20 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
+    public List<AssetAsset> getOpenPingAssets() {
+        List<AssetAsset> assetList = this.list();
+
+        // 支持 ping 的 state_conf
+        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing, 1));
+        List<Integer> enablePingStateConfIdList = stateConfList.stream().map(AssetStateConf::getId).collect(Collectors.toList());
+
+        // 支持 ping 的 asset
+        assetList = assetList.stream().filter(asset -> enablePingStateConfIdList.contains(asset.getStateId())).collect(Collectors.toList());
+
+        return assetList;
+    }
+
+    @Override
     public List<VisualChart> getAssetsWithTagByChartIds(List<Integer> chartIds) {
         List<VisualChart> chartIdWithAssetEntity = assetDao.getAssetsByChartIds(chartIds);
         if(CollectionUtils.isEmpty(chartIdWithAssetEntity)){
