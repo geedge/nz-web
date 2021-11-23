@@ -70,7 +70,7 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			throw new NZException(RCode.ASSET_FIELD_META_TYPE_ERROR);
 		}
 		String key = assetFieldMeta.getMetaKey();
-		if(!key.matches("[\\w]+")) {
+		if(!key.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
 		
