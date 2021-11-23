@@ -32,8 +32,6 @@ import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.log.Log;
 import lombok.Data;
@@ -185,6 +183,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 				}
 			}
 			if (runFlag && messages.size() > 0) {
+				evalLog.setMessages(messages);
 				alertMessageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(messages));
 			}
 			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId,
