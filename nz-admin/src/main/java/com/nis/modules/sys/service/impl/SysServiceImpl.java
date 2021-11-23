@@ -2,9 +2,9 @@ package com.nis.modules.sys.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.modules.sys.dao.SysAppearanceDao;
+import com.nis.modules.sys.dao.SysDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysAppearanceService;
+import com.nis.modules.sys.service.SysService;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class SysAppearanceServiceImpl extends ServiceImpl<SysAppearanceDao, SysConfigEntity> implements SysAppearanceService {
+public class SysServiceImpl extends ServiceImpl<SysDao, SysConfigEntity> implements SysService {
 
     public static final String[] BASIC_KEYS = {"system_name","theme","language","date_format","system_bgImg","system_favicon","system_logo", "timezone"};
 

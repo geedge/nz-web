@@ -5,5 +5,5 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface SysAppearanceDao extends BaseMapper<SysConfigEntity> {
+public interface SysDao extends BaseMapper<SysConfigEntity> {
 }
