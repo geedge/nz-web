@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
 import cn.hutool.log.Log;
 
@@ -135,6 +137,7 @@ public class PromProxyController {
     		HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
     		String queryString = request.getQueryString();
             queryString = StrUtil.isNotBlank(queryString)?queryString:"";
+            queryString = URLUtil.decode(queryString);
             // 构造请求路径
     		String promPathPrefix = promserverService.getPromPathPrefix();
     		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
@@ -219,10 +222,14 @@ public class PromProxyController {
 			Integer start = Integer.valueOf(request.getParameter("start"));
 			Integer end = Integer.valueOf(request.getParameter("end"));
 			String step = request.getParameter("step");
-
+			String filter = request.getParameter("filter");
 			Map data = (Map) result.get("data");
 			JSONArray resultArray = (JSONArray) data.get("result");
-
+			// 去除prometheus返回结果中不符合条件的数据
+			if(StrUtil.isNotBlank(filter)) {
+				filter = URLUtil.decode(filter);
+				resultArray = this.filterResult(resultArray, filter);
+			}
 			// 查询结果集超过系统设置最大限制 , -1 表示不做限制
 			ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
 			String queryMaxSeries = valueOperations.get(Constant.METRICS_QUERY_MAX_SERIES);
@@ -342,5 +349,25 @@ public class PromProxyController {
 			IOUtils.closeQuietly(gzip, out);
 		}
 		return out.toByteArray();
+	}
+	
+	public JSONArray filterResult(JSONArray resultArray,String filter) {
+		Map parse = (Map) JSONObject.parse(filter);
+		JSONObject metric = null;
+		for (int i = resultArray.size()-1; i >= 0; i--) {
+			boolean flag = false;
+			metric = (JSONObject) resultArray.get(i);
+			JSONObject object = (JSONObject) metric.get("metric");
+			Map javaObject = JSONObject.toJavaObject(object, Map.class);
+			for(Object key : parse.keySet()) {
+				if(!ToolUtil.equals(parse.get(key), javaObject.get(key))) {
+					flag = true;
+				}
+			}
+			if(flag) {
+				resultArray.remove(i);
+			}
+		}
+		return resultArray;
 	}
 }
