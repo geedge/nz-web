@@ -371,7 +371,7 @@ INSERT INTO `sys_i18n` VALUES (335, 'alert.list.remark', 'en', 'alert.list.remar
 INSERT INTO `sys_i18n` VALUES (336, 'alert.list.type', 'en', 'alert.list.type', 'Type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (337, 'alert.list.moduleAlert', 'en', 'alert.list.moduleAlert', 'Module alert', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (338, 'alert.list.labels', 'en', 'alert.list.labels', 'Label', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (339, 'alert.list.current', 'en', 'alert.list.current', 'Current', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (339, 'alert.list.current', 'en', 'alert.list.current', 'Current Page', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (340, 'alert.list.expired', 'en', 'alert.list.expired', 'Expired', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (341, 'alert.list.projectAlert', 'en', 'alert.list.projectAlert', 'Project alert', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (342, 'alert.list.deviceAlert', 'en', 'alert.list.deviceAlert', 'Device alert', '', '2021-11-02 00:00:00', 1);
@@ -1974,7 +1974,7 @@ INSERT INTO `sys_i18n` VALUES (1938, 'alert.list.remark', 'zh', 'alert.list.rema
 INSERT INTO `sys_i18n` VALUES (1939, 'alert.list.type', 'zh', 'alert.list.type', '类别', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1940, 'alert.list.moduleAlert', 'zh', 'alert.list.moduleAlert', '模块告警', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1941, 'alert.list.labels', 'zh', 'alert.list.labels', '标签', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1942, 'alert.list.current', 'zh', 'alert.list.current', '当前', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1942, 'alert.list.current', 'zh', 'alert.list.current', '当前页', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1943, 'alert.list.expired', 'zh', 'alert.list.expired', '已过期', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1944, 'alert.list.projectAlert', 'zh', 'alert.list.projectAlert', '系统告警', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1945, 'alert.list.deviceAlert', 'zh', 'alert.list.deviceAlert', '设备告警', '', '2021-11-02 00:00:00', 1);
@@ -4678,8 +4678,8 @@ INSERT INTO `sys_i18n` VALUES (4731, 'alert.alertRuleMessage', 'en', 'alert.aler
 INSERT INTO `sys_i18n` VALUES (4732, 'alert.alertRuleMessage', 'zh', 'alert.alertRuleMessage', '信息', '', '2021-11-04 06:28:14', 1);
 INSERT INTO `sys_i18n` VALUES (4735, 'overall.allData', 'en', 'overall.allData', 'All data', '', '2021-11-05 02:28:44', 1);
 INSERT INTO `sys_i18n` VALUES (4736, 'overall.selectRecords', 'en', 'overall.selectRecords', 'Select records', '', '2021-11-05 02:29:18', 1);
-INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current', '', '2021-11-05 02:29:42', 1);
-INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前', '', '2021-11-05 02:30:52', 1);
+INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current Page', '', '2021-11-05 02:29:42', 1);
+INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前页', '', '2021-11-05 02:30:52', 1);
 INSERT INTO `sys_i18n` VALUES (4739, 'overall.selectRecords', 'zh', 'overall.selectRecords', '选择记录', '', '2021-11-05 02:31:13', 1);
 INSERT INTO `sys_i18n` VALUES (4740, 'overall.allData', 'zh', 'overall.allData', '所有数据', '', '2021-11-05 02:31:32', 1);
 INSERT INTO `sys_i18n` VALUES (4743, 'overall.more', 'en', 'overall.more', 'More', '', '2021-11-08 07:34:35', 1);
