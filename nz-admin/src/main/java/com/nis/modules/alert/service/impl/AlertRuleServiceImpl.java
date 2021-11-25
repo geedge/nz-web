@@ -182,8 +182,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
 
 
-        // snmp trap 不校验 表达式
-        if (3 != alertRule.getType()) {
+        // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
+        if (1 == alertRule.getType()) {
             // 校验expr
             boolean checkRule = false;
             try {
