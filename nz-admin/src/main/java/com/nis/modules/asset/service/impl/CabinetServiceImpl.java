@@ -465,7 +465,16 @@ public class CabinetServiceImpl extends ServiceImpl<CabinetDao, Cabinet> impleme
     public void export(HttpServletResponse response, Map<String, Object> params) {
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_CABINET_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-
+        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
+        long exportMaxLine = 10000;
+		// 导出最大条数限制
+        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
+        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+        }
+        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+		}
         PageUtils page = this.queryCabinetPage(params);
         List<Cabinet> list = (List<Cabinet>) page.getList();
 

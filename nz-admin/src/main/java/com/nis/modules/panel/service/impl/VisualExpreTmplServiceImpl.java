@@ -2,6 +2,7 @@ package com.nis.modules.panel.service.impl;
 
 import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -403,6 +404,16 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
 
+        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
+        long exportMaxLine = 10000;
+		// 导出最大条数限制
+        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
+        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+        }
+        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+		}
         PageUtils page = this.queryPage(params);
         List<VisualExpressionTmpl> list = (List<VisualExpressionTmpl>) page.getList();
 

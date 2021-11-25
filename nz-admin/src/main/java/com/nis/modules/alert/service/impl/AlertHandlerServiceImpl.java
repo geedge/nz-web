@@ -65,6 +65,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 
 @Service("alertMessageHandlerService")
@@ -536,7 +537,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Map map = JSONObject.parseObject(configMap.get("alert_export_header"), Map.class, Feature.OrderedField);
 
 		// 导出最大条数限制
-		int exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+		long exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+		if(ObjectUtil.isEmpty(exportMaxLine)) {
+			exportMaxLine = 10000;
+		}
 		int exportRealTotal = 0;
 
 		SXSSFWorkbook workbook = null;
@@ -547,15 +551,15 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			String sheetName = "AlertMessages";
 			workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
 			SXSSFSheet sheet = workbook.getSheet(sheetName);
-
+			
+			Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+			if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+				params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+			}
 			PageUtils page = this.queryMessagePage(params);
+			
 			List<AlertMessageEntity> exportAlertMsgList = (List<AlertMessageEntity>) page.getList();
 			exportRealTotal = exportAlertMsgList.size();
-
-			// 判断导出条数是否超过配置最大导出量
-			if (exportAlertMsgList.size() > exportMaxLine) {
-				throw new NZException(RCode.SYS_CONFIG_EXPORT_MAX_LINE);
-			}
 
 			this.fillData(exportAlertMsgList, 1, sheet, workbook);
 
