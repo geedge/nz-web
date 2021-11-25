@@ -482,23 +482,23 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // clientstate
-            if (ToolUtil.isNotEmpty(asset.getClientState())) {
-                switch (asset.getClientState()) {
-                    case 1:// ok
-                        break;
-                    case 3: { // 认证失败
-                        asset.setClientState(-1);
-                        break;
-                    }
-                    case 2:  // 超时
-                    case 4: {// 未知错误
-                        asset.setClientState(0); // 认证失败
-                        break;
-                    }
-                    default:
-                        asset.setClientState(null);
-                }
-            }
+//            if (ToolUtil.isNotEmpty(asset.getClientState())) {
+//                switch (asset.getClientState()) {
+//                    case 1:// ok
+//                        break;
+//                    case 3: { // 认证失败
+//                        asset.setClientState(-1);
+//                        break;
+//                    }
+//                    case 2:  // 超时
+//                    case 4: {// 未知错误
+//                        asset.setClientState(0); // 认证失败
+//                        break;
+//                    }
+//                    default:
+//                        asset.setClientState(null);
+//                }
+//            }
         }
     }
 
