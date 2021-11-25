@@ -4730,5 +4730,7 @@ INSERT INTO `sys_i18n` VALUES (4789, 'config.system.basic.passPeriodValue', 'en'
 INSERT INTO `sys_i18n` VALUES (4790, 'config.system.basic.passPeriodValue', 'zh', 'config.system.basic.passPeriodValue', '0 表示不过期', '', '2021-11-22 04:40:54', 1);
 INSERT INTO `sys_i18n` VALUES (4791, 'config.system.basic.retryValue', 'en', 'config.system.basic.retryValue', 'If the number of consecutive logins exceeds the set number, the user will not be allowed to log in within the locked time', '', '2021-11-22 04:45:43', 1);
 INSERT INTO `sys_i18n` VALUES (4792, 'config.system.basic.retryValue', 'zh', 'config.system.basic.retryValue', '连续登录超过设定次数，用户将在锁定时间内不允许登陆', '', '2021-11-22 04:46:34', 1);
+INSERT INTO `sys_i18n` VALUES (4793, 'talon连接超时', 'en', 'asset.connectionTimedOut', 'Connection timed out', '', '2021-11-25 10:20:02', 1);
+INSERT INTO `sys_i18n` VALUES (4794, 'talon连接超时', 'zh', 'asset.connectionTimedOut', '连接超时', '', '2021-11-25 10:20:17', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
