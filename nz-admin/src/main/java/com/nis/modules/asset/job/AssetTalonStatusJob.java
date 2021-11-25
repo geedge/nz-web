@@ -127,7 +127,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                             map.put("state", 1);
                             map.put("msg", "UP");
                         } else {
-                            map.put("state", 0);
+                            map.put("state", 4);
                             map.put("msg", "DOWN");
                         }
                         String s = data.get("version");
