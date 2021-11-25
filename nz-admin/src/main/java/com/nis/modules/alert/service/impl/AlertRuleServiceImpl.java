@@ -583,8 +583,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     }
                     ruleEntity.setTimeout(timeoutVal);
                 }
-                // snmp trap 类型不校验 表达式
-                if (!StrUtil.equals("3", typeStr)) {
+                // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
+                if (StrUtil.equals("1", typeStr)) {
                     try {
                         boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
                         if (!b) {
