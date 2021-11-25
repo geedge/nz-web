@@ -46,7 +46,7 @@ public interface AlertHandlerDao {
 	 * @param message
 	 * @return
 	 */
-	List<AlertMessageEntity> selectMessageEndAtltNow(@Param("now")Date now,@Param("tableName")String tableName);
+	List<AlertMessageEntity> selectMessageEndAtltNow(@Param("now")Date now,@Param("tableName")String tableName,@Param("limit") Integer limit);
 	
 	/**
 	 * 根据id 和表名 删除message

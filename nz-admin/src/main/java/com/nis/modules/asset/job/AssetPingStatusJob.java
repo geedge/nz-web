@@ -61,6 +61,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
     
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+    	Thread.currentThread().setName("AssetPingStatusJob");
     	// 检查 haMode
     	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
         if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;

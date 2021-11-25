@@ -33,7 +33,7 @@ public interface AlertHandlerService  {
 	 */
 	void updateMessageEndAt(AlertMessageEntity message);
 	
-	List<AlertMessageEntity> selectMessagegtNow(String tableName);
+	List<AlertMessageEntity> selectMessagegtNow(String tableName,Integer limit);
 	
 	/**
 	 * 查询失效的silence 配置

@@ -320,10 +320,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * 查询 active || silence 表中 endat 小于 当前时间的告警消息 用于周期线程处理未及时清除的告警消息
 	 */
 	@Override
-	public List<AlertMessageEntity> selectMessagegtNow(String tableName) {
+	public List<AlertMessageEntity> selectMessagegtNow(String tableName,Integer limit) {
 		DateTime now = Tool.DateUtil.date();
 		now = Tool.DateUtil.offsetSecond(now, -resolveTimeout);//加上resolve 时间，减少误判几率
-		List<AlertMessageEntity> list = msgHandlerDao.selectMessageEndAtltNow(now, tableName);
+		List<AlertMessageEntity> list = msgHandlerDao.selectMessageEndAtltNow(now, tableName,limit);
 		return list;
 	}
 

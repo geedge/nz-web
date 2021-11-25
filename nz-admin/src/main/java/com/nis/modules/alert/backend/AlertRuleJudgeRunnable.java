@@ -222,7 +222,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		}
 		stopWatch.stop();
 		long timeMillis = stopWatch.getTotalTimeMillis();
-		log.debug("judge thread ruleId:{},time: {}ms,runFlag:{},cleanCache:{}", alertRuleId, timeMillis, runFlag,
+		log.info("judge thread ruleId:{},time: {}ms,runFlag:{},cleanCache:{}", alertRuleId, timeMillis, runFlag,
 				cleanCache);
 	}
 

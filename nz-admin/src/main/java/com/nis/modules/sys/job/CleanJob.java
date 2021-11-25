@@ -50,6 +50,7 @@ public class CleanJob extends QuartzJobBean {
 	
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		Thread.currentThread().setName("CleanJob");
 		// 检查 haMode
 		String serverId = redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
 		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
