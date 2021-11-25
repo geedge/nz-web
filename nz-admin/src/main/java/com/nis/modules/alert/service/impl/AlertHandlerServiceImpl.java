@@ -671,50 +671,64 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if (endpointId != null && message.getEndpoint() == null) {
 			// 当 moduleid 不存在，但是 endpoint id存在时，通过库表查询赋值
 			MonitorEndpoint ep = endpointService.getById(endpointId);
-			message.setEndpointId(endpointId);
-			moduleId = ep.getModuleId();
-			assetId = ep.getAssetId();
-			message.setEndpointId(endpointId);
-			message.setEndpoint(ep);
+			if(ep != null) {
+				message.setEndpointId(endpointId);
+				moduleId = ep.getModuleId();
+				assetId = ep.getAssetId();
+				message.setEndpointId(endpointId);
+				message.setEndpoint(ep);
+			}
 		}
 
 		// 获取 asset id
 		if (message.getAsset() == null && assetId != null) {
 			AssetAsset asset = assetAssetService.getById(assetId);
-			dcId = asset.getDcId();
-			message.setAssetId(assetId);
-			message.setAsset(asset);
+			if(asset != null) {
+				dcId = asset.getDcId();
+				message.setAssetId(assetId);
+				message.setAsset(asset);
+			}
 		}
 		// 获取dc
 		if (message.getDc() == null && dcId != null ) {
 			Dc dc = dcService.getById(dcId);
-			message.setDcId(dcId);
-			message.setDc(dc);
+			if(dc != null) {
+				message.setDcId(dcId);
+				message.setDc(dc);
+			}
 		}
 		// 判断 module id 是否存在
 		if (message.getModule() == null && moduleId != null ) {
 			MonitorModule module = moduleService.getById(moduleId);
-			projectId = module.getProjectId();
-			message.setModuleId(moduleId);
-			message.setModule(module);
+			if(module != null) {
+				projectId = module.getProjectId();
+				message.setModuleId(moduleId);
+				message.setModule(module);
+			}
 		}
 		// 判断 module id 是否存在
 		if (message.getProject() == null && projectId != null) {
 			MonitorProject project = projectService.getById(projectId);
-			message.setProjectId(projectId);
-			message.setProject(project);
+			if(project != null) {
+				message.setProjectId(projectId);
+				message.setProject(project);
+			}
 		}
 		// 获取alertrule
 		if (message.getAlertRule() == null && ruleId != null) {
 			AlertRuleEntity ruleEntity = alertRuleService.getById(ruleId);
-			message.setRuleId(ruleId);
-			message.setAlertRule(ruleEntity);
+			if(ruleEntity != null) {
+				message.setRuleId(ruleId);
+				message.setAlertRule(ruleEntity);
+			}
 		}
 		//获取  Severity_Id
 		if(message.getSeverity() == null && severityId != null) {
 			AlertSeverityConf severityConf = alertSeverityService.getById(severityId);
-			message.setSeverityId(severityId);
-			message.setSeverity(severityConf);
+			if(severityConf != null) {
+				message.setSeverityId(severityId);
+				message.setSeverity(severityConf);
+			}
 		}
 		return message;
 	}
