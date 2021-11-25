@@ -1080,6 +1080,8 @@ public class Constant {
 	public static final byte[] AES_SECRET_KEY = Tool.HexUtil.decodeHex("bde5430614b21baf1c53bd6f616d1a39");
 
 	public static final String NZ_WEB_COMPONENT_NAME = "nz-web";
+	
+	public static final String SYSCONFIG_KEY_EXPORT_MAX_LINE = "export_max_line";
 
 	public static final Map<String, String> CORS_HEADER = Tool.MapUtil
 			.builder("Access-Control-Allow-Credentials", "true")
