@@ -527,6 +527,18 @@ public class Constant {
 		snmpCerdenOrderFieldMap.put("id", "id");
 		snmpCerdenOrderFieldMap.put("type", "type");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("snmp_credential", snmpCerdenOrderFieldMap);
+		
+		Map<String, String> terminalLogOrderFieldMap = new HashMap<>();
+		terminalLogOrderFieldMap.put("id", "ts.id");
+		terminalLogOrderFieldMap.put("sourceIp", "ts.host");
+		terminalLogOrderFieldMap.put("state", "ts.status");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("terminal_session",terminalLogOrderFieldMap);
+		
+		Map<String, String> operationLogOrderFieldMap = new HashMap<>();
+		operationLogOrderFieldMap.put("user", "su.username");
+		operationLogOrderFieldMap.put("operation", "sl.operation");
+		operationLogOrderFieldMap.put("type", "sl.type");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log",operationLogOrderFieldMap);
 	}
 
 	/**
