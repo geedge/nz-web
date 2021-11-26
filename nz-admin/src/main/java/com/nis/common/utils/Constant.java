@@ -530,7 +530,7 @@ public class Constant {
 		
 		Map<String, String> terminalLogOrderFieldMap = new HashMap<>();
 		terminalLogOrderFieldMap.put("id", "ts.id");
-		terminalLogOrderFieldMap.put("sourceIp", "ts.host");
+		terminalLogOrderFieldMap.put("sourceIp", "ts.remote_addr");
 		terminalLogOrderFieldMap.put("state", "ts.status");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("terminal_session",terminalLogOrderFieldMap);
 		
