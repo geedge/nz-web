@@ -752,6 +752,9 @@ public class Constant {
 	// 指标存储天数，默认30天，单位天
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_RETENTION = "metrics_storage_retention";
 
+	// metrics 对象存储时普罗米修斯默认保留时间
+	public static final String SYSCONFIG_KEY_PROMETHEUS_DEFAULT_RETENTION_TIME_WHEN_S3 = "prometheus_default_retention_time_when_s3";
+
 	// cortex.yml 配置模板
 	public static final String SYSCONFIG_KEY_CORTEX_YML_TMPL = "cortex_yml_tmpl";
 
