@@ -45,11 +45,11 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 	
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		Thread.currentThread().setName("AlertSilenceStatusJob");
 		// 检查 haMode
     	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
         if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
-		log.debug("静默状态定时任务开始");
-		
+		log.info("AlertSilenceStatusJob start");
 		try {
 			/**
 			 * active 变更为 expired
@@ -78,8 +78,9 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 			if(log.isDebugEnabled()) {
 	        	log.debug("耗时统计:{}", sw.prettyPrint());
 	        }
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			log.error(e, "AlertSilenceStatusJob error");
 		}
+		log.info("AlertSilenceStatusJob end");
 	}
 }

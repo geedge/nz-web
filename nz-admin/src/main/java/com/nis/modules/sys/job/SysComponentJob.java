@@ -48,6 +48,7 @@ public class SysComponentJob extends QuartzJobBean {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		Thread.currentThread().setName("SysComponentJob");
 		// 获取本机ip
 		String localHost = Tool.StrUtil.isNotBlank(host) ? host : Tool.NetUtil.getLocalIPBySocket(dbHost, dbPort);
 		String protocol = sslEnabled ? "https" : "http";

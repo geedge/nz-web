@@ -182,8 +182,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         }
 
 
-        // snmp trap 不校验 表达式
-        if (3 != alertRule.getType()) {
+        // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
+        if (1 == alertRule.getType()) {
             // 校验expr
             boolean checkRule = false;
             try {
@@ -583,8 +583,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     }
                     ruleEntity.setTimeout(timeoutVal);
                 }
-                // snmp trap 类型不校验 表达式
-                if (!StrUtil.equals("3", typeStr)) {
+                // 仅metrics类型需要校验rule表达式  logs和snmp trap暂不支持
+                if (StrUtil.equals("1", typeStr)) {
                     try {
                         boolean b = yamlUtil.checkRule(YamlUtil.alertRuleEntityToYamlMap(ruleEntity));
                         if (!b) {
@@ -685,6 +685,16 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
+    	SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
+        long exportMaxLine = 10000;
+		// 导出最大条数限制
+        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
+        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+        }
+        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+		}
         // 导出查询与列表查询一致
         PageUtils page = this.queryPage(params);
         List<AlertRuleEntity> list = (List<AlertRuleEntity>) page.getList();

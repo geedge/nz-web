@@ -65,6 +65,7 @@ import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
 
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 
 @Service("alertMessageHandlerService")
@@ -320,10 +321,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	 * 查询 active || silence 表中 endat 小于 当前时间的告警消息 用于周期线程处理未及时清除的告警消息
 	 */
 	@Override
-	public List<AlertMessageEntity> selectMessagegtNow(String tableName) {
+	public List<AlertMessageEntity> selectMessagegtNow(String tableName,Integer limit) {
 		DateTime now = Tool.DateUtil.date();
 		now = Tool.DateUtil.offsetSecond(now, -resolveTimeout);//加上resolve 时间，减少误判几率
-		List<AlertMessageEntity> list = msgHandlerDao.selectMessageEndAtltNow(now, tableName);
+		List<AlertMessageEntity> list = msgHandlerDao.selectMessageEndAtltNow(now, tableName,limit);
 		return list;
 	}
 
@@ -536,7 +537,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		Map map = JSONObject.parseObject(configMap.get("alert_export_header"), Map.class, Feature.OrderedField);
 
 		// 导出最大条数限制
-		int exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+		long exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
+		if(ObjectUtil.isEmpty(exportMaxLine)) {
+			exportMaxLine = 10000;
+		}
 		int exportRealTotal = 0;
 
 		SXSSFWorkbook workbook = null;
@@ -547,15 +551,15 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			String sheetName = "AlertMessages";
 			workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
 			SXSSFSheet sheet = workbook.getSheet(sheetName);
-
+			
+			Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+			if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+				params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+			}
 			PageUtils page = this.queryMessagePage(params);
+			
 			List<AlertMessageEntity> exportAlertMsgList = (List<AlertMessageEntity>) page.getList();
 			exportRealTotal = exportAlertMsgList.size();
-
-			// 判断导出条数是否超过配置最大导出量
-			if (exportAlertMsgList.size() > exportMaxLine) {
-				throw new NZException(RCode.SYS_CONFIG_EXPORT_MAX_LINE);
-			}
 
 			this.fillData(exportAlertMsgList, 1, sheet, workbook);
 
@@ -667,50 +671,64 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if (endpointId != null && message.getEndpoint() == null) {
 			// 当 moduleid 不存在，但是 endpoint id存在时，通过库表查询赋值
 			MonitorEndpoint ep = endpointService.getById(endpointId);
-			message.setEndpointId(endpointId);
-			moduleId = ep.getModuleId();
-			assetId = ep.getAssetId();
-			message.setEndpointId(endpointId);
-			message.setEndpoint(ep);
+			if(ep != null) {
+				message.setEndpointId(endpointId);
+				moduleId = ep.getModuleId();
+				assetId = ep.getAssetId();
+				message.setEndpointId(endpointId);
+				message.setEndpoint(ep);
+			}
 		}
 
 		// 获取 asset id
 		if (message.getAsset() == null && assetId != null) {
 			AssetAsset asset = assetAssetService.getById(assetId);
-			dcId = asset.getDcId();
-			message.setAssetId(assetId);
-			message.setAsset(asset);
+			if(asset != null) {
+				dcId = asset.getDcId();
+				message.setAssetId(assetId);
+				message.setAsset(asset);
+			}
 		}
 		// 获取dc
 		if (message.getDc() == null && dcId != null ) {
 			Dc dc = dcService.getById(dcId);
-			message.setDcId(dcId);
-			message.setDc(dc);
+			if(dc != null) {
+				message.setDcId(dcId);
+				message.setDc(dc);
+			}
 		}
 		// 判断 module id 是否存在
 		if (message.getModule() == null && moduleId != null ) {
 			MonitorModule module = moduleService.getById(moduleId);
-			projectId = module.getProjectId();
-			message.setModuleId(moduleId);
-			message.setModule(module);
+			if(module != null) {
+				projectId = module.getProjectId();
+				message.setModuleId(moduleId);
+				message.setModule(module);
+			}
 		}
 		// 判断 module id 是否存在
 		if (message.getProject() == null && projectId != null) {
 			MonitorProject project = projectService.getById(projectId);
-			message.setProjectId(projectId);
-			message.setProject(project);
+			if(project != null) {
+				message.setProjectId(projectId);
+				message.setProject(project);
+			}
 		}
 		// 获取alertrule
 		if (message.getAlertRule() == null && ruleId != null) {
 			AlertRuleEntity ruleEntity = alertRuleService.getById(ruleId);
-			message.setRuleId(ruleId);
-			message.setAlertRule(ruleEntity);
+			if(ruleEntity != null) {
+				message.setRuleId(ruleId);
+				message.setAlertRule(ruleEntity);
+			}
 		}
 		//获取  Severity_Id
 		if(message.getSeverity() == null && severityId != null) {
 			AlertSeverityConf severityConf = alertSeverityService.getById(severityId);
-			message.setSeverityId(severityId);
-			message.setSeverity(severityConf);
+			if(severityConf != null) {
+				message.setSeverityId(severityId);
+				message.setSeverity(severityConf);
+			}
 		}
 		return message;
 	}

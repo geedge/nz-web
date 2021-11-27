@@ -527,6 +527,18 @@ public class Constant {
 		snmpCerdenOrderFieldMap.put("id", "id");
 		snmpCerdenOrderFieldMap.put("type", "type");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("snmp_credential", snmpCerdenOrderFieldMap);
+		
+		Map<String, String> terminalLogOrderFieldMap = new HashMap<>();
+		terminalLogOrderFieldMap.put("id", "ts.id");
+		terminalLogOrderFieldMap.put("sourceIp", "ts.remote_addr");
+		terminalLogOrderFieldMap.put("state", "ts.status");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("terminal_session",terminalLogOrderFieldMap);
+		
+		Map<String, String> operationLogOrderFieldMap = new HashMap<>();
+		operationLogOrderFieldMap.put("user", "su.username");
+		operationLogOrderFieldMap.put("operation", "sl.operation");
+		operationLogOrderFieldMap.put("type", "sl.type");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log",operationLogOrderFieldMap);
 	}
 
 	/**
@@ -739,6 +751,9 @@ public class Constant {
 
 	// 指标存储天数，默认30天，单位天
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_RETENTION = "metrics_storage_retention";
+
+	// metrics 对象存储时普罗米修斯默认保留时间
+	public static final String SYSCONFIG_KEY_PROMETHEUS_DEFAULT_RETENTION_TIME_WHEN_S3 = "prometheus_default_retention_time_when_s3";
 
 	// cortex.yml 配置模板
 	public static final String SYSCONFIG_KEY_CORTEX_YML_TMPL = "cortex_yml_tmpl";
@@ -1080,6 +1095,8 @@ public class Constant {
 	public static final byte[] AES_SECRET_KEY = Tool.HexUtil.decodeHex("bde5430614b21baf1c53bd6f616d1a39");
 
 	public static final String NZ_WEB_COMPONENT_NAME = "nz-web";
+	
+	public static final String SYSCONFIG_KEY_EXPORT_MAX_LINE = "export_max_line";
 
 	public static final Map<String, String> CORS_HEADER = Tool.MapUtil
 			.builder("Access-Control-Allow-Credentials", "true")

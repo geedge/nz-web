@@ -1,24 +1,31 @@
 package com.nis.modules.promserver.controller;
 
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.net.url.UrlQuery;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.MD5;
-import cn.hutool.http.Header;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.entity.SysConfigEntity;
-import com.nis.modules.sys.service.SysConfigService;
-import net.sf.json.util.JSONUtils;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -30,20 +37,31 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.BufferReaderWrapper;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
+
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
+import cn.hutool.crypto.digest.MD5;
+import cn.hutool.http.Header;
+import cn.hutool.log.Log;
+import net.sf.json.util.JSONUtils;
 
 @Controller
 @SuppressWarnings("all")
@@ -140,6 +158,7 @@ public class LokiProxyController {
     		HttpEntity<byte[]> httpEntity = new HttpEntity<byte[]>(body, headers);
     		String queryString = request.getQueryString();
             queryString = StrUtil.isNotBlank(queryString)?queryString:"";
+            queryString = URLUtil.decode(queryString);
             // 构造请求路径
          // 请求 prometheus server
             String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
@@ -219,6 +238,13 @@ public class LokiProxyController {
 
             Map<String, Object> data = (Map) result.get("data");
             String resultType = (String) data.get("resultType");
+            String filter = request.getParameter("filter");
+            if(StrUtil.isNotBlank(filter)&& ToolUtil.isNotEmpty(data.get("result"))) {
+				filter = URLUtil.decode(filter);
+				JSONArray resultArray = (JSONArray) data.get("result");
+				resultArray = this.filterResult(resultArray, filter);
+				data.put("result",resultArray);
+			}
             // 重新整理数据结构
             if (format == 1 && "streams".equals(resultType)) {
                 List<Map> resultArray = (List<Map>) data.get("result");
@@ -376,4 +402,24 @@ public class LokiProxyController {
             return level;
         return "unknown";
     }
+    
+    public JSONArray filterResult(JSONArray resultArray,String filter) {
+		Map parse = (Map) JSONObject.parse(filter);
+		JSONObject metric = null;
+		for (int i = resultArray.size()-1; i >= 0; i--) {
+			boolean flag = false;
+			metric = (JSONObject) resultArray.get(i);
+			JSONObject object = (JSONObject) metric.get("metric");
+			Map javaObject = JSONObject.toJavaObject(object, Map.class);
+			for(Object key : parse.keySet()) {
+				if(!ToolUtil.equals(parse.get(key), javaObject.get(key))) {
+					flag = true;
+				}
+			}
+			if(flag) {
+				resultArray.remove(i);
+			}
+		}
+		return resultArray;
+	}
 }

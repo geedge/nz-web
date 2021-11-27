@@ -157,10 +157,11 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					messages.clear();
 					newAlertHash.clear();
 				}
+				log.info("alert message active size: {}",messages.size());
 			}
 
 			// 遍历已有 告警消息，判断是否已经过期
-			long nowTs = Tool.DateUtil.current();
+			long nowTs = Tool.DateUtil.current() - (alertRuleEntity.getInr()*500);
 			Iterator<String> iterator = entries.keySet().iterator();
 			while (runFlag && iterator.hasNext()) {
 				String activeHash = iterator.next();
@@ -176,7 +177,6 @@ public class AlertRuleJudgeRunnable implements Runnable {
 							log.debug("add new alert message,state: expired,content : {}",
 									Tool.JSONUtil.toJsonStr(message));
 						}
-						continue;
 					}
 					// 没有 到达 for 时长，还没有发送过告警消息，可以直接删除
 					hashOperations.delete(ruleCacheKey, activeHash);
@@ -186,8 +186,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 				evalLog.setMessages(messages);
 				alertMessageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(messages));
 			}
-			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId,
-					alertRuleEntity.getInr(), type, messages.size());
+			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId, alertRuleEntity.getInr(), type, messages.size());
 		} catch (Exception e) {
 			log.error(e, "judge error");
 			if (e instanceof NZException) {
@@ -222,7 +221,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		}
 		stopWatch.stop();
 		long timeMillis = stopWatch.getTotalTimeMillis();
-		log.debug("judge thread ruleId:{},time: {}ms,runFlag:{},cleanCache:{}", alertRuleId, timeMillis, runFlag,
+		log.info("judge thread ruleId:{},time: {}ms,runFlag:{},cleanCache:{}", alertRuleId, timeMillis, runFlag,
 				cleanCache);
 	}
 

@@ -82,6 +82,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+    	Thread.currentThread().setName("AutoConfigAgentJob");
         // 检查 haMode
         String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
         if (!StrUtil.equals(serverId, Constant.SERVER_ID)) return;

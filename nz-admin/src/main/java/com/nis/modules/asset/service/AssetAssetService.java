@@ -60,6 +60,13 @@ public interface AssetAssetService extends IService<AssetAsset> {
      */
     List<AssetAsset> getBlackboxAssetInfoList();
 
+    /**
+     * 获取 开启 ping 的 asset
+     *
+     * @return
+     */
+    List<AssetAsset> getOpenPingAssets();
+
     List<VisualChart> getAssetsWithTagByChartIds(List<Integer> idList);
 
     /**

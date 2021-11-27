@@ -65,7 +65,7 @@
 	
 	<!-- 查询 开启自动 失效 状态未及时 修改的 alert message -->
 	<select id="selectMessageEndAtltNow" resultMap="alertMessageMap">
-		select * from ${tableName} am left join alert_rule ar on am.rule_id = ar.id where ar.auto_expired = 1 and end_at &lt; #{now}
+		select * from ${tableName} am left join alert_rule ar on am.rule_id = ar.id where ar.auto_expired = 1 and end_at &lt; #{now} limit #{limit}
 	</select>
 	
 	<!-- 根据id批量删除 alert message -->

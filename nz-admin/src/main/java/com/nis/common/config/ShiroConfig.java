@@ -81,7 +81,7 @@ public class ShiroConfig {
 		filterMap.put("/sys/i18n/lang", "anon");
 		filterMap.put("/metrics", "anon");
 		filterMap.put("/prometheus", "anon");
-		filterMap.put("/prom/**", "anon");
+		// filterMap.put("/prom/**", "anon");
 		filterMap.put("/swagger/**", "anon");
 		filterMap.put("/v2/api-docs", "anon");
 		filterMap.put("/swagger-ui.html", "anon");

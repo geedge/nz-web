@@ -60,6 +60,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		Thread.currentThread().setName("AlertRuleManagerJob");
 		scheduler = context.getScheduler();
 		// 检查 haMode
 		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);

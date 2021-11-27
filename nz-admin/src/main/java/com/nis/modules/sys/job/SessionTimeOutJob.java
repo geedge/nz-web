@@ -1,6 +1,5 @@
 package com.nis.modules.sys.job;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,7 +11,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.QuartzJobBean;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -42,6 +40,7 @@ public class SessionTimeOutJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		Thread.currentThread().setName("SessionTimeOutJob");
 		// 获取redis中所有的token信息
 		Map<String, SysUserEntity> shiroSessionInfoMap = ShiroUtils.getShiroSessionInfoMap();
 		

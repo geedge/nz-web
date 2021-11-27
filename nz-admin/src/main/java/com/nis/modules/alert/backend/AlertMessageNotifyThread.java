@@ -110,7 +110,7 @@ public class AlertMessageNotifyThread implements Runnable {
 				String receiver = alertRule.getReceiver();
 				String methods = alertRule.getMethod();
 				if(logger.isDebugEnabled()) {
-					logger.debug("告警消息内容:{}", Tool.JSONUtil.toJsonStr(messageEntity));
+					logger.debug("message content:{}", Tool.JSONUtil.toJsonStr(messageEntity));
 				}
 				// 没有接收人或通知方式，无法发送通知
 				if (Tool.StrUtil.isBlank(receiver) || Tool.StrUtil.isBlank(methods)) {
@@ -136,10 +136,10 @@ public class AlertMessageNotifyThread implements Runnable {
 						String accountName = method.getAccount();
 						Object accountVal = Tool.BeanUtil.getProperty(user, accountName);
 						if (Tool.StrUtil.isBlankIfStr(accountVal)) {
-							logger.info("用户 {},{} 不存在", user.getName(), accountName);
+							logger.info("user {},{} not exist", user.getName(), accountName);
 							continue;
 						}
-						logger.debug("告警邮件通知人信息:{},通知方式:{}", JSONObject.toJSONString(user, excludefilter),
+						logger.debug("user info:{},method:{}", JSONObject.toJSONString(user, excludefilter),
 								Tool.JSONUtil.toJsonStr(method));
 						// 只有一条 email 内置通知
 						if (Tool.ObjectUtil.equal(method.getBuildIn(), 1)) {

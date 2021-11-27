@@ -10,7 +10,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
 import com.nis.common.utils.Constant;
-import com.nis.common.utils.ToolUtil;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -26,6 +25,7 @@ public class HaJob extends QuartzJobBean {
 	@SuppressWarnings("unchecked")
 	@Override
 	protected void executeInternal(JobExecutionContext arg0) throws JobExecutionException {
+		Thread.currentThread().setName("HaJob");
 		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
 		if(StrUtil.isBlank(serverId)) {
 			Boolean lock = redisTemplate.opsForValue().setIfAbsent(Constant.SYS_HA_LOCK, Constant.SERVER_ID,10, TimeUnit.SECONDS);

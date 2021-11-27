@@ -39,12 +39,13 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 	private AlertRuleSchedLogService alertRuleSchedLogService;
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		Thread.currentThread().setName("AlertRuleScheduleJob");
 		// 检查 haMode
 		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
 		if (!StrUtil.equals(serverId, Constant.SERVER_ID))
 			return;
 		JobKey key = context.getJobDetail().getKey();
-		log.debug("alert rule schedule job start,key:{}", key);
+		log.info("alert rule schedule job start,key:{}", key);
 		// key格式：hash-id-state，例：adcdaed-12-1
 		String[] split = key.getName().split("-");
 		AlertRuleSchedLog schedLog = new AlertRuleSchedLog();
@@ -71,6 +72,6 @@ public class AlertRuleScheduleJob extends QuartzJobBean {
 		}
 		//save schedule log
 		alertRuleSchedLogService.save(schedLog);
-		log.debug("alert rule schedule manager job end,key:{}", key);
+		log.info("alert rule schedule manager job end,key:{}", key);
 	}
 }

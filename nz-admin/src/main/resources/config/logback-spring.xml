@@ -60,7 +60,7 @@
 		</filter>
 	</appender>
 
-	<root level="debug">
+	<root level="INFO">
 		<appender-ref ref="LOG_FILE" />
 		<appender-ref ref="ERROR_FILE" />
 	</root>

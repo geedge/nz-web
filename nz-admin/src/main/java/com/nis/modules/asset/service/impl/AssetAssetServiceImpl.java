@@ -482,23 +482,23 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // clientstate
-            if (ToolUtil.isNotEmpty(asset.getClientState())) {
-                switch (asset.getClientState()) {
-                    case 1:// ok
-                        break;
-                    case 3: { // 认证失败
-                        asset.setClientState(-1);
-                        break;
-                    }
-                    case 2:  // 超时
-                    case 4: {// 未知错误
-                        asset.setClientState(0); // 认证失败
-                        break;
-                    }
-                    default:
-                        asset.setClientState(null);
-                }
-            }
+//            if (ToolUtil.isNotEmpty(asset.getClientState())) {
+//                switch (asset.getClientState()) {
+//                    case 1:// ok
+//                        break;
+//                    case 3: { // 认证失败
+//                        asset.setClientState(-1);
+//                        break;
+//                    }
+//                    case 2:  // 超时
+//                    case 4: {// 未知错误
+//                        asset.setClientState(0); // 认证失败
+//                        break;
+//                    }
+//                    default:
+//                        asset.setClientState(null);
+//                }
+//            }
         }
     }
 
@@ -1546,7 +1546,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     public void export(HttpServletResponse response, Map<String, Object> params) {
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-
+        
+        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
+        long exportMaxLine = 10000;
+		// 导出最大条数限制
+        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
+        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+        }
+        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
+		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
+			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
+		}
         PageUtils page = this.queryAssetPage(params);
         List<AssetAsset> list = (List<AssetAsset>) page.getList();
 
@@ -1672,6 +1682,20 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             entity.setDc(dcIdAndNameMap.get(entity.getDcId()));
             entity.setAssetPingInterval(assetPingIntervalConfig.getParamValue());
         }
+        return assetList;
+    }
+
+    @Override
+    public List<AssetAsset> getOpenPingAssets() {
+        List<AssetAsset> assetList = this.list();
+
+        // 支持 ping 的 state_conf
+        List<AssetStateConf> stateConfList = stateConfService.list(new LambdaQueryWrapper<AssetStateConf>().eq(AssetStateConf::getPing, 1));
+        List<Integer> enablePingStateConfIdList = stateConfList.stream().map(AssetStateConf::getId).collect(Collectors.toList());
+
+        // 支持 ping 的 asset
+        assetList = assetList.stream().filter(asset -> enablePingStateConfIdList.contains(asset.getStateId())).collect(Collectors.toList());
+
         return assetList;
     }
 

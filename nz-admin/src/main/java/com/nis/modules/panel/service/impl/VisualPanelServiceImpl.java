@@ -618,9 +618,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
             row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
-
+            row.createCell(9).setCellValue(chart.getRemark());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 8);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
         }
     }
     
@@ -812,10 +812,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
+            String description = ExcelUtils.getCellValue(row.getCell(9));
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
-                    
                     VisualChart chart = new VisualChart();
                     chart.setSeq(seqUUID);
                     chart.setPanelId(panelId);
@@ -830,6 +830,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setUpdateAt(new Date());
                     chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                     chart.setGroupId(groupId);
+                    chart.setRemark(description);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1204,6 +1205,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
+            String description = ExcelUtils.getCellValue(row.getCell(9));
             if (saveFlag) {
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -1224,6 +1226,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setGroupId(groupId);
                     chart.setVarType(varTypeAndValMap.get(varType));
                     chart.setVarId(linkId);
+                    chart.setRemark(description);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1325,9 +1328,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
             row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
-
+            row.createCell(9).setCellValue(chart.getRemark());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 8);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
         }
     }
     

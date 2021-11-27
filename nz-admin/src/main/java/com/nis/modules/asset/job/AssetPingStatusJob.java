@@ -11,6 +11,7 @@ import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetPingDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetPing;
+import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetPingService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
@@ -51,12 +52,16 @@ public class AssetPingStatusJob extends QuartzJobBean {
     private AssetAssetDao assetDao;
 
     @Autowired
+    private AssetAssetService assetAssetService;
+
+    @Autowired
     private RedisTemplate redisTemplate;
     @Autowired
     private PromserverService promService;
     
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
+    	Thread.currentThread().setName("AssetPingStatusJob");
     	// 检查 haMode
     	String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
         if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
@@ -78,7 +83,8 @@ public class AssetPingStatusJob extends QuartzJobBean {
     public void execAssetPing() throws RuntimeException {
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
         if (promserver == null) {
-            log.info("asset ping 状态定时任务不执行,当前暂无可用 promserver");
+            log.info("asset ping 状态更新为 DOWN,当前暂无可用 promserver");
+            this.allAssetPingStateDown();
             return;
         }
 
@@ -97,8 +103,12 @@ public class AssetPingStatusJob extends QuartzJobBean {
         Map<String, String> assetHostAndStateMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_success&time=" + time);
         Map<String, String> assetHostAndRttMap = this.getMetricsDatabByPath(promserver, queryPath, "query=probe_icmp_duration_seconds{phase='rtt'}&time=" + time);
 
-        // 如果当前未查询到数据，放弃本次更新
-        if (ToolUtil.isEmpty(assetHostAndStateMap) || ToolUtil.isEmpty(assetHostAndRttMap)) return;
+        // 如果当前未查询到数据，更新状态为 down
+        if (ToolUtil.isEmpty(assetHostAndStateMap) || ToolUtil.isEmpty(assetHostAndRttMap)) {
+            log.info("asset ping 状态更新为 DOWN,未查询到 ping 指标数据");
+            this.allAssetPingStateDown();
+            return;
+        }
 
         List<AssetAsset> assetList = assetDao.selectList(null);
         Map<String, Integer> assetHostAndIdMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getManageIp, AssetAsset::getId));
@@ -136,7 +146,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
         }
 
         upAssetPings.addAll(downAssetPings);
-        // 如果本次请求缺失 asset ， 保存上次内容，不更新 时间
+        // 如果本次请求缺失 asset ， 更新状态为 down
         for (AssetPing upAssetPing : upAssetPings) {
             Iterator<AssetPing> iterator = list.iterator();
             while (iterator.hasNext()) {
@@ -146,7 +156,14 @@ public class AssetPingStatusJob extends QuartzJobBean {
                 }
             }
         }
-        if (Tool.CollectionUtil.isNotEmpty(list)) upAssetPings.addAll(list);
+        if (Tool.CollectionUtil.isNotEmpty(list)) {
+            for (AssetPing assetPing : list) {
+                assetPing.setStatus(0);
+                assetPing.setRtt(null);
+                assetPing.setLastUpdate(new Date());
+            }
+            upAssetPings.addAll(list);
+        }
 
         assetPingDao.deleteAll();
         assetPingService.saveBatch(upAssetPings);
@@ -175,5 +192,23 @@ public class AssetPingStatusJob extends QuartzJobBean {
             map.put(assethost.toString(), timeAndData.get(1));
         }
         return map;
+    }
+
+
+    /**
+     * 开启ping 的 asset 状态更新为 down
+     */
+    private void allAssetPingStateDown() {
+        assetPingDao.deleteAll();
+
+        // 开启 Ping Assets
+        List<AssetAsset> openPingAssets = assetAssetService.getOpenPingAssets();
+
+        List<AssetPing> assetPingList = new ArrayList<>();
+        for (AssetAsset asset : openPingAssets) {
+            assetPingList.add(new AssetPing(asset.getId(), asset.getManageIp(), 0, null, new Date()));
+        }
+
+        if (Tool.CollectionUtil.isNotEmpty(assetPingList)) assetPingService.saveBatch(assetPingList);
     }
 }

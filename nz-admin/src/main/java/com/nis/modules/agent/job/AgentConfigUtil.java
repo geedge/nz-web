@@ -167,7 +167,7 @@ public class AgentConfigUtil {
 				.selectOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
 		int count = endpointStateService.count(new LambdaQueryWrapper<MonitorEndpointState>()
 				.eq(MonitorEndpointState::getType, Constant.MonitorConfType.LOGS.getValue())
-				.eq(MonitorEndpointState::getState, 1).ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
+				.ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
 		if (count > 0) {
 			flag = true;
 		}
@@ -384,7 +384,15 @@ public class AgentConfigUtil {
 	 */
 	public Map<String, String> generatePrometheusCmdLine() {
 		Map params = new HashMap(2);
-		params.put("storageDays", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_RETENTION));
+		// object storage 标识 1: 本地文件存储，2：S3对象存储
+		String objStroageEnable = sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE);
+		if (StrUtil.equals("1", objStroageEnable)) {
+			// 本地存储时，prometheus 保存天数为 sys_config key = metrics_storage_retention (d)
+			params.put("storageDays", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_RETENTION));
+		} else {
+			// 对象存储时， cortex 配置 metrics 保存天数为 sys_config key = metrics_storage_retention (d)，prometheus 保存天数设置为 1 d
+			params.put("storageDays", sysConfigService.getValue(Constant.SYSCONFIG_KEY_PROMETHEUS_DEFAULT_RETENTION_TIME_WHEN_S3));
+		}
 
 		String content = "";
 		try {
