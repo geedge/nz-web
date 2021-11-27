@@ -116,13 +116,10 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     // 配置下发
     public void setUpAgentConfig(List<Promserver> healthyPromServers) {
         ThreadUtil.execAsync(() -> {
-            boolean versionChangeFlag = configUtil.comparePromtailVersionChanges();
-            boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
-            log.debug(String.format("conf_event promtail 数据 %s 发生变化", (promtailChangeFlag || versionChangeFlag) ? "" : "没有"));
-            if (promtailChangeFlag || versionChangeFlag) {
-                MonitorEventLog monitorEventLog = eventLogService.getOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
-                this.udpatePromtailsConf(healthyPromServers, monitorEventLog.getCounter());
-            }
+        	boolean promtailChangeFlag = configUtil.compareDataChanges("promtail");
+        	MonitorEventLog monitorEventLog = eventLogService.getOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
+        	log.debug("conf_event promtail change : {}, value: {}",promtailChangeFlag , monitorEventLog.getCounter());
+            this.udpatePromtailsConf(healthyPromServers, monitorEventLog.getCounter());
         });
 
         ThreadUtil.execAsync(() -> {
@@ -212,7 +209,7 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         }
 
         String fedeEnabledStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_PROM_FEDER_ENABLED);
-        log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
+        log.info(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         if (StrUtil.equals("0", fedeEnabledStr)) {
             // 用于生成配置的 endpoint 信息
             List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent(version);
