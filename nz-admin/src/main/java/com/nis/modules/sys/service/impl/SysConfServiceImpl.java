@@ -630,7 +630,7 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
                 incrementKeys.add("loki");
             }
             // cortex.yml 改动
-            if (updateKeys.contains("alert_api") || updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
+            if (updateKeys.contains("metrics_storage_retention") ||  updateKeys.contains("alert_api") || updateKeys.contains("metrics_storage_s3_access_key") || updateKeys.contains("metrics_storage_s3_bucket") || updateKeys.contains("metrics_storage_s3_endpoint") || updateKeys.contains("metrics_storage_s3_secret_access_key")) {
                 incrementKeys.add("cortex");
             }
             // metrics 下发方式改变
