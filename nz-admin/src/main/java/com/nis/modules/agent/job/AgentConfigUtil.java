@@ -167,7 +167,7 @@ public class AgentConfigUtil {
 				.selectOne(new LambdaQueryWrapper<MonitorEventLog>().eq(MonitorEventLog::getEvent, "promtail"));
 		int count = endpointStateService.count(new LambdaQueryWrapper<MonitorEndpointState>()
 				.eq(MonitorEndpointState::getType, Constant.MonitorConfType.LOGS.getValue())
-				.ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
+                .eq(MonitorEndpointState::getState, 1).ne(MonitorEndpointState::getVer, monitorEventLog.getCounter()));
 		if (count > 0) {
 			flag = true;
 		}
