@@ -433,51 +433,48 @@
     </select>
 
     <select id="getEnableLogsEndpointInfoListForAgent" resultMap="endpointInfoByAgent">
-        SELECT
-            endpoint.id AS endpoint_id,
-            endpoint.name AS endpoint_name,
-            endpoint.module_id AS endpoint_module_id,
-            endpoint.asset_id AS endpoint_asset_id,
-
-            endConf.id AS endConf_id,
-            endConf.endpoint_id AS endConf_endpoint_id,
-            endConf.config AS endConf_config,
-            endConf.hash AS endConf_hash,
-            endConf.version AS endConf_version,
-
-            module.id AS module_id,
-            module.project_id AS module_project_id,
-            module.name AS module_name,
-            module.configs AS module_configs,
-            module.snmp_yml AS module_snmp_yml,
-
-            project.id AS project_id,
-            project.name AS project_name,
-
-            asset.id AS asset_id,
-            asset.sn AS asset_sn,
-            asset.name AS asset_name,
-            asset.manage_ip AS asset_manage_ip,
-            asset.dc_id AS asset_dc_id,
-            asset.pid AS asset_pid,
-            client_host AS asset_client_host,
-            client_port AS asset_client_port,
-            client_token AS asset_client_token,
-
-            dc.id AS dc_id,
-            dc.name AS dc_name
-        FROM
-            monitor_endpoint endpoint
-            LEFT JOIN monitor_endpoint_config endConf ON endpoint.id = endConf.endpoint_id
-            LEFT JOIN monitor_module module ON endpoint.module_id = module.id
-            LEFT JOIN monitor_project project ON module.project_id = project.id
-            LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
-            LEFT JOIN dc dc ON asset.dc_id = dc.id
-        WHERE
-            endConf.type = "logs"
-            AND endConf.enable = 1
-            AND asset.client_enable = 1
-            AND dc.state = 'ON'
+		SELECT
+			endpoint.id AS endpoint_id,
+			endpoint.NAME AS endpoint_name,
+			endpoint.module_id AS endpoint_module_id,
+			endpoint.asset_id AS endpoint_asset_id,
+			endConf.id AS endConf_id,
+			endConf.endpoint_id AS endConf_endpoint_id,
+			endConf.config AS endConf_config,
+			endConf.HASH AS endConf_hash,
+			endConf.version AS endConf_version,
+			module.id AS module_id,
+			module.project_id AS module_project_id,
+			module.NAME AS module_name,
+			module.configs AS module_configs,
+			module.snmp_yml AS module_snmp_yml,
+			project.id AS project_id,
+			project.NAME AS project_name,
+			asset.id AS asset_id,
+			asset.sn AS asset_sn,
+			asset.NAME AS asset_name,
+			asset.manage_ip AS asset_manage_ip,
+			asset.dc_id AS asset_dc_id,
+			asset.pid AS asset_pid,
+			client_host AS asset_client_host,
+			client_port AS asset_client_port,
+			client_token AS asset_client_token,
+			dc.id AS dc_id,
+			dc.NAME AS dc_name 
+		FROM
+			monitor_endpoint endpoint
+			LEFT JOIN monitor_endpoint_config endConf ON endpoint.id = endConf.endpoint_id
+			LEFT JOIN monitor_module module ON endpoint.module_id = module.id
+			LEFT JOIN monitor_project project ON module.project_id = project.id
+			LEFT JOIN asset_asset asset ON endpoint.asset_id = asset.id
+			LEFT JOIN dc dc ON asset.dc_id = dc.id
+			LEFT JOIN monitor_endpoint_state mes ON endConf.id = mes.config_id 
+		WHERE
+			endConf.type = "logs" 
+			AND endConf.ENABLE = 1 
+			AND asset.client_enable = 1 
+			AND dc.state = 'ON' 
+			AND ( mes.ver != #{version} || mes.state = 0 )
     </select>
 
 

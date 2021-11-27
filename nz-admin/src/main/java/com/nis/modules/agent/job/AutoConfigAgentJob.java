@@ -215,8 +215,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         log.debug(String.format("prometheus 联邦状态: %s", StrUtil.equals("0", fedeEnabledStr) ? "关闭" : "开启"));
         if (StrUtil.equals("0", fedeEnabledStr)) {
             // 用于生成配置的 endpoint 信息
-            List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent();
-
+            List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent(version);
+            log.info("sync logs config size: {}" , Tool.CollUtil.size(enableEndpointInfoList));
+            if(Tool.CollUtil.isEmpty(enableEndpointInfoList)) {
+            	return;
+            }
             // 联邦关闭 由 global 负载 promtail 配置下发
             List<MonitorEndpoint> distinctByAssetId = enableEndpointInfoList.stream().collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(MonitorEndpoint::getAssetId))), ArrayList::new));
             Map<Integer, Integer> endpointIdAndPromIdMap = configUtil.consistentHashingAssignEndpoint(globalPromServers, distinctByAssetId);
@@ -283,8 +286,11 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         Map<Integer, List<Promserver>> dcIdAndPromservers = perDataCenterPromServers.stream().collect(Collectors.groupingBy(Promserver::getDcId));
 
         // 用于生成配置的 endpoint 信息
-        List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent();
-
+        List<MonitorEndpoint> enableEndpointInfoList = endpointService.getEnableLogsEndpointInfoListForAgent(version);
+        log.info("sync logs config size: {}" , Tool.CollUtil.size(enableEndpointInfoList));
+        if(Tool.CollUtil.isEmpty(enableEndpointInfoList)) {
+        	return;
+        }
         for (Map.Entry<Integer, List<Promserver>> entry : dcIdAndPromservers.entrySet()) {
             Integer dcId = entry.getKey();
             // dc 下的 endpoint 信息

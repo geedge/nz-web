@@ -688,8 +688,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent() {
-        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableLogsEndpointInfoListForAgent();
+    public List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent(Integer version) {
+        List<MonitorEndpoint> enableEndpointInfoList = monitorEndpointDao.getEnableLogsEndpointInfoListForAgent(version);
         // 如 asset 存在 parent , 则 set parent
         List<AssetAsset> assetList = assetService.list();
         Map<Integer, AssetAsset> assetIdAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getId, Function.identity()));
