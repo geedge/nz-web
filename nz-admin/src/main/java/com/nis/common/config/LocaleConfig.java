@@ -36,7 +36,7 @@ public class LocaleConfig implements WebMvcConfigurer {
     public LocaleChangeInterceptor localeChangeInterceptor() {
     	MyI18nInterceptor lci = new MyI18nInterceptor();
         // 参数名
-        lci.setParamName("_lang");
+        lci.setParamName("Language");
         return lci;
     }
 
@@ -63,7 +63,7 @@ class MyI18nInterceptor extends LocaleChangeInterceptor {
 	
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-		String newLocale = request.getParameter(getParamName());
+		String newLocale = request.getHeader(getParamName());
 		if (newLocale != null) {
 			if (validateHttpMethod(request.getMethod())) {
 				LocaleResolver localeResolver = RequestContextUtils.getLocaleResolver(request);
