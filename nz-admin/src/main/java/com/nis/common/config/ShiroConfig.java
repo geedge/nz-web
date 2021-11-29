@@ -108,6 +108,7 @@ public class ShiroConfig {
 		filterMap.put("/actuator/prometheus", "metricsFilter");
 		filterMap.put("/**", "tokenCheckFilter");
 		filterMap.put("/sys/appearance","anon");
+		filterMap.put("/**", "licenseFilter");
 		
 		
 		Integer loginExpiration = getTimeOutData();

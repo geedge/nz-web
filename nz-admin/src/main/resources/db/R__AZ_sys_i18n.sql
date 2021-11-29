@@ -28,7 +28,7 @@ CREATE TABLE `sys_i18n`  (
   `uby` int(10) NOT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_lang_code`(`lang`, `code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4719 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4806 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_i18n
@@ -371,7 +371,7 @@ INSERT INTO `sys_i18n` VALUES (335, 'alert.list.remark', 'en', 'alert.list.remar
 INSERT INTO `sys_i18n` VALUES (336, 'alert.list.type', 'en', 'alert.list.type', 'Type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (337, 'alert.list.moduleAlert', 'en', 'alert.list.moduleAlert', 'Module alert', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (338, 'alert.list.labels', 'en', 'alert.list.labels', 'Label', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (339, 'alert.list.current', 'en', 'alert.list.current', 'Current Page', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (339, 'alert.list.current', 'en', 'alert.list.current', 'Current Page', '', '2021-11-24 02:37:53', 1);
 INSERT INTO `sys_i18n` VALUES (340, 'alert.list.expired', 'en', 'alert.list.expired', 'Expired', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (341, 'alert.list.projectAlert', 'en', 'alert.list.projectAlert', 'Project alert', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (342, 'alert.list.deviceAlert', 'en', 'alert.list.deviceAlert', 'Device alert', '', '2021-11-02 00:00:00', 1);
@@ -448,7 +448,7 @@ INSERT INTO `sys_i18n` VALUES (412, 'overall.batchEndpoint', 'en', 'overall.batc
 INSERT INTO `sys_i18n` VALUES (413, 'overall.parent', 'en', 'overall.parent', 'Parent asset', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (414, 'overall.twoDay', 'en', 'overall.twoDay', '2 days', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (415, 'overall.batchAdd', 'en', 'overall.batchAdd', 'Batch add', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (416, 'overall.select', 'en', 'overall.select', 'Select', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (416, 'overall.select', 'en', 'overall.select', 'Select', '', '2021-11-10 09:36:37', 1);
 INSERT INTO `sys_i18n` VALUES (417, 'overall.createdCredentials', 'en', 'overall.createdCredentials', 'New credential', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (418, 'overall.unavailable', 'en', 'overall.unavailable', 'Unavailable', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (419, 'overall.upload', 'en', 'overall.upload', 'upload', '', '2021-11-02 00:00:00', 1);
@@ -480,7 +480,6 @@ INSERT INTO `sys_i18n` VALUES (444, 'overall.exprTemp', 'en', 'overall.exprTemp'
 INSERT INTO `sys_i18n` VALUES (445, 'overall.importTip', 'en', 'overall.importTip', 'Only allowed xlsx/xls file', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (446, 'overall.module', 'en', 'overall.module', 'Module', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (447, 'overall.signOut', 'en', 'overall.signOut', 'Logout', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (448, 'overall.active', 'en', 'overall.active', 'Active', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (449, 'overall.exportExcelLower', 'en', 'overall.exportExcelLower', 'export', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (450, 'overall.version', 'en', 'overall.version', 'Version', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (451, 'overall.relabelConfigRegex', 'en', 'overall.relabelConfigRegex', 'Default is (.*) ', '', '2021-11-02 00:00:00', 1);
@@ -795,7 +794,6 @@ INSERT INTO `sys_i18n` VALUES (759, 'webshell.host', 'en', 'webshell.host', 'Hos
 INSERT INTO `sys_i18n` VALUES (760, 'webshell.authPin', 'en', 'webshell.authPin', 'Password', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (761, 'webshell.authType', 'en', 'webshell.authType', 'Auth type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (762, 'webshell.downloadButtonTitle', 'en', 'webshell.downloadButtonTitle', 'Download', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (763, 'config.agent.promId', 'en', 'config.agent.promId', 'Agent ID', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (764, 'config.agent.agent.agent', 'en', 'config.agent.agent.agent', 'Agent', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (765, 'config.agent.agent.download', 'en', 'config.agent.agent.download', 'Download', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (766, 'config.agent.agent.osType', 'en', 'config.agent.agent.osType', 'OS type', '', '2021-11-02 00:00:00', 1);
@@ -940,12 +938,11 @@ INSERT INTO `sys_i18n` VALUES (904, 'config.assetType.editAssetType', 'en', 'con
 INSERT INTO `sys_i18n` VALUES (905, 'config.assetType.sshCollectScript', 'en', 'config.assetType.sshCollectScript', 'SshCollectScript', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (906, 'config.assetType.pname', 'en', 'config.assetType.pname', 'Parent name', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (907, 'config.assetType.sshCollect', 'en', 'config.assetType.sshCollect', 'SshCollect', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (908, 'config.assetType.type', 'en', 'config.assetType.type', 'Asset Type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (909, 'config.assetType.snmpCollect', 'en', 'config.assetType.snmpCollect', 'SnmpCollect', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (910, 'config.assetType.authProtocol', 'en', 'config.assetType.authProtocol', 'AuthProtocol', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (911, 'config.assetType.assetType', 'en', 'config.assetType.assetType', 'Asset Type', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (912, 'config.assetType.vmh', 'en', 'config.assetType.vmh', 'VMH', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (913, 'config.assetType.vm', 'en', 'config.assetType.vm', 'VM', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (913, 'config.assetType.vm', 'en', 'config.assetType.vm', 'VM', '', '2021-11-29 03:42:29', 1);
 INSERT INTO `sys_i18n` VALUES (914, 'config.assetType.name', 'en', 'config.assetType.name', 'Name', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (915, 'config.assetType.snmpEnable', 'en', 'config.assetType.snmpEnable', 'SnmpEnable', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (916, 'config.assetType.createModel', 'en', 'config.assetType.createModel', 'New Type', '', '2021-11-02 00:00:00', 1);
@@ -959,7 +956,6 @@ INSERT INTO `sys_i18n` VALUES (923, 'config.system.notification.filePath', 'en',
 INSERT INTO `sys_i18n` VALUES (924, 'config.system.notification.update', 'en', 'config.system.notification.update', 'Update', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (925, 'config.system.notification.del', 'en', 'config.system.notification.del', 'Delete', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (926, 'config.system.notification.filePathReg', 'en', 'config.system.notification.filePathReg', 'Please enter the correct file path', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (927, 'config.system.notification.buildIn', 'en', 'config.system.notification.buildIn', 'Build in', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (928, 'config.system.notification.valid', 'en', 'config.system.notification.valid', 'Valid', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (929, 'config.system.notification.notification', 'en', 'config.system.notification.notification', 'Notification', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (930, 'config.system.notification.name', 'en', 'config.system.notification.name', 'Name', '', '2021-11-02 00:00:00', 1);
@@ -1035,7 +1031,7 @@ INSERT INTO `sys_i18n` VALUES (999, 'config.system.terminal.userTip', 'en', 'con
 INSERT INTO `sys_i18n` VALUES (1000, 'config.system.terminal.terminal', 'en', 'config.system.terminal.terminal', 'Terminal', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1001, 'config.system.terminal.timeout', 'en', 'config.system.terminal.timeout', 'Timeout', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1002, 'config.system.terminal.pinTip', 'en', 'config.system.terminal.pinTip', 'Ternet password prompt', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1003, 'config.system.basic.timezone', 'en', 'config.system.basic.timezone', 'Time zone', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1003, 'config.system.basic.timezone', 'en', 'config.system.basic.timezone', 'Time zone', '', '2021-11-22 03:09:22', 1);
 INSERT INTO `sys_i18n` VALUES (1004, 'config.system.basic.sysLogo', 'en', 'config.system.basic.sysLogo', 'System logo', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1005, 'config.system.basic.title', 'en', 'config.system.basic.title', 'Basic info', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1006, 'config.system.basic.second', 'en', 'config.system.basic.second', 'second', '', '2021-11-02 00:00:00', 1);
@@ -1311,7 +1307,6 @@ INSERT INTO `sys_i18n` VALUES (1275, 'dashboard.metricPreview.inputTip', 'en', '
 INSERT INTO `sys_i18n` VALUES (1276, 'dashboard.explore.wrapLines', 'en', 'dashboard.explore.wrapLines', 'Wrap lines', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1277, 'dashboard.explore.descending', 'en', 'dashboard.explore.descending', 'Descending', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1278, 'dashboard.edit', 'en', 'dashboard.edit', 'Edit', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1279, 'dashboard.Connect', 'en', 'dashboard.Connect', 'Connect', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1280, 'dashboard.refresh', 'en', 'dashboard.refresh', 'Refresh', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1281, 'dashboard.screen', 'en', 'dashboard.screen', 'Full screen', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1282, 'dashboard.duplicate', 'en', 'dashboard.duplicate', 'Duplicate', '', '2021-11-02 00:00:00', 1);
@@ -1503,7 +1498,6 @@ INSERT INTO `sys_i18n` VALUES (1467, 'guide.addProject', 'en', 'guide.addProject
 INSERT INTO `sys_i18n` VALUES (1468, 'guide.addChart', 'en', 'guide.addChart', 'Add chart', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1469, 'guide.asset', 'en', 'guide.asset', 'Asset', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1470, 'guide.dc', 'en', 'guide.dc', 'Datacenter', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1471, 'validate.mobile', 'en', 'validate.mobile', 'Invalid mobile', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1472, 'validate.telephone', 'en', 'validate.telephone', 'Phone number cannot be empty', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1473, 'validate.integer', 'en', 'validate.integer', 'Integer', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1474, 'validate.requiredIdc', 'en', 'validate.requiredIdc', 'dc is required', '', '2021-11-02 00:00:00', 1);
@@ -1933,7 +1927,6 @@ INSERT INTO `sys_i18n` VALUES (1897, 'alert.alertNum', 'zh', 'alert.alertNum', '
 INSERT INTO `sys_i18n` VALUES (1898, 'alert.P3Rule', 'zh', 'alert.P3Rule', 'P3: 轻微警报，需要处理，但不紧急', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1899, 'alert.rule', 'zh', 'alert.rule', '告警规则', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1900, 'alert.description', 'zh', 'alert.description', '描述', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1901, 'alert.alertList', 'zh', 'alert.alertList', '告警信息', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1902, 'alert.type', 'zh', 'alert.type', '类型', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1903, 'alert.notify', 'zh', 'alert.notify', '通知', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1904, 'alert.alert', 'zh', 'alert.alert', '告警', '', '2021-11-02 00:00:00', 1);
@@ -1958,7 +1951,6 @@ INSERT INTO `sys_i18n` VALUES (1922, 'alert.silence.time', 'zh', 'alert.silence.
 INSERT INTO `sys_i18n` VALUES (1923, 'alert.silence.timeError', 'zh', 'alert.silence.timeError', '结束时间必须大于开始时间', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1924, 'alert.silence.state', 'zh', 'alert.silence.state', '状态', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1925, 'alert.silence.asset', 'zh', 'alert.silence.asset', '资产', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1926, 'alert.alertConfig', 'zh', 'alert.alertConfig', '告警规则', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1927, 'alert.startAt', 'zh', 'alert.startAt', '开始时间', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1928, 'alert.severity', 'zh', 'alert.severity', '等级', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1929, 'alert.summary', 'zh', 'alert.summary', '概要', '', '2021-11-02 00:00:00', 1);
@@ -1974,7 +1966,7 @@ INSERT INTO `sys_i18n` VALUES (1938, 'alert.list.remark', 'zh', 'alert.list.rema
 INSERT INTO `sys_i18n` VALUES (1939, 'alert.list.type', 'zh', 'alert.list.type', '类别', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1940, 'alert.list.moduleAlert', 'zh', 'alert.list.moduleAlert', '模块告警', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1941, 'alert.list.labels', 'zh', 'alert.list.labels', '标签', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1942, 'alert.list.current', 'zh', 'alert.list.current', '当前页', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1942, 'alert.list.current', 'zh', 'alert.list.current', '当前页', '', '2021-11-24 02:39:20', 1);
 INSERT INTO `sys_i18n` VALUES (1943, 'alert.list.expired', 'zh', 'alert.list.expired', '已过期', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1944, 'alert.list.projectAlert', 'zh', 'alert.list.projectAlert', '系统告警', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1945, 'alert.list.deviceAlert', 'zh', 'alert.list.deviceAlert', '设备告警', '', '2021-11-02 00:00:00', 1);
@@ -2027,7 +2019,7 @@ INSERT INTO `sys_i18n` VALUES (1991, 'overall.batchEndpoint', 'zh', 'overall.bat
 INSERT INTO `sys_i18n` VALUES (1992, 'overall.parent', 'zh', 'overall.parent', '父级资产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1993, 'overall.twoDay', 'zh', 'overall.twoDay', '2 天', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1994, 'overall.batchAdd', 'zh', 'overall.batchAdd', '批量新增', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1995, 'overall.select', 'zh', 'overall.select', '选择', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1995, 'overall.select', 'zh', 'overall.select', '选择', '', '2021-11-10 09:36:40', 1);
 INSERT INTO `sys_i18n` VALUES (1996, 'overall.createdCredentials', 'zh', 'overall.createdCredentials', '新增凭证', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1997, 'overall.upload', 'zh', 'overall.upload', '上传', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1998, 'overall.unavailable', 'zh', 'overall.unavailable', '不可用', '', '2021-11-02 00:00:00', 1);
@@ -2038,7 +2030,6 @@ INSERT INTO `sys_i18n` VALUES (2002, 'overall.tempPrev', 'zh', 'overall.tempPrev
 INSERT INTO `sys_i18n` VALUES (2003, 'overall.createProject', 'zh', 'overall.createProject', '新增系统', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2004, 'overall.createPrometheusServer', 'zh', 'overall.createPrometheusServer', '新增Agent', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2005, 'overall.type', 'zh', 'overall.type', '类型', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2006, 'overall.clearAll', 'zh', 'overall.clearAll', '清空', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2007, 'overall.cover', 'zh', 'overall.cover', '覆盖', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2008, 'overall.children', 'zh', 'overall.children', '子级资产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2009, 'overall.moreOption', 'zh', 'overall.moreOption', '更多选项', '', '2021-11-02 00:00:00', 1);
@@ -2324,7 +2315,6 @@ INSERT INTO `sys_i18n` VALUES (2288, 'asset.assetState', 'zh', 'asset.assetState
 INSERT INTO `sys_i18n` VALUES (2289, 'asset.remark', 'zh', 'asset.remark', '描述', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2290, 'asset.principalTel', 'zh', 'asset.principalTel', '电话', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2291, 'asset.vendorModel', 'zh', 'asset.vendorModel', '厂商/型号', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2292, 'asset.manufacturer', 'zh', 'asset.manufacturer', '厂商', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2293, 'asset.principal', 'zh', 'asset.principal', '负责人', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2294, 'asset.reLoginPinIntroduce', 'zh', 'asset.reLoginPinIntroduce', '请指定密码提示以便RELOGIN登录过程可自动运行', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2295, 'asset.exporter', 'zh', 'asset.exporter', 'Exporter', '', '2021-11-02 00:00:00', 1);
@@ -2449,19 +2439,6 @@ INSERT INTO `sys_i18n` VALUES (2413, 'config.mib.credential.create', 'zh', 'conf
 INSERT INTO `sys_i18n` VALUES (2414, 'config.mib.credential.username', 'zh', 'config.mib.credential.username', '用户名', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2415, 'config.mib.vendor', 'zh', 'config.mib.vendor', '厂商', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2416, 'config.mib.noData', 'zh', 'config.mib.noData', '暂无数据', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2417, 'config.promServer.promServerList', 'zh', 'config.promServer.promServerList', 'Prometheus服务', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2418, 'config.promServer.editProm', 'zh', 'config.promServer.editProm', '修改Agent', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2419, 'config.promServer.promId', 'zh', 'config.promServer.promId', 'Prometheus服务ID', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2420, 'config.promServer.agent.agent', 'zh', 'config.promServer.agent.agent', '代理', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2421, 'config.promServer.agent.download', 'zh', 'config.promServer.agent.download', '下载', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2422, 'config.promServer.agent.osType', 'zh', 'config.promServer.agent.osType', 'OS 类型', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2423, 'config.promServer.agent.autoScript', 'zh', 'config.promServer.agent.autoScript', '自动安装脚本', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2424, 'config.promServer.agent.title', 'zh', 'config.promServer.agent.title', '下载代理', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2425, 'config.promServer.agent.type', 'zh', 'config.promServer.agent.type', '代理类型', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2426, 'config.promServer.checkTime', 'zh', 'config.promServer.checkTime', '检查时间', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2427, 'config.promServer.dataCenter', 'zh', 'config.promServer.dataCenter', '数据中心', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2428, 'config.promServer.createProm', 'zh', 'config.promServer.createProm', '新增Prometheus服务', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2429, 'config.promServer.type', 'zh', 'config.promServer.type', '类别', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2430, 'config.terminallog.upload', 'zh', 'config.terminallog.upload', '终端文件上传', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2431, 'config.terminallog.killErrorTip', 'zh', 'config.terminallog.killErrorTip', '踢出失败', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2432, 'config.terminallog.source', 'zh', 'config.terminallog.source', '源 IP', '', '2021-11-02 00:00:00', 1);
@@ -2481,7 +2458,6 @@ INSERT INTO `sys_i18n` VALUES (2445, 'config.terminallog.host', 'zh', 'config.te
 INSERT INTO `sys_i18n` VALUES (2446, 'config.terminallog.id', 'zh', 'config.terminallog.id', 'ID', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2447, 'config.terminallog.SessionId', 'zh', 'config.terminallog.SessionId', '会话 ID', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2448, 'config.terminallog.height', 'zh', 'config.terminallog.height', '窗口高度', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2449, 'config.terminallog.replay', 'zh', 'config.terminallog.replay', '回放', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2450, 'config.terminallog.fail', 'zh', 'config.terminallog.fail', '失败', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2451, 'config.terminallog.loginHost', 'zh', 'config.terminallog.loginHost', '登陆主机', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2452, 'config.terminallog.sourceIp', 'zh', 'config.terminallog.sourceIp', '源 IP', '', '2021-11-02 00:00:00', 1);
@@ -2747,7 +2723,7 @@ INSERT INTO `sys_i18n` VALUES (2711, 'config.model.type', 'zh', 'config.model.ty
 INSERT INTO `sys_i18n` VALUES (2712, 'config.model.brand', 'zh', 'config.model.brand', '品牌', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2713, 'config.menus.parent', 'zh', 'config.menus.parent', '上级菜单', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2714, 'config.menus.createMenu', 'zh', 'config.menus.createMenu', '新增菜单', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2715, 'config.menus.code', 'zh', 'config.menus.code', 'Code', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2715, 'config.menus.code', 'zh', 'config.menus.code', '国际化码', '', '2021-11-04 08:51:16', 1);
 INSERT INTO `sys_i18n` VALUES (2716, 'config.menus.mainMenu', 'zh', 'config.menus.mainMenu', '主菜单', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2717, 'config.menus.icon', 'zh', 'config.menus.icon', '图标', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2718, 'config.menus.orderNum', 'zh', 'config.menus.orderNum', '排序', '', '2021-11-02 00:00:00', 1);
@@ -2962,7 +2938,6 @@ INSERT INTO `sys_i18n` VALUES (2926, 'dashboard.panel.beforeThirtyMin', 'zh', 'd
 INSERT INTO `sys_i18n` VALUES (2927, 'dashboard.panel.beforeSevenDay', 'zh', 'dashboard.panel.beforeSevenDay', '之前7天', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2928, 'dashboard.panel.recOneDay', 'zh', 'dashboard.panel.recOneDay', '最近1日', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2929, 'dashboard.panel.curMonth', 'zh', 'dashboard.panel.curMonth', '本月', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2930, 'dashboard.panel.lastTwo', 'zh', 'dashboard.panel.lastTwo', '最近2天', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2931, 'dashboard.panel.beforeThreeHour', 'zh', 'dashboard.panel.beforeThreeHour', '之前3小时', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2932, 'dashboard.panel.createChartByTemp', 'zh', 'dashboard.panel.createChartByTemp', '通过模板添加图表', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2933, 'dashboard.panel.editChartTempTitle', 'zh', 'dashboard.panel.editChartTempTitle', '修改图表模板', '', '2021-11-02 00:00:00', 1);
@@ -3103,7 +3078,6 @@ INSERT INTO `sys_i18n` VALUES (3067, 'validate.domain', 'zh', 'validate.domain',
 INSERT INTO `sys_i18n` VALUES (3068, 'validate.host', 'zh', 'validate.host', '不合法的IP', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3069, 'validate.tel', 'zh', 'validate.tel', '不合法的电话号码', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3070, 'validate.onlyWord', 'zh', 'validate.onlyWord', '只可以输入a-z、A-Z、0-9、\"_\" 字符', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3071, 'validate.config.account', 'zh', 'validate.config.account', '{}', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3072, 'validate.email', 'zh', 'validate.email', '不合法的E-mail地址', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3073, 'validate.key', 'zh', 'validate.key', '不合法的值', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3074, '200', 'en', 'SUCCESS', 'success', '', '2021-11-02 00:00:00', 1);
@@ -3459,7 +3433,7 @@ INSERT INTO `sys_i18n` VALUES (3423, '371006', 'en', 'ASSET_FIELD_META_DISPLAY_I
 INSERT INTO `sys_i18n` VALUES (3424, '371007', 'en', 'ASSET_FIELD_META_TYPE_ISNULL', 'Asset field meta type can not be empty', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3425, '375008', 'en', 'ASSET_FIELD_META_TYPE_ERROR', 'Asset field type value out of range', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3426, '373009', 'en', 'ASSET_FIELD_META_KEY_ERROR', 'Asset field key value incorrect format', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3427, '372010', 'en', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', 'Asset field key value or name duplicate', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (3427, '372010', 'en', 'ASSET_FIELD_META_KEY_DUPLICATE', 'Asset field key value duplicate', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3428, '376011', 'en', 'ASSET_FIELD_META_NOT_FOUND', 'Asset field meta not found', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3429, '411000', 'en', 'ALERTMSG_IDS_ISNULL', 'Ids is required', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3430, '411001', 'en', 'ALERTMSG_STATE_ISNULL', 'State is required', '', '2021-11-02 00:00:00', 1);
@@ -4194,7 +4168,7 @@ INSERT INTO `sys_i18n` VALUES (4159, '371006', 'zh', 'ASSET_FIELD_META_DISPLAY_I
 INSERT INTO `sys_i18n` VALUES (4160, '371007', 'zh', 'ASSET_FIELD_META_TYPE_ISNULL', '资产属性元类型不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4161, '375008', 'zh', 'ASSET_FIELD_META_TYPE_ERROR', '资产属性类型值超出范围', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4162, '373009', 'zh', 'ASSET_FIELD_META_KEY_ERROR', '资产属性键值格式不正确', '', '2021-11-03 16:28:05', 1);
-INSERT INTO `sys_i18n` VALUES (4163, '372010', 'zh', 'ASSET_FIELD_META_KEY_NAME_DUPLICATE', '资产属性键值或名称重复', '', '2021-11-03 16:28:05', 1);
+INSERT INTO `sys_i18n` VALUES (4163, '372010', 'zh', 'ASSET_FIELD_META_KEY_DUPLICATE', '资产属性键值重复', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4164, '376011', 'zh', 'ASSET_FIELD_META_NOT_FOUND', '资产属性元不存在', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4165, '411000', 'zh', 'ALERTMSG_IDS_ISNULL', '告警信息ids不能为空', '', '2021-11-03 16:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4166, '411001', 'zh', 'ALERTMSG_STATE_ISNULL', '告警信息状态不能为空', '', '2021-11-03 16:28:05', 1);
@@ -4672,14 +4646,15 @@ INSERT INTO `sys_i18n` VALUES (4725, 'config.menus.createI18n', 'en', 'config.me
 INSERT INTO `sys_i18n` VALUES (4726, 'config.menus.editI18n', 'en', 'config.menus.editI18n', 'Edit I18N', '', '2021-11-04 06:01:48', 1);
 INSERT INTO `sys_i18n` VALUES (4727, 'config.menus.editI18n', 'zh', 'config.menus.editI18n', '编辑 I18N', '', '2021-11-04 06:02:09', 1);
 INSERT INTO `sys_i18n` VALUES (4728, 'config.menus.createI18n', 'zh', 'config.menus.createI18n', '新增 I18N', '', '2021-11-04 06:31:38', 1);
-INSERT INTO `sys_i18n` VALUES (4729, 'overall.alertRuleEvalLog', 'en', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-04 06:32:52', 1);
-INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-04 06:32:42', 1);
+INSERT INTO `sys_i18n` VALUES (4729, 'overall.alertRuleEvalLog', 'en', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-18 06:26:14', 1);
+INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-18 06:26:20', 1);
 INSERT INTO `sys_i18n` VALUES (4731, 'alert.alertRuleMessage', 'en', 'alert.alertRuleMessage', 'Message', '', '2021-11-04 06:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4732, 'alert.alertRuleMessage', 'zh', 'alert.alertRuleMessage', '信息', '', '2021-11-04 06:28:14', 1);
+INSERT INTO `sys_i18n` VALUES (4734, 'overall.active', 'en', 'overall.active', 'Active', '', '2021-11-05 02:18:08', 1);
 INSERT INTO `sys_i18n` VALUES (4735, 'overall.allData', 'en', 'overall.allData', 'All data', '', '2021-11-05 02:28:44', 1);
 INSERT INTO `sys_i18n` VALUES (4736, 'overall.selectRecords', 'en', 'overall.selectRecords', 'Select records', '', '2021-11-05 02:29:18', 1);
-INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current Page', '', '2021-11-05 02:29:42', 1);
-INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前页', '', '2021-11-05 02:30:52', 1);
+INSERT INTO `sys_i18n` VALUES (4737, 'overall.current', 'en', 'overall.current', 'Current Page', '', '2021-11-24 02:38:00', 1);
+INSERT INTO `sys_i18n` VALUES (4738, 'overall.current', 'zh', 'overall.current', '当前页', '', '2021-11-24 02:39:25', 1);
 INSERT INTO `sys_i18n` VALUES (4739, 'overall.selectRecords', 'zh', 'overall.selectRecords', '选择记录', '', '2021-11-05 02:31:13', 1);
 INSERT INTO `sys_i18n` VALUES (4740, 'overall.allData', 'zh', 'overall.allData', '所有数据', '', '2021-11-05 02:31:32', 1);
 INSERT INTO `sys_i18n` VALUES (4743, 'overall.more', 'en', 'overall.more', 'More', '', '2021-11-08 07:34:35', 1);
@@ -4732,5 +4707,16 @@ INSERT INTO `sys_i18n` VALUES (4791, 'config.system.basic.retryValue', 'en', 'co
 INSERT INTO `sys_i18n` VALUES (4792, 'config.system.basic.retryValue', 'zh', 'config.system.basic.retryValue', '连续登录超过设定次数，用户将在锁定时间内不允许登陆', '', '2021-11-22 04:46:34', 1);
 INSERT INTO `sys_i18n` VALUES (4793, 'talon连接超时', 'en', 'asset.connectionTimedOut', 'Connection timed out', '', '2021-11-25 10:20:02', 1);
 INSERT INTO `sys_i18n` VALUES (4794, 'talon连接超时', 'zh', 'asset.connectionTimedOut', '连接超时', '', '2021-11-25 10:20:17', 1);
+INSERT INTO `sys_i18n` VALUES (4795, 'config.assetType.authProtocol', 'zh', 'config.assetType.authProtocol', '授权协议', '', '2021-11-29 03:26:03', 1);
+INSERT INTO `sys_i18n` VALUES (4796, 'config.assetType.createModel', 'zh', 'config.assetType.createModel', '新增类型', '', '2021-11-29 03:28:04', 1);
+INSERT INTO `sys_i18n` VALUES (4797, 'config.assetType.snmpCollect', 'zh', 'config.assetType.snmpCollect', 'SNMP 收集', '', '2021-11-29 03:30:18', 1);
+INSERT INTO `sys_i18n` VALUES (4798, 'config.assetType.sshCollect', 'zh', 'config.assetType.sshCollect', 'SshCollect', '', '2021-11-29 03:33:15', 1);
+INSERT INTO `sys_i18n` VALUES (4799, 'config.assetType.sshcollectScript', 'zh', 'config.assetType.sshcollectScript', 'Sshcollect 脚本', '', '2021-11-29 03:32:12', 1);
+INSERT INTO `sys_i18n` VALUES (4800, 'login.upload', 'zh', 'login.upload', '上传许可证', '', '2021-11-29 03:33:56', 1);
+INSERT INTO `sys_i18n` VALUES (4801, 'tip.errorInRow', 'zh', 'tip.errorInRow', '行中有一些语法错误', '', '2021-11-29 03:35:17', 1);
+INSERT INTO `sys_i18n` VALUES (4802, 'validate.repeat', 'zh', 'validate.repeat', '重复', '', '2021-11-29 03:35:51', 1);
+INSERT INTO `sys_i18n` VALUES (4803, 'config.assetType.vm', 'zh', 'config.assetType.vm', 'VM', '', '2021-11-29 03:42:40', 1);
+INSERT INTO `sys_i18n` VALUES (4804, 'config.assetType.vmh', 'zh', 'config.assetType.vmh', 'VMH', '', '2021-11-29 03:42:59', 1);
+INSERT INTO `sys_i18n` VALUES (4805, 'config.assetType.snmpEnable', 'zh', 'config.assetType.snmpEnable', ' 启用 SNMP', '', '2021-11-29 06:36:11', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
