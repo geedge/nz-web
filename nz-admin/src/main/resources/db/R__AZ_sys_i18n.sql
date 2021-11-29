@@ -28,7 +28,7 @@ CREATE TABLE `sys_i18n`  (
   `uby` int(10) NOT NULL COMMENT '更新人',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_lang_code`(`lang`, `code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4806 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4810 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_i18n
@@ -4718,5 +4718,9 @@ INSERT INTO `sys_i18n` VALUES (4802, 'validate.repeat', 'zh', 'validate.repeat',
 INSERT INTO `sys_i18n` VALUES (4803, 'config.assetType.vm', 'zh', 'config.assetType.vm', 'VM', '', '2021-11-29 03:42:40', 1);
 INSERT INTO `sys_i18n` VALUES (4804, 'config.assetType.vmh', 'zh', 'config.assetType.vmh', 'VMH', '', '2021-11-29 03:42:59', 1);
 INSERT INTO `sys_i18n` VALUES (4805, 'config.assetType.snmpEnable', 'zh', 'config.assetType.snmpEnable', ' 启用 SNMP', '', '2021-11-29 06:36:11', 1);
+INSERT INTO `sys_i18n` VALUES (4806, '121071', 'en', 'CHART_DATASOURCE_ISNULL', 'Chart datasource can not be null', '', '2021-11-29 15:03:27', 1);
+INSERT INTO `sys_i18n` VALUES (4807, '121071', 'zh', 'CHART_DATASOURCE_ISNULL', '图表数据源不能为空', '', '2021-11-29 15:03:49', 1);
+INSERT INTO `sys_i18n` VALUES (4808, '121072', 'en', 'CHART_DATASOURCE_INVALIDE', 'Chart datasource must be metrics,logs,system,misc', '', '2021-11-29 15:05:45', 1);
+INSERT INTO `sys_i18n` VALUES (4809, '121072', 'zh', 'CHART_DATASOURCE_INVALIDE', '图表数据源类型必须为指标，日志，系统或其它', '', '2021-11-29 15:05:48', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

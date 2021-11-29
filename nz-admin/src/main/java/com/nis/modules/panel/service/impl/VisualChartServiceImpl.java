@@ -1,9 +1,25 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -12,8 +28,15 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.Tool.NzExpressionUtil;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetModel;
 import com.nis.modules.asset.service.AssetAssetService;
@@ -31,16 +54,11 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ObjectUtils;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("visualChartService")
 public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualChart> implements VisualChartService {
@@ -222,7 +240,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            }
 	            break;
 	        }
-	        // singleStat 类型
+	        // stat 类型
 	        case Constant.CHART_SINGLESTAT_TYPE: {
 	            ValidateUtils.is(param).notNull(RCode.CHART_SINGLESTATPARAM_ISNULL)
 	                    .and(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
@@ -234,15 +252,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
 	                throw new NZException(RCode.CHART_PARAMSINGLESTAT_INVALIDE);
 	            }
-	
 	            chartElementService.validateElements(elements);
 	            break;
 	        }
-	        // alertList diagram 类型不需要校验 elements
-	        case Constant.CHART_ALERTLIST_TYPE:
-		    case Constant.CHART_DIAGRAM_TYPE:{
-		    	break;
-		    }
 	        // group 类型不需要校验 elements
 	        case Constant.CHART_GROUP_TYPE:{
 	        	// 当chart为group时 不允许name重复  会影响chart批量导入
@@ -259,13 +271,9 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            if (ToolUtil.isEmpty(text)) throw new NZException(RCode.CHART_PARAMTEXT_ISNULL);
 	            break;
 	        }
-	        default: {
-	            // 除 url alertList diagram 类型外，其他类型都需校验 elements
-	            ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
-	            chartElementService.validateElements(elements);
-	        }
 	    }
 	
+	    
 	    // 4. 校验 unit 是否合法
 	    Integer unit = chart.getUnit();
 	    if (unit != null) {
@@ -284,6 +292,20 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	    // 6. 当前操作人信息赋值
 	    Long userId = ShiroUtils.getUserId();
 	    chart.setUpdateBy(userId.intValue());
+	    
+	    // 7. 校验datasource是否为空 
+	    if(StrUtil.isBlank(chart.getDatasource())) {
+	    	throw new NZException(RCode.CHART_DATASOURCE_ISNULL);
+	    }else {
+	    	//  校验是否为内置类型
+	    	sysDictService.checkSysDicValue(Constant.DICT_CHART_DATASOURCE, chart.getDatasource(), RCode.CHART_DATASOURCE_INVALIDE);
+	    }
+	    
+	    // 8. 校验element参数 仅datasource类型为 logs metrics需要进行校验
+	    if(chart.getDatasource().equals(Constant.ChartDatasourceType.METRICS)||chart.getDatasource().equals(Constant.ChartDatasourceType.LOGS)){
+            ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
+            chartElementService.validateElements(elements);
+	    }
 	}
 
 	/**

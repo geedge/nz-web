@@ -78,4 +78,6 @@ public class VisualChart {
     
     @TableField(exist = false)
     private String varName;
+    
+    private String datasource;
 }

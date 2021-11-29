@@ -618,7 +618,7 @@ public class Constant {
 
 	public enum PanelType {
 		DASHBOARD("dashboard"), ASSET("asset"), PROJECT("project"), MODULE("module"), ENDPOINT("endpoint"),
-		MODEL("model"), TEMPLATE("template");
+		MODEL("model"), TEMPLATE("template"),OVERVIEW("overview");
 
 		private String value;
 
@@ -971,7 +971,7 @@ public class Constant {
 	public static final String CHART_URL_TYPE = "url";
 
 	// 图表 singleStat 类型
-	public static final String CHART_SINGLESTAT_TYPE = "singleStat";
+	public static final String CHART_SINGLESTAT_TYPE = "stat";
 
 	// 图表singleStat 类型 paramkey名称
 	public static final String CHART_SINGLESTAT_PARAMkEY = "statistics";
@@ -991,9 +991,6 @@ public class Constant {
 	// 图表类型为line bar stackArea
 	public static final String CHART_DEFAULT_PARAMkEY = "threshold";
 
-	// 图表类型为alertList
-	public static final String CHART_ALERTLIST_TYPE = "alertList";
-
 	// 图表类型为 diagram
 	public static final String CHART_DIAGRAM_TYPE = "diagram";
 
@@ -1005,7 +1002,14 @@ public class Constant {
 
 	// 图表类型为 endpointInfo
 	public static final String CHART_ENDPOINTINFO_TYPE = "endpointInfo";
-
+	
+	// 图表类型为 endpointInfo
+	public static final String CHART_TREEMAP_TYPE = "treemap";
+	// 图表类型为 endpointInfo
+	public static final String CHART_MAP_TYPE = "map";
+	// 图表类型为 endpointInfo
+	public static final String CHART_TOPOLOGY_TYPE = "topology";
+	
 	public static final String CHART_GROUP_TYPE = "group";
 
 	public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
@@ -1103,4 +1107,24 @@ public class Constant {
 			.put("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS")
 			.put("Access-Control-Max-Age", "18000")
 			.put("Access-Control-Allow-Origin", "*").build();
+	
+	public static final String DICT_CHART_DATASOURCE = "chartDatasource";
+	
+	public enum ChartDatasourceType {
+		METRICS("metrics"),LOGS("logs"),SYSTEM("system"),MISC("misc");
+
+		private String value;
+
+		ChartDatasourceType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
+	}
 }

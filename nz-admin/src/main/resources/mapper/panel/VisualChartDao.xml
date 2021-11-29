@@ -25,6 +25,7 @@
         <result property="varId" column="var_id"/>
         <result property="varName" column="var_name"/>
         <result property="chartNums" column="chartNums"></result>
+        <result property="datasource" column="datasource"/>
         <association property="panel" javaType="com.nis.modules.panel.entity.VisualPanel" columnPrefix="panel_">
         	<id property="id" column="id"/>
             <result property="name" column="name"/>

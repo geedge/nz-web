@@ -21,7 +21,9 @@ import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
@@ -65,6 +67,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 	@Autowired
     private TransactionDefinition transactionDefinition;
     
+	@Autowired
+    private SysDictService sysDictService;
+	
     @Override
     public VisualPanel queryInfo(Integer id) {
     	return this.baseMapper.queryInfo(id);
@@ -619,8 +624,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
             row.createCell(9).setCellValue(chart.getRemark());
+            row.createCell(10).setCellValue(chart.getDatasource());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
         }
     }
     
@@ -694,7 +700,11 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         	VisualPanel endPanel = dashboardTypePanelList.stream().max(Comparator.comparingInt(VisualPanel::getWeight)).get();
             panelMaxWeight = endPanel.getWeight();
         }
-
+        
+        // 查询 chart datasource类型防止频繁查库
+        List<SysDictEntity> chartDatasources = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_DATASOURCE));
+        List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+        
         int successNum = 0;
         for (Row row : rows) {
             if (row == null) continue;
@@ -804,15 +814,26 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
+            String datasource = ExcelUtils.getCellValue(row.getCell(10));
+            if (StringUtils.isEmpty(datasource)) {
+                saveFlag = typeFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_ISNULL.getMsg());
+            } else {
+                if (!datasources.contains(datasource)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_INVALIDE.getMsg());
+                }
+            }
             String elements = ExcelUtils.getCellValue(row.getCell(8));
             if(typeFlag){
-                String msg = this.validateChartElementForImport(type, elements);
+                String msg = this.validateChartElementForImport(datasource, elements);
                 if(StringUtils.isNotEmpty(msg)){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
             String description = ExcelUtils.getCellValue(row.getCell(9));
+            
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -831,6 +852,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                     chart.setGroupId(groupId);
                     chart.setRemark(description);
+                    chart.setDatasource(datasource);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -863,9 +885,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return successNum;
     }
     
-    private String validateChartElementForImport(String type, String elements) {
-        // elemrnt 只有 alert  , diagram 和 url , text group 可以没有，其他必须有
-        if (!StrUtil.equals(Constant.CHART_ALERTLIST_TYPE, type) && !StrUtil.equals(Constant.CHART_URL_TYPE, type) && !StrUtil.equals(Constant.CHART_TEXT_TYPE, type) && !StrUtil.equals(Constant.CHART_GROUP_TYPE, type) && !StrUtil.equals(Constant.CHART_DIAGRAM_TYPE, type)) {
+    private String validateChartElementForImport(String datasource,String elements) {
+        // datasource类型为metrics logs的需要校验elements
+        if (datasource.equals(Constant.ChartDatasourceType.METRICS)||datasource.equals(Constant.ChartDatasourceType.LOGS)) {
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
@@ -1064,6 +1086,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         VisualPanel panel = this.getOne(new QueryWrapper<VisualPanel>().lambda().eq(VisualPanel::getType, panelType).eq(VisualPanel::getLink, linkId));
         if (panel == null && !templateFlag) throw new NZException(RCode.PANEL_NOT_EXIST);
 
+        // 查询 chart datasource类型防止频繁查库
+        List<SysDictEntity> chartDatasources = sysDictService.list(new QueryWrapper<SysDictEntity>().lambda().eq(SysDictEntity::getType, Constant.DICT_CHART_DATASOURCE));
+        List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
+        
         int successNum = 0;
         for (Row row : rows) {
             if (row == null) continue;
@@ -1197,15 +1223,28 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
+            
+            String datasource = ExcelUtils.getCellValue(row.getCell(10));
+            if (StringUtils.isEmpty(datasource)) {
+            	saveFlag = typeFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_ISNULL.getMsg());
+            } else {
+                if (!datasources.contains(datasource)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_INVALIDE.getMsg());
+                }
+            }
+            
             String elements = ExcelUtils.getCellValue(row.getCell(8));
             if (typeFlag) {
-                String msg = this.validateChartElementForImport(type, elements);
+                String msg = this.validateChartElementForImport(datasource, elements);
                 if (StringUtils.isNotEmpty(msg)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
             String description = ExcelUtils.getCellValue(row.getCell(9));
+            
             if (saveFlag) {
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -1227,6 +1266,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setVarType(varTypeAndValMap.get(varType));
                     chart.setVarId(linkId);
                     chart.setRemark(description);
+                    chart.setDatasource(datasource);
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1329,8 +1369,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
             row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
             row.createCell(9).setCellValue(chart.getRemark());
+            row.createCell(10).setCellValue(chart.getDatasource());
             // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 9);
+            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
         }
     }
     

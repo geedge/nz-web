@@ -110,7 +110,9 @@ public enum RCode {
     CHART_HEIGHT_INVALIDE(123068, "Chart height should be between 1 and 12"),
     CHART_VARTYPE_ERROR(123069,"Chart var type must be Asset or Endpoint"),
     CHART_NAME_DUPLICATE_NOTLINK(122070, "Chart name is duplicated and cannot be linked"),
-
+    CHART_DATASOURCE_ISNULL(121071,"Chart datasource can not be null"),
+    CHART_DATASOURCE_INVALIDE(121072,"Chart datasource must be metrics,logs,system,misc"),
+    
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
     EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),
