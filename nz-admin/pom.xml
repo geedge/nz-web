@@ -22,6 +22,9 @@
 		<commons-lang3.version>3.3.2</commons-lang3.version>
 		<apache.poi.version>3.14</apache.poi.version>
 		<jackson.version>2.10.1</jackson.version>
+		<!-- 默认：release，可选：debug，release -->
+		<compileType>release</compileType>
+		<resource.delimiter>#</resource.delimiter>
 	</properties>
 
 	<dependencies>
@@ -263,6 +266,7 @@
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
 				<excludes>
 					<exclude>**/license.key</exclude>
 					<exclude>**/*agent*.rpm</exclude>
@@ -333,13 +337,12 @@
 						<phase>package</phase>
 
 						<configuration>
-<!--							<password>111111</password>-->
-<!--							<includes>-->
-<!--								<include>cn/nis/ntc/**</include>-->
-<!--							</includes>-->
-<!--							<excludes>-->
-<!--								<exclude>cn/nis/ntc/api/config/Swagger2Configuration.class</exclude>-->
-<!--							</excludes>-->
+							<password>vkcyxJVwUu1pTuGDLiF4j8J8cyYsPZ4</password>
+							<excludes>
+								<exclude>/db/*</exclude>
+								<exclude>/static/**/*</exclude>
+								<exclude>/install/*</exclude>
+							</excludes>
 						</configuration>
 					</execution>
 				</executions>

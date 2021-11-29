@@ -30,7 +30,7 @@ public interface MonitorEndpointDao extends BaseMapper<MonitorEndpoint> {
      * 目前获取的是启用状态的 endpoint
      * @return
      */
-    List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent();
+    List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent(@Param("version") Integer version);
     
     List<Map<String,Object>> queryEndpointGroupBy(@Param("column") String column,@Param("params") Map<String, Object> params);
     

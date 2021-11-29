@@ -134,3 +134,5 @@ management:
   metrics:
     tags:
       application: nz-web # prometheus application tag ，标志一个应用
+compile: 
+  type: #compileType#

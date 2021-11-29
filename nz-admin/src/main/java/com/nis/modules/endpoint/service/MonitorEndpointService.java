@@ -61,7 +61,7 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
      * 目前获取的是启用状态的 endpoint
      * @return
      */
-    List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent();
+    List<MonitorEndpoint> getEnableLogsEndpointInfoListForAgent(Integer version);
     
     Map<String,List> queryEndpointGroupBy(Map<String, Object> params);
 }
