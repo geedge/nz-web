@@ -1,6 +1,7 @@
 package com.nis.modules.sys.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -22,4 +23,7 @@ public class SysComponent {
 	private String protocol;
 	
 	private Long utime;
+	
+	@TableField(exist = false)
+	private Integer status;
 }

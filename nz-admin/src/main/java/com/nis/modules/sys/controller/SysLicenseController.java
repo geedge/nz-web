@@ -1,25 +1,26 @@
 package com.nis.modules.sys.controller;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.PrivateKey;
-import java.util.TimeZone;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
-import cn.hutool.core.exceptions.UtilException;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
@@ -30,161 +31,189 @@ import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.TypeEnum;
-import com.nis.modules.sys.entity.LicenseEntity;
-import com.nis.modules.sys.entity.LicenseEntity.Signature;
+import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.LicenseService;
+import com.nis.modules.sys.service.SysComponentService;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
+import Aladdin.HaspStatus;
 import cn.hutool.log.Log;
 
 @RestController
 @RequestMapping("/sys/license")
+@SuppressWarnings("all")
 public class SysLicenseController extends AbstractController {
 	private static final Log log = Log.get();
-	
+
 	@Autowired
 	private LicenseService licenseService;
-	
-	/**
-	 * 私钥存储路径，gen生成证书时使用
-	 */
-	@Value("${license.privatekey.path:license/license.key}")
-	private String prikeyPath;
-	
-	@Value("${license.fileName:license.xml}")
-	private String licenseFileName;
-	
+	@Autowired
+	private SysComponentService sysComponentService;
+
+	@Value("${vendorCode}")
+	private String vendorCode;
+
+	@Value("${licenseTimeout:30000}")
+	private Integer licenseTimeout;
+
+	@Autowired
+	private RestTemplate restTemplate;
+
 	/**
 	 * 获取license
 	 */
 	@RequestMapping
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.LICENSE)
-	public R getLicense(){
-		LicenseEntity licenseEntity = licenseService.getLicenseEntity();
-		return R.ok().putData("license", licenseEntity);
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
+	public R getLicense() {
+		String v2c = licenseService.getLicense();
+		return R.ok().putData("license", v2c);
 	}
-	
+
+	@GetMapping("/token")
+	public R getLicenseToken(@RequestParam(required = false) String scope, HttpServletResponse response)
+			throws IOException {
+		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
+			List<SysComponent> comList = sysComponentService.list();
+			List<CompletableFuture<Map<String, Object>>> futureList = Tool.ListUtil.list(false);
+			for (int i = 0, j = comList.size(); i < j; i++) {
+				SysComponent com = comList.get(i);
+				String host = com.getProtocol() + "://" + com.getHost() + ":" + com.getPort();
+				CompletableFuture<Map<String, Object>> future = CompletableFuture.supplyAsync(() -> {
+					String url = String.format("%s%s?%s", host, "/sys/license/token", "scope=local");
+					ResponseEntity<Map> entity = restTemplate.getForEntity(url, Map.class);
+					log.info("host: {},result: {}", host, Tool.JSONUtil.toJsonStr(entity));
+					return entity.getBody();
+				});
+				futureList.add(future);
+			}
+			// 等待所有结果返回
+			try {
+				CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
+						.get(licenseTimeout, TimeUnit.MILLISECONDS);
+			} catch (Exception e) {
+				log.warn(e);
+			}
+			Document document = Tool.XmlUtil.parseXml("<license></license>");
+			Element rootEle = document.getDocumentElement();
+			futureList.forEach(future -> {
+				Map<String, Object> result = future.getNow(null);
+				if (Tool.MapUtil.isNotEmpty(result)) {
+					Integer code = Tool.MapUtil.get(result, "code", Integer.class);
+					String data = Tool.MapUtil.get(result, "data", String.class);
+					if (Tool.NumberUtil.equals(code, 200)) {
+						Document c2v = Tool.XmlUtil.parseXml(data);
+						Node importNode = document.importNode(c2v.getDocumentElement(), true);
+						rootEle.appendChild(importNode);
+					}
+				}
+			});
+			// 多个 c2v组织成一个 license 文件
+			String license = Tool.XmlUtil.toStr(document);
+			Tool.ResponseUtil.downloadFile(response, "license-request.txt",
+					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
+			return null;
+		} else {
+			String c2v = Tool.HaspUtil.readC2vFromKey(vendorCode);
+			return R.ok().put("data", c2v);
+		}
+	}
+
 	/**
 	 * 获取license state
 	 */
-	@RequestMapping("/state")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.LICENSE)
-	public R getLicenseState(){
-		//获取本机token
-		String token = licenseService.getLicenseToken();
-		R result = R.ok();
-		//读取sys_config表中license
-		try {
-			LicenseEntity licenseEntity = licenseService.getAndSetLicenseCache();
-			licenseService.verify(licenseEntity);
-		} catch (NZException e) {
-			int code = e.getCode();
-			String msg = e.getMsg();
-			result = R.error(code, msg);
+
+	@GetMapping("/status")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
+	public R getLicenseState(@RequestParam(required = false) String scope) {
+
+		if (Tool.StrUtil.equalsIgnoreCase("all", scope)) {
+			List<SysComponent> comList = sysComponentService.list();
+			List<CompletableFuture<SysComponent>> futureList = Tool.ListUtil.list(false);
+			for (int i = 0, j = comList.size(); i < j; i++) {
+				SysComponent com = comList.get(i);
+				String host = com.getProtocol() + "://" + com.getHost() + ":" + com.getPort();
+				CompletableFuture<SysComponent> future = CompletableFuture.supplyAsync(() -> {
+					String url = String.format("%s%s?%s", host, "/sys/license/status", "scope=local");
+					ResponseEntity<Map> entity = restTemplate.getForEntity(url, Map.class);
+					log.info("license status: {}", Tool.JSONUtil.toJsonStr(entity));
+					Map data = Tool.MapUtil.get(entity.getBody(), "data", Map.class);
+					Integer status = Tool.MapUtil.get(data, "status", Integer.class);
+					com.setStatus(status == null ? -1 : status);
+					return com;
+				});
+				futureList.add(future);
+			}
+			// 等待所有结果返回
+			try {
+				CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
+						.get(licenseTimeout, TimeUnit.MILLISECONDS);
+			} catch (Exception e) {
+				log.warn(e);
+			}
+			return R.ok().putData("list", comList);
 		}
-		result.put("token", token);
-		return result;
+
+		Integer status = licenseService.verify();
+		return R.ok().putData("status", status);
 	}
 
 	/**
-	 * @throws IOException 
-	 * 上传license
-	 * @throws  
+	 * @throws IOException 上传license @throws
 	 */
 	@PostMapping("/upload")
-	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.LICENSE)
-	public R uploadLicense(@RequestParam("file") MultipartFile file) throws IOException {
-		ValidateUtils.is(file).notNull(RCode.LICENSE_FILE_IS_NULL);
-		byte[] bytes = file.getBytes();
-		//获取文件内容
-		String xml = null;
-		ByteArrayInputStream stream = null;
-		try {
-			stream = Tool.IoUtil.toStream(bytes);
-			Document document = Tool.XmlUtil.readXML(stream);
-			xml = Tool.XmlUtil.toStr(document, Constant.DEFAULT_CHARTSET_NAME, false);
-		} catch (UtilException e) {
-			logger.error("upload License error", e);
-			throw new NZException(RCode.ERROR);
-		} finally {
-			if(stream != null){
-				IOUtils.closeQuietly(stream);
+	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.LICENSE)
+	public R uploadLicense(@RequestParam(name = "file", required = false) MultipartFile file,
+			@RequestParam(required = false) String scope) throws IOException {
+		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
+			// 保存 license 到 数据库
+			ValidateUtils.is(file).notNull(RCode.LICENSE_FILE_IS_NULL);
+			byte[] bytes = file.getBytes();
+			// 更新证书
+			licenseService.uploadLicense(Tool.StrUtil.str(bytes, "utf-8"));
+			// 调用所有 component 接口 update
+			Map<String, R> result = Tool.MapUtil.newHashMap();
+			List<SysComponent> comList = sysComponentService.list();
+			List<CompletableFuture<SysComponent>> futureList = Tool.ListUtil.list(false);
+			for (int i = 0, j = comList.size(); i < j; i++) {
+				SysComponent com = comList.get(i);
+				String host = com.getProtocol() + "://" + com.getHost() + ":" + com.getPort();
+				CompletableFuture<SysComponent> future = CompletableFuture.supplyAsync(() -> {
+					String url = String.format("%s%s?%s", host, "/sys/license/upload", "scope=local");
+					ResponseEntity<R> entity = restTemplate.postForEntity(url, null, R.class);
+					log.info("license status: {}", Tool.JSONUtil.toJsonStr(entity));
+					Map data = Tool.MapUtil.get(entity.getBody(), "data", Map.class);
+					Integer status = Tool.MapUtil.get(data, "status", Integer.class);
+					com.setStatus(status == null ? -1 : status);
+					return com;
+				});
+				futureList.add(future);
 			}
+			// 等待所有结果返回
+			try {
+				CompletableFuture.allOf((CompletableFuture<?>[]) futureList.toArray(new CompletableFuture[0]))
+						.get(licenseTimeout, TimeUnit.MILLISECONDS);
+			} catch (Exception e) {
+				log.warn(e);
+			}
+			return R.ok().putData("list", comList);
+		} else {
+			boolean installLicense = licenseService.installLicense();
+			if (installLicense) {
+				return R.ok().putData("status", HaspStatus.HASP_STATUS_OK);
+			}
+			return R.error(RCode.LICENSE_ERROR_CODE.setParam(999));
 		}
-
-		//将内容转换为 javabean
-		LicenseEntity licenseEntity = Tool.LicenseUtil.xmlToLicenseBean(xml);
-		//校验证书内容是否缺失
-		ValidateUtils.is(licenseEntity).notNull(RCode.LICENSE_FILE_IS_EMPTY)
-			.and(licenseEntity.getSignature()).notNull(RCode.LICENSE_FILE_INVALID)
-			.and(licenseEntity.getSignature().getSignatureValue()).notNull(RCode.LICENSE_FILE_INVALID);
-		boolean verifyLicense = Tool.LicenseUtil.verifyLicenseSign(licenseEntity, licenseService.getPublicKey(), licenseService.getSignAlgorithm());
-		if(!verifyLicense) {
-			throw new NZException(RCode.LICENSE_FILE_INVALID);
-		}
-		//校验证书是否有效
-		licenseService.verify(licenseEntity);
-		//更新证书
-		licenseService.uploadLicenseEntity(licenseEntity);
-		return R.ok();
 	}
 
 	/**
-	 * 下载license
-	 * @throws IOException 
-	 * @throws UnsupportedEncodingException 
-	 * @throws  
+	 * 下载license @throws IOException @throws UnsupportedEncodingException @throws
 	 */
-	@RequestMapping("/download")
-	public void download(HttpServletResponse response) throws  IOException{
-		LicenseEntity licenseEntity = licenseService.getLicenseEntity();
-		if(licenseEntity == null) {
+	@GetMapping("/download")
+	public void download(HttpServletResponse response) throws IOException {
+		String license = licenseService.getLicense();
+		if (license == null) {
 			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
-		String licenseXml = Tool.LicenseUtil.licenseBeanToXml(licenseEntity, true);
-		Tool.ResponseUtil.downloadFile(response, licenseFileName,licenseXml.getBytes(Constant.DEFAULT_CHARTSET_NAME));
-	}
-
-	/**
-	 * 生成 license
-	 * @throws IOException 
-	*/ 
-	@PostMapping("/gen")
-	public void genLicense(@RequestBody LicenseEntity license,HttpServletResponse response){
-		//验证参数是否为空
-		ValidateUtils.is(license).notNull(RCode.LICENSE_PARAM_IS_NULL);
-		//计算摘要和签名
-		File file = Tool.FileUtil.newFile(prikeyPath);
-		log.debug("pk path : {} ,exist : {}", file.getAbsolutePath(),file.exists());
-		InputStream inputStream = null;
-		try {
-			inputStream = file.exists() ? Tool.FileUtil.getInputStream(file) : this.getClass().getResourceAsStream(prikeyPath);
-			DateTime now = Tool.DateUtil.date().setTimeZone(TimeZone.getTimeZone("UTC"));
-			license.setGenDate(Tool.DateUtil.format(now, DatePattern.UTC_PATTERN));
-			//算config
-			String digestLicense = license.genLicenseDigest();
-			PrivateKey privateKey = Tool.PemUtil.readPemPrivateKey(inputStream);
-			//使用私钥对摘要签名
-			String sign = Tool.LicenseUtil.genSign(license, privateKey, licenseService.getSignAlgorithm());
-			Signature signature = license.newSignature();
-			signature.setDigestValue(digestLicense);
-			signature.setSignatureValue(sign);
-			//保存签名信息
-			license.setSignature(signature);
-
-			//转为xml
-			String xmlStr = Tool.LicenseUtil.licenseBeanToXml(license, true);
-			//下载文件
-			Tool.ResponseUtil.downloadFile(response, licenseFileName, Tool.StrUtil.bytes(xmlStr,Constant.DEFAULT_CHARTSET_NAME));
-		} catch (IOException e) {
-			logger.error("generate License error", e);
-			throw new NZException(RCode.ERROR);
-		} finally {
-			if(inputStream != null){
-				IOUtils.closeQuietly(inputStream);
-			}
-		}
+		Tool.ResponseUtil.downloadFile(response, "license.txt", license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 	}
 
 }

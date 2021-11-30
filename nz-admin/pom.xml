@@ -259,6 +259,11 @@
 			<artifactId>totp</artifactId>
 			<version>1.0</version>
 		</dependency>
+		<dependency>
+			<groupId>net.geedge</groupId>
+			<artifactId>hasp-srm-api</artifactId>
+			<version>1.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

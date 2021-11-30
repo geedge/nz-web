@@ -108,6 +108,19 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigDao, SysConfigEnt
 	}
 
 	@Override
+	public boolean saveOrUpdate(SysConfigEntity entity) {
+		// TODO Auto-generated method stub
+		boolean b = super.saveOrUpdate(entity);
+		if(b) {
+			sysConfigRedis.saveOrUpdate(entity);
+		}else {
+			sysConfigRedis.delete(entity.getParamKey());
+		}
+		return b;
+	}
+	
+	
+	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void updateValueByKey(String key, String value) {
 		baseMapper.updateValueByKey(key, value);

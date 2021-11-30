@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
@@ -42,9 +43,15 @@ public class SetupRunner implements CommandLineRunner{
 
     @Autowired
     SysUserService sysUserService;
+    
+    @Autowired
+    LicenseService licenseService;
 	
 	@Override
 	public void run(String... args) throws Exception {
+		//启动时加载证书
+		boolean lr = licenseService.installLicense();
+		log.info("license install {}", lr);
 		if( inited != 1) {
 			log.debug(" inited = {}	,skip init setup", inited);
 			return ;

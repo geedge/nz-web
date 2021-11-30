@@ -872,6 +872,9 @@ public enum RCode {
 	LICENSE_MAXIMUMASSETS_INVALID(715003, "The number of assets exceeds the maximumAssets"),
 	LICENSE_VERSION_INVALID(715004, "The version is not valid"),
 
+	LICENSE_ERROR_CODE(715004,"License error,code:{0}"),
+	
+	
     ERROR(999, "error"); //通用错误/未知错误
 	
 	

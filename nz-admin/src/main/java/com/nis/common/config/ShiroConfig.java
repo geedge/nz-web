@@ -4,17 +4,21 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.servlet.Filter;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
+import org.apache.shiro.web.filter.AccessControlFilter;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.crazycake.shiro.RedisCacheManager;
 import org.crazycake.shiro.RedisManager;
 import org.crazycake.shiro.RedisSessionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -23,23 +27,26 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.interceptor.LicenseShiroFilter;
-import com.nis.common.interceptor.MetricsShiroFilter;
 import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.metric.dto.NezhaMetrics;
 import com.nis.modules.sys.dao.SysApiKeyDao;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.MySessionManager;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.modules.sys.shiro.UserRealm;
 
+import Aladdin.HaspStatus;
 import cn.hutool.core.util.StrUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * Shiro的配置文件
@@ -64,12 +71,18 @@ public class ShiroConfig {
 	@Autowired
 	private SysApiKeyDao sysApiKeyDao;
 	
+	@Value("${compileType:release}")
+	private String comileType;
+	@Value("${vendorCode}")
+	private String vendorCode;
 	@Autowired
-	private LicenseShiroFilter licenseFilter;
+    private NezhaMetrics nezhaMetrics;
 
+    @Autowired
+    private MeterRegistry meterRegistry;
 	@Autowired
-	private MetricsShiroFilter metricsShiroFilter;
-
+	private LicenseService licenseService;
+	
 	@Bean("shiroFilter")
 	public ShiroFilterFactoryBean shiroFilter(SecurityManager securityManager) {
 		ShiroFilterFactoryBean shiroFilter = new ShiroFilterFactoryBean();
@@ -78,45 +91,49 @@ public class ShiroConfig {
 		shiroFilter.setUnauthorizedUrl("/");
 
 		Map<String, String> filterMap = new LinkedHashMap<>();
-		filterMap.put("/sys/i18n/lang", "anon");
-		filterMap.put("/metrics", "anon");
-		filterMap.put("/prometheus", "anon");
-		// filterMap.put("/prom/**", "anon");
-		filterMap.put("/swagger/**", "anon");
-		filterMap.put("/v2/api-docs", "anon");
-		filterMap.put("/swagger-ui.html", "anon");
-		filterMap.put("/webjars/**", "anon");
-		filterMap.put("/swagger-resources/**", "anon");
-		filterMap.put("/static/**", "anon");
-		filterMap.put("/nezha/**", "anon");
+		
+		
+		/*
+		 * 静态资源 
+		 */
 		filterMap.put("/", "anon");
-		filterMap.put("/config.json", "anon");
-		filterMap.put("/index.html", "anon");
-		filterMap.put("/login.html", "anon");
-		filterMap.put("/sys/login", "anon");
-		filterMap.put("/mfa/**", "anon");
-		filterMap.put("/healthy", "anon");
-		filterMap.put("/buildInfo", "anon");
-		filterMap.put("/favicon.ico", "anon");
-		filterMap.put("/captcha.jpg", "anon");
-		filterMap.put("/api/**", "anon");
-		filterMap.put("/logs/loki/**", "anon");
-		filterMap.put("/terminal.ws", "anon");
-		filterMap.put("/terminal/monitor.ws", "anon");
+		filterMap.put("/static/**", "anon");
+		filterMap.put("/**/*.html", "anon");
+		filterMap.put("/**/*.js", "anon");
+		filterMap.put("/**/*.png", "anon");
+		filterMap.put("/**/*.jpg", "anon");
+		filterMap.put("/**/*.css", "anon");
+		filterMap.put("/**/*.ico", "anon");
+		
+		/*
+		 * 开放权限接口
+		 */
+		filterMap.put("/sys/login", "anon"); // 登录接口
+		filterMap.put("/api/**", "anon"); // 告警消息接收 接口
+		filterMap.put("/sys/i18n/lang", "anon"); //国际化文件获取接口
+		filterMap.put("/mfa/**", "anon"); // mfa 认证接口
+		filterMap.put("/healthy", "anon"); //健康检查接口
+		filterMap.put("/buildInfo", "anon"); //编译信息查询接口
+		filterMap.put("/terminal.ws", "anon"); //terminal websocket 接口
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
-		filterMap.put("/setup/**", "anon");// license 相关接口
-		filterMap.put("/actuator/prometheus", "metricsFilter");
-		filterMap.put("/**", "tokenCheckFilter");
-		filterMap.put("/sys/appearance","anon");
-		filterMap.put("/**", "licenseFilter");
+		filterMap.put("/setup/**", "anon");// 程序配置 相关接口
+		filterMap.put("/sys/appearance","anon"); //系统外观配置查询接口
+		
+		/*
+		 * 自定义 过滤器
+		 */
+		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics 
+		filterMap.put("/**", "tokenCheckFilter"); // 认证接口
+		filterMap.put("/**", "licenseFilter"); //license 检查接口
 		
 		
 		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
-		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,
-				sysApiKeyDao);
-		cumstomFilterMap.put("licenseFilter", licenseFilter);
+		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
+		LicenseShiroFilter licenseShiroFilter = new LicenseShiroFilter();
+		MetricsShiroFilter metricsShiroFilter = new MetricsShiroFilter();
 		cumstomFilterMap.put("tokenCheckFilter", tokenCheckFilter);
+		cumstomFilterMap.put("licenseFilter", licenseShiroFilter);
 		cumstomFilterMap.put("metricsFilter", metricsShiroFilter);
 		shiroFilter.setFilters(cumstomFilterMap);
 		shiroFilter.setFilterChainDefinitionMap(filterMap);
@@ -124,6 +141,40 @@ public class ShiroConfig {
 		return shiroFilter;
 	}
 
+	@Component
+	public class LicenseShiroFilter extends AccessControlFilter {
+		
+		@Override
+		protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
+				throws Exception {
+			// debug 模式不校验 license
+			if(Tool.StrUtil.equalsIgnoreCase(comileType, "debug")) {
+				return true;
+			}
+			return licenseService.verify() ==  HaspStatus.HASP_STATUS_OK;
+		}
+
+		@Override
+		protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+			return false;
+		}
+
+	}
+	
+	public class MetricsShiroFilter extends AccessControlFilter {
+	    @Override
+	    protected boolean isAccessAllowed(ServletRequest servletRequest, ServletResponse servletResponse, Object o) throws Exception {
+	        nezhaMetrics.bindTo(meterRegistry);
+	        return true;
+	    }
+
+	    @Override
+	    protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+	        return false;
+	    }
+	}
+	
+	
 	@Bean
 	@ConditionalOnExpression("${nezha.shiroPermisSupport:true}")
 	public AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor(SecurityManager securityManager) {

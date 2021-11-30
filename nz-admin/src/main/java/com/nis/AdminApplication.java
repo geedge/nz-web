@@ -49,7 +49,6 @@ public class AdminApplication {
 		public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
 				BeanDefinitionRegistry registry) {
 			String inited = environment.getProperty("nezha.inited");
-			String property = environment.getProperty("compileType");
 			if (!StrUtil.isEmpty(inited) && Integer.parseInt(inited) > 0) {
 				ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(registry, true);
 				scanner.scan("com.nis.modules", "com.nis.common");

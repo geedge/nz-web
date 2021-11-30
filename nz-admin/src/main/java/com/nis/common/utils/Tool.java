@@ -1290,5 +1290,10 @@ public class Tool {
 		}
 
 	}
-
+	/**
+	 * sentinel license 工具类
+	 * @author ThinkPad
+	 *
+	 */
+	public static class HaspUtil extends com.nis.common.utils.HaspUtil {}
 }
