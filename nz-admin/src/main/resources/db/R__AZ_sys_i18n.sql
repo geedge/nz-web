@@ -1468,7 +1468,7 @@ INSERT INTO `sys_i18n` VALUES (1437, 'dashboard.panel.searchItem.name', 'en', 'd
 INSERT INTO `sys_i18n` VALUES (1438, 'dashboard.panel.endTime', 'en', 'dashboard.panel.endTime', 'End time', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1439, 'dashboard.panel.to', 'en', 'dashboard.panel.to', 'to', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1440, 'dashboard.panel.lastOneHour', 'en', 'dashboard.panel.lastOneHour', 'Last 1 hour', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1441, 'dashboard.panel.noDate', 'en', 'dashboard.panel.noDate', 'Empty', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1441, 'dashboard.panel.noDate', 'en', 'dashboard.panel.noDate', 'All time', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1442, 'dashboard.panel.lastThirtyDay', 'en', 'dashboard.panel.lastThirtyDay', 'Last 30 days', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1443, 'dashboard.connect', 'en', 'dashboard.connect', ' Open terminal', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1444, 'guide.agent', 'en', 'guide.agent', 'Agent', '', '2021-11-02 00:00:00', 1);
@@ -3031,7 +3031,7 @@ INSERT INTO `sys_i18n` VALUES (3020, 'dashboard.panel.searchItem.name', 'zh', 'd
 INSERT INTO `sys_i18n` VALUES (3021, 'dashboard.panel.endTime', 'zh', 'dashboard.panel.endTime', '结束时间', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3022, 'dashboard.panel.to', 'zh', 'dashboard.panel.to', '至', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3023, 'dashboard.panel.lastOneHour', 'zh', 'dashboard.panel.lastOneHour', '最近1小时', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3024, 'dashboard.panel.noDate', 'zh', 'dashboard.panel.noDate', '无', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (3024, 'dashboard.panel.noDate', 'zh', 'dashboard.panel.noDate', '全部时间', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3025, 'dashboard.panel.lastThirtyDay', 'zh', 'dashboard.panel.lastThirtyDay', '最近30天', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3026, 'dashboard.connect', 'zh', 'dashboard.connect', '连接', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3027, 'guide.agent', 'zh', 'guide.agent', '客户端', '', '2021-11-02 00:00:00', 1);
