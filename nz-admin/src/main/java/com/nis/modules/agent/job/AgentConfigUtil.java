@@ -263,6 +263,14 @@ public class AgentConfigUtil {
 		params.put("joinMemberList", joinMemberIpList);
 		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 
+		String interfaceNames = sysConfigService.getValue("interface_name");
+		if(StrUtil.isBlank(interfaceNames)) {
+			interfaceNames = "eth0";
+		}
+		List<String> interfaceNameList = Arrays.asList(interfaceNames.split(","));
+		params.put("interfaceNameList", interfaceNameList);
+		params.put("instanceInterfaceNames", CollectionUtil.isNotEmpty(interfaceNameList));
+		
 		List<SysConfigEntity> sysConfigList = sysConfigService.list();
 		Map<String, String> sysConfiMap = sysConfigList.stream()
 				.collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
@@ -292,7 +300,14 @@ public class AgentConfigUtil {
 	public Map generateLokiYml() {
 		log.debug("loki.yml 开始生成");
 		Map params = new LinkedHashMap(16);
-
+		
+		String interfaceNames = sysConfigService.getValue("interface_name");
+		if(StrUtil.isBlank(interfaceNames)) {
+			interfaceNames = "eth0";
+		}
+		List<String> interfaceNameList = Arrays.asList(interfaceNames.split(","));
+		params.put("interfaceNameList", interfaceNameList);
+		
 		params.put("schemaConfigFrom", DateUtil.format(new Date(), "yyyy-MM-dd"));
 		String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);
 		params.put("openAws", StrUtil.equals("2", logsStorageType));
