@@ -64,4 +64,5 @@ public interface StatService{
 	
 	Map<String,Object> queryAlertMessageTrend(Map<String,Object> params);
 	
+	Map<String,Object> queryAnalyse(Map<String,Object> params);
 }

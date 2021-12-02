@@ -838,6 +838,12 @@ public enum RCode {
     SYSAPIKEY_ROLEID_ISNULL(811003,"sys api key role id can not be empty"),
     SYSAPIKEY_ID_ISNULL(811004,"sys api key id can not be empty"),
     SYSAPIKEY_NAME_DUPLICATE(811005,"sys api key name is duplicate"),
+    JSON_PARAM_INVALIDED(811006,"param must be json"),
+    SYSSTAT_TYPE_IS_NULL(811007,"param type can not be null"),
+    SYSSTAT_TYPE_INVALIDED(811008,"param type is invalide, allow asset,datacenter,project,module,endpoint,alert rule,alert message,agent"),
+    SYSSTAT_FILTER_IS_NULL(811009,"param filter can not be null"),
+    SYSSTAT_NAME_IS_NULL(811010,"param name can not be null"),
+    SYSSTAT_SELECT_IS_NULL(811011,"param select can not be null"),
     /**
      * 导入相关
      */

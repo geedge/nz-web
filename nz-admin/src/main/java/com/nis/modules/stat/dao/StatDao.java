@@ -72,4 +72,6 @@ public interface StatDao {
 	List<StatAnalysis> selectModuleAssetRelation(@Param("params") Map<String, Object> params);
 	
 	List<StatAnalysis> selectAlertMessageTrend(@Param("params") Map<String, Object> params);
+	
+	List<Map<String,Object>> selectAnalyseInfo(@Param("sql") String sql);
 }

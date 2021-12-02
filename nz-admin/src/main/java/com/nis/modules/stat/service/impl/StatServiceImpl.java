@@ -1,12 +1,30 @@
 package com.nis.modules.stat.service.impl;
 
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
@@ -28,20 +46,21 @@ import com.nis.modules.stat.dao.StatDao;
 import com.nis.modules.stat.entity.StatAnalysis;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 
 @Service
 public class StatServiceImpl implements StatService{
-
+	
+	private Log logger = Log.get();
+	
 	@Autowired
 	private StatDao statDao;
 
@@ -72,8 +91,11 @@ public class StatServiceImpl implements StatService{
 	@Autowired
 	private AlertMessageService alertMessageService;
 	
-	private Integer topNSize=10;
+	@Autowired
+	private SysConfigService sysConfigService;
 	
+	private Integer topNSize=10;
+		
 	@Override
 	public List<StatAnalysis> queryAssetType(Map<String, Object> params) {		
 		return statDao.selectAssetTypeAnalysis(params);
@@ -503,4 +525,152 @@ public class StatServiceImpl implements StatService{
 		
 		return result;
 	}
+	
+	@Override
+	public Map<String, Object> queryAnalyse(Map<String,Object> params) {
+		String q = (String) params.get("q");
+		String resultType = (String) params.get("resultType");
+		// 处理查询结果 resultType 默认为matrix
+		if(StrUtil.isBlank(resultType)) {
+			resultType = "matrix";
+		}
+		Map<String,Object> data = new HashMap<String,Object>();
+		LinkedHashMap parseObject = null;
+		try {
+			parseObject = JSONObject.parseObject(q, LinkedHashMap.class);
+		}catch(Exception e) {
+			throw new NZException(RCode.JSON_PARAM_INVALIDED);
+		}
+		
+		String type = (String) parseObject.get("type");
+		if(StrUtil.isBlank(type)) {
+			throw new NZException(RCode.SYSSTAT_TYPE_IS_NULL);
+		}
+		
+		String statQueryJson = sysConfigService.getValue("stat_query_json");
+		List<Map<String,Object>> allStatMap = JSONArray.parseObject(statQueryJson,List.class);
+		List<String> types = allStatMap.stream().map(o-> (String)o.get("name")).collect(Collectors.toList());
+		if(!types.contains(type)){
+		    throw new NZException(RCode.SYSSTAT_TYPE_INVALIDED);
+		}
+		Map<String, Map<String, Object>> typeMap = allStatMap.stream().collect(Collectors.toMap(o-> (String)o.get("name"), Function.identity()));
+		JSONArray group = (JSONArray) parseObject.get("group");		
+		
+		String whereFilter = "";
+		String groupName = "";
+		String selectStr = "";
+		String limitStr = "";
+		
+		Map<String, Object> sqlParam = typeMap.get(type);
+		
+		JSONArray select = (JSONArray) parseObject.get("select");	
+		if(ObjectUtil.isEmpty(select)) {
+			throw new NZException(RCode.SYSSTAT_SELECT_IS_NULL);
+		}
+		if(ObjectUtil.isNotEmpty(select)) {
+			JSONArray selectJson = (JSONArray) sqlParam.get("select");
+			Map<String,String> nameColumn = new HashMap<String,String>();
+			for(int i = 0;i<selectJson.size();i++) {
+				JSONObject g = selectJson.getJSONObject(i);
+				String name = g.getString("name");
+				String expr = g.getString("expr");
+				nameColumn.put(name, expr);
+			}
+			for(int i = 0;i<select.size();i++) {
+				JSONObject s = select.getJSONObject(i);
+				String name = (String) s.get("name");
+				if(i==0) {
+					selectStr = StrUtil.concat(false, selectStr,nameColumn.get(name)," as ",name);
+				}else {
+					selectStr = StrUtil.concat(false,selectStr," , ",nameColumn.get(name)," as ",name);
+				}
+			}
+		}
+		if(ObjectUtil.isNotEmpty(group)) {
+			JSONArray groupJson = (JSONArray) sqlParam.get("group");
+			Map<String,String> nameColumn = new HashMap<String,String>();
+			for(int i = 0;i<groupJson.size();i++) {
+				JSONObject g = groupJson.getJSONObject(i);
+				String name = g.getString("name");
+				String expr = g.getString("expr");
+				nameColumn.put(name, expr);
+			}
+			for(int i = 0;i<group.size();i++) {
+				JSONObject m = group.getJSONObject(i);
+				String name = (String) m.get("name");
+				String resultName = name;
+				if(StrUtil.isNotBlank(name)) {
+					name = nameColumn.get(name);
+				}else {
+					throw new NZException(RCode.SYSSTAT_NAME_IS_NULL);
+				}
+				String filterOp = (String) m.get("filterOp");
+				String filter = (String)m.get("filter");
+				if(StrUtil.isNotBlank(filterOp) && StrUtil.isEmpty(filter)) {
+					throw new NZException(RCode.SYSSTAT_FILTER_IS_NULL);
+				}else if(StrUtil.isNotBlank(filterOp) && StrUtil.isNotEmpty(filter)){
+					if(filterOp.equals("~")) {
+						filterOp = "like";
+					}else if(filterOp.equals("!~")) {
+						filterOp = "not like";
+					}
+					if(i>0) {
+						whereFilter = StrUtil.concat(false, whereFilter," and ",name,filterOp,"'",filter,"'");
+					}else {
+						whereFilter = StrUtil.concat(false, whereFilter, name,filterOp,"'",filter,"'");
+					}
+				}
+				selectStr = StrUtil.concat(false, selectStr,",",name ," as ", resultName);
+			}
+		}
+		Integer limit = (Integer) parseObject.get("limit");
+		String sort = (String) parseObject.get("sort");
+
+		// 组装sql
+		String dataSql = (String) sqlParam.get("datasql");
+		if(StrUtil.isNotBlank(whereFilter)) {
+			whereFilter = StrUtil.concat(false, " where " , whereFilter);
+		}
+		if(StrUtil.isNotBlank(sort)) {
+			sort = StrUtil.concat(false,  " order by id " , sort);
+		}
+		if(limit > 0 ) {
+			limitStr = StrUtil.concat(false, " limit ",limit.toString());
+		}
+		String sql = StrUtil.concat(false, "select ",selectStr ," from ", "(" , dataSql , ") t" , whereFilter , groupName , sort , limitStr);
+		
+		logger.info("queryAnalyse sql : %s",sql);
+		
+		List<Map<String,Object>> queryInfo = statDao.selectAnalyseInfo(sql);
+		
+		List<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
+		if(ObjectUtil.isNotEmpty(queryInfo)) {
+			if(StrUtil.equals(resultType, "matrix")) {
+				for(Map<String,Object> r : queryInfo) {
+					Map val = new HashMap();
+					List<Object> values = new ArrayList<Object>();
+					Map metric = new HashMap();
+					for(String key : r.keySet()) {
+						if(key.equals("count")) {
+							List<Object> l = new ArrayList<Object>();
+							l.add(new Date().getTime());
+							l.add(r.get(key));
+							values.add(l);
+						}else {
+							metric.put(key, r.get(key));
+						}
+					}
+					val.put("values", values);
+					val.put("metric", metric);
+					result.add(val);
+				}
+			}else {
+				result = queryInfo;
+			}
+		}
+		data.put("resultType", resultType);
+		data.put("result", result);
+		return data;
+	}
+	
 }

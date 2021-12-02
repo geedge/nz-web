@@ -674,4 +674,9 @@
 		ORDER BY
 			TIME
     </select>
+    
+        
+    <select id="selectAnalyseInfo" resultType="java.util.Map">
+    	${sql}
+    </select>
 </mapper>

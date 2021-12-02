@@ -16,12 +16,24 @@ import com.nis.modules.stat.entity.StatAnalysis;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.controller.AbstractController;
 
+import cn.hutool.json.JSONUtil;
+
 @RestController
 @RequestMapping("/stat")
 public class StatController extends AbstractController {
 	
 	@Autowired
 	private StatService statService;
+	
+	/**
+	 * 统计接口
+	 * @return
+	 */
+	@GetMapping
+	public R queryAnalyse(@RequestParam Map<String,Object> params) {
+		Map<String, Object> result = statService.queryAnalyse(params);
+		return R.ok(result);
+	}
 	
 	/**
 	 * 用户统计接口
