@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -22,8 +21,11 @@ import org.springframework.util.ObjectUtils;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.Tool;
@@ -671,6 +673,31 @@ public class StatServiceImpl implements StatService{
 		data.put("resultType", resultType);
 		data.put("result", result);
 		return data;
+	}
+
+	@Override
+	public PageUtils searchAll(Map<String, Object> params) {
+		IPage page = new Query(Map.class).getPage(params);
+		List<Map<String,Object>> list = statDao.searchAll(page,params);
+		page.setRecords(list);
+        return new PageUtils(page);
+	}
+
+	@Override
+	public List<Map<String,Object>> searchAllStatByType(Map<String, Object> params) {
+		List<Map<String,Object>> list = statDao.searchAllStatByType(params);
+        return list;
+	}
+	
+	@Override
+	public Map<String,Object> queryRowNumById(String table, Integer id, String order, Integer pageSize) {
+		Map<String,Object> result = Tool.MapUtil.newHashMap();
+		Integer num = statDao.queryRowNumById(table, id, order);
+		num = (num == null) ? 1 : num;
+		result.put("rownum", num);
+		result.put("pageNo", Tool.NumberUtil.ceilDiv(num, pageSize));
+		result.put("pageSize", pageSize);
+		return result;
 	}
 	
 }

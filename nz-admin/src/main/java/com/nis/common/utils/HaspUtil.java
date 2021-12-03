@@ -1,6 +1,7 @@
 package com.nis.common.utils;
 
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 
 import Aladdin.Hasp;
 import Aladdin.HaspStatus;
@@ -9,23 +10,11 @@ import cn.hutool.log.Log;
 public class HaspUtil {
 	private static final Log log = Log.get();
 	
-	/** Record created indication on WS PUT calls */
-	public final static int CREATED = 201;
-	/** Required header for WS calls */
-	private final static String VERSION = "application/vnd.ems.v12";
 	/** Runtime query scope */
 	protected final static String KEY_SCOPE = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
 			+ "<haspscope>\n"
 			+ "<license_manager hostname=\"localhost\" />\n"
 			+ "</haspscope>\n";
-	/** SL-Legacy C2V not used for V2CP activation**/
-	protected final static String SCOPE_WITHOUT_SL_LEGACY = 
-		      "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"+
-		      "<haspscope>"+
-		      " <license_manager hostname=\"localhost\" >"+
-		      " <hasp key_type=\"~SL-Legacy\" />"+
-		      " </license_manager>"+
-		      "</haspscope>";
 	/** Runtime query view */
 	protected final static String KEY_VIEW = "<haspformat format=\"host_fingerprint\"/>";
 
@@ -40,19 +29,46 @@ public class HaspUtil {
 
 	protected final static String KEY_C2V_FORMAT = "<haspformat format=\"updateinfo\"/>";
 
-	/** WS uri */
-	public static final String PK_LOGIN_URL = "ems/v21/ws/loginByProductKey.ws";
-	public static final String REGISTER_URL = "ems/v21/ws/customer.ws";
-	public static final String V2CP_URL = "/ems/v78/ws/activation/target.ws";
 
-	/** Error message constants */
-	public static final String MSG_BAD_CONNECTION = "Sentinel EMS is not available for the specified URL";
-	public static final String FAILS_WITH_CODE = "Fails with status code ";
-	public static final String TOO_MANY_KEYS = "Too many keys connected.";
-	public static final String NO_KEYS = "No key connected.";
-	public static final String ERROR_CODE = "Error - code ";
-	public static final String SERVER_RETURNED_ERROR = "server returned error code";
-
+	public final static String HASP_FORMAT = "<haspformat>\n" +
+			"	<hasp>\n" +
+			"		<element name=\"id\"/>\n" +
+			"		<element name=\"type\"/>\n" +
+			"		<element name=\"configuration\"/>\n" +
+			"		<element name=\"clone_protected\"/>\n" +
+			"		<element name=\"disabled\"/>\n" +
+			"		<element name=\"production_date\"/>\n" +
+			"		<element name=\"updatecounter\"/>\n" +
+			"		<element name=\"parentid\"/>\n" +
+			"		<feature>\n" +
+			"			<element name=\"id\"/>\n" +
+			"			<element name=\"locked\"/>\n" +
+			"			<element name=\"license\"/>\n" +
+			"			<element name=\"name\"/>\n" +
+			"			<element name=\"concurrency\"/>\n" +
+			"			<element name=\"usable\"/>\n" +
+			"		</feature>\n" +
+			"		<product>\n" +
+			"			<element name=\"id\"/>\n" +
+			"			<element name=\"name\"/>\n" +
+			"		</product>\n" +
+			"	</hasp>\n" +
+			"</haspformat>";
+	
+	public final static String PRODUCT_SCOPE = "<haspscope>\n" +
+			"   <product id=\"%s\" />\n" +
+			"</haspscope>";
+	
+	public static String getLicenseInfo(Integer productId, String vendorCode) {
+		ValidateUtils.is(productId).notNull();
+		Hasp hasp = new Hasp(Hasp.HASP_DEFAULT_FID);
+		String licenseInfo = hasp.getInfo(String.format(PRODUCT_SCOPE, productId), HASP_FORMAT, vendorCode);
+		int status = hasp.getLastError();
+		if (status != HaspStatus.HASP_STATUS_OK) {
+			log.error("Error: updateLicense Fails with status code :{}",status);
+		}
+		return licenseInfo;
+	}
 	
 	/**
 	 * Updates the key with the license (v2c)
@@ -80,7 +96,7 @@ public class HaspUtil {
 	 */
 	public static String readC2vFromKey(String vendorCode)  {
 		Hasp hasp = new Hasp(Hasp.HASP_DEFAULT_FID);
-		String infos = hasp.getInfo(KEY_SCOPE, KEY_VIEW, vendorCode);
+		String infos = hasp.getInfo(PRODUCT_SCOPE, KEY_VIEW, vendorCode);
 		int status = hasp.getLastError();
 		log.info("reading C2v from key status code = " + status);
 		if(status != HaspStatus.HASP_STATUS_OK) {

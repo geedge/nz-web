@@ -64,8 +64,8 @@ public class SysLicenseController extends AbstractController {
 	@RequestMapping
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
 	public R getLicense() {
-		String v2c = licenseService.getLicense();
-		return R.ok().putData("license", v2c);
+		Map<String, Object> license = licenseService.getLicenseDetail();
+		return R.ok().putData("license", license);
 	}
 
 	@GetMapping("/token")

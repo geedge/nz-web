@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service.impl;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -8,6 +10,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
@@ -39,13 +43,17 @@ public class LicenseServiceImpl implements LicenseService {
 	@Value("${fetureId}")
 	private Long fetureId;
 
+	@Value("${productId}")
+	private Integer productId;
+	
 	@Override
-	public String getLicense() {
-		SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", licenseConfigKey));
-		if (entity == null || Tool.StrUtil.isBlank(entity.getParamValue())) {
-			return null;
+	public Map<String,Object> getLicenseDetail() {
+		String licenseInfo = Tool.HaspUtil.getLicenseInfo(productId, vendorCode);
+		if(Tool.StrUtil.isBlank(licenseInfo)) {
+			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
-		return entity.getParamValue();
+		Map<String, Object> licenseMap = Tool.XmlUtil.xmlToMap(licenseInfo);
+		return licenseMap;
 	}
 
 	/**
@@ -61,7 +69,6 @@ public class LicenseServiceImpl implements LicenseService {
 		entity.setParamValue(v2c);
 		entity.setRemark(Tool.DateUtil.now());
 		sysConfigService.saveOrUpdate(entity);
-
 	}
 
 	/**
@@ -99,6 +106,15 @@ public class LicenseServiceImpl implements LicenseService {
 	@Override
 	public Integer verify() {
 		return Tool.HaspUtil.verify(vendorCode,fetureId);
+	}
+
+	@Override
+	public String getLicense() {
+		SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", licenseConfigKey));
+		if (entity == null || Tool.StrUtil.isBlank(entity.getParamValue())) {
+			return null;
+		}
+		return entity.getParamValue();
 	}
 	
 }

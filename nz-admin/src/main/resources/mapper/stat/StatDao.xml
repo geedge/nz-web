@@ -676,7 +676,88 @@
     </select>
     
         
-    <select id="selectAnalyseInfo" resultType="java.util.Map">
+    <select id="selectAnalyseInfo" resultType="java.util.LinkedHashMap">
     	${sql}
     </select>
+    
+    <!-- 全局搜索 -->
+    <select id="searchAll" resultType="java.util.LinkedHashMap">
+    	select
+			type, id, name , sub 
+		from (
+			<trim suffixOverrides="union">
+				<if test="params.scopeList.contains(&quot;asset&quot;)">
+					select 'asset' as type, aa.id,aa.name,CONCAT( manage_ip,' / ',d.name) as sub from  asset_asset aa left join dc d on aa.dc_id = d.id
+					union 
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;project&quot;)">
+					select 'project' as type, id, name ,remark as sub from monitor_project mp
+					union
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;module&quot;)">
+					select 'module' as type, mm.id, mm.name , p.name as sub from monitor_module mm left join monitor_project p on mm.project_id = p.id
+					union 
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;endpoint&quot;)">
+					select 'endpoint' as type, me.id, me.name, mm.name as sub  from monitor_endpoint me LEFT JOIN monitor_module mm on me.module_id = mm.id
+					union 
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;datacenter&quot;)">
+					select 'datacenter' as type, id , name , location as sub from dc
+					union
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;model&quot;)">
+					select 'model' as type, am.id , am.name, ab.name as sub from asset_model am LEFT JOIN asset_brand ab on am.brand_id = ab.id
+					union
+	        	</if>
+	        	<if test="params.scopeList.contains(&quot;alertrule&quot;)">
+					select 'alertrule' as type, ar.id ,ar.name, CONCAT( ac.name,' / ' ,ar.type) as sub from alert_rule ar  LEFT JOIN alert_silence_conf ac on ar.severity_id = ac.id
+	        	</if>
+			</trim>		
+			) tt
+		<if test="params.q != null and params.q != ''">
+			where
+				name like concat('%',#{params.q},'%')
+				or sub like concat('%',#{params.q},'%')
+		</if>
+    </select>
+    
+    <!-- 全局搜索 -->
+    <select id="searchAllStatByType" resultType="java.util.LinkedHashMap">
+    	select
+			type, count(1) as num 
+		from (
+				select 'asset' as type, aa.id,aa.name,CONCAT( manage_ip,' / ',d.name) as sub from  asset_asset aa left join dc d on aa.dc_id = d.id
+				union 
+				select 'project' as type, id, name ,remark as sub from monitor_project mp
+				union 
+				select 'module' as type, mm.id, mm.name , p.name as sub from monitor_module mm left join monitor_project p on mm.project_id = p.id
+				union 
+				select 'endpoint' as type, me.id, me.name, mm.name as sub  from monitor_endpoint me LEFT JOIN monitor_module mm on me.module_id = mm.id
+				union 
+				select 'datacenter' as type, id , name , location as sub from dc
+				union
+				select 'model' as type, am.id , am.name, ab.name as sub from asset_model am LEFT JOIN asset_brand ab on am.brand_id = ab.id
+				union
+				select 'alertRule' as type, ar.id ,ar.name, CONCAT( ac.name,' / ' ,ar.type) as sub from alert_rule ar  LEFT JOIN alert_silence_conf ac on ar.severity_id = ac.id
+			) tt
+		<if test="params.q != null and params.q != ''">
+		where
+			name like concat('%',#{params.q},'%')
+			or sub like concat('%',#{params.q},'%')
+		</if>
+		group by
+			type
+    </select>
+    
+    <!-- 根据id查询所在表 序号 -->
+    <select id="queryRowNumById" resultType="java.lang.Integer">
+    	SELECT
+			row_num 
+		FROM
+			( SELECT ROW_NUMBER( ) OVER ( ORDER BY ${order} ASC ) AS row_num, id FROM ${table} tt ) ttt 
+		WHERE
+			id = #{id}
+    </select>
+    
 </mapper>

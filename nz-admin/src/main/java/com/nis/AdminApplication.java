@@ -37,11 +37,6 @@ public class AdminApplication {
 		TerminalHandler.setApplicationContext(run);
 	}
 
-	/*@Bean
-	MeterRegistryCustomizer<MeterRegistry> configurer(@Value("Nezha") String applicationName) {
-		return (registry) -> registry.config().commonTags("application", applicationName);
-	}*/
-
 	static class SetupAutoConfiguration implements ImportBeanDefinitionRegistrar, EnvironmentAware {
 		private Environment environment;
 		

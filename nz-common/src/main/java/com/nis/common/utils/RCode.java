@@ -844,6 +844,7 @@ public enum RCode {
     SYSSTAT_FILTER_IS_NULL(811009,"param filter can not be null"),
     SYSSTAT_NAME_IS_NULL(811010,"param name can not be null"),
     SYSSTAT_SELECT_IS_NULL(811011,"param select can not be null"),
+    SYSSTAT_TABLE_INVALIDED(813012,"param table invalided"),
     /**
      * 导入相关
      */
@@ -872,7 +873,7 @@ public enum RCode {
 	 * License 相关
 	 */
 	LICENSE_FILE_IS_NULL(711001, "license file can not be null"),
-	LICENSE_FILE_IS_EMPTY(716001, "The license file does not exist"), LICENSE_FILE_INVALID(715001, "Invalid license"),
+	LICENSE_FILE_IS_EMPTY(716001, "The license file does not exist"), LICENSE_FILE_INVALID(715001, "Invalid license,code: {0}"),
 	LICENSE_PARAM_IS_NULL(711002, "license parameter is null"),
 	LICENSE_TOKEN_INVALID(715002, "Invalid license,token error"),
 	LICENSE_MAXIMUMASSETS_INVALID(715003, "The number of assets exceeds the maximumAssets"),

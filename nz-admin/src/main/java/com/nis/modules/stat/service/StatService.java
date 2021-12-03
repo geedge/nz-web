@@ -2,6 +2,8 @@ package com.nis.modules.stat.service;
 
 import java.util.List;
 import java.util.Map;
+
+import com.nis.common.utils.PageUtils;
 import com.nis.modules.stat.entity.StatAnalysis;
 
 public interface StatService{
@@ -65,4 +67,28 @@ public interface StatService{
 	Map<String,Object> queryAlertMessageTrend(Map<String,Object> params);
 	
 	Map<String,Object> queryAnalyse(Map<String,Object> params);
+	
+	/**
+	 * 全局检索
+	 * @param params
+	 * @return
+	 */
+	PageUtils searchAll(Map<String, Object> params);
+	/**
+	 * 全局检索统计
+	 * @param q
+	 * @return
+	 */
+	List<Map<String, Object>> searchAllStatByType(Map<String, Object> params);
+	
+	/**
+	 * 根据id 查询序号
+	 * @param table
+	 * @param id
+	 * @param order
+	 * @return
+	 */
+	Map<String, Object> queryRowNumById(String table, Integer id, String order, Integer pageSize);
+	
+	
 }

@@ -527,18 +527,18 @@ public class Constant {
 		snmpCerdenOrderFieldMap.put("id", "id");
 		snmpCerdenOrderFieldMap.put("type", "type");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("snmp_credential", snmpCerdenOrderFieldMap);
-		
+
 		Map<String, String> terminalLogOrderFieldMap = new HashMap<>();
 		terminalLogOrderFieldMap.put("id", "ts.id");
 		terminalLogOrderFieldMap.put("sourceIp", "ts.remote_addr");
 		terminalLogOrderFieldMap.put("state", "ts.status");
-		TABLE_NAME_ORDER_FIELD_MAPPING.put("terminal_session",terminalLogOrderFieldMap);
-		
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("terminal_session", terminalLogOrderFieldMap);
+
 		Map<String, String> operationLogOrderFieldMap = new HashMap<>();
 		operationLogOrderFieldMap.put("user", "su.username");
 		operationLogOrderFieldMap.put("operation", "sl.operation");
 		operationLogOrderFieldMap.put("type", "sl.type");
-		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log",operationLogOrderFieldMap);
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log", operationLogOrderFieldMap);
 	}
 
 	/**
@@ -618,7 +618,7 @@ public class Constant {
 
 	public enum PanelType {
 		DASHBOARD("dashboard"), ASSET("asset"), PROJECT("project"), MODULE("module"), ENDPOINT("endpoint"),
-		MODEL("model"), TEMPLATE("template"),OVERVIEW("overview");
+		MODEL("model"), TEMPLATE("template"), OVERVIEW("overview");
 
 		private String value;
 
@@ -1002,14 +1002,14 @@ public class Constant {
 
 	// 图表类型为 endpointInfo
 	public static final String CHART_ENDPOINTINFO_TYPE = "endpointInfo";
-	
+
 	// 图表类型为 endpointInfo
 	public static final String CHART_TREEMAP_TYPE = "treemap";
 	// 图表类型为 endpointInfo
 	public static final String CHART_MAP_TYPE = "map";
 	// 图表类型为 endpointInfo
 	public static final String CHART_TOPOLOGY_TYPE = "topology";
-	
+
 	public static final String CHART_GROUP_TYPE = "group";
 
 	public static final String CHART_ELEMENT_EXPERT_TYPE = "expert";
@@ -1067,7 +1067,7 @@ public class Constant {
 	public static final String GUI_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/webRoot";
 	public static final String RESOURCE_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/resource";// nzagent.rpm,install.sh.template,
 	public static final String BIN_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/bin";// promtool,generator
-	
+
 	public static final String BACKUP_ROOT_PATH = NEZHA_ROOT_PATH + "/nz-web/backup";
 	/*
 	 * alert message label 中自定义key
@@ -1099,19 +1099,18 @@ public class Constant {
 	public static final byte[] AES_SECRET_KEY = Tool.HexUtil.decodeHex("bde5430614b21baf1c53bd6f616d1a39");
 
 	public static final String NZ_WEB_COMPONENT_NAME = "nz-web";
-	
+
 	public static final String SYSCONFIG_KEY_EXPORT_MAX_LINE = "export_max_line";
 
 	public static final Map<String, String> CORS_HEADER = Tool.MapUtil
 			.builder("Access-Control-Allow-Credentials", "true")
 			.put("Access-Control-Allow-Methods", "GET,PUT,POST,PATCH,DELETE,HEAD,OPTIONS")
-			.put("Access-Control-Max-Age", "18000")
-			.put("Access-Control-Allow-Origin", "*").build();
-	
+			.put("Access-Control-Max-Age", "18000").put("Access-Control-Allow-Origin", "*").build();
+
 	public static final String DICT_CHART_DATASOURCE = "chartDatasource";
-	
+
 	public enum ChartDatasourceType {
-		METRICS("metrics"),LOGS("logs"),SYSTEM("system"),MISC("misc");
+		METRICS("metrics"), LOGS("logs"), SYSTEM("system"), MISC("misc");
 
 		private String value;
 
@@ -1127,4 +1126,19 @@ public class Constant {
 			this.value = value;
 		}
 	}
+
+	/**
+	 * 全局搜索范围
+	 */
+	public static final List<String> SEARCH_SCOPE = Tool.ListUtil.of("asset", "datacenter", "project", "module",
+			"endpoint", "panel", "alertrule", "model", "user");
+
+	/**
+	 * 搜索关键字 与 表名映射
+	 */
+	public static final Map<String, String> TABLE_MAPPING = Tool.MapUtil.builder("asset", "asset_asset")
+			.put("datacenter", "dc").put("project", "monitor_project").put("module", "monitor_module")
+			.put("endpoint", "monitor_endpoint").put("alertrule", "alert_rule").put("model", "asset_model")
+			.put("user", "sys_user").build();
+
 }

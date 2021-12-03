@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.Filter;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.shiro.mgt.SecurityManager;
@@ -27,11 +28,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.nis.common.exception.NZException;
 import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.R;
+import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.metric.dto.NezhaMetrics;
@@ -151,7 +157,15 @@ public class ShiroConfig {
 			if(Tool.StrUtil.equalsIgnoreCase(comileType, "debug")) {
 				return true;
 			}
-			return licenseService.verify() ==  HaspStatus.HASP_STATUS_OK;
+			
+			Integer status = licenseService.verify();
+			if( ! Tool.NumberUtil.equals(status, HaspStatus.HASP_STATUS_OK)) {
+				HttpServletResponse httpResponse=(HttpServletResponse) response;
+				httpResponse.setStatus(HttpStatus.FORBIDDEN.value());
+				httpResponse.getWriter().write(Tool.JSONUtil.toJsonStr(R.error(RCode.LICENSE_FILE_INVALID.setParam(status))));
+				return false;
+			}
+			return true;
 		}
 
 		@Override

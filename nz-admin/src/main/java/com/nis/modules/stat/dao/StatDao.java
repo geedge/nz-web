@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.stat.entity.StatAnalysis;
 
 @Mapper
@@ -74,4 +75,27 @@ public interface StatDao {
 	List<StatAnalysis> selectAlertMessageTrend(@Param("params") Map<String, Object> params);
 	
 	List<Map<String,Object>> selectAnalyseInfo(@Param("sql") String sql);
+
+	/**
+	 * 全局搜索
+	 * @param params
+	 * @return
+	 */
+	List<Map<String,Object>> searchAll(IPage page,@Param("params") Map<String, Object> params);
+	/**
+	 * 全局搜索统计
+	 * @param params
+	 * @return
+	 */
+	List<Map<String,Object>> searchAllStatByType(@Param("params") Map<String, Object> params);
+
+	/**
+	 * 根据id 获取所在表 序号
+	 * @param table
+	 * @param id
+	 * @param order
+	 * @return
+	 */
+	Integer queryRowNumById(@Param("table") String table, @Param("id") Integer id,@Param("order") String order);
+
 }

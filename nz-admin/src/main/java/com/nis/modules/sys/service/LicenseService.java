@@ -1,5 +1,7 @@
 package com.nis.modules.sys.service;
 
+import java.util.Map;
+
 public interface LicenseService {
 
 
@@ -8,8 +10,10 @@ public interface LicenseService {
 	 * 
 	 * @return
 	 */
-	String getLicense();
+	Map<String,Object> getLicenseDetail();
 
+	String getLicense();
+	
 	/**
 	 * 获取系统版本
 	 * 
