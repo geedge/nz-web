@@ -583,6 +583,13 @@ public class SysConfServiceImpl extends ServiceImpl<SysConfDao, SysConfigEntity>
         }
     }
 
+    @Override
+    public Map<String, Object> querySysConfig(String configKey) {
+        SysConfigEntity sysConfigEntity = this.getOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, configKey));
+        Map<String, Object> map = Tool.BeanUtil.beanToMap(sysConfigEntity);
+        return map;
+    }
+
     /**
      * 处理 monitor_event_log 数据变动
      * @param updateMap

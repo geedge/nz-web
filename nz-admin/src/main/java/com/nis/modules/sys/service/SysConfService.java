@@ -31,4 +31,6 @@ public interface SysConfService extends IService<SysConfigEntity> {
 
     void saveMonitor(Map<String, String> params);
 
+    Map<String, Object> querySysConfig(String configKey);
+
 }

@@ -117,4 +117,12 @@ public class SysConfController {
         }
         return R.ok();
     }
+
+    @GetMapping("/key/{configKey}")
+    @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.SYSTEM)
+    public R querySysConfig(@PathVariable("configKey") String configKey){
+        Map<String ,Object> result = sysConfService.querySysConfig(configKey);
+        return R.ok(result);
+    }
+
 }
