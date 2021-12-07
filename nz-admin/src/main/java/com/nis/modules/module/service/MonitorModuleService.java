@@ -7,6 +7,7 @@ import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -24,11 +25,11 @@ public interface MonitorModuleService extends IService<MonitorModule> {
 
     void removeModules(Integer... ids);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
     void cancelImport(String seq);
 
-    Map importDatacentersFromExcel(MultipartFile excelFile, String language);
+    Map importModuleData(MultipartFile excelFile) throws IOException;
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 }

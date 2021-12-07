@@ -1,40 +1,26 @@
 package com.nis.modules.alert.controller;
 
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertRuleEntity;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.AlertRuleSchedLog;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
 import com.nis.modules.alert.service.AlertRuleService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author song
@@ -114,25 +100,48 @@ public class AlertRuleController {
 
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+    public void getTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
+        String format = request.getHeader("format");
+        format = Tool.StrUtil.emptyToDefault(format, "1");
 
-        alertRuleService.getExportTemplateByLanguage(response, language);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        alertRuleService.getTemplateByLanguage(response, format);
     }
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ALERTRULE)
     @RequiresPermissions({"alert:rule:save"})
-    public R importAlertFromExcelFile(MultipartFile excelFile,HttpServletRequest request) {
+    public R importAlertFromExcelFile(MultipartFile excelFile,HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        ValidateUtils.is(excelFile).notNull(RCode.ALERTRULE_IMPORT_FILE_ISNULL);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
 
-        return R.ok(alertRuleService.importAlertFromExcelFile(excelFile, language));
+        return R.ok(alertRuleService.importAlertRuleData(excelFile));
     }
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ALERTRULE)
-    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+    public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
         alertRuleService.export(response, params);
     }
 

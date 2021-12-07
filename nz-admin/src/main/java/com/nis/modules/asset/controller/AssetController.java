@@ -1,35 +1,10 @@
 package com.nis.modules.asset.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.util.ObjectUtil;
 import com.nis.common.annotation.SysLog;
+import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.asset.entity.AssetStateConf;
@@ -37,8 +12,18 @@ import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetStateConfService;
 import com.nis.modules.asset.service.AssetTypeConfService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import cn.hutool.core.util.ObjectUtil;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -250,12 +235,23 @@ public class AssetController {
     /**
      * 获取导入模板
      * @param response
-     * @param language
      */
     @GetMapping("/asset/template")
-    public void getAssetExcelTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+    public void getTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        assetAssetService.getExportTemplateByLanguage(response, language);
+        String format = request.getHeader("format");
+        format = Tool.StrUtil.emptyToDefault(format, "1");
+
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        assetAssetService.getTemplateByLanguage(response, format);
     }
 
     /**
@@ -266,11 +262,16 @@ public class AssetController {
     @PostMapping("/asset/import")
     @SysLog(operation = OperationEnum.IMPORT,type = TypeEnum.ASSET)
     @RequiresPermissions({"asset:save"})
-    public R importAssets(MultipartFile excelFile,HttpServletRequest request) {
-        ValidateUtils.is(excelFile).notNull(RCode.ASSET_IMPORT_FILE_ISNULL);
+    public R importAssetsData(MultipartFile excelFile, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        Map map = assetAssetService.importAssetsFromExcel(excelFile, language);
-        return R.ok(map);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+
+        Map info = assetAssetService.importAssetsData(excelFile);
+        return R.ok(info);
     }
 
     /**
@@ -295,8 +296,16 @@ public class AssetController {
      */
     @GetMapping("/asset/export")
     @SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ASSET)
-    public void exportAssets(HttpServletResponse response, @RequestParam Map<String, Object> params) {
-        assetAssetService.export(response,params);
+    public void exportAssets(HttpServletResponse response, @RequestParam Map<String, Object> params)  throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
+        assetAssetService.export(response, params);
     }
 
 

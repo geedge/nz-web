@@ -13,11 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 
 @RestController
@@ -110,10 +107,21 @@ public class MonitorEndpointController {
     }
 
     @GetMapping("/endpoint/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
+        String format = request.getHeader("format");
+        format = Tool.StrUtil.emptyToDefault(format, "1");
 
-        monitorEndpointService.getExportTemplateByLanguage(response, language);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        monitorEndpointService.getTemplateByLanguage(response, format);
     }
 
     /**
@@ -134,11 +142,15 @@ public class MonitorEndpointController {
     @PostMapping("/endpoint/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.ENDPOINT)
     @RequiresPermissions({"endpoint:save"})
-    public R importEndpoint(MultipartFile excelFile, HttpServletRequest request) {
+    public R importEndpointsData(MultipartFile excelFile, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        ValidateUtils.is(excelFile).notNull(RCode.ENDPOINT_IMPORT_FILE_ISNULL);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
 
-        Map map = monitorEndpointService.importEndpoint(excelFile, language);
+        Map map = monitorEndpointService.importEndpointData(excelFile);
         return R.ok(map);
     }
 
@@ -150,7 +162,15 @@ public class MonitorEndpointController {
      */
     @GetMapping("/endpoint/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.ENDPOINT)
-    public void exportEndpointsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+    public void exportEndpointsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
         monitorEndpointService.export(response, params);
     }
 

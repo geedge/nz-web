@@ -15,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -129,25 +131,50 @@ public class AssetBrandModelController {
 
 
     @GetMapping("/asset/model/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        modelService.getExportTemplateByLanguage(response, language);
+        String format = request.getHeader("format");
+        format = Tool.StrUtil.emptyToDefault(format, "1");
+
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        modelService.getTemplateByLanguage(response, format);
     }
 
 
     @PostMapping("/asset/model/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.MODEL)
     @RequiresPermissions({"asset:model:save"})
-    public R importAssetModelFromExcel(MultipartFile excelFile, HttpServletRequest request) {
-        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+    public R importAssetModelData(MultipartFile excelFile, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        Map info = modelService.importAssetModelFromExcel(excelFile, language);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+
+        Map info = modelService.importAssetModelData(excelFile);
         return R.ok(info);
     }
 
     @GetMapping("/asset/model/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.MODEL)
-    public void exportAssetModels(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+    public void exportAssetModels(HttpServletResponse response, @RequestParam Map<String, Object> params)  throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
         modelService.export(response, params);
     }
 

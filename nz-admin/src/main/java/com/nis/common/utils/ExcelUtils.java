@@ -2,10 +2,7 @@ package com.nis.common.utils;
 
 
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.nis.common.exception.NZException;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
@@ -21,7 +18,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -240,32 +240,23 @@ public class ExcelUtils {
      */
     public static void setDataCellStyle(CellStyle dataStyle, Row row, int cellNum) {
         Cell cell;
-        for (int i = 0; i <= cellNum; i++) {
+        for (int i = 0; i < cellNum; i++) {
             cell = row.getCell(i);
             cell = cell == null ? row.createCell(i) : cell;
             cell.setCellStyle(dataStyle);
         }
     }
 
-    public static boolean validateExcelHeader(Sheet sheet, int firstRowNum, Collection<Object> columnInfoList) {
+    public static boolean validateExcelHeader(Sheet sheet, int firstRowNum, List<String> columnInfoList) {
         Row row = sheet.getRow(firstRowNum);
         List<Boolean> flags = new ArrayList<>();
-        List<String> columns;
-        LinkedHashMap colsMap;
-        for (Object obj : columnInfoList) {
-            colsMap = JSONObject.parseObject(obj.toString(), LinkedHashMap.class, Feature.OrderedField);
-            columns = new ArrayList<>(colsMap.keySet());
-            if (CollectionUtils.isNotEmpty(columns)) {
-                boolean flag = true;
-                for (int i = 0; i < columns.size(); i++) {
-//                    if (!columns.get(i).toLowerCase().equals(ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
-                    if (!StrUtil.equals(columns.get(i).toLowerCase(),ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
-                        flag = false;
-                        break;
-                    }
-                }
-                flags.add(flag);
+        for (int i = 0; i < columnInfoList.size(); i++) {
+            boolean flag = true;
+            if (!StrUtil.equals(columnInfoList.get(i).toLowerCase(), ExcelUtils.getCellValue(row.getCell(i)).toLowerCase())) {
+                flag = false;
+                break;
             }
+            flags.add(flag);
         }
 
         boolean headerFlag = false;

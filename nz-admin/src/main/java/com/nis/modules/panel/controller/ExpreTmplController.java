@@ -14,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,26 +104,49 @@ public class ExpreTmplController {
     }
 
     @GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) {
+    public void getTemplateByLanguage(HttpServletResponse response, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
+        String format = request.getHeader("format");
+        format = Tool.StrUtil.emptyToDefault(format, "1");
 
-        expreTmplService.getExportTemplateByLanguage(response, language);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+
+        expreTmplService.getTemplateByLanguage(response, format);
     }
 
     @PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.EXPRESSIONTMPL)
     @RequiresPermissions({"expression:tmpl:save"})
-    public R importTmplsFromExcel(MultipartFile excelFile, HttpServletRequest request) {
+    public R importTmpls(MultipartFile excelFile, HttpServletRequest request) throws IOException {
         String language = request.getHeader(Constant.LANGUAGE);
-        ValidateUtils.is(excelFile).notNull(RCode.EXPRETMPL_IMPORT_FILE_ISNULL);
+        ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL);
+        // 校验 LANGUAGE
+        if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+        }
 
-        Map info = expreTmplService.importExpreTmplsFromExcel(excelFile, language);
+        Map info = expreTmplService.importTmpls(excelFile);
         return R.ok(info);
     }
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.EXPRESSIONTMPL)
-    public void exportExpreTmpls(HttpServletResponse response, @RequestParam Map<String, Object> params) {
+    public void exportDataCenters(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+        Object format = params.get("format");
+        String formatStr = format == null ? "1" : format.toString();
+        // 校验 FORMAT
+        if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+            throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+        }
+        params.put("format", formatStr);
+
         expreTmplService.export(response, params);
     }
 

@@ -1,12 +1,12 @@
 package com.nis.modules.endpoint.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.nis.common.utils.PageUtils;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -20,13 +20,13 @@ public interface MonitorEndpointService extends IService<MonitorEndpoint> {
 
     void deleteEndpointByIds(List<Integer> ids);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
     void cancelImport(String seq);
 
-    Map importEndpoint(MultipartFile excelFile, String language);
+    Map importEndpointData(MultipartFile excelFile) throws IOException;
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
     List<Integer> getSuspendedEndpointIdList(Integer assetId);
 

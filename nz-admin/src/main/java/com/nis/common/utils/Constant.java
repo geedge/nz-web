@@ -1143,4 +1143,12 @@ public class Constant {
 			.put("endpoint", "monitor_endpoint").put("alertrule", "alert_rule").put("model", "asset_model")
 			.put("user", "sys_user").build();
 
+
+
+
+	public static final String[] LANGUAGE_VALUES = {"en", "zh"};
+	//1: XLSX， 2: CSV， 3: JSON
+	public static final String[] IMPORTFILE_TYPE_INTVALUES = {"1", "2", "3"};
+
+	public static final String[] IMPORTFILE_TYPE_STRVALUES = {"xlsx", "xls", "csv", "json"};
 }

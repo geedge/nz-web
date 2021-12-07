@@ -6,6 +6,7 @@ import com.nis.modules.asset.entity.Cabinet;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -57,11 +58,11 @@ public interface CabinetService extends IService<Cabinet> {
      */
     Map getCabinetUsizeDetails(Integer id);
 
-    void getCabinetExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getCabinetTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importCabinetsFromExcel(MultipartFile excelFile, String language);
+    Map importCabinetData(MultipartFile excelFile) throws IOException;
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
     void cancelImport(String seq);
 }

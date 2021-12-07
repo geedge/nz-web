@@ -4,7 +4,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -22,25 +21,17 @@ import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.sys.dao.SysConfigDao;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,7 +65,10 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private AlertMessageService alertMessageService;
 
     @Autowired
-    private SysConfigDao sysConfigDao;
+    private SysConfigService sysConfigService;
+
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
 
     @Override
     public Dc queryDcDetails(Integer id) {
@@ -285,55 +279,23 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     }
 
     @Override
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if (map.get(language) != null) {
-            exportHeaderMap = (Map) map.get(language);
-        } else {
-            throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
-        }
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Dc", true);
-            String fileName = "DcExportTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("dc 模板生成失败，错误信息是：" + e.getMessage(), e);
-        } catch (RuntimeException e) {
-            log.error("获取 dc 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e.getMessage(), e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
-        }
+    public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String fileName = "DatacenterTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
-    public Map importDatacentersFromExcel(MultipartFile excelFile, String language) {
-        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
-
-        Sheet sheet = work.getSheetAt(0);
-
-        // 表头校验
-        SysConfigEntity config = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if (!headerFlag) {
-            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
-        }
-
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+    public Map importDcData(MultipartFile multipartFile) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
 
-        int successNum = this.saveDatacentersFromSheet(sheet, failDetails, headerInfos, seqUUID);
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+        int successNum = this.saveDatacentersFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -344,15 +306,14 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         return resultMap;
     }
 
-    private int saveDatacentersFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+    private int saveDatacentersFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         int successNum = 0;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) continue;
+        for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
             boolean saveFlag = true;
+            Map<Integer, String> dataMap = importDataList.get(i);
 
-            String name = ExcelUtils.getCellValue(row.getCell(0));
+            String name = dataMap.get(0);
             if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.DC_NAME_ISNULL.getMsg());
@@ -364,11 +325,11 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 }
             }
 
-            String location = ExcelUtils.getCellValue(row.getCell(1));
-            String tel = ExcelUtils.getCellValue(row.getCell(2));
+            String location = dataMap.get(1);
+            String tel = dataMap.get(2);
 
             SysUserEntity principalUser = null;
-            String principalName = ExcelUtils.getCellValue(row.getCell(3));
+            String principalName = dataMap.get(3);
             if (StringUtils.isNotEmpty(principalName)) {
                 principalUser = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, principalName));
                 if (principalUser == null) {
@@ -377,7 +338,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 }
             }
 
-            String longitude = ExcelUtils.getCellValue(row.getCell(4));
+            String longitude = dataMap.get(4);
             if (StringUtils.isNotEmpty(longitude)) {
                 try {
                     Double aDouble = Double.valueOf(longitude);
@@ -391,7 +352,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 }
             }
 
-            String latitude = ExcelUtils.getCellValue(row.getCell(5));
+            String latitude = dataMap.get(5);
             if (StringUtils.isNotEmpty(latitude)) {
                 try {
                     Double aDouble = Double.valueOf(latitude);
@@ -405,7 +366,7 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
                 }
             }
 
-            String state = ExcelUtils.getCellValue(row.getCell(6));
+            String state = dataMap.get(6);
             if (StringUtils.isEmpty(state)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_STATE_ISNULL.getMsg());
@@ -448,73 +409,43 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     }
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
-        SysConfigEntity configEntity = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-
-        SysConfigEntity maxLine = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
         PageUtils page = this.queryPage(params);
         List<Dc> list = (List<Dc>) page.getList();
+        List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        SXSSFWorkbook workbook = null;
-        try {
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
-
-            String sheetName = "Data center";
-            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
-
-            this.fillData(list, 1, sheet, workbook);
-
-            // 响应为流
-            String fileName = "Datacenters.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("Dc 导出文件生成失败，错误信息是：" + e.getMessage(), e);
-        } catch (RuntimeException e) {
-            log.error("Dc 导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
-        } finally {
-            if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    log.error(e);
-                }
-            }
-        }
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_DC_EXPORT_HEADER);
+        String fileName = "Datacenters";
+        String formatStr = params.get("format").toString();
+        basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
     }
 
-    private void fillData(List<Dc> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+    private List<List<String>> handleExportDataList(List<Dc> list) {
         List<SysUserEntity> userList = sysUserService.list();
         Map<Long, String> userIdAndNameMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
-        for (Dc dc : list) {
-            Row row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(dc.getName());
-            row.createCell(1).setCellValue(ObjectUtil.defaultIfNull(dc.getLocation(), ""));
-            row.createCell(2).setCellValue(ObjectUtil.defaultIfNull(dc.getTel(), ""));
-            String principalName = dc.getPrincipal() != null ? userIdAndNameMap.get(dc.getPrincipal().longValue()) : "";
-            row.createCell(3).setCellValue(ObjectUtil.defaultIfNull(principalName, ""));
-            row.createCell(4).setCellValue(ObjectUtil.defaultIfNull(dc.getLongitude(), "").toString());
-            row.createCell(5).setCellValue(ObjectUtil.defaultIfNull(dc.getLatitude(), "").toString());
-            row.createCell(6).setCellValue(dc.getState());
 
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 6);
+        List<List<String>> exportDataList = new ArrayList<>();
+        for (Dc dc : list) {
+            List<String> tempList = new ArrayList<>();
+            tempList.add(dc.getName());
+            tempList.add(ObjectUtil.defaultIfNull(dc.getLocation(), ""));
+            tempList.add(ObjectUtil.defaultIfNull(dc.getTel(), ""));
+            String principalName = dc.getPrincipal() != null ? userIdAndNameMap.get(dc.getPrincipal().longValue()) : "";
+            tempList.add(ObjectUtil.defaultIfNull(principalName, ""));
+            tempList.add(ObjectUtil.defaultIfNull(dc.getLongitude(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(dc.getLatitude(), "").toString());
+            tempList.add(dc.getState());
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
 
     @Override

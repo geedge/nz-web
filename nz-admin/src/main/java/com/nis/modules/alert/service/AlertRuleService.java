@@ -6,6 +6,7 @@ import com.nis.modules.alert.entity.AlertRuleEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -27,11 +28,11 @@ public interface AlertRuleService extends IService<AlertRuleEntity> {
 	void delete(Integer[] ids);
 
 
-	void getExportTemplateByLanguage(HttpServletResponse response, String language);
+	void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-	Map importAlertFromExcelFile(MultipartFile excelFile, String language);
+	Map importAlertRuleData(MultipartFile excelFile) throws IOException;
 
-	void export(HttpServletResponse response, Map<String, Object> params);
+	void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
 	void cancelImport(String seq);
 	

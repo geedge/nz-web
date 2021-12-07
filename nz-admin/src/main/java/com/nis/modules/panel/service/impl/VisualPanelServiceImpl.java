@@ -6,7 +6,6 @@ import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -22,17 +21,11 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysDictEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysDictService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
@@ -43,7 +36,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,6 +61,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     
 	@Autowired
     private SysDictService sysDictService;
+
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
 	
     @Override
     public VisualPanel queryInfo(Integer id) {
@@ -400,72 +395,25 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         return resultList;
     }
-    
+
     @Override
-	public void getExportTemplateByLanguage(HttpServletResponse response, String language, String type) {
+    public void getTemplateByLanguage(HttpServletResponse response, String format, String type) throws IOException{
 		// 按类型获取表头模板信息
         String configKey = this.getChartTemplateConfigKeyByType(type);
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, configKey));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if(map.get(language) != null){
-            exportHeaderMap = (Map) map.get(language);
-        }else{
-            throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
-        }
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Chart", true);
-            String fileName = "PanelChartExportTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("图表模板生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            log.error("获取图表导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
-        }
+        String sysHeaderJsonStr = sysConfigService.getValue(configKey);
+        String fileName = "PanelChartTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
 	}
     
     @Override
-    public Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language) {
-        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
-            throw new NZException(RCode.PANEL_IMPORTFILE_TYPE);
-        }
-
-        Workbook work = null;
-        try {
-            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (IOException e) {
-            log.error("解析导入图表文件格式有误"+e);
-            throw new NZException(RCode.PANEL_IMPORTFILE_FAILED);
-        } finally {
-            if (work != null) {
-                IOUtils.closeQuietly(work);
-            }
-        }
-
-        Sheet sheet = work.getSheetAt(0);
-        // 表头校验
+    public Map importChartData(MultipartFile multipartFile, String type, Integer linkId,String language) throws IOException {
         String configKey = this.getChartTemplateConfigKeyByType(type);
-        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, configKey));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if(!headerFlag){
-            throw new NZException(RCode.PANEL_EXPORT_HEADER_TEMPLATE_ERROR);
-        }
-
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
+        String sysHeaderJsonStr = sysConfigService.getValue(configKey);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
-
-        // 保存并返回成功条数
         type = StringUtils.isEmpty(type) ? Constant.PanelType.DASHBOARD.getValue() : type;
 
         SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
@@ -475,17 +423,18 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         if (ToolUtil.isEmpty(chartTypeMapByLanguage)) {
             throw new NZException(RCode.PANEL_EXPORT_HEADER_LANGUAGE_ERROR);
         }
-        
+
+        ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
         int successNum = 0;
         if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
-        	// 处理excel表数据 将group chart相关排在前列
-            List<Row> rows = this.groupChartRowHandle(sheet,1);
-            successNum = this.saveDashboardChartDataFromSheet(rows, failDetails, seqUUID, chartTypeMapByLanguage, headerInfos);
+            // 处理excel表数据 将group chart相关排在前列
+            List<Map<Integer, String>> handleImportData = this.groupChartRowHandle(importDataList, 1);
+            successNum = this.saveDashboardChartData(handleImportData, failDetails, headerInfos, seqUUID, chartTypeMapByLanguage);
         } else {
-        	List<Row> rows = this.groupChartRowHandle(sheet,0);
-            successNum = this.saveAssetEndpointChartDataFromSheet(rows, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
+            List<Map<Integer, String>> handleImportData = this.groupChartRowHandle(importDataList, 0);
+            successNum = this.saveAssetEndpointChartData(handleImportData, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
         }
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -516,57 +465,46 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     }
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+        }
         // 导出查询与列表查询一致
         List<VisualChart> charts = this.exportDataByParams(params);
         String type = Constant.PanelType.DASHBOARD.getValue();
         if (CollectionUtils.isNotEmpty(charts)) {
-        	VisualChart chart = charts.stream().findFirst().get();
+            VisualChart chart = charts.stream().findFirst().get();
             VisualPanel panel = this.getById(chart.getPanelId());
-            if(panel == null || !StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),panel.getType())) {
+            if (panel == null || !StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), panel.getType())) {
                 type = Constant.PanelType.ASSET.getValue();
             }
         }
+        String language = (String) params.get("language");
 
         // 获取导出配置 key 名称
-        String chartTemplateConfigKey = this.getChartTemplateConfigKeyByType(type);
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, chartTemplateConfigKey));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        // 添加标题行 默认语言 en
-        String language = (String) params.get("language");
-        language = ToolUtil.isEmpty(language) ? "en" : language;
+        String configKey = this.getChartTemplateConfigKeyByType(type);
+        String sysHeaderJsonStr = sysConfigService.getValue(configKey);
 
-        SXSSFWorkbook workbook = null;
-        try {
-            String sheetName = "Chart";
-            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
+        String i18nConfigJsonStr = sysConfigService.getValue(Constant.I18N_MAPPING);
+        Map i18nConfigMap = JSONObject.parseObject(i18nConfigJsonStr, Map.class);
+        Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
+        Map chartTypeMapByLanguage = (Map) chartTypeMap.get(StrUtil.emptyToDefault(language, "en"));
 
-            SysConfigEntity i18nConfig = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.I18N_MAPPING).eq(SysConfigEntity::getStatus, 1));
-            Map i18nConfigMap = JSONObject.parseObject(i18nConfig.getParamValue(), Map.class);
-            Map chartTypeMap = (Map) i18nConfigMap.get(Constant.DICT_CHART_TYPE);
-            Map chartTypeMapByLanguage = (Map)  chartTypeMap.get(language);
+        charts = charts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
+        String fileName = "Charts";
+        String formatStr = params.get("format").toString();
 
-            charts = charts.stream().sorted(Comparator.comparing(VisualChart::getGroupId)).collect(Collectors.toList());
-            // 填充数据
-            if(!StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)){
-                this.fillAssetEndpointChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
-            }else{
-                this.fillDashboardChartData(charts, 1, sheet, workbook, chartTypeMapByLanguage);
-            }
-
-            String fileName = "PanelChartExport.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("图表导出文件生成失败，错误信息是：" + e.getMessage(), e);
-        } catch (RuntimeException e) {
-            log.error("图表导出失败，参数是：" + params.toString() + " ，错误信息是：" + e.getMessage(), e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
+        if (StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(), type)) {
+            List<List<String>> exportDataList = this.handleDashboardChartExportDataList(charts, chartTypeMapByLanguage);
+            basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
+        } else {
+            List<List<String>> exportDataList = this.handleAssetEndpointChartExportDataList(charts, chartTypeMapByLanguage);
+            basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
         }
     }
     
@@ -596,38 +534,36 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return chartTemplateTyep;
     }
 
-	
-    
-    private void fillAssetEndpointChartData(List<VisualChart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
+
+    private List<List<String>> handleAssetEndpointChartExportDataList(List<VisualChart> charts, Map chartTypeMapByLanguage) {
         Map<Integer, String> varTypeIdAndNameMap = new HashMap<>(4);
         varTypeIdAndNameMap.put(1, "Asset");
         varTypeIdAndNameMap.put(2, "Endpoint");
-        Row row;
-        String type;
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+
+        List<List<String>> exportDataList = new ArrayList<>();
         for (VisualChart chart : charts) {
             if (chart == null || Constant.CHART_ASSETINFO_TYPE.equalsIgnoreCase(chart.getType())
-            	||	Constant.CHART_ENDPOINTINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
-            row = sheet.createRow(rowNum++);
-            type = chart.getType();
-            row.createCell(0).setCellValue(chart.getGroup().getName());
-            row.createCell(1).setCellValue(chart.getName());
-            row.createCell(2).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
-            row.createCell(3).setCellValue(ToolUtil.isEmpty(varTypeIdAndNameMap.get(chart.getVarType())) ? "" : varTypeIdAndNameMap.get(chart.getVarType()));
-            row.createCell(4).setCellValue(chart.getSpan());
-            row.createCell(5).setCellValue(chart.getHeight());
-            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
-                row.createCell(6).setCellValue("");
+                    || Constant.CHART_ENDPOINTINFO_TYPE.equalsIgnoreCase(chart.getType())) continue;
+            List<String> tempList = new ArrayList<>();
+            String type = chart.getType();
+            tempList.add(chart.getGroup().getName());
+            tempList.add(chart.getName());
+            tempList.add(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            tempList.add(ToolUtil.isEmpty(varTypeIdAndNameMap.get(chart.getVarType())) ? "" : varTypeIdAndNameMap.get(chart.getVarType()));
+            tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
+            if (StrUtil.equals(Constant.CHART_TEXT_TYPE, type)) {
+                tempList.add("");
             } else {
-                row.createCell(6).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+                tempList.add(this.getUnitDescrByVal(chart.getUnit()));
             }
-            row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
-            row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
-            row.createCell(9).setCellValue(chart.getRemark());
-            row.createCell(10).setCellValue(chart.getDatasource());
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
+            tempList.add(this.handleChartParam(chart.getParam()));
+            tempList.add(this.handleChartElementForExport(chart.getElements()));
+            tempList.add(chart.getRemark());
+            tempList.add(chart.getDatasource());
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
     
     private String handleChartElementForExport(List<VisualChartElement> chartElements) {
@@ -683,8 +619,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             this.getPanelNamePathAndIdMapFromTree(cPanel, cPath, nodeNamePathAndIdMap);
         }
     }
-    
-    private int saveDashboardChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, Map<String, String> chartTypeMapByLanguage, List<String> headerInfos) {
+
+    private int saveDashboardChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID, Map<String, String> chartTypeMapByLanguage) {
         List<VisualPanel> panelTreeList = this.queryList(new HashMap());
         Map<String, Integer> nodeNamePathAndIdMap = new HashMap<>();
         for (VisualPanel panel : panelTreeList) {
@@ -706,19 +642,20 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
         
         int successNum = 0;
-        for (Row row : rows) {
-            if (row == null) continue;
-            int dataFromExcelRowNum = row.getRowNum() + 1;
+        for (int i = 0; i < importDataList.size(); i++) {
+            int dataFromExcelRowNum = i + 1;
+            Map<Integer, String> dataMap = importDataList.get(i);
+
             boolean saveFlag = true;
             boolean typeFlag = true;
-            String panelName = ExcelUtils.getCellValue(row.getCell(0));
+            String panelName = dataMap.get(0);
             if (StringUtils.isEmpty(panelName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.PANEL_NAME_ISNULL.getMsg());
             }
             Integer panelId = this.handlePanelNameForCellVal(nodeNamePathAndIdMap, panelName, seqUUID, ++panelMaxWeight);
             Integer groupId=0;
-            String groupName = ExcelUtils.getCellValue(row.getCell(1));
+            String groupName = dataMap.get(1);
             if(StrUtil.isNotBlank(groupName) && saveFlag) {
             	VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, groupName).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
                 if(ToolUtil.isEmpty(groupChart)) {
@@ -740,12 +677,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 groupId = groupChart.getId();
             }
             
-            String title = ExcelUtils.getCellValue(row.getCell(2));
+            String title = dataMap.get(2);
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TITLE_ISNULL.getMsg());
             }
-            String type = ExcelUtils.getCellValue(row.getCell(3));
+            String type = dataMap.get(3);
             
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
@@ -765,7 +702,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.CHART_GROUP_NAME_DUPLICATE.getMsg());
             }
             
-            String span = ExcelUtils.getCellValue(row.getCell(4));
+            String span = dataMap.get(4);
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_SPAN_ISNULL.getMsg());
@@ -782,7 +719,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
-            String height = ExcelUtils.getCellValue(row.getCell(5));
+            String height = dataMap.get(5);
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_ISNULL.getMsg());
@@ -799,14 +736,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_INVALIDE.getMsg());
                 }
             }
-            String unit = ExcelUtils.getCellValue(row.getCell(6));
+            String unit = dataMap.get(6);
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
-            String param = ExcelUtils.getCellValue(row.getCell(7));
+            String param = dataMap.get(7);
             if(typeFlag){
                 String msg = this.validateChartParamForImport(type, param, "dashboard");
                 if(StringUtils.isNotEmpty(msg)){
@@ -814,7 +751,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
-            String datasource = ExcelUtils.getCellValue(row.getCell(10));
+            String datasource = dataMap.get(10);
             if (StringUtils.isEmpty(datasource)) {
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_ISNULL.getMsg());
@@ -824,7 +761,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_INVALIDE.getMsg());
                 }
             }
-            String elements = ExcelUtils.getCellValue(row.getCell(8));
+            String elements = dataMap.get(8);
             if(typeFlag){
                 String msg = this.validateChartElementForImport(datasource, elements);
                 if(StringUtils.isNotEmpty(msg)){
@@ -832,7 +769,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
-            String description = ExcelUtils.getCellValue(row.getCell(9));
+            String description = dataMap.get(9);
             
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -1073,7 +1010,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         return null;
     }
     
-    private int saveAssetEndpointChartDataFromSheet(List<Row> rows, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
+    private int saveAssetEndpointChartData(List<Map<Integer, String>> importDataList, List<Map> failDetails, String seqUUID, String panelType, Integer linkId, Map chartTypeMapByLanguage, List<String> headerInfos) {
         // 导入类型 template 标识
         Boolean templateFlag = Constant.PanelType.TEMPLATE.getValue().equalsIgnoreCase(panelType);
         // chart template 导入导出 varType map
@@ -1091,15 +1028,15 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         List<String> datasources = chartDatasources.stream().map(SysDictEntity::getValue).collect(Collectors.toList());
         
         int successNum = 0;
-        for (Row row : rows) {
-            if (row == null) continue;
-            int dataFromExcelRowNum = row.getRowNum() + 1;
+        for (int i = 0; i < importDataList.size(); i++) {
+            int dataFromExcelRowNum = i + 1;
+            Map<Integer, String> dataMap = importDataList.get(i);
             boolean saveFlag = true;
             boolean typeFlag = true;
             
             Integer groupId=0;
-            String groupName = ExcelUtils.getCellValue(row.getCell(0));
-            String varType = ExcelUtils.getCellValue(row.getCell(3));
+            String groupName = dataMap.get(0);
+            String varType = dataMap.get(3);
             if(StrUtil.isNotBlank(groupName)) {
                 VisualChart groupChart;
                 if (templateFlag) {
@@ -1132,13 +1069,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 groupId = groupChart.getId();
             }
             
-            String title = ExcelUtils.getCellValue(row.getCell(1));
+            String title = dataMap.get(1);
             if (StringUtils.isEmpty(title)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.CHART_TITLE_ISNULL.getMsg());
             }
             
-            String type = ExcelUtils.getCellValue(row.getCell(2));
+            String type = dataMap.get(2);
             if (StringUtils.isEmpty(type)) {
                 saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TYPE_ISNULL.getMsg());
@@ -1174,7 +1111,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
 
-            String span = ExcelUtils.getCellValue(row.getCell(4));
+            String span = dataMap.get(4);
             if (StringUtils.isEmpty(span)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_SPAN_ISNULL.getMsg());
@@ -1191,7 +1128,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.CHART_WIDTH_INVALIDE.getMsg());
                 }
             }
-            String height = ExcelUtils.getCellValue(row.getCell(5));
+            String height = dataMap.get(5);
             if (StringUtils.isEmpty(height)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_ISNULL.getMsg());
@@ -1208,14 +1145,14 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.CHART_HEIGHT_INVALIDE.getMsg());
                 }
             }
-            String unit = ExcelUtils.getCellValue(row.getCell(6));
+            String unit = dataMap.get(6);
             if (StringUtils.isNotEmpty(unit)) {
                 if (ToolUtil.isEmpty(Constant.ALERT_RULE_UNIT_MAP.get(unit))) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.CHART_UNIT_NOTFOUND.getMsg());
                 }
             }
-            String param = ExcelUtils.getCellValue(row.getCell(7));
+            String param = dataMap.get(7);
             if (typeFlag) {
                 String msg = this.validateChartParamForImport(type, param, type);
                 if (StringUtils.isNotEmpty(msg)) {
@@ -1224,7 +1161,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             
-            String datasource = ExcelUtils.getCellValue(row.getCell(10));
+            String datasource = dataMap.get(10);
             if (StringUtils.isEmpty(datasource)) {
             	saveFlag = typeFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_ISNULL.getMsg());
@@ -1235,7 +1172,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             
-            String elements = ExcelUtils.getCellValue(row.getCell(8));
+            String elements = dataMap.get(8);
             if (typeFlag) {
                 String msg = this.validateChartElementForImport(datasource, elements);
                 if (StringUtils.isNotEmpty(msg)) {
@@ -1243,7 +1180,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(8), msg);
                 }
             }
-            String description = ExcelUtils.getCellValue(row.getCell(9));
+            String description = dataMap.get(9);
             
             if (saveFlag) {
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -1339,8 +1276,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
         return chartList;
     }
-    
-    private void fillDashboardChartData(List<VisualChart> charts, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook, Map chartTypeMapByLanguage) {
+
+    private List<List<String>> handleDashboardChartExportDataList(List<VisualChart> charts, Map chartTypeMapByLanguage) {
         List<VisualPanel> panelTreeList = this.queryList(new HashMap());
         Map<Integer, String> nodeIdAndNamePathMap = new HashMap<>();
         for (VisualPanel panel : panelTreeList) {
@@ -1348,31 +1285,29 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             this.getPanelIdAndNamePathMapFromTree(panel, panel.getName(), nodeIdAndNamePathMap);
         }
 
-        Row row;
-        String type;
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+        List<List<String>> exportDataList = new ArrayList<>();
         for (VisualChart chart : charts) {
-            if(chart == null) continue;
-            row = sheet.createRow(rowNum++);
-             type = chart.getType();
-            row.createCell(0).setCellValue(nodeIdAndNamePathMap.get(chart.getPanelId()));
-            row.createCell(1).setCellValue(chart.getGroup().getName());
-            row.createCell(2).setCellValue(chart.getName());
-            row.createCell(3).setCellValue(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
-            row.createCell(4).setCellValue(chart.getSpan());
-            row.createCell(5).setCellValue(chart.getHeight());
-            if(StrUtil.equals(Constant.CHART_TEXT_TYPE,type)) {
-                row.createCell(6).setCellValue("");
+            if (chart == null) continue;
+            List<String> tempList = new ArrayList<>();
+            String type = chart.getType();
+            tempList.add(nodeIdAndNamePathMap.get(chart.getPanelId()));
+            tempList.add(chart.getGroup().getName());
+            tempList.add(chart.getName());
+            tempList.add(this.getI18nChartTypeValue(chartTypeMapByLanguage, type));
+            tempList.add(ObjectUtil.defaultIfNull(chart.getSpan(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getHeight(), "").toString());
+            if (StrUtil.equals(Constant.CHART_TEXT_TYPE, type)) {
+                tempList.add("");
             } else {
-                row.createCell(6).setCellValue(this.getUnitDescrByVal(chart.getUnit()));
+                tempList.add(this.getUnitDescrByVal(chart.getUnit()));
             }
-            row.createCell(7).setCellValue(this.handleChartParam(chart.getParam()));
-            row.createCell(8).setCellValue(this.handleChartElementForExport(chart.getElements()));
-            row.createCell(9).setCellValue(chart.getRemark());
-            row.createCell(10).setCellValue(chart.getDatasource());
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 10);
+            tempList.add(this.handleChartParam(chart.getParam()));
+            tempList.add(this.handleChartElementForExport(chart.getElements()));
+            tempList.add(chart.getRemark());
+            tempList.add(chart.getDatasource());
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
     
     public void getPanelIdAndNamePathMapFromTree(VisualPanel panel, String path, Map<Integer, String> nodeIdAndNamePathMap) {
@@ -1424,25 +1359,17 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         }
     }
 
-    public List<Row> groupChartRowHandle(Sheet sheet,Integer type) {
-    	// type标识dashboard还是asset 区别去第几列查找group chart信息
-    	List<Row> rows = new ArrayList<>();
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) {
-                continue;
-            }
-            rows.add(row);
-        }
-        List<Row> list = rows.stream().filter(cells -> {
-            String groupName = ExcelUtils.getCellValue(cells.getCell(type));
+    public List<Map<Integer, String>> groupChartRowHandle(List<Map<Integer, String>> importDataList, Integer index) {
+        // type标识dashboard还是asset 区别去第几列查找group chart信息
+        List<Map<Integer, String>> list = importDataList.stream().filter(dataMap -> {
+            String groupName = dataMap.get(index);
             if (StringUtils.isEmpty(groupName)) {
                 return true;
             }
             return false;
         }).collect(Collectors.toList());
-        rows.removeAll(list);
-        list.addAll(rows);
+        importDataList.removeAll(list);
+        list.addAll(importDataList);
         return list;
     }
 }

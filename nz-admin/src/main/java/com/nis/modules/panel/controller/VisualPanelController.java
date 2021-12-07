@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,27 +87,52 @@ public class VisualPanelController {
 	}
 	
 	@GetMapping("/template")
-    public void getExportTemplateByLanguage(HttpServletResponse response, String type,HttpServletRequest request) {
-        String language = request.getHeader(Constant.LANGUAGE);
+	public void getTemplateByLanguage(HttpServletResponse response, String type, HttpServletRequest request) throws IOException {
+		String language = request.getHeader(Constant.LANGUAGE);
+		String format = request.getHeader("format");
+		format = Tool.StrUtil.emptyToDefault(format, "1");
 
-        visualPanelService.getExportTemplateByLanguage(response, language, type);
-    }
-	
+		// 校验 LANGUAGE
+		if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+			throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+		}
+		// 校验 FORMAT
+		if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(format)) {
+			throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+		}
+
+		visualPanelService.getTemplateByLanguage(response, format, type);
+	}
+
 	@PostMapping("/import")
     @SysLog(operation = OperationEnum.IMPORT, type = TypeEnum.CHART)
 	@RequiresPermissions({ "visual:panel:save"})
-    public R importAlertFromExcelFile(MultipartFile excelFile, String type, Integer linkId,HttpServletRequest request) {
-        String language = request.getHeader(Constant.LANGUAGE);
-        ValidateUtils.is(excelFile).notNull(RCode.PANEL_IMPORT_FILE_ISNULL)
-                .and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
+	public R importChartData(MultipartFile excelFile, String type, Integer linkId, HttpServletRequest request) throws IOException {
 
-        return R.ok(visualPanelService.importChartFromExcelFile(excelFile, type, linkId, language));
-    }
+		String language = request.getHeader(Constant.LANGUAGE);
+		ValidateUtils.is(excelFile).notNull(RCode.EXCELFILE_IMPORT_FILE_ISNULL)
+				.and(type).notNull(RCode.PANEL_CHART_TEMPLATE_TYPE_ISNULL);
+		// 校验 LANGUAGE
+		if (!Arrays.asList(Constant.LANGUAGE_VALUES).contains(language)) {
+			throw new NZException(RCode.EXCELFILE_HEADER_LANGUAGE_ERROR);
+		}
+
+		Map info = visualPanelService.importChartData(excelFile, type, linkId, language);
+		return R.ok(info);
+	}
 
     @GetMapping("/export")
     @SysLog(operation = OperationEnum.EXPORT, type = TypeEnum.CHART)
-    public void exportAssetsFromExcel(HttpServletResponse response, @RequestParam Map<String, Object> params) {
-        visualPanelService.export(response, params);
+    public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+	    Object format = params.get("format");
+	    String formatStr = format == null ? "1" : format.toString();
+	    // 校验 FORMAT
+	    if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+		    throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+	    }
+	    params.put("format", formatStr);
+
+	    visualPanelService.export(response, params);
     }
 
     @DeleteMapping("/cancelImport")

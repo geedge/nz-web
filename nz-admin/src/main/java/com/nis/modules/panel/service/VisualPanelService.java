@@ -3,6 +3,7 @@ package com.nis.modules.panel.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.modules.panel.entity.VisualPanel;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,12 +31,12 @@ public interface VisualPanelService extends IService<VisualPanel> {
 
     void updateVisualPanel(VisualPanel visualPanel);
     
-    void getExportTemplateByLanguage(HttpServletResponse response, String language, String type);
-    
+    void getTemplateByLanguage(HttpServletResponse response, String format, String type) throws IOException;
+
     void cancelImport(String seq);
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
-    Map importChartFromExcelFile(MultipartFile excelFile, String type, Integer linkId, String language);
+    Map importChartData(MultipartFile excelFile, String type, Integer linkId, String language) throws IOException;
 
 }

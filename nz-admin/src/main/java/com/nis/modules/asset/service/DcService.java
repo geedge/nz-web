@@ -6,6 +6,7 @@ import com.nis.modules.asset.entity.Dc;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -50,11 +51,11 @@ public interface DcService extends IService<Dc> {
      */
     void delete(Integer... ids);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importDatacentersFromExcel(MultipartFile excelFile, String language);
+    Map importDcData(MultipartFile excelFile) throws IOException;
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
     void cancelImport(String seq);
 }

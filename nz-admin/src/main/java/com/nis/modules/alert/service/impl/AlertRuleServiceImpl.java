@@ -4,11 +4,8 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.additional.query.impl.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
@@ -23,18 +20,11 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +32,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -75,6 +64,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private AlertMessageService alertMessageService;
+
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -251,73 +243,23 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
 
     @Override
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if(map.get(language) != null){
-            exportHeaderMap = (Map) map.get(language);
-        }else{
-            throw new NZException(RCode.ALERTRULE_EXPORT_HEADER_LANGUAGE_ERROR);
-        }
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "AlertRule", true);
-            String fileName = "AlertRuleExportTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("告警规则模板生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            log.error("获取告警规则导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
-        }
+    public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String fileName = "AlertRuleTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
-    public Map importAlertFromExcelFile(MultipartFile excelFile, String language) {
-        if (!ExcelUtils.validateFileType(excelFile.getOriginalFilename())) {
-            throw new NZException(RCode.ALERTRULE_IMPORTFILE_TYPE);
-        }
-
-        Workbook work = null;
-        try {
-            work = ExcelUtils.getWork(excelFile.getOriginalFilename(), excelFile.getInputStream());
-        } catch (IOException e) {
-            log.error("解析导入告警规则文件格式有误"+e);
-            throw new NZException(RCode.ASSET_IMPORTFILE_FAILED);
-        } finally {
-            if (work != null) {
-                IOUtils.closeQuietly(work);
-            }
-        }
-
-        Sheet sheet = work.getSheetAt(0);
-        // 表头校验
-        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if(!headerFlag){
-            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
-        }
-
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
-
-        // 预先查询出校验数据 避免循环查表
-        List<AlertRuleEntity> alertList = this.list();
-        List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getName).collect(Collectors.toList());
-        List<SysUserEntity> userList = sysUserService.list();
+    public Map importAlertRuleData(MultipartFile multipartFile) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
-        // 保存并返回成功条数
-        int successNum = this.saveAlertDataFromSheet(sheet, alertNameList, failDetails, userList, headerInfos,seqUUID);
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+
+        int successNum = this.saveRulesFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -328,17 +270,20 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         return resultMap;
     }
 
-    private int saveAlertDataFromSheet(Sheet sheet, List<String> alertNameList, List<Map> failDetails, List<SysUserEntity> userList, List<String> headerInfos, String seqUUID) {
+    private int saveRulesFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         int successNum = 0;
         List<AlertSeverityConf> severityConfs = alertSeverityService.list();
         List<AlertNotifyMethod> methodList = methodService.list();
-        Row row;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            row = sheet.getRow(i);
-            if (row == null) continue;
+
+        List<AlertRuleEntity> alertList = this.list();
+        List<String> alertNameList = alertList.stream().map(AlertRuleEntity::getName).collect(Collectors.toList());
+        List<SysUserEntity> userList = sysUserService.list();
+        for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
             boolean saveFlag = true;
-            String alertName = ExcelUtils.getCellValue(row.getCell(0));
+            Map<Integer, String> dataMap = importDataList.get(i);
+
+            String alertName = dataMap.get(0);
             if (StringUtils.isEmpty(alertName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ALERTRULE_NAME_ISNULL.getMsg());
@@ -349,7 +294,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
 
-            String typeStr = ExcelUtils.getCellValue(row.getCell(1));
+            String typeStr = dataMap.get(1);
             if (StrUtil.isEmpty(typeStr)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_TYPE_ISNULL.getMsg());
@@ -360,14 +305,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ALERTRULE_TYPE_INCORRECT.getMsg());
                 }
             }
-            String intervalStr = ExcelUtils.getCellValue(row.getCell(2));
-            String timeoutStr = ExcelUtils.getCellValue(row.getCell(3));
+            String intervalStr = dataMap.get(2);
+            String timeoutStr = dataMap.get(3);
 
-            String expr = ExcelUtils.getCellValue(row.getCell(4));
-            String operator = ExcelUtils.getCellValue(row.getCell(5));
-            String threshold = ExcelUtils.getCellValue(row.getCell(6));
-            String unit = ExcelUtils.getCellValue(row.getCell(7));
-            String last = ExcelUtils.getCellValue(row.getCell(8));
+            String expr = dataMap.get(4);
+            String operator = dataMap.get(5);
+            String threshold = dataMap.get(6);
+            String unit = dataMap.get(7);
+            String last = dataMap.get(8);
             if (saveFlag) {
                 if (StringUtils.isEmpty(expr)) {
                     saveFlag = false;
@@ -424,7 +369,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     }
                 }
             }
-            String severity = ExcelUtils.getCellValue(row.getCell(9));
+            String severity = dataMap.get(9);
             AlertSeverityConf alertSeverityConf=null;
             if (StringUtils.isEmpty(severity)) {
                 saveFlag = false;
@@ -436,14 +381,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(9), RCode.ALERTRULE_SEVERITY_INCORRECT.getMsg());
                 }
             }
-            String summary = ExcelUtils.getCellValue(row.getCell(10));
+            String summary = dataMap.get(10);
             if (StringUtils.isEmpty(summary)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.ALERTRULE_SUMMARY_ISNULL.getMsg());
             }
-            String description = ExcelUtils.getCellValue(row.getCell(11));
-            String receiver = ExcelUtils.getCellValue(row.getCell(12));
-            String method = ExcelUtils.getCellValue(row.getCell(13));
+            String description = dataMap.get(11);
+            String receiver = dataMap.get(12);
+            String method = dataMap.get(13);
             if (StringUtils.isNotEmpty(receiver)) {
                 if (CollectionUtils.isNotEmpty(this.getNonExistentUsers(receiver, userList))) {
                     saveFlag = false;
@@ -468,7 +413,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
 
-            String stateStr = ExcelUtils.getCellValue(row.getCell(14));
+            String stateStr = dataMap.get(14);
             if (StrUtil.isNotEmpty(stateStr)) {
                 if (!StrUtil.equals("1", stateStr) && !StrUtil.equals("0", stateStr)) {
                     saveFlag = false;
@@ -476,19 +421,19 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 }
             }
 
-            String autoExpiredStr = ExcelUtils.getCellValue(row.getCell(15));
+            String autoExpiredStr = dataMap.get(15);
             // 默认开启 进行校验 day start end format
-            String schedEnableStr = ExcelUtils.getCellValue(row.getCell(16));
+            String schedEnableStr = dataMap.get(16);
             schedEnableStr = StrUtil.emptyToDefault(schedEnableStr, "1");
-            String schedDaysStr = ExcelUtils.getCellValue(row.getCell(17));
+            String schedDaysStr = dataMap.get(17);
             schedDaysStr = StrUtil.emptyToDefault(schedDaysStr, "1,2,3,4,5,6,7");
-            String schedStimeStr = ExcelUtils.getCellValue(row.getCell(18));
+            String schedStimeStr = dataMap.get(18);
             schedStimeStr = StrUtil.emptyToDefault(schedStimeStr, "00:00");
-            String schedEtimeStr = ExcelUtils.getCellValue(row.getCell(19));
+            String schedEtimeStr = dataMap.get(19);
             schedEtimeStr = StrUtil.emptyToDefault(schedEtimeStr, "23:59");
-            String notifyActiveStr = ExcelUtils.getCellValue(row.getCell(20));
-            String notifyExpiredStr = ExcelUtils.getCellValue(row.getCell(21));
-            String trbShotStr = ExcelUtils.getCellValue(row.getCell(22));
+            String notifyActiveStr = dataMap.get(20);
+            String notifyExpiredStr = dataMap.get(21);
+            String trbShotStr = dataMap.get(22);
 
             List<String> enableList = Arrays.asList(new String[]{"0", "1"});
             if (StrUtil.isNotEmpty(autoExpiredStr) && !enableList.contains(autoExpiredStr)) {
@@ -684,49 +629,26 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
     }
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
-    	SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
+
         // 导出查询与列表查询一致
         PageUtils page = this.queryPage(params);
         List<AlertRuleEntity> list = (List<AlertRuleEntity>) page.getList();
 
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        // 添加标题行 默认语言 en
-        String language = (String) params.get("language");
-        language = ToolUtil.isEmpty(language) ? "en" : language;
+        List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        SXSSFWorkbook workbook = null;
-        try {
-            String sheetName = "AlterRule";
-            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, true);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
-
-            // 填充数据
-            this.fillData(list, 1, sheet, workbook);
-
-            String fileName = "AlterRuleExport.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("告警规则导出文件生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            log.error("告警规则导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
-        }
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ALERTRULE_EXPORT_HEADER);
+        String fileName = "AlterRules";
+        String formatStr = params.get("format").toString();
+        basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
     }
 
     @Override
@@ -734,30 +656,30 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
         this.remove(new QueryWrapper<AlertRuleEntity>().lambda().eq(AlertRuleEntity::getSeq, seq));
     }
 
-    private void fillData(List<AlertRuleEntity> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
+    private List<List<String>> handleExportDataList(List<AlertRuleEntity> list) {
+        List<List<String>> exportDataList = new ArrayList<>();
+
         List<SysUserEntity> sysUserList = sysUserService.list();
         Map<Long, String> userIdAndNameMap = sysUserList.stream().collect(Collectors.toMap(SysUserEntity::getId, SysUserEntity::getName));
         List<AlertNotifyMethod> methodList = methodService.list();
         Map<Integer, String> methodIdAndNameMap = methodList.stream().collect(Collectors.toMap(AlertNotifyMethod::getId, AlertNotifyMethod::getName));
-        Row row;
         String receiveIds, receiveNames;
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
         for (AlertRuleEntity rule : list) {
             // 内置告警不导出
             if (rule.getBuildIn() != null && rule.getBuildIn().equals(1)) continue;
-            row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(rule.getName());
-            row.createCell(1).setCellValue(rule.getType());
-            row.createCell(2).setCellValue(rule.getInr());
-            row.createCell(3).setCellValue(rule.getTimeout());
-            row.createCell(4).setCellValue(rule.getExpr());
-            row.createCell(5).setCellValue(rule.getOperator());
-            row.createCell(6).setCellValue(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
-            row.createCell(7).setCellValue(getUnitDescrByVal(rule.getUnit()));
-            row.createCell(8).setCellValue(rule.getLast());
-            row.createCell(9).setCellValue(rule.getSeverity().getName());
-            row.createCell(10).setCellValue(rule.getSummary());
-            row.createCell(11).setCellValue(rule.getDescription());
+            List<String> tempList = new ArrayList<>();
+            tempList.add(rule.getName());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getType(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getInr(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getTimeout(), "").toString());
+            tempList.add(rule.getExpr());
+            tempList.add(rule.getOperator());
+            tempList.add(rule.getThreshold() == null ? "" : rule.getThreshold() + "");
+            tempList.add(getUnitDescrByVal(rule.getUnit()));
+            tempList.add(ObjectUtil.defaultIfNull(rule.getLast(),"").toString());
+            tempList.add(rule.getSeverity().getName());
+            tempList.add(rule.getSummary());
+            tempList.add(rule.getDescription());
             receiveIds = rule.getReceiver();
             if (StringUtils.isNotEmpty(receiveIds)) {
                 receiveNames = "";
@@ -767,7 +689,7 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 if (StringUtils.isNotEmpty(receiveNames)) {
                     receiveNames = receiveNames.substring(0, receiveNames.length() - 1);
                 }
-                row.createCell(12).setCellValue(receiveNames);
+                tempList.add(receiveNames);
             }
 
             String methodIds = rule.getMethod();
@@ -779,21 +701,20 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                 if (StringUtils.isNotEmpty(methodNames)) {
                     methodNames = methodNames.substring(0, methodNames.length() - 1);
                 }
-                row.createCell(13).setCellValue(methodNames);
+                tempList.add(methodNames);
             }
-            row.createCell(14).setCellValue(rule.getState());
-            row.createCell(15).setCellValue(rule.getAutoExpired());
-            row.createCell(16).setCellValue(rule.getSchedEnable());
-            row.createCell(17).setCellValue(rule.getSchedDays());
-            row.createCell(18).setCellValue(rule.getSchedStime());
-            row.createCell(19).setCellValue(rule.getSchedEtime());
-            row.createCell(20).setCellValue(rule.getNotifyActive());
-            row.createCell(21).setCellValue(rule.getNotifyExpired());
-            row.createCell(22).setCellValue(StrUtil.emptyToDefault(rule.getTrbShot(), ""));
-
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 22);
+            tempList.add(ObjectUtil.defaultIfNull(rule.getState(),"").toString());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getAutoExpired(),"").toString());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getSchedEnable(),"").toString());
+            tempList.add(rule.getSchedDays());
+            tempList.add(rule.getSchedStime());
+            tempList.add(rule.getSchedEtime());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getNotifyActive(),"").toString());
+            tempList.add(ObjectUtil.defaultIfNull(rule.getNotifyExpired(),"").toString());
+            tempList.add(StrUtil.emptyToDefault(rule.getTrbShot(), ""));
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
 
     private String getUnitDescrByVal(Integer unitVal) {

@@ -1,43 +1,14 @@
 package com.nis.modules.endpoint.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.lang.hash.MurmurHash;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -45,15 +16,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -76,18 +39,25 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SnmpCredential;
-import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
+import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
-import cn.hutool.core.lang.hash.MurmurHash;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, MonitorEndpoint> implements MonitorEndpointService {
@@ -96,9 +66,6 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private AssetAssetService assetService;
-
-    @Autowired
-    private SysConfigDao sysConfigDao;
 
     @Autowired
     private AlertMessageDao alertMessageDao;
@@ -132,6 +99,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Autowired
     private SnmpCredentialService snmpCredentialService;
+
+    @Autowired
+    private SysConfigService sysConfigService;
+
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
 
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
@@ -496,31 +469,10 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if (map.get(language) != null) {
-            exportHeaderMap = (Map) map.get(language);
-        } else {
-            throw new NZException(RCode.ENDPOINT_EXPORT_HEADER_LANGUAGE_ERROR);
-        }
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Endpoint", true);
-            String fileName = "EndpointExportTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error("endpoint 模板生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            log.error("获取 endpoint 导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
-            }
-        }
+    public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER);
+        String fileName = "EndpointTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
@@ -544,27 +496,16 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public Map importEndpoint(MultipartFile excelFile, String language) {
-        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+    public Map importEndpointData(MultipartFile multipartFile) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        Sheet sheet = work.getSheetAt(0);
-
-        // 表头校验
-        SysConfigEntity config = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if (!headerFlag) {
-            throw new NZException(RCode.EXCELFILE_HEADER_TEMPLATE_ERROR);
-        }
-
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
-        // 预先查询出校验数据 避免循环查表
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
 
-        int successNum = this.saveTmplsDataFromSheet(sheet, failDetails, headerInfos, seqUUID);
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+        int successNum = this.saveEndpointsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -576,97 +517,70 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     }
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
-    	
-    	SysConfigEntity maxLine = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
+
         PageUtils page = (PageUtils) this.queryPage(params).get("page");
         List<MonitorEndpoint> list = (List<MonitorEndpoint>) page.getList();
 
-        SXSSFWorkbook workbook = null;
-        try {
-            int rowNum = 0;
-            SysConfigEntity configEntity = sysConfigDao.selectOne(new LambdaQueryWrapper<SysConfigEntity>().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER));
-            Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
+        List<List<String>> exportDataList = this.handleExportDataList(list);
 
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
-            Map<String, String> exportHeader = (Map) map.get(language);
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_MONITORENDPOINT_EXPORT_HEADER);
+        String fileName = "Endpoints";
+        String formatStr = params.get("format").toString();
+        basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
+    }
 
-            String sheetName = "Endpoints";
-            workbook = ExcelUtils.createExcel07(exportHeader, sheetName, false);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
-            CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+    private List<List<String>> handleExportDataList(List<MonitorEndpoint> list) {
+        List<List<String>> exportDataList = new ArrayList<>();
+        for (MonitorEndpoint endpoint : list) {
+            List<String> tempList = new ArrayList<>();
+            MonitorProject project = endpoint.getProject();
+            MonitorModule module = endpoint.getModule();
+            AssetAsset asset = endpoint.getAsset();
 
-            // 添加数据
-            Row row1;
-            for (MonitorEndpoint endpoint : list) {
-                row1 = sheet.createRow(++rowNum);
-
-                MonitorProject project = endpoint.getProject();
-                MonitorModule module = endpoint.getModule();
-                AssetAsset asset = endpoint.getAsset();
-
-                // project name
-                row1.createCell(0).setCellValue(project.getName());
-                // module name
-                row1.createCell(1).setCellValue(module.getName());
-                // name
-                row1.createCell(2).setCellValue(endpoint.getName());
-                // asset name
-                row1.createCell(3).setCellValue(asset.getName());
-                // config
-                List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
-                if (Tool.CollectionUtil.isNotEmpty(configs)) {
-                    MonitorEndpointConfig metricsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
-                    List<Map> tempConfigList = new ArrayList<>();
-                    if (metricsEndpointConf != null) {
-                        Map metricsMap = new HashMap();
-                        metricsMap.put("type", Constant.MonitorConfType.METRICS.getValue());
-                        metricsMap.put("config", JSONObject.parseObject(StrUtil.emptyToDefault(metricsEndpointConf.getConfig(), "")));
-                        metricsMap.put("enable", metricsEndpointConf.getEnable());
-                        tempConfigList.add(metricsMap);
-                    }
-
-                    MonitorEndpointConfig logsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.LOGS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
-                    if (logsEndpointConf != null) {
-                        Map logsMap = new HashMap();
-                        logsMap.put("type", Constant.MonitorConfType.LOGS.getValue());
-                        logsMap.put("config", JSONObject.parseArray(StrUtil.emptyToDefault(logsEndpointConf.getConfig(), "")));
-                        logsMap.put("enable", logsEndpointConf.getEnable());
-                        tempConfigList.add(logsMap);
-                    }
-
-                    row1.createCell(4).setCellValue(JSONObject.toJSONString(tempConfigList));
+            // project name
+            tempList.add(project.getName());
+            // module name
+            tempList.add(module.getName());
+            // name
+            tempList.add(endpoint.getName());
+            // asset name
+            tempList.add(asset.getName());
+            // config
+            List<MonitorEndpointConfig> configs = (List<MonitorEndpointConfig>) endpoint.getConfigs();
+            if (Tool.CollectionUtil.isNotEmpty(configs)) {
+                MonitorEndpointConfig metricsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.METRICS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
+                List<Map> tempConfigList = new ArrayList<>();
+                if (metricsEndpointConf != null) {
+                    Map metricsMap = new HashMap();
+                    metricsMap.put("type", Constant.MonitorConfType.METRICS.getValue());
+                    metricsMap.put("config", JSONObject.parseObject(StrUtil.emptyToDefault(metricsEndpointConf.getConfig(), "")));
+                    metricsMap.put("enable", metricsEndpointConf.getEnable());
+                    tempConfigList.add(metricsMap);
                 }
 
-                // 设置单元格样式
-                ExcelUtils.setDataCellStyle(dataStyle, row1, 4);
-            }
+                MonitorEndpointConfig logsEndpointConf = configs.stream().filter(monitorEndpointConfig -> Constant.MonitorConfType.LOGS.getValue().equals(monitorEndpointConfig.getType())).findFirst().orElse(null);
+                if (logsEndpointConf != null) {
+                    Map logsMap = new HashMap();
+                    logsMap.put("type", Constant.MonitorConfType.LOGS.getValue());
+                    logsMap.put("config", JSONObject.parseArray(StrUtil.emptyToDefault(logsEndpointConf.getConfig(), "")));
+                    logsMap.put("enable", logsEndpointConf.getEnable());
+                    tempConfigList.add(logsMap);
+                }
 
-            // 响应为流
-            String fileName = "EndpointsExport.xlsx"; // 默认名称
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            log.error(e);
-        } catch (RuntimeException e) {
-            log.error(e);
-        } finally {
-            if (workbook != null) {
-                IOUtils.closeQuietly(workbook);
+                tempList.add(JSONObject.toJSONString(tempConfigList));
             }
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
 
     @Override
@@ -700,7 +614,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         return enableEndpointInfoList;
     }
 
-    private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+    private int saveEndpointsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<MonitorProject> projectList = monitorProjectService.list();
         Map<String, Integer> projectNameAndIdMap = projectList.stream().collect(Collectors.toMap(MonitorProject::getName, MonitorProject::getId));
 
@@ -711,19 +625,17 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         Map<String, Integer> assetNameAndIdMap = assets.stream().collect(Collectors.toMap(AssetAsset::getName, AssetAsset::getId));
 
         // endpoint chart template
-        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
-        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
+        String sysEndpointChartTplStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
+        VisualChart chartTemplate = JSONObject.parseObject(sysEndpointChartTplStr, VisualChart.class);
 
         int successNum = 0;
-        Row row;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            row = sheet.getRow(i);
-            if (row == null) continue;
-
+        for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
             boolean saveFlag = true;
+            Map<Integer, String> dataMap = importDataList.get(i);
+
             Integer projectId = null;
-            String projectName = ExcelUtils.getCellValue(row.getCell(0));
+            String projectName = dataMap.get(0);
             if (StringUtils.isEmpty(projectName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.PROJECT_NAME_ISNULL.getMsg());
@@ -735,7 +647,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
             }
             MonitorModule module = null;
-            String moduleName = ExcelUtils.getCellValue(row.getCell(1));
+            String moduleName = dataMap.get(1);
             if (StringUtils.isEmpty(moduleName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.MODULE_NAME_ISNULL.getMsg());
@@ -753,7 +665,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
             }
 
-            String assetName = ExcelUtils.getCellValue(row.getCell(3));
+            String assetName = dataMap.get(3);
             if (StringUtils.isEmpty(assetName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_NAME_ISNULL.getMsg());
@@ -764,7 +676,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 }
             }
 
-            String configStr = ExcelUtils.getCellValue(row.getCell(4));
+            String configStr = dataMap.get(4);
             List<Map> configMapList = new ArrayList<>();
             if (StringUtils.isNotEmpty(configStr)) {
                 try {
@@ -908,7 +820,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
                 AssetAsset assetInfo = assetService.queryAssetInfo(assetId);
                 MonitorModule moduleInfo = monitorModuleService.queryModuleInfo(module.getId());
-                String name = ExcelUtils.getCellValue(row.getCell(2));
+                String name = dataMap.get(2);
                 if (StringUtils.isEmpty(name)) {
                     name = Tool.NzExpressionUtil.renderExpression(module.getEndpointNameTmpl(), assetInfo, moduleInfo);
                 }
@@ -1102,8 +1014,8 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         this.saveOrUpdateEndpointConfigs(endpoint, module);
 
         // 新增时需要新增 panel chart
-        SysConfigEntity endpointChartConfig = sysConfigDao.selectOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL));
-        VisualChart chartTemplate = JSONObject.parseObject(endpointChartConfig.getParamValue(), VisualChart.class);
+        String sysEndpointChartTplStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ENDPOINT_CHART_TPL);
+        VisualChart chartTemplate = JSONObject.parseObject(sysEndpointChartTplStr, VisualChart.class);
         visualChartService.saveRelPanelAndChart(Constant.PanelType.ENDPOINT.getValue(), endpoint.getId(), endpoint.getSeq(), chartTemplate);
 
         // 新增时同时需要新增 module下chart ids关联的模板

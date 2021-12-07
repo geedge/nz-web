@@ -6,6 +6,7 @@ import com.nis.modules.asset.entity.AssetModel;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -26,11 +27,11 @@ public interface AssetModelService extends IService<AssetModel> {
 
     void delete(Integer... ids);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
-    Map importAssetModelFromExcel(MultipartFile excelFile, String language);
+    Map importAssetModelData(MultipartFile excelFile) throws IOException;
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
     void cancelImport(String seq);
 }

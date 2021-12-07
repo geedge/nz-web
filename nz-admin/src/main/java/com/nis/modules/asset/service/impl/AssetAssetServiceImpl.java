@@ -1,48 +1,8 @@
 package com.nis.modules.asset.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.snmp4j.smi.TimeTicks;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
@@ -55,46 +15,14 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.RuntimeUtil;
-import com.nis.common.utils.SnmpUtil;
-import com.nis.common.utils.SshUtil;
-import com.nis.common.utils.StringUtils;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetFieldMetaDao;
 import com.nis.modules.asset.dao.CabinetDao;
-import com.nis.modules.asset.entity.AssetAsset;
-import com.nis.modules.asset.entity.AssetBrand;
-import com.nis.modules.asset.entity.AssetFeature;
-import com.nis.modules.asset.entity.AssetFieldMeta;
-import com.nis.modules.asset.entity.AssetFieldValue;
-import com.nis.modules.asset.entity.AssetModel;
-import com.nis.modules.asset.entity.AssetPing;
-import com.nis.modules.asset.entity.AssetStateConf;
-import com.nis.modules.asset.entity.AssetTypeConf;
-import com.nis.modules.asset.entity.Cabinet;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.AssetAssetService;
-import com.nis.modules.asset.service.AssetBrandService;
-import com.nis.modules.asset.service.AssetFeatureService;
-import com.nis.modules.asset.service.AssetFieldMetaService;
-import com.nis.modules.asset.service.AssetFieldValueService;
-import com.nis.modules.asset.service.AssetModelService;
-import com.nis.modules.asset.service.AssetPingService;
-import com.nis.modules.asset.service.AssetStateConfService;
-import com.nis.modules.asset.service.AssetTypeConfService;
-import com.nis.modules.asset.service.CabinetService;
-import com.nis.modules.asset.service.DcService;
+import com.nis.modules.asset.entity.*;
+import com.nis.modules.asset.service.*;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
@@ -111,13 +39,29 @@ import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.snmp4j.smi.TimeTicks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 资产    serviceImpl
@@ -204,12 +148,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 	@Autowired
     private MonitorModuleService moduleService;
-	
+
 	@Autowired
     private RedisTemplate redisTemplate;
 
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
+
     @SuppressWarnings("unchecked")
-	@Override
+    @Override
     public AssetAsset queryAssetInfo(Integer id) {
         AssetAsset asset = this.getById(id);
         if (ToolUtil.isEmpty(asset)) {
@@ -471,7 +418,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         Map assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
         List<AssetPing> assetPinglist = assetPingService.list();
         Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity()));
-        
+
         for (AssetAsset asset : assetList) {
             if (ToolUtil.isNotEmpty(asset.getCreateBy())) {
                 asset.setCreateUser(userIdAndEntityMap.get(asset.getCreateBy()));
@@ -502,8 +449,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             	assetPing = JSON.parseObject((String)object,AssetPing.class);
             }
             asset.setPingInfo(assetPing);
-            
-            
+
+
             // clientstate
 //            if (ToolUtil.isNotEmpty(asset.getClientState())) {
 //                switch (asset.getClientState()) {
@@ -996,11 +943,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
-        
+
         // 修改后处理asset ping数据 删除缓存和数据库中的数据
         assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
         redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
-        
+
         return asset.getId();
     }
 
@@ -1009,7 +956,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
      * @param asset
      */
     @Transactional(rollbackFor = Exception.class)
-    private void updateModelCharts(AssetAsset asset) {
+    public void updateModelCharts(AssetAsset asset) {
         VisualPanel assetPanel = panelService.getOne(new LambdaQueryWrapper<VisualPanel>().eq(VisualPanel::getType, Constant.PanelType.ASSET).eq(VisualPanel::getLink, asset.getId()));
         List<VisualChart> chartList = chartService.list(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getPanelId, assetPanel.getId()));
         List<Integer> delIds = chartList.stream().filter(chart -> chart.getPid() != null ? true : false).map(VisualChart::getId).collect(Collectors.toList());
@@ -1094,7 +1041,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
         // 删除 关联通过 chart temp 创建的 charts
-        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));  
+        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));
     }
 
     /*@Override
@@ -1202,35 +1149,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
     @Override
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if (map.get(language) != null) {
-            exportHeaderMap = (Map) map.get(language);
-        } else {
-            throw new NZException(RCode.ASSET_EXPORT_HEADER_LANGUAGE_ERROR);
-        }
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Assets", true);
-            String fileName = "AssetExportTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            logger.error("asset模板生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            logger.error("获取asset导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    logger.error(e);
-                }
-            }
-        }
+    public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String fileName = "AssetTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
@@ -1574,79 +1496,36 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        
-        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
         PageUtils page = this.queryAssetPage(params);
         List<AssetAsset> list = (List<AssetAsset>) page.getList();
+        List<List<String>> exportDataList = this.handleExportDataList(list);
 
-        SXSSFWorkbook workbook = null;
-        try {
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
-            Map<String, String> exportHeader = (Map) map.get(language);
-
-            String sheetName = "Assets";
-            workbook = ExcelUtils.createExcel07(exportHeader, sheetName, true);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
-
-            // 填充数据
-            this.fillData(list, 1, sheet, workbook);
-
-            // 响应为流
-            String fileName = "AssetsExport.xlsx"; // 默认名称
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            logger.error("asset导出文件生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            logger.error("asset导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    logger.error(e);
-                }
-            }
-        }
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        String fileName = "Assets";
+        String formatStr = params.get("format").toString();
+        basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
     }
 
     @Override
-    public Map importAssetsFromExcel(MultipartFile excelFile, String language) {
-        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+    public Map importAssetsData(MultipartFile multipartFile) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        Sheet sheet = work.getSheetAt(0);
-
-        // 表头校验
-        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_ASSET_ASSET_EXPORT_HEADER));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if (!headerFlag) {
-            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
-        }
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
-
-        // 预先查询出校验数据 避免循环查表
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
 
-        int successNum = this.saveAssetsDataFromSheet(sheet, failDetails, headerInfos, seqUUID);
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+        int successNum = this.saveAssetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -1739,7 +1618,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return chartIdWithAssetEntity;
     }
 
-    private int saveAssetsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+    private int saveAssetsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<AssetAsset> assetList = this.list();
         Map<String, AssetAsset> assetNameAndEntityMap = assetList.stream().collect(Collectors.toMap(AssetAsset::getName, Function.identity()));
         List<String> assetSnList = assetList.stream().map(AssetAsset::getSn).collect(Collectors.toList());
@@ -1773,13 +1652,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         int successNum = 0;
         // 处理 excel 数据，将含宿主机资产排到前面
-        List<Row> rows = this.handleExcelData(sheet);
-        for (Row row : rows) {
-            int dataFromExcelRowNum = row.getRowNum() + 1;
+        List<Map<Integer, String>> handleImportData = this.handleImportData(importDataList);
+        for (int i = 0; i < handleImportData.size(); i++) {
+            int dataFromExcelRowNum = i + 1;
             Map saveEntitys = new HashMap();
             boolean saveFlag = true;
+            Map<Integer, String> dataMap = handleImportData.get(i);
             // name
-            String name = ExcelUtils.getCellValue(row.getCell(0));
+            String name = dataMap.get(0);
             if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.ASSET_NAME_ISNULL.getMsg());
@@ -1792,7 +1672,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // sn
-            String sn = ExcelUtils.getCellValue(row.getCell(1));
+            String sn = dataMap.get(1);
             if (StringUtils.isEmpty(sn)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(1), RCode.ASSET_SN_ISNULL.getMsg());
@@ -1805,7 +1685,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // ip
-            String host = ExcelUtils.getCellValue(row.getCell(3));
+            String host = dataMap.get(3);
             if (StringUtils.isEmpty(host)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(3), RCode.ASSET_MANAGEIP_ISNULL.getMsg());
@@ -1824,14 +1704,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             // brand  model
             Integer brandId = null, modelId = null;
-            String brandName = ExcelUtils.getCellValue(row.getCell(4));
+            String brandName = dataMap.get(4);
             if (StringUtils.isEmpty(brandName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.ASSET_BRAND_NAME_ISNULL.getMsg());
             } else {
                 brandId = this.validateBrand(brandName, brandNameAndEntityMap, seqUUID, saveEntitys);
             }
-            String modelName = ExcelUtils.getCellValue(row.getCell(5));
+            String modelName = dataMap.get(5);
             if (StringUtils.isEmpty(modelName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODELNAME_ISNULL.getMsg());
@@ -1840,7 +1720,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             // state
-            String stateName = ExcelUtils.getCellValue(row.getCell(10));
+            String stateName = dataMap.get(10);
             AssetStateConf stateConf = null;
             if (StringUtils.isEmpty(stateName)) {
                 saveFlag = false;
@@ -1856,7 +1736,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             // type
             AssetTypeConf typeConf = null;
-            String typeName = ExcelUtils.getCellValue(row.getCell(11));
+            String typeName = dataMap.get(11);
             if (StringUtils.isEmpty(typeName)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NAME_ISNULL.getMsg());
@@ -1872,7 +1752,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             
 
             // 虚拟机宿主
-            String parentName = ExcelUtils.getCellValue(row.getCell(2));
+            String parentName = dataMap.get(2);
             Integer start = null, end = null, cabinetId = null, dcId = null;
             AssetAsset parentAsset = null;
             if (StringUtils.isNotEmpty(parentName)) {// 虚拟机 parentname 不为空
@@ -1894,7 +1774,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.ASSET_NOT_SUPPORT_MOUNTING.getMsg());
                 }
             } else {
-                String dcName = ExcelUtils.getCellValue(row.getCell(6));
+                String dcName = dataMap.get(6);
                 if (StringUtils.isEmpty(dcName)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(6), RCode.DC_NAME_ISNULL.getMsg());
@@ -1909,9 +1789,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
                 // parent Name 为 null , 当前是 宿主机 ， 并且前面没有发生错误，校验 cabinet start end 相关数据
                 if (saveFlag) {
-                    String cabinetName = ExcelUtils.getCellValue(row.getCell(7));
-                    String cabinetStart = ExcelUtils.getCellValue(row.getCell(8));
-                    String cabinetEnd = ExcelUtils.getCellValue(row.getCell(9));
+                    String cabinetName = dataMap.get(7);
+                    String cabinetStart = dataMap.get(8);
+                    String cabinetEnd = dataMap.get(9);
                     if (StringUtils.isNotEmpty(cabinetStart) && StringUtils.isNotEmpty(cabinetEnd)) {
                         start = this.getIntValFromStr(cabinetStart);
                         if (start == null) {
@@ -1966,7 +1846,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
-            String purchaseDate = ExcelUtils.getCellValue(row.getCell(12));
+            String purchaseDate = dataMap.get(12);
             if (StringUtils.isNotEmpty(purchaseDate)) {
                 if (!DateUtil.isValidDate(purchaseDate, "yyyy-MM-dd")) {
                     saveFlag = false;
@@ -1974,31 +1854,31 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
-            String fieldsStr = ExcelUtils.getCellValue(row.getCell(13));
+            String fieldsStr = dataMap.get(13);
             if (StringUtils.isNotEmpty(fieldsStr)) {
                 saveEntitys.put("fields", this.getFieldsByFieldsStr(fieldsStr, seqUUID));
             }
             
             
-            String authProtocolPort = ExcelUtils.getCellValue(row.getCell(14));
+            String authProtocolPort = dataMap.get(14);
             if(StringUtils.isNotEmpty(authProtocolPort)){
                 if (!CommonUtils.checkPort(authProtocolPort)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(14), RCode.ACCOUNT_PORT_ERROR.getMsg());
                 }
             }
-            String authType = ExcelUtils.getCellValue(row.getCell(15));
+            String authType = dataMap.get(15);
             if(StringUtils.isNotEmpty(authType)){
                 if (!"1".equalsIgnoreCase(authType) && !"2".equalsIgnoreCase(authType)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(15), RCode.ACCOUNT_AUTHTYPE_INVALIDE.getMsg());
                 }
             }
-            String authUsername = ExcelUtils.getCellValue(row.getCell(16));
-            String authPin = ExcelUtils.getCellValue(row.getCell(17));
-            String authPriKey = ExcelUtils.getCellValue(row.getCell(18));
-            String authUserTip = ExcelUtils.getCellValue(row.getCell(19));
-            String authPinTip = ExcelUtils.getCellValue(row.getCell(20));
+            String authUsername = dataMap.get(16);
+            String authPin = dataMap.get(17);
+            String authPriKey = dataMap.get(18);
+            String authUserTip = dataMap.get(19);
+            String authPinTip = dataMap.get(20);
             if(ObjectUtil.equals(authType, "1")) {
             	if(ObjectUtil.isEmpty(authUsername)) {
             		saveFlag = false;
@@ -2015,7 +1895,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             }
 
             Integer snmpCredentialId = null;
-            String snmpCredentialName = ExcelUtils.getCellValue(row.getCell(21));
+            String snmpCredentialName = dataMap.get(21);
             if(StringUtils.isNotEmpty(snmpCredentialName)){
                 SnmpCredential snmpCredential = snmpCredentialService.getOne(new LambdaQueryWrapper<SnmpCredential>().eq(SnmpCredential::getName, snmpCredentialName));
                 if(snmpCredential == null){
@@ -2026,17 +1906,17 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
-            String clientUser = ExcelUtils.getCellValue(row.getCell(22));
-            String clientPin = ExcelUtils.getCellValue(row.getCell(23));
-            String clientToken = ExcelUtils.getCellValue(row.getCell(24));
-            String clientPort = ExcelUtils.getCellValue(row.getCell(25));
+            String clientUser = dataMap.get(22);
+            String clientPin = dataMap.get(23);
+            String clientToken = dataMap.get(24);
+            String clientPort = dataMap.get(25);
             if (StringUtils.isNotEmpty(clientPort)) {
                 if (!CommonUtils.checkPort(clientPort)) {
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(25), RCode.ASSET_CLIENTPORT_ERROR.getMsg());
                 }
             }
-            String clientEnable = ExcelUtils.getCellValue(row.getCell(26));
+            String clientEnable = dataMap.get(26);
             if (StrUtil.isNotEmpty(clientEnable)) {
                 if (!StrUtil.equals("0", clientEnable) && !StrUtil.equals("1", clientEnable)) {
                     saveFlag = false;
@@ -2289,24 +2169,16 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         return updateMap;
     }
 
-    private List<Row> handleExcelData(Sheet sheet) {
-        List<Row> rows = new ArrayList<>();
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) {
-                continue;
-            }
-            rows.add(row);
-        }
-        List<Row> list = rows.stream().filter(cells -> {
-            String parentName = ExcelUtils.getCellValue(cells.getCell(2));
+    private List<Map<Integer, String>> handleImportData(List<Map<Integer, String>> importDataList) {
+        List<Map<Integer, String>> list = importDataList.stream().filter(dataMap -> {
+            String parentName = dataMap.get(2);
             if (StringUtils.isEmpty(parentName)) {
                 return true;
             }
             return false;
         }).collect(Collectors.toList());
-        rows.removeAll(list);
-        list.addAll(rows);
+        importDataList.removeAll(list);
+        list.addAll(importDataList);
         return list;
     }
 
@@ -2378,61 +2250,59 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         failDetails.add(failDetail);
     }
 
-    private void fillData(List<AssetAsset> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
-        Row row;
-        String fieldStr;
+    private List<List<String>> handleExportDataList(List<AssetAsset> list) {
+        List<List<String>> exportDataList = new ArrayList<>();
         for (AssetAsset asset : list) {
-            row = sheet.createRow(rowNum++);
+            List<String> tempList = new ArrayList<>();
 
-            row.createCell(0).setCellValue(asset.getName());
-            row.createCell(1).setCellValue(asset.getSn());
-            row.createCell(2).setCellValue(ToolUtil.isEmpty(asset.getParent()) ? "" : asset.getParent().getName());
-            row.createCell(3).setCellValue(asset.getManageIp());
-            row.createCell(4).setCellValue(asset.getBrand().getName());
-            row.createCell(5).setCellValue(asset.getModel().getName());
-            row.createCell(6).setCellValue(asset.getDc().getName());
-            row.createCell(7).setCellValue(ToolUtil.isEmpty(asset.getCabinet()) ? "" : asset.getCabinet().getName());
-            row.createCell(8).setCellValue(ToolUtil.isEmpty(asset.getCabinetStart()) ? "" : String.valueOf(asset.getCabinetStart()));
-            row.createCell(9).setCellValue(ToolUtil.isEmpty(asset.getCabinetEnd()) ? "" : String.valueOf(asset.getCabinetEnd()));
-            row.createCell(10).setCellValue(asset.getState().getName());
-            row.createCell(11).setCellValue(asset.getType().getName());
+           tempList.add(asset.getName());
+           tempList.add(asset.getSn());
+           tempList.add(ToolUtil.isEmpty(asset.getParent()) ? "" : asset.getParent().getName());
+           tempList.add(asset.getManageIp());
+           tempList.add(asset.getBrand().getName());
+           tempList.add(asset.getModel().getName());
+           tempList.add(asset.getDc().getName());
+           tempList.add(ToolUtil.isEmpty(asset.getCabinet()) ? "" : asset.getCabinet().getName());
+           tempList.add(ToolUtil.isEmpty(asset.getCabinetStart()) ? "" : String.valueOf(asset.getCabinetStart()));
+           tempList.add(ToolUtil.isEmpty(asset.getCabinetEnd()) ? "" : String.valueOf(asset.getCabinetEnd()));
+            tempList.add(asset.getState().getName());
+            tempList.add(asset.getType().getName());
 
             
-            row.createCell(12).setCellValue(asset.getPurchaseDate());
+            tempList.add(asset.getPurchaseDate());
             if (CollectionUtils.isNotEmpty(asset.getFields())) {
-                fieldStr = "";
+                String fieldStr = "";
                 for (AssetFieldMeta meta : asset.getFields()) {
                     fieldStr += meta.getMetaKey() + "=" + meta.getValue().get(0) + "\n";
                 }
-                row.createCell(13).setCellValue(fieldStr);
+                tempList.add(fieldStr);
             }
             
-            row.createCell(14).setCellValue(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
-            row.createCell(15).setCellValue(ToolUtil.isEmpty(asset.getAuthType()) ? "" : String.valueOf(asset.getAuthType()));
-            row.createCell(16).setCellValue(ToolUtil.isEmpty(asset.getAuthUsername()) ? "" : asset.getAuthUsername());
+            tempList.add(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
+            tempList.add(ToolUtil.isEmpty(asset.getAuthType()) ? "" : String.valueOf(asset.getAuthType()));
+            tempList.add(ToolUtil.isEmpty(asset.getAuthUsername()) ? "" : asset.getAuthUsername());
 //            row.createCell(17).setCellValue(ToolUtil.isEmpty(asset.getAuthPin()) ? "" : asset.getAuthPin());
 //            row.createCell(18).setCellValue(ToolUtil.isEmpty(asset.getAuthPriKey()) ? "" : asset.getAuthPriKey());
-            row.createCell(17).setCellValue("");
-            row.createCell(18).setCellValue("");
-            row.createCell(19).setCellValue(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
-            row.createCell(20).setCellValue(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
+            tempList.add("");
+            tempList.add("");
+            tempList.add(ToolUtil.isEmpty(asset.getAuthUserTip()) ? "" : asset.getAuthUserTip());
+            tempList.add(ToolUtil.isEmpty(asset.getAuthPinTip()) ? "" : asset.getAuthPinTip());
 
             String snmpCredentialName = "";
             if (ToolUtil.isNotEmpty(asset.getSnmpCredentialId())) {
                 SnmpCredential snmpCredential = snmpCredentialService.getById(asset.getSnmpCredentialId());
                 snmpCredentialName = snmpCredential == null ? "" : snmpCredential.getName();
             }
-            row.createCell(21).setCellValue(snmpCredentialName);
+            tempList.add(snmpCredentialName);
 
-            row.createCell(22).setCellValue(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
+            tempList.add(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
 //            row.createCell(23).setCellValue(asset.getClientPin());
-            row.createCell(24).setCellValue(ObjectUtil.defaultIfNull(asset.getClientToken(), ""));
-            row.createCell(25).setCellValue(ObjectUtil.defaultIfNull(asset.getClientPort(), "").toString());
-            row.createCell(26).setCellValue(ObjectUtil.defaultIfNull(asset.getClientEnable(), "").toString());
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 26);
+            tempList.add(ObjectUtil.defaultIfNull(asset.getClientToken(), ""));
+            tempList.add(ObjectUtil.defaultIfNull(asset.getClientPort(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(asset.getClientEnable(), "").toString());
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
 
 	@Override

@@ -1,31 +1,20 @@
 package com.nis.modules.alert.controller;
 
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import cn.hutool.log.Log;
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.OperationEnum;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.R;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.TypeEnum;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertHandlerService;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -88,7 +77,15 @@ public class AlertMessageController {
 	 */
 	@GetMapping(value = "/export")
 	@SysLog(operation = OperationEnum.EXPORT,type = TypeEnum.ALERTMESSAGE)
-	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params){
-		handlerService.exportMessage(response,params);
+	public void export(HttpServletResponse response, @RequestParam Map<String, Object> params) throws IOException {
+		Object format = params.get("format");
+		String formatStr = format == null ? "1" : format.toString();
+		// 校验 FORMAT
+		if (!Arrays.asList(Constant.IMPORTFILE_TYPE_INTVALUES).contains(formatStr)) {
+			throw new NZException(RCode.EXCELFILE_TYPE_ERROR);
+		}
+		params.put("format", formatStr);
+
+		handlerService.exportMessage(response, params);
 	}
 }

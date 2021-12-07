@@ -1,15 +1,15 @@
 package com.nis.modules.alert.service;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.entity.AlertSilenceConf;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -80,7 +80,7 @@ public interface AlertHandlerService  {
 	 */
 	Map<String,List> queryMessageGroupBy(Map<String,Object> params);
 
-	void exportMessage(HttpServletResponse response, Map<String, Object> params);
+	void exportMessage(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
 	/**
 	 * 删除告警消息

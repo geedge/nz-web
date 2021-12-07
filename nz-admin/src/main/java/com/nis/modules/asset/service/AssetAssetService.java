@@ -1,17 +1,16 @@
 package com.nis.modules.asset.service;
 
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.multipart.MultipartFile;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.panel.entity.VisualChart;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 资产 service
@@ -43,13 +42,13 @@ public interface AssetAssetService extends IService<AssetAsset> {
 
     List<AssetFieldMeta> queryAssetFieldValue(Integer assetId, Integer metaId);
 
-    void getExportTemplateByLanguage(HttpServletResponse response, String language);
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
 
     void collectData(Integer assetId);
 
-    void export(HttpServletResponse response, Map<String, Object> params);
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
 
-    Map importAssetsFromExcel(MultipartFile excelFile, String language);
+    Map importAssetsData(MultipartFile excelFile) throws IOException;
 
     void cancelImport(String seq);
 

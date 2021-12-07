@@ -848,9 +848,9 @@ public enum RCode {
     /**
      * 导入相关
      */
-    EXCELFILE_TYPE_ERROR(900, "Only support import XLS or XLSX file"),
+    EXCELFILE_TYPE_ERROR(900, "The type can only be xlsx, json, csv"),
     EXCELFILE_PARSE_ERROR(901, "Import file resolution failed"),
-    EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the excel import template is inconsistent with the system template"),
+    EXCELFILE_HEADER_TEMPLATE_ERROR(902,"The header row of the import template is inconsistent with the system template"),
     EXCELFILE_HEADER_LANGUAGE_ERROR(903, "Excel header language must be en, zh or ru"),
     EXCELFILE_IMPORT_FILE_ISNULL(904, "Import file is null"),
     EXCELFILE_HEADER_LANGUAGE_ISNULL(905, "Language can not be empty"),

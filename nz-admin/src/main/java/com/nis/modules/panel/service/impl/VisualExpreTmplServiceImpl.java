@@ -1,14 +1,10 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
@@ -26,22 +22,15 @@ import com.nis.modules.panel.entity.VisualExpressionTmpl;
 import com.nis.modules.panel.service.VisualExpreTmplService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,6 +65,9 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
 
     @Autowired
     private MonitorEndpointService endpointService;
+
+    @Autowired
+    private BasicImportAndExportServices basicImportAndExportServices;
 
     @Override
     public VisualExpressionTmpl queryTmplInfoById(Integer id) {
@@ -265,62 +257,23 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     }
 
     @Override
-    public void getExportTemplateByLanguage(HttpServletResponse response, String language) {
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-        Map<String, String> exportHeaderMap;
-        if (map.get(language) != null) {
-            exportHeaderMap = (Map) map.get(language);
-        } else {
-            throw new NZException(RCode.EXPRETMPL_EXPORT_HEADER_LANGUAGE_ERROR);
-        }
-
-        SXSSFWorkbook workbook = null;
-        try {
-            workbook = ExcelUtils.createExcel07(exportHeaderMap, "Expression Templates", true);
-            // 响应为流
-            String fileName = "ExpressionTemplate.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            logger.error("表达式模板生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            logger.error("获取表达式导入模板失败，表头语言是：" + language + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    logger.error(e);
-                }
-            }
-        }
+    public void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER);
+        String fileName = "ExpressionTemplate";
+        basicImportAndExportServices.getTemplate(sysHeaderJsonStr, format, fileName, response);
     }
 
     @Override
-    public Map importExpreTmplsFromExcel(MultipartFile excelFile, String language) {
-        Workbook work = ExcelUtils.getWorkBookFromMultipartFile(excelFile);
+    public Map importTmpls(MultipartFile multipartFile) throws IOException {
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER);
+        Map<String, String> exportHeaderMap = basicImportAndExportServices.getI18nHeaderMap(sysHeaderJsonStr);
+        List<Map<Integer, String>> importDataList = basicImportAndExportServices.getImportDataFromMultipartFile(multipartFile, sysHeaderJsonStr);
 
-        Sheet sheet = work.getSheetAt(0);
-
-        // 表头校验
-        SysConfigEntity config = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER));
-        HashMap<String, Object> map = JSONObject.parseObject(config.getParamValue(), HashMap.class, Feature.OrderedField);
-        boolean headerFlag = ExcelUtils.validateExcelHeader(sheet, sheet.getFirstRowNum(), map.values());
-        if (!headerFlag) {
-            throw new NZException(RCode.ASSET_EXPORT_HEADER_TEMPLATE_ERROR);
-        }
-
-        Map<String, String> exportHeader = (Map) map.get(language);
-        List<String> headerInfos = new ArrayList(exportHeader.keySet());
-
-        // 预先查询出校验数据 避免循环查表
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
 
-        int successNum = this.saveTmplsDataFromSheet(sheet, failDetails, headerInfos, seqUUID);
-        int totalNum = sheet.getLastRowNum() - sheet.getFirstRowNum();
+        int successNum = this.saveTmplsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
+        int totalNum = importDataList.size();
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -331,7 +284,7 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         return resultMap;
     }
 
-    private int saveTmplsDataFromSheet(Sheet sheet, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
+    private int saveTmplsFromImportDataList(List<Map<Integer, String>> importDataList, List<Map> failDetails, List<String> headerInfos, String seqUUID) {
         List<VisualExpressionTmpl> tmpls = this.list();
         List<String> ganmes = tmpls.stream().map(VisualExpressionTmpl::getGname).distinct().collect(Collectors.toList());
         Map<String, List<String>> gnameAndTmplNameMap = new HashMap();
@@ -341,15 +294,13 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         });
 
         int successNum = 0;
-        Row row;
-        for (int i = sheet.getFirstRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
-            row = sheet.getRow(i);
-            if (row == null) continue;
-
+        for (int i = 0; i < importDataList.size(); i++) {
             int dataFromExcelRowNum = i + 1;
             boolean saveFlag = true;
-            String name = ExcelUtils.getCellValue(row.getCell(0));
-            String gname = ExcelUtils.getCellValue(row.getCell(1));
+            Map<Integer, String> dataMap = importDataList.get(i);
+
+            String name = dataMap.get(0);
+            String gname = dataMap.get(1);
             gname = StringUtils.isEmpty(gname) ? "default" : gname;
 
             if (StringUtils.isEmpty(name)) {
@@ -363,13 +314,13 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.EXPRETMPL_NAME_DUPLICATE.getMsg());
                 }
             }
-            String expression = ExcelUtils.getCellValue(row.getCell(2));
+            String expression = dataMap.get(2);
             if (StringUtils.isEmpty(expression)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.EXPRETMPL_EXPRESSION_ISNULL.getMsg());
             }
             if (saveFlag) {
-                String remark = ExcelUtils.getCellValue(row.getCell(3));
+                String remark = dataMap.get(3);
                 VisualExpressionTmpl tmpl = new VisualExpressionTmpl();
                 tmpl.setName(name);
                 tmpl.setGname(gname);
@@ -400,68 +351,37 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     }
 
     @Override
-    public void export(HttpServletResponse response, Map<String, Object> params) {
-        SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER));
-        Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
-
-        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+    public void export(HttpServletResponse response, Map<String, Object> params) throws IOException {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (ObjectUtil.isEmpty(pageSize) || pageSize == -1 || pageSize > exportMaxLine) {
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
         PageUtils page = this.queryPage(params);
         List<VisualExpressionTmpl> list = (List<VisualExpressionTmpl>) page.getList();
 
-        SXSSFWorkbook workbook = null;
-        try {
-            // 添加标题行 默认语言 en
-            String language = (String) params.get("language");
-            language = ToolUtil.isEmpty(language) ? "en" : language;
+        List<List<String>> exportDataList = this.handleExportDataList(list);
 
-            String sheetName = "Expression Template";
-            workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
-            SXSSFSheet sheet = workbook.getSheet(sheetName);
-
-            this.fillData(list, 1, sheet, workbook);
-
-            // 响应为流
-            String fileName = "ExpressionTemplates.xlsx";
-            response.setContentType("application/excel");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ";filename*=utf-8''" + URLEncoder.encode(fileName, "UTF-8"));
-            workbook.write(response.getOutputStream());
-        } catch (IOException e) {
-            logger.error("表达式模板导出文件生成失败，错误信息是：" + e);
-        } catch (RuntimeException e) {
-            logger.error("表达式模板导出失败，参数是：" + params.toString() + " ，错误信息是：" + e);
-        } finally {
-            if (workbook != null) {
-                try {
-                    workbook.close();
-                } catch (IOException e) {
-                    logger.error(e);
-                }
-            }
-        }
+        String sysHeaderJsonStr = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER);
+        String fileName = "ExpressionTemplates";
+        String formatStr = params.get("format").toString();
+        basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
     }
 
-    private void fillData(List<VisualExpressionTmpl> list, int rowNum, SXSSFSheet sheet, SXSSFWorkbook workbook) {
-        Row row;
-        CellStyle dataStyle = ExcelUtils.createCellStyle(workbook, (short) 13, false);
+    private List<List<String>> handleExportDataList(List<VisualExpressionTmpl> list) {
+        List<List<String>> exportDataList = new ArrayList<>();
         for (VisualExpressionTmpl tmpl : list) {
-            row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(tmpl.getName());
-            row.createCell(1).setCellValue(tmpl.getGname());
-            row.createCell(2).setCellValue(tmpl.getExpression());
-            row.createCell(3).setCellValue(tmpl.getRemark());
-
-            // 设置单元格样式
-            ExcelUtils.setDataCellStyle(dataStyle, row, 3);
+            List<String> tempList = new ArrayList<>();
+            tempList.add(tmpl.getName());
+            tempList.add(tmpl.getGname());
+            tempList.add(tmpl.getExpression());
+            tempList.add(tmpl.getRemark());
+            exportDataList.add(tempList);
         }
+        return exportDataList;
     }
 
     @Override
