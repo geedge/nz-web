@@ -68,8 +68,6 @@
 
 		<association property="pingInfo" columnPrefix="assp_" javaType="com.nis.modules.asset.entity.AssetPing">
             <result property="status" column="status"/>
-            <result property="rtt" column="rtt"/>
-            <result property="lastUpdate" column="lastUpdate"/>
         </association>
         
     </resultMap>
@@ -105,8 +103,6 @@
 			model.id AS m_id,
 			model.NAME AS m_name,
 			assp.STATUS AS assp_status,
-			assp.rtt AS assp_rtt,
-			assp.last_update AS assp_lastUpdate,
 			talon.STATUS AS talon_status,
 			IFNULL( me.endpointNum, 0 ) AS endpointNum,
 			IFNULL( msg.alertNum, 0 ) AS alertNum 

@@ -519,8 +519,9 @@
 			asset_asset aa
 		LEFT JOIN asset_ping ap ON aa.manage_ip = ap.host
 		LEFT JOIN alert_message_active am ON aa.id = am.asset_id
+		left join asset_state_conf assc on aa.state_id = assc.id
 		WHERE
-			( ap.`status` = 0 OR ap.STATUS IS NULL OR am.state = 1 )
+			( ap.`status` = 0 OR ap.STATUS IS NULL OR am.state = 1 ) and assc.ping=1
 		GROUP BY
 			aa.id;
 	</select>
