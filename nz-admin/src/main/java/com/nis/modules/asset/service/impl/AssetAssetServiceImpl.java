@@ -34,6 +34,7 @@ import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.snmp4j.smi.TimeTicks;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -203,8 +204,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 	@Autowired
     private MonitorModuleService moduleService;
+	
+	@Autowired
+    private RedisTemplate redisTemplate;
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     public AssetAsset queryAssetInfo(Integer id) {
         AssetAsset asset = this.getById(id);
         if (ToolUtil.isEmpty(asset)) {
@@ -234,6 +239,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         asset.setDc(dc);
 
         AssetPing assetPing = assetPingService.getOne(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
+        Object object = redisTemplate.opsForHash().get(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
+        if(ToolUtil.isNotEmpty(object)) {
+        	assetPing = JSON.parseObject((String)object,AssetPing.class);
+        }
         asset.setPingInfo(assetPing);
 
         if (asset.getCabinetId() != null) {
@@ -447,7 +456,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 		});*/
     }
     
-    private void handleResuleList(List<AssetAsset> assetList) {
+    @SuppressWarnings("unchecked")
+	private void handleResuleList(List<AssetAsset> assetList) {
         List<SysUserEntity> userList = sysUserDao.selectList(null);
         Map<Long, SysUserEntity> userIdAndEntityMap = userList.stream().collect(Collectors.toMap(SysUserEntity::getId, Function.identity()));
 
@@ -458,6 +468,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<AssetFieldMeta> metaInfoList = assetFieldMetaService.getAssetFieldMetaListByAssetId(null);
         Map<Integer, List<AssetFieldMeta>> assetIdAndMetaInfoList = metaInfoList.stream().collect(Collectors.groupingBy(AssetFieldMeta::getAssetId));
 
+        Map assetCachePings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
+        List<AssetPing> assetPinglist = assetPingService.list();
+        Map<Integer, AssetPing> assetPings = assetPinglist.stream().collect(Collectors.toMap(AssetPing::getAssetId, Function.identity()));
+        
         for (AssetAsset asset : assetList) {
             if (ToolUtil.isNotEmpty(asset.getCreateBy())) {
                 asset.setCreateUser(userIdAndEntityMap.get(asset.getCreateBy()));
@@ -481,6 +495,15 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 asset.setCabinetEnd(asset.getCabinetEnd() - 1);
             }
 
+            // 获取缓存中ping状态信息
+            AssetPing assetPing = assetPings.get(asset.getId());
+            Object object = assetCachePings.get(asset.getId().toString());
+            if(ToolUtil.isNotEmpty(object)) {
+            	assetPing = JSON.parseObject((String)object,AssetPing.class);
+            }
+            asset.setPingInfo(assetPing);
+            
+            
             // clientstate
 //            if (ToolUtil.isNotEmpty(asset.getClientState())) {
 //                switch (asset.getClientState()) {
@@ -973,6 +996,11 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
         // 保存 asset 关联数据
         this.saveAssetRelData(asset);
+        
+        // 修改后处理asset ping数据 删除缓存和数据库中的数据
+        assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
+        redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
+        
         return asset.getId();
     }
 
@@ -1051,6 +1079,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         // 删除 assetPing
         if (CollectionUtils.isNotEmpty(delAssetHosts)) {
             assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getHost, delAssetHosts));
+            // 删除缓存中的数据
+            List<String> deleteList = idList.stream().map(id-> id.toString()).collect(Collectors.toList());
+            redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, deleteList.toArray());
         }
 
         // 删除 field
@@ -1063,7 +1094,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
             panelService.delPanelsAndChartInfoByPanelIds(panelIds);
         }
         // 删除 关联通过 chart temp 创建的 charts
-        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));
+        chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));  
     }
 
     /*@Override

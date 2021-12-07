@@ -818,7 +818,9 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_GENERATOR_PATH = "generator_path";
 	// 配置表中 blackbox 源， 1: global 2: per-datacenter 默认：1
 	public static final String SYSCONFIG_KEY_ASSET_PING_FROM = "asset_ping_from";
-
+	
+	public static final String SYSCONFIG_KEY_ASSET_PING = "asset_ping";
+	
 	// 配置表中 配置prometheus是否开启联邦模式，1：开启，0：关闭（界面禁用 添加选择 per-datacenter agent，所有endpoint
 	// 配置信息 hash 分布到 global prometheus）
 	public static final String SYSCONFIG_KEY_PROM_FEDER_ENABLED = "prometheus_federation_enabled";

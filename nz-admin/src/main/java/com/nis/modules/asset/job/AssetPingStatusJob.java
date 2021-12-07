@@ -2,8 +2,11 @@ package com.nis.modules.asset.job;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -79,7 +83,8 @@ public class AssetPingStatusJob extends QuartzJobBean {
         log.info("asset ping Run Time: {}", sw.toString());
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @SuppressWarnings("unchecked")
+	@Transactional(rollbackFor = Exception.class)
     public void execAssetPing() throws RuntimeException {
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
         if (promserver == null) {
@@ -129,22 +134,14 @@ public class AssetPingStatusJob extends QuartzJobBean {
                 BigDecimal bd = BigDecimal.valueOf(Double.valueOf(assetHostAndRttMap.get(host)));
                 bd = bd.multiply(BigDecimal.valueOf(1000));
                 Double d = bd.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-                upAssetPings.add(new AssetPing(assetId, host, 1, d, new Date()));
+                upAssetPings.add(new AssetPing(null,assetId, host, 1,d,new Date()));
             } else {
                 // down
-                downAssetPings.add(new AssetPing(assetId, host, 0, null, null));
+                downAssetPings.add(new AssetPing(null,assetId, host, 0,null,null));
             }
         }
-        // 更新数据库
+        
         List<AssetPing> list = assetPingService.list();
-        Map<String, AssetPing> hostAndAssetPing = list.stream().collect(Collectors.toMap(AssetPing::getHost, Function.identity()));
-
-        // 处理不可达资产的最后可达时间
-        for (AssetPing assetPing : downAssetPings) {
-            AssetPing ping = hostAndAssetPing.get(assetPing.getHost());
-            if (ping != null) assetPing.setLastUpdate(ping.getLastUpdate());
-        }
-
         upAssetPings.addAll(downAssetPings);
         // 如果本次请求缺失 asset ， 更新状态为 down
         for (AssetPing upAssetPing : upAssetPings) {
@@ -152,6 +149,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
             while (iterator.hasNext()) {
                 AssetPing next = iterator.next();
                 if (upAssetPing.getAssetId().equals(next.getAssetId())) {
+                	upAssetPing.setId(next.getId());
                     iterator.remove();
                 }
             }
@@ -159,14 +157,37 @@ public class AssetPingStatusJob extends QuartzJobBean {
         if (Tool.CollectionUtil.isNotEmpty(list)) {
             for (AssetPing assetPing : list) {
                 assetPing.setStatus(0);
-                assetPing.setRtt(null);
-                assetPing.setLastUpdate(new Date());
             }
             upAssetPings.addAll(list);
         }
 
-        assetPingDao.deleteAll();
-        assetPingService.saveBatch(upAssetPings);
+        //判断查询数据与缓存中变化的信息
+        Map assetPings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
+        if(ToolUtil.isNotEmpty(assetPings)) {
+        	for(int i=upAssetPings.size()-1;i>=0;i--) {
+        		AssetPing assetPing = upAssetPings.get(i);
+        		if(assetPings.containsKey(assetPing.getAssetId().toString())) {
+        			AssetPing cachePing = JSON.parseObject((String)assetPings.get(assetPing.getAssetId().toString()),AssetPing.class);
+        			if(cachePing.getStatus().equals(assetPing.getStatus())) {
+        				// 如果状态相同则只更新缓存中的数据信息
+        				redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+        				upAssetPings.remove(i);
+        			}
+        		}else{
+        			// 数据库存在 缓存中不存在
+        			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+        		}
+            }
+        }else {
+        	for(AssetPing assetPing:upAssetPings) {
+        		redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
+        	}
+        }
+        // 超时周期设置为两个assetPing周期
+        redisTemplate.expire(Constant.SYSCONFIG_KEY_ASSET_PING, Long.valueOf(assetPingIntervalStr)*2, TimeUnit.SECONDS);
+        if(ToolUtil.isNotEmpty(upAssetPings)) {
+        	assetPingService.saveOrUpdateBatch(upAssetPings);
+        }
     }
 
 
@@ -206,7 +227,7 @@ public class AssetPingStatusJob extends QuartzJobBean {
 
         List<AssetPing> assetPingList = new ArrayList<>();
         for (AssetAsset asset : openPingAssets) {
-            assetPingList.add(new AssetPing(asset.getId(), asset.getManageIp(), 0, null, new Date()));
+            assetPingList.add(new AssetPing(null,asset.getId(), asset.getManageIp(), 0,null,null));
         }
 
         if (Tool.CollectionUtil.isNotEmpty(assetPingList)) assetPingService.saveBatch(assetPingList);

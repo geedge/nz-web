@@ -1,5 +1,6 @@
 package com.nis.modules.asset.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,6 +16,7 @@ import java.util.Date;
 public class AssetPing implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private Integer id;
     /**
      * asset id
      */
@@ -33,11 +35,13 @@ public class AssetPing implements Serializable {
     /**
      * 传输时间延迟
      */
+    @TableField(exist = false)
     private Double rtt;
 
     /**
      * 最后更新时间
      */
+    @TableField(exist = false)
     private Date lastUpdate;
 
 }
