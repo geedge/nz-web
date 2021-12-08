@@ -55,6 +55,9 @@ public class SysLicenseController extends AbstractController {
 	@Value("${licenseTimeout:30000}")
 	private Integer licenseTimeout;
 
+	@Value("${compileType:release}")
+	private String compileType;
+	
 	@Autowired
 	private RestTemplate restTemplate;
 
@@ -124,7 +127,9 @@ public class SysLicenseController extends AbstractController {
 	@GetMapping("/status")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
 	public R getLicenseState(@RequestParam(required = false) String scope) {
-
+		if(Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
+			return R.ok().putData("status", 0);
+		}
 		if (Tool.StrUtil.equalsIgnoreCase("all", scope)) {
 			List<SysComponent> comList = sysComponentService.list();
 			List<CompletableFuture<SysComponent>> futureList = Tool.ListUtil.list(false);
