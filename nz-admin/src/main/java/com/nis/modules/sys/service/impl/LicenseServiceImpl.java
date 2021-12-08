@@ -41,14 +41,14 @@ public class LicenseServiceImpl implements LicenseService {
 	private String vendorCode;
 
 	@Value("${fetureId}")
-	private Long fetureId;
+	private Integer fetureId;
 
-	@Value("${productId}")
-	private Integer productId;
-	
+	/**
+	 * 获取license 详情
+	 */
 	@Override
 	public Map<String,Object> getLicenseDetail() {
-		String licenseInfo = Tool.HaspUtil.getLicenseInfo(productId, vendorCode);
+		String licenseInfo = Tool.HaspUtil.getLicenseInfo(vendorCode,fetureId);
 		if(Tool.StrUtil.isBlank(licenseInfo)) {
 			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
@@ -81,6 +81,19 @@ public class LicenseServiceImpl implements LicenseService {
 		return sysConfigService.getValue(systemVersionKey);
 	}
 
+	/**
+	 * 获取 license 指纹
+	 * @return
+	 */
+	@Override
+	public String getLicenseC2V() {
+		String c2v = Tool.HaspUtil.readC2V(vendorCode,fetureId);
+		return c2v;
+	}
+	
+	/**
+	 * 安装 license
+	 */
 	@Override
 	public boolean installLicense() {
 		String license = this.getLicense();
@@ -95,7 +108,7 @@ public class LicenseServiceImpl implements LicenseService {
 				Node node = nodeList.item(i);
 				String v2c = Tool.XmlUtil.toStr(node);
 				int status = Tool.HaspUtil.updateKeyWithLicense(v2c, vendorCode);
-				if(status == HaspStatus.HASP_STATUS_OK) {
+				if(status == HaspStatus.HASP_STATUS_OK || status == HaspStatus.HASP_UPDATE_ALREADY_ADDED) {
 					return true;
 				}
 			}
@@ -103,11 +116,17 @@ public class LicenseServiceImpl implements LicenseService {
 		}
 	}
 
+	/**
+	 * 验证 license
+	 */
 	@Override
 	public Integer verify() {
 		return Tool.HaspUtil.verify(vendorCode,fetureId);
 	}
 
+	/**
+	 * 获取所有 license
+	 */
 	@Override
 	public String getLicense() {
 		SysConfigEntity entity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().eq("param_key", licenseConfigKey));

@@ -61,7 +61,7 @@ public class SysLicenseController extends AbstractController {
 	/**
 	 * 获取license
 	 */
-	@RequestMapping
+	@GetMapping("/detail")
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.LICENSE)
 	public R getLicense() {
 		Map<String, Object> license = licenseService.getLicenseDetail();
@@ -112,7 +112,7 @@ public class SysLicenseController extends AbstractController {
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 			return null;
 		} else {
-			String c2v = Tool.HaspUtil.readC2vFromKey(vendorCode);
+			String c2v = licenseService.getLicenseC2V();
 			return R.ok().put("data", c2v);
 		}
 	}

@@ -32,4 +32,6 @@ public interface LicenseService {
 	 * @return
 	 */
 	Integer verify();
+
+	String getLicenseC2V();
 }

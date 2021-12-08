@@ -55,13 +55,19 @@ public class SysComponentJob extends QuartzJobBean {
 		// 正确得到本机ip，更新 sys_component 表
 		if (Tool.StrUtil.isNotBlank(localHost)) {
 			SysComponent component = new SysComponent();
-			component.setServerid(Constant.SERVER_ID);
+			
 			component.setHost(localHost);
 			component.setPort(port);
 			component.setProtocol(protocol);
 			component.setComponent(Constant.NZ_WEB_COMPONENT_NAME);
+			
+			SysComponent sysComponent = sysComponentService.getOne(Wrappers.lambdaQuery(component));
+			component.setServerid(Constant.SERVER_ID);
 			component.setUtime(System.currentTimeMillis());
-			sysComponentService.updateComponent(component);
+			if(sysComponent != null) {
+				component.setId(sysComponent.getId());
+			}
+			sysComponentService.saveOrUpdate(component);
 		}
 
 		// 检查 haMode
