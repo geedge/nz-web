@@ -106,8 +106,7 @@ public class ShiroConfig {
 		filterMap.put("/sys/license/**", "anon");// license 相关接口
 		filterMap.put("/setup/**", "anon");// license 相关接口
 		filterMap.put("/actuator/prometheus", "metricsFilter");
-		filterMap.put("/**", "tokenCheckFilter");
-		filterMap.put("/**", "licenseFilter");
+		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
 		
 		
 		Integer loginExpiration = getTimeOutData();
