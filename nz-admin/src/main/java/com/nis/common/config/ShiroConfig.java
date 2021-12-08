@@ -128,8 +128,7 @@ public class ShiroConfig {
 		 * 自定义 过滤器
 		 */
 		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics 
-		filterMap.put("/**", "tokenCheckFilter"); // 认证接口
-		filterMap.put("/**", "licenseFilter"); //license 检查接口
+		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
 		
 		
 		Integer loginExpiration = getTimeOutData();
