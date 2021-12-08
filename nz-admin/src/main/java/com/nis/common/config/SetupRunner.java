@@ -38,6 +38,9 @@ public class SetupRunner implements CommandLineRunner{
     @Value("${nezha.config.path:./config/nezha.properties}")
     private String nezhaConfigPath;
     
+    @Value("${compileType:release}")
+	private String comileType;
+    
     @Autowired
     SysConfigService sysConfigService;
 
@@ -47,11 +50,15 @@ public class SetupRunner implements CommandLineRunner{
     @Autowired
     LicenseService licenseService;
 	
+    
+    
 	@Override
 	public void run(String... args) throws Exception {
 		//启动时加载证书
-		boolean lr = licenseService.installLicense();
-		log.info("license install {}", lr);
+		if(! Tool.StrUtil.equalsIgnoreCase(comileType, "debug")) {
+			boolean lr = licenseService.installLicense();
+			log.info("license install {}", lr);
+		}
 		if( inited != 1) {
 			log.debug(" inited = {}	,skip init setup", inited);
 			return ;

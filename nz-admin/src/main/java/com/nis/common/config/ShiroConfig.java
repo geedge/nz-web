@@ -31,9 +31,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.nis.common.exception.NZException;
 import com.nis.common.interceptor.TokenCheckFilter;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
@@ -116,6 +114,7 @@ public class ShiroConfig {
 		 */
 		filterMap.put("/sys/login", "anon"); // 登录接口
 		filterMap.put("/api/**", "anon"); // 告警消息接收 接口
+		filterMap.put("/actuator/**", "anon"); // 诊断接口
 		filterMap.put("/sys/i18n/lang", "anon"); //国际化文件获取接口
 		filterMap.put("/mfa/**", "anon"); // mfa 认证接口
 		filterMap.put("/healthy", "anon"); //健康检查接口

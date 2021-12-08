@@ -64,6 +64,7 @@ public class HaspUtil {
 		Hasp hasp = new Hasp(Hasp.HASP_DEFAULT_FID);
 		String licenseInfo = hasp.getInfo(String.format(PRODUCT_SCOPE, productId), HASP_FORMAT, vendorCode);
 		int status = hasp.getLastError();
+		log.info("license status: {}", status);
 		if (status != HaspStatus.HASP_STATUS_OK) {
 			log.error("Error: updateLicense Fails with status code :{}",status);
 		}
@@ -81,6 +82,7 @@ public class HaspUtil {
 		Hasp hasp = new Hasp(Hasp.HASP_DEFAULT_FID);
 		hasp.update(v2c);
 		int status = hasp.getLastError();
+		log.info("license status: {}", status);
 		if (status != HaspStatus.HASP_STATUS_OK) {
 			log.error("Error: updateLicense Fails with status code :{}",status);
 		}
@@ -96,9 +98,9 @@ public class HaspUtil {
 	 */
 	public static String readC2vFromKey(String vendorCode)  {
 		Hasp hasp = new Hasp(Hasp.HASP_DEFAULT_FID);
-		String infos = hasp.getInfo(PRODUCT_SCOPE, KEY_VIEW, vendorCode);
+		String infos = hasp.getInfo(KEY_SCOPE, KEY_VIEW, vendorCode);
 		int status = hasp.getLastError();
-		log.info("reading C2v from key status code = " + status);
+		log.info("license status: {}", status);
 		if(status != HaspStatus.HASP_STATUS_OK) {
 			log.error("Error: getLicense c2v Fails with status code :{}",status);
 			throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));	
@@ -110,6 +112,7 @@ public class HaspUtil {
 		Hasp hasp = new Hasp(fetureId);
 		hasp.login(vendorCode);
 		int status = hasp.getLastError();
+		log.info("license status: {}", status);
 		if(status != HaspStatus.HASP_STATUS_OK) {
 			log.error("Error: license login  Fails with status code :{}",status);
 		}
