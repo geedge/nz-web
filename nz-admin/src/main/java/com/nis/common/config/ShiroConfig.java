@@ -76,7 +76,7 @@ public class ShiroConfig {
 	private SysApiKeyDao sysApiKeyDao;
 	
 	@Value("${compileType:release}")
-	private String comileType;
+	private String compileType;
 	@Value("${vendorCode}")
 	private String vendorCode;
 	@Autowired
@@ -153,7 +153,7 @@ public class ShiroConfig {
 		protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)
 				throws Exception {
 			// debug 模式不校验 license
-			if(Tool.StrUtil.equalsIgnoreCase(comileType, "debug")) {
+			if(Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
 				return true;
 			}
 			

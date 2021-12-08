@@ -39,7 +39,7 @@ public class SetupRunner implements CommandLineRunner{
     private String nezhaConfigPath;
     
     @Value("${compileType:release}")
-	private String comileType;
+	private String compileType;
     
     @Autowired
     SysConfigService sysConfigService;
@@ -54,8 +54,9 @@ public class SetupRunner implements CommandLineRunner{
     
 	@Override
 	public void run(String... args) throws Exception {
+		log.info("compileType  value  is : "+compileType);
 		//启动时加载证书
-		if(! Tool.StrUtil.equalsIgnoreCase(comileType, "debug")) {
+		if(! Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
 			boolean lr = licenseService.installLicense();
 			log.info("license install {}", lr);
 		}
