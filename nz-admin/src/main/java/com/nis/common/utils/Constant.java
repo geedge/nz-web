@@ -857,9 +857,6 @@ public class Constant {
 	// chart dashboard 类型导入表头
 	public static final String SYSCONFIG_KEY_CHART_EXPORT_HEADER = "chart_export_header";
 
-	// model 类型导入表头
-	public static final String SYSCONFIG_KEY_MODEL_CHART_EXPORT_HEADER = "model_chart_export_header";
-
 	// asset 类型导入表头
 	public static final String SYSCONFIG_KEY_ASSET_CHART_EXPORT_HEADER = "asset_chart_export_header";
 

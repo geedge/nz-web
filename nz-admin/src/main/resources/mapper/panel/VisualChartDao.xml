@@ -250,9 +250,4 @@
         </where>
     </select>
 
-    <select id="getUpdateChartElement" resultType="com.nis.modules.panel.entity.VisualChartElement">
-        select b.* from visual_chart a
-        left join visual_chart_element b on a.id = b.chart_id
-        where a.panel_id = 0 and  b.expression like "%1m%";
-    </select>
 </mapper>
