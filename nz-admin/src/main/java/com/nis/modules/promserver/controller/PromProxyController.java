@@ -142,24 +142,28 @@ public class PromProxyController {
     		String queryString = request.getQueryString();
             queryString = StrUtil.isNotBlank(queryString)?queryString:"";
             queryString = URLUtil.decode(queryString);
-            if(StrUtil.equals(promPath, "/api/v1/query_range")) {
+            if(StrUtil.equals(promPath, "/api/v1/query_range") || StrUtil.equals(promPath, "/api/v1/query")) {
             	if(ReUtil.contains("\\[\\s*\\$interval\\s*]", URLUtil.decode(queryString))) {
             		// 判断step是否小于两个周期的scrape interval
             		Integer defaultScrapeInterval = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
                 	String step = request.getParameter("step");
-                	Integer stepVal = Integer.valueOf(StrUtil.sub(step, 0, step.length()-1));
-                	if(step.endsWith("s")) {
-                		if(stepVal < defaultScrapeInterval*2) {
-                			step = defaultScrapeInterval * 2 + "s";
-                		}
-                	}else if(step.endsWith("m")) {
-                		if(stepVal * 60 < defaultScrapeInterval*2) {
-                			step = defaultScrapeInterval * 2 + "s";
-                		}
+                	if(StrUtil.isNotBlank(step)) {
+                		Integer stepVal = Integer.valueOf(StrUtil.sub(step, 0, step.length()-1));
+                    	if(step.endsWith("s")) {
+                    		if(stepVal < defaultScrapeInterval*2) {
+                    			step = defaultScrapeInterval * 2 + "s";
+                    		}
+                    	}else if(step.endsWith("m")) {
+                    		if(stepVal * 60 < defaultScrapeInterval*2) {
+                    			step = defaultScrapeInterval * 2 + "s";
+                    		}
+                    	}else {
+                    		if(stepVal * 60 * 60 < defaultScrapeInterval*2) {
+                    			step = defaultScrapeInterval * 2 + "s";
+                    		}
+                    	}
                 	}else {
-                		if(stepVal * 60 * 60 < defaultScrapeInterval*2) {
-                			step = defaultScrapeInterval * 2 + "s";
-                		}
+                		step = defaultScrapeInterval * 2 + "s";
                 	}
                 	// 正则替换 当查询语句中有[]时  将时间替换为step
                 	queryString = URLUtil.encode(URLUtil.decode(queryString).replaceAll("\\[\\s*\\$interval\\s*]", "["+step+"]"));
