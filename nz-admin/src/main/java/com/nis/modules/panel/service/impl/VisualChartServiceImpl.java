@@ -242,8 +242,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	        }
 	        // stat 类型
 	        case Constant.CHART_SINGLESTAT_TYPE: {
-	            ValidateUtils.is(param).notNull(RCode.CHART_SINGLESTATPARAM_ISNULL)
-	                    .and(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
+	            ValidateUtils.is(param).notNull(RCode.CHART_SINGLESTATPARAM_ISNULL);
 	
 	            Object statistics = param.get(Constant.CHART_SINGLESTAT_PARAMkEY);
 	            if (ToolUtil.isEmpty(statistics)) {
