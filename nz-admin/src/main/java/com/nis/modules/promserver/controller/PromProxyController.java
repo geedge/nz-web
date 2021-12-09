@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -52,10 +51,12 @@ import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
 import com.nis.modules.sys.dao.SysConfigDao;
 import com.nis.modules.sys.entity.SysConfigEntity;
+import com.nis.modules.sys.service.SysConfigService;
 
 import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.net.url.UrlPath;
 import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
@@ -81,6 +82,9 @@ public class PromProxyController {
 	
 	@Autowired
 	private RestTemplate restTemplate;
+	
+	@Autowired
+	private SysConfigService sysConfigService;
 	
 	@RequestMapping(value = "/prom/**")
 	public void promProxy(HttpServletRequest request, HttpServletResponse response) {
@@ -138,6 +142,29 @@ public class PromProxyController {
     		String queryString = request.getQueryString();
             queryString = StrUtil.isNotBlank(queryString)?queryString:"";
             queryString = URLUtil.decode(queryString);
+            if(StrUtil.equals(promPath, "/api/v1/query_range")) {
+            	if(ReUtil.contains("\\[\\s*\\$interval\\s*]", URLUtil.decode(queryString))) {
+            		// 判断step是否小于两个周期的scrape interval
+            		Integer defaultScrapeInterval = Integer.valueOf(sysConfigService.getValue(Constant.SYSCONFIG_KEY_SCRAPEINTERVAL));
+                	String step = request.getParameter("step");
+                	Integer stepVal = Integer.valueOf(StrUtil.sub(step, 0, step.length()-1));
+                	if(step.endsWith("s")) {
+                		if(stepVal < defaultScrapeInterval*2) {
+                			step = defaultScrapeInterval * 2 + "s";
+                		}
+                	}else if(step.endsWith("m")) {
+                		if(stepVal * 60 < defaultScrapeInterval*2) {
+                			step = defaultScrapeInterval * 2 + "s";
+                		}
+                	}else {
+                		if(stepVal * 60 * 60 < defaultScrapeInterval*2) {
+                			step = defaultScrapeInterval * 2 + "s";
+                		}
+                	}
+                	// 正则替换 当查询语句中有[]时  将时间替换为step
+                	queryString = URLUtil.encode(URLUtil.decode(queryString).replaceAll("\\[\\s*\\$interval\\s*]", "["+step+"]"));
+            	}
+            }
             // 构造请求路径
     		String promPathPrefix = promserverService.getPromPathPrefix();
     		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
