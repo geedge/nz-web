@@ -25,6 +25,7 @@ import com.nis.modules.asset.dao.AssetFieldValueDao;
 import com.nis.modules.asset.entity.AssetFieldMeta;
 import com.nis.modules.asset.entity.AssetFieldValue;
 import com.nis.modules.asset.service.AssetFieldMetaService;
+import com.nis.modules.sys.entity.SysApiKey;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -74,7 +75,9 @@ public class AssetFieldMetaServiceImpl extends ServiceImpl<AssetFieldMetaDao,Ass
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_ERROR);
 		}
 		
-		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda().eq(AssetFieldMeta::getMetaKey, key).or().eq(AssetFieldMeta::getName,assetFieldMeta.getName()).ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId()));
+		List<AssetFieldMeta> list = this.list(new QueryWrapper<AssetFieldMeta>().lambda()
+				.ne(ObjectUtil.isNotEmpty(assetFieldMeta.getId()),AssetFieldMeta::getId, assetFieldMeta.getId())
+				.and(wrapper -> wrapper.eq(AssetFieldMeta::getMetaKey, key).or().eq(AssetFieldMeta::getName,assetFieldMeta.getName())));
 		
 		if(ObjectUtil.isNotEmpty(list)) {
 			throw new NZException(RCode.ASSET_FIELD_META_KEY_NAME_DUPLICATE);
