@@ -1148,4 +1148,10 @@ public class Constant {
 	public static final String[] IMPORTFILE_TYPE_INTVALUES = {"1", "2", "3"};
 
 	public static final String[] IMPORTFILE_TYPE_STRVALUES = {"xlsx", "xls", "csv", "json"};
+	
+	public static final String ENDPOINT_METRICS_STATE_CACHE_KEY = "endpoint_metrics_state";
+	
+	public static final String ENDPOINT_LOGS_STATE_CACHE_KEY = "endpoint_logs_state";
+	
+	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status"; 
 }

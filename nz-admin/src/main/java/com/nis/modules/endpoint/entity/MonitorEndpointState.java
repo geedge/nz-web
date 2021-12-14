@@ -1,6 +1,7 @@
 package com.nis.modules.endpoint.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class MonitorEndpointState implements Serializable {
 
     private Integer ver;
 
+    @TableField(exist = false)
     private Date time;
 
 }

@@ -25,6 +25,7 @@ public class AssetTalonStatus implements Serializable {
 
     private String msg;
 
+    @TableField(exist = false)
     private Date lastUpdate;
 
     @TableField(exist = false)

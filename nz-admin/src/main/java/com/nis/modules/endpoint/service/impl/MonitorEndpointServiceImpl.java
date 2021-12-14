@@ -6,6 +6,8 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
@@ -21,6 +23,7 @@ import com.nis.modules.alert.dao.AlertMessageDao;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.endpoint.dao.MonitorEndpointDao;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
@@ -46,6 +49,7 @@ import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
@@ -109,6 +113,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     @Autowired
     private DataSourceTransactionManager dataSourceTransactionManager;
 
+    @Autowired
+    private RedisTemplate redisTemplate;
+    
     @Override
     public MonitorEndpoint queryEndpointEntity(Integer id) {
         MonitorEndpoint endpoint = this.getById(id);
@@ -133,12 +140,34 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
             endpoint.setAlertNum(tempAlert.size());
         }
 
+        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+  
         // configs
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new LambdaQueryWrapper<MonitorEndpointConfig>().eq(MonitorEndpointConfig::getEndpointId, endpoint.getId()));
         for (MonitorEndpointConfig endpointConfig : endpointConfigs) {
             endpointConfig.setVer(endpointConfig.getVersion());
 
-            MonitorEndpointState endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+            MonitorEndpointState endpointStateByConfigId = null;
+            if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
+            	if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
+            		Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
+                	if(ToolUtil.isNotEmpty(object)) {
+                		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                    }
+            	}
+            }else {
+            	if(ToolUtil.isNotEmpty(endpointLogsStates)) {
+            		Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
+                	if(ToolUtil.isNotEmpty(object)) {
+                		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                    }
+            	}
+            }
+            // 缓存中未取到值时 从数据库中获取
+            if(endpointStateByConfigId == null) {
+                endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+            }
             if (endpointStateByConfigId == null)
                 continue;
             endpointConfig.setState(endpointStateByConfigId.getState());
@@ -271,12 +300,34 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 	private void handleResuleList(List<MonitorEndpoint> endpointList) {
         List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
 
+        Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        
         for (MonitorEndpoint endpoint : endpointList) {
             List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
             for (MonitorEndpointConfig endpointConfig : configsByEndpointId) {
                 endpointConfig.setVer(endpointConfig.getVersion());
 
-                MonitorEndpointState endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+                MonitorEndpointState endpointStateByConfigId = null;
+                if(endpointConfig.getType().equals(Constant.MonitorConfType.METRICS.getValue())) {
+                	if(ToolUtil.isNotEmpty(endpointMetricsStates)) {
+                		Object object = endpointMetricsStates.get(endpointConfig.getEndpointId().toString());
+                    	if(ToolUtil.isNotEmpty(object)) {
+                    		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                        }
+                	}
+                }else {
+                	if(ToolUtil.isNotEmpty(endpointLogsStates)) {
+                		Object object = endpointLogsStates.get(endpointConfig.getEndpointId().toString());
+                    	if(ToolUtil.isNotEmpty(object)) {
+                    		endpointStateByConfigId = JSON.parseObject((String)object,MonitorEndpointState.class);
+                        }
+                	}
+                }
+                // 缓存中未取到值时 从数据库中获取
+                if(endpointStateByConfigId == null) {
+                    endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+                }
                 if (endpointStateByConfigId == null)
                     continue;
                 endpointConfig.setState(endpointStateByConfigId.getState());
@@ -450,6 +501,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 删除 endpoint state
         endpointStateService.removeByIds(ids);
+        List<String> deleteList = ids.stream().map(id-> id.toString()).collect(Collectors.toList());
+        redisTemplate.opsForHash().delete(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, deleteList.toArray());
+        redisTemplate.opsForHash().delete(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, deleteList.toArray());
 
         // 删除 alert
         alertMessageService.removeByEndpointIds(ids);
@@ -1131,6 +1185,11 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
         // 保存配置信息
         this.saveOrUpdateEndpointConfigs(endpoint, module);
+        
+        // 修改完成删除 endpoint state数据 删除缓存中的数据
+        endpointStateService.removeById(endpoint.getId());
+        redisTemplate.opsForHash().delete(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpoint.getId().toString());
+        redisTemplate.opsForHash().delete(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpoint.getId().toString());
         return endpoint.getId();
     }
 

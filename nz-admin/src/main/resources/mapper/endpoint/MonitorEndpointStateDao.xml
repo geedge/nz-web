@@ -7,4 +7,12 @@
         DELETE FROM monitor_endpoint_state WHERE type = #{type};
     </delete>
 
+	<update id="updateBatchEndpointState">
+		<foreach collection="datas" separator=";" item="data">
+            update monitor_endpoint_state set state=#{data.state},
+            config_id = #{data.configId},
+            ver = #{data.ver}            
+            where endpoint_id = #{data.endpointId} and type = #{type} 
+        </foreach>
+	</update>
 </mapper>

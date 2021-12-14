@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,9 +23,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.util.AgentUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTalonStatus;
@@ -190,9 +194,34 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         }
 
         talonUpdateStatusList.addAll(abnormalTalonList);
-        talonStatusService.remove(null);
-        talonStatusService.saveBatch(talonUpdateStatusList);
-
+        
+        //判断查询数据与缓存中变化的信息
+        Map assetTalonStatuss = redisTemplate.opsForHash().entries(Constant.ASSET_TALON_STATUS_CACHE_KEY);
+        if(ToolUtil.isNotEmpty(assetTalonStatuss)) {
+        	for(int i=talonUpdateStatusList.size()-1;i>=0;i--) {
+        		AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);
+        		if(assetTalonStatuss.containsKey(assetTalonStatus.getAssetId().toString())) {
+        			AssetTalonStatus cacheEndpointState = JSON.parseObject((String)assetTalonStatuss.get(assetTalonStatus.getAssetId().toString()),AssetTalonStatus.class);
+        			redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+        			if(cacheEndpointState.getStatus().equals(assetTalonStatus.getStatus())) {
+        				// 如果状态相同则只更新缓存中的数据信息
+        				talonUpdateStatusList.remove(i);
+        			}
+        		}else{
+        			// 数据库存在 缓存中不存在
+        			redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+        		}
+            }
+        }else {
+        	for(AssetTalonStatus assetTalonStatus:talonUpdateStatusList) {
+        		redisTemplate.opsForHash().put(Constant.ASSET_TALON_STATUS_CACHE_KEY, assetTalonStatus.getAssetId().toString(), JSON.toJSONString(assetTalonStatus));
+        	}
+        }
+        // 超时周期设置为两个endpointState周期
+        redisTemplate.expire(Constant.ASSET_TALON_STATUS_CACHE_KEY, 2, TimeUnit.MINUTES);
+        if(ToolUtil.isNotEmpty(talonUpdateStatusList)) {
+        	talonStatusService.saveOrUpdateBatch(talonUpdateStatusList);
+        }
 
         Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         // 更新 endpoint state 表数据
@@ -224,8 +253,47 @@ public class AssetTalonStatusJob extends QuartzJobBean {
             }
             logStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, talonStatus.getVersion(), new Date()));
         }
-        // 更新 endpoint state
-        endpointStateDao.deleteConfStateByType(Constant.MonitorConfType.LOGS.getValue());
-        endpointStateService.saveBatch(logStateList);
+        //判断查询数据与缓存中变化的信息
+        Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
+        if(ToolUtil.isNotEmpty(endpointStates)) {
+        	for(int i=logStateList.size()-1;i>=0;i--) {
+        		MonitorEndpointState endpointState = logStateList.get(i);
+        		if(endpointStates.containsKey(endpointState.getEndpointId().toString())) {
+        			MonitorEndpointState cacheEndpointState = JSON.parseObject((String)endpointStates.get(endpointState.getEndpointId().toString()),MonitorEndpointState.class);
+        			redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        			if(cacheEndpointState.getState().equals(endpointState.getState())) {
+        				// 如果状态相同则只更新缓存中的数据信息
+        				logStateList.remove(i);
+        			}
+        		}else{
+        			// 数据库存在 缓存中不存在
+        			redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        		}
+            }
+        }else {
+        	for(MonitorEndpointState endpointState:logStateList) {
+        		redisTemplate.opsForHash().put(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        	}
+        }
+        // 超时周期设置为两个endpointState周期
+        redisTemplate.expire(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY, 2, TimeUnit.MINUTES);
+        // 保存 根据类型以及endpointId进行新增或者修改
+        if(ToolUtil.isNotEmpty(logStateList)) {
+        	// 将数据分为新增或者修改
+        	List<Integer> endpointIds = logStateList.stream().map(MonitorEndpointState::getEndpointId).collect(Collectors.toList());
+        	List<MonitorEndpointState> existStates = endpointStateService.list(new LambdaQueryWrapper<MonitorEndpointState>()
+        			.in(MonitorEndpointState::getEndpointId, endpointIds).eq(MonitorEndpointState::getType, Constant.MonitorConfType.LOGS.getValue()));
+        	List<Integer> existIds = existStates.stream().map(MonitorEndpointState::getEndpointId).collect(Collectors.toList());
+        	List<MonitorEndpointState> batchUpdateStates = logStateList.stream().filter(s->existIds.contains(s.getEndpointId())).collect(Collectors.toList());
+        	List<MonitorEndpointState> batchAddStates = logStateList.stream().filter(s->!existIds.contains(s.getEndpointId())).collect(Collectors.toList());
+        	if(ToolUtil.isNotEmpty(batchAddStates)) {
+        		log.debug("Endpoint state batch add datas info : %s ",JSON.toJSON(batchAddStates));
+        		endpointStateService.saveBatch(batchAddStates);
+        	}
+        	if(ToolUtil.isNotEmpty(batchUpdateStates)) {
+        		log.debug("Endpoint state batch update datas info : %s ",JSON.toJSON(batchAddStates));
+        		endpointStateService.modifyBatchEndpointState(batchUpdateStates, Constant.MonitorConfType.LOGS.getValue());
+        	}
+        }
     }
 }

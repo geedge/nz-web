@@ -154,6 +154,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
+    
+    @Autowired
+    private AssetTalonStatusService assetTalonStatusService;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -948,6 +951,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         assetPingService.remove(new QueryWrapper<AssetPing>().lambda().eq(AssetPing::getAssetId, asset.getId()));
         redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, asset.getId().toString());
 
+        // 修改后处理asset talon status数据 删除缓存和数据库中的数据
+        assetTalonStatusService.removeById(asset.getId());
+        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, asset.getId().toString());
         return asset.getId();
     }
 
@@ -1024,10 +1030,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         alertMessageService.removeByAssetIds(idList);
 
         // 删除 assetPing
+        List<String> deleteList = idList.stream().map(id-> id.toString()).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delAssetHosts)) {
             assetPingService.remove(new LambdaQueryWrapper<AssetPing>().in(AssetPing::getHost, delAssetHosts));
             // 删除缓存中的数据
-            List<String> deleteList = idList.stream().map(id-> id.toString()).collect(Collectors.toList());
             redisTemplate.opsForHash().delete(Constant.SYSCONFIG_KEY_ASSET_PING, deleteList.toArray());
         }
 
@@ -1042,6 +1048,10 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         }
         // 删除 关联通过 chart temp 创建的 charts
         chartService.remove(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getVarType, 1).in(VisualChart::getVarId, idList));
+        
+        // 删除assetTalonStatus中的数据以及缓存中的数据信息
+        assetTalonStatusService.removeByIds(idList);
+        redisTemplate.opsForHash().delete(Constant.ASSET_TALON_STATUS_CACHE_KEY, deleteList.toArray());
     }
 
     /*@Override

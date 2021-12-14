@@ -2,9 +2,12 @@ package com.nis.modules.endpoint.job;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.endpoint.dao.MonitorEndpointStateDao;
 import com.nis.modules.endpoint.entity.MonitorEndpointConfig;
 import com.nis.modules.endpoint.entity.MonitorEndpointState;
@@ -23,6 +26,7 @@ import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
@@ -70,7 +74,8 @@ public class EndpointStateJob extends QuartzJobBean {
     /**
      * 更新 endpoint 状态
      */
-    @Transactional(rollbackFor = Exception.class)
+    @SuppressWarnings("unlikely-arg-type")
+	@Transactional(rollbackFor = Exception.class)
     public void updateEndpointStatus() {
         // 随机获取一个 Global Prometheus
         Promserver promserver = promserverService.getOneAvaPromServer(null, null, Constant.PromserverType.GLOBAL.getValue());
@@ -117,12 +122,52 @@ public class EndpointStateJob extends QuartzJobBean {
             downEndpointStateList.add(new MonitorEndpointState(conf.getEndpointId(), conf.getId(), conf.getType(), state, conf.getVersion(), new Date()));
         }
 
-        List allState = new ArrayList();
+        List<MonitorEndpointState> allState = new ArrayList<MonitorEndpointState>();
         allState.addAll(upMetricsEndpointStateList);
         allState.addAll(downEndpointStateList);
-        // 保存
-        endpointStateDao.deleteConfStateByType(Constant.MonitorConfType.METRICS.getValue());
-        endpointStateService.saveBatch(allState);
+        
+        //判断查询数据与缓存中变化的信息
+        Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
+        if(ToolUtil.isNotEmpty(endpointStates)) {
+        	for(int i=allState.size()-1;i>=0;i--) {
+        		MonitorEndpointState endpointState = allState.get(i);
+        		if(endpointStates.containsKey(endpointState.getEndpointId().toString())) {
+        			MonitorEndpointState cacheEndpointState = JSON.parseObject((String)endpointStates.get(endpointState.getEndpointId().toString()),MonitorEndpointState.class);
+        			redisTemplate.opsForHash().put(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        			if(cacheEndpointState.getState().equals(endpointState.getState())) {
+        				// 如果状态相同则只更新缓存中的数据信息
+        				allState.remove(i);
+        			}
+        		}else{
+        			// 数据库存在 缓存中不存在
+        			redisTemplate.opsForHash().put(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        		}
+            }
+        }else {
+        	for(MonitorEndpointState endpointState:allState) {
+        		redisTemplate.opsForHash().put(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, endpointState.getEndpointId().toString(), JSON.toJSONString(endpointState));
+        	}
+        }
+        // 超时周期设置为两个endpointState周期
+        redisTemplate.expire(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY, 2, TimeUnit.MINUTES);
+        // 保存 根据类型以及endpointId进行新增或者修改
+        if(ToolUtil.isNotEmpty(allState)) {
+        	// 将数据分为新增或者修改
+        	List<Integer> endpointIds = allState.stream().map(MonitorEndpointState::getEndpointId).collect(Collectors.toList());
+        	List<MonitorEndpointState> existStates = endpointStateService.list(new LambdaQueryWrapper<MonitorEndpointState>()
+        			.in(MonitorEndpointState::getEndpointId, endpointIds).eq(MonitorEndpointState::getType, Constant.MonitorConfType.METRICS.getValue()));
+        	List<Integer> existIds = existStates.stream().map(MonitorEndpointState::getEndpointId).collect(Collectors.toList());
+        	List<MonitorEndpointState> batchUpdateStates = allState.stream().filter(s->existIds.contains(s.getEndpointId())).collect(Collectors.toList());
+        	List<MonitorEndpointState> batchAddStates = allState.stream().filter(s->!existIds.contains(s.getEndpointId())).collect(Collectors.toList());
+        	if(ToolUtil.isNotEmpty(batchAddStates)) {
+        		log.debug("Endpoint state batch add datas info : %s ",JSON.toJSON(batchAddStates));
+        		endpointStateService.saveBatch(batchAddStates);
+        	}
+        	if(ToolUtil.isNotEmpty(batchUpdateStates)) {
+        		log.debug("Endpoint state batch update datas info : %s ",JSON.toJSON(batchAddStates));
+        		endpointStateService.modifyBatchEndpointState(batchUpdateStates, Constant.MonitorConfType.METRICS.getValue());
+        	}
+        }
     }
 
     /**
