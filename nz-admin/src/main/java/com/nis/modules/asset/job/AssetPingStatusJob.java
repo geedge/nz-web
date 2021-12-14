@@ -168,9 +168,9 @@ public class AssetPingStatusJob extends QuartzJobBean {
         		AssetPing assetPing = upAssetPings.get(i);
         		if(assetPings.containsKey(assetPing.getAssetId().toString())) {
         			AssetPing cachePing = JSON.parseObject((String)assetPings.get(assetPing.getAssetId().toString()),AssetPing.class);
+        			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
         			if(cachePing.getStatus().equals(assetPing.getStatus())) {
         				// 如果状态相同则只更新缓存中的数据信息
-        				redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
         				upAssetPings.remove(i);
         			}
         		}else{
