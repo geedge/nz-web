@@ -251,7 +251,6 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	            if (!Constant.CHART_SINGLESTAT_STATISTICS.contains(statistics.toString())) {
 	                throw new NZException(RCode.CHART_PARAMSINGLESTAT_INVALIDE);
 	            }
-	            chartElementService.validateElements(elements);
 	            break;
 	        }
 	        // group 类型不需要校验 elements
