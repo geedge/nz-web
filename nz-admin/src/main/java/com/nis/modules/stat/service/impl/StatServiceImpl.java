@@ -55,6 +55,7 @@ import com.nis.modules.sys.shiro.ShiroUtils;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.log.Log;
 
 
@@ -531,6 +532,10 @@ public class StatServiceImpl implements StatService{
 	@Override
 	public Map<String, Object> queryAnalyse(Map<String,Object> params) {
 		String q = (String) params.get("q");
+		if(ToolUtil.isEmpty(q)) {
+			throw new NZException(RCode.SYSSTAT_Q_IS_NULL);
+		}
+		q = URLUtil.decode(q);
 		String resultType = (String) params.get("resultType");
 		// 处理查询结果 resultType 默认为matrix
 		if(StrUtil.isBlank(resultType)) {

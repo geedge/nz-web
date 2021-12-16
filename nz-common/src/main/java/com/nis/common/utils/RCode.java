@@ -845,6 +845,7 @@ public enum RCode {
     SYSSTAT_NAME_IS_NULL(811010,"param name can not be null"),
     SYSSTAT_SELECT_IS_NULL(811011,"param select can not be null"),
     SYSSTAT_TABLE_INVALIDED(813012,"param table invalided"),
+    SYSSTAT_Q_IS_NULL(813013,"param q can not be null"),
     /**
      * 导入相关
      */
