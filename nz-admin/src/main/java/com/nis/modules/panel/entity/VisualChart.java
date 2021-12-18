@@ -19,10 +19,10 @@ public class VisualChart {
 	private Integer panelId;
 	
 	private Integer groupId;
+
+	private Double span;
 	
-	private Integer span;
-	
-	private Integer height;
+	private Double height;
 	
 	private Integer updateBy;
 	
@@ -44,9 +44,9 @@ public class VisualChart {
 	
 	private String seq;
 
-	private Integer x;
+	private Double x;
 
-	private Integer y;
+	private Double y;
 
 	@TableField(exist = false)
     private List<VisualChartElement> elements;

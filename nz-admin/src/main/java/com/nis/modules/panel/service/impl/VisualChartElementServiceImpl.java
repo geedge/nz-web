@@ -34,7 +34,8 @@ public class VisualChartElementServiceImpl extends ServiceImpl<VisualChartElemen
         for (VisualChartElement element : elements) {
             ValidateUtils.is(element.getExpression()).notNull(RCode.CHARTELEMENT_EXPRESSION_ISNULL).maxLength(4096)
                     .and(element.getType()).notNull(RCode.CHARTELEMENT_TYPE_ISNULL)
-                    .and(element.getLegend()).maxLength(512);
+                    .and(element.getLegend()).maxLength(512)
+                    .and(element.getName()).notNull(RCode.CHARTELEMENT_NAME_ISNULL).maxLength(64);
 
             if (!expressionTypes.contains(element.getType())) {
                 throw new NZException(RCode.CHARTELEMENT_TYPE_INVALIDE);

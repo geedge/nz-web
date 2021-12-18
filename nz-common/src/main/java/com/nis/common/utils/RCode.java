@@ -112,7 +112,8 @@ public enum RCode {
     CHART_NAME_DUPLICATE_NOTLINK(122070, "Chart name is duplicated and cannot be linked"),
     CHART_DATASOURCE_ISNULL(121071,"Chart datasource can not be null"),
     CHART_DATASOURCE_INVALIDE(121072,"Chart datasource must be metrics,logs,system,misc"),
-    
+    CHARTELEMENT_NAME_ISNULL(121073, "Chart element name can not be empty"),
+
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
     EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),

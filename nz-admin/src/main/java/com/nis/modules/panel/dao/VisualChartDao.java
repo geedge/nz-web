@@ -3,12 +3,11 @@ package com.nis.modules.panel.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.modules.panel.entity.VisualChart;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 import java.util.Map;
-
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface VisualChartDao extends BaseMapper<VisualChart> {
@@ -33,4 +32,6 @@ public interface VisualChartDao extends BaseMapper<VisualChart> {
     
     // 查询model和module实例化的图表数据信息
     List<VisualChart> selectInstanceChart(@Param("type")Integer type,@Param("id")Integer id);
+
+    void insertBatchChart(@Param("list") List<VisualChart> oldChartListByPanelId);
 }

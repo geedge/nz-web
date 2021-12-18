@@ -2,6 +2,7 @@ package com.nis.common.config;
 
 import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.log.Log;
+import com.nis.common.update.service.DataFormatConversionService;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
@@ -29,6 +30,9 @@ public class FlywayConfig {
 
     @Autowired
     private FlywayProperties flywayProperties;
+
+    @Autowired
+    private DataFormatConversionService dataFormatConversionService;
 
     @PostConstruct
     public void migrate() {
@@ -64,5 +68,8 @@ public class FlywayConfig {
             flyway.repair();
             log.error("flyway执行脚本失败", e);
         }
+
+        // 3.0 - 3.2 visual_chart 表数据转换
+        dataFormatConversionService.visualChartDataFormatConversion();
     }
 }

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nis.common.update.dao.V3_0VisualChartDao">
+
+    <resultMap id="chartResultMap" type="com.nis.modules.panel.entity.VisualChart">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="panelId" column="panel_id"/>
+        <result property="groupId" column="group_id"/>
+        <result property="span" column="span"/>
+        <result property="height" column="height"/>
+        <result property="updateAt" column="update_at"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="type" column="type"/>
+        <result property="unit" column="unit"/>
+        <result property="weight" column="weight"/>
+        <result property="param" column="param"/>
+        <result property="pid" column="pid"/>
+        <result property="buildIn" column="build_in"/>
+        <result property="remark" column="remark"/>
+        <result property="seq" column="seq"/>
+        <result property="varType" column="var_type"/>
+        <result property="varId" column="var_id"/>
+        <result property="varName" column="var_name"/>
+        <!--<result property="datasource" column="datasource"/>
+        <result property="x" column="x"/>
+        <result property="y" column="y"/>-->
+    </resultMap>
+
+    <select id="checkTableExists" resultType="java.util.Map">
+        SHOW TABLES LIKE #{tableName};
+    </select>
+
+    <select id="queryList" resultMap="chartResultMap">
+        SELECT
+            *
+        FROM
+             visual_chart_v3_2
+        ORDER BY
+            panel_id,
+            group_id,
+            weight;
+    </select>
+
+    <update id="dropTable">
+        DROP TABLE ${tableName};
+    </update>
+    
+</mapper>

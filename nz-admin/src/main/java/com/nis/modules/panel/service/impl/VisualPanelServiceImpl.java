@@ -663,8 +663,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	groupChart.setPanelId(panelId);
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
-                	groupChart.setSpan(12);
-                	groupChart.setHeight(12);
+                	groupChart.setSpan(12d);
+                	groupChart.setHeight(-1d);
                 	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                 	groupChart.setUpdateAt(new Date());
                 	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
@@ -779,8 +779,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setPanelId(panelId);
                     chart.setName(title);
                     chart.setType(type);
-                    chart.setSpan(Double.valueOf(span).intValue());
-                    chart.setHeight(Double.valueOf(height).intValue());
+                    chart.setSpan(Double.valueOf(span));
+                    chart.setHeight(Double.valueOf(height));
                     // unit 为空 设置默认值为 short
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));
@@ -842,6 +842,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             for (VisualChartElement element : elementsList) {
                 if(ToolUtil.isEmpty(element.getExpression())){
                     return RCode.CHARTELEMENT_EXPRESSION_ISNULL.getMsg();
+                }
+                if (ToolUtil.isEmpty(element.getName())) {
+                    return RCode.CHARTELEMENT_NAME_ISNULL.getMsg();
+                }
+                if (ToolUtil.isEmpty(element.getType())) {
+                    return RCode.CHARTELEMENT_TYPE_ISNULL.getMsg();
                 }
             }
         }
@@ -1052,8 +1058,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     groupChart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
                 	groupChart.setName(groupName);
                 	groupChart.setGroupId(0);
-                	groupChart.setSpan(12);
-                	groupChart.setHeight(12);
+                	groupChart.setSpan(12d);
+                	groupChart.setHeight(-1d);
                 	groupChart.setUpdateBy((ShiroUtils.getUserId()).intValue());
                 	groupChart.setUpdateAt(new Date());
                 	groupChart.setType(Constant.CHART_GROUP_TYPE.toString());
@@ -1191,8 +1197,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
                     chart.setName(title);
                     chart.setType(type);
-                    chart.setSpan(Double.valueOf(span).intValue());
-                    chart.setHeight(Double.valueOf(height).intValue());
+                    chart.setSpan(Double.valueOf(span));
+                    chart.setHeight(Double.valueOf(height));
                     // unit 为空 设置默认值为 short
                     unit = StringUtils.isEmpty(unit) ? "short" : unit;
                     chart.setUnit(Constant.ALERT_RULE_UNIT_MAP.get(unit));

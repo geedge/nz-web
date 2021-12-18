@@ -21,4 +21,9 @@ public class VisualChartElement {
 	private Integer buildIn;
 	
 	private String seq;
+
+	private String name;
+
+	private Integer state;
+
 }

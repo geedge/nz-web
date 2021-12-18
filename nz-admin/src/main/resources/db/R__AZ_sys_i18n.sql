@@ -5026,4 +5026,7 @@ INSERT INTO `sys_i18n` VALUES (5570, 'license.inactive', 'en', 'license.inactive
 INSERT INTO `sys_i18n` VALUES (5571, 'license.inactive', 'zh', 'license.inactive', 'Inactive', '', '2021-12-17 08:48:27', 1);
 INSERT INTO `sys_i18n` VALUES (5572, 'login.download', 'en', 'login.download', 'Download license', '', '2021-12-17 08:53:08', 1);
 INSERT INTO `sys_i18n` VALUES (5573, 'login.download', 'zh', 'login.download', '下载许可', '', '2021-12-17 08:53:13', 1);
+INSERT INTO `sys_i18n` VALUES (5574, '121073', 'en', 'CHARTELEMENT_NAME_ISNULL', 'Chart element name can not be empty', '', '2021-12-18 09:32:35', 1);
+INSERT INTO `sys_i18n` VALUES (5575, '121073', 'zh', 'CHARTELEMENT_NAME_ISNULL', '图表元素名称不能为空', '', '2021-12-18 09:32:58', 1);
+
 SET FOREIGN_KEY_CHECKS = 1;

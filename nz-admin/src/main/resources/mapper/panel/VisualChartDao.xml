@@ -39,6 +39,8 @@
             <result property="expression" column="expression"></result>
             <result property="type" column="type"></result>
             <result property="legend" column="legend"></result>
+            <result property="name" column="name"></result>
+            <result property="state" column="state"></result>
         </collection>
     </resultMap>
 
@@ -51,6 +53,8 @@
             vce.expression AS vce_expression,
             vce.type AS vce_type,
             vce.legend AS vce_legend,
+            vce.name AS vce_name,
+            vce.state AS vce_state,
             vp.id as panel_id,
             vp.name as panel_name,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
@@ -250,4 +254,35 @@
         </where>
     </select>
 
+
+    <insert id="insertBatchChart">
+        insert into visual_chart
+        (`id`, `name`, `panel_id`, `group_id`, `span`, `height`, `update_by`, `update_at`, `type`, `unit`, `weight`, `param`, `pid`, `build_in`, `remark`, `seq`, `var_type`, `var_id`, `x`, `y`, `datasource`)
+        VALUES
+        <foreach collection="list" item="item" separator="," >
+            (
+            #{item.id},
+            #{item.name},
+            #{item.panelId},
+            #{item.groupId},
+            #{item.span},
+            #{item.height},
+            #{item.updateBy},
+            #{item.updateAt},
+            #{item.type},
+            #{item.unit},
+            #{item.weight},
+            #{item.param},
+            #{item.pid},
+            #{item.buildIn},
+            #{item.remark},
+            #{item.seq},
+            #{item.varType},
+            #{item.varId},
+            #{item.x},
+            #{item.y},
+            #{item.datasource}
+            )
+        </foreach>
+    </insert>
 </mapper>
