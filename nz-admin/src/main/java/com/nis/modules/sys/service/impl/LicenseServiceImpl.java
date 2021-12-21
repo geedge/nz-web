@@ -164,9 +164,6 @@ public class LicenseServiceImpl implements LicenseService {
 		entity.setHasps(haspsStr);
 		String genLicenseDigest = entity.genLicenseDigest();
 		log.debug("File digestValue : %s , figure out genLicenseDigest : %s", digestValue,genLicenseDigest);
-		
-		System.err.println(digestValue);
-		System.err.println(genLicenseDigest);
 		if(!StrUtil.equals(digestValue, genLicenseDigest)) {
 			throw new NZException(RCode.LICENSE_DIGESTVALUE_INVALID);
 		}
