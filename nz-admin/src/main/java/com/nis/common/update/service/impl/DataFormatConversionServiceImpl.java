@@ -197,8 +197,8 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                 colX = span;
                 // 下一行第一个 Y 就是上一行 height 最大值
                 colY += highestValueInLine;
-                Double colXValue = this.getColXValue(colX, span, i, list, true);
-                chart.setX(colXValue);
+                Integer colXValue = colX - span.intValue();
+                chart.setX(colXValue.doubleValue());
                 chart.setY(colY.doubleValue());
                 highestValueInLine = 0;
             } else {
@@ -206,24 +206,14 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                 if (Tool.StrUtil.equals(chart.getType(), "group")) {
                     chart.setX(0d);
                 } else {
-                    Double colXValue = this.getColXValue(colX, span, i, list, false);
-                    chart.setX(colXValue);
+                    Integer colXValue = colX - span.intValue();
+                    chart.setX(colXValue.doubleValue());
                 }
                 chart.setY(colY.doubleValue());
             }
             // 行内最高值
             highestValueInLine = highestValueInLine < height ? height : highestValueInLine;
         }
-    }
-
-    private Double getColXValue(Integer colX, Integer span, int i, List<VisualChart> list, boolean flag) {
-        Integer tempX;
-        if (i == 0 || flag) {
-            tempX = colX - span.intValue();
-        } else {
-            tempX = colX - list.get(i - 1).getSpan().intValue();
-        }
-        return tempX.doubleValue();
     }
 
     /**
