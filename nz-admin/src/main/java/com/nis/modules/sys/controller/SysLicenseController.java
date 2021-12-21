@@ -133,10 +133,6 @@ public class SysLicenseController extends AbstractController {
 			}
 			String haspsStr = hasps.asXML();
 			
-			//待删除代码
-			String sha1 = SecureUtil.sha1(haspsStr);
-			System.err.println(sha1);
-			
 			licenseEle.remove(hasps);
 			String licenseToken = sysConfigService.getValue("license_token");
 			LicenseEntity licenseEntity = new LicenseEntity();
