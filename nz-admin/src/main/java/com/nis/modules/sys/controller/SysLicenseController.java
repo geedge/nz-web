@@ -1,13 +1,20 @@
 package com.nis.modules.sys.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -18,24 +25,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.LicenseUtil;
 import com.nis.common.utils.OperationEnum;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.common.utils.TypeEnum;
+import com.nis.modules.sys.entity.LicenseEntity;
+import com.nis.modules.sys.entity.Signature;
 import com.nis.modules.sys.entity.SysComponent;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysComponentService;
+import com.nis.modules.sys.service.SysConfigService;
 
 import Aladdin.HaspStatus;
+import cn.hutool.crypto.SecureUtil;
 import cn.hutool.log.Log;
 
 @RestController
@@ -61,6 +71,8 @@ public class SysLicenseController extends AbstractController {
 	@Autowired
 	private RestTemplate restTemplate;
 
+	@Autowired
+	private SysConfigService sysConfigService;
 	/**
 	 * 获取license
 	 */
@@ -73,7 +85,7 @@ public class SysLicenseController extends AbstractController {
 
 	@GetMapping("/token")
 	public R getLicenseToken(@RequestParam(required = false) String scope, HttpServletResponse response)
-			throws IOException {
+			throws IOException, DocumentException {
 		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
 			List<SysComponent> comList = sysComponentService.list();
 			List<CompletableFuture<Map<String, Object>>> futureList = Tool.ListUtil.list(false);
@@ -95,22 +107,60 @@ public class SysLicenseController extends AbstractController {
 			} catch (Exception e) {
 				log.warn(e);
 			}
-			Document document = Tool.XmlUtil.parseXml("<license></license>");
-			Element rootEle = document.getDocumentElement();
+			List<String> haspResult = new ArrayList<String>();
 			futureList.forEach(future -> {
 				Map<String, Object> result = future.getNow(null);
 				if (Tool.MapUtil.isNotEmpty(result)) {
 					Integer code = Tool.MapUtil.get(result, "code", Integer.class);
 					String data = Tool.MapUtil.get(result, "data", String.class);
 					if (Tool.NumberUtil.equals(code, 200)) {
-						Document c2v = Tool.XmlUtil.parseXml(data);
-						Node importNode = document.importNode(c2v.getDocumentElement(), true);
-						rootEle.appendChild(importNode);
+						haspResult.add(data);
 					}
 				}
 			});
+			
+			//排序组装hasps内容  计算摘要值
+			List<String> sortHasp = haspResult.stream().sorted().collect(Collectors.toList());
+			
+			Document document = DocumentHelper.createDocument();
+			Element licenseEle = document.addElement("license");
+			Element hasps = licenseEle.addElement("hasps");
+			
+			for(String hasp : haspResult) {
+				Document haspDoc = DocumentHelper.parseText(hasp);
+				Element haspInfo = haspDoc.getRootElement();
+				hasps.add(haspInfo);
+			}
+			String haspsStr = hasps.asXML();
+			
+			//待删除代码
+			String sha1 = SecureUtil.sha1(haspsStr);
+			System.err.println(sha1);
+			
+			licenseEle.remove(hasps);
+			String licenseToken = sysConfigService.getValue("license_token");
+			LicenseEntity licenseEntity = new LicenseEntity();
+			licenseEntity.setSupportID(licenseToken);
+			licenseEntity.setHasps(haspsStr);
+			String digest = licenseEntity.genLicenseDigest();
+			
+			Signature signature = new Signature();
+			signature.setDigestMethod("sha1");
+			signature.setDigestValue(digest);
+			licenseEntity.setSignature(signature);
+			
+			String licenseXml = LicenseUtil.convertObjectToXmlStr(licenseEntity);
+			
+			Document licDoc = DocumentHelper.parseText(licenseXml);
+			Element lic = licDoc.getRootElement();
+			Element licHasps = lic.element("hasps");
+			if(ToolUtil.isNotEmpty(licHasps)) {
+				lic.remove(licHasps);
+			}
+			lic.add(hasps);
+			
 			// 多个 c2v组织成一个 license 文件
-			String license = Tool.XmlUtil.toStr(document);
+			String license = licDoc.asXML();
 			Tool.ResponseUtil.downloadFile(response, "license-request.txt",
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 			return null;
@@ -158,6 +208,9 @@ public class SysLicenseController extends AbstractController {
 		}
 
 		Integer status = licenseService.verify();
+		if(status != 0) {
+			throw new NZException(RCode.LICENSE_ERROR_CODE.setParam(status));
+		}
 		return R.ok().putData("status", status);
 	}
 
@@ -167,11 +220,14 @@ public class SysLicenseController extends AbstractController {
 	@PostMapping("/upload")
 	@SysLog(operation = OperationEnum.UPDATE, type = TypeEnum.LICENSE)
 	public R uploadLicense(@RequestParam(name = "file", required = false) MultipartFile file,
-			@RequestParam(required = false) String scope) throws IOException {
+			@RequestParam(required = false) String scope) throws Exception {
 		if (!Tool.StrUtil.equalsIgnoreCase("local", scope)) {
 			// 保存 license 到 数据库
 			ValidateUtils.is(file).notNull(RCode.LICENSE_FILE_IS_NULL);
 			byte[] bytes = file.getBytes();
+			
+			// 保存前先校验摘要值
+			licenseService.validateDigestValue(Tool.StrUtil.str(bytes, "utf-8"));
 			// 更新证书
 			licenseService.uploadLicense(Tool.StrUtil.str(bytes, "utf-8"));
 			// 调用所有 component 接口 update

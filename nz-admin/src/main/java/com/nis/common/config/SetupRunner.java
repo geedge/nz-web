@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -16,6 +17,8 @@ import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 import com.nis.setup.entity.SetupEntity;
 
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.setting.dialect.Props;
 
@@ -53,7 +56,7 @@ public class SetupRunner implements CommandLineRunner{
     
     
 	@Override
-	public void run(String... args) throws Exception {
+	public void run(String... args) throws Exception {		
 		log.info("compileType  value  is : "+compileType);
 		//启动时加载证书
 		if(! Tool.StrUtil.equalsIgnoreCase(compileType, "debug")) {
@@ -62,6 +65,20 @@ public class SetupRunner implements CommandLineRunner{
 		}
 		if( inited != 1) {
 			log.debug(" inited = {}	,skip init setup", inited);
+			// 创建设备16位数字的license token
+			String licenseToken = sysConfigService.getValue("license_token");
+			if(ToolUtil.isEmpty(licenseToken)|| ! licenseToken.startsWith("GN-")||licenseToken.length()!=19) {
+				int random = (int) (Math.random()*9+1);
+		        String valueOf = String.valueOf(random);
+		        //生成uuid的hashCode值
+		        int hashCode = UUID.randomUUID().toString().hashCode();
+		        //可能为负数
+		        if(hashCode<0){
+		            hashCode = -hashCode;
+		        }
+		        licenseToken = StrUtil.concat(true, "GN-",valueOf,String.format("%015d", hashCode));
+		        sysConfigService.updateValueByKey("license_token",licenseToken);
+			}     
 			return ;
 		}
 		File file = Tool.FileUtil.file(tmpDir, Constant.SETUP_FILE_NAME);

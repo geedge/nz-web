@@ -2,22 +2,30 @@ package com.nis.modules.sys.service.impl;
 
 import java.util.Map;
 
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.nis.common.exception.NZException;
+import com.nis.common.utils.LicenseUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.sys.entity.LicenseEntity;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
 
 import Aladdin.HaspStatus;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 
 @Service
@@ -53,6 +61,15 @@ public class LicenseServiceImpl implements LicenseService {
 			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
 		Map<String, Object> licenseMap = Tool.XmlUtil.xmlToMap(licenseInfo);
+		
+		String v2c = sysConfigService.getValue("license");
+		LicenseEntity license = (LicenseEntity) LicenseUtil.convertXmlStrToObject(LicenseEntity.class, v2c);
+		if(ToolUtil.isNotEmpty(license)) {
+			licenseMap.put("comment", license.getComment());
+			licenseMap.put("supportID", license.getSupportID());
+			licenseMap.put("organization", license.getOrganization());
+			licenseMap.put("type", license.getType());
+		}
 		return licenseMap;
 	}
 
@@ -134,6 +151,25 @@ public class LicenseServiceImpl implements LicenseService {
 			return null;
 		}
 		return entity.getParamValue();
+	}
+
+	@Override
+	public void validateDigestValue(String v2c) throws DocumentException {
+		org.dom4j.Document doc = DocumentHelper.parseText(v2c);
+		Element rootElement = doc.getRootElement();
+		Element hasps = rootElement.element("hasps");
+		String haspsStr = hasps.asXML();
+		LicenseEntity entity = (LicenseEntity) LicenseUtil.convertXmlStrToObject(LicenseEntity.class, v2c);
+		String digestValue = entity.getSignature().getDigestValue();
+		entity.setHasps(haspsStr);
+		String genLicenseDigest = entity.genLicenseDigest();
+		log.debug("File digestValue : %s , figure out genLicenseDigest : %s", digestValue,genLicenseDigest);
+		
+		System.err.println(digestValue);
+		System.err.println(genLicenseDigest);
+		if(!StrUtil.equals(digestValue, genLicenseDigest)) {
+			throw new NZException(RCode.LICENSE_DIGESTVALUE_INVALID);
+		}
 	}
 	
 }

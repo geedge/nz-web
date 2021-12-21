@@ -875,14 +875,14 @@ public enum RCode {
 	 * License 相关
 	 */
 	LICENSE_FILE_IS_NULL(711001, "license file can not be null"),
-	LICENSE_FILE_IS_EMPTY(716001, "The license file does not exist"), LICENSE_FILE_INVALID(715001, "Invalid license,code: {0}"),
+	LICENSE_FILE_IS_EMPTY(716001, "The license file does not exist"), 
+	LICENSE_FILE_INVALID(715001, "Invalid license,code: {0}"),
 	LICENSE_PARAM_IS_NULL(711002, "license parameter is null"),
-	LICENSE_TOKEN_INVALID(715002, "Invalid license,token error"),
-	LICENSE_MAXIMUMASSETS_INVALID(715003, "The number of assets exceeds the maximumAssets"),
-	LICENSE_VERSION_INVALID(715004, "The version is not valid"),
-
-	LICENSE_ERROR_CODE(715004,"License error,code:{0}"),
-	
+	LICENSE_TOKEN_INVALID(715003, "Invalid license,token error"),
+	LICENSE_MAXIMUMASSETS_INVALID(715004, "The number of assets exceeds the maximumAssets"),
+	LICENSE_VERSION_INVALID(715005, "The version is not valid"),
+	LICENSE_ERROR_CODE(715006,"License error,code:{0}"),
+	LICENSE_DIGESTVALUE_INVALID(715007,"Lincese digest value error ,The file may have been modified"),
 	
     ERROR(999, "error"); //通用错误/未知错误
 	

@@ -2,6 +2,9 @@ package com.nis.modules.sys.service;
 
 import java.util.Map;
 
+import org.dom4j.DocumentException;
+import org.springframework.web.multipart.MultipartFile;
+
 public interface LicenseService {
 
 
@@ -34,4 +37,6 @@ public interface LicenseService {
 	Integer verify();
 
 	String getLicenseC2V();
+	
+	void validateDigestValue(String v2c) throws DocumentException ;
 }
