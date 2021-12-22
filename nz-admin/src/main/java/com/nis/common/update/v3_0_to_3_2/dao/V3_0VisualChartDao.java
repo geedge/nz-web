@@ -1,4 +1,4 @@
-package com.nis.common.update.dao;
+package com.nis.common.update.v3_0_to_3_2.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nis.modules.panel.entity.VisualChart;
