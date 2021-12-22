@@ -1,5 +1,6 @@
 package com.nis.modules.sys.service.impl;
 
+import java.util.List;
 import java.util.Map;
 
 import org.dom4j.DocumentException;
@@ -110,26 +111,36 @@ public class LicenseServiceImpl implements LicenseService {
 	
 	/**
 	 * 安装 license
+	 * @throws DocumentException 
 	 */
 	@Override
-	public boolean installLicense() {
+	public boolean installLicense(){
 		String license = this.getLicense();
 		log.info("license v2c content: {}" ,license);
 		if(Tool.StrUtil.isEmpty(license)) {
 			log.error("license v2c empty");
 			return false;
 		}else {
-			Document document = Tool.XmlUtil.parseXml(license);
-			NodeList nodeList = document.getDocumentElement().getChildNodes();
-			for(int i = 0,j = nodeList.getLength();i<j;i++) {
-				Node node = nodeList.item(i);
-				String v2c = Tool.XmlUtil.toStr(node);
-				int status = Tool.HaspUtil.updateKeyWithLicense(v2c, vendorCode);
-				if(status == HaspStatus.HASP_STATUS_OK || status == HaspStatus.HASP_UPDATE_ALREADY_ADDED) {
-					return true;
+			try {
+				org.dom4j.Document document = DocumentHelper.parseText(license);
+				Element hasps = document.getRootElement().element("hasps");
+				if(ToolUtil.isEmpty(hasps)) {
+					return false;
 				}
+				List<org.dom4j.Node> nodeList = hasps.content();
+				for(int i = 0,j = nodeList.size();i<j;i++) {
+					org.dom4j.Node node = nodeList.get(i);
+					String v2c = node.asXML();
+					int status = Tool.HaspUtil.updateKeyWithLicense(v2c, vendorCode);
+					if(status == HaspStatus.HASP_STATUS_OK || status == HaspStatus.HASP_UPDATE_ALREADY_ADDED) {
+						return true;
+					}
+				}
+				return false;
+			}catch(Exception e) {
+				log.error("installLicense error msg : %s",e.getMessage());
+				return false;
 			}
-			return false;
 		}
 	}
 
