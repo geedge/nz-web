@@ -561,7 +561,7 @@ public class StatServiceImpl implements StatService{
 		    throw new NZException(RCode.SYSSTAT_TYPE_INVALIDED);
 		}
 		Map<String, Map<String, Object>> typeMap = allStatMap.stream().collect(Collectors.toMap(o-> (String)o.get("name"), Function.identity()));
-		JSONArray group = (JSONArray) parseObject.get("group");		
+		Object groupParam = parseObject.get("group");		
 		
 		String whereFilter = "";
 		String groupName = "";
@@ -593,7 +593,8 @@ public class StatServiceImpl implements StatService{
 				}
 			}
 		}
-		if(ObjectUtil.isNotEmpty(group)) {
+		if(ObjectUtil.isNotEmpty(groupParam)) {
+			JSONArray group = (JSONArray) parseObject.get("group");	
 			JSONArray groupJson = (JSONArray) sqlParam.get("group");
 			Map<String,String> nameColumn = new HashMap<String,String>();
 			for(int i = 0;i<groupJson.size();i++) {
