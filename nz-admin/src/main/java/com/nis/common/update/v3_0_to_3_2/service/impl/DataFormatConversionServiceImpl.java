@@ -1,22 +1,30 @@
-package com.nis.common.update.service.impl;
+package com.nis.common.update.v3_0_to_3_2.service.impl;
 
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.log.Log;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.fastjson.JSONObject;
-import com.nis.common.update.dao.V3_0VisualChartDao;
-import com.nis.common.update.service.DataFormatConversionService;
+import com.nis.common.update.v3_0_to_3_2.dao.V3_0VisualChartDao;
+import com.nis.common.update.v3_0_to_3_2.service.DataFormatConversionService;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.panel.dao.VisualChartDao;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
 import com.nis.modules.panel.service.VisualChartElementService;
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.log.Log;
 
 @Service
 public class DataFormatConversionServiceImpl implements DataFormatConversionService {

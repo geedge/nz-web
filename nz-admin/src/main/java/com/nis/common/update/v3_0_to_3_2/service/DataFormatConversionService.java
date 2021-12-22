@@ -1,4 +1,4 @@
-package com.nis.common.update.service;
+package com.nis.common.update.v3_0_to_3_2.service;
 
 public interface DataFormatConversionService {
 
