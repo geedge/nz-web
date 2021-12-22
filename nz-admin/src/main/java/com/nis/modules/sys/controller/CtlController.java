@@ -22,6 +22,8 @@ import com.nis.common.utils.TypeEnum;
 import com.nis.modules.sys.entity.Link;
 import com.nis.modules.sys.service.CtlService;
 
+import cn.hutool.core.util.StrUtil;
+
 @RestController
 @RequestMapping("/ctl")
 public class CtlController extends AbstractController{
@@ -29,22 +31,12 @@ public class CtlController extends AbstractController{
 	@Autowired
 	private CtlService ctlService;
 	
-	
-	@GetMapping("/aes")
-	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.CTL)
-	public R ase(@RequestParam String content){
-		Map<String, String> result = ctlService.ase(content);
-		return R.ok(result);
-	}
-	
 	@PutMapping("/resetAdmin")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.CTL)
 	public R resetAdmin(HttpServletRequest request) {
 		String ipAddr = IPUtils.getIpAddr(request);
-		LinkedHashSet<String> localIpv4s = Tool.NetUtil.localIpv4s();
-		LinkedHashSet<String> localIpv6s = Tool.NetUtil.localIpv6s();
 		Map<String, Object> result = null;
-		if(localIpv4s.contains(ipAddr) || localIpv6s.contains(ipAddr)) {
+		if(StrUtil.equals(ipAddr, "127.0.0.1") || StrUtil.equals(ipAddr, "localhost") || StrUtil.equals(ipAddr, ":::1")) {
 			result = ctlService.resetAdmin();
 		}
 		return R.ok(result);

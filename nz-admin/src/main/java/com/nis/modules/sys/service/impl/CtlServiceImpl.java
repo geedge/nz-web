@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -23,22 +24,16 @@ import cn.hutool.log.Log;
 public class CtlServiceImpl implements CtlService {
 	private static final Log log = Log.get();
 	
+	@Value("${nezha.adminId:1}")
+    private String adminId;
+	
 	@Autowired
 	private SysUserService sysUserService;
-	
-	@Override
-	public Map<String,String> ase(String content) {
-		Map<String,String> result =new HashMap<String,String>();
-		String encrypt = Tool.AesUtil.encrypt(content, Constant.AES_SECRET_KEY);
-		result.put("content", content);
-		result.put("encrypt", encrypt);
-		return result;
-	}
 
 	@Override
 	public Map<String, Object> resetAdmin() {
 		String pin = Tool.RandomUtil.randomNumbers(10);
-		SysUserEntity user = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getUsername, "admin"));
+		SysUserEntity user = sysUserService.getOne(new QueryWrapper<SysUserEntity>().lambda().eq(SysUserEntity::getId, adminId));
 		if(ToolUtil.isEmpty(user)) {
 			user = new SysUserEntity();
 		}
