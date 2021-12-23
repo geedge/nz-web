@@ -4742,8 +4742,8 @@ INSERT INTO `sys_i18n` VALUES (4848, 'dashboard.panel.chartForm.typeVal.treemap.
 INSERT INTO `sys_i18n` VALUES (4849, 'dashboard.panel.chartForm.typeVal.treemap.label', 'zh', 'dashboard.panel.chartForm.typeVal.treemap.label', 'Treemap', '', '2021-12-02 05:44:51', 1);
 INSERT INTO `sys_i18n` VALUES (4850, 'dashboard.panel.chartForm.typeVal.log.label', 'en', 'dashboard.panel.chartForm.typeVal.log.label', 'Log', '', '2021-12-02 05:45:07', 1);
 INSERT INTO `sys_i18n` VALUES (4851, 'dashboard.panel.chartForm.typeVal.log.label', 'zh', 'dashboard.panel.chartForm.typeVal.log.label', 'Log', '', '2021-12-02 05:45:17', 1);
-INSERT INTO `sys_i18n` VALUES (4852, 'dashboard.panel.chartForm.tableIndex', 'en', 'dashboard.panel.chartForm.tableIndex', 'Index', '', '2021-12-02 05:48:19', 1);
-INSERT INTO `sys_i18n` VALUES (4853, 'dashboard.panel.chartForm.tableIndex', 'zh', 'dashboard.panel.chartForm.tableIndex', 'Index', '', '2021-12-02 05:48:30', 1);
+INSERT INTO `sys_i18n` VALUES (4852, 'dashboard.panel.chartForm.tableIndex', 'en', 'dashboard.panel.chartForm.tableIndex', 'Unique label', '', '2021-12-22 06:25:40', 1);
+INSERT INTO `sys_i18n` VALUES (4853, 'dashboard.panel.chartForm.tableIndex', 'zh', 'dashboard.panel.chartForm.tableIndex', 'Unique label', '', '2021-12-22 06:25:44', 1);
 INSERT INTO `sys_i18n` VALUES (4854, 'dashboard.panel.chartForm.sort', 'en', 'dashboard.panel.chartForm.sort', 'Sort', '', '2021-12-02 10:16:03', 1);
 INSERT INTO `sys_i18n` VALUES (4855, 'dashboard.panel.chartForm.sort', 'zh', 'dashboard.panel.chartForm.sort', '排序', '', '2021-12-02 10:16:19', 1);
 INSERT INTO `sys_i18n` VALUES (4856, 'dashboard.explore.ascending', 'en', 'dashboard.explore.ascending', 'Ascending', '', '2021-12-02 10:26:29', 1);
@@ -5028,5 +5028,15 @@ INSERT INTO `sys_i18n` VALUES (5572, 'login.download', 'en', 'login.download', '
 INSERT INTO `sys_i18n` VALUES (5573, 'login.download', 'zh', 'login.download', '下载许可', '', '2021-12-17 08:53:13', 1);
 INSERT INTO `sys_i18n` VALUES (5574, '121073', 'en', 'CHARTELEMENT_NAME_ISNULL', 'Chart element name can not be empty', '', '2021-12-18 09:32:35', 1);
 INSERT INTO `sys_i18n` VALUES (5575, '121073', 'zh', 'CHARTELEMENT_NAME_ISNULL', '图表元素名称不能为空', '', '2021-12-18 09:32:58', 1);
+INSERT INTO `sys_i18n` VALUES (5576, 'dashboard.panel.chartForm.nullType', 'en', 'dashboard.panel.chartForm.nullType', 'Null value', '', '2021-12-22 06:22:10', 1);
+INSERT INTO `sys_i18n` VALUES (5577, 'dashboard.panel.chartForm.nullType', 'zh', 'dashboard.panel.chartForm.nullType', 'Null value', '', '2021-12-22 06:22:23', 1);
+INSERT INTO `sys_i18n` VALUES (5578, 'dashboard.panel.chartForm.display', 'en', 'dashboard.panel.chartForm.display', 'Display', '', '2021-12-22 06:22:59', 1);
+INSERT INTO `sys_i18n` VALUES (5579, 'dashboard.panel.chartForm.display', 'zh', 'dashboard.panel.chartForm.display', 'Display', '', '2021-12-22 06:23:10', 1);
+INSERT INTO `sys_i18n` VALUES (5580, 'dashboard.panel.chartForm.typeVal.map.label', 'en', 'dashboard.panel.chartForm.typeVal.map.label', 'Map', '', '2021-12-23 05:44:52', 381);
+INSERT INTO `sys_i18n` VALUES (5581, 'dashboard.panel.chartForm.typeVal.map.label', 'zh', 'dashboard.panel.chartForm.typeVal.map.label', '地图', '', '2021-12-23 05:45:02', 381);
+INSERT INTO `sys_i18n` VALUES (5582, 'dashboard.panel.chartForm.typeVal.topology.label', 'en', 'dashboard.panel.chartForm.typeVal.topology.label', 'Carousel', '', '2021-12-23 05:46:08', 381);
+INSERT INTO `sys_i18n` VALUES (5583, 'dashboard.panel.chartForm.typeVal.topology.label', 'zh', 'dashboard.panel.chartForm.typeVal.topology.label', '轮播图', '', '2021-12-23 05:46:20', 381);
+INSERT INTO `sys_i18n` VALUES (5584, 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'en', 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'Hexagon', '', '2021-12-23 05:46:45', 381);
+INSERT INTO `sys_i18n` VALUES (5585, 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'zh', 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', '蜂窝图', '', '2021-12-23 05:47:02', 381);
 
 SET FOREIGN_KEY_CHECKS = 1;
