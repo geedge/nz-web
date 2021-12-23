@@ -1,6 +1,5 @@
 package com.nis.modules.panel.service.impl;
 
-import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -119,7 +118,7 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         LambdaQueryWrapper<VisualExpressionTmpl> queryWrapper = new LambdaQueryWrapper<VisualExpressionTmpl>()
                 .in(ToolUtil.isNotEmpty(params.get("ids")), VisualExpressionTmpl::getId, asList)
                 .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, params.get("name"))
-                .eq(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
+                .like(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
 
         IPage page = this.page(new Query(VisualExpressionTmpl.class).getPage(params), queryWrapper);
         return new PageUtils(page);
@@ -404,16 +403,19 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
         SysConfigEntity configEntity = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPRETMPL_EXPORT_HEADER));
         Map map = JSONObject.parseObject(configEntity.getParamValue(), Map.class, Feature.OrderedField);
 
-        SysConfigEntity maxLine = sysConfigService.getOne(new QueryWrapper<SysConfigEntity>().lambda().eq(SysConfigEntity::getParamKey, Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE));
-        long exportMaxLine = 10000;
-		// 导出最大条数限制
-        if(ObjectUtil.isNotEmpty(maxLine) && ObjectUtil.isNotEmpty(maxLine.getParamValue())) {
-        	exportMaxLine = Integer.parseInt(maxLine.getParamValue());
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (pageSize == -1) {
+            // 导出所有直接限制 pageSize
+            params.put(Constant.PAGE, "1");
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+        } else if (pageSize > exportMaxLine) {
+            // 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
         }
-        Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-		if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-			params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-		}
         PageUtils page = this.queryPage(params);
         List<VisualExpressionTmpl> list = (List<VisualExpressionTmpl>) page.getList();
 

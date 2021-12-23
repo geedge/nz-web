@@ -1,27 +1,8 @@
 package com.nis.modules.alert.service.impl;
 
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -29,22 +10,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.DateUtil;
-import com.nis.common.utils.ExcelUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertSilenceDao;
-import com.nis.modules.alert.entity.AlertMessageEntity;
-import com.nis.modules.alert.entity.AlertRuleEntity;
-import com.nis.modules.alert.entity.AlertSeverityConf;
-import com.nis.modules.alert.entity.AlertSilenceConf;
-import com.nis.modules.alert.entity.AlertSilenceMatcher;
-import com.nis.modules.alert.entity.AlertSilenceMessageRel;
+import com.nis.modules.alert.entity.*;
 import com.nis.modules.alert.entity.receive.AlertMessageReceiveDTO;
 import com.nis.modules.alert.service.AlertHandlerService;
 import com.nis.modules.alert.service.AlertRuleService;
@@ -61,12 +30,22 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
-import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfService;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.log.Log;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service("alertMessageHandlerService")
 public class AlertHandlerServiceImpl implements AlertHandlerService {
@@ -532,15 +511,23 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 
 	@Override
 	public void exportMessage(HttpServletResponse response, Map<String, Object> params) {
-		List<SysConfigEntity> configList = sysConfService.list();
-		Map<String, String> configMap = configList.stream().collect(Collectors.toMap(SysConfigEntity::getParamKey, SysConfigEntity::getParamValue));
-		Map map = JSONObject.parseObject(configMap.get("alert_export_header"), Map.class, Feature.OrderedField);
-
+		String maxLine = sysConfService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+		long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
 		// 导出最大条数限制
-		long exportMaxLine = Integer.parseInt(configMap.get("export_max_line"));
-		if(ObjectUtil.isEmpty(exportMaxLine)) {
-			exportMaxLine = 10000;
+		Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+		Long pageSize = Long.parseLong(limit.toString());
+		if (pageSize == -1) {
+			// 导出所有直接限制 pageSize
+			params.put(Constant.PAGE, "1");
+			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+		} else if (pageSize > exportMaxLine) {
+			// 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
+			params.put(Constant.LIMIT, Long.toString(exportMaxLine));
 		}
+
+		String sysHeaderJsonStr = sysConfService.getValue("alert_export_header");
+		Map map = JSONObject.parseObject(sysHeaderJsonStr, Map.class, Feature.OrderedField);
+
 		int exportRealTotal = 0;
 
 		SXSSFWorkbook workbook = null;
@@ -551,11 +538,7 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			String sheetName = "AlertMessages";
 			workbook = ExcelUtils.createExcel07((Map) map.get(language), sheetName, false);
 			SXSSFSheet sheet = workbook.getSheet(sheetName);
-			
-			Long pageSize = Long.parseLong((String)params.get(Constant.LIMIT));
-			if(ObjectUtil.isEmpty(pageSize) || pageSize==-1 || pageSize>exportMaxLine) {
-				params.put(Constant.LIMIT,Long.toString(exportMaxLine));
-			}
+
 			PageUtils page = this.queryMessagePage(params);
 			
 			List<AlertMessageEntity> exportAlertMsgList = (List<AlertMessageEntity>) page.getList();

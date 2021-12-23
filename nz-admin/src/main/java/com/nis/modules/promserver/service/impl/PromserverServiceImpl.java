@@ -7,6 +7,7 @@ import cn.hutool.core.net.url.UrlQuery;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -76,12 +77,19 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	}
 
 
-	public void validateParam(Promserver promserverEntity,boolean modify) {
-		Promserver promserver = this.getOne(new QueryWrapper<Promserver>().lambda()
+	public void validateParam(Promserver promserverEntity) {
+		// host port type 唯一
+		List<Promserver> pList = this.list(new LambdaQueryWrapper<Promserver>()
 				.eq(Promserver::getHost, promserverEntity.getHost())
 				.eq(Promserver::getPort, promserverEntity.getPort())
 				.eq(Promserver::getType, promserverEntity.getType()));
-		if (promserver != null && !modify) {
+
+		boolean flag = false;
+		if ((pList == null || pList.size() == 0) || (pList != null && pList.size() == 1 && pList.get(0).getId().equals(promserverEntity.getId()))) {
+			flag = true;
+		}
+
+		if (!flag) {
 			throw new NZException(RCode.PROMSERVER_EXIST_ERROR);
 		}
 
@@ -166,7 +174,7 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	@Override
 	public Integer saveOrUpdatePromserver(Promserver promserverEntity, boolean modify) {
         // 校验
-		this.validateParam(promserverEntity,modify);
+		this.validateParam(promserverEntity);
 
 		// 添加设置默认值
 		if(!modify){

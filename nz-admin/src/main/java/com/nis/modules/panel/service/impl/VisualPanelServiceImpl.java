@@ -512,6 +512,19 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
     @Override
     public void export(HttpServletResponse response, Map<String, Object> params) {
+        String maxLine = sysConfigService.getValue(Constant.SYSCONFIG_KEY_EXPORT_MAX_LINE);
+        long exportMaxLine = Integer.parseInt(StrUtil.emptyToDefault(maxLine, "10000"));
+        // 导出最大条数限制
+        Object limit = params.get(Constant.LIMIT) == null ? Constant.PAGESIZE : params.get(Constant.LIMIT);
+        Long pageSize = Long.parseLong(limit.toString());
+        if (pageSize == -1) {
+            // 导出所有直接限制 pageSize
+            params.put(Constant.PAGE, "1");
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+        } else if (pageSize > exportMaxLine) {
+            // 分页超过最大限制 则设置最大限制为 系统配置值，和 pageSize == -1 判断区别在于 pageNo
+            params.put(Constant.LIMIT, Long.toString(exportMaxLine));
+        }
         // 导出查询与列表查询一致
         List<VisualChart> charts = this.exportDataByParams(params);
         String type = Constant.PanelType.DASHBOARD.getValue();
