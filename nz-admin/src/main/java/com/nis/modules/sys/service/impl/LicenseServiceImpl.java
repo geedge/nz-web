@@ -1,7 +1,9 @@
 package com.nis.modules.sys.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -10,17 +12,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.jcraft.jsch.Logger;
 import com.nis.common.exception.NZException;
 import com.nis.common.utils.LicenseUtil;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.entity.LicenseEntity;
+import com.nis.modules.sys.entity.Signature;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.LicenseService;
 import com.nis.modules.sys.service.SysConfigService;
@@ -178,6 +179,84 @@ public class LicenseServiceImpl implements LicenseService {
 		if(!StrUtil.equals(digestValue, genLicenseDigest)) {
 			throw new NZException(RCode.LICENSE_DIGESTVALUE_INVALID);
 		}
+	}
+
+	@Override
+	public String gen(MultipartFile[] files, Map<String, Object> params) {
+		String supportID = (String) params.get("supportID");
+		String organization = (String) params.get("organization");
+		String type = (String) params.get("type");
+		String comment = (String) params.get("comment");
+		List<String> haspInfos = new ArrayList<String>();
+		String license = null;
+		try {
+			// 提取v2c文件中的hasp info数据
+			for(MultipartFile file : files) {
+				
+					byte[] bytes = file.getBytes();
+					String fileLicense = Tool.StrUtil.str(bytes, "utf-8");
+					org.dom4j.Document document = DocumentHelper.parseText(fileLicense);
+			    	Element ele = document.getRootElement();
+			    	List<Element> elements = ele.elements();
+			    	for(Element e : elements) {
+			    		if(StrUtil.equals(e.getName(), "hasp_info")) {
+			    			haspInfos.add(e.asXML());
+			    		}
+			    		List<org.dom4j.Node> nodes = e.content();
+			    		for(org.dom4j.Node node : nodes) {
+			    			if(StrUtil.equals(node.getName(), "hasp_info")) {
+			        			haspInfos.add(node.asXML());
+			        		}
+			    		}
+			    	}
+			}
+			
+			if(ToolUtil.isEmpty(haspInfos)) {
+				return null;
+			}
+			// 程序组装v2c文件 返回
+			List<String> sortHasp = haspInfos.stream().sorted().collect(Collectors.toList());
+			
+			org.dom4j.Document document = DocumentHelper.createDocument();
+			Element licenseEle = document.addElement("license");
+			Element hasps = licenseEle.addElement("hasps");
+	
+			for(String hasp : haspInfos) {
+				org.dom4j.Document haspDoc = DocumentHelper.parseText(hasp);
+				org.dom4j.Element haspInfo = haspDoc.getRootElement();
+				hasps.add(haspInfo);
+			}
+			String haspsStr = hasps.asXML();
+	
+			licenseEle.remove(hasps);
+			LicenseEntity licenseEntity = new LicenseEntity();
+			licenseEntity.setSupportID(supportID);
+			licenseEntity.setOrganization(organization);
+			licenseEntity.setType(type);
+			licenseEntity.setComment(comment);
+			licenseEntity.setHasps(haspsStr);
+			String digest = licenseEntity.genLicenseDigest();
+	
+			Signature signature = new Signature();
+			signature.setDigestMethod("sha1");
+			signature.setDigestValue(digest);
+			licenseEntity.setSignature(signature);
+	
+			String licenseXml = LicenseUtil.convertObjectToXmlStr(licenseEntity);
+	
+			org.dom4j.Document licDoc = DocumentHelper.parseText(licenseXml);
+			org.dom4j.Element lic = licDoc.getRootElement();
+			Element licHasps = lic.element("hasps");
+			if(ToolUtil.isNotEmpty(licHasps)) {
+				lic.remove(licHasps);
+			}
+			lic.add(hasps);
+			license = licDoc.asXML();
+		} catch (Exception e) {
+			log.error("license  gen error msg : %s",e.getMessage());
+			e.printStackTrace();
+		}
+		return license;
 	}
 	
 }

@@ -39,4 +39,9 @@ public interface LicenseService {
 	String getLicenseC2V();
 	
 	void validateDigestValue(String v2c) throws DocumentException ;
+	
+	/**
+	 * 生成v2c文件
+	 */
+	String gen(MultipartFile[] files,Map<String,Object> params);
 }

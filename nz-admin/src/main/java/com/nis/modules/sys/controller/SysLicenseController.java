@@ -1,6 +1,7 @@
 package com.nis.modules.sys.controller;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ import com.nis.modules.sys.service.SysComponentService;
 import com.nis.modules.sys.service.SysConfigService;
 
 import Aladdin.HaspStatus;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.log.Log;
 
@@ -273,4 +276,23 @@ public class SysLicenseController extends AbstractController {
 		Tool.ResponseUtil.downloadFile(response, "license.txt", license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 	}
 
+	
+	@PostMapping("/gen")
+	public void gen(@RequestParam(name = "file", required = true) MultipartFile[] files,@RequestParam Map<String,Object> params,HttpServletResponse response) throws IORuntimeException, UnsupportedEncodingException, IOException {
+		ValidateUtils.is(params.get("supportID")).notNull(RCode.LICENSE_SUPPORT_ID_ISNULL)
+		.and(params.get("organization")).notNull(RCode.LICENSE_ORGANIZATION_ISNULL)
+		.and(params.get("type")).notNull(RCode.LICENSE_TYPE_ISNULL);
+		if(ToolUtil.isEmpty(files)) {
+			throw new NZException(RCode.LICENSE_FILE_IS_NULL);
+		}
+		
+		String license = licenseService.gen(files,params);
+		
+		if(StrUtil.isEmpty(license)) {
+			return;
+		}else {
+			Tool.ResponseUtil.downloadFile(response, "license.v2c",
+					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
+		}
+	}
 }

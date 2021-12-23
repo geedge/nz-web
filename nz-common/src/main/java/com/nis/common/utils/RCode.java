@@ -883,7 +883,9 @@ public enum RCode {
 	LICENSE_VERSION_INVALID(715005, "The version is not valid"),
 	LICENSE_ERROR_CODE(715006,"License error,code:{0}"),
 	LICENSE_DIGESTVALUE_INVALID(715007,"Lincese digest value error ,The file may have been modified"),
-	
+	LICENSE_SUPPORT_ID_ISNULL(715008,"License params support id can not be null"),
+	LICENSE_ORGANIZATION_ISNULL(715009,"License params organization can not be null"),
+	LICENSE_TYPE_ISNULL(715010,"License params type can not be null"),
     ERROR(999, "error"); //通用错误/未知错误
 	
 	
