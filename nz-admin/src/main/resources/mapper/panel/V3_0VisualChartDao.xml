@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.nis.common.update.dao.V3_0VisualChartDao">
+<mapper namespace="com.nis.common.update.v3_0_to_3_2.dao.V3_0VisualChartDao">
 
     <resultMap id="chartResultMap" type="com.nis.modules.panel.entity.VisualChart">
         <result property="id" column="id"/>
