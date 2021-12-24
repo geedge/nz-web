@@ -5042,5 +5042,11 @@ INSERT INTO `sys_i18n` VALUES (5586, 'license.type', 'en', 'license.type', 'Type
 INSERT INTO `sys_i18n` VALUES (5587, 'license.type', 'zh', 'license.type', '类型', '', '2021-12-24 01:19:21', 1);
 INSERT INTO `sys_i18n` VALUES (5588, 'license.organization', 'zh', 'license.organization', '组织', '', '2021-12-24 01:19:39', 1);
 INSERT INTO `sys_i18n` VALUES (5589, 'license.organization', 'en', 'license.organization', 'Organization', '', '2021-12-24 01:19:50', 1);
+INSERT INTO `sys_i18n` VALUES (5590, 'overall.link', 'en', 'overall.link', 'Link', '', '2021-12-24 08:07:08', 1);
+INSERT INTO `sys_i18n` VALUES (5591, 'overall.link', 'zh', 'overall.link', '链接', '', '2021-12-24 08:07:24', 1);
+INSERT INTO `sys_i18n` VALUES (5592, 'dashboard.panel.chartForm.min', 'en', 'dashboard.panel.chartForm.min', 'Min', '', '2021-12-24 08:08:00', 1);
+INSERT INTO `sys_i18n` VALUES (5593, 'dashboard.panel.chartForm.min', 'zh', 'dashboard.panel.chartForm.min', '最小值', '', '2021-12-24 08:08:13', 1);
+INSERT INTO `sys_i18n` VALUES (5594, 'dashboard.panel.chartForm.max', 'en', 'dashboard.panel.chartForm.max', 'Max', '', '2021-12-24 08:08:33', 1);
+INSERT INTO `sys_i18n` VALUES (5595, 'dashboard.panel.chartForm.max', 'zh', 'dashboard.panel.chartForm.max', '最大值', '', '2021-12-24 08:08:41', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
