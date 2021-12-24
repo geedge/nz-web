@@ -564,7 +564,7 @@ public class StatServiceImpl implements StatService{
 		Object groupParam = parseObject.get("group");		
 		
 		String whereFilter = "";
-		String groupName = " group by ";
+		String groupName = "";
 		String selectStr = "";
 		String limitStr = "";
 		
@@ -629,7 +629,7 @@ public class StatServiceImpl implements StatService{
 					}
 				}
 				if(i==0) {
-					groupName = StrUtil.concat(false, groupName,name);
+					groupName = StrUtil.concat(false, groupName," group by ",name);
 				}else {
 					groupName = StrUtil.concat(false, groupName,",",name);
 				}
