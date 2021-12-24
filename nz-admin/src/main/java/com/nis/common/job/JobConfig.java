@@ -3,6 +3,7 @@ package com.nis.common.job;
 import cn.hutool.log.Log;
 import com.nis.modules.agent.job.AgentHealthCheckJob;
 import com.nis.modules.agent.job.AutoConfigAgentJob;
+import com.nis.modules.agent.job.CortexHistoryDataDelJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
@@ -73,6 +74,9 @@ public class JobConfig {
 	@Value("${nezha.sysComponentJobCron:0/30 * * * * ?}")
 	private String sysComponentJobCron;
 
+    @Value("${nezha.cortexHistoryDataDelJobCron:0 0 0/2 * * ?}")
+    private String cortexHistoryDataDelJobCron;
+
 	@Autowired
     private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
@@ -91,7 +95,8 @@ public class JobConfig {
     private String sessionTimeOutJobName = "SESSIONTIMEOUT_JOB";
     private String cleanJobCronName = "CLEAN_JOB";
     private String sysComponentJobName = "SYSCOMPONENT_JOB";
-   
+    private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
+
     @Bean
     public JobDetail agentCronJobDetail() {
         return JobBuilder.newJob(AutoConfigAgentJob.class).withIdentity(JOB_NAME + agentJobName).storeDurably().build();
@@ -156,6 +161,11 @@ public class JobConfig {
     public JobDetail sysComponentJobDetail() {
         return JobBuilder.newJob(SysComponentJob.class).withIdentity(JOB_NAME + sysComponentJobName).storeDurably().build();
     }
+
+    @Bean
+    public JobDetail cortexHistoryDataDelJobDetail() {
+        return JobBuilder.newJob(CortexHistoryDataDelJob.class).withIdentity(JOB_NAME + cortexHistoryDataDelJobName).storeDurably().build();
+    }
     
     @PostConstruct
     public void init() throws SchedulerException {
@@ -198,6 +208,9 @@ public class JobConfig {
         
         //sys component 状态更新线程
         createCronScheduleJob(sysComponentJobName, sysComponentJobDetail(), StringUtils.isEmpty(sysComponentJobCron) ? "0/30 * * * * ?" : sysComponentJobCron);
+
+        // cortex metrics 历史数据删除
+        createCronScheduleJob(cortexHistoryDataDelJobName, cortexHistoryDataDelJobDetail(), StringUtils.isEmpty(cortexHistoryDataDelJobCron) ? "0 0 0/2 * * ?" : cortexHistoryDataDelJobCron);
     }
     
     /**
