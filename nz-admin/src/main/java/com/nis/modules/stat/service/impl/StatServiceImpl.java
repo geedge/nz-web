@@ -587,9 +587,9 @@ public class StatServiceImpl implements StatService{
 				JSONObject s = select.getJSONObject(i);
 				String name = (String) s.get("name");
 				if(i==0) {
-					selectStr = StrUtil.concat(false, selectStr,nameColumn.get(name)," as ",name);
+					selectStr = StrUtil.concat(false, selectStr,nameColumn.get(name)," as ","'",name,"'");
 				}else {
-					selectStr = StrUtil.concat(false,selectStr," , ",nameColumn.get(name)," as ",name);
+					selectStr = StrUtil.concat(false,selectStr," , ",nameColumn.get(name)," as ","'",name,"'");
 				}
 			}
 		}
@@ -633,7 +633,7 @@ public class StatServiceImpl implements StatService{
 				}else {
 					groupName = StrUtil.concat(false, groupName,",",name);
 				}
-				selectStr = StrUtil.concat(false, selectStr,",",name ," as ", resultName);
+				selectStr = StrUtil.concat(false, selectStr,",",name ," as ", "'",resultName,"'");
 			}
 		}
 		Integer limit = (Integer) parseObject.get("limit");
