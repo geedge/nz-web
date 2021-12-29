@@ -772,6 +772,7 @@ public class Constant {
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY = "metrics_storage_s3_access_key";
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY = "metrics_storage_s3_secret_access_key";
 	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_INSECURE = "metrics_storage_s3_insecure";
+	public static final String SYSCONFIG_KEY_METRICS_STORAGE_S3_REGION = "metrics_storage_s3_region";
 
 	// 日志存储模式，1: 本地文件存储，2：S3对象存储
 	public static final String SYSCONFIG_KEY_LOGS_STORAGE_TYPE = "logs_storage_type";
