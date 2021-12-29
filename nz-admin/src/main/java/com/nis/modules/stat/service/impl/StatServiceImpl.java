@@ -567,6 +567,7 @@ public class StatServiceImpl implements StatService{
 		String groupName = "";
 		String selectStr = "";
 		String limitStr = "";
+		String metricName ="";
 		
 		Map<String, Object> sqlParam = typeMap.get(type);
 		
@@ -586,6 +587,7 @@ public class StatServiceImpl implements StatService{
 			for(int i = 0;i<select.size();i++) {
 				JSONObject s = select.getJSONObject(i);
 				String name = (String) s.get("name");
+				metricName = name;
 				if(i==0) {
 					selectStr = StrUtil.concat(false, selectStr,nameColumn.get(name)," as ","'",name,"'");
 				}else {
@@ -664,11 +666,12 @@ public class StatServiceImpl implements StatService{
 					List<Object> values = new ArrayList<Object>();
 					Map metric = new HashMap();
 					for(String key : r.keySet()) {
-						if(key.equals("count")) {
+						if(StrUtil.equals(key, metricName)) {
 							List<Object> l = new ArrayList<Object>();
 							l.add(new Date().getTime());
 							l.add(r.get(key));
 							values.add(l);
+							metric.put("__name__",key);
 						}else {
 							metric.put(key, r.get(key));
 						}
