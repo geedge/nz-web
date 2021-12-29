@@ -647,7 +647,7 @@ public class StatServiceImpl implements StatService{
 			whereFilter = StrUtil.concat(false, " where " , whereFilter);
 		}
 		if(StrUtil.isNotBlank(sort)) {
-			sort = StrUtil.concat(false,  " order by id " , sort);
+			sort = StrUtil.concat(false,  " order by ", metricName," ", sort);
 		}
 		if(limit > 0 ) {
 			limitStr = StrUtil.concat(false, " limit ",limit.toString());

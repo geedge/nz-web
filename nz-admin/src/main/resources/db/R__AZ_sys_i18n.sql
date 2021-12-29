@@ -544,14 +544,14 @@ INSERT INTO `sys_i18n` VALUES (509, 'overall.rollbackImport', 'en', 'overall.rol
 INSERT INTO `sys_i18n` VALUES (510, 'overall.assetSubTab', 'en', 'overall.assetSubTab', 'Children asset', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (511, 'overall.project', 'en', 'overall.project', 'Project', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (512, 'overall.createAssetState', 'en', 'overall.createAssetState', 'New asset state', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (513, 'overall.unlocked', 'en', 'overall.unlocked', 'Unlocked', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (513, 'overall.unlocked', 'en', 'overall.unlocked', 'Unlock editing', '', '2021-12-29 02:03:55', 381);
 INSERT INTO `sys_i18n` VALUES (514, 'overall.view', 'en', 'overall.view', 'View', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (515, 'overall.download', 'en', 'overall.download', 'Download', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (516, 'overall.AuthenticationFailed', 'en', 'overall.AuthenticationFailed', 'Authentication failed', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (517, 'overall.limit', 'en', 'overall.limit', 'Limit', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (518, 'overall.create', 'en', 'overall.create', 'New', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (519, 'overall.tag', 'en', 'overall.tag', 'Tag', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (520, 'overall.locked', 'en', 'overall.locked', 'Locked', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (520, 'overall.locked', 'en', 'overall.locked', ' Lock editing ', '', '2021-12-29 02:03:28', 381);
 INSERT INTO `sys_i18n` VALUES (521, 'overall.logs', 'en', 'overall.logs', 'Logs', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (522, 'overall.generate', 'en', 'overall.generate', 'Generate', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (523, 'overall.unusual', 'en', 'overall.unusual', 'Down', '', '2021-11-02 00:00:00', 1);
@@ -5048,5 +5048,13 @@ INSERT INTO `sys_i18n` VALUES (5592, 'dashboard.panel.chartForm.min', 'en', 'das
 INSERT INTO `sys_i18n` VALUES (5593, 'dashboard.panel.chartForm.min', 'zh', 'dashboard.panel.chartForm.min', '最小值', '', '2021-12-24 08:08:13', 1);
 INSERT INTO `sys_i18n` VALUES (5594, 'dashboard.panel.chartForm.max', 'en', 'dashboard.panel.chartForm.max', 'Max', '', '2021-12-24 08:08:33', 1);
 INSERT INTO `sys_i18n` VALUES (5595, 'dashboard.panel.chartForm.max', 'zh', 'dashboard.panel.chartForm.max', '最大值', '', '2021-12-24 08:08:41', 1);
+INSERT INTO `sys_i18n` VALUES (5596, 'dashboard.panel.chartForm.typeVal.clock.label', 'en', 'dashboard.panel.chartForm.typeVal.clock.label', 'Clock', '', '2021-12-28 06:53:00', 1);
+INSERT INTO `sys_i18n` VALUES (5597, 'dashboard.panel.chartForm.typeVal.clock.label', 'zh', 'dashboard.panel.chartForm.typeVal.clock.label', '时钟', '', '2021-12-28 06:53:14', 1);
+INSERT INTO `sys_i18n` VALUES (5598, 'dashboard.panel.chartForm.typeVal.local', 'en', 'dashboard.panel.chartForm.typeVal.local', 'Local time', '', '2021-12-28 06:53:42', 1);
+INSERT INTO `sys_i18n` VALUES (5599, 'dashboard.panel.chartForm.typeVal.local', 'zh', 'dashboard.panel.chartForm.typeVal.local', '本地时间', '', '2021-12-28 06:53:55', 1);
+INSERT INTO `sys_i18n` VALUES (5600, 'dashboard.panel.chartForm.typeVal.server', 'en', 'dashboard.panel.chartForm.typeVal.server', 'Server time', '', '2021-12-28 06:54:16', 1);
+INSERT INTO `sys_i18n` VALUES (5601, 'dashboard.panel.chartForm.typeVal.server', 'zh', 'dashboard.panel.chartForm.typeVal.server', '服务器时间', '', '2021-12-28 06:54:35', 1);
+INSERT INTO `sys_i18n` VALUES (5602, 'dashboard.panel.chartForm.timeType', 'en', 'dashboard.panel.chartForm.timeType', 'Time type', '', '2021-12-29 03:52:58', 382);
+INSERT INTO `sys_i18n` VALUES (5603, 'dashboard.panel.chartForm.timeType', 'zh', 'dashboard.panel.chartForm.timeType', '时间类型', '', '2021-12-29 03:53:16', 382);
 
 SET FOREIGN_KEY_CHECKS = 1;
