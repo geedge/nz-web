@@ -123,7 +123,9 @@ public class ShiroUtils {
 			if (ToolUtil.isEmpty(session.getAttributes()))
 				continue;
 			SimplePrincipalCollection primaryPrincipal = (SimplePrincipalCollection) session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
-			resultMap.put(entry.getKey(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
+			if(ToolUtil.isNotEmpty(primaryPrincipal)) {
+				resultMap.put(entry.getKey(), (SysUserEntity) primaryPrincipal.getPrimaryPrincipal());
+			}
 		}
 		return resultMap;
 	}
