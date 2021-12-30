@@ -424,6 +424,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         break;
                     }
                     case "logs": {
+                        visualChart.setType("log");
                         visualChart.setDatasource(Constant.ChartDatasourceType.LOGS.getValue());
                         break;
                     }
