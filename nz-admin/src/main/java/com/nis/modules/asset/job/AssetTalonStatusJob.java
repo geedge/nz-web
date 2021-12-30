@@ -137,8 +137,9 @@ public class AssetTalonStatusJob extends QuartzJobBean {
                         }
                         return map;
                     } catch (Exception e) {
-                        log.error(String.format("请求 %s 接口失败", urlBuilder.toString()), e);
-                        // 连接异常
+                        if (log.isWarnEnabled()) {
+                            log.warn(String.format("请求 %s 接口失败 message: %s", urlBuilder.toString(), e.getMessage()));
+                        }                        // 连接异常
                         Map<String, Object> map = new HashMap(4);
                         map.put("id", talonOpenAsset.getId());
                         if (e.getCause() != null && e.getCause() instanceof ConnectTimeoutException) {
