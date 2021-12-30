@@ -373,7 +373,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserDao, SysUserEntity> i
 		resultMap.put("roles", rolesByUesr);
 
 		List<Integer> roleIdList = rolesByUesr.stream().map(SysRoleEntity::getId).collect(Collectors.toList());
-		Map<String, Object> menuInfoByRoles = sysMenuService.getMenuInfoByRoles(roleIdList);
+		Integer menuState = 1;
+		Map<String, Object> menuInfoByRoles = sysMenuService.getMenuInfoByRoles(roleIdList, menuState);
 		resultMap.put("menus", menuInfoByRoles.get("menus"));
 		resultMap.put("buttons", menuInfoByRoles.get("buttons"));
 		return resultMap;

@@ -50,6 +50,12 @@ public class SysMenuEntity implements Serializable {
      */
     private String required;
 
+    /**
+     * 状态
+     * 默认：1 0:停用 1:启用
+     */
+    private Integer state;
+
     @TableField(exist = false)
     private List<SysMenuEntity> children;
 }

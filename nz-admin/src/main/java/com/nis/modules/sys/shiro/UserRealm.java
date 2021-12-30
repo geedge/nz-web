@@ -117,7 +117,7 @@ public class UserRealm extends AuthorizingRealm {
 					menuList = sysMenuService
 							.list(new LambdaQueryWrapper<SysMenuEntity>().in(SysMenuEntity::getId, menuIds));
 					// 根据叶子节点得到完整的权限
-					menuList = sysMenuService.getMenuByLeafMenu(menuList);
+					menuList = sysMenuService.getMenuByLeafMenu(menuList, null);
 				} else {
 					menuList = Collections.emptyList();
 				}

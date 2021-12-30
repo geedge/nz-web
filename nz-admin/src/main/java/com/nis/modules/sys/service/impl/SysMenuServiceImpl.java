@@ -196,7 +196,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	}
 
 	@Override
-	public Map<String, Object> getMenuInfoByRoles(List<Integer> roleIds) {
+	public Map<String, Object> getMenuInfoByRoles(List<Integer> roleIds, Integer menuState) {
 		if (CollectionUtils.isEmpty(roleIds))
 			return Collections.emptyMap();
 
@@ -211,10 +211,12 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 			return resultMap;
 		}
 
+		// 状态 0:停用 1:启用
+		menuState = menuState == null ? 1 : menuState;
 		// 查到的所有子节点
-		List<SysMenuEntity> list = sysMenuDao.selectList(new LambdaQueryWrapper<SysMenuEntity>().in(SysMenuEntity::getId, menuIds));
+		List<SysMenuEntity> list = sysMenuDao.selectList(new LambdaQueryWrapper<SysMenuEntity>().in(SysMenuEntity::getId, menuIds).eq(SysMenuEntity::getState, menuState));
 
-		List<SysMenuEntity> menus = this.getMenuByLeafMenu(list);
+		List<SysMenuEntity> menus = this.getMenuByLeafMenu(list, menuState);
 		List<SysMenuEntity> menuTreeList = this.getMenuTreeList(menus, 0);
 
 		// 因为按钮不能作为父级节点，所以可以直接进行过滤
@@ -226,8 +228,10 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 	}
 
 	@Override
-	public List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList) {
-		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().orderByAsc(SysMenuEntity::getOrderNum));
+	public List<SysMenuEntity> getMenuByLeafMenu(List<SysMenuEntity> leafMenuList, Integer menuState) {
+		// 状态 0:停用 1:启用
+		menuState = menuState == null ? 1 : menuState;
+		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getState, menuState).orderByAsc(SysMenuEntity::getOrderNum));
 		Map<Integer, SysMenuEntity> idAndMenuList = new HashMap<>();
 		for (SysMenuEntity entity : menuList) {
 			idAndMenuList.put(entity.getId(), entity);
