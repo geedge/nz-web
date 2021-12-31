@@ -2,6 +2,8 @@ package com.nis.common.utils;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.text.StrBuilder;
+import cn.hutool.core.util.CharUtil;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -1021,7 +1023,44 @@ public class Tool {
 	 *
 	 * @author xiaoleilu
 	 */
-	public static class StrUtil extends cn.hutool.core.util.StrUtil {}
+	public static class StrUtil extends cn.hutool.core.util.StrUtil {
+
+		/**
+		 * 将下划线方式命名的字符串转换为驼峰式。如果转换前的下划线大写方式命名的字符串为空，则返回空字符串。<br>
+		 * 例如：hello_world=》helloWorld
+		 * 
+		 * @param name 转换前的下划线大写方式命名的字符串
+		 * @param symbol 连接符
+		 * @return 转换后的驼峰式命名的字符串
+		 */
+		public static String toCamelCase(CharSequence name, char symbol) {
+			if (null == name) {
+				return null;
+			}
+			String symbolStr = symbol + "";
+			String name2 = name.toString();
+			if (name2.contains(symbolStr)) {
+				final StringBuilder sb = new StringBuilder(name2.length());
+				boolean upperCase = false;
+				for (int i = 0; i < name2.length(); i++) {
+					char c = name2.charAt(i);
+
+					if (c == symbol) {
+						upperCase = true;
+					} else if (upperCase) {
+						sb.append(Character.toUpperCase(c));
+						upperCase = false;
+					} else {
+						sb.append(Character.toLowerCase(c));
+					}
+				}
+				return sb.toString();
+			} else {
+				return name2;
+			}
+		}
+		
+	}
 	/**
 	 * Map相关工具类
 	 *

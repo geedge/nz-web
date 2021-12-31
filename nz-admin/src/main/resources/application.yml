@@ -51,29 +51,23 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
-      driver-class-name: com.mysql.jdbc.Driver
-      initial-size: 10
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 5
       max-active: 100
-      min-idle: 10
+      min-idle: 5
       max-wait: 60000
+      keep-alive: true
       pool-prepared-statements: true
       max-pool-prepared-statement-per-connection-size: 20
-      time-between-eviction-runs-millis: 60000
-      min-evictable-idle-time-millis: 300000
-      test-while-idle: true
-      test-on-borrow: false
-      test-on-return: false
-      stat-view-servlet:
-        enabled: true
-        url-pattern: /druid/*
-      filter:
-        stat:
-          log-slow-sql: true
-          slow-sql-millis: 1000
-          merge-sql: false
-        wall:
-          config:
-            multi-statement-allow: true
+      min-evictable-idle-time-millis: 600000 # 配置一个连接在连接池中的最小生存时间，单位毫秒
+      max-evictable-idle-time-millis: 900000 
+      validation-query: select 1 # 用来检测连接是否有效的sql
+      validation-query-timeout: 1 # 单位：秒，检测连接是否有效的超时时间
+      test-while-idle: true # 如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效
+      time-between-eviction-runs-millis: 5000 # 配置间隔多久进行一次检测，检测需要关闭的空闲连接，单位毫秒
+      test-on-borrow: false # 配置从连接池获取连接时，是否检查连接有效性，true每次都检查；false不检查
+      test-on-return: false # 配置向连接池归还连接时，是否检查连接有效性，true每次都检查；false不检查
+
 nezha:
   endpointStateTime: 90000   #endpoint state超时周期时间 毫秒
   userId:

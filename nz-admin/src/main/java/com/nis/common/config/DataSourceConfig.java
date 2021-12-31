@@ -1,22 +1,32 @@
 package com.nis.common.config;
 
-import cn.hutool.db.Db;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.log.Log;
-import com.alibaba.druid.pool.DruidDataSource;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.Tool;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Properties;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.transaction.TransactionManagerCustomizers;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import javax.sql.DataSource;
-import java.util.List;
+import com.alibaba.druid.pool.DruidDataSource;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
+
+import cn.hutool.db.Db;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.log.Log;
+import lombok.Data;
 
 @Configuration
 public class DataSourceConfig {
@@ -35,59 +45,64 @@ public class DataSourceConfig {
 	private String databasePin;
     @Value("${mybatis-plus.mapper-locations}")
 	private String mapperLocation;
-    
+    @Autowired
+    private DruidProperties druidConfig;
     
 	/**
 	 * 数据源配置项
 	 */
-	@Value("${spring.datasource.druid.driver-class-name:com.mysql.jdbc.Driver}")
-	private String driver;
 	@Value("${spring.datasource.druid.url-pattern:jdbc:mysql://{{host}}:{{port}}/{{dbName}}?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false}")
 	private String urlPattern;
-	@Value("${spring.datasource.druid.initial-size:10}")
-	private int initialSize;
-	@Value("${spring.datasource.druid.max-active:100}")
-	private int dbMaxActive;
-	@Value("${spring.datasource.druid.min-idle:5}")
-	private int dbMinIdle;
-	@Value("${spring.datasource.druid.max-wait:60000}")
-	private int dbMaxWait;
-	@Value("${spring.datasource.druid.pool-prepared-statements:true}")
-	private boolean poolPreparedStatements;
-	@Value("${spring.datasource.druid.validation-query:SELECT 1}")
-	private String validationQuery;
+	@Value("${spring.datasource.druid.driver-class-name:com.mysql.cj.jdbc.Driver}")
+	private String driver;
 	
-    
+	@Data
+	@Component
+	@ConfigurationProperties("spring.datasource")
+	static class DruidProperties implements InitializingBean{
+		
+		private Properties druid;
+
+		@Override
+		public void afterPropertiesSet() throws Exception {
+			System.setProperty("druid.mysql.usePingMethod","false");
+			if(druid != null) {
+				Properties temp = new Properties();
+				druid.forEach((key,val) -> {
+					String keyStr = Tool.StrUtil.toCamelCase(key.toString(),'-');
+					keyStr = Tool.StrUtil.concat(true, "druid.",keyStr);
+					temp.put(keyStr, val);
+				});
+				this.druid = temp;
+			}
+		}
+	}
+	
 	/**
 	 * 创建自定义数据源
 	 * @return
+	 * @throws SQLException 
 	 */
 	@Bean
-	public DataSource dataSource() {
+	public DataSource dataSource() throws SQLException {
 		if(!Tool.StrUtil.isAllNotBlank(this.databaseHost,this.databaseUser,this.databaseName)) {
         	return null;
         }
 		/* 数据库密码解密 */
-		// AES aes = Tool.SecureUtil.aes(Constant.AES_SECRET_KEY);
-		// databasePin = aes.decryptStr(this.databasePin);
 		databasePin = Tool.AesUtil.decrypt(this.databasePin, Constant.AES_SECRET_KEY);
 		//初始化时创建 数据库
 		this.createDatabase();
 		log.info("datasource config,user:{}, url: {}",this.databaseUser,this.getDbUrl());
         DruidDataSource dataSource = new DruidDataSource();
+        //设置 druid config
+        dataSource.setConnectProperties(druidConfig.getDruid());
         dataSource.setUrl(this.getDbUrl());
         dataSource.setUsername(this.databaseUser);
         dataSource.setPassword(this.databasePin);
-        dataSource.setDriverClassName(this.driver);
-        dataSource.setInitialSize(this.initialSize);
-        dataSource.setMaxActive(this.dbMaxActive);
-        dataSource.setMinIdle(this.dbMinIdle);
-        dataSource.setMaxWait(this.dbMaxWait);
-        dataSource.setPoolPreparedStatements(this.poolPreparedStatements);
-        dataSource.setValidationQuery(this.validationQuery);
+        dataSource.init();
         return dataSource;
 	}
-
+	
     /** 返回data数据库的事务
      * @param ds
      * @return
