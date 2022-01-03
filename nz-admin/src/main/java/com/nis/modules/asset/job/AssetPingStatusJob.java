@@ -161,6 +161,10 @@ public class AssetPingStatusJob extends QuartzJobBean {
             upAssetPings.addAll(list);
         }
 
+        // 未更新前 asset_ping 历史数据
+        List<AssetPing> befUpdHistoryAssetPingDataList = assetPingService.list();
+        Map<Integer, Integer> befUpdHistoryAssetPingAssetIdAndStatusMap = befUpdHistoryAssetPingDataList.stream().collect(Collectors.toMap(AssetPing::getAssetId, AssetPing::getStatus));
+
         //判断查询数据与缓存中变化的信息
         Map assetPings = redisTemplate.opsForHash().entries(Constant.SYSCONFIG_KEY_ASSET_PING);
         if(ToolUtil.isNotEmpty(assetPings)) {
@@ -169,10 +173,14 @@ public class AssetPingStatusJob extends QuartzJobBean {
         		if(assetPings.containsKey(assetPing.getAssetId().toString())) {
         			AssetPing cachePing = JSON.parseObject((String)assetPings.get(assetPing.getAssetId().toString()),AssetPing.class);
         			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
-        			if(cachePing.getStatus().equals(assetPing.getStatus())) {
-        				// 如果状态相同则只更新缓存中的数据信息
-        				upAssetPings.remove(i);
-        			}
+                    // 如果状态相同则只更新缓存中的数据信息
+                    if (cachePing.getStatus().equals(assetPing.getStatus())) {
+                        // 增加数据库状态对比 避免数据库历史数据导致状态不一致没有更新的情况
+                        Integer befUpdHistoryAssetPingStatus = befUpdHistoryAssetPingAssetIdAndStatusMap.get(cachePing.getAssetId());
+                        if (befUpdHistoryAssetPingStatus != null && befUpdHistoryAssetPingStatus.equals(cachePing.getStatus())) {
+                            upAssetPings.remove(i);
+                        }
+                    }
         		}else{
         			// 数据库存在 缓存中不存在
         			redisTemplate.opsForHash().put(Constant.SYSCONFIG_KEY_ASSET_PING, assetPing.getAssetId().toString(), JSON.toJSONString(assetPing));
