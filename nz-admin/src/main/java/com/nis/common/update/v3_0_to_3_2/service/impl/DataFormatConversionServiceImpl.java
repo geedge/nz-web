@@ -1,30 +1,23 @@
 package com.nis.common.update.v3_0_to_3_2.service.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.time.StopWatch;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.update.v3_0_to_3_2.dao.V3_0VisualChartDao;
 import com.nis.common.update.v3_0_to_3_2.service.DataFormatConversionService;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.panel.dao.VisualChartDao;
+import com.nis.modules.panel.dao.VisualChartElementDao;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.entity.VisualChartElement;
-import com.nis.modules.panel.service.VisualChartElementService;
+import org.apache.commons.lang3.time.StopWatch;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.log.Log;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class DataFormatConversionServiceImpl implements DataFormatConversionService {
@@ -38,7 +31,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
     private VisualChartDao visualChartDao;
 
     @Autowired
-    private VisualChartElementService visualChartElementService;
+    private VisualChartElementDao visualChartElementDao;
 
     static String[] LETTERS = new String[]{
             "A", "B", "C", "D", "E", "F", "G",
@@ -59,17 +52,19 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
         StopWatch sw = new StopWatch();
         sw.start();
         try {
-
+            logger.info("Start processing visual_chart_element data and supplement the element name value.");
             // 2. handle visual_chart_element name value (先处理 element name ,table chart handle 需要使用)
             this.handleElementName();
+            logger.info("The visual_chart_element name processing done.");
 
             // 3. 处理数据变化
             List<VisualChart> oldChartList = v3_0VisualChartDao.queryList();
 
             // 再查询 element 内容，此时 name 已处理完成
-            List<VisualChartElement> visualChartElements = visualChartElementService.list();
+            List<VisualChartElement> visualChartElements = visualChartElementDao.selectList(null);
             Map<Integer, List<VisualChartElement>> chartIdAndElementListMap = visualChartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
 
+            logger.info("Start processing visual_chart data format changes.");
             // 排除 alertList ,alertList drop
             Map<Integer, List<VisualChart>> oldChartListGroupByPanelId = oldChartList.stream().filter(visualChart -> !Tool.StrUtil.equals(visualChart.getType(), "alertList")).collect(Collectors.groupingBy(VisualChart::getPanelId));
             for (Map.Entry<Integer, List<VisualChart>> entry : oldChartListGroupByPanelId.entrySet()) {
@@ -85,7 +80,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                 // 入库 visual_chart (新表)
                 visualChartDao.insertBatchChart(oldChartListByPanelId);
             }
-
+            logger.info("The visual_chart data format change processing done.");
             // 4. 删除 visual_chart_v3_2 表
             v3_0VisualChartDao.dropTable("visual_chart_v3_2");
         } catch (Exception e) {
@@ -100,7 +95,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
      * chart element name 处理 初始化按照 每个chart数据  A-Z AA-AZ BA-BZ AAA-AAZ 顺序添加
      */
     public void handleElementName() {
-        List<VisualChartElement> visualChartElements = visualChartElementService.list();
+        List<VisualChartElement> visualChartElements = visualChartElementDao.selectList(null);
         Map<Integer, List<VisualChartElement>> collect = visualChartElements.stream().collect(Collectors.groupingBy(VisualChartElement::getChartId));
         for (Map.Entry<Integer, List<VisualChartElement>> entry : collect.entrySet()) {
             List<VisualChartElement> elementList = entry.getValue();
@@ -111,7 +106,16 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
             }
         }
         List<VisualChartElement> allElementList = collect.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
-        visualChartElementService.saveOrUpdateBatch(allElementList);
+        // visualChartElementService.saveOrUpdateBatch(allElementList);
+        if (Tool.CollectionUtil.isNotEmpty(allElementList)) {
+            // visualChartElementDao xml sql 为 updaet xx set name case when ...  where id in xxx. 组合，防止 sql 过长，分割后拼接 sql 修改
+            Integer batchSize = 1000;
+            Integer limit = (allElementList.size() + batchSize - 1) / batchSize;
+            List<List<VisualChartElement>> splitVisualChartElementList = Stream.iterate(0, n -> n + 1).limit(limit).parallel().map(a -> allElementList.stream().skip(a * batchSize).limit(batchSize).parallel().collect(Collectors.toList())).collect(Collectors.toList());
+            for (List<VisualChartElement> elements : splitVisualChartElementList) {
+                visualChartElementDao.updateNameBatch(elements);
+            }
+        }
     }
 
     /**
