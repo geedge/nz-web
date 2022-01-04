@@ -24,6 +24,7 @@ import org.apache.shiro.subject.Subject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -108,6 +109,7 @@ public class SysLoginController extends AbstractController {
 		String username = sysUser.getUsername();
 		String pin = StrUtil.str(sysUser.getPin());
 		Map<String, Object> result = new HashMap<>();
+		boolean flag = false;
 		try{
 			SysUserEntity user = sysUserService.getOne(new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getName, username));
 			if(ToolUtil.isNotEmpty(user)) {
@@ -168,7 +170,8 @@ public class SysLoginController extends AbstractController {
 				}
 				result.put(ToolUtil.toCamelCase(configEntity.getParamKey()), configEntity.getParamValue());
 			}
-           
+			// 登录成功标识
+			flag = true;
             return R.ok(result);
 		}catch (UnknownAccountException e) {
 			throw new NZException(RCode.SYS_LOGIN_UNKNOWNACCOUNT);
@@ -179,7 +182,13 @@ public class SysLoginController extends AbstractController {
 		}catch (AuthenticationException e) {
 			throw new NZException(RCode.SYS_LOGIN_ACCOUNTAUTH);
 		}finally {
-			sysUserService.checkRedisRetry(sysUser);
+			if(!flag) {
+				sysUserService.checkRedisRetry(sysUser);
+			}else {
+				// 登录成功清除可能之前密码错误保留的缓存
+				String redisKey = String.format("sysUserLogin_%s", sysUser.getUsername());
+				redisTemplate.delete(redisKey);
+			}
 		}
 	}
 
