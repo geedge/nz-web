@@ -46,7 +46,7 @@
 			su.*
 		FROM
 			sys_user_role sur
-			LEFT JOIN sys_user su ON sur.user_id = su.id
+			RIGHT JOIN sys_user su ON sur.user_id = su.id
 		WHERE
 			sur.role_id = #{roleId}
 	</select>
