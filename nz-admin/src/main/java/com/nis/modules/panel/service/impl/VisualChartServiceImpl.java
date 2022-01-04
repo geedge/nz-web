@@ -30,6 +30,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.CommonUtils;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Constant.ChartDatasourceType;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
@@ -1025,6 +1026,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 		target.setPanelId(panel.getId());
 		target.setGroupId(0);
 		target.setUpdateBy(ShiroUtils.getUserId().intValue());
+		target.setDatasource(ChartDatasourceType.SYSTEM.getValue());
 		target.setUpdateAt(new Date());
 		if(StringUtils.isNotEmpty(seq)){
 			target.setSeq(seq);
