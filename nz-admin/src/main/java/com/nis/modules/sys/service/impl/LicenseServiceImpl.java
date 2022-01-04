@@ -197,6 +197,9 @@ public class LicenseServiceImpl implements LicenseService {
 					String fileLicense = Tool.StrUtil.str(bytes, "utf-8");
 					org.dom4j.Document document = DocumentHelper.parseText(fileLicense);
 			    	Element ele = document.getRootElement();
+			    	if(StrUtil.equals(ele.getName(), "hasp_info")) {
+		    			haspInfos.add(ele.asXML());
+		    		}
 			    	List<Element> elements = ele.elements();
 			    	for(Element e : elements) {
 			    		if(StrUtil.equals(e.getName(), "hasp_info")) {
@@ -212,6 +215,7 @@ public class LicenseServiceImpl implements LicenseService {
 			}
 			
 			if(ToolUtil.isEmpty(haspInfos)) {
+				log.debug("license gen haspInfos empty");
 				return null;
 			}
 			// 程序组装v2c文件 返回

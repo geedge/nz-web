@@ -1364,7 +1364,7 @@ INSERT INTO `sys_i18n` VALUES (1333, 'dashboard.panel.createPanelTitle', 'en', '
 INSERT INTO `sys_i18n` VALUES (1334, 'dashboard.panel.singleStatErrorTip', 'en', 'dashboard.panel.singleStatErrorTip', 'Only queries that return single series/table is supported', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1335, 'dashboard.panel.recSevenDay', 'en', 'dashboard.panel.recSevenDay', 'Last 7 day', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1336, 'dashboard.panel.createChartTempTitle', 'en', 'dashboard.panel.createChartTempTitle', 'New chart template', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1337, 'dashboard.panel.title', 'en', 'dashboard.panel.title', 'Panel', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1337, 'dashboard.panel.title', 'en', 'dashboard.panel.title', 'Main', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1338, 'dashboard.panel.yesterday', 'en', 'dashboard.panel.yesterday', 'Yesterday', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1339, 'dashboard.panel.beforeTwoDay', 'en', 'dashboard.panel.beforeTwoDay', 'Previous 2 days', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1340, 'dashboard.panel.showAll', 'en', 'dashboard.panel.showAll', 'Show all ', '', '2021-11-02 00:00:00', 1);
@@ -2116,14 +2116,14 @@ INSERT INTO `sys_i18n` VALUES (2089, 'overall.rollbackImport', 'zh', 'overall.ro
 INSERT INTO `sys_i18n` VALUES (2090, 'overall.assetSubTab', 'zh', 'overall.assetSubTab', '子级资产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2091, 'overall.project', 'zh', 'overall.project', '系统', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2092, 'overall.createAssetState', 'zh', 'overall.createAssetState', '新增设备状态', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2093, 'overall.unlocked', 'zh', 'overall.unlocked', '已解锁', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2093, 'overall.unlocked', 'zh', 'overall.unlocked', '解锁', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2094, 'overall.view', 'zh', 'overall.view', '查看', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2095, 'overall.download', 'zh', 'overall.download', '下载', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2096, 'overall.AuthenticationFailed', 'zh', 'overall.AuthenticationFailed', '认证失败', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2097, 'overall.limit', 'zh', 'overall.limit', '限制', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2098, 'overall.create', 'zh', 'overall.create', '新增', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2099, 'overall.tag', 'zh', 'overall.tag', '标签', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2100, 'overall.locked', 'zh', 'overall.locked', '已锁定', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2100, 'overall.locked', 'zh', 'overall.locked', '锁定', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2101, 'overall.logs', 'zh', 'overall.logs', '日志', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2102, 'overall.generate', 'zh', 'overall.generate', '生产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2103, 'overall.unusual', 'zh', 'overall.unusual', '不正常', '', '2021-11-02 00:00:00', 1);
@@ -2927,7 +2927,7 @@ INSERT INTO `sys_i18n` VALUES (2915, 'dashboard.panel.createPanelTitle', 'zh', '
 INSERT INTO `sys_i18n` VALUES (2916, 'dashboard.panel.singleStatErrorTip', 'zh', 'dashboard.panel.singleStatErrorTip', '仅支持返回单个系列/表的查询', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2917, 'dashboard.panel.recSevenDay', 'zh', 'dashboard.panel.recSevenDay', '最近7日', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2918, 'dashboard.panel.createChartTempTitle', 'zh', 'dashboard.panel.createChartTempTitle', '新增图表模板', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2919, 'dashboard.panel.title', 'zh', 'dashboard.panel.title', '面板', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2919, 'dashboard.panel.title', 'zh', 'dashboard.panel.title', '主面板', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2920, 'dashboard.panel.yesterday', 'zh', 'dashboard.panel.yesterday', '昨日', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2921, 'dashboard.panel.beforeTwoDay', 'zh', 'dashboard.panel.beforeTwoDay', '之前2天', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2922, 'dashboard.panel.showAll', 'zh', 'dashboard.panel.showAll', '全部显示 ', '', '2021-11-02 00:00:00', 1);
@@ -5034,7 +5034,7 @@ INSERT INTO `sys_i18n` VALUES (5578, 'dashboard.panel.chartForm.display', 'en', 
 INSERT INTO `sys_i18n` VALUES (5579, 'dashboard.panel.chartForm.display', 'zh', 'dashboard.panel.chartForm.display', 'Display', '', '2021-12-22 06:23:10', 1);
 INSERT INTO `sys_i18n` VALUES (5580, 'dashboard.panel.chartForm.typeVal.map.label', 'en', 'dashboard.panel.chartForm.typeVal.map.label', 'Map', '', '2021-12-23 05:44:52', 381);
 INSERT INTO `sys_i18n` VALUES (5581, 'dashboard.panel.chartForm.typeVal.map.label', 'zh', 'dashboard.panel.chartForm.typeVal.map.label', '地图', '', '2021-12-23 05:45:02', 381);
-INSERT INTO `sys_i18n` VALUES (5582, 'dashboard.panel.chartForm.typeVal.topology.label', 'en', 'dashboard.panel.chartForm.typeVal.topology.label', 'Carousel', '', '2021-12-23 05:46:08', 381);
+INSERT INTO `sys_i18n` VALUES (5582, 'dashboard.panel.chartForm.typeVal.topology.label', 'en', 'dashboard.panel.chartForm.typeVal.topology.label', 'Project topology', '', '2021-12-23 05:46:08', 381);
 INSERT INTO `sys_i18n` VALUES (5583, 'dashboard.panel.chartForm.typeVal.topology.label', 'zh', 'dashboard.panel.chartForm.typeVal.topology.label', '轮播图', '', '2021-12-23 05:46:20', 381);
 INSERT INTO `sys_i18n` VALUES (5584, 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'en', 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'Hexagon', '', '2021-12-23 05:46:45', 381);
 INSERT INTO `sys_i18n` VALUES (5585, 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', 'zh', 'dashboard.panel.chartForm.typeVal.hexagonFigure.label', '蜂窝图', '', '2021-12-23 05:47:02', 381);

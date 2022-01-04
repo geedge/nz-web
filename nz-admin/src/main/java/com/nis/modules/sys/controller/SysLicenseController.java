@@ -278,7 +278,7 @@ public class SysLicenseController extends AbstractController {
 
 	
 	@PostMapping("/gen")
-	public void gen(@RequestParam(name = "file", required = true) MultipartFile[] files,@RequestParam Map<String,Object> params,HttpServletResponse response) throws IORuntimeException, UnsupportedEncodingException, IOException {
+	public void gen(@RequestParam(name = "files", required = true) MultipartFile[] files,@RequestParam Map<String,Object> params,HttpServletResponse response) throws IORuntimeException, UnsupportedEncodingException, IOException {
 		ValidateUtils.is(params.get("supportID")).notNull(RCode.LICENSE_SUPPORT_ID_ISNULL)
 		.and(params.get("organization")).notNull(RCode.LICENSE_ORGANIZATION_ISNULL)
 		.and(params.get("type")).notNull(RCode.LICENSE_TYPE_ISNULL);
