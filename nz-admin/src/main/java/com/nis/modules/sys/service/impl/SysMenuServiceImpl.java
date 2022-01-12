@@ -31,7 +31,7 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
 
 	@Override
 	public List<SysMenuEntity> getMenuList(Integer id) {
-		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().eq(id != null, SysMenuEntity::getId, id).orderByAsc(SysMenuEntity::getOrderNum));
+		List<SysMenuEntity> menuList = this.list(new LambdaQueryWrapper<SysMenuEntity>().eq(id != null, SysMenuEntity::getId, id).eq(SysMenuEntity::getState,1).orderByAsc(SysMenuEntity::getOrderNum));
 		if (CollectionUtils.isEmpty(menuList) || menuList.size() == 1)
 			return menuList;
 		menuList = this.getMenuTreeList(menuList, 0);

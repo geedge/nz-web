@@ -74,8 +74,8 @@ public class AssetTalonStatusJob extends QuartzJobBean {
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     	Thread.currentThread().setName("AssetTalonStatusJob");
         // 检查 haMode
-        String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
-        if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
+		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+		if(!StrUtil.equals(serverId, Constant.SERVER_ID)) return;
 
         StopWatch sw = new StopWatch();
         sw.start();
@@ -196,6 +196,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
 
         talonUpdateStatusList.addAll(abnormalTalonList);
         
+        Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         //判断查询数据与缓存中变化的信息
         Map assetTalonStatuss = redisTemplate.opsForHash().entries(Constant.ASSET_TALON_STATUS_CACHE_KEY);
         if(ToolUtil.isNotEmpty(assetTalonStatuss)) {
@@ -224,7 +225,6 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         	talonStatusService.saveOrUpdateBatch(talonUpdateStatusList);
         }
 
-        Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         // 更新 endpoint state 表数据
         List<MonitorEndpointState> logStateList = new ArrayList<>();
         List<MonitorEndpointConfig> logsEndpointConfigList = endpointConfigService.getEndpointConfigInfoListByType(Constant.MonitorConfType.LOGS.getValue());
