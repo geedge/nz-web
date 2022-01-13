@@ -89,8 +89,8 @@ public class PromProxyController {
 	@RequestMapping(value = "/prom/**")
 	public void promProxy(HttpServletRequest request, HttpServletResponse response) {
 		String promPath = request.getServletPath().substring(5);
-		Integer promId = request.getParameter("promId") != null ? Integer.valueOf(request.getParameter("promId")):null;
-		Integer idcId = request.getParameter("idcId") != null ? Integer.valueOf(request.getParameter("idcId")):null;
+		Integer agentId = request.getParameter("agentId") != null ? Integer.valueOf(request.getParameter("agentId")):null;
+		Integer dcId = request.getParameter("dcId") != null ? Integer.valueOf(request.getParameter("dcId")):null;
 		Integer type = request.getParameter("type") != null ? Integer.valueOf(request.getParameter("type")):null;
 
 		switch (promPath) {
@@ -116,11 +116,11 @@ public class PromProxyController {
 			break;
 		}
 
-		Promserver server = promserverService.getOneAvaPromServer(promId, idcId, type);
+		Promserver server = promserverService.getOneAvaPromServer(agentId, dcId, type);
 		if (ToolUtil.isEmpty(server)) {
 			// type 其次使用 global
 			type = PromConstant.PROMSERVER_GLOBAL;
-			server = promserverService.getOneAvaPromServer(promId, idcId, type);
+			server = promserverService.getOneAvaPromServer(agentId, dcId, type);
 			ValidateUtils.is(server).notNull(RCode.PROMSERVER_UNAVAILABLE);
 		}
 		ByteArrayInputStream bais = null;
