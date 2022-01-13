@@ -797,6 +797,10 @@ public enum RCode {
     SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
     SYS_ROLE_REMOVE_ERROR(587008,"These roles contains user can't remove roles"),
+    SYS_USER_STARRED_ISNULL(511045,"Starred can not be empty"),
+    SYS_USER_STARRED_TYPE_ISNULL(511046,"Starred type can not be empty"),
+    SYS_USER_STARRED_TID_ISNULL(511047,"Starred tid can not be empty"),
+    SYS_USER_STARRED_ID_TYPE_ISNULL(511048,"Starred id and type at the same time null"),
 
     LINK_ID_ISNULL(581001,"link id can not be null"),
     LINK_NAME_ISNULL(581002,"link name can not be null"),
