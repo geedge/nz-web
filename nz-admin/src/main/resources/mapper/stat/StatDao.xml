@@ -689,7 +689,7 @@
 			<trim suffixOverrides="union">
 				<if test="params.scopeList.contains(&quot;asset&quot;)">
 					select 
-						'asset' as type, aa.id, aa.name CONCAT( aa.name ,' / ',aa.manage_ip), d.name as sub 
+						'asset' as type, aa.id, CONCAT( aa.name ,' / ',aa.manage_ip) as name, d.name as sub 
 					from  
 						asset_asset aa left join dc d on aa.dc_id = d.id
 					<if test="params.q != null and params.q != ''">
@@ -777,7 +777,7 @@
 			<trim suffixOverrides="union">
 				<if test="params.scopeList.contains(&quot;asset&quot;)">
 					select 
-						'asset' as type, aa.id, aa.name CONCAT( aa.name ,' / ',aa.manage_ip), d.name as sub 
+						'asset' as type, aa.id, CONCAT( aa.name ,' / ',aa.manage_ip) as name, d.name as sub 
 					from  
 						asset_asset aa left join dc d on aa.dc_id = d.id
 					<if test="params.q != null and params.q != ''">
