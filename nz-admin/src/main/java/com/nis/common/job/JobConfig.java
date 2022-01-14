@@ -7,6 +7,7 @@ import com.nis.modules.agent.job.CortexHistoryDataDelJob;
 import com.nis.modules.alert.backend.AlertMessageExpiredJob;
 import com.nis.modules.alert.backend.AlertRuleManagerJob;
 import com.nis.modules.alert.backend.AlertSilenceStatusJob;
+import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.asset.job.AssetFeatureJob;
 import com.nis.modules.asset.job.AssetPingStatusJob;
 import com.nis.modules.asset.job.AssetTalonStatusJob;
@@ -77,6 +78,9 @@ public class JobConfig {
     @Value("${nezha.cortexHistoryDataDelJobCron:0 0 0/2 * * ?}")
     private String cortexHistoryDataDelJobCron;
 
+    @Value("${nezha.alertMessageHistoryPartManJobCron:0 0 0 1/1 * ?}")
+    private String alertMessageHistoryPartManJobCron;
+
 	@Autowired
     private Scheduler scheduler;
 //    @Qualifier("costomSchedulerFactoryBean")
@@ -96,6 +100,7 @@ public class JobConfig {
     private String cleanJobCronName = "CLEAN_JOB";
     private String sysComponentJobName = "SYSCOMPONENT_JOB";
     private String cortexHistoryDataDelJobName = "CORTEXHISTORYDATADEL_JOB";
+    private String alertMessageHistoryPartManJobName = "ALERTMESSAGEHISTORYPARTMAN_JOB";
 
     @Bean
     public JobDetail agentCronJobDetail() {
@@ -166,6 +171,11 @@ public class JobConfig {
     public JobDetail cortexHistoryDataDelJobDetail() {
         return JobBuilder.newJob(CortexHistoryDataDelJob.class).withIdentity(JOB_NAME + cortexHistoryDataDelJobName).storeDurably().build();
     }
+
+    @Bean
+    public JobDetail alertMessageHistoryPartManJobDetail() {
+        return JobBuilder.newJob(AlertMessageHistoryPartitionManagementJob.class).withIdentity(JOB_NAME + alertMessageHistoryPartManJobName).storeDurably().build();
+    }
     
     @PostConstruct
     public void init() throws SchedulerException {
@@ -211,6 +221,9 @@ public class JobConfig {
 
         // cortex metrics 历史数据删除
         createCronScheduleJob(cortexHistoryDataDelJobName, cortexHistoryDataDelJobDetail(), StringUtils.isEmpty(cortexHistoryDataDelJobCron) ? "0 0 0/2 * * ?" : cortexHistoryDataDelJobCron);
+
+        // alert message History Partition Management 分区管理
+        createCronScheduleJob(alertMessageHistoryPartManJobName, alertMessageHistoryPartManJobDetail(), StringUtils.isEmpty(alertMessageHistoryPartManJobCron) ? "0 0 0 1/1 * ?" : alertMessageHistoryPartManJobCron);
     }
     
     /**

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.modules.alert.dao.AlertMessageHistoryPartitionManagementDao">
+
+
+	<select id="getPartitionNamesByTabelName" resultType="java.lang.String">
+		SELECT
+			PARTITION_NAME
+		FROM
+			INFORMATION_SCHEMA.PARTITIONS
+		WHERE
+			TABLE_NAME = #{tableName} AND PARTITION_NAME != ""
+			<if test="partitionNames != null and partitionNames.length > 0">
+				AND PARTITION_NAME IN
+				<foreach item="item" collection="partitionNames" separator="," open="(" close=")" index="">
+					#{item}
+				</foreach>
+			</if>
+	</select>
+
+	<update id="createIntervalsPartitions">
+		ALTER TABLE ${tableName} PARTITION BY RANGE ( to_days(${columnName}) ) (
+            <foreach collection="map" index="key" item="value" separator=",">
+                PARTITION  ${key} VALUES LESS THAN ( to_days(#{value}) )
+            </foreach>
+		);
+	</update>
+
+	<update id="addPartitions">
+		ALTER TABLE ${tableName} ADD PARTITION (
+			PARTITION ${partitionName} VALUES LESS THAN ( to_days(#{partitionExpr}) )
+		);
+	</update>
+
+	<update id="dropPartitionByPnames">
+		ALTER TABLE ${tableName} DROP PARTITION
+		<foreach item="item" collection="list" separator="," open="" close="" index="">
+			 ${item}
+		</foreach>
+	</update>
+
+</mapper>

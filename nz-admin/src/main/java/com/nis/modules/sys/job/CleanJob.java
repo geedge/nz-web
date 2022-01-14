@@ -3,11 +3,15 @@ package com.nis.modules.sys.job;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.DateUtil;
 import com.nis.common.utils.Tool;
+import com.nis.modules.alert.dao.AlertMessageHistoryPartitionManagementDao;
 import com.nis.modules.alert.entity.AlertRuleEvalLog;
 import com.nis.modules.alert.entity.AlertRuleSchedLog;
+import com.nis.modules.alert.job.AlertMessageHistoryPartitionManagementJob;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.alert.service.AlertRuleSchedLogService;
@@ -20,6 +24,9 @@ import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 系统清理任务 1. terminal log，默认保留 365天. 2. alert_rule_eval_log，默认保留 30天 3.
@@ -47,6 +54,9 @@ public class CleanJob extends QuartzJobBean {
 
 	@Autowired
 	private RedisTemplate<String, String> redisTemplate;
+
+	@Autowired
+	private AlertMessageHistoryPartitionManagementDao alertMessageHistoryPartitionManagementDao;
 	
 	@Override
 	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
@@ -122,7 +132,28 @@ public class CleanJob extends QuartzJobBean {
 			sw.start();
 			try {
 				log.info("start clean alert message data");
-				alertMessageService.cleanExpiredDataByTime(startCleanAlertMessageTime);
+				// alertMessageService.cleanExpiredDataByTime(startCleanAlertMessageTime);
+				DateTime cleanPartitionDate = Tool.DateUtil.parseDate(Tool.DateUtil.formatDate(startCleanAlertMessageTime));
+				log.info(String.format("Clean up alert_message_history partition , expiration time is %s", DateUtil.format(cleanPartitionDate, "yyyy-MM-dd")));
+				// 通过删除分区方式清理数据
+				List<String> partNamesForTable = alertMessageHistoryPartitionManagementDao.getPartitionNamesByTabelName("alert_message_history");
+				if (Tool.CollectionUtil.isNotEmpty(partNamesForTable)) {
+					// 查询超出保留日期得分区名称
+					List<String> cleanPartitionList = partNamesForTable.stream().filter(s -> {
+						// Partition name 格式为 pdate 例： p20210310
+						s = s.replaceAll(AlertMessageHistoryPartitionManagementJob.ALERT_RTITIONNAME_PREFIX, "");
+						return DateUtil.parse(s, "yyyyMMdd").before(cleanPartitionDate);
+					}).collect(Collectors.toList());
+
+					log.info(String.format("Clean up alert_message_history partition size: %s , partition names: %s", cleanPartitionList.size(), JSONObject.toJSONString(cleanPartitionList)));
+
+					if (Tool.CollectionUtil.isNotEmpty(cleanPartitionList)) {
+						alertMessageHistoryPartitionManagementDao.dropPartitionByPnames("alert_message_history", cleanPartitionList);
+						log.info("Clean up alert_message_history partition success.");
+					} else {
+						log.info("Clean up alert_message_history partition finish, this time no partition cleaning.");
+					}
+				}
 			} catch (Exception e) {
 				log.error("clean alert message data error", e);
 			} finally {
