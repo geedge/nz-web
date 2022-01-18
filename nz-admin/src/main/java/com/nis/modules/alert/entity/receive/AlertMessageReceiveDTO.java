@@ -31,7 +31,13 @@ public class AlertMessageReceiveDTO implements Serializable {
     private String endsAt;
 
     private String generatorURL;
+    
+    private Long acts;
 
+    private String state;
+    
+    private String value;
+    
 //    private Boolean snmptrap;
 
     public String genHashKey() {

@@ -31,6 +31,7 @@ import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
+import com.sun.mail.handlers.message_rfc822;
 
 import cn.hutool.core.date.StopWatch;
 import cn.hutool.log.Log;
@@ -133,6 +134,12 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					if (!entries.containsKey(hash)) {// 第一次达到告警阈值
 						// 将第一次 触发的时间 作为 value 保存，后续根据此计算 达到 for 的条件
 						hashOperations.put(ruleCacheKey, hash, timestamp.toString());
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
+								null, null);
+						message.setActs((long) (values.getDoubleValue(0) * 1000L));
+						message.setState(Constant.AlertMessageStatus.PENDING.getValue());
+						message.setValue(values.getString(1));
+						messages.add(message);
 						continue;
 					}
 					/*
@@ -144,6 +151,9 @@ public class AlertRuleJudgeRunnable implements Runnable {
 						String et  = (timeout > 0) ? Tool.AlertUtil.formatMessageDate(timestamp + timeout*1000) : null;
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
 								Tool.AlertUtil.formatMessageDate(firstTime), et);
+						message.setActs((long) (values.getDoubleValue(0) * 1000L));
+						message.setState(Constant.AlertMessageStatus.FIRING.getValue());
+						message.setValue(values.getString(1));
 						messages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: active,content : {}",
@@ -172,6 +182,9 @@ public class AlertRuleJudgeRunnable implements Runnable {
 						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(
 								Tool.JSONUtil.parseObj(activeHash), Tool.StrUtil.EMPTY,
 								Tool.AlertUtil.formatMessageDate(firstTime), Tool.AlertUtil.formatMessageDate(nowTs));
+						message.setActs(nowTs);
+						message.setState(Constant.AlertMessageStatus.INACTIVE.getValue());
+						message.setValue(Tool.StrUtil.EMPTY);
 						messages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: expired,content : {}",

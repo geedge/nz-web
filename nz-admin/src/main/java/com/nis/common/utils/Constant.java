@@ -1155,4 +1155,32 @@ public class Constant {
 	public static final String ENDPOINT_LOGS_STATE_CACHE_KEY = "endpoint_logs_state";
 	
 	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status"; 
+	
+	/**
+	 * 告警消息状态
+	 */
+	public enum AlertMessageStatus {
+		/**
+		 * 失效
+		 */
+		INACTIVE("inactive"),
+		/**
+		 * 即将产生
+		 */
+		PENDING("pending"),
+		/**
+		 * 持续中
+		 */
+		FIRING("firing");
+
+		private String value;
+
+		AlertMessageStatus(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+	}
 }
