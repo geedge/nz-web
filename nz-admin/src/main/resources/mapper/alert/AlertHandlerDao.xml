@@ -168,21 +168,8 @@
 		</foreach>
 		ON DUPLICATE KEY UPDATE
 		id = VALUES(id),
-		summary = VALUES(summary),
-		description = VALUES(description),
-		labels = VALUES(labels),
 		start_at = VALUES(start_at),
-		end_at = VALUES(end_at),
-		state = VALUES(state),
-		rule_id = VALUES(rule_id),
-		project_id = VALUES(project_id),
-		module_id = VALUES(module_id),
-		endpoint_id = VALUES(endpoint_id),
-		asset_id = VALUES(asset_id),
-		dc_id = VALUES(dc_id),
-		hash_key = VALUES(hash_key),
-		remark = VALUES(remark),
-		severity_id = VALUES(severity_id);
+		end_at = VALUES(end_at);
 	</insert>
 	
 	<!-- 页面查询告警消息 -->
