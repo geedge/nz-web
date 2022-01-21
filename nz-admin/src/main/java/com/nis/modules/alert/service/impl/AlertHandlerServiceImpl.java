@@ -198,7 +198,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			redisTemplate.opsForValue().set(Tool.StrUtil.concat(true, Constant.ALERT_MESSAGE_ACTIVE_PRIX, hashKey),String.valueOf(messageId),this.getKeyTimeout(endAt),TimeUnit.MILLISECONDS);
 			this.pushMessageNotifyList(message);
 		}
-		msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
+		// msgHandlerDao.saveMessageBatch(msgList, tableName);//批量保存
+		// 批量保存 active message -> ALERT_MESSAGE_ACTIVE table
+		msgHandlerDao.saveActiveMessageBatch(msgList);
 	}
 	
 	/**

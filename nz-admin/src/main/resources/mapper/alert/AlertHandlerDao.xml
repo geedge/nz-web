@@ -155,6 +155,35 @@
 			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
 		</foreach>
 	</insert>
+
+	<!-- 批量保存 active message - ALERT_MESSAGE_ACTIVE table -->
+	<insert id="saveActiveMessageBatch">
+		INSERT INTO alert_message_active (id, summary, description, labels, start_at, end_at, state, rule_id,
+		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.state},
+			#{item.ruleId}, #{item.projectId}, #{item.moduleId}, #{item.endpointId}, #{item.assetId},
+			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
+		</foreach>
+		ON DUPLICATE KEY UPDATE
+		id = VALUES(id),
+		summary = VALUES(summary),
+		description = VALUES(description),
+		labels = VALUES(labels),
+		start_at = VALUES(start_at),
+		end_at = VALUES(end_at),
+		state = VALUES(state),
+		rule_id = VALUES(rule_id),
+		project_id = VALUES(project_id),
+		module_id = VALUES(module_id),
+		endpoint_id = VALUES(endpoint_id),
+		asset_id = VALUES(asset_id),
+		dc_id = VALUES(dc_id),
+		hash_key = VALUES(hash_key),
+		remark = VALUES(remark),
+		severity_id = VALUES(severity_id);
+	</insert>
 	
 	<!-- 页面查询告警消息 -->
 	<select id="queryList" resultMap="alertMessageMap">
