@@ -11,8 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
- * 
  * @author song
  * @email 
  * @date 2019-11-25 10:11:01
@@ -152,4 +150,11 @@ public interface AlertHandlerDao {
 	 * @param message
 	 */
 	void updateCloseExpiredMessageEndAt(@Param("tableName")String tableName,@Param("endAt")Date endAt);
+
+    /**
+     * 批量保存 active message -> ALERT_MESSAGE_ACTIVE table
+     *
+     * @param msgList
+     */
+    void saveActiveMessageBatch(@Param("list") List<AlertMessageEntity> msgList);
 }
