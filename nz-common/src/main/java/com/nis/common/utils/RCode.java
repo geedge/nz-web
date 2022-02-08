@@ -851,6 +851,20 @@ public enum RCode {
     SYSSTAT_SELECT_IS_NULL(811011,"param select can not be null"),
     SYSSTAT_TABLE_INVALIDED(813012,"param table invalided"),
     SYSSTAT_Q_IS_NULL(813013,"param q can not be null"),
+    FILTER_NAME_NOTFOUND(814014, "filter name not found in system configuration"),
+    FILTER_OPER_INVALIDED(813015, "filter oper value is invalide"),
+    FILTER_DATACENTER_IS_NULL(811016, "filter datacenter is null"),
+    FILTER_ASSET_IS_NULL(811017, "filter asset is null"),
+    FILTER_ASSET_TYPE_IS_NULL(811018, "filter asset type is null"),
+    FILTER_ASSET_STATE_IS_NULL(811019, "filter asset state is null"),
+    FILTER_ASSET_BRAND_IS_NULL(811020, "filter asset brand is null"),
+    FILTER_ASSET_MODEL_IS_NULL(811021, "filter asset model is null"),
+    FILTER_ASSET_ID_IS_NULL(811022, "filter asset id is null"),
+    FILTER_PROJECT_IS_NULL(811023, "filter project is null"),
+    FILTER_MODULE_IS_NULL(811024, "filter module is null"),
+    FILTER_PRIORITY_IS_NULL(811025, "filter priority is null"),
+    FILTER_ALERT_RULE_IS_NULL(811026, "filter alert rule is null"),
+    FILTER_ENDPOINT_IS_NULL(811027, "filter endpoint is null"),
     /**
      * 导入相关
      */

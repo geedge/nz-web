@@ -176,6 +176,8 @@ public class NzExpressionUtil {
 			}else if (obj instanceof Dc) {
 				expre = expre.replaceAll("datacenter.", "").replaceAll("dc.", "");
 				result = BeanUtil.getProperty(obj,expre);
+			}else if (obj instanceof Map) {
+				result = BeanUtil.getProperty(obj, expre);
 			}
 			if(ToolUtil.isNotEmpty(result)) {
 				break;

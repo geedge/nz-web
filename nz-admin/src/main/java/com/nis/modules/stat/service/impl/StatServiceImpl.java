@@ -620,9 +620,9 @@ public class StatServiceImpl implements StatService{
 					throw new NZException(RCode.SYSSTAT_FILTER_IS_NULL);
 				}else if(StrUtil.isNotBlank(filterOp) && StrUtil.isNotEmpty(filter)){
 					if(filterOp.equals("~")) {
-						filterOp = "like";
+						filterOp = " like ";
 					}else if(filterOp.equals("!~")) {
-						filterOp = "not like";
+						filterOp = " not like ";
 					}
 					if(i>0) {
 						whereFilter = StrUtil.concat(false, whereFilter," and ",name,filterOp,"'",filter,"'");
@@ -641,6 +641,44 @@ public class StatServiceImpl implements StatService{
 		Integer limit = (Integer) parseObject.get("limit");
 		String sort = (String) parseObject.get("sort");
 
+		// filter 用以拼接在 dataSql 后
+		String filterSqlStr = "";
+		List<Map<String, Object>> filterParam = (List<Map<String, Object>>) parseObject.get("filter");
+		if (ObjectUtil.isNotEmpty(filterParam)) {
+			List<String> filterParamNameList = filterParam.stream().map(m -> m.get("name").toString()).collect(Collectors.toList());
+			List<Map<String, Object>> filterJson = (List<Map<String, Object>>) sqlParam.get("filter");
+			Map<String, Object> filterNameAndObjMap = filterJson.stream().collect(Collectors.toMap(o -> o.get("name").toString(), Function.identity()));
+
+			long nameNotExistCount = filterParamNameList.stream().filter(o -> ObjectUtil.isEmpty(filterNameAndObjMap.get(o))).count();
+			if (nameNotExistCount > 0) {
+				throw new NZException(RCode.FILTER_NAME_NOTFOUND);
+			}
+
+			for (int i = 0; i < filterParam.size(); i++) {
+				Map<String, Object> pojo = filterParam.get(i);
+				String name = pojo.get("name").toString();
+				String value = pojo.get("value").toString();
+				String oper = pojo.get("oper").toString();
+
+				Map<String, Object> fieldObjInfoMap = (Map<String, Object>) filterNameAndObjMap.get(name);
+				List<Map<String, String>> ruleRegexAndTipMapList = (List<Map<String, String>>) fieldObjInfoMap.get("rule");
+				for (Map<String, String> ruleRegexAndTipMap : ruleRegexAndTipMapList) {
+					if (!Tool.ReUtil.isMatch(ruleRegexAndTipMap.get("regex"), value)) {
+						throw new NZException(RCode.valueOf(ruleRegexAndTipMap.get("tip").toUpperCase()));
+					}
+				}
+
+				List<Map<String, String>> operAndExprMapList = (List<Map<String, String>>) fieldObjInfoMap.get("opers");
+				Map<String, String> operAndExprMap = operAndExprMapList.stream().filter(m -> oper.equals(m.get("name"))).findFirst().orElse(null);
+				if (ObjectUtil.isEmpty(operAndExprMap)) {
+					throw new NZException(RCode.FILTER_OPER_INVALIDED);
+				}
+
+				String expr = Tool.NzExpressionUtil.renderExpression(operAndExprMap.get("expr"), pojo);
+				filterSqlStr += StrUtil.concat(false, expr, (i == filterParam.size() - 1 ? "" : " and "));
+			}
+		}
+
 		// 组装sql
 		String dataSql = (String) sqlParam.get("datasql");
 		if(StrUtil.isNotBlank(whereFilter)) {
@@ -652,9 +690,12 @@ public class StatServiceImpl implements StatService{
 		if(limit > 0 ) {
 			limitStr = StrUtil.concat(false, " limit ",limit.toString());
 		}
+		if (StrUtil.isNotBlank(filterSqlStr)) {
+			dataSql = StrUtil.concat(false, dataSql, " where ", filterSqlStr);
+		}
 		String sql = StrUtil.concat(false, "select ",selectStr ," from ", "(" , dataSql , ") t" , whereFilter , groupName , sort , limitStr);
-		
-		logger.info("queryAnalyse sql : %s",sql);
+
+		logger.info(String.format("queryAnalyse sql : %s", sql));
 		
 		List<Map<String,Object>> queryInfo = statDao.selectAnalyseInfo(sql);
 		
