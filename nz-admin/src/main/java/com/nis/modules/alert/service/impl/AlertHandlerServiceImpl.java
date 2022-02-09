@@ -30,8 +30,10 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.nis.modules.sys.service.TimezoneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,6 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -71,6 +75,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private AlertSilenceDao alertSilenceDao;
 	@Autowired
 	private SysConfigService sysConfigService;
+	@Autowired
+	private TimezoneService timezoneService;
 	@Autowired
 	private BasicImportAndExportServices basicImportAndExportServices;
 
@@ -539,11 +545,11 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	private List<List<String>> handleExportDataList(List<AlertMessageEntity> list) {
 		List<List<String>> exportDataList = new ArrayList<>();
 
+		Timezone sysTimezone = timezoneService.getOne(new LambdaQueryWrapper<Timezone>().eq(Timezone::getName, sysConfigService.getValue("timezone")));
+		DateFormat dateformat = getISO8601DateFormatBySysTimeOffset(sysTimezone.getOffset());
+
 		for (AlertMessageEntity alertMessage : list) {
 			List<String> tempList = new ArrayList<>();
-
-			String startAt = ToolUtil.isNotEmpty(alertMessage.getStartAt()) ? DateUtil.formatDate(alertMessage.getStartAt(), "yyyy-MM-dd HH:mm:ss") : "";
-			String endAt = ToolUtil.isNotEmpty(alertMessage.getEndAt()) ? DateUtil.formatDate(alertMessage.getEndAt(), "yyyy-MM-dd HH:mm:ss") : "";
 
 			tempList.add(ObjectUtil.defaultIfNull(alertMessage.getId(), "").toString());
 			tempList.add(alertMessage.getAlertRule().getName());
@@ -556,12 +562,40 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			tempList.add(ToolUtil.isNotEmpty(alertMessage.getSeverity()) ? alertMessage.getSeverity().getName() : "");
 			tempList.add(alertMessage.getSummary());
 			tempList.add(alertMessage.getDescription());
-			tempList.add(startAt);
-			tempList.add(endAt);
+			tempList.add(getExportFormatTime(alertMessage.getStartAt(), dateformat));
+			tempList.add(getExportFormatTime(alertMessage.getEndAt(), dateformat));
 			tempList.add(Constant.ALERT_MESSAGE_STATE_NAME_MAPPING.get(alertMessage.getState()));
 			exportDataList.add(tempList);
 		}
 		return exportDataList;
+	}
+
+	/**
+	 * 根据系统配置时区偏移量 获取 SimpleDateFormat 对象，格式为 yyyy-MM-dd'T'HH:mm:ssZ
+	 * @param offset
+	 * @return
+	 */
+	private DateFormat getISO8601DateFormatBySysTimeOffset(Integer offset) {
+		TimeZone tz = new SimpleTimeZone(offset,"");
+		SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+		dateformat.setTimeZone(tz);
+		return dateformat;
+	}
+
+	/**
+	 * @param time
+	 * @param dateformat
+	 * @return
+	 */
+	private String getExportFormatTime(Date time, DateFormat dateformat) {
+		if (ToolUtil.isEmpty(time)) {
+			return StrUtil.EMPTY;
+		}
+		String dateStr = dateformat.format(time);
+		StringBuffer stringBuffer = new StringBuffer(dateStr);
+		// 转换后 时区为 +0800 需要变更为u +08:00
+		stringBuffer.insert(stringBuffer.length() - 2, ":");
+		return stringBuffer.toString();
 	}
 	/**
 	 * 计算 active silence key 超时时间
