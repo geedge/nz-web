@@ -562,8 +562,7 @@ public class StatServiceImpl implements StatService{
 		}
 		Map<String, Map<String, Object>> typeMap = allStatMap.stream().collect(Collectors.toMap(o-> (String)o.get("name"), Function.identity()));
 		Object groupParam = parseObject.get("group");		
-		
-		String whereFilter = "";
+
 		String groupName = "";
 		String selectStr = "";
 		String limitStr = "";
@@ -613,22 +612,6 @@ public class StatServiceImpl implements StatService{
 					name = nameColumn.get(name);
 				}else {
 					throw new NZException(RCode.SYSSTAT_NAME_IS_NULL);
-				}
-				String filterOp = (String) m.get("filterOp");
-				String filter = (String)m.get("filter");
-				if(StrUtil.isNotBlank(filterOp) && StrUtil.isEmpty(filter)) {
-					throw new NZException(RCode.SYSSTAT_FILTER_IS_NULL);
-				}else if(StrUtil.isNotBlank(filterOp) && StrUtil.isNotEmpty(filter)){
-					if(filterOp.equals("~")) {
-						filterOp = " like ";
-					}else if(filterOp.equals("!~")) {
-						filterOp = " not like ";
-					}
-					if(i>0) {
-						whereFilter = StrUtil.concat(false, whereFilter," and ",name,filterOp,"'",filter,"'");
-					}else {
-						whereFilter = StrUtil.concat(false, whereFilter, name,filterOp,"'",filter,"'");
-					}
 				}
 				if(i==0) {
 					groupName = StrUtil.concat(false, groupName," group by ",name);
@@ -681,9 +664,6 @@ public class StatServiceImpl implements StatService{
 
 		// 组装sql
 		String dataSql = (String) sqlParam.get("datasql");
-		if(StrUtil.isNotBlank(whereFilter)) {
-			whereFilter = StrUtil.concat(false, " where " , whereFilter);
-		}
 		if(StrUtil.isNotBlank(sort)) {
 			sort = StrUtil.concat(false,  " order by ", metricName," ", sort);
 		}
@@ -693,7 +673,7 @@ public class StatServiceImpl implements StatService{
 		if (StrUtil.isNotBlank(filterSqlStr)) {
 			dataSql = StrUtil.concat(false, dataSql, " where ", filterSqlStr);
 		}
-		String sql = StrUtil.concat(false, "select ",selectStr ," from ", "(" , dataSql , ") t" , whereFilter , groupName , sort , limitStr);
+		String sql = StrUtil.concat(false, "select ",selectStr ," from ", "(" , dataSql , ") t" , groupName , sort , limitStr);
 
 		logger.info(String.format("queryAnalyse sql : %s", sql));
 		
