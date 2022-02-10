@@ -35,4 +35,10 @@ public class StatAnalysis {
 	private Integer pid;
 	
 	private String time;
+	
+	private Integer projectId;
+	
+	private Integer dcId;
+	
+	private Integer severityId;
 }

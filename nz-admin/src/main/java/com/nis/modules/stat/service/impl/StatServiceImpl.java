@@ -30,7 +30,9 @@ import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
 import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.entity.AlertSeverityConf;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.alert.service.AlertSeverityService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetPing;
 import com.nis.modules.asset.entity.Dc;
@@ -96,6 +98,9 @@ public class StatServiceImpl implements StatService{
 	
 	@Autowired
 	private SysConfigService sysConfigService;
+	
+	@Autowired
+	private AlertSeverityService alertSeverityConfService;
 	
 	private Integer topNSize=10;
 		
@@ -498,25 +503,91 @@ public class StatServiceImpl implements StatService{
 			params.put("etime",new Date());
 		}
 		
+		if(ToolUtil.isEmpty(params.get("type"))) {
+			params.put("type","new");
+		}
+		
 		String formatStep = "%Y-%m-%d %H:00:00";
 		if(ToolUtil.isNotEmpty(params.get("step"))) {
 			String step = (String)params.get("step");
 			if(StringUtils.isEquals(step, "d")) {
 				formatStep = "%Y-%m-%d";
 			}
+		}else {
+			params.put("step","h");
 		}
-		params.put("step", formatStep);
 		
-		List<StatAnalysis> datas = statDao.selectAlertMessageTrend(params);
+		params.put("formatStep", formatStep);
+		
+		List<StatAnalysis> datas = null;
+		if(StrUtil.equals("new",(String)params.get("type"))) {
+			datas = statDao.selectAlertMessageNewTrend(params);
+		}else {
+			datas = statDao.selectAlertMessageTotalTrend(params);
+		}
+		
+		Map<Integer,String> map = null;
+		if(ToolUtil.isNotEmpty(params.get("dimension"))) {
+			String dimension = (String)params.get("dimension");
+			if(StrUtil.equals(dimension, "priority")) {
+				List<AlertSeverityConf> severitys = alertSeverityConfService.list();
+				map = severitys.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
+			}else if (StrUtil.equals(dimension, "datacenter")) {
+				List<Dc> dcs = dcService.list();
+				map = dcs.stream().collect(Collectors.toMap(Dc::getId, Dc::getName));
+			}else if (StrUtil.equals(dimension, "project")){
+				List<MonitorProject> projects = monitorProjectService.list();
+				map = projects.stream().collect(Collectors.toMap(MonitorProject::getId, MonitorProject::getName));
+			}
+		}
 		
 		if(ToolUtil.isNotEmpty(datas)) {
 			List<Object> values =new ArrayList<Object>();
-			for(StatAnalysis data : datas) {
-				List<Object> value = new ArrayList<Object>();
-				value.add(DateUtil.parse(data.getTime()).getTime());
-				value.add(data.getNum());
-				values.add(value);
-			}
+			Map<Integer, List<StatAnalysis>> handleDatas = null;
+			if(ToolUtil.isNotEmpty(params.get("dimension"))) {
+				String dimension = (String)params.get("dimension");
+				if(StrUtil.equals(dimension, "priority")) {
+					handleDatas = datas.stream().collect(Collectors.groupingBy(StatAnalysis::getSeverityId));
+				}else if (StrUtil.equals(dimension, "datacenter")) {
+					handleDatas = datas.stream().collect(Collectors.groupingBy(StatAnalysis::getDcId));
+				}else if (StrUtil.equals(dimension, "project")){
+					handleDatas = datas.stream().collect(Collectors.groupingBy(StatAnalysis::getProjectId));
+				}
+				
+				for(Integer key : map.keySet()) {
+					String name = map.get(key);
+					List<StatAnalysis> stats = handleDatas.get(key);
+					Map<String,String> metric = new HashMap<String,String>();
+					metric.put(dimension, name);
+					List<Object> vals = new ArrayList<Object>();
+					
+					if(ToolUtil.isEmpty(stats)) {
+						List<Object> val = new ArrayList<Object>();
+						val.add(0);
+						val.add(0);
+						vals.add(val);
+					}else {
+						for(StatAnalysis stat: stats) {
+							List<Object> val = new ArrayList<Object>();
+							val.add(DateUtil.parse(stat.getTime()).getTime());
+							val.add(stat.getTotal());
+							vals.add(val);
+						}
+					}
+					
+					Map<Object,Object> value = new HashMap<Object,Object>();
+					value.put("metric", metric);
+					value.put("values", vals);
+					values.add(value);
+				}
+			}else {
+				for(StatAnalysis data : datas) {
+					List<Object> value = new ArrayList<Object>();
+					value.add(DateUtil.parse(data.getTime()).getTime());
+					value.add(data.getNum());
+					values.add(value);
+				}
+			}			
 			
 			Map<String,List<Object>> handleData = new HashMap<String,List<Object>>();
 			handleData.put("values", values);
