@@ -1260,12 +1260,10 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         	panelType =  params.get("type").toString();
             if (!Constant.PanelType.TEMPLATE.getValue().equals(panelType)) {
                 params.put("panelType", panelType);
+            }else {
+            	panelId = "0";
             }
         	params.remove("type");
-        }
-        String pageSize = (String) params.get("pageSize");
-        if ("-1".equals(pageSize) && Constant.PanelType.TEMPLATE.getValue().equals(panelType) && panelId == null) {
-            panelId = "0";
         }
         List<VisualChart> chartList = new ArrayList<VisualChart>();
         if(chartId != null) {
@@ -1278,7 +1276,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             for (VisualPanel panel : panelList) {
             	Map<String, Object> param = new HashMap<String,Object>();
             	param.put("panelType", panelType);
-            	param.put("pageSize", "-1");
+            	param.put("pageSize", (String) params.get("pageSize"));
                 chartList.addAll(this.queryChartsByPanelId(panel.getId().toString(),null,param));
             }
         } else if(ToolUtil.isNotEmpty(panelId)){
