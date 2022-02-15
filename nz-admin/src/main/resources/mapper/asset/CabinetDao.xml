@@ -72,7 +72,7 @@
             </if>
 
             <if test="params.name != null and params.name != ''">
-                AND cab.name LIKE CONCAT('%', #{params.name}, '%')
+                AND locate(#{params.name} , cab.name)
             </if>
         </where>
 		<if test="params.orderBy == null or params.orderBy == ''">

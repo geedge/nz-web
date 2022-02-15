@@ -143,7 +143,7 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
 
     @Override
     public List<MonitorProject> queryModuleTree(String name) {
-        List<MonitorModule> moduleList = this.list(new LambdaQueryWrapper<MonitorModule>().like(StringUtils.isNotEmpty(name), MonitorModule::getName, name));
+        List<MonitorModule> moduleList = this.list(new LambdaQueryWrapper<MonitorModule>().like(StringUtils.isNotEmpty(name), MonitorModule::getName, Tool.StrUtil.likeEscape(name)));
         if (CollectionUtils.isEmpty(moduleList)) {
             return Collections.emptyList();
         }

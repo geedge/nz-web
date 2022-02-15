@@ -128,15 +128,15 @@
              </if>
 
              <if test="params.sn != null and params.sn != ''">
-                 AND asset.sn like CONCAT('%', #{params.sn}, '%')
+                 AND locate(#{params.sn} , asset.sn)
              </if>
 
              <if test="params.name != null and params.name != ''">
-                 AND asset.name like CONCAT('%', #{params.name}, '%')
+                 AND locate(#{params.name} , asset.name)
              </if>
 
              <if test="params.manageIp != null and params.manageIp != ''">
-                 AND asset.manage_ip like CONCAT('%', #{params.manageIp}, '%')
+                 AND locate(#{params.manageIp} , asset.manage_ip)
              </if>
 
              <if test="params.brandIds != null and params.brandIds.size > 0">
@@ -255,13 +255,13 @@
 				     </foreach>
              </if>
              <if test="params.sn != null and params.sn != ''">
-                 AND asset.sn like CONCAT('%', #{params.sn}, '%')
+                 AND locate(#{params.sn} , asset.sn)
              </if>
              <if test="params.name != null and params.name != ''">
-                 AND asset.name like CONCAT('%', #{params.name}, '%')
+                 AND locate(#{params.name} , asset.name)
              </if>
              <if test="params.manageIp != null and params.manageIp != ''">
-                 AND asset.manage_ip like CONCAT('%', #{params.manageIp}, '%')
+                 AND locate(#{params.manageIp} , asset.manage_ip)
              </if>
              <if test="params.brandIds != null and params.brandIds.size > 0">
                  AND asset.brand_id IN

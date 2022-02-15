@@ -6,6 +6,7 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
 import com.nis.modules.terminal.dao.TerminalCmdDao;
 import com.nis.modules.terminal.entity.TerminalCmd;
 import com.nis.modules.terminal.service.TerminalCmdService;
@@ -42,7 +43,7 @@ public class TerminalCmdServiceImpl extends ServiceImpl<TerminalCmdDao, Terminal
 
         List<TerminalCmd> list = this.list(new LambdaQueryWrapper<TerminalCmd>()
                 .eq(TerminalCmd::getUuid, params.get("uuid"))
-                .like(TerminalCmd::getCmd, cmd)
+                .like(TerminalCmd::getCmd, Tool.StrUtil.likeEscape(cmd))
                 .gt(TerminalCmd::getTime, time)
                 .orderByAsc(TerminalCmd::getId));
 

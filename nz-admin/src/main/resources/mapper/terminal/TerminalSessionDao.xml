@@ -17,7 +17,7 @@
             </if>
 
             <if test="params.loginUser != null and params.loginUser != ''">
-                AND ts.login_user like CONCAT('%', #{params.loginUser}, '%')
+                AND locate(#{params.loginUser} , ts.login_user)
             </if>
 
             <if test="params.state != null ">
@@ -25,15 +25,15 @@
             </if>
 
             <if test="params.uuid != null ">
-                AND ts.uuid like CONCAT('%', #{params.uuid}, '%')
+                AND locate(#{params.uuid} , ts.uuid)
             </if>
 
             <if test="params.remoteAddr != null and params.remoteAddr != ''">
-                AND ts.remote_addr like CONCAT('%', #{params.remoteAddr}, '%')
+                AND locate(#{params.remoteAddr} , ts.remote_addr)
             </if>
 
             <if test="params.host != null and params.host != ''">
-                AND ts.host like CONCAT('%', #{params.host}, '%')
+                AND locate(#{params.host} , ts.host)
             </if>
 
             <if test="params.startTime != null">
@@ -49,11 +49,11 @@
             </if>
 
             <if test="params.username != null and params.username != ''">
-                AND su.username like CONCAT('%', #{params.username}, '%')
+                AND locate(#{params.username} , su.username)
             </if>
 
             <if test="params.remoteAddr != null and params.remoteAddr != ''">
-                AND ts.remote_addr like CONCAT('%', #{params.remoteAddr}, '%')
+                AND locate(#{params.remoteAddr} , ts.remote_addr)
             </if>
 
         </where>

@@ -57,7 +57,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleDao, SysRoleEntity> i
                 new Query(SysRoleEntity.class).getPage(params),
                 new LambdaUpdateWrapper<SysRoleEntity>()
                         .eq(ToolUtil.isNotEmpty(params.get("id")), SysRoleEntity::getId, params.get("id"))
-                        .like(ToolUtil.isNotEmpty(params.get("name")), SysRoleEntity::getName, params.get("name"))
+                        .like(ToolUtil.isNotEmpty(params.get("name")), SysRoleEntity::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")))
         );
 
         return new PageUtils(page);

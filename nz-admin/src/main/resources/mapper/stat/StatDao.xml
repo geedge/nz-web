@@ -781,7 +781,7 @@
 						asset_asset aa left join dc d on aa.dc_id = d.id
 					<if test="params.q != null and params.q != ''">
 					where
-						aa.name like concat('%',#{params.q},'%') or aa.manage_ip like concat('%',#{params.q},'%')
+						locate(#{params.q},aa.name}) or locate(#{params.q},aa.manage_ip)
 					</if>
 					union 
 	        	</if>
@@ -792,7 +792,7 @@
 						monitor_project mp
 					<if test="params.q != null and params.q != ''">
 					where
-						mp.name like concat('%',#{params.q},'%')
+						locate(#{params.q},mp.name)
 					</if>
 					union
 	        	</if>
@@ -803,7 +803,7 @@
 						monitor_module mm left join monitor_project p on mm.project_id = p.id
 					<if test="params.q != null and params.q != ''">
 					where
-						mm.name like concat('%',#{params.q},'%')
+						locate(#{params.q},mm.name)
 					</if>
 					union 
 	        	</if>
@@ -816,7 +816,7 @@
 						LEFT JOIN monitor_project mp on mm.project_id = mp.id
 					<if test="params.q != null and params.q != ''">
 					where
-						me.name like concat('%',#{params.q},'%')
+						locate(#{params.q},me.name)
 					</if>
 					union 
 	        	</if>
@@ -827,7 +827,7 @@
 						dc d
 					<if test="params.q != null and params.q != ''">
 					where
-						d.name like concat('%',#{params.q},'%')
+						locate(#{params.q},d.name)
 					</if>
 					union
 	        	</if>
@@ -838,7 +838,7 @@
 						asset_model am LEFT JOIN asset_brand ab on am.brand_id = ab.id
 					<if test="params.q != null and params.q != ''">
 					where
-						am.name like concat('%',#{params.q},'%')
+						locate(#{params.q},am.name)
 					</if>
 					union
 	        	</if>
@@ -849,7 +849,7 @@
 						alert_rule ar  LEFT JOIN alert_severity_conf ac on ar.severity_id = ac.id
 					<if test="params.q != null and params.q != ''">
 					where
-						ar.name like concat('%',#{params.q},'%')
+						locate(#{params.q},ar.name)
 					</if>
 	        	</if>
 			</trim>		
@@ -869,7 +869,7 @@
 						asset_asset aa left join dc d on aa.dc_id = d.id
 					<if test="params.q != null and params.q != ''">
 					where
-						aa.name like concat('%',#{params.q},'%') or aa.manage_ip like concat('%',#{params.q},'%')
+						locate(#{params.q},aa.name)  or locate(#{params.q},aa.manage_ip)
 					</if>
 					union 
 	        	</if>
@@ -880,7 +880,7 @@
 						monitor_project mp
 					<if test="params.q != null and params.q != ''">
 					where
-						mp.name like concat('%',#{params.q},'%')
+						locate(#{params.q},mp.name)
 					</if>
 					union
 	        	</if>
@@ -891,7 +891,7 @@
 						monitor_module mm left join monitor_project p on mm.project_id = p.id
 					<if test="params.q != null and params.q != ''">
 					where
-						mm.name like concat('%',#{params.q},'%')
+						locate(#{params.q},mm.name)
 					</if>
 					union 
 	        	</if>
@@ -904,7 +904,7 @@
 						LEFT JOIN monitor_project mp on mm.project_id = mp.id
 					<if test="params.q != null and params.q != ''">
 					where
-						me.name like concat('%',#{params.q},'%')
+						locate(#{params.q},me.name)
 					</if>
 					union 
 	        	</if>
@@ -915,7 +915,7 @@
 						dc d
 					<if test="params.q != null and params.q != ''">
 					where
-						d.name like concat('%',#{params.q},'%')
+						locate(#{params.q},d.name)
 					</if>
 					union
 	        	</if>
@@ -926,7 +926,7 @@
 						asset_model am LEFT JOIN asset_brand ab on am.brand_id = ab.id
 					<if test="params.q != null and params.q != ''">
 					where
-						am.name like concat('%',#{params.q},'%')
+						locate(#{params.q},am.name)
 					</if>
 					union
 	        	</if>
@@ -937,7 +937,7 @@
 						alert_rule ar  LEFT JOIN alert_severity_conf ac on ar.severity_id = ac.id
 					<if test="params.q != null and params.q != ''">
 					where
-						ar.name like concat('%',#{params.q},'%')
+						locate(#{params.q},ar.name)
 					</if>
 	        	</if>
 			</trim>		

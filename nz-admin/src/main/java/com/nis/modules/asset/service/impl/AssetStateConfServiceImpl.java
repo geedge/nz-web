@@ -5,10 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetStateConfDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetStateConf;
@@ -51,7 +48,7 @@ public class AssetStateConfServiceImpl extends ServiceImpl<AssetStateConfDao, As
     public PageUtils queryPage(Map<String, Object> params) {
         LambdaQueryWrapper<AssetStateConf> queryWrapper = new LambdaQueryWrapper<AssetStateConf>().
                 eq(ToolUtil.isNotEmpty(params.get("id")), AssetStateConf::getId, params.get("id"))
-                .like(ToolUtil.isNotEmpty(params.get("name")), AssetStateConf::getName, params.get("name"));
+                .like(ToolUtil.isNotEmpty(params.get("name")), AssetStateConf::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")));
         IPage page = this.page(new Query(AssetStateConf.class).getPage(params), queryWrapper);
 
         List<AssetStateConf> data = page.getRecords();

@@ -51,7 +51,7 @@ public class AlertSeverityServiceImpl extends ServiceImpl<AlertSeverityDao, Aler
 
         List<AlertSeverityConf> list = this.list(new QueryWrapper<AlertSeverityConf>().lambda()
                                                     .in(ToolUtil.isNotEmpty(params.get("ids")),AlertSeverityConf::getId,String.valueOf(params.get("ids")).split(","))
-                                                    .like(ToolUtil.isNotEmpty(params.get("name")),AlertSeverityConf::getName,String.valueOf(params.get("name")))
+                                                    .like(ToolUtil.isNotEmpty(params.get("name")),AlertSeverityConf::getName,Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")))
                                                 );
 
         return list;

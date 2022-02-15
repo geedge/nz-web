@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetBrandDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
@@ -51,7 +48,7 @@ public class AssetBrandServiceImpl extends ServiceImpl<AssetBrandDao, AssetBrand
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         LambdaQueryWrapper<AssetBrand> queryWrapper = new LambdaQueryWrapper<AssetBrand>()
-                .like(ToolUtil.isNotEmpty(params.get("name")), AssetBrand::getName, params.get("name"));
+                .like(ToolUtil.isNotEmpty(params.get("name")), AssetBrand::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")));
         IPage page = this.page(new Query(AssetBrand.class).getPage(params), queryWrapper);
         return new PageUtils(page);
     }

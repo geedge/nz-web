@@ -30,7 +30,7 @@
 			LEFT JOIN ( SELECT model_id, count( 1 ) AS assetNum FROM asset_asset GROUP BY model_id ) asset ON model.id = asset.model_id
         <where>
             <if test="params.name != null and params.name != ''">
-                and model.name LIKE CONCAT('%', #{params.name}, '%')
+                and locate(#{params.name} , model.name)
             </if>
             <if test="params.brandIds != null">
             	and model.brand_id in 

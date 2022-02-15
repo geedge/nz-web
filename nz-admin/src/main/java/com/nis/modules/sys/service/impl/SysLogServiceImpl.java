@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.StringUtils;
+import com.nis.common.utils.Tool;
 import com.nis.modules.sys.dao.SysLogDao;
 import com.nis.modules.sys.entity.SysLogEntity;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -45,7 +46,7 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogDao, SysLogEntity> impl
     public PageUtils queryPage(Map<String, Object> params) {
         String username = (String) params.get("username");
         if (StringUtils.isNotEmpty(username)) {
-            List<SysUserEntity> userList = userService.list(new LambdaQueryWrapper<SysUserEntity>().like(SysUserEntity::getUsername, username).or().like(SysUserEntity::getName, username));
+            List<SysUserEntity> userList = userService.list(new LambdaQueryWrapper<SysUserEntity>().like(SysUserEntity::getUsername, Tool.StrUtil.likeEscape(username)).or().like(SysUserEntity::getName, Tool.StrUtil.likeEscape(username)));
             List<Long> userIds = userList.stream().map(SysUserEntity::getId).distinct().collect(Collectors.toList());
             params.put("userIds", userIds);
         }
