@@ -29,7 +29,7 @@
                 </foreach>
             </if>
             <if test="params.name != null">
-                and name like concat('%',#{params.name},'%')
+                and locate(#{params.name} , name)
             </if>
             <if test="params.state != null">
                 and state  = #{params.state}

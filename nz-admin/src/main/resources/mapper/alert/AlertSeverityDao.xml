@@ -40,7 +40,7 @@
                 </foreach>
             </if>
             <if test="params.name != null and params.name.length > 0">
-                and name like concat('%',#{params.name},'%')
+                and locate(#{params.name} , name)
             </if>
         </where>
         order by weight

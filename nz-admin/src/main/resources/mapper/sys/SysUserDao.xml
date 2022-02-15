@@ -36,7 +36,7 @@
 			</if>
 
 			<if test="params.name != null and params.name != ''">
-				AND (su.username like CONCAT('%', #{params.name}, '%') or su.name like CONCAT('%', #{params.name}, '%'))
+				AND ( locate(#{params.name} , su.username)  or locate(#{params.name} , su.name ) )
 			</if>
 		</where>
 	</select>

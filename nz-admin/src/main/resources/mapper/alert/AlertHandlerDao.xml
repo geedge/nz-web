@@ -204,7 +204,7 @@
 		LEFT JOIN dc dc on am.dc_id = dc.id
 		<where>
 			<if test="params.ruleName != null and params.ruleName != ''">
-				ar.name like concat('%', #{params.ruleName}, '%')
+				locate(#{params.ruleName} , ar.name)
 			</if>
 			<if test="params.severityIds != null and params.severity != ''">
 				AND am.severity_id in
@@ -213,11 +213,11 @@
 				</foreach>
 			</if>
 			<if test="params.summary != null and params.summary != ''">
-				AND am.summary like concat('%', #{params.summary}, '%')
+				AND locate(#{params.summary} , am.summary)
 			</if>
 
 			<if test="params.description != null and params.description != ''">
-				AND am.description like concat('%', #{params.description}, '%')
+				AND locate(#{params.description} , am.description)
 			</if>
 
 			<if test="params.ids != null and params.ids != ''">
@@ -272,16 +272,16 @@
 				</foreach>
 			</if>
 			<if test="params.labels != null and params.labels != ''">
-				AND am.labels like concat('%', #{params.labels}, '%')
+				AND locate(#{params.labels},am.labels)
 			</if>
 			<if test="params.endpointName != null and params.endpointName != ''">
-				AND e.name LIKE concat('%', #{params.endpointName}, '%')
+				AND locate(#{params.endpointName},e.name)
 			</if>
 			<if test="params.assetName != null and params.assetName != ''">
-				AND ass.name LIKE CONCAT('%', #{params.assetName}, '%')
+				AND locate(#{params.assetName},ass.name)
 			</if>
 			<if test="params.asset != null and params.asset != ''">
-				AND ass.name LIKE CONCAT('%', #{params.asset}, '%')
+				AND locate(#{params.asset},ass.name)
 			</if>
 		</where>
 		<if test="params.orderBy == null or params.orderBy == ''">
@@ -306,7 +306,7 @@
 		<where>
 			${columnId} is not null
 			<if test="params.ruleName != null and params.ruleName != ''">
-				AND ar.name like concat('%', #{params.ruleName}, '%')
+				AND locate(#{params.ruleName},ar.name)
 			</if>
 			<if test="params.severityIds != null and params.severity != ''">
 				AND am.severity_id in
@@ -315,11 +315,11 @@
 				</foreach>
 			</if>
 			<if test="params.summary != null and params.summary != ''">
-				AND am.summary like concat('%', #{params.summary}, '%')
+				AND locate(#{params.summary},am.summary)
 			</if>
 
 			<if test="params.description != null and params.description != ''">
-				AND am.description like concat('%', #{params.description}, '%')
+				AND locate(#{params.description},am.description)
 			</if>
 
 			<if test="params.ids != null and params.ids != ''">
@@ -374,16 +374,16 @@
 				</foreach>
 			</if>
 			<if test="params.labels != null and params.labels != ''">
-				AND am.labels like concat('%', #{params.labels}, '%')
+				AND locate(#{params.labels}, am.labels)
 			</if>
 			<if test="params.endpointName != null and params.endpointName != ''">
-				AND e.name LIKE concat('%', #{params.endpointName}, '%')
+				AND locate(#{params.endpointName},e.name )
 			</if>
 			<if test="params.assetName != null and params.assetName != ''">
-				AND ass.name LIKE CONCAT('%', #{params.assetName}, '%')
+				AND locate(#{params.assetName},ass.name)
 			</if>
 			<if test="params.asset != null and params.asset != ''">
-				AND ass.name LIKE CONCAT('%', #{params.asset}, '%')
+				AND locate(#{params.asset},ass.name)
 			</if>
 		</where>
 		GROUP BY ${columnId}

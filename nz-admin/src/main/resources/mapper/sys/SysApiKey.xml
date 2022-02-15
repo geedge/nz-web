@@ -39,7 +39,7 @@
 		    </foreach>
       	</if>
 		<if test="params.name !=null and params.name != ''">
-			and sak.name like CONCAT('%', #{params.name}, '%')
+			and locate(#{params.name} , sak.name)
 		</if>
     </select>
 

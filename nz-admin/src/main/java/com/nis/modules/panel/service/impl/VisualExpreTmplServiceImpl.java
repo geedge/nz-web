@@ -109,8 +109,8 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
     	}
         LambdaQueryWrapper<VisualExpressionTmpl> queryWrapper = new LambdaQueryWrapper<VisualExpressionTmpl>()
                 .in(ToolUtil.isNotEmpty(params.get("ids")), VisualExpressionTmpl::getId, asList)
-                .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, params.get("name"))
-                .like(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname, params.get("gname"));
+                .like(ToolUtil.isNotEmpty(params.get("name")), VisualExpressionTmpl::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")))
+                .like(ToolUtil.isNotEmpty(params.get("gname")), VisualExpressionTmpl::getGname,Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"gname")));
 
         IPage page = this.page(new Query(VisualExpressionTmpl.class).getPage(params), queryWrapper);
         return new PageUtils(page);
@@ -118,7 +118,7 @@ public class VisualExpreTmplServiceImpl extends ServiceImpl<VisualExpreTmplDao, 
 
     @Override
     public List<String> queryTmplsByGname(String gname) {
-        List<VisualExpressionTmpl> list = this.list(new LambdaQueryWrapper<VisualExpressionTmpl>().like(ToolUtil.isNotEmpty(gname), VisualExpressionTmpl::getGname, gname).orderByAsc(VisualExpressionTmpl::getGname));
+        List<VisualExpressionTmpl> list = this.list(new LambdaQueryWrapper<VisualExpressionTmpl>().like(ToolUtil.isNotEmpty(gname), VisualExpressionTmpl::getGname, Tool.StrUtil.likeEscape(gname)).orderByAsc(VisualExpressionTmpl::getGname));
         List<String> gnameList = list.stream().map(VisualExpressionTmpl::getGname).distinct().collect(Collectors.toList());
         return gnameList;
     }

@@ -83,7 +83,7 @@
             </if>
 
             <if test="params.content != null and params.content != ''">
-                AND mr.content like CONCAT('%', #{params.content}, '%')
+                AND locate(#{params.content} , mr.content)
             </if>
         </where>
     </select>

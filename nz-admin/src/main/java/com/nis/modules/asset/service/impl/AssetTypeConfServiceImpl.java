@@ -4,10 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetTypeConfDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetTypeConf;
@@ -50,7 +47,7 @@ public class AssetTypeConfServiceImpl extends ServiceImpl<AssetTypeConfDao, Asse
     public PageUtils queryPage(Map<String, Object> params) {
         LambdaQueryWrapper<AssetTypeConf> queryWrapper = new LambdaQueryWrapper<AssetTypeConf>()
                 .eq(ToolUtil.isNotEmpty(params.get("id")), AssetTypeConf::getId, params.get("id"))
-                .like(ToolUtil.isNotEmpty(params.get("name")), AssetTypeConf::getName, params.get("name"))
+                .like(ToolUtil.isNotEmpty(params.get("name")), AssetTypeConf::getName, Tool.StrUtil.likeEscape(Tool.MapUtil.getStr(params,"name")))
                 .eq(ToolUtil.isNotEmpty(params.get("vm")), AssetTypeConf::getVm, params.get("vm"))
                 .eq(ToolUtil.isNotEmpty(params.get("vmh")), AssetTypeConf::getVmh, params.get("vmh"))
                 .eq(ToolUtil.isNotEmpty(params.get("authProtocol")), AssetTypeConf::getAuthProtocol, params.get("authProtocol"))

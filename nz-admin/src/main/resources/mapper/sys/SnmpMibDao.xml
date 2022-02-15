@@ -44,8 +44,8 @@
         </if>
 
         <if test="params.name != null and params.name != ''">
-            AND sm.name like CONCAT('%', #{params.name}, '%')
-            OR sm.file_name LIKE CONCAT('%', #{params.name}, '%')
+            AND locate(#{params.name} , sm.name )
+            OR locate(#{params.name} , sm.file_name)
         </if>
     </select>
 

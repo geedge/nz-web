@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.nis.common.utils.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +40,7 @@ public class AssetFieldGroupServiceImpl extends ServiceImpl<AssetFieldGroupDao,A
 	public PageUtils queryList(Map<String, Object> params) {
 		String name = (String) params.get("name");
 		IPage page = new Query(AssetFieldGroup.class).getPage(params);
-		IPage<AssetFieldGroup> result = this.page(page, new QueryWrapper<AssetFieldGroup>().lambda().like(ObjectUtil.isNotEmpty(name), AssetFieldGroup::getName, name));
+		IPage<AssetFieldGroup> result = this.page(page, new QueryWrapper<AssetFieldGroup>().lambda().like(ObjectUtil.isNotEmpty(name), AssetFieldGroup::getName, Tool.StrUtil.likeEscape(name)));
 		return new PageUtils(result);
 	}
 

@@ -400,7 +400,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
 
     @Override
     public List<MonitorProject> queryEndpointTree(String name) {
-        List<MonitorEndpoint> endpointList = this.list(new LambdaQueryWrapper<MonitorEndpoint>().like(StringUtils.isNotEmpty(name), MonitorEndpoint::getName, name));
+        List<MonitorEndpoint> endpointList = this.list(new LambdaQueryWrapper<MonitorEndpoint>().like(StringUtils.isNotEmpty(name), MonitorEndpoint::getName, Tool.StrUtil.likeEscape(name)));
         if (CollectionUtils.isEmpty(endpointList)) {
             return Collections.emptyList();
         }

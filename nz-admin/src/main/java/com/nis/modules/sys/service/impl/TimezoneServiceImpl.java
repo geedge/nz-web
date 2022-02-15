@@ -14,7 +14,7 @@ import java.util.List;
 public class TimezoneServiceImpl extends ServiceImpl<TimezoneDao, Timezone> implements TimezoneService{
     @Override
     public List<Timezone> queryTimezone(String name) {
-        List<Timezone> list = this.list(new QueryWrapper<Timezone>().lambda().like(Tool.StrUtil.isNotBlank(name), Timezone::getName, name));
+        List<Timezone> list = this.list(new QueryWrapper<Timezone>().lambda().like(Tool.StrUtil.isNotBlank(name), Timezone::getName, Tool.StrUtil.likeEscape(name)));
         return list;
     }
 }

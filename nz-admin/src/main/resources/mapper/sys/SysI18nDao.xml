@@ -28,7 +28,7 @@
 		left join sys_user su on si.uby = su.id
 		<where>
 			<if test="params.q != null and params.q != ''">
-				and (si.lang like CONCAT('%', #{params.q}, '%') or si.code like CONCAT('%', #{params.q}, '%') or si.value like CONCAT('%', #{params.q}, '%') or si.remark like CONCAT('%', #{params.q}, '%') )
+				and (locate(#{params.q} , si.lang)  or locate(#{params.q} , si.code)  or locate(#{params.q} , si.value)  or locate(#{params.q} , si.remark)  )
 			</if>
 			<if test="params.ids != null">
                 and si.id in 

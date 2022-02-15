@@ -56,7 +56,7 @@
 			</if>
 
 			<if test="params.host != null and params.host != ''">
-				AND ps.host like CONCAT('%', #{params.host}, '%')
+				AND locate(#{params.host} , ps.host)
 			</if>
 
 			<if test="params.port != null and params.port != ''">

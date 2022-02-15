@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import com.nis.common.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +15,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.SnmpUtil;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldGroup;
 import com.nis.modules.asset.entity.AssetFieldMeta;
@@ -43,7 +39,7 @@ public class SnmpCredentialServiceImpl extends ServiceImpl<SnmpCredentialDao,Snm
 		
 		IPage result = this.page(new Query(SnmpCredential.class).getPage(params), new QueryWrapper<SnmpCredential>().lambda()
 				.in(ToolUtil.isNotEmpty(ids), SnmpCredential::getId, ToolUtil.isNotEmpty(ids) ? Arrays.asList(ids.toString().split(",")) : null)
-				.like(ToolUtil.isNotEmpty(name), SnmpCredential::getName, name)
+				.like(ToolUtil.isNotEmpty(name), SnmpCredential::getName, Tool.StrUtil.likeEscape(name))
 				.in(ToolUtil.isNotEmpty(types), SnmpCredential::getType, ToolUtil.isNotEmpty(types) ? Arrays.asList(types.toString().split(",")) : null));
 		
 		return new PageUtils(result);

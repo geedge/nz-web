@@ -37,13 +37,13 @@
                     left join sys_api_key sak on sl.api_key_id = sak.id
                     <where>
                         <if test="params.operation != null and params.operation != ''">
-                                AND sl.operation like CONCAT('%', #{params.operation}, '%')
+                                AND locate(#{params.operation} , sl.operation)
                         </if>
                         <if test="params.state != null and params.state != ''">
                                 AND sl.state = #{params.state}
                         </if>
                         <if test="params.type != null and params.type != ''">
-                                AND sl.type like CONCAT('%', #{params.type}, '%')
+                                AND locate(#{params.type} , sl.type)
                         </if>
                         <if test="params.userIds != null and params.userIds.size > 0">
                                 AND sl.user_id IN
@@ -55,7 +55,7 @@
                                 AND sl.user_id = #{params.userId}
                         </if>
                         <if test="params.name != null and params.name != ''">
-                                AND (su.name like CONCAT('%', #{params.name}, '%') or su.username like CONCAT('%', #{params.name}, '%'))
+                                AND (locate(#{params.name} , su.name)  or locate(#{params.name} , su.username))
                         </if>
                         <if test="params.ip != null and params.ip != ''">
                                 AND sl.ip = #{params.ip}
@@ -67,10 +67,10 @@
 						    </foreach>
                         </if>
                         <if test="params.params != null and params.params != ''">
-                        	AND sl.params like CONCAT('%', #{params.params}, '%')
+                        	AND locate(#{params.params} , sl.params)
                         </if>
                         <if test="params.response != null and params.response != ''">
-                        	AND sl.response like CONCAT('%', #{params.response}, '%')
+                        	AND locate(#{params.response} , sl.response)
                         </if>
                         <if test="params.exception != null and params.exception != ''">
                         	AND sl.exception = #{params.exception}

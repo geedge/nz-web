@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletResponse;
 
+import com.nis.common.utils.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.TransientDataAccessResourceException;
 import org.springframework.stereotype.Service;
@@ -151,7 +152,7 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
 
 	@Override
 	public List<String> queryTopoIconUnitName(String name) {
-		List<TopoIcon> topoIcons = topoIconDao.selectList(new LambdaQueryWrapper<TopoIcon>().like(TopoIcon::getName, name));
+		List<TopoIcon> topoIcons = topoIconDao.selectList(new LambdaQueryWrapper<TopoIcon>().like(TopoIcon::getName, Tool.StrUtil.likeEscape(name)));
 		List<String> result = topoIcons.stream().map(TopoIcon::getUnit).collect(Collectors.toList());
 		return result;
 	}
