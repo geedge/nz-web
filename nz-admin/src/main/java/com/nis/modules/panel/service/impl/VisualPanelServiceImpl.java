@@ -426,15 +426,16 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
         ArrayList<String> headerInfos = new ArrayList<>(exportHeaderMap.keySet());
         int successNum = 0;
+        List<Map<Integer, String>> handleImportData = null;
         if(StrUtil.equals(Constant.PanelType.DASHBOARD.getValue(),type)) {
             // 处理excel表数据 将group chart相关排在前列
-            List<Map<Integer, String>> handleImportData = this.groupChartRowHandle(importDataList, 1);
+        	handleImportData = this.groupChartRowHandle(importDataList, 1);
             successNum = this.saveDashboardChartData(handleImportData, failDetails, headerInfos, seqUUID, chartTypeMapByLanguage);
         } else {
-            List<Map<Integer, String>> handleImportData = this.groupChartRowHandle(importDataList, 0);
+            handleImportData = this.groupChartRowHandle(importDataList, 0);
             successNum = this.saveAssetEndpointChartData(handleImportData, failDetails, seqUUID, type, linkId, chartTypeMapByLanguage,headerInfos);
         }
-        int totalNum = importDataList.size();
+        int totalNum = ToolUtil.isNotEmpty(handleImportData) ? handleImportData.size() : 0;
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
