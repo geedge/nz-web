@@ -296,14 +296,20 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     
     @SuppressWarnings("unlikely-arg-type")
 	private void handleResuleList(List<MonitorEndpoint> endpointList) {
-        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list();
-
+    	List<Integer> endpointIds = endpointList.stream().map(MonitorEndpoint::getId).collect(Collectors.toList());
+        List<MonitorEndpointConfig> endpointConfigs = endpointConfigService.list(new QueryWrapper<MonitorEndpointConfig>().lambda().in(MonitorEndpointConfig::getEndpointId, endpointIds));
+        Map<Integer, List<MonitorEndpointConfig>> configsByEndpointIds = endpointConfigs.stream().collect(Collectors.groupingBy(MonitorEndpointConfig::getEndpointId));
+        List<MonitorEndpointState> endpointStates = endpointStateService.list(new QueryWrapper<MonitorEndpointState>().lambda().in(MonitorEndpointState::getEndpointId, endpointIds));
+        Map<Integer, MonitorEndpointState> endpointStateMap = endpointStates.stream().collect(Collectors.toMap(MonitorEndpointState::getConfigId, Function.identity()));
         for (MonitorEndpoint endpoint : endpointList) {
-            List<MonitorEndpointConfig> configsByEndpointId = endpointConfigs.stream().filter(endpointConfig -> endpoint.getId().equals(endpointConfig.getEndpointId())).collect(Collectors.toList());
+            List<MonitorEndpointConfig> configsByEndpointId = configsByEndpointIds.get(endpoint.getId());
+            if(ToolUtil.isEmpty(configsByEndpointId)) {
+            	continue;
+            }
             for (MonitorEndpointConfig endpointConfig : configsByEndpointId) {
                 endpointConfig.setVer(endpointConfig.getVersion());
 
-                MonitorEndpointState endpointStateByConfigId = endpointStateService.getOne(new LambdaQueryWrapper<MonitorEndpointState>().eq(MonitorEndpointState::getConfigId, endpointConfig.getId()));
+                MonitorEndpointState endpointStateByConfigId = endpointStateMap.get(endpointConfig.getId());
                 if (endpointStateByConfigId == null)
                     continue;
                 endpointConfig.setState(endpointStateByConfigId.getState());
