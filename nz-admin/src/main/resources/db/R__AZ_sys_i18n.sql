@@ -4998,7 +4998,7 @@ INSERT INTO `sys_i18n` VALUES (5542, 'dashboard.panel.chartForm.datasource', 'en
 INSERT INTO `sys_i18n` VALUES (5543, 'dashboard.panel.chartForm.datasource', 'zh', 'dashboard.panel.chartForm.datasource', '数据源', '', '2021-12-07 13:52:23', 1);
 INSERT INTO `sys_i18n` VALUES (5544, 'dashboard.panel.chartForm.datasource.comment', 'en', 'dashboard.panel.chartForm.datasource.comment', 'Datasource  Example:metrics,logs,system,misc', '', '2021-12-07 13:52:43', 1);
 INSERT INTO `sys_i18n` VALUES (5545, 'dashboard.panel.chartForm.datasource.comment', 'zh', 'dashboard.panel.chartForm.datasource.comment', '数据源 示例 metrics,logs,system,misc', '', '2021-12-07 13:53:16', 1);
-INSERT INTO `sys_i18n` VALUES (5546, 'config.system.license.license', 'en', 'config.system.license.license', 'License', '', '2021-12-10 01:27:39', 1);
+INSERT INTO `sys_i18n` VALUES (5546, 'config.system.license.license', 'en', 'config.system.license.license', 'Licenses', '', '2021-12-10 01:27:39', 1);
 INSERT INTO `sys_i18n` VALUES (5547, 'config.system.license.license', 'zh', 'config.system.license.license', '证书', '', '2021-12-10 01:28:20', 1);
 INSERT INTO `sys_i18n` VALUES (5548, 'license.active', 'en', 'license.active', 'Active', '', '2021-12-10 01:28:47', 1);
 INSERT INTO `sys_i18n` VALUES (5549, 'license.active', 'zh', 'license.active', 'Active', '', '2021-12-10 01:29:51', 1);
@@ -5140,5 +5140,7 @@ INSERT INTO `sys_i18n` VALUES (5684, '811026', 'en', 'FILTER_ALERT_RULE_IS_NULL'
 INSERT INTO `sys_i18n` VALUES (5685, '811026', 'zh', 'FILTER_ALERT_RULE_IS_NULL', '告警规则名称参数为空', '', '2022-02-08 06:12:34', 1);
 INSERT INTO `sys_i18n` VALUES (5686, '811027', 'en', 'FILTER_ENDPOINT_IS_NULL', 'filter endpoint is null', '', '2022-02-08 06:13:08', 1);
 INSERT INTO `sys_i18n` VALUES (5687, '811027', 'zh', 'FILTER_ENDPOINT_IS_NULL', 'Endpoint参数为空', '', '2022-02-08 06:13:29', 1);
+INSERT INTO `sys_i18n` VALUES (5688, 'configuration_notification_setting', 'en', 'configuration_notification_setting', 'Notification Settings', '', '2022-02-15 18:13:33', 1);
+INSERT INTO `sys_i18n` VALUES (5689, 'configuration_notification_setting', 'zh', 'configuration_notification_setting', '通知配置', '', '2022-02-15 18:13:49', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
