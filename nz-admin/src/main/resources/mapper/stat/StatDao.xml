@@ -781,7 +781,7 @@
 						asset_asset aa left join dc d on aa.dc_id = d.id
 					<if test="params.q != null and params.q != ''">
 					where
-						locate(#{params.q},aa.name}) or locate(#{params.q},aa.manage_ip)
+						locate( #{params.q} , aa.name) or locate(#{params.q},aa.manage_ip)
 					</if>
 					union 
 	        	</if>
