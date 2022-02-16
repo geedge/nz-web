@@ -100,7 +100,8 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 				.and(host).notNull(RCode.PROMSERVER_HOST_ISNULL).maxLength(64)
 				.and(type).notNull(RCode.PROMSERVER_TYPE_ISNULL)
 				.and(port).notNull(RCode.PROMSERVER_PORT_ISNULL).maxLength(10)
-				.and(promserverEntity.getToken()).notNull(RCode.PROMSERVER_TOKEN_ISNULL).maxLength(64);
+				.and(promserverEntity.getToken()).notNull(RCode.PROMSERVER_TOKEN_ISNULL).maxLength(64)
+		        .and(promserverEntity.getName()).notNull(RCode.PROMSERVER_NAME_ISNULL).maxLength(256);
 
 		// 校验ip是否合法
 		boolean ipFlag = CommonUtils.checkIp(host);

@@ -14,6 +14,7 @@
 	<result property="checkTime" column="check_time"/>
 	<result property="statusInfo" column="status_info"/>
 	<result property="token" column="token"/>
+	<result property="name" column="name"/>
 
 	<association property="dc" columnPrefix="d_" javaType="com.nis.modules.asset.entity.Dc">
 		<id property="id" column="id"/>
@@ -69,6 +70,9 @@
 			
 			<if test="params.type != null and params.type != ''">
 				AND ps.type = #{params.type}
+			</if>
+			<if test="params.name != null and params.name != ''">
+				AND ps.name = #{params.name}
 			</if>
 		</where>
 	</select>

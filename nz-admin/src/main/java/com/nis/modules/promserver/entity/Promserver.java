@@ -17,6 +17,8 @@ public class Promserver {
 	@NotBlank(message="参数名不能为空")
 	private Integer dcId;
 	@NotBlank(message="参数名不能为空")
+	private String name;
+	@NotBlank(message="参数名不能为空")
 	private String host;
 	@NotBlank(message="参数名不能为空")
 	private Integer type;
