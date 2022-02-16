@@ -58,6 +58,7 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 			StopWatch sw = new StopWatch("silence");
 	        sw.start("silence conf active to expired");
 			if(Tool.CollUtil.isNotEmpty(silenceList)) {
+				log.info("silence conf active to expired, size:{}",Tool.CollUtil.size(silenceList));
 				//有状态变化 silence 
 				//1、alert message 判断是否需要移动到 history 表
 				//2 修改 silence conf 状态
@@ -70,6 +71,7 @@ public class AlertSilenceStatusJob extends QuartzJobBean{
 			sw.start("silence conf pending to active");
 			silenceList = handlerService.selectPendingToActiveSilence();
 			if(Tool.CollUtil.isNotEmpty(silenceList)) {
+				log.info("silence conf pending to active, size:{}",Tool.CollUtil.size(silenceList));
 				//1、判断当前 alert_message_active表中数据是否有符合 静默规则的
 				//2、修改 silence conf 状态
 				handlerService.handleSilenceConfPendingToActive(silenceList);
