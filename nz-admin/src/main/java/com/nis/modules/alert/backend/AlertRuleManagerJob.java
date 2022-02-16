@@ -70,7 +70,7 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 	// 计数器，每 forceSync 个周期 执行一次强制执行
 	private volatile static Integer counter = 1;
 
-	@Value("${alert.rule.force.sync:5}")
+	@Value("${alert.rule.force.sync:30}")
 	private Integer forceSync;
 	
 	@Override
