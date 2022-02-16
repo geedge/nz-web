@@ -1,18 +1,23 @@
 package com.nis.modules.agent.job;
 
-import cn.hutool.core.net.url.UrlBuilder;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.SDKGlobalConfiguration;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
+import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
+import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysConfigEntity;
 import com.nis.modules.sys.service.SysConfigService;
-import io.minio.BucketExistsArgs;
-import io.minio.GetBucketLifecycleArgs;
-import io.minio.MinioClient;
-import io.minio.SetBucketLifecycleArgs;
-import io.minio.messages.*;
-import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
@@ -21,21 +26,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
-import javax.net.ssl.*;
-import java.nio.charset.Charset;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.time.ZonedDateTime;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @DisallowConcurrentExecution
 public class CortexHistoryDataDelJob extends QuartzJobBean {
+
+    static {
+        System.setProperty(SDKGlobalConfiguration.DISABLE_CERT_CHECKING_SYSTEM_PROPERTY, "true");
+    }
 
     private static Log log = Log.get();
 
@@ -89,49 +90,52 @@ public class CortexHistoryDataDelJob extends QuartzJobBean {
         String connectionScheme = sysConfigMap.get(Constant.CORTEX_MONITOR_SCHEME);
         connectionScheme = StrUtil.isEmpty(connectionScheme) ? "http" : connectionScheme;
 
-        String minioEndpoint = String.format("%s://%s/", connectionScheme, sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT));
+        String minioEndpoint = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT);
         String accessKey = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY);
         String secretKey = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_SECRET_ACCESS_KEY);
         String bucketName = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET);
         String regionStr = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_REGION);
 
         try {
-            UrlBuilder urlBuilder = UrlBuilder.ofHttp(minioEndpoint, Charset.forName("UTF-8"));
-            MinioClient minioClient = MinioClient.builder()
-                    .endpoint(urlBuilder.getHost(), urlBuilder.getPort(), StrUtil.equalsIgnoreCase(connectionScheme, "https") ? true : false)
-                    .credentials(accessKey, secretKey)
-                    // region 不能为 "" ， 为 null 表示不设置
-                    .region(StrUtil.isEmpty(regionStr) ? null : regionStr)
-                    // https 取消 SSL 验证
-                    .httpClient(getUnsafeOkHttpClent())
+            AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
+            ClientConfiguration clientConfig = new ClientConfiguration();
+            clientConfig.setProtocol(Protocol.valueOf(connectionScheme.toUpperCase()));
+
+            AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+                    .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                    .withClientConfiguration(clientConfig)
+                    .withEndpointConfiguration(
+                            new AwsClientBuilder.EndpointConfiguration(minioEndpoint, StrUtil.isEmpty(regionStr) ? null : regionStr)
+                    )
                     .build();
 
-            boolean bucketExists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            boolean bucketExists = s3Client.doesBucketExistV2(bucketName);
             if (bucketExists) {
                 log.info(String.format("bucket %s exists", bucketName));
                 // 查询过期数据，设置存储桶生命周期
                 String metricsStorageRetentionDay = sysConfigMap.get(Constant.SYSCONFIG_KEY_METRICS_STORAGE_RETENTION);
 
-                // cortex 生命周期策略 /fake 目录下 文件保存 metricsStorageRetentionDay d
-                List<LifecycleRule> rules = new LinkedList<>();
-                rules.add(
-                        new LifecycleRule(
-                                Status.ENABLED,
-                                null,
-                                new Expiration((ZonedDateTime) null, Integer.valueOf(metricsStorageRetentionDay), null),
-                                new RuleFilter("fake/"),
-                                "cortexExpirationRule",
-                                null,
-                                null,
-                                null));
-                LifecycleConfiguration config = new LifecycleConfiguration(rules);
-                minioClient.setBucketLifecycle(SetBucketLifecycleArgs.builder().bucket(bucketName).config(config).build());
+                // Create a rule to archive objects with the "glacierobjects/" prefix to Glacier immediately.
+                BucketLifecycleConfiguration.Rule rule1 = new BucketLifecycleConfiguration.Rule()
+                        .withId("cortexExpirationRule")
+                        .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("fake/")))
+                        .withExpirationInDays(Integer.valueOf(metricsStorageRetentionDay))
+                        .withStatus(BucketLifecycleConfiguration.ENABLED);
+
+                // Add the rules to a new BucketLifecycleConfiguration.
+                BucketLifecycleConfiguration configuration = new BucketLifecycleConfiguration().withRules(Arrays.asList(rule1));
+                // Save the configuration.
+                s3Client.setBucketLifecycleConfiguration(bucketName, configuration);
 
                 // 获取配置
-                LifecycleConfiguration lifecycleConfiguration = minioClient.getBucketLifecycle(GetBucketLifecycleArgs.builder().bucket(bucketName).build());
-                List<LifecycleRule> rules1 = lifecycleConfiguration.rules();
-                for (LifecycleRule l : rules1) {
-                    log.info(String.format("Lifecycle status is %s , Lifecycle prefix is %s , Lifecycle expiration days is %s", l.status(), l.filter().prefix(), l.expiration().days()));
+                // Retrieve the configuration.
+                // Verify that the configuration now has one rules. prefix: fake/ expirationInDays: sysconfig.metricsStorageRetentionDay
+                BucketLifecycleConfiguration bucketLifecycleConfiguration = s3Client.getBucketLifecycleConfiguration(bucketName);
+                List<BucketLifecycleConfiguration.Rule> rules1 = bucketLifecycleConfiguration.getRules();
+                for (BucketLifecycleConfiguration.Rule l : rules1) {
+                    LifecyclePrefixPredicate predicate = (LifecyclePrefixPredicate) l.getFilter().getPredicate();
+                    String prefix = predicate.getPrefix();
+                    log.info(String.format("Lifecycle status is %s , Lifecycle prefix is %s , Lifecycle expiration days is %s", l.getStatus(), prefix, l.getExpirationInDays()));
                 }
 
                 // 标识重置
@@ -146,45 +150,4 @@ public class CortexHistoryDataDelJob extends QuartzJobBean {
         }
     }
 
-    /**
-     * 不校验 minio server 证书
-     *
-     * @return
-     * @throws KeyManagementException
-     */
-    public OkHttpClient getUnsafeOkHttpClent() throws KeyManagementException {
-        try {
-            final TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        @Override
-                        public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                        }
-
-                        @Override
-                        public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                        }
-
-                        @Override
-                        public X509Certificate[] getAcceptedIssuers() {
-                            return new X509Certificate[]{};
-                        }
-                    }
-            };
-            final SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, trustAllCerts, new SecureRandom());
-            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-            OkHttpClient.Builder builder = new OkHttpClient.Builder();
-            builder.sslSocketFactory(sslSocketFactory);
-            builder.hostnameVerifier(new HostnameVerifier() {
-                @Override
-                public boolean verify(String s, SSLSession sslSession) {
-                    return true;
-                }
-            });
-            return builder.build();
-        } catch (NoSuchAlgorithmException e) {
-            log.error(e);
-        }
-        return null;
-    }
 }
