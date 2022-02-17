@@ -130,13 +130,14 @@ public class AlertHanlderThread implements Runnable {
 							}
 							//首次收到 active 消息变更为expired 消息，更新状态
 							if(Tool.StrUtil.isNotBlank(activeRk)) {
-								log.debug("告警失效 {}", JSONObject.toJSONString(message));
+								log.info("active->expired, {}", JSONObject.toJSONString(message));
 								message.setId(Tool.NumberUtil.toBigInteger(activeRk).longValue());
 								//删除 active 表数据，history新增一条，推送邮件通知队列
 								messageHandlerService.handleMessageExpiredBatch(Tool.ListUtil.toList(message), Constant.ALERT_MESSAGE_ACTIVE_STATE);
 							}
 							//首次收到 silence消息变更为expired 消息，更新状态
 							if(Tool.StrUtil.isNotBlank(silenceRk)) {
+								log.info("silence->expired, {}", JSONObject.toJSONString(message));
 								message.setId(Tool.NumberUtil.toBigInteger(silenceRk).longValue());
 								messageHandlerService.handleMessageExpiredBatch(Tool.ListUtil.toList(message), Constant.ALERT_MESSAGE_SILENCE_STATE);
 								continue;
@@ -186,6 +187,7 @@ public class AlertHanlderThread implements Runnable {
 						message.setId(messageId);
 						// 判断 是否符合alert slience 规则
 						List<AlertSilenceConf> silenceList = messageHandlerService.judgeAlertMessageSilence(message);
+						log.info("first alert message: {}, match silence size: {}", Tool.JSONUtil.toJsonStr(message),Tool.CollUtil.size(silenceList));
 						if (Tool.CollectionUtil.isEmpty(silenceList)) {// 未匹配任何告警静默规则,
 							// 判断是否已经新产生告警
 							message.setTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE);

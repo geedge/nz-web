@@ -162,8 +162,6 @@ public class AlertRuleManagerJob extends QuartzJobBean {
 				Integer alertRuleId = Tool.NumberUtil.parseInt(keyArr[1]);
 				hashIdMap.put(hash, alertRuleId);
 			});
-			log.info(Tool.JSONUtil.toJsonStr(hashIdMap));
-			log.info(Tool.JSONUtil.toJsonStr(newAlertRuleMap));
 			// 1、停掉已删除job
 			for (Entry<String, Integer> en : hashIdMap.entrySet()) {
 				if (!newAlertRuleMap.containsKey(en.getKey())) {
