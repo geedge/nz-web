@@ -113,6 +113,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 
 			Set<String> newAlertHash = Tool.CollUtil.newHashSet();
 			List<AlertMessageReceiveDTO> messages = Tool.ListUtil.list(true);
+			List<AlertMessageReceiveDTO> evalMessages = Tool.ListUtil.list(true);
 			int timeout = alertRuleEntity.getExpiredTimeout();
 			if (dataArr != null && dataArr.size() > 0) {
 				Iterator<Object> ite = dataArr.iterator();
@@ -132,7 +133,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
 						message.setState(Constant.AlertMessageStatus.PENDING.getValue());
 						message.setValue(values.getString(1));
-						messages.add(message);
+						evalMessages.add(message);
 						continue;
 					}
 					/*
@@ -148,6 +149,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 						message.setState(Constant.AlertMessageStatus.FIRING.getValue());
 						message.setValue(values.getString(1));
 						messages.add(message);
+						evalMessages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: active,content : {}",
 									Tool.JSONUtil.toJsonStr(message));
@@ -175,6 +177,7 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 						message.setState(Constant.AlertMessageStatus.INACTIVE.getValue());
 						message.setValue(Tool.StrUtil.EMPTY);
 						messages.add(message);
+						evalMessages.add(message);
 						if (log.isDebugEnabled()) {
 							log.debug("add new alert message,state: expired,content : {}",
 									Tool.JSONUtil.toJsonStr(message));
@@ -185,8 +188,10 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 				}
 			}
 			if (messages.size() > 0) {
-				evalLog.setMessages(messages);
 				alertMessageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(messages));
+			}
+			if (evalMessages.size() > 0) {
+				evalLog.setMessages(evalMessages);
 			}
 			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId,
 					alertRuleEntity.getInr(), type, messages.size());
