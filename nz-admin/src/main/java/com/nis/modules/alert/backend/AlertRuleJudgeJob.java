@@ -6,14 +6,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.quartz.DisallowConcurrentExecution;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONArray;
@@ -31,19 +34,15 @@ import com.nis.modules.alert.service.AlertRuleEvalLogService;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
-import com.sun.mail.handlers.message_rfc822;
 
 import cn.hutool.core.date.StopWatch;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import lombok.Data;
 
-@Data
 @Component
-@Scope("prototype")
-public class AlertRuleJudgeRunnable implements Runnable {
+@DisallowConcurrentExecution
+public class AlertRuleJudgeJob extends QuartzJobBean {
 	private static final Log log = Log.get();
-	private AlertRuleEntity alertRuleEntity;
-	private volatile Future<?> future;
 	@Autowired
 	private PromserverService promService;
 	@Autowired
@@ -54,40 +53,34 @@ public class AlertRuleJudgeRunnable implements Runnable {
 	private AlertMessageService alertMessageService;
 	@Autowired
 	private SysConfigService sysConfigService;
-	// 运行标识
-	private volatile boolean runFlag = true;
-	// 是否告警规则删除
-	private volatile boolean cleanCache = false;
-	/**
-	 * alert 状态 key
-	 */
-	private static final String ALERT_FOR_STATE_KEY_FORMAT = "alert_for_state:%s";
 
 	/**
 	 * alert rule 查询告警数据 向前偏移
 	 */
 	@Value("${alert.rule.query.offset:0}")
 	private Long queryOffsetSec;
-	/*
-	 * query path 模板
-	 */
-	private final static Map<Integer, String> QUERY_PATH_FORMAT = Tool.MapUtil
-			.builder(1, "/api/v1/query?query=%s&time=%s") // 指标查询 path 模板
-			.put(2, "%s/loki/proxy/loki/api/v1/query?query=%s&limit=1&time=%s").build(); // 日志查询path 模板
 
-	public AlertRuleJudgeRunnable() {}
 
 	@Override
-	public void run() {
+	protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+		JobDataMap jobDataMap = context.getJobDetail().getJobDataMap();
+		AlertRuleEntity alertRuleEntity = (AlertRuleEntity) jobDataMap.get(AlertContext.JOB_DATA_KEY_ALERT_RULE_ENTITY);
 		Integer alertRuleId = alertRuleEntity.getId();
 		Thread.currentThread().setName(String.format("alertRuleJuage-%s", alertRuleId));
+		// 检查 haMode
+		String serverId = (String) redisTemplate.opsForValue().get(Constant.SYS_HA_LOCK);
+		if (!StrUtil.equals(serverId, Constant.SERVER_ID)) {
+			log.info("skip execute, SERVER_ID: {}, ruleId: {}",Constant.SERVER_ID, alertRuleId);
+			return;
+		}
+
 		StopWatch stopWatch = Tool.DateUtil.createStopWatch();
 		stopWatch.start();
 		// type 类型，1：metrics，2：logs
 		Integer type = alertRuleEntity.getType();
 		log.info("judge start,ruleId:{},interval:{}s,type:{}", alertRuleId, alertRuleEntity.getInr(), type);
 		// 获取当前所有缓存的keys
-		String ruleCacheKey = this.getRedisCacheKey();
+		String ruleCacheKey = AlertContext.getRedisCacheKey(alertRuleId);
 		AlertRuleEvalLog evalLog = new AlertRuleEvalLog();
 		evalLog.setRuleId(alertRuleId);
 		evalLog.setStts(Tool.DateUtil.current());
@@ -120,10 +113,10 @@ public class AlertRuleJudgeRunnable implements Runnable {
 
 			Set<String> newAlertHash = Tool.CollUtil.newHashSet();
 			List<AlertMessageReceiveDTO> messages = Tool.ListUtil.list(true);
-			int timeout = this.alertRuleEntity.getExpiredTimeout();
+			int timeout = alertRuleEntity.getExpiredTimeout();
 			if (dataArr != null && dataArr.size() > 0) {
 				Iterator<Object> ite = dataArr.iterator();
-				while (runFlag && ite.hasNext()) {
+				while (ite.hasNext()) {
 					JSONObject r = (JSONObject) ite.next();
 					JSONObject metric = r.getJSONObject("metric");
 					JSONArray values = r.getJSONArray("value");
@@ -134,7 +127,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					if (!entries.containsKey(hash)) {// 第一次达到告警阈值
 						// 将第一次 触发的时间 作为 value 保存，后续根据此计算 达到 for 的条件
 						hashOperations.put(ruleCacheKey, hash, timestamp.toString());
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, metric, values.getString(1),
 								null, null);
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
 						message.setState(Constant.AlertMessageStatus.PENDING.getValue());
@@ -147,10 +140,10 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					 */
 					Long firstTime = Tool.NumberUtil.parseLong(hashOperations.get(ruleCacheKey, hash));
 					if (timestamp - firstTime > alertRuleEntity.getLast() * 1000) {
-						// 用户设置了 开启了自动失效，且 设置了 timeout 
-						String et  = (timeout > 0) ? Tool.AlertUtil.formatMessageDate(timestamp + timeout*1000) : null;
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(metric, values.getString(1),
-								Tool.AlertUtil.formatMessageDate(firstTime), et);
+						// 用户设置了 开启了自动失效，且 设置了 timeout
+						String et = (timeout > 0) ? Tool.AlertUtil.formatMessageDate(timestamp + timeout * 1000) : null;
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity, metric,
+								values.getString(1), Tool.AlertUtil.formatMessageDate(firstTime), et);
 						message.setActs((long) (values.getDoubleValue(0) * 1000L));
 						message.setState(Constant.AlertMessageStatus.FIRING.getValue());
 						message.setValue(values.getString(1));
@@ -162,24 +155,20 @@ public class AlertRuleJudgeRunnable implements Runnable {
 						continue;
 					}
 				}
-				// 已经停止的rule 清空新生成的告警消息
-				if (!runFlag) {
-					messages.clear();
-					newAlertHash.clear();
-				}
-				log.info("alert message active size: {}",messages.size());
+
+				log.info("alert message active size: {}", messages.size());
 			}
 
 			// 遍历已有 告警消息，判断是否已经过期
-			long nowTs = Tool.DateUtil.current() - (alertRuleEntity.getInr()*500);
+			long nowTs = Tool.DateUtil.current() - (alertRuleEntity.getInr() * 500);
 			Iterator<String> iterator = entries.keySet().iterator();
-			while (runFlag && iterator.hasNext()) {
+			while (iterator.hasNext()) {
 				String activeHash = iterator.next();
 				if (!newAlertHash.contains(activeHash)) {
 					Long firstTime = Tool.NumberUtil.parseLong(entries.get(activeHash));
 					if (nowTs - firstTime > alertRuleEntity.getLast() * 1000) {
 						// 说明之前发送过 告警消息，需要发送已经失效的告警消息，endAt < now
-						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(
+						AlertMessageReceiveDTO message = this.genAlertMessageFromVector(alertRuleEntity,
 								Tool.JSONUtil.parseObj(activeHash), Tool.StrUtil.EMPTY,
 								Tool.AlertUtil.formatMessageDate(firstTime), Tool.AlertUtil.formatMessageDate(nowTs));
 						message.setActs(nowTs);
@@ -195,11 +184,12 @@ public class AlertRuleJudgeRunnable implements Runnable {
 					hashOperations.delete(ruleCacheKey, activeHash);
 				}
 			}
-			if (runFlag && messages.size() > 0) {
+			if (messages.size() > 0) {
 				evalLog.setMessages(messages);
 				alertMessageService.leftPushAlertMessageToRedis(Tool.JSONUtil.toJsonStr(messages));
 			}
-			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId, alertRuleEntity.getInr(), type, messages.size());
+			log.info("judge end,ruleId:{},interval:{}s,type:{},aletmessagesize:{}", alertRuleId,
+					alertRuleEntity.getInr(), type, messages.size());
 		} catch (Exception e) {
 			log.error(e, "judge error");
 			if (e instanceof NZException) {
@@ -210,19 +200,9 @@ public class AlertRuleJudgeRunnable implements Runnable {
 				evalLog.setMsg(Tool.StrUtil.subPre(e.getMessage(), 128));
 			}
 		} finally {
-			if (!runFlag && cleanCache) {
-				// 删除 redis hash
-				try {
-					redisTemplate.delete(ruleCacheKey);
-				} catch (Exception e) {
-					log.warn(e, "delete alert for state key error");
-				}
-				log.info("judge thread stop ,ruleId: {}", alertRuleId);
-			} else {
-				if (redisTemplate.hasKey(ruleCacheKey)) {
-					// hash 缓存设置超时时间，防止 意外不能删除, interval + 5min
-					redisTemplate.expire(ruleCacheKey, alertRuleEntity.getInr() + 5 * 60, TimeUnit.SECONDS);
-				}
+			if (redisTemplate.hasKey(ruleCacheKey)) {
+				// hash 缓存设置超时时间，防止 意外不能删除, interval + 5min
+				redisTemplate.expire(ruleCacheKey, alertRuleEntity.getInr() + 5 * 60, TimeUnit.SECONDS);
 			}
 			try {
 				// 保存执行日志
@@ -234,8 +214,8 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		}
 		stopWatch.stop();
 		long timeMillis = stopWatch.getTotalTimeMillis();
-		log.info("judge thread ruleId:{},time: {}ms,runFlag:{},cleanCache:{}", alertRuleId, timeMillis, runFlag,
-				cleanCache);
+		log.info("judge thread ruleId:{},time: {}ms", alertRuleId, timeMillis);
+
 	}
 
 	/**
@@ -283,16 +263,17 @@ public class AlertRuleJudgeRunnable implements Runnable {
 	 * @return
 	 */
 	@SuppressWarnings("all")
-	private AlertMessageReceiveDTO genAlertMessageFromVector(Map labels, String value, String startAt, String endAt) {
+	private AlertMessageReceiveDTO genAlertMessageFromVector(AlertRuleEntity alertRuleEntity, Map labels, String value,
+			String startAt, String endAt) {
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
 		// 添加label
-		String ruleType = this.alertRuleEntity.getType() == 1?"metrics":"logs";
+		String ruleType = alertRuleEntity.getType() == 1 ? "metrics" : "logs";
 		labels.put("rule_type", ruleType);
-		labels.put("alertname", this.alertRuleEntity.getId().toString());
+		labels.put("alertname", alertRuleEntity.getId().toString());
 		if (alertRuleEntity.getSeverity() != null) {
-			labels.put("severity", this.alertRuleEntity.getSeverity().getName());
+			labels.put("severity", alertRuleEntity.getSeverity().getName());
 		}
-		labels.put("severity_id", this.alertRuleEntity.getSeverityId().toString());
+		labels.put("severity_id", alertRuleEntity.getSeverityId().toString());
 		dto.setLabels(new LinkedHashMap<String, String>(labels));
 		dto.setStartsAt(startAt);
 		dto.setEndsAt(endAt);
@@ -302,7 +283,7 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		HashMap<String, String> anno = Tool.MapUtil.newHashMap(2);
 		Map<String, Object> context = Tool.MapUtil.newHashMap();
 		context.put("labels", labels);
-		context.put("alertRule", this.alertRuleEntity);
+		context.put("alertRule", alertRuleEntity);
 		context.put("value", value);
 		summary = Tool.AlertUtil.renderAlertRuleAnnotations(summary, context);
 		description = Tool.AlertUtil.renderAlertRuleAnnotations(description, context);
@@ -312,29 +293,6 @@ public class AlertRuleJudgeRunnable implements Runnable {
 		return dto;
 	}
 
-	/**
-	 * 将ms 转化为 utc 时间格式 yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
-	 * 
-	 * @param time
-	 * @return
-	 */
-
-
-	public String getRedisCacheKey() {
-		return String.format(ALERT_FOR_STATE_KEY_FORMAT, this.alertRuleEntity.getId());
-	}
-
-	public void stop(boolean cleanCache) {
-		this.runFlag = false;
-		future.cancel(true);
-		if (cleanCache) {
-			try {
-				redisTemplate.delete(this.getRedisCacheKey());
-			} catch (Exception e) {
-				log.warn(e, "delete alert for state key error");
-			}
-		}
-
-	}
+	
 
 }

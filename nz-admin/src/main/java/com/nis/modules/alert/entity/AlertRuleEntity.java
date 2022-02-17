@@ -1,14 +1,15 @@
 package com.nis.modules.alert.entity;
 
+import java.io.Serializable;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.nis.common.utils.Tool;
 import com.nis.modules.sys.entity.SysUserEntity;
-import lombok.Data;
 
-import java.io.Serializable;
-import java.util.List;
+import lombok.Data;
 
 /**
  *
@@ -69,25 +70,17 @@ public class AlertRuleEntity implements Serializable {
 	private String description;
 
 	/**
-	 * 是否自动失效	默认：1
-	 * 1：开启自动失效判断
-	 * 0：关闭自动失效判断
+	 * 是否自动失效 默认：1 1：开启自动失效判断 0：关闭自动失效判断
 	 */
 	private Integer autoExpired;
 
 	/**
-	 *定时是否开启	默认：0
-	 * 1：开启
-	 * 0：关闭
+	 * 定时是否开启 默认：0 1：开启 0：关闭
 	 */
 	private Integer schedEnable;
 
 	/**
-	 *定时开启天（星期几）
-	 * 默认："1,2,3,4,5,6,7"
-	 * 多个逗号分隔
-	 * 例：1,2,3,4,5,6,7
-	 * sched_enable = 1 时，不能为空
+	 * 定时开启天（星期几） 默认："1,2,3,4,5,6,7" 多个逗号分隔 例：1,2,3,4,5,6,7 sched_enable = 1 时，不能为空
 	 */
 	private String schedDays;
 
@@ -97,26 +90,22 @@ public class AlertRuleEntity implements Serializable {
 	private String schedStime;
 
 	/**
-	 *定时开启 关闭时间 默认：23:59
+	 * 定时开启 关闭时间 默认：23:59
 	 */
 	private String schedEtime;
 
 	/**
-	 *active通知开关 默认：1
-	 * 1：开启
-	 * 0：关闭
+	 * active通知开关 默认：1 1：开启 0：关闭
 	 */
 	private Integer notifyActive;
 
 	/**
-	 *expired通知开关	    默认：1
-	 * 1：开启
-	 * 0：关闭
+	 * expired通知开关 默认：1 1：开启 0：关闭
 	 */
 	private Integer notifyExpired;
 
 	/**
-	 *trouble shooting
+	 * trouble shooting
 	 */
 	private String trbShot;
 
@@ -140,31 +129,25 @@ public class AlertRuleEntity implements Serializable {
 	private String seq;
 
 	/**
-	 * 告警规则状态
-	 * 默认：开启
-	 * 0：关闭
-	 * 1：开启
+	 * 告警规则状态 默认：开启 0：关闭 1：开启
 	 */
 	private Integer state;
 
 	/**
-	 * 告警 规则类型
-	 * 1：metrics
-	 * 2：logs
-	 * 3：snmp trap
+	 * 告警 规则类型 1：metrics 2：logs 3：snmp trap
 	 */
 	private Integer type;
-	
+
 	/**
 	 * 执行周期
 	 */
 	private Integer inr;
-	
+
 	/**
 	 * 执行超时时间
 	 */
 	private Integer timeout;
-	
+
 	/**
 	 * 告警消息统计
 	 */
@@ -185,31 +168,38 @@ public class AlertRuleEntity implements Serializable {
 	@TableField(exist = false)
 	private AlertSeverityConf severity;
 
-	
 	/**
 	 * 计算 alert rule hash id
+	 * 
 	 * @param entity
 	 * @return
 	 */
-	public  String getAlertRuleHashId() {
-		return Tool.DigestUtil.md5Hex(this.toString());
+
+	public String getAlertRuleHashId() {
+		String content = new StringBuilder(AlertRuleEntity.class.getName()).append(id).append(name).append(expr)
+				.append(operator).append(threshold).append(unit).append(last).append(severityId).append(summary)
+				.append(description).append(autoExpired).append(schedEnable).append(schedDays).append(schedStime)
+				.append(schedEtime).append(notifyActive).append(notifyExpired).append(receiver).append(method)
+				.append(buildIn).append(seq).append(state).append(type).append(inr).append(timeout).toString();
+		return Tool.DigestUtil.sha1Hex(content);
 	}
-	
+
 	/**
 	 * 获取 完整表达式 内容
+	 * 
 	 * @return
 	 */
 	public String getExpression() {
-		return String.format("%s %s %s", this.getExpr(),this.getOperator(),this.getThreshold());
+		return String.format("%s %s %s", this.getExpr(), this.getOperator(), this.getThreshold());
 	}
-	
+
 	public int getExpiredTimeout() {
-		Integer autoExpired = this.getAutoExpired();//是否开启自动失效
+		Integer autoExpired = this.getAutoExpired();// 是否开启自动失效
 		autoExpired = (autoExpired == null) ? 0 : autoExpired;
-		Integer timeout = this.getTimeout();//自动失效超时时间
-		timeout = (timeout == null) ? 0 : timeout*autoExpired;
+		Integer timeout = this.getTimeout();// 自动失效超时时间
+		timeout = (timeout == null) ? 0 : timeout * autoExpired;
 		return timeout;
 	}
-	
-	
+
+
 }

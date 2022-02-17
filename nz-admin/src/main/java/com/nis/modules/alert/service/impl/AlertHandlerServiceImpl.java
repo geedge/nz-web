@@ -363,7 +363,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if(Tool.CollUtil.isEmpty(silenceList)) {
 			return ;
 		}
-		log.debug("告警静默规则状态变更：active -> expired ,silenceConf : {}", Tool.JSONUtil.toJsonStr(silenceList));
+		if(log.isDebugEnabled()) {
+			log.debug("告警静默规则状态变更：active -> expired ,silenceConf : {}", Tool.JSONUtil.toJsonStr(silenceList));
+		}
 		List<Integer> ids = Tool.ListUtil.list(false);
 		List<Long> msgIds = Tool.ListUtil.list(false);
 		for(AlertSilenceConf silenceConf : silenceList) {
@@ -380,11 +382,11 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			}
 		}
 		//删除 alert_message_silence 
-		log.debug("silence messsageIds : {}", msgIds.toString());
+		log.info("silence messsageIds : {}", msgIds.toString());
 		if(Tool.CollUtil.isNotEmpty(msgIds)) {
 			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_SILENCE_TABLE,msgIds.toArray(new Long[] {}));
 		}
-		log.debug("silence confIds : {}", ids.toString());
+		log.info("silence confIds : {}", ids.toString());
 		msgHandlerDao.deleteAlertSilenceMessageRelBySilenceConfIds(ids.toArray(new Integer[] {}));
 		//更新 alert silence conf 状态 为 expired
 		this.updateSilenceConfStateBatch(Constant.ALERT_SILENCE_STATE_EXPIRED, ids.toArray(new Integer[] {}));
@@ -396,7 +398,9 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		if(Tool.CollUtil.isEmpty(silenceList)) {
 			return ;
 		}
-		log.debug("告警静默规则状态变更：pending -> active ,silenceConf : {}", Tool.JSONUtil.toJsonStr(silenceList));
+		if(log.isDebugEnabled()) {
+			log.debug("告警静默规则状态变更：pending -> active ,silenceConf : {}", Tool.JSONUtil.toJsonStr(silenceList));
+		}
 		//查询数据库中所有 active message 逐一判断
 		List<AlertMessageEntity> activeMessage = msgHandlerDao.selectAllActiveMessage();
 		List<Long> messageIds = Tool.ListUtil.list(true);
@@ -424,12 +428,14 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		for(AlertSilenceConf conf : silenceList) {
 			confIds.add(conf.getId());
 		}
+		log.info("silence confIds : {}", confIds.toString());
 		//修改 alert_silence_conf 状态
 		this.updateSilenceConfStateBatch(Constant.ALERT_SILENCE_STATE_ACTIVE, confIds.toArray(new Integer[] {}));
 		//保存到 alert_message_silence 表及 rel 表
 		this.handleMessageSilenceBatch(activeMessage);
 		//删除 alert_message_active 表数据
 		if(Tool.CollUtil.isNotEmpty(messageIds)) {
+			log.info("silence messageIds: {}",messageIds.toString());
 			msgHandlerDao.deleteMessageByIdsAndTableName(Constant.ALERT_MESSAGE_ACTIVE_TABLE, messageIds.toArray(new Long[] {}));
 		}
 	}
