@@ -35,6 +35,8 @@ public class Promserver {
 	 * -1：认证失败
 	 */
 	private Integer status;
+	
+	@TableField(exist = false)
 	private Date checkTime;
 
 	/**

@@ -19,6 +19,7 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,12 @@ public class AssetTalonStatusJob extends QuartzJobBean {
 
     @Autowired
     private RedisTemplate redisTemplate;
+    
+    // 计数器，每 forceSync 个周期 执行一次强制执行
+ 	private volatile static Integer counter = 1;
+
+ 	@Value("${alert.rule.force.sync:8}")
+ 	private Integer forceSync;
 
     private static ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -199,7 +206,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         Map<Integer, AssetTalonStatus> map = talonUpdateStatusList.stream().collect(Collectors.toMap(AssetTalonStatus::getAssetId, Function.identity()));
         //判断查询数据与缓存中变化的信息
         Map assetTalonStatuss = redisTemplate.opsForHash().entries(Constant.ASSET_TALON_STATUS_CACHE_KEY);
-        if(ToolUtil.isNotEmpty(assetTalonStatuss)) {
+        if(ToolUtil.isNotEmpty(assetTalonStatuss) && counter % forceSync != 0) {
         	for(int i=talonUpdateStatusList.size()-1;i>=0;i--) {
         		AssetTalonStatus assetTalonStatus = talonUpdateStatusList.get(i);
         		if(assetTalonStatuss.containsKey(assetTalonStatus.getAssetId().toString())) {
@@ -256,7 +263,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         }
         //判断查询数据与缓存中变化的信息
         Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);
-        if(ToolUtil.isNotEmpty(endpointStates)) {
+        if(ToolUtil.isNotEmpty(endpointStates) && counter % forceSync != 0) {
         	for(int i=logStateList.size()-1;i>=0;i--) {
         		MonitorEndpointState endpointState = logStateList.get(i);
         		if(endpointStates.containsKey(endpointState.getEndpointId().toString())) {
@@ -295,6 +302,11 @@ public class AssetTalonStatusJob extends QuartzJobBean {
         		log.debug("Endpoint state batch update datas info : %s ",JSON.toJSON(batchAddStates));
         		endpointStateService.modifyBatchEndpointState(batchUpdateStates, Constant.MonitorConfType.LOGS.getValue());
         	}
+        }
+        if(counter % forceSync == 0) {
+        	counter = 1;
+        }else {
+        	counter++;
         }
     }
 }

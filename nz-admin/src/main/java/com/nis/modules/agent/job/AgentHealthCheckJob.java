@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
 import org.quartz.DisallowConcurrentExecution;
@@ -20,16 +21,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.util.AgentUtil;
+import com.nis.modules.endpoint.entity.MonitorEndpointState;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.sys.service.SysConfigService;
 
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 
@@ -49,6 +54,12 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	private RedisTemplate redisTemplate;
 	private static ExecutorService exec = Executors.newCachedThreadPool();
 
+	// 计数器，每 forceSync 个周期 执行一次强制执行
+	private volatile static Integer counter = 1;
+
+	@Value("${alert.rule.force.sync:15}")
+	private Integer forceSync;
+	
 	@Override
 	protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 		Thread.currentThread().setName("AgentHealthCheckJob");
@@ -74,6 +85,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	/**
 	 * 调用 agent/healthy 更新 prom_server 数据状态
 	 */
+	@SuppressWarnings("unchecked")
 	public void updateAgentStatus() {
 		List<Promserver> allPromServers = promService.list();
 		String metricsStorageType = configService.getValueOrDefault(Constant.SYSCONFIG_KEY_METRICS_STORAGE_TYPE, "1");
@@ -167,8 +179,21 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 			for (Future<Promserver> future : futures) {
 				if (!future.isCancelled()) {
 					Promserver promserver = future.get();
-					promService.updateStatusInfo(promserver);
+					Object agent = redisTemplate.opsForHash().get(Constant.AGENT_STATE_CACHE_KEY,promserver.getId().toString());
+					Promserver promserverCache = JSON.parseObject((String)agent,Promserver.class);
+					if(counter % forceSync == 0 || ToolUtil.isEmpty(promserverCache) || !ObjectUtil.equal(promserverCache.getStatus(), promserver.getStatus())) {						
+						// 判断状态是否缓存与数据库数据是否一致 不一致需要修改数据库信息
+						promService.updateStatusInfo(promserver);
+					}
+					redisTemplate.opsForHash().put(Constant.AGENT_STATE_CACHE_KEY,promserver.getId().toString(),JSON.toJSONString(promserver));
+					// 超时周期设置为两个agent周期
+			        redisTemplate.expire(Constant.AGENT_STATE_CACHE_KEY, 1, TimeUnit.MINUTES);
 				}
+			}
+			if(counter % forceSync == 0) {
+				counter=1;
+			}else {
+				counter++;
 			}
 		} catch (InterruptedException | ExecutionException e) {
 			log.error(e);

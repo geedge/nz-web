@@ -20,12 +20,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.utils.Constant;
 import com.nis.common.utils.R;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import com.nis.common.utils.ToolUtil;
 import com.nis.modules.agent.entity.MonitorEventLog;
 import com.nis.modules.agent.service.MonitorEventLogService;
 import com.nis.modules.agent.util.AgentUtil;
@@ -80,7 +82,8 @@ public class AutoConfigAgentJob extends QuartzJobBean {
     // sys_config map
     Map<String, String> sysConfigMap = new HashMap();
 
-    @Override
+    @SuppressWarnings("unchecked")
+	@Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) throws JobExecutionException {
     	Thread.currentThread().setName("AutoConfigAgentJob");
         // 检查 haMode
@@ -92,7 +95,13 @@ public class AutoConfigAgentJob extends QuartzJobBean {
         sw.start();
         try {
             // 获取健康的 agent
-            List<Promserver> healthyPromServers = promService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
+        	List<Promserver> healthyPromServers = null;
+        	List<String> promServerCaches = redisTemplate.opsForHash().values(Constant.AGENT_STATE_CACHE_KEY);
+        	if(ToolUtil.isNotEmpty(promServerCaches)) {
+        		healthyPromServers = promServerCaches.stream().map(promServerCache -> JSON.parseObject(promServerCache, Promserver.class)).filter(p -> p.getStatus().equals(1)).collect(Collectors.toList());
+        	}else {
+        		healthyPromServers = promService.list(new LambdaQueryWrapper<Promserver>().eq(Promserver::getStatus, 1));
+        	}
             log.debug("健康的 Promservers: " + JSONObject.toJSONString(healthyPromServers));
 
             // 没有可用的 global 不下发配置

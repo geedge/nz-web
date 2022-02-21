@@ -1,35 +1,5 @@
 package com.nis.modules.promserver.service.impl;
 
-import cn.hutool.core.net.URLEncoder;
-import cn.hutool.core.net.url.UrlBuilder;
-import cn.hutool.core.net.url.UrlPath;
-import cn.hutool.core.net.url.UrlQuery;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.nis.common.exception.NZException;
-import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.*;
-import com.nis.modules.asset.entity.Dc;
-import com.nis.modules.asset.service.DcService;
-import com.nis.modules.promserver.dao.PromserverDao;
-import com.nis.modules.promserver.entity.Promserver;
-import com.nis.modules.promserver.service.PromserverService;
-import com.nis.modules.sys.service.SysConfigService;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.RandomUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -38,6 +8,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
+import com.nis.common.utils.CommonUtils;
+import com.nis.common.utils.Constant;
+import com.nis.common.utils.PageUtils;
+import com.nis.common.utils.Query;
+import com.nis.common.utils.RCode;
+import com.nis.common.utils.ToolUtil;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.asset.service.DcService;
+import com.nis.modules.promserver.dao.PromserverDao;
+import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.promserver.service.PromserverService;
+import com.nis.modules.sys.service.SysConfigService;
+
+import cn.hutool.core.net.URLEncoder;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.net.url.UrlPath;
+import cn.hutool.core.net.url.UrlQuery;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 
 @Service("promserverService")
 public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver> implements PromserverService{
@@ -53,7 +62,9 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 	private SysConfigService configService;
 	@Autowired
 	private RestTemplate restTemplate;
-	
+	@Autowired
+	private RedisTemplate redisTemplate;
+	@SuppressWarnings("unchecked")
 	@Override
 	public PageUtils queryPage(Map<String, Object> params) {
 		String ids = (String) params.get("ids");
@@ -71,7 +82,16 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 
 		IPage page = new Query(Promserver.class).getPage(params);
 		List<Promserver> promserverList = promserverDao.queryList(page, params);
-
+		// 获取缓存中检查时间信息
+		Map promserverCaches = redisTemplate.opsForHash().entries(Constant.AGENT_STATE_CACHE_KEY);
+		if(ToolUtil.isNotEmpty(promserverCaches)) {
+			for(Promserver prom : promserverList) {
+				Object promCache = promserverCaches.get(prom.getId().toString());
+				if(ToolUtil.isNotEmpty(promCache)) {
+					prom.setCheckTime(JSON.parseObject((String)promCache, Promserver.class).getCheckTime());
+				}
+			}
+		}
 		page.setRecords(promserverList);
 		return new PageUtils(page);
 	}

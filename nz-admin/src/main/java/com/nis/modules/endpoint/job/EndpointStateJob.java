@@ -21,6 +21,7 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +53,12 @@ public class EndpointStateJob extends QuartzJobBean {
     @Autowired
     private RedisTemplate redisTemplate;
 
+    // 计数器，每 forceSync 个周期 执行一次强制执行
+  	private volatile static Integer counter = 1;
+
+  	@Value("${alert.rule.force.sync:8}")
+  	private Integer forceSync;
+  	
     @Override
     protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
     	Thread.currentThread().setName("EndpointStateJob");
@@ -128,7 +135,7 @@ public class EndpointStateJob extends QuartzJobBean {
         
         //判断查询数据与缓存中变化的信息
         Map endpointStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
-        if(ToolUtil.isNotEmpty(endpointStates)) {
+        if(ToolUtil.isNotEmpty(endpointStates) && counter % forceSync != 0) {
         	for(int i=allState.size()-1;i>=0;i--) {
         		MonitorEndpointState endpointState = allState.get(i);
         		if(endpointStates.containsKey(endpointState.getEndpointId().toString())) {
@@ -167,6 +174,11 @@ public class EndpointStateJob extends QuartzJobBean {
         		log.debug("Endpoint state batch update datas info : %s ",JSON.toJSON(batchAddStates));
         		endpointStateService.modifyBatchEndpointState(batchUpdateStates, Constant.MonitorConfType.METRICS.getValue());
         	}
+        }
+        if(counter % forceSync == 0) {
+        	counter = 1;
+        }else {
+        	counter++;
         }
     }
 

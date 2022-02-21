@@ -1156,6 +1156,7 @@ public class Constant {
 	
 	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status"; 
 	
+	public static final String AGENT_STATE_CACHE_KEY = "agent_state";
 	/**
 	 * 告警消息状态
 	 */
