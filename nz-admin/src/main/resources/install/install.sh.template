@@ -125,9 +125,16 @@ function installPackage() {
     ;;
   esac
 
+AGENT_NAME=$(hostname)
+
+if [ $AGENT_NAME == 'localhost.localdomain' ];then
+   AGENT_NAME=$(cut -d '-' -f 1 /proc/sys/kernel/random/uuid)
+fi
+
   if [ 0 -eq $? ];then
     cat > $WORK_PATH/param.tmp <<EOF
     {
+      "name":$AGENT_NAME,
       "dcId":$DATACENTER_ID,
       "host":"$LOCALHOST",
       "type":$TYPE,
