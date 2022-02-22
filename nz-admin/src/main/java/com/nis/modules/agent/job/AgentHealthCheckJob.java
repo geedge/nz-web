@@ -57,7 +57,7 @@ public class AgentHealthCheckJob extends QuartzJobBean {
 	// 计数器，每 forceSync 个周期 执行一次强制执行
 	private volatile static Integer counter = 1;
 
-	@Value("${alert.rule.force.sync:15}")
+	@Value("${agent.healthy.check.force.sync:15}")
 	private Integer forceSync;
 	
 	@Override

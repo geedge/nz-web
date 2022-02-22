@@ -72,7 +72,7 @@ public class AssetTalonStatusJob extends QuartzJobBean {
     // 计数器，每 forceSync 个周期 执行一次强制执行
  	private volatile static Integer counter = 1;
 
- 	@Value("${alert.rule.force.sync:8}")
+ 	@Value("${asset.talon.status.force.sync:8}")
  	private Integer forceSync;
 
     private static ExecutorService executorService = Executors.newCachedThreadPool();

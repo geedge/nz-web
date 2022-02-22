@@ -56,7 +56,7 @@ public class EndpointStateJob extends QuartzJobBean {
     // 计数器，每 forceSync 个周期 执行一次强制执行
   	private volatile static Integer counter = 1;
 
-  	@Value("${alert.rule.force.sync:8}")
+  	@Value("${endpoint.state.force.sync:8}")
   	private Integer forceSync;
   	
     @Override
