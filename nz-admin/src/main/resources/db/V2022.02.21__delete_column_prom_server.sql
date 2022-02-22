@@ -4,5 +4,4 @@
  * prom_server删除check_time字段
  */
 
-ALTER TABLE `prom_server` 
-DROP COLUMN `check_time`;
+ALTER TABLE prom_server DROP IF EXISTS check_time
