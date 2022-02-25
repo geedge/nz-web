@@ -1157,6 +1157,10 @@ public class Constant {
 	public static final String ASSET_TALON_STATUS_CACHE_KEY = "asset_talon_status"; 
 	
 	public static final String AGENT_STATE_CACHE_KEY = "agent_state";
+	
+	public static final String SYSCONFIG_KEY_IPAMSUBNET_IMPORT_HEADER="ipam_subnet_import_header";
+	
+	public static final String SYSCONFIG_KEY_IPAMSUBNET_EXPORT_HEADER="ipam_subnet_export_header";
 	/**
 	 * 告警消息状态
 	 */

@@ -905,6 +905,23 @@ public enum RCode {
 	LICENSE_SUPPORT_ID_ISNULL(715008,"License params support id can not be null"),
 	LICENSE_ORGANIZATION_ISNULL(715009,"License params organization can not be null"),
 	LICENSE_TYPE_ISNULL(715010,"License params type can not be null"),
+	
+	/**
+	 * Ipamsubnet 相关
+	 */
+	IPAM_SUBNET_ID_ISNULL(721001,"Ipamsubnet id can not be null"),
+	IPAM_SUBNET_NAME_ISNULL(721002,"Ipamsubnet name can not be null"),
+	IPAM_SUBNET_TYPE_ISNULL(721003,"Ipamsubnet type can not be null"),
+	IPAM_SUBNET_ADDR_ISNULL(721004,"Ipamsubnet addr can not be null"),
+	IPAM_SUBNET_MASK_ISNULL(721005,"Ipamsubnet mask can not be null"),
+	IPAM_SUBNET_DCID_ISNULL(721006,"Ipamsubnet dc id can not be null"),
+	IPAM_SUBNET_VLAN_ISNULL(721007,"Ipamsubnet vlan can not be null"),
+	IPAM_SUBNET_TYPE_ERROR(723008,"Ipamsubnet type only allow 4 or 6"),
+	IPAM_SUBNET_ADDR_ERROR(723009,"Ipamsubnet addr format error,please check ip format for ipv4/6"),
+	IPAM_SUBNET_MASK_ERROR(723010,"Ipamsubnet mask error, allow ipv4(0~32),ipv6(64-128)"),
+	IPAM_SUBNET_DC_ISNULL(721011,"Ipamsubnet datacenter can not be null"),
+	IPAM_SUBNET_INTERVAL_ERROR(723012,"Ipamsubnet interval already exists"),
+
     ERROR(999, "error"); //通用错误/未知错误
 	
 	
