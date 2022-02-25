@@ -772,7 +772,7 @@ INSERT INTO `sys_i18n` VALUES (737, 'asset.location', 'en', 'asset.location', 'L
 INSERT INTO `sys_i18n` VALUES (738, 'asset.asset', 'en', 'asset.asset', 'Asset ', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (739, 'asset.endpointNum', 'en', 'asset.endpointNum', 'Represents the total quantity', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (740, 'asset.cabinet', 'en', 'asset.cabinet', 'Cabinet', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (741, 'asset.userName', 'en', 'asset.userName', 'Username', '', '2022-02-17 09:16:52', 98);INSERT INTO `sys_i18n` VALUES (742, 'asset.dc', 'en', 'asset.dc', 'DataCenter', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (741, 'asset.username', 'en', 'asset.username', 'Username', '', '2022-02-17 09:16:52', 98);INSERT INTO `sys_i18n` VALUES (742, 'asset.dc', 'en', 'asset.dc', 'DataCenter', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (743, 'webshell.closeTip', 'en', 'webshell.closeTip', 'All connections will be closed, are you sure you want to close the window?', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (744, 'webshell.authUserTip', 'en', 'webshell.authUserTip', 'Username prompt', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (745, 'webshell.uploadButtonTitle', 'en', 'webshell.uploadButtonTitle', 'Upload', '', '2021-11-02 00:00:00', 1);
