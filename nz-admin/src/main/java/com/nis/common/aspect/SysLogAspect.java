@@ -327,7 +327,7 @@ public class SysLogAspect {
 			} else {
 				// 单个实体对象方式
 				oepraId += getEntityId(arg) + ",";
-				;
+
 				if (ToolUtil.isNotEmpty(oepraId)) {
 					oepraId = oepraId.substring(0, oepraId.length() - 1);
 				}
@@ -345,6 +345,10 @@ public class SysLogAspect {
 	private static String getEntityId(Object arg) {
 		String oepraId = "";
 		Class aClass = arg.getClass();
+		String className = aClass.getName();
+		if(StrUtil.isEmpty(className) || StrUtil.contains(className,"java.lang")){
+			return StrUtil.EMPTY;
+		}
 		String name = aClass.getPackage().getName();
 		// 只有是本项目实体对象 才获取回添 ID
 		if (ToolUtil.isNotEmpty(name) && name.indexOf("com.nis") != -1) {
