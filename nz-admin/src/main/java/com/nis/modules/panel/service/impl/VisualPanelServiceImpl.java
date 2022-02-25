@@ -678,6 +678,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	groupChart.setBuildIn(0);
                 	groupChart.setRemark("");
                     groupChart.setSeq(seqUUID);
+                    // group 默认 datasource misc
+                    groupChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
                 	visualChartService.save(groupChart);
                 }
                 groupId = groupChart.getId();
@@ -1075,6 +1077,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 	if(templateFlag) {
                 		groupChart.setVarType(varTypeAndValMap.get(varType.trim()));
                 	}
+                    // group 默认 datasource misc
+                    groupChart.setDatasource(Constant.ChartDatasourceType.MISC.getValue());
                     groupChart.setSeq(seqUUID);
                 	visualChartService.save(groupChart);
                 }
