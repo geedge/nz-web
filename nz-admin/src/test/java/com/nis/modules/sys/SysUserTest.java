@@ -257,7 +257,7 @@ public class SysUserTest extends BaseTest<SysUserEntity> {
     @Test
     public void resetMfa_success() {
         Map map = jsonToInParameter(testName.getMethodName(), Map.class);
-        MvcResult result = UTUtil.performGet("/sys/user/resetMfa", map);
+        MvcResult result = UTUtil.performDelete("/sys/user/resetMfa", map);
 
         UTUtil.assertEqualsRCode(result, RCode.SUCCESS);
     }
