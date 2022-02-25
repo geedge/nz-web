@@ -132,12 +132,12 @@ public class SysUserController extends AbstractController {
 		logger.info("userName:{},mfa disabled",userEntity.getUsername());
 		return R.ok();
 	}
-	
-	@RequestMapping("/resetMfa")
+
+	@DeleteMapping("/resetMfa")
 	@SysLog(operation = OperationEnum.UPDATE,type = TypeEnum.ACCOUNT)
     @RequiresPermissions("sys:user:update")
 	public R resetMfa(String[] ids) {
-		if(Tool.StrUtil.isAllBlank(ids)) {
+		if (Tool.StrUtil.isAllNotBlank(ids)) {
 			SysUserEntity entity = new SysUserEntity();
 			entity.setOtpKey(Tool.StrUtil.EMPTY);
 			entity.setRecoveryCode(Tool.StrUtil.EMPTY);

@@ -1,0 +1,150 @@
+{
+  "------------------ POST  /sys/user data---------------------": "note",
+  "saveUser_success": {
+    "name": "coder",
+    "username": "zhangsan",
+    "pin": "2E2817DF",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkPin": {
+    "name": "coder",
+    "username": "zhangsan",
+    "pin": "",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkUsername": {
+    "name": "夏元英",
+    "username": "",
+    "pin": "8F7F7EBC",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkName": {
+    "name": "",
+    "username": "xiayuanying",
+    "pin": "8F7F7EBC",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkNameDuplicate": {
+    "name": "admin",
+    "username": "admin",
+    "pin": "2E2817DF",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkStatusInvalide": {
+    "name": "A6AEDA82",
+    "username": "A6AEDA82",
+    "pin": "2E2817DF",
+    "status": 6,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "saveUser_checkRoleIds": {
+    "name": "A6AEDA82",
+    "username": "A6AEDA82",
+    "pin": "2E2817DF",
+    "status": 6,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2,9999"
+  },
+  "------------------ PUT  /sys/user data---------------------": "note",
+  "updateUser_success": {
+    "id": 2,
+    "name": "common",
+    "username": "common-update",
+    "pin": "2E2817DF",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "updateUser_checkNameDuplicate": {
+    "id": 1,
+    "name": "coder",
+    "username": "zhangsan",
+    "pin": "2E2817DF",
+    "status": 1,
+    "lang": "en",
+    "mfaLevel": 0,
+    "theme": 1,
+    "roleIds": "1,2"
+  },
+  "------------------ GET  /sys/user/{id} data---------------------": "note",
+  "queryUserInfo_exist": {
+    "id": 2
+  },
+  "queryUserInfo_notexist": {
+    "id": 99999
+  },
+  "------------------ GET  /sys/user data---------------------": "note",
+  "queryUserList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1",
+    "name": ""
+  },
+  "queryUserList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "9999",
+    "name": "4624F06B"
+  },
+  "------------------ PUT  /sys/user/Pin data---------------------": "note",
+  "updatePin_success": {
+    "id": 1,
+    "oldPin": "admin",
+    "newPin": "admin"
+  },
+  "updatePin_checkoldPin": {
+    "id": 1,
+    "oldPin": "",
+    "newPin": "admin"
+  },
+  "updatePin_checknewPin": {
+    "id": 1,
+    "oldPin": "admin",
+    "newPin": ""
+  },
+  "updatePin_oldPinError": {
+    "id": 1,
+    "oldPin": "AC269CD713F2411CB37689BB6405F807",
+    "newPin": "123"
+  },
+  "------------------ DELETE  /sys/user/resetMfa data---------------------": "note",
+  "resetMfa_success": {
+    "ids": "1"
+  },
+  "------------------ DELETE  /sys/user data---------------------": "note",
+  "deleteUser_success": {
+    "ids": "3,15"
+  },
+  "deleteUser_adminNotDel": {
+    "ids": "1,200"
+  }
+}
