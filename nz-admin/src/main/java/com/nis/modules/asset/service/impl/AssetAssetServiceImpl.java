@@ -2291,6 +2291,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     fieldStr += meta.getMetaKey() + "=" + meta.getValue().get(0) + "\n";
                 }
                 tempList.add(fieldStr);
+            } else {
+                tempList.add(StrUtil.EMPTY);
             }
             
             tempList.add(ToolUtil.isEmpty(asset.getAuthProtocolPort()) ? "" : String.valueOf(asset.getAuthProtocolPort()));
@@ -2312,6 +2314,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientUser(), ""));
 //            row.createCell(23).setCellValue(asset.getClientPin());
+            // client pin
+            tempList.add(StrUtil.EMPTY);
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientToken(), ""));
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientPort(), "").toString());
             tempList.add(ObjectUtil.defaultIfNull(asset.getClientEnable(), "").toString());

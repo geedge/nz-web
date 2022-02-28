@@ -695,6 +695,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     receiveNames = receiveNames.substring(0, receiveNames.length() - 1);
                 }
                 tempList.add(receiveNames);
+            } else {
+                tempList.add(StrUtil.EMPTY);
             }
 
             String methodIds = rule.getMethod();
@@ -707,6 +709,8 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
                     methodNames = methodNames.substring(0, methodNames.length() - 1);
                 }
                 tempList.add(methodNames);
+            } else {
+                tempList.add(StrUtil.EMPTY);
             }
             tempList.add(ObjectUtil.defaultIfNull(rule.getState(),"").toString());
             tempList.add(ObjectUtil.defaultIfNull(rule.getAutoExpired(),"").toString());
