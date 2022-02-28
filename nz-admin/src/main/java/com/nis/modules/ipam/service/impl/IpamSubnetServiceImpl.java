@@ -125,6 +125,11 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 			throw new NZException(RCode.IPAM_SUBNET_MASK_ERROR);
 		}
 		
+		Dc dc = dcService.getById(ipamSubnet.getDcId());
+		if(ToolUtil.isEmpty(dc)) {
+			throw new NZException(RCode.IPAM_SUBNET_DC_ISNULL);
+		}
+		
 		// 计算子网总容量
 		ipamSubnet.setCap(new BigDecimal(Math.pow(2,ipCap-ipamSubnet.getMask())).toString());
 		
