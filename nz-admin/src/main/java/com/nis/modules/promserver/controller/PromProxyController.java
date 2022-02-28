@@ -23,6 +23,7 @@ import java.util.zip.GZIPOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.mysql.cj.x.protobuf.MysqlxDatatypes;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -171,6 +172,11 @@ public class PromProxyController {
             }
             // 构造请求路径
     		String promPathPrefix = promserverService.getPromPathPrefix();
+            //获取prometheus指标路径前缀
+			if (promPath.endsWith("targets")){
+				String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
+				promPathPrefix = String.format("%s%s",agentPath, "/prometheus/proxy");
+			}
     		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
             String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
             		.setPort(server.getPort()).setPath(UrlPath.of(proxyPath, Charset.forName("UTF-8")))
