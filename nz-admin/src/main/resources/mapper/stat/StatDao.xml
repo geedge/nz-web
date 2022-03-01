@@ -722,16 +722,16 @@
 		</if>
 		<where>
 			<if test="params.stime!=null">
-				and time > #{params.stime}
+				and time >= #{params.stime}
 			</if>
 			<if test="params.etime!=null">
-				and time &lt; #{params.etime}
+				and time &lt;= #{params.etime}
 			</if>
 		</where>
 		) b , (select * from alert_message_active union all select * from alert_message_history) amh
-		where ((amh.start_at > b.time and amh.start_at &lt; DATE_ADD(b.time,INTERVAL 1 DAY) and state = 3 )
-		OR (amh.start_at &lt; b.time AND amh.end_at > DATE_ADD( b.time, INTERVAL 1 DAY ) and state = 3)
-	    OR ( amh.start_at &lt; DATE_ADD(b.time,INTERVAL 1 DAY) AND amh.state = 1 )) 
+		where ((amh.start_at >= b.time and amh.start_at &lt;= DATE_ADD(b.time,INTERVAL 1 DAY) and state = 3 )
+		OR (amh.start_at &lt;= b.time AND amh.end_at >= b.time and state = 3)
+	    OR ( amh.start_at &lt;= DATE_ADD(b.time,INTERVAL 1 DAY) AND amh.state = 1 ))
 		<if test="params.dcId!=null">
 			and amh.dc_id = #{params.dcId}
 		</if>
