@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.mysql.cj.x.protobuf.MysqlxDatatypes;
+import com.nis.common.exception.NZException;
+import com.nis.common.utils.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,11 +44,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.BufferReaderWrapper;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.Tool;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
 import com.nis.modules.promserver.util.PromConstant;
@@ -172,10 +169,15 @@ public class PromProxyController {
             }
             // 构造请求路径
     		String promPathPrefix = promserverService.getPromPathPrefix();
-            //获取prometheus指标路径前缀
 			if (promPath.endsWith("targets")){
+				//获取 targets代理 path
 				String agentPath = sysConfigService.getValue(Constant.CONFAGENT_PATH);
 				promPathPrefix = String.format("%s%s",agentPath, "/prometheus/proxy");
+				//获取本身 agent
+				server = promserverService.getOne(new LambdaQueryWrapper<Promserver>()
+						.eq(ToolUtil.isNotEmpty(dcId),Promserver::getDcId,dcId)
+						.eq(ToolUtil.isNotEmpty(type),Promserver::getType,type)
+						.eq(ToolUtil.isNotEmpty(agentId),Promserver::getId,agentId));
 			}
     		String proxyPath = String.format("%s%s", promPathPrefix, promPath);
             String urlStr = UrlBuilder.create().setScheme(server.getProtocol()).setHost(server.getHost())
