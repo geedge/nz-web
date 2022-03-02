@@ -68,6 +68,7 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 	/**
 	 * 新增  silence conf 告警静默规则
 	 */
+	@Transactional
 	@Override
 	public void saveAlertSilenceConf(AlertSilenceConf conf) {
 		DateTime now = Tool.DateUtil.date();
