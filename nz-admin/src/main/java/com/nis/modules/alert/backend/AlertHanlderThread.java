@@ -117,6 +117,7 @@ public class AlertHanlderThread implements Runnable {
 						AlertMessageEntity message = new AlertMessageEntity();
 						message.setEndAt(endTime);
 						message.setHashKey(hash);
+						message.setLastAt(nowDate);//设置当前时间为 最近一次 告警接收时间
 						/**
 						 * endtime < now 超时过期 alert message 处理
 						 * redis key 存在说明首次处理
@@ -125,6 +126,8 @@ public class AlertHanlderThread implements Runnable {
 						 * redis key 不存在说明之前处理过，直接continue
 						 */
 						if (endTime != null && Tool.DateUtil.compare(nowDate, endTime)>0) {//判断是否已过期
+							// 当 endTime 小于 当前时间，需要将 lastAt 时间和 endtime 保持一致
+							message.setLastAt(endTime);
 							if(Tool.StrUtil.isAllBlank(activeRk,silenceRk)) {//不存在说明已经处理过，首次接收到 expired 消息会删除缓存key
 								continue;
 							}
@@ -181,6 +184,7 @@ public class AlertHanlderThread implements Runnable {
 							continue;
 						}
 						message.setHashKey(hash);//message 保存 hashkey
+						message.setLastAt(nowDate);
 
 						//补充id
 						Long messageId = this.getAlertMessageId();

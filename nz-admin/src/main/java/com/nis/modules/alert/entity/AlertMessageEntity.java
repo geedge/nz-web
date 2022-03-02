@@ -76,6 +76,10 @@ public class AlertMessageEntity implements Serializable {
 	 */
 	private Date endAt;
 	/**
+	 * 最后一次接收到 告警时间
+	 */
+	private Date lastAt;
+	/**
 	 * 状态
 	 */
 	private Integer state;

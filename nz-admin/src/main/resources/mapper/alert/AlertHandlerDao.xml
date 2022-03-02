@@ -16,6 +16,7 @@
         <result property="labels" column="labels"/>
         <result property="startAt" column="start_at"/>
         <result property="endAt" column="end_at"/>
+        <result property="lastAt" column="last_at"/>
         <result property="state" column="state"/>
 		<result property="hashKey" column="hash_key"/>
 		<result property="remark" column="remark"/>
@@ -78,7 +79,7 @@
 	
 	<!-- 更新 alert message endat时间 -->
 	<update id="updateMessageEndAt" >
-		update ${tableName} set end_at = #{endAt} where id = #{id}
+		update ${tableName} set end_at = #{endAt} ,last_at = #{lastAt} where id = #{id}
 	</update>
 	
 	<!-- 更新 关闭 auto expired 功能的 告警消息 结束时间 -->
@@ -137,20 +138,20 @@
 	
 	<!-- 保存 alertMessage -->
 	<insert id="saveAlertMessage" >
-		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, state, rule_id, 
+		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, last_at, state, rule_id, 
 		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id) 
 			VALUES 
-		(#{id}, #{summary}, #{description}, #{labels}, #{startAt}, #{endAt}, #{state}, #{ruleId}, 
+		(#{id}, #{summary}, #{description}, #{labels}, #{startAt}, #{endAt}, #{lastAt}, #{state}, #{ruleId}, 
 		#{projectId}, #{moduleId}, #{endpointId}, #{assetId}, #{dcId}, #{hashKey}, #{remark}, #{severityId})
 	</insert>
 	
 	<!-- 批量保存alert message -->
 	<insert id="saveMessageBatch" >
-		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, state, rule_id, 
+		INSERT INTO ${tableName} (id, summary, description, labels, start_at, end_at, last_at, state, rule_id, 
 		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id) 
 			VALUES 
 		<foreach collection="list" item="item" separator=",">
-			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.state}, 
+			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.lastAt}, #{item.state}, 
 			#{item.ruleId}, #{item.projectId}, #{item.moduleId}, #{item.endpointId}, #{item.assetId}, 
 			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
 		</foreach>
@@ -158,17 +159,18 @@
 
 	<!-- 批量保存 active message - ALERT_MESSAGE_ACTIVE table -->
 	<insert id="saveActiveMessageBatch">
-		INSERT INTO alert_message_active (id, summary, description, labels, start_at, end_at, state, rule_id,
+		INSERT INTO alert_message_active (id, summary, description, labels, start_at, end_at, last_at, state, rule_id,
 		project_id, module_id, endpoint_id, asset_id, dc_id, hash_key, remark, severity_id)
 		VALUES
 		<foreach collection="list" item="item" separator=",">
-			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.state},
+			( #{item.id}, #{item.summary}, #{item.description}, #{item.labels}, #{item.startAt}, #{item.endAt}, #{item.lastAt}, #{item.state},
 			#{item.ruleId}, #{item.projectId}, #{item.moduleId}, #{item.endpointId}, #{item.assetId},
 			#{item.dcId}, #{item.hashKey}, #{item.remark}, #{item.severityId} )
 		</foreach>
 		ON DUPLICATE KEY UPDATE
 		id = VALUES(id),
 		start_at = VALUES(start_at),
+		last_at = VALUES(last_at),
 		end_at = VALUES(end_at);
 	</insert>
 	
