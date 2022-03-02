@@ -16,6 +16,7 @@ import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -25,6 +26,7 @@ import com.nis.modules.terminal.config.TerminalHandler;
 
 import cn.hutool.core.util.StrUtil;
 
+@EnableTransactionManagement
 @SpringBootApplication(scanBasePackages = { "com.nis.setup" })
 @Import(SetupAutoConfiguration.class)
 @PropertySource(value = { "file:./config/nezha.properties","classpath:./config/nezha.properties","classpath:build.properties"  }, encoding = "utf-8", ignoreResourceNotFound = true)
