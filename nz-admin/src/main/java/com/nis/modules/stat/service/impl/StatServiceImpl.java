@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -20,6 +21,7 @@ import org.springframework.util.ObjectUtils;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nis.common.exception.NZException;
@@ -50,10 +52,13 @@ import com.nis.modules.stat.dao.StatDao;
 import com.nis.modules.stat.entity.StatAnalysis;
 import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
+import com.nis.modules.sys.entity.Timezone;
 import com.nis.modules.sys.service.SysConfigService;
 import com.nis.modules.sys.service.SysUserService;
+import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -101,6 +106,9 @@ public class StatServiceImpl implements StatService{
 	
 	@Autowired
 	private AlertSeverityService alertSeverityConfService;
+	
+	@Autowired
+	private TimezoneService timezoneService;
 	
 	private Integer topNSize=10;
 		
@@ -496,11 +504,23 @@ public class StatServiceImpl implements StatService{
 	@Override
 	public Map<String,Object> queryAlertMessageTrend(Map<String, Object> params) {
 		Map<String,Object> result = new HashMap<String,Object>(); 
+		
+		// 处理时区问题
+		Timezone sysTimezone = timezoneService.getOne(new LambdaQueryWrapper<Timezone>().eq(Timezone::getName, sysConfigService.getValue("timezone")));		
+		params.put("timezone", ToolUtil.isEmpty(sysTimezone)? 0 : sysTimezone.getOffset());
+		
 		if(ToolUtil.isEmpty(params.get("stime"))) {
-			params.put("stime", DateUtil.offsetDay(new Date(), -7));
+			params.put("stime", DateUtil.offsetDay(DateUtil.offsetMillisecond(new Date(), ToolUtil.isEmpty(sysTimezone)? 0 : sysTimezone.getOffset()) , -7));
+		}else {
+			Long startTime = (Long) params.get("stime");
+			params.put("stime",DateUtil.offsetMillisecond(new Date(startTime*1000), ToolUtil.isEmpty(sysTimezone)? 0 : sysTimezone.getOffset()));
 		}
+		
 		if(ToolUtil.isEmpty(params.get("etime"))) {
-			params.put("etime",new Date());
+			params.put("etime",DateUtil.offsetMillisecond(new Date(), ToolUtil.isEmpty(sysTimezone)? 0 : sysTimezone.getOffset()));
+		}else {
+			Long endTime = (Long) params.get("etime");
+			params.put("etime",DateUtil.offsetMillisecond(new Date(endTime*1000), ToolUtil.isEmpty(sysTimezone)? 0 : sysTimezone.getOffset()));
 		}
 		
 		if(ToolUtil.isEmpty(params.get("type"))) {
