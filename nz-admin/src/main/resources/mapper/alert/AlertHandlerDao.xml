@@ -196,7 +196,14 @@
 			dc.id as dc_id,
 			dc.name as dc_name
 		FROM
-			${params.tableName} am
+			<if test="params.tableName != null and params.tableName !='' ">
+				${params.tableName} am
+			</if>
+			<if test="params.tableName == null">
+				(select * from alert_message_active union all 
+				 select * from alert_message_history union all 
+				 select * from alert_message_silence) am
+			</if>
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN monitor_project p on am.project_id = p.id
 		LEFT JOIN monitor_module m on am.module_id = m.id
@@ -232,10 +239,10 @@
                 AND am.state=#{params.state}
             </if>
 			<if test="params.startAt != null">
-				AND am.start_at &gt;= #{params.startAt}
+				AND am.last_at &gt;= #{params.startAt}
 			</if>
 			<if test="params.endAt != null">
-				AND am.start_at &lt;= #{params.endAt}
+				AND am.last_at &lt;= #{params.endAt}
 			</if>
 			<if test="params.ruleIds != null and params.ruleIds != ''">
 				AND am.rule_id in
@@ -297,7 +304,14 @@
 			${columnId} AS id,
 			count(1) AS num
 		FROM
-			${params.tableName} am
+			<if test="params.tableName != null and params.tableName !='' ">
+				${params.tableName} am
+			</if>
+			<if test="params.tableName == null">
+				(select * from alert_message_active union all 
+				 select * from alert_message_history union all 
+				 select * from alert_message_silence) am
+			</if>
 		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
 		LEFT JOIN monitor_project p on am.project_id = p.id
 		LEFT JOIN monitor_module m on am.module_id = m.id
@@ -334,10 +348,10 @@
                 AND am.state=#{params.state}
             </if>
 			<if test="params.startAt != null">
-				AND am.start_at &gt;= #{params.startAt}
+				AND am.last_at &gt;= #{params.startAt}
 			</if>
 			<if test="params.endAt != null">
-				AND am.start_at &lt;= #{params.endAt}
+				AND am.last_at &lt;= #{params.endAt}
 			</if>
 			<if test="params.ruleIds != null and params.ruleIds != ''">
 				AND am.rule_id in

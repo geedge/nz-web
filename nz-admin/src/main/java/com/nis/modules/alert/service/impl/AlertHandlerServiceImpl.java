@@ -443,8 +443,10 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Override
 	public PageUtils queryMessagePage(Map<String, Object> params) {
 		//根据状态判断对应的表
-		String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
-		params.put("tableName", tableName);
+		if(ToolUtil.isNotEmpty(params.get("state"))) {
+			String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
+			params.put("tableName", tableName);
+		}
 		IPage page = new Query(AlertMessageEntity.class).getPage(params);
 		List<AlertMessageEntity> list = msgHandlerDao.queryList(page,params);
 		page.setRecords(list);

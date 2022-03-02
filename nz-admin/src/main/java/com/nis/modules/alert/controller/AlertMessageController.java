@@ -41,10 +41,10 @@ public class AlertMessageController {
     public R list(@RequestParam Map<String, Object> params){
     	logger.debug("query param : {}", Tool.JSONUtil.toJsonStr(params));
     	//state不能为空
-    	boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(Integer.valueOf(params.get("state").toString()));
-    	if(!containsstate) {
-    		throw new NZException(RCode.ERROR);
-    	}
+		/*boolean containsstate = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.containsKey(Integer.valueOf(params.get("state").toString()));
+		if(!containsstate) {
+			throw new NZException(RCode.ERROR);
+		}*/
         PageUtils page = handlerService.queryMessagePage(params);
         R result = R.ok(page);
         Object statFlag = params.getOrDefault("statistics", 0);

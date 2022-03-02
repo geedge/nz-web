@@ -5217,5 +5217,7 @@ INSERT INTO `sys_i18n` VALUES (5762, 'overall.ipam.edit', 'en', 'overall.ipam.ed
 INSERT INTO `sys_i18n` VALUES (5763, 'overall.ipam.edit', 'zh', 'overall.ipam.edit', '编辑 IPAM', '', '2022-03-02 03:15:49', 382);
 INSERT INTO `sys_i18n` VALUES (5764, 'overall.ipam.create', 'en', 'overall.ipam.create', 'New IPAM', '', '2022-03-02 03:16:16', 382);
 INSERT INTO `sys_i18n` VALUES (5765, 'overall.ipam.create', 'zh', 'overall.ipam.create', '新增 IPAM', '', '2022-03-02 03:16:33', 382);
+INSERT INTO `sys_i18n` VALUES (5766, 'alert.lastAt', 'en', 'alert.lastAt', 'Last time', '', '2022-03-02 08:40:39', 1);
+INSERT INTO `sys_i18n` VALUES (5767, 'alert.lastAt', 'zh', 'alert.lastAt', '最近一次', '', '2022-03-02 08:42:46', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;
