@@ -5205,5 +5205,17 @@ INSERT INTO `sys_i18n` VALUES (5750, 'config.ipamsubnet.cap.comment', 'en', 'con
 INSERT INTO `sys_i18n` VALUES (5751, 'config.ipamsubnet.cap.comment', 'zh', 'config.ipamsubnet.cap.comment', '总容量', '', '2022-02-24 10:31:18', 1);
 INSERT INTO `sys_i18n` VALUES (5752, 'config.ipamsubnet.used.comment', 'en', 'config.ipamsubnet.used.comment', 'Used', '', '2022-02-24 10:31:28', 1);
 INSERT INTO `sys_i18n` VALUES (5753, 'config.ipamsubnet.used.comment', 'zh', 'config.ipamsubnet.used.comment', '使用量', '', '2022-02-24 10:31:35', 1);
+INSERT INTO `sys_i18n` VALUES (5754, 'overall.ipam', 'en', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:11', 382);
+INSERT INTO `sys_i18n` VALUES (5755, 'overall.ipam', 'zh', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:21', 382);
+INSERT INTO `sys_i18n` VALUES (5756, 'overall.addr', 'en', 'overall.addr', 'Addr', '', '2022-03-02 03:08:26', 382);
+INSERT INTO `sys_i18n` VALUES (5757, 'overall.addr', 'zh', 'overall.addr', 'Addr', '', '2022-03-02 03:10:23', 382);
+INSERT INTO `sys_i18n` VALUES (5758, 'overall.mask', 'en', 'overall.mask', 'Mask', '', '2022-03-02 03:08:41', 382);
+INSERT INTO `sys_i18n` VALUES (5759, 'overall.mask', 'zh', 'overall.mask', 'Mask', '', '2022-03-02 03:10:08', 382);
+INSERT INTO `sys_i18n` VALUES (5760, 'overall.vlan', 'en', 'overall.vlan', 'Vlan', '', '2022-03-02 03:10:38', 382);
+INSERT INTO `sys_i18n` VALUES (5761, 'overall.vlan', 'zh', 'overall.vlan', 'Vlan', '', '2022-03-02 03:11:07', 382);
+INSERT INTO `sys_i18n` VALUES (5762, 'overall.ipam.edit', 'en', 'overall.ipam.edit', 'Edit IPAM', '', '2022-03-02 03:15:33', 382);
+INSERT INTO `sys_i18n` VALUES (5763, 'overall.ipam.edit', 'zh', 'overall.ipam.edit', '编辑 IPAM', '', '2022-03-02 03:15:49', 382);
+INSERT INTO `sys_i18n` VALUES (5764, 'overall.ipam.create', 'en', 'overall.ipam.create', 'New IPAM', '', '2022-03-02 03:16:16', 382);
+INSERT INTO `sys_i18n` VALUES (5765, 'overall.ipam.create', 'zh', 'overall.ipam.create', '新增 IPAM', '', '2022-03-02 03:16:33', 382);
 
 SET FOREIGN_KEY_CHECKS = 1;
