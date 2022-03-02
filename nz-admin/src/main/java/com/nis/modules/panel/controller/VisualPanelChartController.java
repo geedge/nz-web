@@ -41,7 +41,7 @@ public class VisualPanelChartController {
     @SysLog(operation = OperationEnum.QUERY,type = TypeEnum.VISUALCHART)
     public R chartInfo(@PathVariable Integer id){
 		VisualChart visualChart = visualChartService.queryInfo(id);
-        return R.ok().putData("data", visualChart);
+        return R.ok(visualChart);
     }
 
 	@GetMapping

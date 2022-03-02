@@ -33,7 +33,7 @@ public class VisualPanelController {
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.VISUALPANEL)
 	public R panel(@PathVariable Integer id) {
 		VisualPanel panel = visualPanelService.queryInfo(id);
-		return R.ok().putData("data", panel);
+		return R.ok(panel);
 	}
 
 	@GetMapping

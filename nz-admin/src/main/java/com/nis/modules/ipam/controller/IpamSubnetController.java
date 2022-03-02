@@ -51,7 +51,7 @@ public class IpamSubnetController {
 	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.IPAMSUBNET)
 	public R ipamSubnetInfo(@PathVariable Integer id) {
     	IpamSubnet ipamSubnet = ipamSubnetService.queryInfo(id);
-		return R.ok().putData("data", ipamSubnet);
+		return R.ok(ipamSubnet);
 	}
 
 	@GetMapping
