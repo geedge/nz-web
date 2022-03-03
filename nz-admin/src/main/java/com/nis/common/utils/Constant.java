@@ -472,6 +472,7 @@ public class Constant {
 		alertMsgOrderFieldMap.put("labels", "am.labels");
 		alertMsgOrderFieldMap.put("startAt", "am.start_at");
 		alertMsgOrderFieldMap.put("severityId", "am.severity_id");
+		alertMsgOrderFieldMap.put("lastAt", "am.last_at");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("alert_message_active", alertMsgOrderFieldMap);
 
 		Map<String, String> alertRuleOrderFieldMap = new HashMap<>();
@@ -539,6 +540,12 @@ public class Constant {
 		operationLogOrderFieldMap.put("operation", "sl.operation");
 		operationLogOrderFieldMap.put("type", "sl.type");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("sys_log", operationLogOrderFieldMap);
+		
+		
+		Map<String, String> ipamSubnetOrderFieldMap = new HashMap<>();
+		ipamSubnetOrderFieldMap.put("address", "addr");
+		ipamSubnetOrderFieldMap.put("dc", "dc_id");
+		TABLE_NAME_ORDER_FIELD_MAPPING.put("ipam_subnet", ipamSubnetOrderFieldMap);
 	}
 
 	/**
