@@ -114,7 +114,6 @@ public class ShiroConfig {
 		 */
 		filterMap.put("/sys/login", "anon"); // 登录接口
 		filterMap.put("/api/**", "anon"); // 告警消息接收 接口
-		filterMap.put("/actuator/**", "anon"); // 诊断接口
 		filterMap.put("/sys/i18n/lang", "anon"); //国际化文件获取接口
 		filterMap.put("/mfa/**", "anon"); // mfa 认证接口
 		filterMap.put("/healthy", "anon"); //健康检查接口
@@ -129,7 +128,7 @@ public class ShiroConfig {
 		 */
 		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics 
 		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
-		
+		filterMap.put("/actuator/**", "anon"); // 诊断接口
 		
 		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
