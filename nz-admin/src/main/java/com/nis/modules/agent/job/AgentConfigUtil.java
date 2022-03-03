@@ -246,8 +246,9 @@ public class AgentConfigUtil {
 	public Map generateCortexYml(Promserver promserver, List<Promserver> globalPromServerList, Boolean isAlert) {
 		log.debug("cortex.yml 开始生成");
 		Map params = new LinkedHashMap(8);
-
+		
 		params.put("ip", promserver.getHost());
+		params.put("localAgent", promserver);
 		params.put("objectStroageUrl", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ENDPOINT));
 		params.put("bucketName", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_BUCKET));
 		params.put("accessKey", sysConfigService.getValue(Constant.SYSCONFIG_KEY_METRICS_STORAGE_S3_ACCESS_KEY));
@@ -298,9 +299,10 @@ public class AgentConfigUtil {
 	 *
 	 * @return
 	 */
-	public Map generateLokiYml() {
+	public Map generateLokiYml(Promserver promserver,List<Promserver> globalPromServerList) {
 		log.debug("loki.yml 开始生成");
 		Map params = new LinkedHashMap(16);
+		params.put("localAgent", promserver);
 		
 		String interfaceNames = sysConfigService.getValue("interface_name");
 		if(StrUtil.isBlank(interfaceNames)) {
@@ -308,6 +310,12 @@ public class AgentConfigUtil {
 		}
 		List<String> interfaceNameList = Arrays.asList(interfaceNames.split(","));
 		params.put("interfaceNameList", interfaceNameList);
+		
+		List<String> joinMemberIpList = new ArrayList<>();
+		joinMemberIpList = globalPromServerList.stream().filter(entity -> !entity.getId().equals(promserver.getId()))
+				.map(Promserver::getHost).collect(Collectors.toList());
+		params.put("joinMemberList", joinMemberIpList);
+		params.put("isMemberlistStore", CollectionUtil.isNotEmpty(joinMemberIpList));
 		
 		params.put("schemaConfigFrom", DateUtil.format(new Date(), "yyyy-MM-dd"));
 		String logsStorageType = sysConfigService.getValue(Constant.SYSCONFIG_KEY_LOGS_STORAGE_TYPE);

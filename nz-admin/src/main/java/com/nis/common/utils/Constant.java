@@ -543,8 +543,11 @@ public class Constant {
 		
 		
 		Map<String, String> ipamSubnetOrderFieldMap = new HashMap<>();
-		ipamSubnetOrderFieldMap.put("address", "addr");
-		ipamSubnetOrderFieldMap.put("dc", "dc_id");
+		ipamSubnetOrderFieldMap.put("name", "ipam.name");
+		ipamSubnetOrderFieldMap.put("type", "ipam.type");
+		ipamSubnetOrderFieldMap.put("vlan", "ipam.vlan");
+		ipamSubnetOrderFieldMap.put("address", "ipam.addr");
+		ipamSubnetOrderFieldMap.put("dc", "dc.id");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("ipam_subnet", ipamSubnetOrderFieldMap);
 	}
 
