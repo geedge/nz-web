@@ -568,6 +568,7 @@ public class AgentConfigUtil {
 		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		labels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
 		labels.put("application", "prometheus");
+		labels.put("agent_name",promserver.getName());
 		promMetricsStaticConfig.put("labels", labels);
 		promMetricsStaticConfigList.add(promMetricsStaticConfig);
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
@@ -589,6 +590,7 @@ public class AgentConfigUtil {
 		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		agentLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
 		agentLabels.put("application", "nz-agent");
+		agentLabels.put("agent_name", promserver.getName());
 		agentMetricsStaticConfig.put("labels", agentLabels);
 
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
@@ -611,6 +613,7 @@ public class AgentConfigUtil {
 		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		snmpExporterLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
 		snmpExporterLabels.put("application", "snmp-exporter");
+		snmpExporterLabels.put("agent_name",promserver.getName());
 		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
 
 		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
@@ -633,6 +636,7 @@ public class AgentConfigUtil {
 		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		blackboxExporterLabels.put("type", Constant.PromserverType.getPromserverType(promserver.getType()).getName());
 		blackboxExporterLabels.put("application", "blackbox-exporter");
+		blackboxExporterLabels.put("agent_name",promserver.getName());
 		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
 
 		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
@@ -863,6 +867,7 @@ public class AgentConfigUtil {
 		labels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		labels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
 		labels.put("application", "prometheus");
+		labels.put("agent_name",currentAgent.getName());
 		promMetricsStaticConfig.put("labels", labels);
 		promMetricsStaticConfigList.add(promMetricsStaticConfig);
 		promMetricsMap.put("staticConfigList", promMetricsStaticConfigList);
@@ -886,6 +891,7 @@ public class AgentConfigUtil {
 		Map nezhaLabels = new LinkedHashMap(4);
 		nezhaLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		nezhaLabels.put("application", "nz-web");
+		nezhaLabels.put("agent_name", currentAgent.getName());
 		nezhaMetricsStaticConfig.put("labels",nezhaLabels);
 		nezhaMetricsStaticConfigList.add(nezhaMetricsStaticConfig);
 		nezhaMetricsMap.put("staticConfigList", nezhaMetricsStaticConfigList);
@@ -907,6 +913,7 @@ public class AgentConfigUtil {
 		agentLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		agentLabels.put("application", "nz-agent");
 		agentLabels.put("type", Constant.PromserverType.getPromserverType(currentAgent.getType()).getName());
+		agentLabels.put("agent_name", currentAgent.getName());
 		agentMetricsStaticConfig.put("labels", agentLabels);
 		agentMetricsStaticConfigList.add(agentMetricsStaticConfig);
 		agentMetricsMap.put("staticConfigList", agentMetricsStaticConfigList);
@@ -928,6 +935,7 @@ public class AgentConfigUtil {
 		Map snmpExporterLabels = new LinkedHashMap(2);
 		snmpExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		snmpExporterLabels.put("application", "snmp-exporter");
+		snmpExporterLabels.put("agent_name", currentAgent.getName());
 		snmpExporterMetricsStaticConfig.put("labels", snmpExporterLabels);
 		snmpExporterMetricsStaticConfigList.add(snmpExporterMetricsStaticConfig);
 		snmpExporterMetricsMap.put("staticConfigList", snmpExporterMetricsStaticConfigList);
@@ -949,6 +957,7 @@ public class AgentConfigUtil {
 		Map blackboxExporterLabels = new LinkedHashMap(2);
 		blackboxExporterLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		blackboxExporterLabels.put("application", "blackbox-exporter");
+		blackboxExporterLabels.put("agent_name",currentAgent.getName());
 		blackboxExporterMetricsStaticConfig.put("labels", blackboxExporterLabels);
 		blackboxExporterMetricsStaticConfigList.add(blackboxExporterMetricsStaticConfig);
 		blackboxExporterMetricsMap.put("staticConfigList", blackboxExporterMetricsStaticConfigList);
@@ -968,6 +977,7 @@ public class AgentConfigUtil {
 		Map lokiLabels = new LinkedHashMap(2);
 		lokiLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		lokiLabels.put("application", "loki");
+		lokiLabels.put("agent_name",currentAgent.getName());
 		lokiMetricsStaticConfig.put("labels", lokiLabels);
 		lokiMetricsStaticConfigList.add(lokiMetricsStaticConfig);
 		lokiMetricsMap.put("staticConfigList", lokiMetricsStaticConfigList);
@@ -987,6 +997,7 @@ public class AgentConfigUtil {
 		Map cortexLabels = new LinkedHashMap(2);
 		cortexLabels.put("datacenter", ToolUtil.string2Json(dc.getName()));
 		cortexLabels.put("application", "cortex");
+		cortexLabels.put("agent_name", currentAgent.getName());
 		cortexMetricsStaticConfig.put("labels", cortexLabels);
 		cortexMetricsStaticConfigList.add(cortexMetricsStaticConfig);
 		cortexMetricsMap.put("staticConfigList", cortexMetricsStaticConfigList);
