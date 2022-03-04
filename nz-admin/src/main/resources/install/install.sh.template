@@ -134,7 +134,7 @@ fi
   if [ 0 -eq $? ];then
     cat > $WORK_PATH/param.tmp <<EOF
     {
-      "name":$AGENT_NAME,
+      "name":"$AGENT_NAME",
       "dcId":$DATACENTER_ID,
       "host":"$LOCALHOST",
       "type":$TYPE,
