@@ -64,14 +64,16 @@ public class SnmpMibServiceImpl extends ServiceImpl<SnmpMibDao, SnmpMib> impleme
 
 
         // 处理 modelDetail 信息
-        List<AssetModel> modelsDetail;
+        List<AssetModel> modelsDetail = null;
         for (SnmpMib snmpMib : mibs) {
             snmpMib.setContent(null);
             if (ToolUtil.isNotEmpty(snmpMib.getModels())) {
                 modelsDetail = new ArrayList<>();
                 int[] ints = Arrays.asList(snmpMib.getModels().split(",")).stream().mapToInt(Integer::parseInt).toArray();
                 for (int i = 0; i < ints.length; i++) {
-                    modelsDetail.add(modelsDetailIdAndEntity.get(ints[i]));
+                    if (Tool.ObjectUtil.isNotEmpty(modelsDetailIdAndEntity.get(ints[i]))){
+                        modelsDetail.add(modelsDetailIdAndEntity.get(ints[i]));
+                    }
                 }
                 snmpMib.setModelsDetail(modelsDetail);
             }

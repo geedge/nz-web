@@ -614,6 +614,7 @@ public enum RCode {
     PROMSERVER_UNAVAILABLE(526017,"No PromServer available"),
     PROMSERVER_TOKEN_ISNULL(521018, "PromServer token info can not be empty"),
     PROMSERVER_NAME_ISNULL(521019, "PromServer name can not be empty"),
+    PROMSERVER_NAME_EXISTED(521020, "PromServer name existed"),
 
 
     DC_NAME_ISNULL(531000, "Dc name can not be empty"),              // 数据中心name不能为空
