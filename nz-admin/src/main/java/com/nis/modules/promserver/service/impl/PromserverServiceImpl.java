@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.nis.common.utils.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +29,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.CommonUtils;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
 import com.nis.modules.promserver.dao.PromserverDao;
@@ -111,6 +106,19 @@ public class PromserverServiceImpl extends ServiceImpl<PromserverDao, Promserver
 
 		if (!flag) {
 			throw new NZException(RCode.PROMSERVER_EXIST_ERROR);
+		}
+
+		Promserver promserver = null;
+		if (promserverEntity.getId() == null){
+			promserver = this.getOne(new LambdaQueryWrapper<Promserver>().eq(Promserver::getName, promserverEntity.getName()));
+			if (Tool.ObjectUtil.isNotEmpty(promserver)){
+				throw new NZException(RCode.PROMSERVER_NAME_EXISTED);
+			}
+		}else {
+			promserver = this.getOne(new LambdaQueryWrapper<Promserver>().eq(Promserver::getName, promserverEntity.getName()));
+			if (Tool.ObjectUtil.isNotEmpty(promserver) && !promserver.getId().equals(promserverEntity.getId())){
+				throw new NZException(RCode.PROMSERVER_NAME_EXISTED);
+			}
 		}
 
 		Integer type = promserverEntity.getType();
