@@ -113,7 +113,14 @@ public enum RCode {
     CHART_DATASOURCE_ISNULL(121071,"Chart datasource can not be null"),
     CHART_DATASOURCE_INVALIDE(121072,"Chart datasource must be metrics,logs,system,misc"),
     CHARTELEMENT_NAME_ISNULL(121073, "Chart element name can not be empty"),
-
+    CHART_NAME_TOO_LONG(121074,"Chart name too long than 64"),
+    CHART_X_ISNULL(121075, "Chart x can not be empty"),
+    CHART_X_FORMAT(123076, "Chart x format should be a integer"),
+    CHART_X_INVALIDE(123077, "Chart x should be between 0 and 12"),
+    CHART_Y_ISNULL(121078, "Chart y can not be empty"),
+    CHART_Y_FORMAT(123079, "Chart y format should be a integer"),
+    CHART_X_WIDTH_INVALIDE(123080,"Chart x and width sum cannot be greater than 12 "),
+    
     EXPRETMPL_NOT_FOUND(136000, "Expression template not found"),
     EXPRETMPL_NAME_ISNULL(131001, "Expression template name is null"),
     EXPRETMPL_EXPRESSION_ISNULL(131002, "Expression template expression is null"),
