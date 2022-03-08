@@ -567,6 +567,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             tempList.add(this.handleChartElementForExport(chart.getElements()));
             tempList.add(chart.getRemark());
             tempList.add(chart.getDatasource());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getX(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getY(), "").toString());
             exportDataList.add(tempList);
         }
         return exportDataList;
@@ -685,10 +687,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 groupId = groupChart.getId();
             }
             
-            String title = dataMap.get(2);
-            if (StringUtils.isEmpty(title)) {
+            String name = dataMap.get(2);
+            if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_TITLE_ISNULL.getMsg());
+            } else if(name.length() > 64) {
+            	saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NAME_TOO_LONG.getMsg());
             }
             String type = dataMap.get(3);
             
@@ -703,7 +708,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             
-            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
+            VisualChart groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, name).eq(VisualChart::getPanelId, panelId).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE.toString()));
             if(StrUtil.equals(type, Constant.CHART_GROUP_TYPE.toString())&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
             	saveFlag = false;
@@ -759,6 +764,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(7), msg);
                 }
             }
+            
             String datasource = dataMap.get(10);
             if (StringUtils.isEmpty(datasource)) {
                 saveFlag = typeFlag = false;
@@ -769,6 +775,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.CHART_DATASOURCE_INVALIDE.getMsg());
                 }
             }
+            
             String elements = dataMap.get(8);
             if(typeFlag){
                 String msg = this.validateChartElementForImport(datasource, elements);
@@ -778,6 +785,48 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 }
             }
             String description = dataMap.get(9);
+                        
+            String x = dataMap.get(11);
+            if (StringUtils.isEmpty(x)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_ISNULL.getMsg());
+            }else{
+                Integer xIntVal = null;
+                try {
+                    xIntVal = Double.valueOf(x).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_FORMAT.getMsg());
+                }
+                if (xIntVal != null && (xIntVal < 0 || xIntVal > 12)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_INVALIDE.getMsg());
+                }
+            }
+            
+            // x和width之和不能大于12
+            if(StringUtils.isNotEmpty(x) && StringUtils.isNotEmpty(span)) {
+            	Double xVal = Double.valueOf(x);
+            	Double widthVal = Double.valueOf(span);
+            	if(xVal+widthVal>12) {
+            		saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_WIDTH_INVALIDE.getMsg());
+            	}
+            }
+            
+            String y = dataMap.get(12);
+            if (StringUtils.isEmpty(y)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.CHART_Y_ISNULL.getMsg());
+            }else{
+                Integer yIntVal = null;
+                try {
+                    yIntVal = Double.valueOf(y).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.CHART_Y_FORMAT.getMsg());
+                }
+            }
             
             if(saveFlag){
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
@@ -785,7 +834,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     VisualChart chart = new VisualChart();
                     chart.setSeq(seqUUID);
                     chart.setPanelId(panelId);
-                    chart.setName(title);
+                    chart.setName(name);
                     chart.setType(type);
                     chart.setSpan(Double.valueOf(span));
                     chart.setHeight(Double.valueOf(height));
@@ -798,6 +847,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setGroupId(groupId);
                     chart.setRemark(description);
                     chart.setDatasource(datasource);
+                    chart.setX(Double.valueOf(x));
+                    chart.setY(Double.valueOf(y));
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1085,10 +1136,13 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 groupId = groupChart.getId();
             }
             
-            String title = dataMap.get(1);
-            if (StringUtils.isEmpty(title)) {
+            String name = dataMap.get(1);
+            if (StringUtils.isEmpty(name)) {
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(0), RCode.CHART_TITLE_ISNULL.getMsg());
+            } else if(name.length() > 64) {
+            	saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.CHART_NAME_TOO_LONG.getMsg());
             }
             
             String type = dataMap.get(2);
@@ -1105,9 +1159,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
 
             VisualChart groupChart = null;
             if (templateFlag) {
-                groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE).eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
+                groupChart = visualChartService.getOne(new LambdaQueryWrapper<VisualChart>().eq(VisualChart::getName, name).eq(VisualChart::getPanelId, 0).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE).eq(VisualChart::getVarType, varTypeAndValMap.get(varType.trim())));
             } else {
-                groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, title).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
+                groupChart = visualChartService.getOne(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getName, name).eq(VisualChart::getPanelId, panel.getId()).eq(VisualChart::getType, Constant.CHART_GROUP_TYPE));
             }
             if (StrUtil.equals(type, Constant.CHART_GROUP_TYPE)&&ToolUtil.isNotEmpty(groupChart)) {
         		// chart group 不允许重复 
@@ -1198,6 +1252,48 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             }
             String description = dataMap.get(9);
             
+            String x = dataMap.get(11);
+            if (StringUtils.isEmpty(x)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_ISNULL.getMsg());
+            }else{
+                Integer xIntVal = null;
+                try {
+                    xIntVal = Double.valueOf(x).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_FORMAT.getMsg());
+                }
+                if (xIntVal != null && (xIntVal < 0 || xIntVal > 12)) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_INVALIDE.getMsg());
+                }
+            }
+            
+            // x和width之和不能大于12
+            if(StringUtils.isNotEmpty(x) && StringUtils.isNotEmpty(span)) {
+            	Double xVal = Double.valueOf(x);
+            	Double widthVal = Double.valueOf(span);
+            	if(xVal+widthVal>12) {
+            		saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.CHART_X_WIDTH_INVALIDE.getMsg());
+            	}
+            }
+            
+            String y = dataMap.get(12);
+            if (StringUtils.isEmpty(y)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.CHART_Y_ISNULL.getMsg());
+            }else{
+                Integer yIntVal = null;
+                try {
+                    yIntVal = Double.valueOf(y).intValue();
+                } catch (NumberFormatException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(12), RCode.CHART_Y_FORMAT.getMsg());
+                }
+            }
+            
             if (saveFlag) {
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(transactionDefinition);
                 try {
@@ -1205,7 +1301,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setSeq(seqUUID);
                     // panel 为 null,即为 template type, panel_id = 0
                     chart.setPanelId(ToolUtil.isEmpty(panel) ? 0 : panel.getId());
-                    chart.setName(title);
+                    chart.setName(name);
                     chart.setType(type);
                     chart.setSpan(Double.valueOf(span));
                     chart.setHeight(Double.valueOf(height));
@@ -1220,6 +1316,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                     chart.setVarId(linkId);
                     chart.setRemark(description);
                     chart.setDatasource(datasource);
+                    chart.setX(Double.valueOf(x));
+                    chart.setY(Double.valueOf(y));
                     // 查询当前 panel 下的 charts
                     List<VisualChart> chartList = visualChartService.list(new QueryWrapper<VisualChart>().lambda().eq(VisualChart::getPanelId, chart.getPanelId()));
                     if (CollectionUtils.isEmpty(chartList)) {
@@ -1319,6 +1417,8 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
             tempList.add(this.handleChartElementForExport(chart.getElements()));
             tempList.add(chart.getRemark());
             tempList.add(chart.getDatasource());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getX(), "").toString());
+            tempList.add(ObjectUtil.defaultIfNull(chart.getY(), "").toString());
             exportDataList.add(tempList);
         }
         return exportDataList;
