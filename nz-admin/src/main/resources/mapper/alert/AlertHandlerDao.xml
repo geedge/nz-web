@@ -242,7 +242,7 @@
 				AND am.start_at &gt;= #{params.startAt}
 			</if>
 			<if test="params.endAt != null">
-				AND am.last_at &lt;= #{params.endAt}
+				AND am.start_at &lt;= #{params.endAt}
 			</if>
 			<if test="params.ruleIds != null and params.ruleIds != ''">
 				AND am.rule_id in
@@ -348,10 +348,10 @@
                 AND am.state=#{params.state}
             </if>
 			<if test="params.startAt != null">
-				AND am.last_at &gt;= #{params.startAt}
+				AND am.start_at &gt;= #{params.startAt}
 			</if>
 			<if test="params.endAt != null">
-				AND am.last_at &lt;= #{params.endAt}
+				AND am.start_at &lt;= #{params.endAt}
 			</if>
 			<if test="params.ruleIds != null and params.ruleIds != ''">
 				AND am.rule_id in
