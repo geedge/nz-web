@@ -4735,8 +4735,8 @@ INSERT INTO `sys_i18n` VALUES (4842, 'dashboard.panel.chartForm.valueMapping', '
 INSERT INTO `sys_i18n` VALUES (4843, 'dashboard.panel.chartForm.valueMapping', 'zh', 'dashboard.panel.chartForm.valueMapping', 'Value mapping', '', '2021-12-01 08:28:47', 1);
 INSERT INTO `sys_i18n` VALUES (4844, 'dashboard.panel.chartForm.typeVal.point.label', 'en', 'dashboard.panel.chartForm.typeVal.point.label', 'Point', '', '2021-12-02 05:43:04', 1);
 INSERT INTO `sys_i18n` VALUES (4845, 'dashboard.panel.chartForm.typeVal.point.label', 'zh', 'dashboard.panel.chartForm.typeVal.point.label', '散点图', '', '2021-12-02 05:43:29', 1);
-INSERT INTO `sys_i18n` VALUES (4846, 'dashboard.panel.chartForm.typeVal.gauge.label', 'en', 'dashboard.panel.chartForm.typeVal.guage.label', 'Guage', '', '2021-12-02 05:43:58', 1);
-INSERT INTO `sys_i18n` VALUES (4847, 'dashboard.panel.chartForm.typeVal.gauge.label', 'zh', 'dashboard.panel.chartForm.typeVal.guage.label', 'Guage', '', '2021-12-02 05:44:19', 1);
+INSERT INTO `sys_i18n` VALUES (4846, 'dashboard.panel.chartForm.typeVal.gauge.label', 'en', 'dashboard.panel.chartForm.typeVal.gauge.label', 'Guage', '', '2021-12-02 05:43:58', 1);
+INSERT INTO `sys_i18n` VALUES (4847, 'dashboard.panel.chartForm.typeVal.gauge.label', 'zh', 'dashboard.panel.chartForm.typeVal.gauge.label', 'Guage', '', '2021-12-02 05:44:19', 1);
 INSERT INTO `sys_i18n` VALUES (4848, 'dashboard.panel.chartForm.typeVal.treemap.label', 'en', 'dashboard.panel.chartForm.typeVal.treemap.label', 'Treemap', '', '2021-12-02 05:44:37', 1);
 INSERT INTO `sys_i18n` VALUES (4849, 'dashboard.panel.chartForm.typeVal.treemap.label', 'zh', 'dashboard.panel.chartForm.typeVal.treemap.label', 'Treemap', '', '2021-12-02 05:44:51', 1);
 INSERT INTO `sys_i18n` VALUES (4850, 'dashboard.panel.chartForm.typeVal.log.label', 'en', 'dashboard.panel.chartForm.typeVal.log.label', 'Log', '', '2021-12-02 05:45:07', 1);
