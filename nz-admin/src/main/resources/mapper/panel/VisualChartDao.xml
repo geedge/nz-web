@@ -240,7 +240,9 @@
             vce.id AS vce_id,
             vce.expression AS vce_expression,
             vce.type AS vce_type,
-            vce.legend AS vce_legend
+            vce.legend AS vce_legend,
+            vce.name AS vce_name,
+            vce.state AS vce_state
         FROM
             visual_chart vch
             LEFT JOIN visual_chart_element vce ON vch.id = vce.chart_id
