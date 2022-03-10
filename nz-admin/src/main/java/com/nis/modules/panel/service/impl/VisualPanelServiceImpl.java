@@ -583,8 +583,12 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
         for (VisualChartElement element : chartElements) {
             tempMap = new LinkedHashMap(4);
             tempMap.put("expression", element.getExpression());
-            if(ToolUtil.isNotEmpty(element.getLegend())){
+            tempMap.put("state", element.getState());
+            if (ToolUtil.isNotEmpty(element.getLegend())) {
                 tempMap.put("legend", element.getLegend());
+            }
+            if (ToolUtil.isNotEmpty(element.getName())) {
+                tempMap.put("name", element.getName());
             }
             handleMaps.add(tempMap);
         }
