@@ -126,10 +126,10 @@ public class ShiroConfig {
 		/*
 		 * 自定义 过滤器
 		 */
-		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics 
-		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
+		filterMap.put("/actuator/prometheus", "metricsFilter"); //prometheus metrics
 		filterMap.put("/actuator/**", "anon"); // 诊断接口
-		
+		filterMap.put("/**", "tokenCheckFilter,licenseFilter");
+
 		Integer loginExpiration = getTimeOutData();
 		Map<String, Filter> cumstomFilterMap = new LinkedHashMap<String, Filter>();
 		TokenCheckFilter tokenCheckFilter = new TokenCheckFilter(redisTemplate, loginExpiration, sysUserDao,sysApiKeyDao);
