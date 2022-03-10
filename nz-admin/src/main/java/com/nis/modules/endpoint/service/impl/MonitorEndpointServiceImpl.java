@@ -464,7 +464,7 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
                 saveChart.setUpdateBy(ShiroUtils.getUserId().intValue());
                 saveChart.setPid(chart.getId());
 
-                saveChart.setVarType(1);
+                saveChart.setVarType(2);
                 saveChart.setVarId(endpoint.getId());
 
                 Integer newGroupId = groupIdMapping.get(saveChart.getGroupId());
