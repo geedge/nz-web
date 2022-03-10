@@ -1489,7 +1489,6 @@ INSERT INTO `sys_i18n` VALUES (1459, 'guide.importEndpoint', 'en', 'guide.import
 INSERT INTO `sys_i18n` VALUES (1460, 'guide.addEndpoint', 'en', 'guide.addEndpoint', 'Add endpoint', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1461, 'guide.importAsset', 'en', 'guide.importAsset', 'Import asset', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1462, 'guide.downloadAgent', 'en', 'guide.downloadAgent', 'Download agent', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1463, 'guide.monitor', 'en', 'guide.monitor', 'Monitor', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1464, 'guide.addModule', 'en', 'guide.addModule', 'Add module', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1465, 'guide.visualizationTip', 'en', 'guide.visualizationTip', 'Panels consist of different sets of customized charts. You can create several panels and switch between them.', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1466, 'guide.dcTip', 'en', 'guide.dcTip', 'Data center associated with Prometheus servers contains cabinets and assets; cabinet is a container for assets.', '', '2021-11-02 00:00:00', 1);
@@ -3052,7 +3051,6 @@ INSERT INTO `sys_i18n` VALUES (3042, 'guide.importEndpoint', 'zh', 'guide.import
 INSERT INTO `sys_i18n` VALUES (3043, 'guide.addEndpoint', 'zh', 'guide.addEndpoint', '新增endpoint', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3044, 'guide.importAsset', 'zh', 'guide.importAsset', '导入资产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3045, 'guide.downloadAgent', 'zh', 'guide.downloadAgent', '下载客户端', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (3046, 'guide.monitor', 'zh', 'guide.monitor', '监控', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3047, 'guide.addModule', 'zh', 'guide.addModule', '新增模块', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3048, 'guide.visualizationTip', 'zh', 'guide.visualizationTip', '面板由不同组的自定义图表组成，您可以创建多个面板并在它们之间切换', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (3049, 'guide.dcTip', 'zh', 'guide.dcTip', '数据中心包含机柜和资产，机柜是资产的容器', '', '2021-11-02 00:00:00', 1);
