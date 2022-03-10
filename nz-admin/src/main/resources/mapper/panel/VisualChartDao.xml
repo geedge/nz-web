@@ -76,6 +76,8 @@
             vce.expression AS vce_expression,
             vce.type AS vce_type,
             vce.legend AS vce_legend,
+            vce.name AS vce_name,
+            vce.state AS vce_state,
             vp.id as panel_id,
             vp.name as panel_name,
             case when vch.var_type=1 then aa.name when vch.var_type=2 then me.name end as var_name
