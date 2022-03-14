@@ -22,6 +22,7 @@ import org.springframework.restdocs.mockmvc.RestDocumentationResultHandler;
 import org.springframework.restdocs.operation.preprocess.Preprocessors;
 import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -38,6 +39,7 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 // 默认使用 test 配置进行测试
 @ActiveProfiles("test")
 @Component
+@TestExecutionListeners(mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS, listeners = {DBTestListener.class})
 public abstract class BaseTest<T> {
 
     protected static final Log log = Log.get();
