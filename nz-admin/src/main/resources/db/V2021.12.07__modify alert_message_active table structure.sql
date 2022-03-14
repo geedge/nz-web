@@ -5,7 +5,7 @@
  */
 
 DELETE FROM alert_message_active WHERE id NOT IN (
-	     SELECT max(id) maxId FROM alert_message_active GROUP BY hash_key
+	     SELECT * FROM ( SELECT max(id) maxId FROM alert_message_active GROUP BY hash_key ) AS t
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_hash_key ON alert_message_active(`hash_key`) USING BTREE;
