@@ -160,7 +160,8 @@ public class SysLicenseController extends AbstractController {
 			
 			// 多个 c2v组织成一个 license 文件
 			String license = licDoc.asXML();
-			Tool.ResponseUtil.downloadFile(response, "license-request.txt",
+			String licenseProductName = sysConfigService.getValue("license_product_name");
+			Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-apply.xml", licenseProductName, licenseToken),
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 			return null;
 		} else {
@@ -273,7 +274,9 @@ public class SysLicenseController extends AbstractController {
 		if (license == null) {
 			throw new NZException(RCode.LICENSE_FILE_IS_EMPTY);
 		}
-		Tool.ResponseUtil.downloadFile(response, "license.txt", license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
+		String licenseProductName = sysConfigService.getValue("license_product_name");
+		String licenseToken = sysConfigService.getValue("license_token");
+		Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-issue.xml", licenseProductName, licenseToken), license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 	}
 
 	
@@ -291,7 +294,7 @@ public class SysLicenseController extends AbstractController {
 		if(StrUtil.isEmpty(license)) {
 			return;
 		}else {
-			Tool.ResponseUtil.downloadFile(response, "license.v2c",
+			Tool.ResponseUtil.downloadFile(response, String.format("%s-%s-license-issue.xml",  sysConfigService.getValue("license_product_name"), params.get("supportID")),
 					license.getBytes(Constant.DEFAULT_CHARTSET_NAME));
 		}
 	}
