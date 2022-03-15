@@ -887,7 +887,7 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
     
     private String validateChartElementForImport(String datasource,String elements) {
         // datasource类型为metrics logs的需要校验elements
-        if (datasource.equals(Constant.ChartDatasourceType.METRICS)||datasource.equals(Constant.ChartDatasourceType.LOGS)) {
+        if (datasource.equals(Constant.ChartDatasourceType.METRICS.getValue()) || datasource.equals(Constant.ChartDatasourceType.LOGS.getValue())) {
             if(StringUtils.isEmpty(elements)){
                 return RCode.CHART_ELEMENT_ISNULL.getMsg();
             }
