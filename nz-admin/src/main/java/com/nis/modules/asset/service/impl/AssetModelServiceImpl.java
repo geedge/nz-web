@@ -9,19 +9,23 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.asset.dao.AssetAssetDao;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetBrand;
 import com.nis.modules.asset.entity.AssetModel;
+import com.nis.modules.asset.entity.AssetTypeConf;
 import com.nis.modules.asset.service.AssetAssetService;
 import com.nis.modules.asset.service.AssetBrandService;
 import com.nis.modules.asset.service.AssetModelService;
+import com.nis.modules.asset.service.AssetTypeConfService;
 import com.nis.modules.panel.entity.VisualChart;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+import com.sun.jmx.snmp.SnmpOid;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -63,6 +67,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
     private AssetAssetDao assetDao;
 
     @Autowired
+    private AssetTypeConfService typeConfService;
+
+    @Autowired
     private SysConfigService sysConfigService;
 
     @Autowired
@@ -87,10 +94,12 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
             model.setCharts(charts);
     	}
-    	//获取资产数量
+        AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
+        //获取资产数量
     	List<AssetAsset> list = assetAssetService.list(new QueryWrapper<AssetAsset>().lambda().eq(AssetAsset::getModelId, model.getId()));
     	model.setAssetNum(list.size());
         model.setBrand(brand);
+        model.setType(typeConf);
         return model;
     }
 
@@ -106,6 +115,11 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         if(StrUtil.isNotBlank(brandIds)) {
         	List<String> brandListIds = Arrays.asList(brandIds.split(","));
         	params.put("brandIds",brandListIds);
+        }
+        String typeIds = (String) params.get("typeIds");
+        if(StrUtil.isNotBlank(typeIds)) {
+            List<String> typeListIds = Arrays.asList(typeIds.split(","));
+            params.put("typeIds",typeListIds);
         }
         List<AssetModel> modelList = assetModelDao.queryList(page, params);
         for(AssetModel model : modelList) {
@@ -151,21 +165,49 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         		throw new NZException(RCode.ASSET_MODEL_CHART_ERROR);
         	}
         }
+
+        // 4. type 是否存在
+        AssetTypeConf typeConfObj = typeConfService.getById(model.getTypeId());
+        ValidateUtils.is(typeConfObj).notNull(RCode.TYPECONF_NOT_FOUND);
+
+        // 5. sysObjectId 校验符合 oid 格式 / 唯一
+        if (StrUtil.isNotEmpty(model.getSysObjectId())) {
+            // format
+            try {
+                new SnmpOid(model.getSysObjectId());
+            } catch (IllegalArgumentException e) {
+                throw new NZException(RCode.ASSET_MODEL_OID_INCORRECT);
+            }
+
+            // only
+            List<AssetModel> tmplList = this.list(new QueryWrapper<AssetModel>().lambda().eq(AssetModel::getSysObjectId, model.getSysObjectId()));
+
+            flag = false;
+            // 当只有一个结果并且这个结果是自身时，或没有结果时，说明名称不重复
+            if ((tmplList == null || tmplList.size() == 0) || (tmplList != null && tmplList.size() == 1 && tmplList.get(0).getId().equals(model.getId()))) {
+                flag = true;
+            }
+
+            if (!flag) {
+                throw new NZException(RCode.ASSET_MODEL_OID_DUPLICATE);
+            }
+        }
     }
 
     @Override
-    public void saveModel(AssetModel model) {
+    public Integer saveModel(AssetModel model) {
         // 1. 校验
         this.validateAssetModelInfo(model);
 
         // 保存
         this.save(model);
+        return model.getId();
     }
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateModel(AssetModel model) {
+    public Integer updateModel(AssetModel model) {
         // 1. 校验
         this.validateAssetModelInfo(model);
 
@@ -178,6 +220,7 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
         if (!oldModel.getBrandId().equals(model.getBrandId())) {
             assetDao.updateBrandIdByModelId(model.getId(), model.getBrandId());
         }
+        return model.getId();
     }
 
     @Override
@@ -264,6 +307,38 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
 
             String remark = dataMap.get(3);
+
+            String typeName = dataMap.get(4);
+            Integer typeId = null;
+            if (StringUtils.isEmpty(typeName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.TYPECONF_NAME_ISNULL.getMsg());
+            } else {
+                AssetTypeConf typeConf = typeConfService.getOne(new LambdaQueryWrapper<AssetTypeConf>().eq(AssetTypeConf::getName, typeName.trim()));
+                if (typeConf == null) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(4), RCode.TYPECONF_NOT_FOUND.getMsg());
+                }
+                typeId = Tool.ObjectUtil.isEmpty(typeConf) ? null : typeConf.getId();
+            }
+
+            String sysObjectIdStr = dataMap.get(5);
+            if (StringUtils.isNotEmpty(sysObjectIdStr)) {
+                // fotmat
+                try {
+                    new SnmpOid(sysObjectIdStr);
+                } catch (IllegalArgumentException e) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODEL_OID_INCORRECT.getMsg());
+                }
+                // only
+                int count = this.count(new LambdaQueryWrapper<AssetModel>().eq(AssetModel::getSysObjectId, sysObjectIdStr));
+                if(count > 0){
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODEL_OID_DUPLICATE.getMsg());
+                }
+            }
+
             if (saveFlag) {
                 DefaultTransactionDefinition def = new DefaultTransactionDefinition();
                 TransactionStatus transactionStatus = dataSourceTransactionManager.getTransaction(def);
@@ -291,6 +366,8 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
                     model.setUsize(1);
                     String chartIds = relChartTemplateIds.toString();
                     model.setChartIds(StrUtil.isNotEmpty(chartIds) ? chartIds.substring(0, chartIds.length() - 1) : "");
+                    model.setTypeId(typeId);
+                    model.setSysObjectId(StrUtil.isNotEmpty(sysObjectIdStr) ? sysObjectIdStr : StrUtil.EMPTY);
                     model.setSeq(seqUUID);
                     this.save(model);
 
@@ -361,6 +438,9 @@ public class AssetModelServiceImpl extends ServiceImpl<AssetModelDao, AssetModel
             }
             tempList.add(chartNames);
             tempList.add(ObjectUtil.defaultIfNull(model.getRemark(), ""));
+            AssetTypeConf typeConf = typeConfService.getById(model.getTypeId());
+            tempList.add(typeConf.getName());
+            tempList.add(model.getSysObjectId());
             exportDataList.add(tempList);
         }
         return exportDataList;

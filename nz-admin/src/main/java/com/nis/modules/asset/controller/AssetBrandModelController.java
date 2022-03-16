@@ -100,10 +100,11 @@ public class AssetBrandModelController {
     public R saveAssetModel(@RequestBody AssetModel model) {
         ValidateUtils.is(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL).maxLength(64)
                 .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL)
-                .and(model.getRemark()).maxLength(256);
+                .and(model.getRemark()).maxLength(256)
+                .and(model.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
 
-        modelService.saveModel(model);
-        return R.ok();
+        Integer id = modelService.saveModel(model);
+        return R.ok().putData("id", id);
     }
 
     @PutMapping("/asset/model")
@@ -113,10 +114,11 @@ public class AssetBrandModelController {
         ValidateUtils.is(model.getId()).notNull(RCode.ASSET_MODELID_ISNULL)
                 .and(model.getName()).notNull(RCode.ASSET_MODELNAME_ISNULL).maxLength(64)
                 .and(model.getBrandId()).notNull(RCode.ASSET_MODEL_BRANDID_ISNULL)
-                .and(model.getRemark()).maxLength(256);
+                .and(model.getRemark()).maxLength(256)
+                .and(model.getTypeId()).notNull(RCode.ASSET_TYPE_ID_ISNULL);
 
-        modelService.updateModel(model);
-        return R.ok();
+        Integer id = modelService.updateModel(model);
+        return R.ok().putData("id", id);
     }
 
     @DeleteMapping("/asset/model")

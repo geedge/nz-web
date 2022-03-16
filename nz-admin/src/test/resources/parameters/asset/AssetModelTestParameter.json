@@ -1,0 +1,119 @@
+{
+  "------------------ POST  /asset/model data---------------------": "note",
+  "saveModel_success": {
+    "brandId": 1,
+    "name": "D80FB840",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": "1.3.6.1.2.1.76"
+  },
+  "saveModel_checkNameNotNull": {
+    "brandId": 3,
+    "name": "",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": ""
+  },
+ "saveModel_checkBrandIdNotNull": {
+   "brandId": null,
+   "name": "D80FB840",
+   "usize": null,
+   "typeId": 1,
+   "sysObjectId": ""
+ },
+ "saveModel_checkTypeIdNotNull": {
+   "brandId": 1,
+   "name": "D80FB840",
+   "usize": null,
+   "typeId": null,
+   "sysObjectId": ""
+ },
+ "saveModel_checkBrandExist": {
+   "brandId": 9999,
+   "name": "07e72283",
+   "usize": null,
+   "typeId": 1,
+   "sysObjectId": ""
+ },
+ "saveModel_checkNameDuplicate": {
+   "brandId": 2,
+   "name": "OPD",
+   "usize": null,
+   "typeId": 1,
+   "sysObjectId": ""
+ },
+  "saveModel_checkTypeExist": {
+    "brandId": 1,
+    "name": "07e72283",
+    "usize": null,
+    "typeId": 9999,
+    "sysObjectId": ""
+  },
+  "saveModel_checkOIDFormat": {
+    "brandId": 1,
+    "name": "07e72283",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": "abcdefg"
+  },
+  "saveModel_checkOIDDuplicate": {
+    "brandId": 1,
+    "name": "07e72283",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": "1.3.6.1.2.1.11"
+  },
+  "------------------ PUT  /asset/model data---------------------": "note",
+  "updateModel_success": {
+    "id": 5,
+    "brandId": 4,
+    "name": "S5735-update",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": ""
+  },
+  "updateModel_checkNameDuplicate": {
+    "id": 5,
+    "brandId": 2,
+    "name": "TSG-9K-NPB",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": ""
+  },
+  "updateModel_checkOIDDuplicate": {
+    "id": 5,
+    "brandId": 4,
+    "name": "2A19DC49",
+    "usize": null,
+    "typeId": 1,
+    "sysObjectId": "1.3.6.1.2.1.11"
+  },
+  "------------------ GET  /asset/model/{id} data---------------------": "note",
+  "queryModelInfo_notexist": {
+    "id": 999
+  },
+  "queryModelInfo_exist": {
+    "id": 1
+  },
+  "------------------ GET  /asset/model data---------------------": "note",
+  "queryModelList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "10,13",
+    "name": "",
+    "brandIds": "10",
+    "typeIds": "99"
+  },
+  "queryModelList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2,3,4",
+    "name": ""
+  },
+  "------------------ DELETE  /asset/model data---------------------": "note",
+  "deleteModel_success": {
+    "ids": "6"
+  }
+}

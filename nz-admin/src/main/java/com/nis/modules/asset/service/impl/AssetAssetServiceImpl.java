@@ -1539,8 +1539,8 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         List<Map> failDetails = new ArrayList<>();
         String seqUUID = UUID.randomUUID().toString();
 
-        int successNum = this.saveAssetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
         int totalNum = importDataList.size();
+        int successNum = this.saveAssetsFromImportDataList(importDataList, failDetails, new ArrayList<>(exportHeaderMap.keySet()), seqUUID);
 
         Map resultMap = new HashMap(8);
         resultMap.put("seq", seqUUID);
@@ -1717,6 +1717,21 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 }
             }
 
+            // type
+            AssetTypeConf typeConf = null;
+            String typeName = dataMap.get(11);
+            if (StringUtils.isEmpty(typeName)) {
+                saveFlag = false;
+                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NAME_ISNULL.getMsg());
+            } else {
+                // type 未找到
+                typeConf = typeNameAndEntityMap.get(typeName);
+                if (typeConf == null) {
+                    saveFlag = false;
+                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NOT_FOUND.getMsg());
+                }
+            }
+
             // brand  model
             Integer brandId = null, modelId = null;
             String brandName = dataMap.get(4);
@@ -1731,7 +1746,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 saveFlag = false;
                 this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(5), RCode.ASSET_MODELNAME_ISNULL.getMsg());
             } else {
-                modelId = this.validateModel(brandId, modelName, brandIdAndModelListMap, seqUUID, saveEntitys);
+                modelId = this.validateModel(brandId, modelName, brandIdAndModelListMap, seqUUID, saveEntitys, Tool.ObjectUtil.isNull(typeConf) ? null : typeConf.getId());
             }
 
             // state
@@ -1748,23 +1763,6 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(10), RCode.STATECONF_NOT_FOUND.getMsg());
                 }
             }
-
-            // type
-            AssetTypeConf typeConf = null;
-            String typeName = dataMap.get(11);
-            if (StringUtils.isEmpty(typeName)) {
-                saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NAME_ISNULL.getMsg());
-            } else {
-                // type 未找到
-                typeConf = typeNameAndEntityMap.get(typeName);
-                if (typeConf == null) {
-                    saveFlag = false;
-                    this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(11), RCode.TYPECONF_NOT_FOUND.getMsg());
-                }
-            }
-
-            
 
             // 虚拟机宿主
             String parentName = dataMap.get(2);
@@ -2220,13 +2218,14 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
     }
 
 
-    private Integer validateModel(Integer brandId, String modelName, Map<Integer, List<AssetModel>> brandIdAndModelListMap, String seqUUID, Map saveEntitys) {
+    private Integer validateModel(Integer brandId, String modelName, Map<Integer, List<AssetModel>> brandIdAndModelListMap, String seqUUID, Map saveEntitys, Integer typeId) {
         // brand 不存在,model肯定也不在
         if (brandId == null) {
             AssetModel model = new AssetModel();
             model.setName(modelName);
             model.setSeq(seqUUID);
             model.setUsize(1);
+            model.setTypeId(typeId);
             saveEntitys.put("model", model);
             return model.getId();
         } else {
@@ -2239,6 +2238,7 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
                 model.setName(modelName);
                 model.setSeq(seqUUID);
                 model.setUsize(1);
+                model.setTypeId(typeId);
                 saveEntitys.put("model", model);
                 return model.getId();
             } else {

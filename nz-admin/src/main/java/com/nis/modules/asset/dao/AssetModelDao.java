@@ -25,4 +25,6 @@ public interface AssetModelDao extends BaseMapper<AssetModel> {
 
     // nz_asset_nums / 按型号统计资产数量
     List<MetricsDto> nzAssetNumsMetric();
+
+    void insertModel(@Param("model") AssetModel assetModel);
 }

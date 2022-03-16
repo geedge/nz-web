@@ -9,10 +9,17 @@
         <result property="brandId" column="brand_id"/>
         <result property="remark" column="remark"/>
         <result property="seq" column="seq"/>
+        <result property="typeId" column="type_id"/>
+        <result property="sysObjectId" column="sys_object_id"/>
         <result property="chartIds" column="chart_ids"/>
         <result property="assetNum" column="assetNum"/>
 
         <association property="brand" columnPrefix="b_" javaType="com.nis.modules.asset.entity.AssetBrand">
+            <id property="id" column="id"/>
+            <result property="name" column="name"/>
+        </association>
+
+        <association property="type" columnPrefix="atc_" javaType="com.nis.modules.asset.entity.AssetTypeConf">
             <id property="id" column="id"/>
             <result property="name" column="name"/>
         </association>
@@ -23,10 +30,13 @@
 			model.*,
 			brand.id AS b_id,
 			brand.NAME AS b_name,
+            atc.id AS atc_id,
+            atc.NAME AS atc_name,
 			IFNULL( asset.assetNum, 0 ) AS assetNum 
 		FROM
 			asset_model model
 			LEFT JOIN asset_brand brand ON model.brand_id = brand.id
+            LEFT JOIN asset_type_conf atc on model.type_id = atc.id
 			LEFT JOIN ( SELECT model_id, count( 1 ) AS assetNum FROM asset_asset GROUP BY model_id ) asset ON model.id = asset.model_id
         <where>
             <if test="params.name != null and params.name != ''">
@@ -38,6 +48,18 @@
 		       		#{brandId}
 			    </foreach>
             </if>
+
+            <if test="params.typeIds != null ">
+                and model.type_id in
+                <foreach item="typeId" collection="params.typeIds" separator="," open="(" close=")" index="">
+                    #{typeId}
+                </foreach>
+            </if>
+
+            <if test="params.sysObjectId != null">
+                and model.sys_object_id = #{params.sysObjectId}
+            </if>
+
             <if test="params.ids != null">
             	and model.id in 
 				<foreach item="id" collection="params.ids" separator="," open="(" close=")" index="">
@@ -68,4 +90,10 @@
             state.id,
             type.id
     </select>
+
+    <insert id="insertModel">
+        INSERT INTO `asset_model`(`id`, `brand_id`, `name`, `remark`, `seq`, `usize`, `chart_ids`,`type_id`,`sys_object_id`)
+        VALUES
+        (#{model.id}, #{model.brandId}, #{model.name}, #{model.remark},#{model.seq}, #{model.usize}, #{model.chartIds},#{model.typeId},#{model.sysObjectId});
+    </insert>
 </mapper>

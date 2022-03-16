@@ -54,6 +54,21 @@ public class AssetModel implements Serializable {
      */
     private Integer usize;
 
+    /**
+     * 关联 asset_type_conf.id
+     */
+    private Integer typeId;
+
+    /**
+     * 唯一不重复
+     * 用于snmp 自动扫描设备型号识别
+     */
+    private String sysObjectId;
+
+
+    @TableField(exist = false)
+    private AssetTypeConf type;
+
     @TableField(exist = false)
     private AssetBrand brand;
     

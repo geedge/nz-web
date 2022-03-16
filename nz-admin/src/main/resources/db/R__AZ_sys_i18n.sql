@@ -5275,5 +5275,17 @@ INSERT INTO `sys_i18n` VALUES (5822, 'config.ipamip.remark.comment', 'en', 'conf
 INSERT INTO `sys_i18n` VALUES (5823, 'config.ipamip.remark.comment', 'zh', 'config.ipamip.remark.comment', '描述', '', '2022-03-15 10:23:55', 1);
 INSERT INTO `sys_i18n` VALUES (5824, 'config.ipamip.uts.comment', 'en', 'config.ipamip.uts.comment', 'Uts', '', '2022-03-15 10:23:55', 1);
 INSERT INTO `sys_i18n` VALUES (5825, 'config.ipamip.uts.comment', 'zh', 'config.ipamip.uts.comment', '更新时间戳', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5826, 'config.model.sysObjectId', 'en', 'config.model.sysObjectId', 'Sys object id', '', '2022-03-11 06:15:08', 1);
+INSERT INTO `sys_i18n` VALUES (5827, 'config.model.sysObjectId', 'zh', 'config.model.sysObjectId', '系统对象 ID', '', '2022-03-11 06:17:45', 1);
+INSERT INTO `sys_i18n` VALUES (5828, 'config.model.sysObjectId.comment', 'en', 'config.model.sysObjectId.comment', 'System Object Id Example:  1.3.6.1.2.1.30', '', '2022-03-11 08:48:24', 1);
+INSERT INTO `sys_i18n` VALUES (5829, 'config.model.sysObjectId.comment', 'zh', 'config.model.sysObjectId.comment', '对象ID 示例：1.3.6.1.2.1.30', '', '2022-03-11 08:48:59', 1);
+INSERT INTO `sys_i18n` VALUES (5830, '323016', 'en', 'ASSET_MODEL_OID_INCORRECT', 'OID format is incorrect', '', '2022-03-14 06:55:09', 1);
+INSERT INTO `sys_i18n` VALUES (5831, '323016', 'zh', 'ASSET_MODEL_OID_INCORRECT', 'OID 格式错误', '', '2022-03-14 06:55:29', 1);
+INSERT INTO `sys_i18n` VALUES (5832, '322017', 'en', 'ASSET_MODEL_OID_DUPLICATE', 'OID duplicate', '', '2022-03-14 06:55:44', 1);
+INSERT INTO `sys_i18n` VALUES (5833, '322017', 'zh', 'ASSET_MODEL_OID_DUPLICATE', 'OID 重复', '', '2022-03-14 06:55:55', 1);
+INSERT INTO `sys_i18n` VALUES (5834, 'licenseGen.comment', 'en', 'licenseGen.comment', 'Comment', '', '2022-03-15 06:07:09', 1);
+INSERT INTO `sys_i18n` VALUES (5835, 'licenseGen.comment', 'zh', 'licenseGen.comment', 'Comment', '', '2022-03-15 06:07:23', 1);
+INSERT INTO `sys_i18n` VALUES (5836, 'license.gen', 'en', 'license.gen', 'License Gen', '', '2022-03-15 06:26:43', 1);
+INSERT INTO `sys_i18n` VALUES (5837, 'license.gen', 'zh', 'license.gen', '生成证书', '', '2022-03-15 06:27:18', 1);
 
 SET FOREIGN_KEY_CHECKS = 1;

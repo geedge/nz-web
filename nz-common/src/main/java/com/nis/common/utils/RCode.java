@@ -325,6 +325,8 @@ public enum RCode {
     ASSET_MODEL_BRANDID_ISNULL(321013, "Asset model brand id can not be null"),
     ASSET_MODEL_CHART_ERROR(321014,"Asset model chart template not exist"),
     ASSET_MODEL_SEQ_ISNULL(321015, "Cancel import serial number is empty"),
+    ASSET_MODEL_OID_INCORRECT(323016, "OID format is incorrect"),
+    ASSET_MODEL_OID_DUPLICATE(322017, "OID duplicate"),
 
     ACCOUNT_AUTHTYPE_ISNULL(331000, "Authentication type cannot be empty"),
     ACCOUNT_AUTHTYPE_INVALIDE(333001, "Invalid authentication type"),

@@ -21,9 +21,9 @@ public interface AssetModelService extends IService<AssetModel> {
 
     PageUtils queryPage(Map<String, Object> params);
 
-    void saveModel(AssetModel model);
+    Integer saveModel(AssetModel model);
 
-    void updateModel(AssetModel model);
+    Integer updateModel(AssetModel model);
 
     void delete(Integer... ids);
 

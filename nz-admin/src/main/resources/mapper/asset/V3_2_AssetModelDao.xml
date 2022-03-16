@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.nis.common.update.v3_2_to_3_3.dao.V3_2_AssetModelDao">
+
+    <resultMap type="com.nis.modules.asset.entity.AssetModel" id="modelView">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="brandId" column="brand_id"/>
+        <result property="remark" column="remark"/>
+        <result property="seq" column="seq"/>
+        <result property="chartIds" column="chart_ids"/>
+        <result property="usize" column="usize"/>
+    </resultMap>
+
+    <select id="checkTableExists" resultType="java.util.Map">
+        SHOW TABLES LIKE #{tableName};
+    </select>
+
+    <update id="dropTable">
+        DROP TABLE ${tableName};
+    </update>
+
+    <select id="queryAssetModelIdAndTypesMapping" resultType="java.util.Map">
+        SELECT
+            model_id AS modelId,
+            GROUP_CONCAT( DISTINCT type_id ) AS typeId
+        FROM
+            asset_asset
+        GROUP BY
+            model_id;
+    </select>
+
+    <select id="queryList" resultMap="modelView">
+        SELECT
+            *
+        FROM
+            asset_model_v3_2;
+    </select>
+
+</mapper>
