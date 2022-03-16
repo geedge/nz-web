@@ -940,12 +940,12 @@ public enum RCode {
     IPAM_IP_ADDR_ISNULL(731003,"Ipamip addr can not be null"),
     IPAM_IP_MAC_ISNULL(731004,"Ipamip mac can not be null"),
     IPAM_IP_ADDR_ERROR(731005,"Ipamip addr format error,please check ip format for ipv4/6"),
-    IPAM_IP_INTERVAL_ERROR(73106,"Ipamip interval already exists"),
-    IPAM_IP_ASSET_ISNULL(73107,"Ipamip asset can not be null"),
-    IPAM_IP_SUBNET_ISNULL(73108,"Ipamip subnet can not be null"),
-    IPAM_IP_MAC_ERROR(73109,"Ipamip mac error, mac repeat"),
-    IPAM_IP_SUBNET_ADDR_ERROR(73110,"Ipamip addr error, ip addr different subnet addr "),
-    IPAM_IP_MAC_ADDR_ERROR(7311,"Ipamip mac and addr exist"),
+    IPAM_IP_INTERVAL_ERROR(731006,"Ipamip interval already exists"),
+    IPAM_IP_ASSET_ISNULL(731007,"Ipamip asset can not be null"),
+    IPAM_IP_SUBNET_ISNULL(731008,"Ipamip subnet can not be null"),
+    IPAM_IP_MAC_ERROR(731009,"Ipamip mac error, mac repeat"),
+    IPAM_IP_SUBNET_ADDR_ERROR(731010,"Ipamip addr error, ip addr different subnet addr "),
+    IPAM_IP_MAC_ADDR_ERROR(731011,"Ipamip mac and addr exist"),
 
 
     ERROR(999, "error"); //通用错误/未知错误

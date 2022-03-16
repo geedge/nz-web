@@ -1,0 +1,127 @@
+{
+  "------------------ GET  /ipam/ip/{id} data---------------------": "note",
+  "queryIpamIpInfo_exist": {
+    "id": 1
+  },
+  "queryIpamIpInfo_notexist": {
+    "id": 99999
+  },
+  "------------------ GET  /ipam/ip data---------------------": "note",
+  "queryIpamIpList_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryIpamIpList_error": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "888,999",
+    "name": "",
+    "state": "",
+    "addr": ""
+  },
+  "queryIpamIpList_ids": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryIpamIpList_name": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "name": "node-1"
+  },
+  "queryIpamIpList_state": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "state": 1
+  },
+  "queryIpamIpList_addr": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "addr": "192.168.40.0"
+  },
+  "------------------ POST  /ipam/ip data---------------------": "note",
+  "saveIpamIp_success": {
+    "name": "node-6",
+    "addr": "192.168.66.1",
+    "mac": "1f:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_nameisnull": {
+    "name": "",
+    "addr": "192.168.88.1",
+    "mac": "1g:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_addrisnull": {
+    "name": "node-7",
+    "addr": "",
+    "mac": "1g:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_macisnull": {
+    "name": "node-7",
+    "addr": "192.168.88.1",
+    "mac": "",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_addrerror": {
+  "name": "node-7",
+  "addr": "192.168.88.1.1",
+  "mac": "1g:1b:6b:1d:65:1d",
+  "state": 1,
+  "remark": ""
+  },
+  "saveIpamIp_subnetisnull": {
+    "name": "node-7",
+    "addr": "127.0.0.1",
+    "mac": "1g:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_macerror": {
+    "name": "node-7",
+    "addr": "192.168.88.1",
+    "mac": "1g:1b:6b:1d:65:1d:7f:8d",
+    "state": 1,
+    "remark": ""
+  },
+  "saveIpamIp_ipmacexists": {
+    "name": "node-7",
+    "addr": "192.168.88.1",
+    "mac": "1a:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "------------------ PUT  /ipam/ip data---------------------": "note",
+  "updateIpamIp_success": {
+    "id": 2,
+    "name": "node-7",
+    "addr": "192.168.66.1",
+    "mac": "1b:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "updateIpamIp_idisnull": {
+    "id": null,
+    "name": "node-7",
+    "addr": "192.168.66.1",
+    "mac": "1b:1b:6b:1d:65:1d",
+    "state": 1,
+    "remark": ""
+  },
+  "------------------ DELETE  /ipam/ip data---------------------": "note",
+  "deleteIpamIp_success": {
+    "ids": "4,5"
+  }
+}

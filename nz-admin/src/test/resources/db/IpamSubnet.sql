@@ -5,4 +5,6 @@ INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `
 INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `dc_id`, `remark`, `seq`) VALUES (9, 'IpamSubnetTest', 4, '192.168.50.1', 24, 'vlanNameTest', '256', 1, '1', '');
 INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `dc_id`, `remark`, `seq`) VALUES (10, 'IpamSubnetTest', 4, '192.168.44.1', 24, 'vlanNameTest', '256', 100, '1', '');
 INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `dc_id`, `remark`, `seq`) VALUES (11, 'IpamSubnetTest', 4, '192.168.63.1', 24, 'vlanNameTest', '256', 1, '1', '');
+INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `dc_id`, `remark`, `seq`) VALUES (12, 'IpamSubnetTest3', 4, '192.168.66.1', 24, 'vlanNameTest', '256', 1, '1', '');
+INSERT INTO `ipam_subnet`(`id`, `name`, `type`, `addr`, `mask`, `vlan`, `cap`, `dc_id`, `remark`, `seq`) VALUES (13, 'IpamSubnetTest4', 4, '192.168.88.1', 24, 'vlanNameTest', '256', 1, '1', '');
 
