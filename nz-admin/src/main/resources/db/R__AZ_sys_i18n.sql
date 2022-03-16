@@ -5011,9 +5011,9 @@ INSERT INTO `sys_i18n` VALUES (5558, 'license.proDate', 'en', 'license.proDate',
 INSERT INTO `sys_i18n` VALUES (5559, 'license.proDate', 'zh', 'license.proDate', '发行日期', '', '2021-12-24 01:13:42', 1);
 INSERT INTO `sys_i18n` VALUES (5560, 'license.expDate', 'en', 'license.expDate', 'Date Expires', '', '2021-12-24 01:15:27', 1);
 INSERT INTO `sys_i18n` VALUES (5561, 'license.expDate', 'zh', 'license.expDate', '到期日期', '', '2021-12-24 01:15:35', 1);
-INSERT INTO `sys_i18n` VALUES (5562, 'license.downloadID', 'en', 'license.downloadID', 'Download fingerprint', '', '2021-12-24 01:15:52', 1);
+INSERT INTO `sys_i18n` VALUES (5562, 'license.downloadID', 'en', 'license.downloadID', 'Download apply file', '', '2021-12-24 01:15:52', 1);
 INSERT INTO `sys_i18n` VALUES (5563, 'license.downloadID', 'zh', 'license.downloadID', '下载指纹', '', '2021-12-24 01:16:18', 1);
-INSERT INTO `sys_i18n` VALUES (5564, 'license.uploadLicense', 'en', 'license.uploadLicense', 'Upload license', '', '2021-12-10 01:40:29', 1);
+INSERT INTO `sys_i18n` VALUES (5564, 'license.uploadLicense', 'en', 'license.uploadLicense', 'Upload issue file', '', '2021-12-10 01:40:29', 1);
 INSERT INTO `sys_i18n` VALUES (5565, 'license.uploadLicense', 'zh', 'license.uploadLicense', '上传许可证', '', '2021-12-10 01:40:53', 1);
 INSERT INTO `sys_i18n` VALUES (5566, 'license.nzTitleValue', 'en', 'license.nzTitleValue', 'Nezha one stop monitoring system', '', '2021-12-10 01:43:24', 1);
 INSERT INTO `sys_i18n` VALUES (5567, 'license.nzTitleValue', 'zh', 'license.nzTitleValue', '哪吒一站式监控系统', '', '2021-12-10 01:43:54', 1);

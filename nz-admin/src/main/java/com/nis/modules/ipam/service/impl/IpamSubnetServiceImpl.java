@@ -38,6 +38,8 @@ import com.nis.modules.ipam.entity.IpamSubnet;
 import com.nis.modules.ipam.service.IpamSubnetService;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
+
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import inet.ipaddr.AddressStringException;
@@ -136,7 +138,7 @@ public class IpamSubnetServiceImpl extends ServiceImpl<IpamSubnetDao, IpamSubnet
 		// 校验ip以及掩码值之前是否有创建或者包含
 		String ip = StrUtil.builder(ipamSubnet.getAddr(),StrUtil.SLASH,ipamSubnet.getMask().toString()).toString();
 		IPAddress ipAddress = new IPAddressString(ip).toAddress();
-		List<IpamSubnet> ipamSubnets = this.list();
+		List<IpamSubnet> ipamSubnets = this.list(new QueryWrapper<IpamSubnet>().lambda().ne(ObjectUtil.isNotEmpty(ipamSubnet.getId()),IpamSubnet::getId, ipamSubnet.getId()));
 		List<String> ips = ipamSubnets.stream().map(o -> StrUtil.builder(o.getAddr(),StrUtil.SLASH,o.getMask().toString()).toString()).collect(Collectors.toList());
 		if(ToolUtil.isNotAllEmpty(ips)) {
 			for(String p : ips) {

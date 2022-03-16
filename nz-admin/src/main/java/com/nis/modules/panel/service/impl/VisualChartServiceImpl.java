@@ -301,7 +301,7 @@ public class VisualChartServiceImpl extends ServiceImpl<VisualChartDao, VisualCh
 	    }
 	    
 	    // 8. 校验element参数 仅datasource类型为 logs metrics需要进行校验
-	    if(chart.getDatasource().equals(Constant.ChartDatasourceType.METRICS)||chart.getDatasource().equals(Constant.ChartDatasourceType.LOGS)){
+		if (chart.getDatasource().equals(Constant.ChartDatasourceType.METRICS.getValue()) || chart.getDatasource().equals(Constant.ChartDatasourceType.LOGS.getValue())) {
             ValidateUtils.is(elements).notNull(RCode.CHART_ELEMENT_ISNULL);
             chartElementService.validateElements(elements);
 	    }
