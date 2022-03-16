@@ -563,4 +563,12 @@ public class CommonUtils {
     	}
     	return false;
     }
+    public static boolean checkMac(String mac) {
+        Pattern checkMac = Pattern.compile("^([A-Fa-f0-9]{2}[-,:]){5}[A-Fa-f0-9]{2}$");
+        boolean matches = checkMac.matcher(mac).matches();
+        if (!matches){
+            return false;
+        }
+        return true;
+    }
 }

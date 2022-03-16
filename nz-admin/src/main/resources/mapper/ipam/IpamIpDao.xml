@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.nis.modules.ipam.dao.IpamIpDao">
+    <resultMap type="com.nis.modules.ipam.entity.IpamIp" id="ipamIp">
+        <result property="id" column="id"/>
+        <result property="name" column="name" />
+        <result property="subnetId" column="subnet_id" />
+        <result property="addr" column="addr" />
+        <result property="mac" column="mac" />
+        <result property="assetId" column="asset_id" />
+        <result property="state" column="state" />
+        <result property="remark" column="remark" />
+        <result property="uts" column="uts" />
+        <result property="seq" column="seq" />
+
+        <association property="asset" columnPrefix="aa_" javaType="com.nis.modules.asset.entity.AssetAsset">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+        </association>
+        <association property="ipamSubnet" columnPrefix="is_" javaType="com.nis.modules.ipam.entity.IpamSubnet">
+            <id column="id" property="id"/>
+            <result column="name" property="name"/>
+        </association>
+    </resultMap>
+
+    <select id="queryPage" resultMap="ipamIp">
+        select ii.*,
+        ipam_subnet.id as is_id,
+        ipam_subnet.name as is_name,
+        asset_asset.id as aa_id,
+        asset_asset.name as aa_name
+
+        from ipam_ip ii
+        left join ipam_subnet on ii.subnet_id = ipam_subnet.id
+        left join asset_asset on ii.asset_id = asset_asset.id
+        <where>
+            <if test="params.ids != null and params.ids.size > 0">
+                ii.id IN
+                <foreach collection="params.ids" item="id" index="no" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.name != null and params.name != ''">
+                AND locate(#{params.name} , ii.name)
+            </if>
+
+            <if test="params.state != null">
+                AND ii.state = #{params.state}
+            </if>
+
+            <if test="params.addr != null and params.addr != ''">
+                AND locate(#{params.addr} , ii.addr)
+            </if>
+
+        </where>
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY ii.id
+        </if>
+    </select>
+</mapper>

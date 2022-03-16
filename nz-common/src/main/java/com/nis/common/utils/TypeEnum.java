@@ -13,7 +13,8 @@ public enum TypeEnum {
 	SYSTEM("system"), LINK("link"), SCRIPT("notification script"), ALERTSILENCE("alert silence"),
 	ALERTSEVERITY("alert severity"), ALERTNOTIFYMETHOD("alert notify method"), ASSETSTATECONF("asset state conf"),
 	ASSETTYPECONF("asset type conf"), EXPRESSIONTMPL("expression tmpl"), ASSETBRAND("asset brand"),
-	SNMPCREDENTIAL("snmp credential"), LICENSE("license"), SYSTEMAPIKEY("sys api key"),I18N("i18n"),CTL("ctl"),IPAMSUBNET("ipam subnet");
+	SNMPCREDENTIAL("snmp credential"), LICENSE("license"), SYSTEMAPIKEY("sys api key"),I18N("i18n"),CTL("ctl"),IPAMSUBNET("ipam subnet"),
+	IPAMIP("ipam ip");
 
 	private String value;
 

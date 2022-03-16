@@ -1,0 +1,31 @@
+package com.nis.modules.ipam.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.nis.common.utils.PageUtils;
+import com.nis.modules.ipam.entity.IpamIp;
+import inet.ipaddr.AddressStringException;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+public interface IpamIpService extends IService<IpamIp> {
+
+    IpamIp ipamIpInfo(Integer id);
+
+    PageUtils ipamIpList(Map params);
+
+    Integer saveOrModifyIpamSubnet(IpamIp ipamIp);
+
+    void delIpamIps(List<Integer> asList);
+
+    void getTemplateByLanguage(HttpServletResponse response, String format) throws IOException;
+
+    Map importIpamIpData(MultipartFile excelFile) throws IOException, AddressStringException;
+
+    void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
+
+    void cancelImport(String seq);
+}
