@@ -89,6 +89,8 @@ public interface StatService{
 	 * @return
 	 */
 	Map<String, Object> queryRowNumById(String table, Integer id, String order, Integer pageSize);
-	
-	
+
+
+	Map<String, Object> rel(String type, Integer id, Integer level, Integer limit);
+
 }

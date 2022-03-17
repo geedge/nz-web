@@ -1,13 +1,13 @@
 /**
- *  
+ *
  	！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
  	重点注意  每次更新本表格时  需要在界面 sys_log中查询用户新增、修改或删除了的数据内容补充到本文件中，防止更新后将用户操作内容给覆盖丢失
  	！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
- 	
+
 
  *  按照时间 描述记录每次变化内容
  *  2021年10月8日10:46:56 新建sys_i18n表 记录国际化相关数据信息
- * 
+ *
  */
 
 SET NAMES utf8mb4;
@@ -5203,8 +5203,8 @@ INSERT INTO `sys_i18n` VALUES (5750, 'config.ipamsubnet.cap.comment', 'en', 'con
 INSERT INTO `sys_i18n` VALUES (5751, 'config.ipamsubnet.cap.comment', 'zh', 'config.ipamsubnet.cap.comment', '总容量', '', '2022-02-24 10:31:18', 1);
 INSERT INTO `sys_i18n` VALUES (5752, 'config.ipamsubnet.used.comment', 'en', 'config.ipamsubnet.used.comment', 'Used', '', '2022-02-24 10:31:28', 1);
 INSERT INTO `sys_i18n` VALUES (5753, 'config.ipamsubnet.used.comment', 'zh', 'config.ipamsubnet.used.comment', '使用量', '', '2022-02-24 10:31:35', 1);
-INSERT INTO `sys_i18n` VALUES (5754, 'overall.ipam', 'en', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:11', 382);
-INSERT INTO `sys_i18n` VALUES (5755, 'overall.ipam', 'zh', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:21', 382);
+INSERT INTO `sys_i18n` VALUES (5754, 'ipam.subnet', 'en', 'ipam.subnet', 'IPAM', '', '2022-03-02 03:07:11', 382);
+INSERT INTO `sys_i18n` VALUES (5755, 'ipam.subnet', 'zh', 'ipam.subnet', 'IPAM', '', '2022-03-02 03:07:21', 382);
 INSERT INTO `sys_i18n` VALUES (5756, 'overall.addr', 'en', 'overall.addr', 'Addr', '', '2022-03-02 03:08:26', 382);
 INSERT INTO `sys_i18n` VALUES (5757, 'overall.addr', 'zh', 'overall.addr', 'Addr', '', '2022-03-02 03:10:23', 382);
 INSERT INTO `sys_i18n` VALUES (5758, 'overall.mask', 'en', 'overall.mask', 'Mask', '', '2022-03-02 03:08:41', 382);
@@ -5287,5 +5287,15 @@ INSERT INTO `sys_i18n` VALUES (5834, 'licenseGen.comment', 'en', 'licenseGen.com
 INSERT INTO `sys_i18n` VALUES (5835, 'licenseGen.comment', 'zh', 'licenseGen.comment', 'Comment', '', '2022-03-15 06:07:23', 1);
 INSERT INTO `sys_i18n` VALUES (5836, 'license.gen', 'en', 'license.gen', 'License Gen', '', '2022-03-15 06:26:43', 1);
 INSERT INTO `sys_i18n` VALUES (5837, 'license.gen', 'zh', 'license.gen', '生成证书', '', '2022-03-15 06:27:18', 1);
+INSERT INTO `sys_i18n` VALUES (5838, 'licenseGen.document', 'en', 'licenseGen.document', 'Please upload at least one file', '', '2022-03-16 06:21:39', 1);
+INSERT INTO `sys_i18n` VALUES (5839, 'licenseGen.document', 'zh', 'licenseGen.document', '请至少上传一个文件', '', '2022-03-16 06:21:17', 1);
+INSERT INTO `sys_i18n` VALUES (5840, 'ipam.view', 'en', 'ipam.view', 'View', '', '2022-03-16 06:46:21', 382);
+INSERT INTO `sys_i18n` VALUES (5841, 'ipam.view', 'zh', 'ipam.view', '查看', '', '2022-03-16 06:50:45', 382);
+INSERT INTO `sys_i18n` VALUES (5842, 'ipam.add', 'en', 'ipam.add', 'Add', '', '2022-03-16 06:51:39', 382);
+INSERT INTO `sys_i18n` VALUES (5843, 'ipam.add', 'zh', 'ipam.add', '新增', '', '2022-03-16 06:51:59', 382);
+INSERT INTO `sys_i18n` VALUES (5844, 'ipam.edit', 'en', 'ipam.edit', 'Edit', '', '2022-03-16 06:52:20', 382);
+INSERT INTO `sys_i18n` VALUES (5845, 'ipam.edit', 'zh', 'ipam.edit', '编辑', '', '2022-03-16 06:52:31', 382);
+INSERT INTO `sys_i18n` VALUES (5846, 'ipam.delete', 'en', 'ipam.delete', 'Delete', '', '2022-03-16 06:53:35', 382);
+INSERT INTO `sys_i18n` VALUES (5847, 'ipam.delete', 'zh', 'ipam.delete', '删除', '', '2022-03-16 06:53:48', 382);
 
 SET FOREIGN_KEY_CHECKS = 1;

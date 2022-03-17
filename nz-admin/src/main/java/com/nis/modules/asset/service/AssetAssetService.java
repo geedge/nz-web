@@ -4,7 +4,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.AssetFieldMeta;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.panel.entity.VisualChart;
+import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -74,4 +77,25 @@ public interface AssetAssetService extends IService<AssetAsset> {
      * @return
      */
     AssetAsset getAssetByIP(String ip);
+
+    /**
+     * 通过 assetid 获取 endpoint 列表
+     * @param assetId
+     * @return
+     */
+    List<MonitorEndpoint> getEndpointListByAssetId(Integer assetId);
+
+    /**
+     * 通过 assetid 获取 Module 列表
+     * @param assetId
+     * @return
+     */
+    List<MonitorModule> getModuleListByAssetId(Integer assetId);
+
+    /**
+     * 通过 assetid 获取 Project 列表
+     * @param assetId
+     * @return
+     */
+    List<MonitorProject> getProjectListByAssetId(Integer assetId);
 }

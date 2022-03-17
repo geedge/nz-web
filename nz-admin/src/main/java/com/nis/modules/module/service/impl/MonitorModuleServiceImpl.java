@@ -18,6 +18,8 @@ import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.dao.MonitorModuleDao;
@@ -824,6 +826,22 @@ public class MonitorModuleServiceImpl extends ServiceImpl<MonitorModuleDao, Moni
         String fileName = "Modules";
         String formatStr = params.get("format").toString();
         basicImportAndExportServices.exportDataByFormat(response, exportDataList, sysHeaderJsonStr, formatStr, fileName);
+    }
+
+    @Override
+    public List<AssetAsset> getAssetListByModuleId(Integer moduleId) {
+        ValidateUtils.is(moduleId).notNull(RCode.MODULE_ID_ISNULL);
+
+        List<AssetAsset> assetList = this.baseMapper.queryAssetListByModuleId(moduleId);
+        return assetList;
+    }
+
+    @Override
+    public List<Dc> getDcListByModuleId(Integer moduleId) {
+        ValidateUtils.is(moduleId).notNull(RCode.MODULE_ID_ISNULL);
+
+        List<Dc> dcList = this.baseMapper.queryDcListByModuleId(moduleId);
+        return dcList;
     }
 
     private List<List<String>> handleExportDataList(List<MonitorModule> list) {

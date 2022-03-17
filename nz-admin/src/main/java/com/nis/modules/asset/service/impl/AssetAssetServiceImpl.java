@@ -35,6 +35,8 @@ import com.nis.modules.panel.entity.VisualPanel;
 import com.nis.modules.panel.service.VisualChartElementService;
 import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
+import com.nis.modules.project.entity.MonitorProject;
+import com.nis.modules.project.service.MonitorProjectService;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -148,6 +150,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
 	@Autowired
     private MonitorModuleService moduleService;
+
+	@Autowired
+    private MonitorProjectService projectService;
 
 	@Autowired
     private RedisTemplate redisTemplate;
@@ -2414,4 +2419,36 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 		}
 		return this.getOne(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getManageIp, ip));
 	}
+
+    @Override
+    public List<MonitorEndpoint> getEndpointListByAssetId(Integer assetId) {
+        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
+        return endpointList;
+    }
+
+    @Override
+    public List<MonitorModule> getModuleListByAssetId(Integer assetId) {
+        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
+        if(Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
+
+        List<Integer> moduleIds = endpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
+        List<MonitorModule> moduleList = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, moduleIds));
+        return moduleList;
+    }
+
+    @Override
+    public List<MonitorProject> getProjectListByAssetId(Integer assetId) {
+        ValidateUtils.is(assetId).notNull(RCode.ASSET_ID_ISNULL);
+        List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, assetId));
+        if(Tool.CollectionUtil.isEmpty(endpointList)) return Collections.emptyList();
+
+        List<Integer> moduleIds = endpointList.stream().map(MonitorEndpoint::getModuleId).distinct().collect(Collectors.toList());
+        List<MonitorModule> moduleList = moduleService.list(new LambdaQueryWrapper<MonitorModule>().in(MonitorModule::getId, moduleIds));
+
+        List<Integer> projectIds = moduleList.stream().map(MonitorModule::getProjectId).distinct().collect(Collectors.toList());
+        List<MonitorProject> projectList = projectService.list(new LambdaQueryWrapper<MonitorProject>().in(MonitorProject::getId, projectIds));
+        return projectList;
+    }
 }

@@ -1,9 +1,11 @@
 package com.nis.modules.alert.service.impl;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.map.MapBuilder;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -888,4 +890,31 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 		
 		return alertRule;
 	}
+
+    /**
+     * 通过 ruleIds 返回  告警级别  对应 ruleId map
+     * k: severityName
+     * v: ruleIds
+     *
+     * @param ids
+     * @return
+     */
+    @Override
+    public Map<String, List<Integer>> getSeverityNameAndRuleIdsMap(Integer... ids) {
+        List<AlertSeverityConf> severityConfList = alertSeverityService.list();
+        Map<Integer, String> severityIdAndNameMap = severityConfList.stream().collect(Collectors.toMap(AlertSeverityConf::getId, AlertSeverityConf::getName));
+
+        List<AlertRuleEntity> ruleList = this.list(new LambdaQueryWrapper<AlertRuleEntity>().in(AlertRuleEntity::getId, Arrays.asList(ids)));
+        Map<Integer, List<AlertRuleEntity>> severityIdAndRules = ruleList.stream().collect(Collectors.groupingBy(AlertRuleEntity::getSeverityId));
+
+        Map<String, List<Integer>> severityNameAndRuleIdsMap = new HashMap<>(8);
+        for (Map.Entry<Integer, String> entry : severityIdAndNameMap.entrySet()) {
+            Integer severityId = entry.getKey();
+            String severityName = entry.getValue();
+            List<AlertRuleEntity> rules = Tool.ObjectUtil.isNull(severityIdAndRules.get(severityId)) ? new ArrayList<>() : severityIdAndRules.get(severityId);
+            List<Integer> ruleIds = rules.stream().map(AlertRuleEntity::getId).collect(Collectors.toList());
+            severityNameAndRuleIdsMap.put(severityName, ruleIds);
+        }
+        return severityNameAndRuleIdsMap;
+    }
 }

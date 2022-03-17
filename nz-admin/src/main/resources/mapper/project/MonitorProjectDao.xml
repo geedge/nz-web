@@ -52,5 +52,41 @@
             ORDER BY mp.id
         </if>
     </select>
+
+    <select id="queryEndpointListByProjectId" resultType="com.nis.modules.endpoint.entity.MonitorEndpoint">
+        SELECT
+            me.*
+        FROM
+            monitor_project mp
+            RIGHT JOIN monitor_module mm ON mp.id = mm.project_id
+            RIGHT JOIN monitor_endpoint me ON mm.id = me.module_id
+        WHERE
+            mp.id = #{projectId}
+    </select>
+
+    <select id="queryAssetListByProjectId" resultType="com.nis.modules.asset.entity.AssetAsset">
+        SELECT
+            DISTINCT asset.*
+        FROM
+            monitor_project mp
+            RIGHT JOIN monitor_module mm ON mp.id = mm.project_id
+            RIGHT JOIN monitor_endpoint me ON mm.id = me.module_id
+            RIGHT JOIN asset_asset asset ON me.asset_id = asset.id
+        WHERE
+            mp.id = #{projectId}
+    </select>
+
+    <select id="queryDcListByProjectId" resultType="com.nis.modules.asset.entity.Dc">
+        SELECT
+         DISTINCT dc.*
+        FROM
+            monitor_project mp
+            RIGHT JOIN monitor_module mm ON mp.id = mm.project_id
+            RIGHT JOIN monitor_endpoint me ON mm.id = me.module_id
+            RIGHT JOIN asset_asset asset ON me.asset_id = asset.id
+            RIGHT JOIN dc dc ON asset.dc_id = dc.id
+        WHERE
+            mp.id = #{projectId}
+    </select>
 	
 </mapper>

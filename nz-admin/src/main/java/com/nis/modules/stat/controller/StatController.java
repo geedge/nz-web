@@ -433,4 +433,18 @@ public class StatController extends AbstractController {
 		Map<String, Object> result = statService.queryRowNumById(table, id, order, pageSize);
 		return R.ok(result);
 	}
+
+	/**
+	 * 关系查询接口
+	 *
+	 * @return
+	 */
+	@GetMapping("/rel")
+	public R rel(@RequestParam(name = "type") String type,
+	             @RequestParam(name = "id") Integer id,
+	             @RequestParam(name = "level", defaultValue = "1") Integer level,
+	             @RequestParam(name = "limit", required = false) Integer limit) {
+
+		return R.ok().put("data", statService.rel(type, id, level, limit));
+	}
 }

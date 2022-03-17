@@ -61,4 +61,41 @@
         </if>
     </select>
 
+    <select id="queryProjectListByDcId" resultType="com.nis.modules.project.entity.MonitorProject">
+        SELECT
+            DISTINCT mp.*
+        FROM
+            monitor_project mp
+            LEFT JOIN monitor_module mm ON mp.id = mm.project_id
+            LEFT JOIN monitor_endpoint me ON mm.id = me.module_id
+            LEFT JOIN asset_asset asset ON me.asset_id = asset.id
+            LEFT JOIN dc ON dc.id = asset.dc_id
+        WHERE
+            dc.id = #{dcId}
+    </select>
+
+    <select id="queryModuleListByDcId" resultType="com.nis.modules.module.entity.MonitorModule">
+        SELECT
+            DISTINCT mm.*
+        FROM
+            monitor_module mm
+            LEFT JOIN monitor_endpoint me ON mm.id = me.module_id
+            LEFT JOIN asset_asset asset ON me.asset_id = asset.id
+            LEFT JOIN dc ON dc.id = asset.dc_id
+        WHERE
+            dc.id = #{dcId}
+    </select>
+
+
+    <select id="queryEndpointListByDcId" resultType="com.nis.modules.endpoint.entity.MonitorEndpoint">
+        SELECT
+            DISTINCT me.*
+        FROM
+             monitor_endpoint me
+            LEFT JOIN asset_asset asset ON me.asset_id = asset.id
+            LEFT JOIN dc ON dc.id = asset.dc_id
+        WHERE
+            dc.id =  #{dcId}
+    </select>
+
 </mapper>

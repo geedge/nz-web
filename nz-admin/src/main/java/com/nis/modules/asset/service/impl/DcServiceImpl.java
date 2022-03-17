@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
 import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
@@ -19,6 +20,9 @@ import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Cabinet;
 import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.asset.service.DcService;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
+import com.nis.modules.module.entity.MonitorModule;
+import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.sys.entity.SysUserEntity;
@@ -457,4 +461,37 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     public void cancelImport(String seq) {
         this.remove(new LambdaQueryWrapper<Dc>().eq(Dc::getSeq, seq));
     }
+
+    @Override
+    public List<AssetAsset> getAssetListByDcId(Integer dcId) {
+        ValidateUtils.is(dcId).notNull(RCode.DC_ID_ISNULL);
+        List<AssetAsset> assetList = assetDao.selectList(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dcId));
+        return assetList;
+    }
+
+    @Override
+    public List<MonitorProject> getProjectListByDcId(Integer dcId) {
+        ValidateUtils.is(dcId).notNull(RCode.DC_ID_ISNULL);
+
+        List<MonitorProject> projectList = this.baseMapper.queryProjectListByDcId(dcId);
+        return projectList;
+    }
+
+    @Override
+    public List<MonitorModule> getModuleListByDcId(Integer dcId) {
+        ValidateUtils.is(dcId).notNull(RCode.DC_ID_ISNULL);
+
+        List<MonitorModule> moduleList = this.baseMapper.queryModuleListByDcId(dcId);
+        return moduleList;
+    }
+
+    @Override
+    public List<MonitorEndpoint> getEndpointListByDcId(Integer dcId) {
+        ValidateUtils.is(dcId).notNull(RCode.DC_ID_ISNULL);
+
+        List<MonitorEndpoint> endpointList = this.baseMapper.queryEndpointListByDcId(dcId);
+        return endpointList;
+    }
+
+
 }

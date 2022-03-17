@@ -2,6 +2,8 @@ package com.nis.modules.module.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nis.common.utils.PageUtils;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,4 +34,8 @@ public interface MonitorModuleService extends IService<MonitorModule> {
     Map importModuleData(MultipartFile excelFile) throws IOException;
 
     void export(HttpServletResponse response, Map<String, Object> params) throws IOException;
+
+    List<AssetAsset> getAssetListByModuleId(Integer moduleId);
+
+    List<Dc> getDcListByModuleId(Integer moduleId);
 }

@@ -1,20 +1,14 @@
 package com.nis.modules.stat.service.impl;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import cn.hutool.core.lang.Pair;
+import com.nis.modules.alert.dao.AlertMessageDao;
+import com.nis.modules.alert.entity.AlertMessageEntity;
+import com.nis.modules.alert.service.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -58,7 +52,6 @@ import com.nis.modules.sys.service.SysUserService;
 import com.nis.modules.sys.service.TimezoneService;
 import com.nis.modules.sys.shiro.ShiroUtils;
 
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -106,7 +99,13 @@ public class StatServiceImpl implements StatService{
 	
 	@Autowired
 	private AlertSeverityService alertSeverityConfService;
-	
+
+	@Autowired
+	private AlertMessageDao alertMessageDao;
+
+	@Autowired
+	private AlertRuleService alertRuleService;
+
 	@Autowired
 	private TimezoneService timezoneService;
 	
@@ -825,5 +824,395 @@ public class StatServiceImpl implements StatService{
 		result.put("pageSize", pageSize);
 		return result;
 	}
-	
+
+	/**
+	 * @param type  asset datacenter project module endpoint
+	 * @param id
+	 * @param level 1 default
+	 * @param limit
+	 */
+	@Override
+	public Map<String, Object> rel(String type, Integer id, Integer level, Integer limit) {
+		List nodesList = new ArrayList();
+		switch (type.toLowerCase()) {
+			case "asset": {
+				Map<Integer, String> assetRelLevelMapping = Tool.MapUtil.of(
+						Pair.of(1, "asset,datacenter,endpoint"),
+						Pair.of(2, "asset,datacenter,endpoint,module"),
+						Pair.of(3, "asset,datacenter,endpoint,module,project")
+				);
+				String statRelObjects = Tool.ObjectUtil.isEmpty(assetRelLevelMapping.get(level)) ? assetRelLevelMapping.get(3) : assetRelLevelMapping.get(level);
+				nodesList = this.queryAssetRel(id, statRelObjects);
+				break;
+			}
+			case "datacenter": {
+				Map<Integer, String> dcRelLevelMapping = Tool.MapUtil.of(
+						Pair.of(1, "datacenter,asset"),
+						Pair.of(2, "datacenter,asset,endpoint"),
+						Pair.of(3, "datacenter,asset,endpoint,module"),
+						Pair.of(4, "datacenter,asset,endpoint,module,project")
+				);
+				String statRelObjects = Tool.ObjectUtil.isEmpty(dcRelLevelMapping.get(level)) ? dcRelLevelMapping.get(4) : dcRelLevelMapping.get(level);
+				nodesList = this.queryDcRel(id, statRelObjects);
+				break;
+			}
+			case "project": {
+				Map<Integer, String> projectRelLevelMapping = Tool.MapUtil.of(
+						Pair.of(1, "project,module"),
+						Pair.of(2, "project,module,endpoint"),
+						Pair.of(3, "project,module,endpoint,asset"),
+						Pair.of(4, "project,module,endpoint,asset,datacenter")
+				);
+				String statRelObjects = Tool.ObjectUtil.isEmpty(projectRelLevelMapping.get(level)) ? projectRelLevelMapping.get(4) : projectRelLevelMapping.get(level);
+				nodesList = this.queryProjectRel(id, statRelObjects);
+				break;
+			}
+			case "module": {
+				Map<Integer, String> moduletRelLevelMapping = Tool.MapUtil.of(
+						Pair.of(1, "module,project,endpoint"),
+						Pair.of(2, "module,project,endpoint,asset"),
+						Pair.of(3, "module,project,endpoint,asset,datacenter")
+				);
+				String statRelObjects = Tool.ObjectUtil.isEmpty(moduletRelLevelMapping.get(level)) ? moduletRelLevelMapping.get(3) : moduletRelLevelMapping.get(level);
+				nodesList = this.queryModuleRel(id, statRelObjects);
+				break;
+			}
+			case "endpoint": {
+				Map<Integer, String> endpointRelLevelMapping = Tool.MapUtil.of(
+						Pair.of(1, "endpoint,module,asset"),
+						Pair.of(2, "endpoint,module,asset,project,datacenter"),
+						Pair.of(2, "endpoint,module,asset,project,datacenter")
+				);
+				String statRelObjects = Tool.ObjectUtil.isEmpty(endpointRelLevelMapping.get(level)) ? endpointRelLevelMapping.get(2) : endpointRelLevelMapping.get(level);
+				nodesList = this.queryEndpointRel(id, statRelObjects);
+				break;
+			}
+		}
+
+		if (Tool.ObjectUtil.isNotNull(limit) && nodesList.size() > limit)
+			nodesList = Tool.ListUtil.sub(nodesList, 0, limit.intValue());
+
+		List links = this.handelRelLinksInfo(nodesList, type);
+
+		Map map = new LinkedHashMap(4);
+		map.put("nodes", nodesList);
+		map.put("links", links);
+		return map;
+	}
+
+	private List queryEndpointRel(Integer id, String statRelObjects) {
+		MonitorEndpoint endpoint = monitorEndpointService.getById(id);
+		if (Tool.ObjectUtil.isNull(endpoint)) throw new NZException(RCode.ENDPOINT_NOTFOUND);
+
+		List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+		Map<String, List<Integer>> severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+
+		AssetAsset asset = assetAssetService.getById(endpoint.getAssetId());
+		MonitorModule module = monitorModuleService.getById(endpoint.getModuleId());
+
+		List nodesList = new ArrayList();
+		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
+			switch (statRelObjectStr) {
+				case "asset": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> asset.getId().equals(alertmsg.getAssetId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("asset", asset.getId(), asset.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "datacenter": {
+					Dc dc = dcService.getById(asset.getDcId());
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> dc.getId().equals(alertmsg.getDcId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("datacenter", dc.getId(), dc.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "project": {
+					MonitorProject project = monitorProjectService.getById(module.getProjectId());
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> project.getId().equals(alertmsg.getProjectId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("project", project.getId(), project.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "module": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> module.getId().equals(alertmsg.getModuleId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("module", module.getId(), module.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "endpoint": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> endpoint.getId().equals(alertmsg.getEndpointId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("endpoint", endpoint.getId(), endpoint.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+			}
+		}
+		return nodesList;
+	}
+
+	private List queryModuleRel(Integer id, String statRelObjects) {
+		MonitorModule module = monitorModuleService.getById(id);
+		if (Tool.ObjectUtil.isNull(module)) throw new NZException(RCode.MODULE_NOTFOUND);
+
+		List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+		Map<String, List<Integer>> severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+
+		List nodesList = new ArrayList();
+		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
+			switch (statRelObjectStr) {
+				case "asset": {
+					List<AssetAsset> assetList = monitorModuleService.getAssetListByModuleId(module.getId());
+					for (AssetAsset asset : assetList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> asset.getId().equals(alertmsg.getAssetId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("asset", asset.getId(), asset.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "datacenter": {
+					List<Dc> dcList = monitorModuleService.getDcListByModuleId(module.getId());
+					for (Dc dc : dcList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> dc.getId().equals(alertmsg.getDcId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("datacenter", dc.getId(), dc.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "project": {
+					MonitorProject project = monitorProjectService.getOne(new LambdaQueryWrapper<MonitorProject>().eq(MonitorProject::getId, module.getProjectId()));
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> project.getId().equals(alertmsg.getProjectId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("project", project.getId(), project.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "module": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> module.getId().equals(alertmsg.getModuleId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("module", module.getId(), module.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "endpoint": {
+					List<MonitorEndpoint> endpointList = monitorEndpointService.list(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getModuleId, module.getId()));
+					for (MonitorEndpoint endpoint : endpointList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> endpoint.getId().equals(alertmsg.getEndpointId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("endpoint", endpoint.getId(), endpoint.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+			}
+		}
+		return nodesList;
+	}
+
+	private List queryProjectRel(Integer id, String statRelObjects) {
+		MonitorProject project = monitorProjectService.getById(id);
+		if (Tool.ObjectUtil.isNull(project)) throw new NZException(RCode.PROJECT_NOTFOUND);
+
+		List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+		Map<String, List<Integer>> severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+
+		List nodesList = new ArrayList();
+		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
+			switch (statRelObjectStr) {
+				case "asset": {
+					List<AssetAsset> assetList = monitorProjectService.getAssetListByProjectId(project.getId());
+					for (AssetAsset asset : assetList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> asset.getId().equals(alertmsg.getAssetId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("asset", asset.getId(), asset.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "datacenter": {
+					List<Dc> dcList = monitorProjectService.getDcListByProjectId(project.getId());
+					for (Dc dc : dcList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> dc.getId().equals(alertmsg.getDcId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("datacenter", dc.getId(), dc.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "project": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> project.getId().equals(alertmsg.getProjectId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("project", project.getId(), project.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "module": {
+					List<MonitorModule> moduleList = monitorProjectService.getModuleListByProjectId(project.getId());
+					for (MonitorModule module : moduleList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> module.getId().equals(alertmsg.getModuleId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("module", module.getId(), module.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "endpoint": {
+					List<MonitorEndpoint> endpointList = monitorProjectService.getEndpointListByProjectId(project.getId());
+					for (MonitorEndpoint endpoint : endpointList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> endpoint.getId().equals(alertmsg.getEndpointId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("endpoint", endpoint.getId(), endpoint.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+			}
+		}
+		return nodesList;
+	}
+
+	private List queryDcRel(Integer id, String statRelObjects) {
+		Dc dc = dcService.getById(id);
+		if (Tool.ObjectUtil.isNull(dc)) throw new NZException(RCode.DC_NOT_EXISTS);
+
+		List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+		Map<String, List<Integer>> severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+
+		List nodesList = new ArrayList();
+		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
+			switch (statRelObjectStr) {
+				case "asset": {
+					List<AssetAsset> assetList = dcService.getAssetListByDcId(dc.getId());
+					for (AssetAsset asset : assetList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> asset.getId().equals(alertmsg.getAssetId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("asset", asset.getId(), asset.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "datacenter": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> dc.getId().equals(alertmsg.getDcId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("datacenter", dc.getId(), dc.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "project": {
+					List<MonitorProject> projectList = dcService.getProjectListByDcId(dc.getId());
+					for (MonitorProject project : projectList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> project.getId().equals(alertmsg.getProjectId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("project", project.getId(), project.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "module": {
+					List<MonitorModule> moduleList = dcService.getModuleListByDcId(dc.getId());
+					for (MonitorModule module : moduleList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> module.getId().equals(alertmsg.getModuleId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("module", module.getId(), module.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "endpoint": {
+					List<MonitorEndpoint> endpointList = dcService.getEndpointListByDcId(dc.getId());
+					for (MonitorEndpoint endpoint : endpointList) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> endpoint.getId().equals(alertmsg.getEndpointId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("endpoint", endpoint.getId(), endpoint.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+			}
+		}
+		return nodesList;
+	}
+
+	private List queryAssetRel(Integer id, String statRelObjects) {
+		AssetAsset asset = assetAssetService.getById(id);
+		if (Tool.ObjectUtil.isNull(asset)) throw new NZException(RCode.ASSET_NOT_EXIST);
+
+		List<AlertMessageEntity> alertList = alertMessageDao.getAlertsStatColumn();
+		Map<String, List<Integer>> severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+
+		List<Map<String, Object>> nodesList = new ArrayList();
+		for (String statRelObjectStr : Tool.StrUtil.split(statRelObjects, ',')) {
+			switch (statRelObjectStr) {
+				case "asset": {
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> asset.getId().equals(alertmsg.getAssetId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("asset", asset.getId(), asset.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "datacenter": {
+					Dc dc = dcService.getById(asset.getDcId());
+					Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> dc.getId().equals(alertmsg.getDcId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+					Map<String, Object> node = this.getStatNodeInfo("datacenter", dc.getId(), dc.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+					nodesList.add(node);
+					break;
+				}
+				case "project": {
+					List<MonitorProject> projectListByAssetId = assetAssetService.getProjectListByAssetId(asset.getId());
+					for (MonitorProject project : projectListByAssetId) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> project.getId().equals(alertmsg.getProjectId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("project", project.getId(), project.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "module": {
+					List<MonitorModule> moduleListByAssetId = assetAssetService.getModuleListByAssetId(asset.getId());
+					for (MonitorModule module : moduleListByAssetId) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> module.getId().equals(alertmsg.getModuleId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("module", module.getId(), module.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+				case "endpoint": {
+					List<MonitorEndpoint> endpointListByAssetId = assetAssetService.getEndpointListByAssetId(asset.getId());
+					for (MonitorEndpoint endpoint : endpointListByAssetId) {
+						Map<Integer, Long> ruleIdAndAlertCountMap = alertList.parallelStream().filter(alertmsg -> endpoint.getId().equals(alertmsg.getEndpointId())).collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+						Map<String, Object> node = this.getStatNodeInfo("endpoint", endpoint.getId(), endpoint.getName(), ruleIdAndAlertCountMap, severityNameAndRuleIdsMap);
+						nodesList.add(node);
+					}
+					break;
+				}
+			}
+		}
+		return nodesList;
+	}
+
+	private Map<String, Object> getStatNodeInfo(String type, Integer id, String name, Map<Integer, Long> ruleIdAndAlertCountMap, Map<String, List<Integer>> severityNameAndRuleIdsMap) {
+		List<Map<String, Object>> alert = new ArrayList<>();
+		for (Map.Entry<String, List<Integer>> entry : severityNameAndRuleIdsMap.entrySet()) {
+			Map<String, Object> severityNameAndRuleNumMap = new HashMap<>(4);
+			String severityName = entry.getKey();
+			List<Integer> ruleIds = entry.getValue();
+			Long ruleNumBySeverityName = 0L;
+			for (Integer ruleId : ruleIds) {
+				ruleNumBySeverityName += Tool.ObjectUtil.isNull(ruleIdAndAlertCountMap.get(ruleId)) ? 0L : ruleIdAndAlertCountMap.get(ruleId);
+			}
+			severityNameAndRuleNumMap.put("priority", severityName);
+			severityNameAndRuleNumMap.put("num", ruleNumBySeverityName);
+			alert.add(severityNameAndRuleNumMap);
+		}
+
+		Map<String, Object> statMap = new HashMap<>(8);
+		statMap.put("id", String.format("%s-%s", type, id));
+		statMap.put("type", type);
+		statMap.put("name", name);
+		statMap.put("alert", alert);
+		return statMap;
+	}
+
+	private List handelRelLinksInfo(List<Map<String, Object>> nodesList, String type) {
+		// links
+		List l = new ArrayList();
+		String source = "";
+		for (Map<String, Object> n : nodesList) {
+			String nodeType = n.get("type").toString();
+			if (type.equals(nodeType)) {
+				source = n.get("id").toString();
+				continue;
+			}
+
+			Map t = new HashMap(4);
+			t.put("source", source);
+			t.put("target", n.get("id"));
+			l.add(t);
+		}
+		return l;
+	}
 }

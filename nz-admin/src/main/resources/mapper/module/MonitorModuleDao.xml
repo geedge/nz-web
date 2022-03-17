@@ -72,4 +72,27 @@
             module.id
     </select>
 
+    <select id="queryAssetListByModuleId" resultType="com.nis.modules.asset.entity.AssetAsset">
+        SELECT
+            DISTINCT asset.*
+        FROM
+            monitor_module mm
+            RIGHT JOIN monitor_endpoint me ON mm.id = me.module_id
+            RIGHT JOIN asset_asset asset ON me.asset_id = asset.id
+        WHERE
+            mm.id = #{moduleId}
+    </select>
+
+    <select id="queryDcListByModuleId" resultType="com.nis.modules.asset.entity.Dc">
+        SELECT DISTINCT
+            dc.*
+        FROM
+            monitor_module mm
+            RIGHT JOIN monitor_endpoint me ON mm.id = me.module_id
+            RIGHT JOIN asset_asset asset ON me.asset_id = asset.id
+            RIGHT JOIN dc dc ON asset.dc_id = dc.id
+        WHERE
+            mm.id = #{moduleId}
+    </select>
+
 </mapper>

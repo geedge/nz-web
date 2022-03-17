@@ -2,6 +2,9 @@ package com.nis.modules.project.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
+import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.project.entity.MonitorProject;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -13,5 +16,11 @@ import java.util.Map;
 public interface MonitorProjectDao extends BaseMapper<MonitorProject> {
 
     List<MonitorProject> queryProjectList(IPage page, @Param("params") Map<String, Object> params);
+
+    List<MonitorEndpoint> queryEndpointListByProjectId(@Param("projectId") Integer projectId);
+
+    List<AssetAsset> queryAssetListByProjectId(@Param("projectId") Integer projectId);
+
+    List<Dc> queryDcListByProjectId(@Param("projectId") Integer projectId);
 
 }

@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
+import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.PageUtils;
 import com.nis.common.utils.Query;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.ToolUtil;
-import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
+import com.nis.modules.asset.entity.AssetAsset;
+import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.endpoint.entity.MonitorEndpoint;
 import com.nis.modules.endpoint.service.MonitorEndpointService;
 import com.nis.modules.module.entity.MonitorModule;
@@ -145,6 +147,38 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
 
         // 删除告警消息
         alertMessageService.removeByProjectIds(Arrays.asList(ids));
+    }
+
+    @Override
+    public List<MonitorModule> getModuleListByProjectId(Integer projectId) {
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+        List<MonitorModule> moduleList = monitorModuleService.list(new LambdaQueryWrapper<MonitorModule>().eq(MonitorModule::getProjectId, projectId));
+        return moduleList;
+    }
+
+    @Override
+    public List<MonitorEndpoint> getEndpointListByProjectId(Integer projectId) {
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+        List<MonitorEndpoint> endpointList = this.baseMapper.queryEndpointListByProjectId(projectId);
+        return endpointList;
+    }
+
+    @Override
+    public List<AssetAsset> getAssetListByProjectId(Integer projectId) {
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+        List<AssetAsset> assetList = this.baseMapper.queryAssetListByProjectId(projectId);
+        return assetList;
+    }
+
+    @Override
+    public List<Dc> getDcListByProjectId(Integer projectId) {
+        ValidateUtils.is(projectId).notNull(RCode.PROJECT_ID_ISNULL);
+
+        List<Dc> dcList = this.baseMapper.queryDcListByProjectId(projectId);
+        return dcList;
     }
 
 }
