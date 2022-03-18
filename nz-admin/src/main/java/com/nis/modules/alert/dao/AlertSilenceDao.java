@@ -15,4 +15,5 @@ public interface AlertSilenceDao extends BaseMapper<AlertSilenceConf>{
 
 	List<AlertSilenceConf> selectAlertSilenceConfs(IPage page,@Param("params")Map<String,Object> params);
 
+	List<AlertSilenceConf> selectAlertSilenceMessageRel(IPage page, @Param("params") Map<String, Object> params, @Param("silenceId") Integer silenceId);
 }

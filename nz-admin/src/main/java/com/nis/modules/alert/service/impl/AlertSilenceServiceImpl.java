@@ -173,5 +173,19 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 			}
 		}
 	}
-	
+
+	/**
+	 * 告警静音关联消息查询
+	 * @param silenceId
+	 * @param params
+	 * @return
+	 */
+	@Override
+	public PageUtils querySilenceMsgRelObj(Integer silenceId, Map<String, Object> params) {
+		IPage page = new Query(AlertSilenceConf.class).getPage(params);
+		List<AlertSilenceConf> alertSilences = alertSilenceDao.selectAlertSilenceMessageRel(page, params, silenceId);
+		page.setRecords(alertSilences);
+		return new PageUtils(page);
+	}
+
 }

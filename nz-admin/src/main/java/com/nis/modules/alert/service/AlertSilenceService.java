@@ -18,4 +18,5 @@ public interface AlertSilenceService extends IService<AlertSilenceConf>{
 	
 	void updateAlertSilenceConfExpiredBatch(Integer ...ids);
 
+	PageUtils querySilenceMsgRelObj(Integer silenceId, Map<String, Object> params);
 }

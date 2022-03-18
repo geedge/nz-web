@@ -47,4 +47,122 @@
          </where>
     </select>
 
+    <select id="selectAlertSilenceMessageRel" resultMap="com.nis.modules.alert.dao.AlertHandlerDao.alertMessageMap">
+        SELECT
+            am.*,
+            ar.id AS r_id,
+            ar.name AS r_name,
+            ar.type AS r_type,
+            ar.trb_shot AS r_trb_shot,
+            p.id AS p_id,
+            p.name AS p_name,
+            m.id AS m_id,
+            m.name AS m_name,
+            e.id AS e_id,
+            e.name AS e_name,
+            ass.id AS ass_id,
+            ass.name AS ass_name,
+            alsc.id AS alsc_id,
+            alsc.name AS alsc_name,
+            alsc.color AS alsc_color,
+            dc.id AS dc_id,
+            dc.name AS dc_name 
+        FROM
+            alert_silence_message_rel msgrel
+            LEFT JOIN alert_message_silence am ON msgrel.message_id = am.id
+            LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+            LEFT JOIN monitor_project p ON am.project_id = p.id
+            LEFT JOIN monitor_module m ON am.module_id = m.id
+            LEFT JOIN monitor_endpoint e ON am.endpoint_id = e.id
+            LEFT JOIN asset_asset ass ON am.asset_id = ass.id
+            LEFT JOIN alert_severity_conf alsc ON am.severity_id = alsc.id
+            LEFT JOIN dc dc ON am.dc_id = dc.id 
+        <where>
+            msgrel.silence_conf_id = #{silenceId}
+            <if test="params.ruleName != null and params.ruleName != ''">
+                AND locate(#{params.ruleName} , ar.name)
+            </if>
+
+            <if test="params.assetName != null and params.assetName != ''">
+                AND locate(#{params.assetName},ass.name)
+            </if>
+
+            <if test="params.endpointName != null and params.endpointName != ''">
+                AND locate(#{params.endpointName},e.name)
+            </if>
+
+            <if test="params.ruleIds != null and params.ruleIds != ''">
+                AND am.rule_id IN
+                <foreach collection="params.ruleIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.dcIds != null and params.dcIds != ''">
+                AND am.dc_id IN
+                <foreach collection="params.dcIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.projectIds != null and params.projectIds != ''">
+                AND am.project_id IN
+                <foreach collection="params.projectIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.moduleIds != null and params.moduleIds != ''">
+                AND am.module_id IN
+                <foreach collection="params.moduleIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.endpointIds != null and params.endpointIds != ''">
+                AND am.endpoint_id IN
+                <foreach collection="params.endpointIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.assetIds != null and params.assetIds != ''">
+                AND am.asset_id IN
+                <foreach collection="params.assetIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.severityIds != null and params.severity != ''">
+                AND am.severity_id IN
+                <foreach collection="params.severityIds.split(',')" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+
+            <if test="params.summary != null and params.summary != ''">
+                AND locate(#{params.summary},am.summary)
+            </if>
+
+            <if test="params.description != null and params.description != ''">
+                AND locate(#{params.description},am.description)
+            </if>
+
+            <if test="params.labels != null and params.labels != ''">
+                AND locate(#{params.labels}, am.labels)
+            </if>
+
+            <if test="params.startAt != null">
+                AND am.start_at &gt;= #{params.startAt}
+            </if>
+
+            <if test="params.endAt != null">
+                AND am.start_at &lt;= #{params.endAt}
+            </if>
+        </where>
+
+        <if test="params.orderBy == null or params.orderBy == ''">
+            ORDER BY am.id
+        </if>
+    </select>
 </mapper>

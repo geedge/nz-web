@@ -94,4 +94,13 @@ public class AlertSilenceController {
 		alertSilenceService.updateAlertSilenceConfExpiredBatch(ids);
 		return R.ok();
 	}
+
+	@GetMapping("/{id}/rel")
+	@SysLog(operation = OperationEnum.QUERY, type = TypeEnum.ALERTSILENCE)
+	public R rel(@PathVariable("id") Integer silenceId, @RequestParam Map<String, Object> params) {
+		ValidateUtils.is(silenceId).notNull(RCode.ALERTSILENCE_ID_IS_NOT_NULL);
+
+		PageUtils page = alertSilenceService.querySilenceMsgRelObj(silenceId, params);
+		return R.ok(page);
+	}
 }
