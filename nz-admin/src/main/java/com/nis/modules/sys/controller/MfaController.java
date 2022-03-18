@@ -231,6 +231,8 @@ public class MfaController extends AbstractController {
         userEntity.setLastLoginTime(new Date());
         // 设置IP地址
         userEntity.setLastLoginIp(IPUtils.getIpAddr(request));
+		// 设置 recoveryCode 为 null，避免重复更新 recoveryCode 值
+		userEntity.setRecoveryCode(null);
         sysUserService.updateById(userEntity);
 		return R.ok(obj);
 	}
