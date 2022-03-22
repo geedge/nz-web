@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+	<logger name="org.springframework.web" level="info" />
+	<logger name="org.springboot.sample" level="info" />
+	<logger name="org.apache" level="info" />
+	<logger name="org.springframework" level="info" />
+	<logger name="druid.sql" level="info" />
+	<logger name="com.springboot" level="debug" />
+
+	<!--<logger name="org.springframework.web.client" level="debug" />-->
+
+	<property name="log.path" value="./logs/" />
+    <!-- 输出格式 -->
+    <property name="out.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n" />
+    <!-- 活动文件的大小 -->
+    <property name="max.file.size" value="100MB"/>
+    <!-- 保留的归档文件的最大数量 -->
+    <property name="max.history" value="30"/>
+    <!-- 控制所有归档日志文件的总大小 -->
+    <property name="total.size.cap" value="15GB"/>
+   
+	<!-- 2.2 level为 INFO 日志，时间滚动输出 -->
+	<appender name="LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!-- 正在记录的日志文档的路径及文档名 -->
+		<file>${log.path}/nz-web.log</file>
+		<!--日志文档输出格式 -->
+		<encoder>
+			<pattern>${out.pattern}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+		<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/nz-web-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max.file.size}</maxFileSize>
+            <maxHistory>${max.history}</maxHistory>
+            <totalSizeCap>${total.size.cap}</totalSizeCap>
+        </rollingPolicy>
+	</appender>
+
+	<!-- 2.1 level为 ERROR 日志，时间滚动输出 -->
+	<appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!-- 正在记录的日志文档的路径及文档名 -->
+		<file>${log.path}/nz-web-error.log</file>
+		<!--日志文档输出格式 -->
+		<encoder>
+			<pattern>${out.pattern}</pattern>
+			<charset>UTF-8</charset>
+		</encoder>
+		<!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/nz-web-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max.file.size}</maxFileSize>
+            <maxHistory>${max.history}</maxHistory>
+            <totalSizeCap>${total.size.cap}</totalSizeCap>
+        </rollingPolicy>
+		<!-- 此日志文档只记录debug级别的 -->
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>error</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+	</appender>
+
+	<root level="info">
+		<appender-ref ref="LOG_FILE" />
+		<appender-ref ref="ERROR_FILE" />
+	</root>
+
+</configuration>

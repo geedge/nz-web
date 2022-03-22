@@ -67,7 +67,7 @@ public class SetupRunner implements CommandLineRunner{
 			log.debug(" inited = {}	,skip init setup", inited);
 			// 创建设备16位数字的license token
 			String licenseToken = sysConfigService.getValue("license_token");
-			if(ToolUtil.isEmpty(licenseToken)|| ! licenseToken.startsWith("GN-")||licenseToken.length()!=19) {
+			if(ToolUtil.isEmpty(licenseToken)|| ! licenseToken.startsWith("GDNT-")||licenseToken.length()!=21) {
 				int random = (int) (Math.random()*9+1);
 		        String valueOf = String.valueOf(random);
 		        //生成uuid的hashCode值
@@ -76,7 +76,7 @@ public class SetupRunner implements CommandLineRunner{
 		        if(hashCode<0){
 		            hashCode = -hashCode;
 		        }
-		        licenseToken = StrUtil.concat(true, "GN-",valueOf,String.format("%015d", hashCode));
+		        licenseToken = StrUtil.concat(true, "GDNT-",valueOf,String.format("%015d", hashCode));
 		        sysConfigService.updateValueByKey("license_token",licenseToken);
 			}     
 			return ;

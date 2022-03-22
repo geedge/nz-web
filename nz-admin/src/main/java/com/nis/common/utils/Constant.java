@@ -418,6 +418,7 @@ public class Constant {
 		assetOrderFieldMap.put("model", "model.name");
 		assetOrderFieldMap.put("endpointNum", "endpointNum");
 		assetOrderFieldMap.put("alertNum", "alertNum");
+		assetOrderFieldMap.put("talon", "talon_status");
 		TABLE_NAME_ORDER_FIELD_MAPPING.put("asset_asset", assetOrderFieldMap);
 
 		Map<String, String> modelOrderFieldMap = new HashMap<>();
