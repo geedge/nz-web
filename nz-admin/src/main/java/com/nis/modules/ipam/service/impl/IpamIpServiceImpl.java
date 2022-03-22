@@ -79,9 +79,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
     @Override
     @Transactional
     public Integer saveOrModifyIpamSubnet(IpamIp ipamIp) {
-        ValidateUtils.is(ipamIp.getName()).notNull(RCode.IPAM_IP_NAME_ISNULL).
-                and(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL).
-                and(ipamIp.getMac()).notNull(RCode.IPAM_IP_MAC_ISNULL);
+        ValidateUtils.is(ipamIp.getAddr()).notNull(RCode.IPAM_IP_ADDR_ISNULL);
 
         //校验ip
         if (!(CommonUtils.checkIpv4(ipamIp.getAddr()) || CommonUtils.checkIpv6(ipamIp.getAddr()))){
@@ -92,7 +90,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
         if (Tool.ObjectUtil.isEmpty(ipamSubnet)){
             throw new NZException(RCode.IPAM_IP_SUBNET_ISNULL);
         }
-        //校验mac
+        /*//校验mac
         if (!CommonUtils.checkMac(ipamIp.getMac())){
             throw new NZException(RCode.IPAM_IP_MAC_ERROR);
         }
@@ -100,7 +98,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
         IpamIp ip = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, ipamIp.getAddr()).eq(IpamIp::getMac, ipamIp.getMac()));
         if (Tool.ObjectUtil.isNotEmpty(ip)){
             throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
-        }
+        }*/
         if (Tool.ObjectUtil.isEmpty(ipamIp.getState())){
             ipamIp.setState(1);
         }

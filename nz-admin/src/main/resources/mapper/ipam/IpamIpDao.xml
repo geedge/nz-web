@@ -40,7 +40,9 @@
                     #{id}
                 </foreach>
             </if>
-
+            <if test="params.subnetId != null and params.subnetId != ''">
+                AND ii.subnet_id = #{params.subnetId}
+            </if>
             <if test="params.name != null and params.name != ''">
                 AND locate(#{params.name} , ii.name)
             </if>
