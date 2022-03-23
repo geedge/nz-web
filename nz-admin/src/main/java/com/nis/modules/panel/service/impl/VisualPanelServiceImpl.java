@@ -909,9 +909,9 @@ public class VisualPanelServiceImpl extends ServiceImpl<VisualPanelDao, VisualPa
                 if (ToolUtil.isEmpty(element.getName())) {
                     return RCode.CHARTELEMENT_NAME_ISNULL.getMsg();
                 }
-                if (ToolUtil.isEmpty(element.getType())) {
+                /*if (ToolUtil.isEmpty(element.getType())) {
                     return RCode.CHARTELEMENT_TYPE_ISNULL.getMsg();
-                }
+                }*/
             }
         }
         return "";
