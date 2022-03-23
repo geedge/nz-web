@@ -5297,7 +5297,7 @@ INSERT INTO `sys_i18n` VALUES (5844, 'ipam.edit', 'en', 'ipam.edit', 'Edit', '',
 INSERT INTO `sys_i18n` VALUES (5845, 'ipam.edit', 'zh', 'ipam.edit', '编辑', '', '2022-03-16 06:52:31', 382);
 INSERT INTO `sys_i18n` VALUES (5846, 'ipam.delete', 'en', 'ipam.delete', 'Delete', '', '2022-03-16 06:53:35', 382);
 INSERT INTO `sys_i18n` VALUES (5847, 'ipam.delete', 'zh', 'ipam.delete', '删除', '', '2022-03-16 06:53:48', 382);
-INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipamIp.create', 'New IP detail', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipamIp.create', 'New IP detail','', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5849, 'overall.ipamIp.create', 'zh', 'overall.ipamIp.create', '新增 IP 详情', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5850, 'overall.ipamIp.edit', 'en', 'overall.ipamIp.edit', 'Edit IP detail', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5851, 'overall.ipamIp.edit', 'zh', 'overall.ipamIp.edit', '编辑 IP 详情', '', '2022-03-22 06:53:48', 1);
