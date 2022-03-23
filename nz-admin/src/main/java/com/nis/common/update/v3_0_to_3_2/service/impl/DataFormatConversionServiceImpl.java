@@ -277,6 +277,11 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         // type value 变更
                         if (Tool.StrUtil.equalsIgnoreCase(type, "stackArea")) {
                             visualChart.setType("area");
+                            // area 类型图表 stack 默认值 为 true
+                            params.put("stack", "true");
+                        } else {
+                            // line 类型图表 stack 默认值 为 false
+                            params.put("stack", "false");
                         }
                         List<String> legendOnValueList;
                         if (oldParamMap.get("legendValue") == null) {
@@ -287,7 +292,6 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         }
 
                         params.put("style", visualChart.getType());
-                        params.put("stack", "true");
                         // legend
                         Map legend = new HashMap<>();
                         legend.put("placement", "bottom");
