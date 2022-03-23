@@ -5301,5 +5301,8 @@ INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipa
 INSERT INTO `sys_i18n` VALUES (5849, 'overall.ipamIp.create', 'zh', 'overall.ipamIp.create', '新增 IP 详情', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5850, 'overall.ipamIp.edit', 'en', 'overall.ipamIp.edit', 'Edit IP detail', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5851, 'overall.ipamIp.edit', 'zh', 'overall.ipamIp.edit', '编辑 IP 详情', '', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5852, 'ipam.subnet.ipDetails', 'en', 'ipam.subnet.ipDetails', 'IP details', '', '2022-03-21 09:06:24', 382);
+INSERT INTO `sys_i18n` VALUES (5853, 'ipam.subnet.ipDetails', 'zh', 'ipam.subnet.ipDetails', 'IP 详情', '', '2022-03-21 09:06:40', 382);
+
 
 SET FOREIGN_KEY_CHECKS = 1;
