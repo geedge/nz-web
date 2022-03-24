@@ -5303,6 +5303,38 @@ INSERT INTO `sys_i18n` VALUES (5850, 'overall.ipamIp.edit', 'en', 'overall.ipamI
 INSERT INTO `sys_i18n` VALUES (5851, 'overall.ipamIp.edit', 'zh', 'overall.ipamIp.edit', '编辑 IP 详情', '', '2022-03-22 06:53:48', 1);
 INSERT INTO `sys_i18n` VALUES (5852, 'ipam.subnet.ipDetails', 'en', 'ipam.subnet.ipDetails', 'IP details', '', '2022-03-21 09:06:24', 382);
 INSERT INTO `sys_i18n` VALUES (5853, 'ipam.subnet.ipDetails', 'zh', 'ipam.subnet.ipDetails', 'IP 详情', '', '2022-03-21 09:06:40', 382);
+INSERT INTO `sys_i18n` VALUES (5854, 'asset.talon', 'en', 'asset.talon', 'Talon', '', '2022-03-24 07:11:46', 1);
+INSERT INTO `sys_i18n` VALUES (5855, 'asset.talon', 'zh', 'asset.talon', 'Talon', '', '2022-03-24 07:12:36', 1);
+INSERT INTO `sys_i18n` VALUES (5856, 'overall.system', 'en', 'overall.system', 'System', '', '2022-03-24 07:21:05', 1);
+INSERT INTO `sys_i18n` VALUES (5857, 'overall.system', 'zh', 'overall.system', '系统', '', '2022-03-24 07:21:14', 1);
+INSERT INTO `sys_i18n` VALUES (5858, 'overall.misc', 'en', 'overall.misc', 'Misc', '', '2022-03-24 07:21:28', 1);
+INSERT INTO `sys_i18n` VALUES (5859, 'overall.misc', 'zh', 'overall.misc', '杂项', '', '2022-03-24 07:21:38', 1);
+INSERT INTO `sys_i18n` VALUES (5860, 'overall.addThresholds', 'en', 'overall.addThresholds', 'Add thresholds', '', '2022-03-24 07:37:05', 1);
+INSERT INTO `sys_i18n` VALUES (5861, 'overall.addThresholds', 'zh', 'overall.addThresholds', '添加阈值', '', '2022-03-24 07:37:12', 1);
+INSERT INTO `sys_i18n` VALUES (5862, 'overall.addColumns', 'en', 'overall.addColumns', 'Add columns', '', '2022-03-24 07:37:17', 1);
+INSERT INTO `sys_i18n` VALUES (5863, 'overall.addColumns', 'zh', 'overall.addColumns', '添加列', '', '2022-03-24 07:38:56', 1);
+INSERT INTO `sys_i18n` VALUES (5864, 'overall.addMapping', 'en', 'overall.addMapping', 'Add valueMapping', '', '2022-03-24 07:37:28', 1);
+INSERT INTO `sys_i18n` VALUES (5865, 'overall.addMapping', 'zh', 'overall.addMapping', '添加 valueMapping', '', '2022-03-24 07:37:34', 1);
+INSERT INTO `sys_i18n` VALUES (5866, 'dashboard.panel.chartForm.valMapping.regx', 'en', 'dashboard.panel.chartForm.valMapping.regx', 'Regx', '', '2022-03-24 07:46:00', 1);
+INSERT INTO `sys_i18n` VALUES (5867, 'dashboard.panel.chartForm.valMapping.regx', 'zh', 'dashboard.panel.chartForm.valMapping.regx', '正则', '', '2022-03-24 07:46:09', 1);
+INSERT INTO `sys_i18n` VALUES (5868, 'overall.global', 'en', 'overall.global', 'Global', '', '2022-03-24 07:52:30', 1);
+INSERT INTO `sys_i18n` VALUES (5869, 'overall.global', 'zh', 'overall.global', 'Global', '', '2022-03-24 07:52:38', 1);
+INSERT INTO `sys_i18n` VALUES (5870, 'overall.perDatacenter', 'en', 'overall.perDatacenter', 'Per-Datacenter', '', '2022-03-24 07:53:06', 1);
+INSERT INTO `sys_i18n` VALUES (5871, 'overall.perDatacenter', 'zh', 'overall.perDatacenter', 'Per-Datacenter', '', '2022-03-24 07:53:56', 1);
+INSERT INTO `sys_i18n` VALUES (5872, 'overall.SNMPTrap', 'en', 'overall.SNMPTrap', 'SNMP trap', '', '2022-03-24 07:57:09', 1);
+INSERT INTO `sys_i18n` VALUES (5873, 'overall.SNMPTrap', 'zh', 'overall.SNMPTrap', 'SNMP trap', '', '2022-03-24 07:57:22', 1);
+INSERT INTO `sys_i18n` VALUES (5874, 'overall.selected', 'en', 'overall.selected', 'Selected', '', '2022-03-24 08:11:59', 1);
+INSERT INTO `sys_i18n` VALUES (5875, 'overall.selected', 'zh', 'overall.selected', '已选择', '', '2022-03-24 08:12:14', 1);
+INSERT INTO `sys_i18n` VALUES (5876, 'asset.pingStatus', 'en', 'asset.pingStatus', 'Ping status', '', '2022-03-24 08:13:30', 1);
+INSERT INTO `sys_i18n` VALUES (5877, 'asset.pingStatus', 'zh', 'asset.pingStatus', 'Ping status', '', '2022-03-24 08:13:55', 1);
+INSERT INTO `sys_i18n` VALUES (5878, 'webshell.selAsset', 'en', 'webshell.selAsset', 'Select asset', '', '2022-03-24 08:18:30', 1);
+INSERT INTO `sys_i18n` VALUES (5879, 'webshell.selAsset', 'zh', 'webshell.selAsset', '选择资产', '', '2022-03-24 08:18:44', 1);
+INSERT INTO `sys_i18n` VALUES (5880, 'webshell.custom', 'en', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:19:31', 1);
+INSERT INTO `sys_i18n` VALUES (5881, 'webshell.custom', 'zh', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:20:02', 1);
+INSERT INTO `sys_i18n` VALUES (5882, 'webshell.connect', 'en', 'webshell.connect', 'Connect', '', '2022-03-24 08:21:43', 1);
+INSERT INTO `sys_i18n` VALUES (5883, 'webshell.connect', 'zh', 'webshell.connect', '连接', '', '2022-03-24 08:22:20', 1);
+INSERT INTO `sys_i18n` VALUES (5884, 'overall.split', 'en', 'overall.split', 'split', '', '2022-03-24 08:33:17', 1);
+INSERT INTO `sys_i18n` VALUES (5885, 'overall.split', 'zh', 'overall.split', '分割', '', '2022-03-24 08:36:04', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
