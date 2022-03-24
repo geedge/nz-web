@@ -271,15 +271,17 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 	private AlertMessageReceiveDTO genAlertMessageFromVector(AlertRuleEntity alertRuleEntity, Map labels, String value,
 			String startAt, String endAt) {
 		AlertMessageReceiveDTO dto = new AlertMessageReceiveDTO();
+		LinkedHashMap alertLabels = new LinkedHashMap(labels);
+		alertLabels.put("alertname", alertRuleEntity.getId().toString());
 		// 添加label
 		String ruleType = alertRuleEntity.getType() == 1 ? "metrics" : "logs";
-		labels.put("rule_type", ruleType);
-		labels.put("alertname", alertRuleEntity.getId().toString());
+		alertLabels.put("rule_type", ruleType);
 		if (alertRuleEntity.getSeverity() != null) {
-			labels.put("severity", alertRuleEntity.getSeverity().getName());
+			alertLabels.put("severity", alertRuleEntity.getSeverity().getName());
 		}
-		labels.put("severity_id", alertRuleEntity.getSeverityId().toString());
-		dto.setLabels(new LinkedHashMap<String, String>(labels));
+		alertLabels.put("severity_id", alertRuleEntity.getSeverityId().toString());
+		alertLabels.remove("__name__");
+		dto.setLabels(alertLabels);
 		dto.setStartsAt(startAt);
 		dto.setEndsAt(endAt);
 		// 渲染 annotation
@@ -297,7 +299,5 @@ public class AlertRuleJudgeJob extends QuartzJobBean {
 		dto.setAnnotations(anno);
 		return dto;
 	}
-
 	
-
 }
