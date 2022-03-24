@@ -1542,6 +1542,7 @@ public class Tool {
 					// snmp trap variables 特殊处理
 					if (Tool.StrUtil.equalsIgnoreCase(var, "variables")) {
 						value = context.get("variables");
+						matcher.appendReplacement(stringBuffer, value == null ? Tool.StrUtil.EMPTY : value.toString());
 						continue;
 					}
 					if (var.startsWith("variables")) {
@@ -1552,6 +1553,7 @@ public class Tool {
 							List<Object> vlist = (List<Object>) value;
 							value = vlist.size() == 1 ? vlist.get(0) : Tool.StrUtil.join(",", vlist.toArray());
 						}
+						matcher.appendReplacement(stringBuffer, value == null ? Tool.StrUtil.EMPTY : value.toString());
 						continue;
 					}
 					value = Tool.BeanUtil.getProperty(context, var);
