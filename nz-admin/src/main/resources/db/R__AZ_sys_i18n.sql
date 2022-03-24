@@ -1,13 +1,13 @@
 /**
- *  
+ *
  	！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
  	重点注意  每次更新本表格时  需要在界面 sys_log中查询用户新增、修改或删除了的数据内容补充到本文件中，防止更新后将用户操作内容给覆盖丢失
  	！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
- 	
+
 
  *  按照时间 描述记录每次变化内容
  *  2021年10月8日10:46:56 新建sys_i18n表 记录国际化相关数据信息
- * 
+ *
  */
 
 SET NAMES utf8mb4;
@@ -483,7 +483,7 @@ INSERT INTO `sys_i18n` VALUES (447, 'overall.signOut', 'en', 'overall.signOut', 
 INSERT INTO `sys_i18n` VALUES (449, 'overall.exportExcelLower', 'en', 'overall.exportExcelLower', 'export', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (450, 'overall.version', 'en', 'overall.version', 'Version', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (451, 'overall.relabelConfigRegex', 'en', 'overall.relabelConfigRegex', 'Default is (.*) ', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (452, 'overall.labels', 'en', 'overall.labels', 'Label', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (452, 'overall.labels', 'en', 'overall.labels', 'Attributes', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (453, 'overall.importExcel', 'en', 'overall.importExcel', 'Import', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (454, 'overall.folder', 'en', 'overall.folder', 'Folder', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (455, 'overall.createAlertSilence', 'en', 'overall.createAlertSilence', 'New alert silence', '', '2021-11-02 00:00:00', 1);
@@ -5203,8 +5203,8 @@ INSERT INTO `sys_i18n` VALUES (5750, 'config.ipamsubnet.cap.comment', 'en', 'con
 INSERT INTO `sys_i18n` VALUES (5751, 'config.ipamsubnet.cap.comment', 'zh', 'config.ipamsubnet.cap.comment', '总容量', '', '2022-02-24 10:31:18', 1);
 INSERT INTO `sys_i18n` VALUES (5752, 'config.ipamsubnet.used.comment', 'en', 'config.ipamsubnet.used.comment', 'Used', '', '2022-02-24 10:31:28', 1);
 INSERT INTO `sys_i18n` VALUES (5753, 'config.ipamsubnet.used.comment', 'zh', 'config.ipamsubnet.used.comment', '使用量', '', '2022-02-24 10:31:35', 1);
-INSERT INTO `sys_i18n` VALUES (5754, 'overall.ipam', 'en', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:11', 382);
-INSERT INTO `sys_i18n` VALUES (5755, 'overall.ipam', 'zh', 'overall.ipam', 'IPAM', '', '2022-03-02 03:07:21', 382);
+INSERT INTO `sys_i18n` VALUES (5754, 'ipam.subnet', 'en', 'ipam.subnet', 'IPAM', '', '2022-03-02 03:07:11', 382);
+INSERT INTO `sys_i18n` VALUES (5755, 'ipam.subnet', 'zh', 'ipam.subnet', 'IPAM', '', '2022-03-02 03:07:21', 382);
 INSERT INTO `sys_i18n` VALUES (5756, 'overall.addr', 'en', 'overall.addr', 'Addr', '', '2022-03-02 03:08:26', 382);
 INSERT INTO `sys_i18n` VALUES (5757, 'overall.addr', 'zh', 'overall.addr', 'Addr', '', '2022-03-02 03:10:23', 382);
 INSERT INTO `sys_i18n` VALUES (5758, 'overall.mask', 'en', 'overall.mask', 'Mask', '', '2022-03-02 03:08:41', 382);
@@ -5243,5 +5243,98 @@ INSERT INTO `sys_i18n` VALUES (5790, '123079', 'en', 'CHART_Y_FORMAT', 'Chart y 
 INSERT INTO `sys_i18n` VALUES (5791, '123079', 'zh', 'CHART_Y_FORMAT', '图表y轴数据格式错误', '', '2022-03-08 01:51:22', 1);
 INSERT INTO `sys_i18n` VALUES (5792, '123080', 'en', 'CHART_X_WIDTH_INVALIDE', 'Chart x and width sum cannot be greater than 12 ', '', '2022-03-08 01:51:35', 1);
 INSERT INTO `sys_i18n` VALUES (5793, '123080', 'zh', 'CHART_X_WIDTH_INVALIDE', '图表x轴和宽度之和不能超过12', '', '2022-03-08 01:51:54', 1);
+INSERT INTO `sys_i18n` VALUES (5794, 'config.ipamip.name', 'en', 'config.ipamip.name', 'Name', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5795, 'config.ipamip.name', 'zh', 'config.ipamip.name', '名称', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5796, 'config.ipamip.ipamsubnet', 'en', 'config.ipamip.ipamsubnet', 'Ipamsubnet', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5797, 'config.ipamip.ipamsubnet', 'zh', 'config.ipamip.ipamsubnet', '子网信息', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5798, 'config.ipamip.addr', 'en', 'config.ipamip.addr', 'Addr', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5799, 'config.ipamip.addr', 'zh', 'config.ipamip.addr', '子网地址', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5800, 'config.ipamip.mac', 'en', 'config.ipamip.mac', 'Mac', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5801, 'config.ipamip.mac', 'zh', 'config.ipamip.mac', 'MAC地址', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5802, 'config.ipamip.asset', 'en', 'config.ipamip.asset', 'Asset', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5803, 'config.ipamip.asset', 'zh', 'config.ipamip.asset', '资产', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5804, 'config.ipamip.state', 'en', 'config.ipamip.state', 'State', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5805, 'config.ipamip.state', 'zh', 'config.ipamip.state', '状态', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5806, 'config.ipamip.remark', 'en', 'config.ipamip.remark', 'Remark', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5807, 'config.ipamip.remark', 'zh', 'config.ipamip.remark', '备注', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5808, 'config.ipamip.uts', 'en', 'config.ipamip.uts', 'Uts', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5809, 'config.ipamip.uts', 'zh', 'config.ipamip.uts', '更新时间戳', '', '2022-03-15 10:20:20', 1);
+INSERT INTO `sys_i18n` VALUES (5810, 'config.ipamip.name.comment', 'en', 'config.ipamip.name.comment', 'Name(Required) Example: xxx ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5811, 'config.ipamip.name.comment', 'zh', 'config.ipamip.name.comment', '名称(必填) 事例: xxx ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5812, 'config.ipamip.ipamsubnet.comment', 'en', 'config.ipamip.ipamsubnet.comment', 'Ipamsubnet(Required) Example: xxx Ipamsubnet name ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5813, 'config.ipamip.ipamsubnet.comment', 'zh', 'config.ipamip.ipamsubnet.comment', '子网信息(必填) 实例: xxx子网信息', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5814, 'config.ipamip.addr.comment', 'en', 'config.ipamip.addr.comment', 'Addr(Required) Example: ipv4 192.168.10.1 ipv6: 0000:0000:0000:0000:0000:0000:c0a8:0a01 ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5815, 'config.ipamip.addr.comment', 'zh', 'config.ipamip.addr.comment', '子网地址(必填) 事例: ipv4 192.168.10.1 ipv6: 0000:0000:0000:0000:0000:0000:c0a8:0a01 ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5816, 'config.ipamip.mac.comment', 'en', 'config.ipamip.mac.comment', 'Mac(Required) Example: xxx ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5817, 'config.ipamip.mac.comment', 'zh', 'config.ipamip.mac.comment', 'MAC地址(必填) 事例: xxx ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5818, 'config.ipamip.asset.comment', 'en', 'config.ipamip.asset.comment', 'Asset(Required) Example: Asset name ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5819, 'config.ipamip.asset.comment', 'zh', 'config.ipamip.asset.comment', '资产(必填) 事例: xxx资产 ', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5820, 'config.ipamip.state.comment', 'en', 'config.ipamip.state.comment', 'State', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5821, 'config.ipamip.state.comment', 'zh', 'config.ipamip.state.comment', '状态', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5822, 'config.ipamip.remark.comment', 'en', 'config.ipamip.remark.comment', 'Remark', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5823, 'config.ipamip.remark.comment', 'zh', 'config.ipamip.remark.comment', '描述', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5824, 'config.ipamip.uts.comment', 'en', 'config.ipamip.uts.comment', 'Uts', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5825, 'config.ipamip.uts.comment', 'zh', 'config.ipamip.uts.comment', '更新时间戳', '', '2022-03-15 10:23:55', 1);
+INSERT INTO `sys_i18n` VALUES (5826, 'config.model.sysObjectId', 'en', 'config.model.sysObjectId', 'Sys object id', '', '2022-03-11 06:15:08', 1);
+INSERT INTO `sys_i18n` VALUES (5827, 'config.model.sysObjectId', 'zh', 'config.model.sysObjectId', '系统对象 ID', '', '2022-03-11 06:17:45', 1);
+INSERT INTO `sys_i18n` VALUES (5828, 'config.model.sysObjectId.comment', 'en', 'config.model.sysObjectId.comment', 'System Object Id Example:  1.3.6.1.2.1.30', '', '2022-03-11 08:48:24', 1);
+INSERT INTO `sys_i18n` VALUES (5829, 'config.model.sysObjectId.comment', 'zh', 'config.model.sysObjectId.comment', '对象ID 示例：1.3.6.1.2.1.30', '', '2022-03-11 08:48:59', 1);
+INSERT INTO `sys_i18n` VALUES (5830, '323016', 'en', 'ASSET_MODEL_OID_INCORRECT', 'OID format is incorrect', '', '2022-03-14 06:55:09', 1);
+INSERT INTO `sys_i18n` VALUES (5831, '323016', 'zh', 'ASSET_MODEL_OID_INCORRECT', 'OID 格式错误', '', '2022-03-14 06:55:29', 1);
+INSERT INTO `sys_i18n` VALUES (5832, '322017', 'en', 'ASSET_MODEL_OID_DUPLICATE', 'OID duplicate', '', '2022-03-14 06:55:44', 1);
+INSERT INTO `sys_i18n` VALUES (5833, '322017', 'zh', 'ASSET_MODEL_OID_DUPLICATE', 'OID 重复', '', '2022-03-14 06:55:55', 1);
+INSERT INTO `sys_i18n` VALUES (5834, 'licenseGen.comment', 'en', 'licenseGen.comment', 'Comment', '', '2022-03-15 06:07:09', 1);
+INSERT INTO `sys_i18n` VALUES (5835, 'licenseGen.comment', 'zh', 'licenseGen.comment', 'Comment', '', '2022-03-15 06:07:23', 1);
+INSERT INTO `sys_i18n` VALUES (5836, 'license.gen', 'en', 'license.gen', 'License Gen', '', '2022-03-15 06:26:43', 1);
+INSERT INTO `sys_i18n` VALUES (5837, 'license.gen', 'zh', 'license.gen', '生成证书', '', '2022-03-15 06:27:18', 1);
+INSERT INTO `sys_i18n` VALUES (5838, 'licenseGen.document', 'en', 'licenseGen.document', 'Please upload at least one file', '', '2022-03-16 06:21:39', 1);
+INSERT INTO `sys_i18n` VALUES (5839, 'licenseGen.document', 'zh', 'licenseGen.document', '请至少上传一个文件', '', '2022-03-16 06:21:17', 1);
+INSERT INTO `sys_i18n` VALUES (5840, 'ipam.view', 'en', 'ipam.view', 'View', '', '2022-03-16 06:46:21', 382);
+INSERT INTO `sys_i18n` VALUES (5841, 'ipam.view', 'zh', 'ipam.view', '查看', '', '2022-03-16 06:50:45', 382);
+INSERT INTO `sys_i18n` VALUES (5842, 'ipam.add', 'en', 'ipam.add', 'Add', '', '2022-03-16 06:51:39', 382);
+INSERT INTO `sys_i18n` VALUES (5843, 'ipam.add', 'zh', 'ipam.add', '新增', '', '2022-03-16 06:51:59', 382);
+INSERT INTO `sys_i18n` VALUES (5844, 'ipam.edit', 'en', 'ipam.edit', 'Edit', '', '2022-03-16 06:52:20', 382);
+INSERT INTO `sys_i18n` VALUES (5845, 'ipam.edit', 'zh', 'ipam.edit', '编辑', '', '2022-03-16 06:52:31', 382);
+INSERT INTO `sys_i18n` VALUES (5846, 'ipam.delete', 'en', 'ipam.delete', 'Delete', '', '2022-03-16 06:53:35', 382);
+INSERT INTO `sys_i18n` VALUES (5847, 'ipam.delete', 'zh', 'ipam.delete', '删除', '', '2022-03-16 06:53:48', 382);
+INSERT INTO `sys_i18n` VALUES (5848, 'overall.ipamIp.create', 'en', 'overall.ipamIp.create', 'New IP detail','', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5849, 'overall.ipamIp.create', 'zh', 'overall.ipamIp.create', '新增 IP 详情', '', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5850, 'overall.ipamIp.edit', 'en', 'overall.ipamIp.edit', 'Edit IP detail', '', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5851, 'overall.ipamIp.edit', 'zh', 'overall.ipamIp.edit', '编辑 IP 详情', '', '2022-03-22 06:53:48', 1);
+INSERT INTO `sys_i18n` VALUES (5852, 'ipam.subnet.ipDetails', 'en', 'ipam.subnet.ipDetails', 'IP details', '', '2022-03-21 09:06:24', 382);
+INSERT INTO `sys_i18n` VALUES (5853, 'ipam.subnet.ipDetails', 'zh', 'ipam.subnet.ipDetails', 'IP 详情', '', '2022-03-21 09:06:40', 382);
+INSERT INTO `sys_i18n` VALUES (5854, 'asset.talon', 'en', 'asset.talon', 'Talon', '', '2022-03-24 07:11:46', 1);
+INSERT INTO `sys_i18n` VALUES (5855, 'asset.talon', 'zh', 'asset.talon', 'Talon', '', '2022-03-24 07:12:36', 1);
+INSERT INTO `sys_i18n` VALUES (5856, 'overall.system', 'en', 'overall.system', 'System', '', '2022-03-24 07:21:05', 1);
+INSERT INTO `sys_i18n` VALUES (5857, 'overall.system', 'zh', 'overall.system', '系统', '', '2022-03-24 07:21:14', 1);
+INSERT INTO `sys_i18n` VALUES (5858, 'overall.misc', 'en', 'overall.misc', 'Misc', '', '2022-03-24 07:21:28', 1);
+INSERT INTO `sys_i18n` VALUES (5859, 'overall.misc', 'zh', 'overall.misc', '杂项', '', '2022-03-24 07:21:38', 1);
+INSERT INTO `sys_i18n` VALUES (5860, 'overall.addThresholds', 'en', 'overall.addThresholds', 'Add thresholds', '', '2022-03-24 07:37:05', 1);
+INSERT INTO `sys_i18n` VALUES (5861, 'overall.addThresholds', 'zh', 'overall.addThresholds', '添加阈值', '', '2022-03-24 07:37:12', 1);
+INSERT INTO `sys_i18n` VALUES (5862, 'overall.addColumns', 'en', 'overall.addColumns', 'Add columns', '', '2022-03-24 07:37:17', 1);
+INSERT INTO `sys_i18n` VALUES (5863, 'overall.addColumns', 'zh', 'overall.addColumns', '添加列', '', '2022-03-24 07:38:56', 1);
+INSERT INTO `sys_i18n` VALUES (5864, 'overall.addMapping', 'en', 'overall.addMapping', 'Add valueMapping', '', '2022-03-24 07:37:28', 1);
+INSERT INTO `sys_i18n` VALUES (5865, 'overall.addMapping', 'zh', 'overall.addMapping', '添加 valueMapping', '', '2022-03-24 07:37:34', 1);
+INSERT INTO `sys_i18n` VALUES (5866, 'dashboard.panel.chartForm.valMapping.regx', 'en', 'dashboard.panel.chartForm.valMapping.regx', 'Regx', '', '2022-03-24 07:46:00', 1);
+INSERT INTO `sys_i18n` VALUES (5867, 'dashboard.panel.chartForm.valMapping.regx', 'zh', 'dashboard.panel.chartForm.valMapping.regx', '正则', '', '2022-03-24 07:46:09', 1);
+INSERT INTO `sys_i18n` VALUES (5868, 'overall.global', 'en', 'overall.global', 'Global', '', '2022-03-24 07:52:30', 1);
+INSERT INTO `sys_i18n` VALUES (5869, 'overall.global', 'zh', 'overall.global', 'Global', '', '2022-03-24 07:52:38', 1);
+INSERT INTO `sys_i18n` VALUES (5870, 'overall.perDatacenter', 'en', 'overall.perDatacenter', 'Per-Datacenter', '', '2022-03-24 07:53:06', 1);
+INSERT INTO `sys_i18n` VALUES (5871, 'overall.perDatacenter', 'zh', 'overall.perDatacenter', 'Per-Datacenter', '', '2022-03-24 07:53:56', 1);
+INSERT INTO `sys_i18n` VALUES (5872, 'overall.SNMPTrap', 'en', 'overall.SNMPTrap', 'SNMP trap', '', '2022-03-24 07:57:09', 1);
+INSERT INTO `sys_i18n` VALUES (5873, 'overall.SNMPTrap', 'zh', 'overall.SNMPTrap', 'SNMP trap', '', '2022-03-24 07:57:22', 1);
+INSERT INTO `sys_i18n` VALUES (5874, 'overall.selected', 'en', 'overall.selected', 'Selected', '', '2022-03-24 08:11:59', 1);
+INSERT INTO `sys_i18n` VALUES (5875, 'overall.selected', 'zh', 'overall.selected', '已选择', '', '2022-03-24 08:12:14', 1);
+INSERT INTO `sys_i18n` VALUES (5876, 'asset.pingStatus', 'en', 'asset.pingStatus', 'Ping status', '', '2022-03-24 08:13:30', 1);
+INSERT INTO `sys_i18n` VALUES (5877, 'asset.pingStatus', 'zh', 'asset.pingStatus', 'Ping status', '', '2022-03-24 08:13:55', 1);
+INSERT INTO `sys_i18n` VALUES (5878, 'webshell.selAsset', 'en', 'webshell.selAsset', 'Select asset', '', '2022-03-24 08:18:30', 1);
+INSERT INTO `sys_i18n` VALUES (5879, 'webshell.selAsset', 'zh', 'webshell.selAsset', '选择资产', '', '2022-03-24 08:18:44', 1);
+INSERT INTO `sys_i18n` VALUES (5880, 'webshell.custom', 'en', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:19:31', 1);
+INSERT INTO `sys_i18n` VALUES (5881, 'webshell.custom', 'zh', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:20:02', 1);
+INSERT INTO `sys_i18n` VALUES (5882, 'webshell.connect', 'en', 'webshell.connect', 'Connect', '', '2022-03-24 08:21:43', 1);
+INSERT INTO `sys_i18n` VALUES (5883, 'webshell.connect', 'zh', 'webshell.connect', '连接', '', '2022-03-24 08:22:20', 1);
+INSERT INTO `sys_i18n` VALUES (5884, 'overall.split', 'en', 'overall.split', 'split', '', '2022-03-24 08:33:17', 1);
+INSERT INTO `sys_i18n` VALUES (5885, 'overall.split', 'zh', 'overall.split', '分割', '', '2022-03-24 08:36:04', 1);
+
 
 SET FOREIGN_KEY_CHECKS = 1;
