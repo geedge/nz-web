@@ -2316,7 +2316,7 @@ INSERT INTO `sys_i18n` VALUES (2291, 'asset.vendorModel', 'zh', 'asset.vendorMod
 INSERT INTO `sys_i18n` VALUES (2293, 'asset.principal', 'zh', 'asset.principal', '负责人', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2294, 'asset.reLoginPinIntroduce', 'zh', 'asset.reLoginPinIntroduce', '请指定密码提示以便RELOGIN登录过程可自动运行', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2295, 'asset.exporter', 'zh', 'asset.exporter', 'Exporter', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2296, 'asset.endpoint', 'zh', 'asset.endpoint', 'Endpoint', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2296, 'asset.endpoint', 'zh', 'asset.endpoint', '应用实例', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2297, 'asset.total', 'zh', 'asset.total', '总数', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2298, 'asset.vendor', 'zh', 'asset.vendor', '厂商', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2299, 'asset.sn', 'zh', 'asset.sn', 'SN', '', '2021-11-02 00:00:00', 1);
@@ -2329,7 +2329,7 @@ INSERT INTO `sys_i18n` VALUES (2305, 'asset.address', 'zh', 'asset.address', '�
 INSERT INTO `sys_i18n` VALUES (2306, 'asset.selectAsset', 'zh', 'asset.selectAsset', '已选择的资产', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2307, 'asset.dataCenter', 'zh', 'asset.dataCenter', '数据中心', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2308, 'asset.clickToCover', 'zh', 'asset.clickToCover', '覆盖', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2309, 'asset.endpointNum2', 'zh', 'asset.endpointNum2', 'Endpoint数量', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2309, 'asset.endpointNum2', 'zh', 'asset.endpointNum2', '应用实例数量', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2310, 'asset.userTip', 'zh', 'asset.userTip', '用户名提示', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2311, 'asset.userName', 'zh', 'asset.userName', '用户名', '', '2022-02-17 09:16:57', 98);
 INSERT INTO `sys_i18n` VALUES (2312, 'asset.pinPrompt', 'zh', 'asset.pinPrompt', '密码提示', '', '2021-11-02 00:00:00', 1);
@@ -2980,15 +2980,15 @@ INSERT INTO `sys_i18n` VALUES (2971, 'dashboard.panel.chartForm.alignList.left',
 INSERT INTO `sys_i18n` VALUES (2972, 'dashboard.panel.chartForm.alignList.center', 'zh', 'dashboard.panel.chartForm.alignList.center', '居中', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2973, 'dashboard.panel.chartForm.alignList.right', 'zh', 'dashboard.panel.chartForm.alignList.right', '右对齐', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2974, 'dashboard.panel.chartForm.chartId', 'zh', 'dashboard.panel.chartForm.chartId', 'ID', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2975, 'dashboard.panel.chartForm.statisticsVal.average', 'zh', 'dashboard.panel.chartForm.statisticsVal.average', 'Average', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2976, 'dashboard.panel.chartForm.statisticsVal.total', 'zh', 'dashboard.panel.chartForm.statisticsVal.total', 'Total', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2977, 'dashboard.panel.chartForm.statisticsVal.min', 'zh', 'dashboard.panel.chartForm.statisticsVal.min', 'Min', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2978, 'dashboard.panel.chartForm.statisticsVal.last', 'zh', 'dashboard.panel.chartForm.statisticsVal.last', 'Last', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2975, 'dashboard.panel.chartForm.statisticsVal.average', 'zh', 'dashboard.panel.chartForm.statisticsVal.average', '平均值', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2976, 'dashboard.panel.chartForm.statisticsVal.total', 'zh', 'dashboard.panel.chartForm.statisticsVal.total', '总和', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2977, 'dashboard.panel.chartForm.statisticsVal.min', 'zh', 'dashboard.panel.chartForm.statisticsVal.min', '最小值', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2978, 'dashboard.panel.chartForm.statisticsVal.last', 'zh', 'dashboard.panel.chartForm.statisticsVal.last', '最后一个值', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2979, 'dashboard.panel.chartForm.statisticsVal.null', 'zh', 'dashboard.panel.chartForm.statisticsVal.null', 'None', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2980, 'dashboard.panel.chartForm.statisticsVal.max', 'zh', 'dashboard.panel.chartForm.statisticsVal.max', 'Max', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2981, 'dashboard.panel.chartForm.statisticsVal.range', 'zh', 'dashboard.panel.chartForm.statisticsVal.range', 'Range', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2982, 'dashboard.panel.chartForm.statisticsVal.different', 'zh', 'dashboard.panel.chartForm.statisticsVal.different', 'Different', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2983, 'dashboard.panel.chartForm.statisticsVal.first', 'zh', 'dashboard.panel.chartForm.statisticsVal.first', 'First', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2980, 'dashboard.panel.chartForm.statisticsVal.max', 'zh', 'dashboard.panel.chartForm.statisticsVal.max', '最大值', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2981, 'dashboard.panel.chartForm.statisticsVal.range', 'zh', 'dashboard.panel.chartForm.statisticsVal.range', '范围', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2982, 'dashboard.panel.chartForm.statisticsVal.different', 'zh', 'dashboard.panel.chartForm.statisticsVal.different', '差值', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2983, 'dashboard.panel.chartForm.statisticsVal.first', 'zh', 'dashboard.panel.chartForm.statisticsVal.first', '第一个值', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2984, 'dashboard.panel.chartForm.limit', 'zh', 'dashboard.panel.chartForm.limit', '限制', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2985, 'dashboard.panel.chartForm.lock', 'zh', 'dashboard.panel.chartForm.lock', '锁', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2986, 'dashboard.panel.chartForm.group', 'zh', 'dashboard.panel.chartForm.group', '组', '', '2021-12-03 08:21:56', 1);
@@ -4758,7 +4758,7 @@ INSERT INTO `sys_i18n` VALUES (4883, 'placeholder.chart.display', 'en', 'placeho
 INSERT INTO `sys_i18n` VALUES (4884, 'placeholder.system.limit', 'en', 'placeholder.system.limit', 'Default all', '', '2021-12-03 09:13:16', 1);
 INSERT INTO `sys_i18n` VALUES (4885, 'placeholder.system.limit', 'zh', 'placeholder.system.limit', '默认全部', '', '2021-12-03 09:13:22', 1);
 INSERT INTO `sys_i18n` VALUES (4894, 'dashboard.panel.chartForm.legendConfig', 'en', 'dashboard.panel.chartForm.legendConfig', 'Legend', '', '2021-12-03 07:49:42', 1);
-INSERT INTO `sys_i18n` VALUES (4895, 'dashboard.panel.chartForm.legendConfig', 'zh', 'dashboard.panel.chartForm.legendConfig', 'Legend', '', '2021-12-03 07:49:52', 1);
+INSERT INTO `sys_i18n` VALUES (4895, 'dashboard.panel.chartForm.legendConfig', 'zh', 'dashboard.panel.chartForm.legendConfig', '图例', '', '2021-12-03 07:49:52', 1);
 INSERT INTO `sys_i18n` VALUES (4896, 'error.nameDuplicate', 'en', 'error.nameDuplicate', 'Name is duplicate', '', '2021-12-03 07:51:31', 1);
 INSERT INTO `sys_i18n` VALUES (4897, 'error.nameDuplicate', 'zh', 'error.nameDuplicate', '名字重复', '', '2021-12-03 07:51:42', 1);
 INSERT INTO `sys_i18n` VALUES (4898, 'dashboard.panel.chartForm.dimension', 'en', 'dashboard.panel.chartForm.dimension', 'Dimension', '', '2021-12-03 08:22:27', 1);
@@ -5330,11 +5330,19 @@ INSERT INTO `sys_i18n` VALUES (5877, 'asset.pingStatus', 'zh', 'asset.pingStatus
 INSERT INTO `sys_i18n` VALUES (5878, 'webshell.selAsset', 'en', 'webshell.selAsset', 'Select asset', '', '2022-03-24 08:18:30', 1);
 INSERT INTO `sys_i18n` VALUES (5879, 'webshell.selAsset', 'zh', 'webshell.selAsset', '选择资产', '', '2022-03-24 08:18:44', 1);
 INSERT INTO `sys_i18n` VALUES (5880, 'webshell.custom', 'en', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:19:31', 1);
-INSERT INTO `sys_i18n` VALUES (5881, 'webshell.custom', 'zh', 'webshell.custom', 'Custom connect', '', '2022-03-24 08:20:02', 1);
+INSERT INTO `sys_i18n` VALUES (5881, 'webshell.custom', 'zh', 'webshell.custom', '自定义连接', '', '2022-03-24 08:20:02', 1);
 INSERT INTO `sys_i18n` VALUES (5882, 'webshell.connect', 'en', 'webshell.connect', 'Connect', '', '2022-03-24 08:21:43', 1);
 INSERT INTO `sys_i18n` VALUES (5883, 'webshell.connect', 'zh', 'webshell.connect', '连接', '', '2022-03-24 08:22:20', 1);
 INSERT INTO `sys_i18n` VALUES (5884, 'overall.split', 'en', 'overall.split', 'split', '', '2022-03-24 08:33:17', 1);
 INSERT INTO `sys_i18n` VALUES (5885, 'overall.split', 'zh', 'overall.split', '分割', '', '2022-03-24 08:36:04', 1);
+INSERT INTO `sys_i18n` VALUES (5886, 'overall.basicInfo', 'en', 'overall.basicInfo', 'Basic Info', '', '2022-03-25 05:40:22', 1);
+INSERT INTO `sys_i18n` VALUES (5887, 'overall.basicInfo', 'zh', 'overall.basicInfo', '基本信息', '', '2022-03-25 05:41:07', 1);
+INSERT INTO `sys_i18n` VALUES (5888, 'overall.bottom', 'en', 'overall.bottom', 'Bottom', '', '2022-03-25 05:44:05', 1);
+INSERT INTO `sys_i18n` VALUES (5889, 'overall.bottom', 'zh', 'overall.bottom', '底部', '', '2022-03-25 05:44:16', 1);
+INSERT INTO `sys_i18n` VALUES (5890, 'overall.left', 'en', 'overall.left', 'Left', '', '2022-03-25 05:44:31', 1);
+INSERT INTO `sys_i18n` VALUES (5891, 'overall.left', 'zh', 'overall.left', '左', '', '2022-03-25 05:44:40', 1);
+INSERT INTO `sys_i18n` VALUES (5892, 'overall.right', 'en', 'overall.right', 'Right', '', '2022-03-25 05:46:11', 1);
+INSERT INTO `sys_i18n` VALUES (5893, 'overall.right', 'zh', 'overall.right', '右', '', '2022-03-25 05:46:21', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
