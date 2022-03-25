@@ -1,7 +1,10 @@
 package com.nis.modules.metric.dto;
 
+import com.alibaba.fastjson.JSONObject;
 import com.nis.common.utils.Constant;
+import com.nis.common.utils.Tool;
 import com.nis.common.utils.ToolUtil;
+import com.nis.modules.alert.dao.AlertHandlerDao;
 import com.nis.modules.alert.dao.AlertRuleDao;
 import com.nis.modules.asset.dao.AssetModelDao;
 import com.nis.modules.asset.dao.DcDao;
@@ -9,14 +12,14 @@ import com.nis.modules.asset.entity.Dc;
 import com.nis.modules.module.dao.MonitorModuleDao;
 import com.nis.modules.promserver.entity.Promserver;
 import com.nis.modules.promserver.service.PromserverService;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
+import com.nis.modules.sys.service.SysConfService;
+import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.search.Search;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,10 +42,16 @@ public class NezhaMetrics implements MeterBinder {
     @Autowired
     private AssetModelDao modelDao;
 
+    @Autowired
+    private SysConfService sysConfService;
+
+    @Autowired
+    private AlertHandlerDao alertHandlerDao;
+
     @Override
     public void bindTo(MeterRegistry meterRegistry) {
         // 清空指标数据
-        this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums", "nz_asset_nums", "nz_endpoint_nums", "nz_agent_status");
+        this.cleanMeterInRegistryByName(meterRegistry, "nz_alert_nums", "nz_asset_nums", "nz_endpoint_nums", "nz_agent_status", "nz_alerts");
 
         /**
          * alert_nums指标 / 根据告警规则 id 统计激活状态的告警消息数量
@@ -94,6 +103,32 @@ public class NezhaMetrics implements MeterBinder {
                     .tags("datacenter", idcIdAndNameMap.get(promserver.getDcId()) == null ? "null" : idcIdAndNameMap.get(promserver.getDcId()), "type", Constant.PromserverType.getPromserverType(promserver.getType()).getName(), "host", promserver.getHost(), "port", promserver.getPort() + "")
                     .description("Prometheus statistics info")
                     .register(meterRegistry);
+        }
+
+        /**
+         * nz_alerts
+         */
+        String nzAlertsMetricsEnabled = sysConfService.getValue("nz_alerts_metrics_enabled");
+        nzAlertsMetricsEnabled = Tool.StrUtil.emptyToDefault(nzAlertsMetricsEnabled, "on");
+        if (Tool.StrUtil.equals("on", nzAlertsMetricsEnabled)) {
+            List<String> activeMessageLabelsList = alertHandlerDao.selectAlertMessageLabelsList();
+            activeMessageLabelsList = activeMessageLabelsList.stream().filter(s -> Tool.StrUtil.isNotEmpty(s)).distinct().collect(Collectors.toList());
+
+            for (String labelsJSONStr : activeMessageLabelsList) {
+                // labels
+                List<Tag> tags = new ArrayList<>();
+                Map<String, Object> labelsMap = JSONObject.parseObject(labelsJSONStr, Map.class);
+                for (Map.Entry<String, Object> entry : labelsMap.entrySet()) {
+                    String key = entry.getKey();
+                    if (Tool.StrUtil.equals("__name__", key)) continue;
+                    tags.add(new ImmutableTag(key, entry.getValue().toString()));
+                }
+
+                Gauge.builder("nz_alerts", labelsMap, value -> 0d)
+                        .tags(tags)
+                        .description("Alert active message statistics info")
+                        .register(meterRegistry);
+            }
         }
     }
 

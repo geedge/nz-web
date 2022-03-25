@@ -448,4 +448,11 @@
 		</foreach>
 	</select>
 
+	<select id="selectAlertMessageLabelsList" resultType="java.lang.String">
+		SELECT
+			am.labels
+		FROM
+			alert_message_active am
+	</select>
+
 </mapper>

@@ -157,4 +157,11 @@ public interface AlertHandlerDao {
      * @param msgList
      */
     void saveActiveMessageBatch(@Param("list") List<AlertMessageEntity> msgList);
+
+	/**
+	 * select labels from alert_message_active
+	 * @return
+	 */
+	List<String> selectAlertMessageLabelsList();
+
 }
