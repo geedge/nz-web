@@ -45,11 +45,25 @@
     "scope": ""
   },
   "------------------ get  /alert/message/export data---------------------": "note",
-  "messageExport": {
+  "messageExportFile_csv": {
     "pageNo": null,
     "pageSize": null,
     "orderBy": "",
     "ids": "211210040800001,211210040800002",
     "format": 2
+  },
+  "messageExportFile_json": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "211210040800001,211210040800002",
+    "format": 3
+  },
+  "messageExportFile_excel": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "211210040800001,211210040800002",
+    "format": 1
   }
 }

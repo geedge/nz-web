@@ -128,6 +128,38 @@ public class AlertMessageTest extends BaseTest<AlertMessageEntity> {
         UTUtil.assertToSizeByFlag(result, false);
     }
 
+    /**
+     * get  /alert/message csv
+     */
+    @Test()
+    public void messageExportFile_csv() throws IOException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/alert/message/export", map);
+
+        UTUtil.assertToExportFile(result, map,2);
+    }
+
+    /**
+     * get  /alert/message json
+     */
+    @Test()
+    public void messageExportFile_json() throws IOException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/alert/message/export", map);
+
+        UTUtil.assertToExportFile(result, map,2);
+    }
+
+    /**
+     * get  /alert/message excel
+     */
+    @Test()
+    public void messageExportFile_excel() throws IOException {
+        Map map = jsonToInParameter(testName.getMethodName(), Map.class);
+        MvcResult result = UTUtil.performGet("/alert/message/export", map);
+
+        UTUtil.assertToExportFile(result, map,2);
+    }
 
 
 }

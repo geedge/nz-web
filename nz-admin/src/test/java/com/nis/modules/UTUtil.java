@@ -1,20 +1,34 @@
 package com.nis.modules;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.text.csv.CsvData;
+import cn.hutool.core.text.csv.CsvRow;
+import cn.hutool.core.util.CharsetUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.nis.common.utils.Constant;
 import com.nis.common.utils.RCode;
 import com.nis.common.utils.Tool;
+import org.apache.commons.io.FileUtils;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.Assert;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @SuppressWarnings("all")
 public class UTUtil extends BaseTest {
@@ -37,7 +51,7 @@ public class UTUtil extends BaseTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(JSONObject.toJSONString(requestBody))
             )
-                   // .andDo(MockMvcResultHandlers.print())
+                    // .andDo(MockMvcResultHandlers.print())
                     // .andExpect(MockMvcResultMatchers.status().isOk())
                     .andReturn();
         } catch (Exception e) {
@@ -46,7 +60,7 @@ public class UTUtil extends BaseTest {
         return result;
     }
 
-    public static MvcResult performPut(String url,Object requestBody) {
+    public static MvcResult performPut(String url, Object requestBody) {
         MvcResult result = null;
         try {
             result = mockMvc.perform(
@@ -64,7 +78,7 @@ public class UTUtil extends BaseTest {
         return result;
     }
 
-    public static MvcResult performGet(String url, Map<String,Object> queryParam) {
+    public static MvcResult performGet(String url, Map<String, Object> queryParam) {
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get(url)
                 .header(Authorization, TEST_TOKEN)
                 .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -93,7 +107,7 @@ public class UTUtil extends BaseTest {
     }
 
 
-    public static MvcResult performDelete(String url,  Map<String,Object> queryParam) {
+    public static MvcResult performDelete(String url, Map<String, Object> queryParam) {
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete(url)
                 .header(Authorization, TEST_TOKEN)
                 .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -161,7 +175,7 @@ public class UTUtil extends BaseTest {
     /**
      * 用于断言接口实际返回 Rcode 是否和 期望Rcode 一致
      *
-     * @param result 实际返回结果
+     * @param result     实际返回结果
      * @param expectedOk 期望 Rcode
      */
     public static void assertEqualsRCode(MvcResult result, RCode expectedRcode) {
@@ -180,7 +194,7 @@ public class UTUtil extends BaseTest {
     /**
      * 用于断言接口实际返回 Rcode 是否和 期望Rcode 一致
      *
-     * @param result 实际返回结果
+     * @param result     实际返回结果
      * @param expectedOk 期望 Rcode
      */
     public static void assertNotEqualsRCode(MvcResult result, RCode expectedRcode) {
@@ -223,4 +237,59 @@ public class UTUtil extends BaseTest {
         }
     }
 
+    /**
+     * 用于  断言文件导出
+     *
+     * @param result
+     * @param map 请求参数
+     * @param row 期望请求 返回正确条数
+     */
+    public static void assertToExportFile(MvcResult result, Map map,int row) throws IOException {
+        File tempCsvFile = null;
+        try {
+            String responseStr = result.getResponse().getContentAsString();
+            Assert.assertNotNull("No success response", responseStr);
+
+            MockHttpServletResponse response = result.getResponse();
+            InputStream contentInStream = new ByteArrayInputStream(
+                    response.getContentAsByteArray());
+            Integer format = (Integer) map.get("format") == null ? 1 : (Integer) map.get("format");
+            switch (format) {
+                case 1: { // XLSX
+                    //断言格式
+                    Assert.assertEquals("application/excel", response.getContentType());
+                    Workbook excel = new XSSFWorkbook(contentInStream);
+                    Sheet datasheet = excel.getSheet("Datasheet");
+                    Assert.assertNotNull(datasheet);
+                    int lastRowNum = datasheet.getLastRowNum();
+                    Assert.assertEquals(row, lastRowNum);
+                    break;
+                }
+                case 2: {// CSV
+                    tempCsvFile = new File(Constant.TEMP_PATH + File.separator + "csv_" + UUID.randomUUID());
+                    FileUtils.copyInputStreamToFile(contentInStream, tempCsvFile);
+                    CsvData data = Tool.CsvUtil.getReader().read(ResourceUtil.getReader(tempCsvFile.getPath(), CharsetUtil.CHARSET_GBK));
+                    Assert.assertNotNull(data);
+                    List<CsvRow> rows = data.getRows();
+                    Assert.assertEquals(row+1, rows.size());
+                    break;
+                }
+                case 3: {// JSON
+                    String jsonStr = IoUtil.read(contentInStream, CharsetUtil.charset("UTF-8"));
+                    Assert.assertNotNull(jsonStr);
+                    List<LinkedHashMap> mapList = JSONObject.parseArray(jsonStr, LinkedHashMap.class);
+                    Assert.assertEquals(row, mapList.size());
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+
+        } catch (Exception e) {
+            log.error(e);
+        } finally {
+            if (tempCsvFile != null && tempCsvFile.exists()) tempCsvFile.delete();
+        }
+    }
 }
