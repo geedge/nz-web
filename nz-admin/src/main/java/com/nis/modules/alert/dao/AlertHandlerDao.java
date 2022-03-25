@@ -164,4 +164,8 @@ public interface AlertHandlerDao {
 	 */
 	List<String> selectAlertMessageLabelsList();
 
+	AlertMessageEntity queryInfo(@Param("id") Long id);
+
+	List<AlertMessageEntity> queryAlertMessageRelList(IPage page, @Param("params") Map params);
+
 }

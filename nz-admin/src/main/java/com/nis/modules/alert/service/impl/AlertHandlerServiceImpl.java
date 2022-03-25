@@ -46,6 +46,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("alertMessageHandlerService")
 public class AlertHandlerServiceImpl implements AlertHandlerService {
@@ -884,5 +885,34 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 	@Override
 	public void updateCloseExpiredMessageEndAt(String tableName,Date endAt) {
 		msgHandlerDao.updateCloseExpiredMessageEndAt(tableName, endAt);
+	}
+
+	@Override
+	public AlertMessageEntity queryInfo(Long id) {
+		AlertMessageEntity alertMessageEntity = msgHandlerDao.queryInfo(id);
+		return alertMessageEntity;
+	}
+
+	@Override
+	public PageUtils queryAlertMessageRelList(Map params) {
+		String scopeStr = Tool.MapUtil.get(params, "scope", String.class);
+		List<String> scopeList = null;
+		if (Tool.StrUtil.isBlank(scopeStr)) {
+			scopeList = Constant.MESSAGE_SCOPE;
+		} else {
+			String[] split = scopeStr.split(",");
+			scopeList = Tool.ListUtil.list(false, split).stream()
+					.filter(s -> Constant.MESSAGE_SCOPE.contains(s.toLowerCase())).collect(Collectors.toList());
+			scopeList.forEach(s -> s.toLowerCase());
+		}
+		params.put("scopeList", scopeList);
+		if(ToolUtil.isNotEmpty(params.get("state"))) {
+			String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
+			params.put("tableName", tableName);
+		}
+		IPage page = new Query(AlertMessageEntity.class).getPage(params);
+		List<AlertMessageEntity> alertMessageEntityList = msgHandlerDao.queryAlertMessageRelList(page,params);
+		page.setRecords(alertMessageEntityList);
+		return new PageUtils(page);
 	}
 }

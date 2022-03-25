@@ -454,5 +454,115 @@
 		FROM
 			alert_message_active am
 	</select>
+	<select id="queryInfo" resultMap="alertMessageMap">
+		select
+		am.*,
+		ar.id as r_id ,
+		ar.name as r_name,
+		ar.type as r_type,
+		ar.trb_shot as r_trb_shot,
+		p.id as p_id,
+		p.name as p_name,
+		m.id as m_id,
+		m.name as m_name,
+		e.id as e_id,
+		e.name as e_name,
+		ass.id as ass_id,
+		ass.name as ass_name,
+		alsc.id as alsc_id,
+		alsc.name as alsc_name,
+		alsc.color as alsc_color,
+		dc.id as dc_id,
+		dc.name as dc_name
+		from alert_message_active am
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN monitor_project p on am.project_id = p.id
+		LEFT JOIN monitor_module m on am.module_id = m.id
+		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
+		LEFT JOIN asset_asset ass on am.asset_id = ass.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		LEFT JOIN dc dc on am.dc_id = dc.id
+		<where>
+			<if test="id != null and id != ''">
+				am.id = #{id}
+			</if>
+		</where>
+	</select>
+
+	<select id="queryAlertMessageRelList" resultMap="alertMessageMap">
+		select
+		am.*,
+		ass.id as ass_id,
+		ass.name as ass_name,
+		dc.id as dc_id,
+		dc.name as dc_name,
+		p.id as p_id,
+		p.name as p_name,
+		m.id as m_id,
+		m.name as m_name,
+		e.id as e_id,
+		e.name as e_name,
+		ar.id as r_id ,
+		ar.name as r_name,
+		ar.type as r_type,
+		ar.trb_shot as r_trb_shot,
+		alsc.id as alsc_id,
+		alsc.name as alsc_name,
+		alsc.color as alsc_color
+		FROM
+		<if test="params.tableName != null and params.tableName !='' ">
+			${params.tableName} am
+		</if>
+		<if test="params.tableName == null">
+			(select * from alert_message_active union all
+			select * from alert_message_history union all
+			select * from alert_message_silence) am
+		</if>
+		LEFT JOIN asset_asset ass on am.asset_id = ass.id
+		LEFT JOIN dc dc on am.dc_id = dc.id
+		LEFT JOIN monitor_project p on am.project_id = p.id
+		LEFT JOIN monitor_module m on am.module_id = m.id
+		LEFT JOIN monitor_endpoint e on am.endpoint_id = e.id
+		LEFT JOIN alert_rule ar ON am.rule_id = ar.id
+		LEFT JOIN alert_severity_conf alsc on am.severity_id = alsc.id
+		<where>
+			<if test="params.id != null and params.id != ''">
+				(
+				<trim suffixOverrides="or">
+					<if test="params.scopeList.contains(&quot;asset&quot;)">
+						am.asset_id = (select asset_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;datacenter&quot;)">
+						am.dc_id = (select dc_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;project&quot;)">
+						am.project_id = (select project_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;module&quot;)">
+						am.module_id = (select module_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;endpoint&quot;)">
+						am.endpoint_id = (select endpoint_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;alertrule&quot;)">
+						am.rule_id = (select rule_id from alert_message_active where id = #{params.id}) or
+					</if>
+					<if test="params.scopeList.contains(&quot;hash&quot;)">
+						am.hash_key = (select hash_key from alert_message_active where id = #{params.id}) or
+					</if>
+				</trim>
+				)
+			</if>
+			<if test="params.startAt != null">
+				AND am.start_at &gt;= #{params.startAt}
+			</if>
+			<if test="params.endAt != null">
+				AND am.start_at &lt;= #{params.endAt}
+			</if>
+		</where>
+		<if test="params.orderBy == null and params.orderBy == ''">
+			ORDER BY am.id ;
+		</if>
+	</select>
 
 </mapper>

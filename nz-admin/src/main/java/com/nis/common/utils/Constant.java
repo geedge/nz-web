@@ -1144,6 +1144,9 @@ public class Constant {
 	public static final List<String> SEARCH_SCOPE = Tool.ListUtil.of("asset", "datacenter", "project", "module",
 			"endpoint", "panel", "alertrule", "model", "user");
 
+	public static final List<String> MESSAGE_SCOPE = Tool.ListUtil.of("asset", "datacenter", "project", "module",
+			"endpoint", "alertrule", "hash");
+
 	/**
 	 * 搜索关键字 与 表名映射
 	 */

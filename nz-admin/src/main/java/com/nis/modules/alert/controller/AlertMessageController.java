@@ -5,6 +5,7 @@ import com.nis.common.annotation.SysLog;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertHandlerService;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +88,27 @@ public class AlertMessageController {
 		params.put("format", formatStr);
 
 		handlerService.exportMessage(response, params);
+	}
+
+	/**
+	 * alert message详情
+	 */
+	@GetMapping("/{id}")
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+	public R queryInfo(@PathVariable("id") Long id){
+		ValidateUtils.is(id).notNull(RCode.ALERTMSG_IDS_ISNULL);
+		AlertMessageEntity alertMessageEntity = handlerService.queryInfo(id);
+		return R.ok(alertMessageEntity);
+	}
+
+	/**
+	 * alert message相关查询
+	 */
+	@GetMapping("/rel")
+	@SysLog(operation = OperationEnum.QUERY,type = TypeEnum.ALERTMESSAGE)
+	public R queryAlertMessageRelList(@RequestParam Map params){
+
+		PageUtils page = handlerService.queryAlertMessageRelList(params);
+		return R.ok(page);
 	}
 }

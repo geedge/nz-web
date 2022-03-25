@@ -115,6 +115,9 @@ public interface AlertHandlerService  {
 	 * @param endAt
 	 */
 	void updateCloseExpiredMessageEndAt(String tableName,Date endAt);
-	
+
+    AlertMessageEntity queryInfo(Long id);
+
+	PageUtils queryAlertMessageRelList(Map params);
 }
 
