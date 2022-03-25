@@ -1,0 +1,55 @@
+{
+  "------------------ get  /alert/message data---------------------": "note",
+  "listMessage_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "211210040800001,211210040800002"
+  },
+  "listMessage_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "10,13"
+  },
+  "------------------ delete  /alert/message data---------------------": "note",
+  "deleteMessage_success": {
+    "ids": "211210040800005,211210040800006",
+    "state": 1
+  },
+  "deleteMessage_error": {
+    "ids": "7,8",
+    "state": 4
+  },
+  "------------------ GET  /alert/message data---------------------": "note",
+  "queryInfoMessage_exist": {
+    "id": 211210040800001
+  },
+  "queryInfoMessage_notexist": {
+    "id": 211210040800010
+  },
+
+  "------------------ get  /alert/message/rel data---------------------": "note",
+  "listMessageRel_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "id": 211210040800001 ,
+    "scope": ""
+  },
+  "listMessageRel_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "id": 211210040800010,
+    "scope": ""
+  },
+  "------------------ get  /alert/message/export data---------------------": "note",
+  "messageExport": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "211210040800001,211210040800002",
+    "format": 2
+  }
+}
