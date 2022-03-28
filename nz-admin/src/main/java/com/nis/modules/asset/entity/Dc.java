@@ -8,6 +8,7 @@ import com.nis.modules.sys.entity.SysUserEntity;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 
 /**
@@ -102,5 +103,8 @@ public class Dc implements Serializable {
      */
     @TableField(exist = false)
     private Integer alertNum;
+
+    @TableField(exist = false)
+    private List alert;
 
 }

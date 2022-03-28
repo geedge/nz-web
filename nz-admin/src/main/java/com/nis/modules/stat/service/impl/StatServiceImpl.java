@@ -1175,6 +1175,30 @@ public class StatServiceImpl implements StatService{
 	}
 
 	private Map<String, Object> getStatNodeInfo(String type, Integer id, String name, Map<Integer, Long> ruleIdAndAlertCountMap, Map<String, List<Integer>> severityNameAndRuleIdsMap) {
+		List<Map<String, Object>> alert = this.getSeverityStatByRuleMsgCount(severityNameAndRuleIdsMap, ruleIdAndAlertCountMap);
+
+		Map<String, Object> statMap = new HashMap<>(8);
+		statMap.put("id", String.format("%s-%s", type, id));
+		statMap.put("type", type);
+		statMap.put("name", name);
+		statMap.put("alert", alert);
+		return statMap;
+	}
+
+
+	/**
+	 * 根据 告警级别对应规则ID MAP & 告警ID对应告警消息数量  返回告警级别对应告警消息总数
+	 *
+	 * @param severityNameAndRuleIdsMap key = severityName , value = Mapping ruleIds   example:   P1:1,2,3,4  P2:5,6,7,8 ...
+	 * @param ruleIdAndAlertCountMap    key = ruleId , value = msgCount                example: 1:10  2:5 ...
+	 * @return List<Map < String, Object>> example: [{p1:55},{p2:22}...]
+	 */
+	@Override
+	public List<Map<String, Object>> getSeverityStatByRuleMsgCount(Map<String, List<Integer>> severityNameAndRuleIdsMap, Map<Integer, Long> ruleIdAndAlertCountMap) {
+		// 如果 severityNameAndRuleIdsMap 为null 则查库补充
+		if (Tool.MapUtil.isEmpty(severityNameAndRuleIdsMap)) {
+			severityNameAndRuleIdsMap = alertRuleService.getSeverityNameAndRuleIdsMap();
+		}
 		List<Map<String, Object>> alert = new ArrayList<>();
 		for (Map.Entry<String, List<Integer>> entry : severityNameAndRuleIdsMap.entrySet()) {
 			Map<String, Object> severityNameAndRuleNumMap = new HashMap<>(4);
@@ -1188,13 +1212,7 @@ public class StatServiceImpl implements StatService{
 			severityNameAndRuleNumMap.put("num", ruleNumBySeverityName);
 			alert.add(severityNameAndRuleNumMap);
 		}
-
-		Map<String, Object> statMap = new HashMap<>(8);
-		statMap.put("id", String.format("%s-%s", type, id));
-		statMap.put("type", type);
-		statMap.put("name", name);
-		statMap.put("alert", alert);
-		return statMap;
+		return alert;
 	}
 
 	private List handelRelLinksInfo(List<Map<String, Object>> nodesList, String type) {

@@ -42,6 +42,7 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SnmpCredentialService;
@@ -108,6 +109,9 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
     private SysConfigService sysConfigService;
 
     @Autowired
+    private StatService statService;
+
+    @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
     @Autowired
@@ -129,16 +133,12 @@ public class MonitorEndpointServiceImpl extends ServiceImpl<MonitorEndpointDao, 
         AssetAsset asset = assetService.getById(endpoint.getAssetId());
         endpoint.setAsset(asset);
 
-        List<AlertMessageEntity> alerts = alertMessageDao.getAlertsStatColumn();
-        alerts = alerts.stream().filter(alert -> ToolUtil.isNotEmpty(alert.getEndpointId())).collect(Collectors.toList());
-        Map<Integer, List<AlertMessageEntity>> endpointIdAndAlersMap = alerts.stream().collect(Collectors.groupingBy(AlertMessageEntity::getEndpointId));
+        List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getEndpointId, endpoint.getId()));
+        endpoint.setAlertNum(alertMessageList.size());
 
-        List<AlertMessageEntity> tempAlert = endpointIdAndAlersMap.get(endpoint.getId());
-        if (CollectionUtils.isEmpty(tempAlert)) {
-            endpoint.setAlertNum(0);
-        } else {
-            endpoint.setAlertNum(tempAlert.size());
-        }
+        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        endpoint.setAlert(alert);
 
         Map endpointMetricsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_METRICS_STATE_CACHE_KEY);
         Map endpointLogsStates = redisTemplate.opsForHash().entries(Constant.ENDPOINT_LOGS_STATE_CACHE_KEY);

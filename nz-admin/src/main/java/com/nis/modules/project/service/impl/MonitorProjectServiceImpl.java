@@ -6,10 +6,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
+import com.nis.common.utils.*;
+import com.nis.modules.alert.entity.AlertMessageEntity;
 import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.asset.entity.AssetAsset;
 import com.nis.modules.asset.entity.Dc;
@@ -20,6 +18,7 @@ import com.nis.modules.module.service.MonitorModuleService;
 import com.nis.modules.project.dao.MonitorProjectDao;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.stat.service.StatService;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,6 +43,9 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
     @Autowired
     private MonitorProjectDao monitorProjectDao;
 
+    @Autowired
+    private StatService statService;
+
     @Override
     public MonitorProject queryProjectEntity(Integer id) {
         MonitorProject project = this.getById(id);
@@ -62,8 +64,12 @@ public class MonitorProjectServiceImpl extends ServiceImpl<MonitorProjectDao, Mo
         long assetNum = endpointList.stream().map(MonitorEndpoint::getAssetId).distinct().count();
         project.setAssetNum(Integer.valueOf(String.valueOf(assetNum)));
 
-        Integer alertNum = alertMessageService.getAactiveAlertCountByProjectId(project.getId());
-        project.setAlertNum(alertNum);
+        List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getProjectId, project.getId()));
+        project.setAlertNum(alertMessageList.size());
+
+        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        project.setAlert(alert);
 
         return project;
     }

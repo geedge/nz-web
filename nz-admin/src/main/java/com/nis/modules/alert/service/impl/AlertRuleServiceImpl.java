@@ -22,6 +22,7 @@ import com.nis.modules.alert.service.AlertMessageService;
 import com.nis.modules.alert.service.AlertNotifyMethodService;
 import com.nis.modules.alert.service.AlertRuleService;
 import com.nis.modules.alert.service.AlertSeverityService;
+import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -66,6 +67,9 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 
     @Autowired
     private AlertMessageService alertMessageService;
+
+    @Autowired
+    private StatService statService;
 
     @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
@@ -867,9 +871,14 @@ public class AlertRuleServiceImpl extends ServiceImpl<AlertRuleDao, AlertRuleEnt
 	@Override
 	public AlertRuleEntity queryAlertRule(Integer id) {
 		AlertRuleEntity alertRule = alertRuleDao.selectById(id);
-		
-		int alertNum = alertMessageService.count(new QueryWrapper<AlertMessageEntity>().lambda().eq(AlertMessageEntity::getRuleId,id));
-		alertRule.setAlertNum(alertNum);
+
+        List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getRuleId, id));
+        alertRule.setAlertNum(alertMessageList.size());
+
+        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        alertRule.setAlert(alert);
+
 		if(ObjectUtil.isNotEmpty(alertRule)) {
 			// 获取所有用户
 	        List<SysUserEntity> userList = sysUserService.list();

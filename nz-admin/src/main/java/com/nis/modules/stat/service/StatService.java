@@ -93,4 +93,13 @@ public interface StatService{
 
 	Map<String, Object> rel(String type, Integer id, Integer level, Integer limit);
 
+	/**
+	 * 根据 告警级别对应规则ID MAP & 告警ID对应告警消息数量  返回告警级别对应告警消息总数
+	 *
+	 * @param severityNameAndRuleIdsMap key = severityName , value = Mapping ruleIds   example:   P1:1,2,3,4  P2:5,6,7,8 ...
+	 * @param ruleIdAndAlertCountMap    key = ruleId , value = msgCount                example: 1:10  2:5 ...
+	 * @return List<Map < String, Object>> example: [{p1:55},{p2:22}...]
+	 */
+	List<Map<String, Object>> getSeverityStatByRuleMsgCount(Map<String, List<Integer>> severityNameAndRuleIdsMap, Map<Integer, Long> ruleIdAndAlertCountMap);
+
 }

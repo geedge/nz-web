@@ -112,16 +112,6 @@ public class AlertMessageServiceImpl extends ServiceImpl<AlertMessageDao, AlertM
         alertMessageDao.deleteByRuleIds(ruleIds);
     }
 
-    @Override
-    public Integer getAactiveAlertCountByModuleId(Integer moduleId) {
-        return alertMessageDao.getAactiveAlertCountByModuleId(moduleId);
-    }
-
-    @Override
-    public Integer getAactiveAlertCountByProjectId(Integer projectId) {
-        return alertMessageDao.getAactiveAlertCountByProjectId(projectId);
-    }
-
 	@Override
 	public void removeAllData() {
 		this.baseMapper.removeAllData();

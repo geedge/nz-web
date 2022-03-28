@@ -320,4 +320,7 @@ public class AssetAsset implements Serializable {
     @TableField(exist = false)
     private Integer clientState;
 
+    @TableField(exist = false)
+    private List alert;
+
 }

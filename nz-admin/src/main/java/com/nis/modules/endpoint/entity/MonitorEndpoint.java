@@ -12,6 +12,7 @@ import com.nis.modules.promserver.entity.Promserver;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -74,4 +75,7 @@ public class MonitorEndpoint implements Serializable {
 
 	@TableField(exist = false)
 	private MonitorEndpointConfig endpointConfig;
+
+	@TableField(exist = false)
+	private List alert;
 }

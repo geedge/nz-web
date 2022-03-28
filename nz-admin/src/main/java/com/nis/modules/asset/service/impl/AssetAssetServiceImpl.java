@@ -37,6 +37,7 @@ import com.nis.modules.panel.service.VisualChartService;
 import com.nis.modules.panel.service.VisualPanelService;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.project.service.MonitorProjectService;
+import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.dao.SysUserDao;
 import com.nis.modules.sys.entity.SnmpCredential;
 import com.nis.modules.sys.entity.SysConfigEntity;
@@ -114,6 +115,9 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
 
     @Autowired
     private AlertMessageService alertMessageService;
+
+    @Autowired
+    private StatService statService;
 
     @Autowired
     private AssetPingService assetPingService;
@@ -231,8 +235,12 @@ public class AssetAssetServiceImpl extends ServiceImpl<AssetAssetDao, AssetAsset
         int endpointCount = monitorEndpointService.count(new LambdaQueryWrapper<MonitorEndpoint>().eq(MonitorEndpoint::getAssetId, asset.getId()));
         asset.setEndpointNum(endpointCount);
 
-        int alertCount = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
-        asset.setAlertNum(alertCount);
+        List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getAssetId, asset.getId()));
+        asset.setAlertNum(alertMessageList.size());
+
+        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        asset.setAlert(alert);
 
         // 不返回 密码 / 密钥信息
         asset.setAuthPin(null);

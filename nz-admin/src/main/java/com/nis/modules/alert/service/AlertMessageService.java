@@ -23,10 +23,6 @@ public interface AlertMessageService extends IService<AlertMessageEntity> {
 
 	void removeByRuleIds(List ids);
 
-	Integer getAactiveAlertCountByModuleId(Integer moduleId);
-
-	Integer getAactiveAlertCountByProjectId(Integer projectId);
-	
 	void removeAllData();
 
 	void leftPushAlertMessageToRedis(String messages);

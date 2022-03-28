@@ -101,4 +101,7 @@ public class MonitorModule implements Serializable {
     
     @TableField(exist = false)
     private List<VisualChart> charts;
+
+    @TableField(exist = false)
+    private List alert;
 }

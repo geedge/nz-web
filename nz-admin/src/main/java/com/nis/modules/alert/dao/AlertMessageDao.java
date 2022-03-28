@@ -33,12 +33,6 @@ public interface AlertMessageDao extends BaseMapper<AlertMessageEntity> {
     // 只返回用于统计的列  severity rule_id  project_id module_id asset_id dc_id
     List<AlertMessageEntity> getAlertsStatColumn();
 
-    @Select("SELECT COUNT(1) FROM ALERT_MESSAGE_ACTIVE WHERE module_id = #{moduleId};")
-    Integer getAactiveAlertCountByModuleId(@Param("moduleId")Integer moduleId);
-
-    @Select("SELECT COUNT(1) FROM ALERT_MESSAGE_ACTIVE WHERE project_id = #{projectId};")
-    Integer getAactiveAlertCountByProjectId(@Param("projectId")Integer projectId);
-    
     void removeAllData();
 
     void cleanExpiredDataByTime(@Param("startCleanAlertMessageTime") DateTime startCleanAlertMessageTime);

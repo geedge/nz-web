@@ -72,4 +72,6 @@ public class MonitorProject implements Serializable {
     @TableField(exist = false)
     private Integer alertNum;
 
+    @TableField(exist = false)
+    private List alert;
 }

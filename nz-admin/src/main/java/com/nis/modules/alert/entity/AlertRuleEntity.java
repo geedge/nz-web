@@ -168,6 +168,8 @@ public class AlertRuleEntity implements Serializable {
 	@TableField(exist = false)
 	private AlertSeverityConf severity;
 
+	@TableField(exist = false)
+	private List alert;
 	/**
 	 * 计算 alert rule hash id
 	 * 

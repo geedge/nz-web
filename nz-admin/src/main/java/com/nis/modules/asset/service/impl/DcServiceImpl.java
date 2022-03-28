@@ -25,6 +25,7 @@ import com.nis.modules.module.entity.MonitorModule;
 import com.nis.modules.project.entity.MonitorProject;
 import com.nis.modules.promserver.dao.PromserverDao;
 import com.nis.modules.promserver.entity.Promserver;
+import com.nis.modules.stat.service.StatService;
 import com.nis.modules.sys.entity.SysUserEntity;
 import com.nis.modules.sys.service.BasicImportAndExportServices;
 import com.nis.modules.sys.service.SysConfigService;
@@ -72,6 +73,9 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
     private SysConfigService sysConfigService;
 
     @Autowired
+    private StatService statService;
+
+    @Autowired
     private BasicImportAndExportServices basicImportAndExportServices;
 
     @Override
@@ -89,8 +93,12 @@ public class DcServiceImpl extends ServiceImpl<DcDao, Dc> implements DcService {
         Integer cabinetNum = cabinetDao.selectCount(new LambdaQueryWrapper<Cabinet>().eq(Cabinet::getDcId, dc.getId()));
         dc.setCabinetNum(cabinetNum);
 
-        Integer alertNum = alertMessageService.count(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
-        dc.setAlertNum(alertNum);
+        List<AlertMessageEntity> alertMessageList = alertMessageService.list(new LambdaQueryWrapper<AlertMessageEntity>().eq(AlertMessageEntity::getDcId, dc.getId()));
+        dc.setAlertNum(alertMessageList.size());
+
+        Map<Integer, Long> ruleIdAndAlertCountMap = alertMessageList.parallelStream().collect(Collectors.groupingBy(AlertMessageEntity::getRuleId, Collectors.counting()));
+        List<Map<String, Object>> alert = statService.getSeverityStatByRuleMsgCount(Tool.MapUtil.empty(), ruleIdAndAlertCountMap);
+        dc.setAlert(alert);
 
         Integer assetNum = assetDao.selectCount(new LambdaQueryWrapper<AssetAsset>().eq(AssetAsset::getDcId, dc.getId()));
         dc.setAssetNum(assetNum);
