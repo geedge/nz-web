@@ -5343,6 +5343,10 @@ INSERT INTO `sys_i18n` VALUES (5890, 'overall.left', 'en', 'overall.left', 'Left
 INSERT INTO `sys_i18n` VALUES (5891, 'overall.left', 'zh', 'overall.left', '左', '', '2022-03-25 05:44:40', 1);
 INSERT INTO `sys_i18n` VALUES (5892, 'overall.right', 'en', 'overall.right', 'Right', '', '2022-03-25 05:46:11', 1);
 INSERT INTO `sys_i18n` VALUES (5893, 'overall.right', 'zh', 'overall.right', '右', '', '2022-03-25 05:46:21', 1);
+INSERT INTO `sys_i18n` VALUES (5894, 'panel.assetOk', 'en', 'panel.assetOk', 'Asset ok', '', '2022-03-28 03:09:47', 1);
+INSERT INTO `sys_i18n` VALUES (5895, 'panel.assetOk', 'zh', 'panel.assetOk', '资产正常', '', '2022-03-28 03:10:32', 1);
+INSERT INTO `sys_i18n` VALUES (5896, 'panel.assetAlarm', 'en', 'panel.assetAlarm', 'Asset alarm', '', '2022-03-28 03:11:37', 1);
+INSERT INTO `sys_i18n` VALUES (5897, 'panel.assetAlarm', 'zh', 'panel.assetAlarm', '资产告警', '', '2022-03-28 03:11:47', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
