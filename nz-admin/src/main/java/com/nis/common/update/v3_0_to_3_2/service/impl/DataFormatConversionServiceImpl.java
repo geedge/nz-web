@@ -301,7 +301,7 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         if (Tool.StrUtil.isNotBlank(thresholdStrVal)) {
                             Map tempThresholdFirstMap = new HashMap();
                             tempThresholdFirstMap.put("color", "#d64f40");
-                            tempThresholdFirstMap.put("val", thresholdStrVal);
+                            tempThresholdFirstMap.put("value", thresholdStrVal);
                             thresholds.add(tempThresholdFirstMap);
                         }
                         params.put("thresholds", thresholds);
