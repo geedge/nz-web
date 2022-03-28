@@ -2124,7 +2124,7 @@ INSERT INTO `sys_i18n` VALUES (2099, 'overall.tag', 'zh', 'overall.tag', '标签
 INSERT INTO `sys_i18n` VALUES (2100, 'overall.locked', 'zh', 'overall.locked', '锁定', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2101, 'overall.logs', 'zh', 'overall.logs', '日志', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2102, 'overall.generate', 'zh', 'overall.generate', '生产', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2103, 'overall.unusual', 'zh', 'overall.unusual', '不正常', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2103, 'overall.unusual', 'zh', 'overall.unusual', '异常', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2104, 'overall.placeHolder', 'zh', 'overall.placeHolder', '请输入', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2105, 'overall.clickUpload', 'zh', 'overall.clickUpload', '点击上传', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2106, 'overall.add', 'zh', 'overall.add', '新增', '', '2021-11-02 00:00:00', 1);
@@ -4644,7 +4644,7 @@ INSERT INTO `sys_i18n` VALUES (4726, 'config.menus.editI18n', 'en', 'config.menu
 INSERT INTO `sys_i18n` VALUES (4727, 'config.menus.editI18n', 'zh', 'config.menus.editI18n', '编辑 I18N', '', '2021-11-04 06:02:09', 1);
 INSERT INTO `sys_i18n` VALUES (4728, 'config.menus.createI18n', 'zh', 'config.menus.createI18n', '新增 I18N', '', '2021-11-04 06:31:38', 1);
 INSERT INTO `sys_i18n` VALUES (4729, 'overall.alertRuleEvalLog', 'en', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-18 06:26:14', 1);
-INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', 'Evaluation log', '', '2021-11-18 06:26:20', 1);
+INSERT INTO `sys_i18n` VALUES (4730, 'overall.alertRuleEvalLog', 'zh', 'overall.alertRuleEvalLog', '评估记录', '', '2021-11-18 06:26:20', 1);
 INSERT INTO `sys_i18n` VALUES (4731, 'alert.alertRuleMessage', 'en', 'alert.alertRuleMessage', 'Message', '', '2021-11-04 06:28:05', 1);
 INSERT INTO `sys_i18n` VALUES (4732, 'alert.alertRuleMessage', 'zh', 'alert.alertRuleMessage', '信息', '', '2021-11-04 06:28:14', 1);
 INSERT INTO `sys_i18n` VALUES (4734, 'overall.active', 'en', 'overall.active', 'Active', '', '2021-11-05 02:18:08', 1);
