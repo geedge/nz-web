@@ -5347,6 +5347,8 @@ INSERT INTO `sys_i18n` VALUES (5894, 'panel.assetOk', 'en', 'panel.assetOk', 'As
 INSERT INTO `sys_i18n` VALUES (5895, 'panel.assetOk', 'zh', 'panel.assetOk', '资产正常', '', '2022-03-28 03:10:32', 1);
 INSERT INTO `sys_i18n` VALUES (5896, 'panel.assetAlarm', 'en', 'panel.assetAlarm', 'Asset alarm', '', '2022-03-28 03:11:37', 1);
 INSERT INTO `sys_i18n` VALUES (5897, 'panel.assetAlarm', 'zh', 'panel.assetAlarm', '资产告警', '', '2022-03-28 03:11:47', 1);
+INSERT INTO `sys_i18n` VALUES (5898, 'overall.topology', 'zh', 'overall.topology', '简体中文', '', '2022-03-28 03:11:47', 1);
+INSERT INTO `sys_i18n` VALUES (5899, 'overall.topology', 'en', 'overall.topology', 'English', '', '2022-03-28 03:11:47', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
