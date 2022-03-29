@@ -278,10 +278,10 @@ public class DataFormatConversionServiceImpl implements DataFormatConversionServ
                         if (Tool.StrUtil.equalsIgnoreCase(type, "stackArea")) {
                             visualChart.setType("area");
                             // area 类型图表 stack 默认值 为 true
-                            params.put("stack", "true");
+                            params.put("stack", true);
                         } else {
                             // line 类型图表 stack 默认值 为 false
-                            params.put("stack", "false");
+                            params.put("stack", false);
                         }
                         List<String> legendOnValueList;
                         if (oldParamMap.get("legendValue") == null) {
