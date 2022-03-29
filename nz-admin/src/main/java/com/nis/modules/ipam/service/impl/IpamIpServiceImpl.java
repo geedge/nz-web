@@ -85,25 +85,22 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
         if (!(CommonUtils.checkIpv4(ipamIp.getAddr()) || CommonUtils.checkIpv6(ipamIp.getAddr()))){
             throw new NZException(RCode.IPAM_IP_ADDR_ERROR);
         }
-        //查询subnet
-        IpamSubnet ipamSubnet = ipamSubnetService.getOne(new LambdaQueryWrapper<IpamSubnet>().eq(IpamSubnet::getAddr, ipamIp.getAddr()));
-        if (Tool.ObjectUtil.isEmpty(ipamSubnet)){
+        //判断ip属于那个子网
+        boolean inRange = true;
+        List<IpamSubnet> subnets = ipamSubnetService.list();
+        for (IpamSubnet subnet : subnets) {
+            inRange = IPUtils.isInRange(ipamIp.getAddr(), StrUtil.builder(subnet.getAddr(), StrUtil.SLASH, subnet.getMask().toString()).toString());
+            if (inRange){
+                ipamIp.setSubnetId(subnet.getId());
+            }
+        }
+        if (!inRange){
             throw new NZException(RCode.IPAM_IP_SUBNET_ISNULL);
         }
-        /*//校验mac
-        if (!CommonUtils.checkMac(ipamIp.getMac())){
-            throw new NZException(RCode.IPAM_IP_MAC_ERROR);
-        }
-        //校验ip mac之前是否创建
-        IpamIp ip = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, ipamIp.getAddr()).eq(IpamIp::getMac, ipamIp.getMac()));
-        if (Tool.ObjectUtil.isNotEmpty(ip)){
-            throw new NZException(RCode.IPAM_IP_INTERVAL_ERROR);
-        }*/
         if (Tool.ObjectUtil.isEmpty(ipamIp.getState())){
             ipamIp.setState(1);
         }
         ipamIp.setUts(new Date().getTime());
-        ipamIp.setSubnetId(ipamSubnet.getId());
         this.saveOrUpdate(ipamIp);
         return ipamIp.getId();
     }
@@ -182,7 +179,7 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_ADDR_ERROR.getMsg());
                 }
-                if (!ipamSubnet.getAddr().equals(addr)){
+                if (!IPUtils.isInRange(addr,StrUtil.builder(ipamSubnet.getAddr(), StrUtil.SLASH, ipamSubnet.getMask().toString()).toString())){
                     saveFlag = false;
                     this.addFailDetail(dataFromExcelRowNum, failDetails, headerInfos.get(2), RCode.IPAM_IP_SUBNET_ADDR_ERROR.getMsg());
                 }
@@ -197,11 +194,11 @@ public class IpamIpServiceImpl extends ServiceImpl<IpamIpDao, IpamIp> implements
                 this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(3),RCode.IPAM_IP_MAC_ERROR.getMsg());
             }
 
-            // 校验ip以及mac值之前是否有创建或者包含
-            IpamIp ipamIp1 = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, addr).eq(IpamIp::getMac, mac));
+            // 校验ip之前是否有创建或者包含
+            IpamIp ipamIp1 = this.getOne(new LambdaQueryWrapper<IpamIp>().eq(IpamIp::getAddr, addr));
             if (Tool.ObjectUtil.isNotEmpty(ipamIp1)){
                 saveFlag = false;
-                this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(3),RCode.IPAM_IP_MAC_ADDR_ERROR.getMsg());
+                this.addFailDetail(dataFromExcelRowNum,failDetails,headerInfos.get(2),RCode.IPAM_IP_INTERVAL_ERROR.getMsg());
             }
 
             String assdtName = dataMap.get(4);
