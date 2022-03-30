@@ -29,5 +29,7 @@ public class AlertSilenceConf {
 	private Integer state;
 	
 	private String seq;
-	
+
+	private Integer alerts;
+
 }

@@ -567,5 +567,8 @@
 			ORDER BY am.id ;
 		</if>
 	</select>
+	<select id="queryAlertMessageCount" resultType="java.lang.Integer">
+		select count(1) from alert_silence_message_rel where silence_conf_id = #{id}
+	</select>
 
 </mapper>

@@ -61,6 +61,10 @@ public class AlertSilenceServiceImpl extends ServiceImpl<AlertSilenceDao,AlertSi
 		
 		IPage page = new Query(AlertSilenceConf.class).getPage(params);
 		List<AlertSilenceConf> alertSilences = alertSilenceDao.selectAlertSilenceConfs(page,params);
+		for (AlertSilenceConf alertSilence : alertSilences) {
+			int count = handlerService.queryAlertMessageCount(alertSilence.getId());
+			alertSilence.setAlerts(count);
+		}
 		page.setRecords(alertSilences);
 		return new PageUtils(page);
 	}
