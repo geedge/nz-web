@@ -8,6 +8,7 @@
 
 package com.nis.common.exception;
 
+import com.nis.common.utils.Tool;
 import org.apache.shiro.authz.AuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
@@ -47,10 +48,14 @@ public class NZExceptionHandler {
 		if(ToolUtil.isNotEmpty(e.getRCode())) {
 			msg = sysI18nService.queryValue(e.getRCode().toString(),e.getParam());
 		}
-		if(ToolUtil.isEmpty(e.getRCode()) || ToolUtil.equals(msg, e.getRCode().toString())) {
-			r.put("msg",e.getMsg());
-		}else {
-			r.put("msg",msg);
+		// 如果还是未找到 再尝试使用 sys_i18n name 搜索 条件为 RCode code 码
+		if (Tool.StrUtil.isEmpty(msg)) {
+			msg = sysI18nService.queryValueByName(Tool.StrUtil.toString(e.getCode()));
+		}
+		if (Tool.StrUtil.isEmpty(msg) && (ToolUtil.isEmpty(e.getRCode()) || ToolUtil.equals(msg, e.getRCode().toString()))) {
+			r.put("msg", e.getMsg());
+		} else {
+			r.put("msg", msg);
 		}
 		return r;
 	}
