@@ -920,6 +920,8 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			params.put("alertrule",alertMessageEntity.getRuleId());
 			params.put("datacenter",alertMessageEntity.getDcId());
 			params.put("hash ",alertMessageEntity.getHashKey());
+		}else {
+			throw new NZException(RCode.ALERTMSG_NOT_EXITS);
 		}
 		IPage page = new Query(AlertMessageEntity.class).getPage(params);
 		List<AlertMessageEntity> alertMessageEntityList = msgHandlerDao.queryAlertMessageRelList(page,params);

@@ -5361,6 +5361,8 @@ INSERT INTO `sys_i18n` VALUES (5932, '715009', 'en', 'LICENSE_ORGANIZATION_ISNUL
 INSERT INTO `sys_i18n` VALUES (5933, '715009', 'zh', 'LICENSE_ORGANIZATION_ISNULL', '许可证组织参数不能为空', '', '2022-03-30 06:45:26', 1);
 INSERT INTO `sys_i18n` VALUES (5934, '715010', 'en', 'LICENSE_TYPE_ISNULL', 'License params type can not be null', '', '2022-03-30 06:46:08', 1);
 INSERT INTO `sys_i18n` VALUES (5935, '715010', 'zh', 'LICENSE_TYPE_ISNULL', '许可证类型参数不能为空', '', '2022-03-30 06:46:32', 1);
+INSERT INTO `sys_i18n` VALUES (5936, '416007', 'en', 'ALERTMSG_NOT_EXITS', 'Alert message not exits', '', '2022-03-30 06:46:32', 1);
+INSERT INTO `sys_i18n` VALUES (5936, '416007', 'zh', 'ALERTMSG_NOT_EXITS', '告警消息不能为空', '', '2022-03-30 06:46:32', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;

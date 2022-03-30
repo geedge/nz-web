@@ -533,25 +533,39 @@
 				(
 				<trim suffixOverrides="or">
 					<if test="params.scopeList.contains(&quot;asset&quot;)">
-						am.asset_id = #{params.asset}  or
+						<if test="params.asset != null and params.asset != ''">
+							am.asset_id = #{params.asset}  or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;datacenter&quot;)">
-						am.dc_id = #{params.datacenter} or
+						<if test="params.datacenter != null and params.datacenter != ''">
+							am.dc_id = #{params.datacenter} or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;project&quot;)">
-						am.project_id =  #{params.project} or
+						<if test="params.project != null and params.project != ''">
+							am.project_id =  #{params.project} or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;module&quot;)">
-						am.module_id =  #{params.module} or
+						<if test="params.module != null and params.module != ''">
+							am.module_id =  #{params.module} or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;endpoint&quot;)">
-						am.endpoint_id = #{params.endpoint} or
+						<if test="params.endpoint != null and params.endpoint != ''">
+							am.endpoint_id = #{params.endpoint} or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;alertrule&quot;)">
-						am.rule_id = #{params.alertrule} or
+						<if test="params.alertrule != null and params.alertrule != ''">
+							am.rule_id = #{params.alertrule} or
+						</if>
 					</if>
 					<if test="params.scopeList.contains(&quot;hash&quot;)">
-						am.hash_key = #{params.hash}  or
+						<if test="params.hash != null and params.hash != ''">
+							am.hash_key = #{params.hash}  or
+						</if>
 					</if>
 				</trim>
 				)
@@ -567,6 +581,7 @@
 			ORDER BY am.id ;
 		</if>
 	</select>
+
 	<select id="queryAlertMessageCount" resultType="java.lang.Integer">
 		select count(1) from alert_silence_message_rel where silence_conf_id = #{id}
 	</select>
