@@ -1759,7 +1759,7 @@ INSERT INTO `sys_i18n` VALUES (1731, 'project.topology.edit', 'zh', 'project.top
 INSERT INTO `sys_i18n` VALUES (1732, 'project.topology.imgSize', 'zh', 'project.topology.imgSize', '上传图片大小不能超过 2MB!', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1733, 'project.topology.onLayout', 'zh', 'project.topology.onLayout', '开始排版', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1734, 'project.topology.module', 'zh', 'project.topology.module', '模块', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (1735, 'project.topology.textContent', 'zh', 'project.topology.textContent', 'Text content', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (1735, 'project.topology.textContent', 'zh', 'project.topology.textContent', '文本内容', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1736, 'project.topology.animation', 'zh', 'project.topology.animation', '动画', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1737, 'project.topology.exit', 'zh', 'project.topology.exit', '退出', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (1738, 'project.topology.folder', 'zh', 'project.topology.folder', '目录', '', '2021-11-02 00:00:00', 1);
@@ -2569,13 +2569,13 @@ INSERT INTO `sys_i18n` VALUES (2559, 'config.system.monitor.s3', 'zh', 'config.s
 INSERT INTO `sys_i18n` VALUES (2560, 'config.system.monitor.logs_storage_type', 'zh', 'config.system.monitor.logs_storage_type', '保存模式', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2561, 'config.system.monitor.metrics_storage_retention', 'zh', 'config.system.monitor.metrics_storage_retention', '保存天数', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2562, 'config.system.monitor.metricsTitle', 'zh', 'config.system.monitor.metricsTitle', '指标配置', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2563, 'config.system.monitor.logs_storage_s3_endpoint', 'zh', 'config.system.monitor.logs_storage_s3_endpoint', 'Endpoint', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2564, 'config.system.monitor.prometheusFederation', 'zh', 'config.system.monitor.prometheusFederation', 'Federation', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2565, 'config.system.monitor.metrics_storage_s3_endpoint', 'zh', 'config.system.monitor.metrics_storage_s3_endpoint', 'Endpoint', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2563, 'config.system.monitor.logs_storage_s3_endpoint', 'zh', 'config.system.monitor.logs_storage_s3_endpoint', '应用实例', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2564, 'config.system.monitor.prometheusFederation', 'zh', 'config.system.monitor.prometheusFederation', '集群', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2565, 'config.system.monitor.metrics_storage_s3_endpoint', 'zh', 'config.system.monitor.metrics_storage_s3_endpoint', '应用实例', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2566, 'config.system.monitor.logs_storage_s3_bucket', 'zh', 'config.system.monitor.logs_storage_s3_bucket', 'Bucket name', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2567, 'config.system.monitor.logs_storage_s3_access_key', 'zh', 'config.system.monitor.logs_storage_s3_access_key', '访问密钥', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2568, 'config.system.monitor.asset_ping_from', 'zh', 'config.system.monitor.asset_ping_from', 'Ping from', '', '2021-11-02 00:00:00', 1);
-INSERT INTO `sys_i18n` VALUES (2569, 'config.system.monitor.metrics_storage_s3_bucket', 'zh', 'config.system.monitor.metrics_storage_s3_bucket', 'Bucket name', '', '2021-11-02 00:00:00', 1);
+INSERT INTO `sys_i18n` VALUES (2569, 'config.system.monitor.metrics_storage_s3_bucket', 'zh', 'config.system.monitor.metrics_storage_s3_bucket', '桶', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2570, 'config.system.monitor.monitor', 'zh', 'config.system.monitor.monitor', '监控', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2571, 'config.system.monitor.logs_storage_s3_secret_access_key', 'zh', 'config.system.monitor.logs_storage_s3_secret_access_key', '密钥', '', '2021-11-02 00:00:00', 1);
 INSERT INTO `sys_i18n` VALUES (2572, 'config.system.monitor.metrics_storage_s3_secret_access_key', 'zh', 'config.system.monitor.metrics_storage_s3_secret_access_key', '密钥', '', '2021-11-02 00:00:00', 1);
@@ -5361,6 +5361,8 @@ INSERT INTO `sys_i18n` VALUES (5932, '715009', 'en', 'LICENSE_ORGANIZATION_ISNUL
 INSERT INTO `sys_i18n` VALUES (5933, '715009', 'zh', 'LICENSE_ORGANIZATION_ISNULL', '许可证组织参数不能为空', '', '2022-03-30 06:45:26', 1);
 INSERT INTO `sys_i18n` VALUES (5934, '715010', 'en', 'LICENSE_TYPE_ISNULL', 'License params type can not be null', '', '2022-03-30 06:46:08', 1);
 INSERT INTO `sys_i18n` VALUES (5935, '715010', 'zh', 'LICENSE_TYPE_ISNULL', '许可证类型参数不能为空', '', '2022-03-30 06:46:32', 1);
+INSERT INTO `sys_i18n` VALUES (5936, 'project.topology.font', 'en', 'project.topology.font', 'Font', '', '2022-03-30 07:59:26', 1);
+INSERT INTO `sys_i18n` VALUES (5937, 'project.topology.font', 'zh', 'project.topology.font', '字体', '', '2022-03-30 07:59:39', 1);
 
 
 SET FOREIGN_KEY_CHECKS = 1;
