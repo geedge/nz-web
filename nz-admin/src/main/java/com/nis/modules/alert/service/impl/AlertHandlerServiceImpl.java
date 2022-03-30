@@ -910,6 +910,17 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 			String tableName = Constant.ALERT_MESSAGE_STATE_TABLE_MAPPING.get(Integer.valueOf(params.get("state").toString()));
 			params.put("tableName", tableName);
 		}
+
+		AlertMessageEntity alertMessageEntity = this.queryInfo(Tool.MapUtil.get(params, "id", Long.class));
+		if (Tool.ObjectUtil.isNotEmpty(alertMessageEntity)){
+			params.put("asset",alertMessageEntity.getAssetId());
+			params.put("project",alertMessageEntity.getProjectId());
+			params.put("module",alertMessageEntity.getModuleId());
+			params.put("endpoint",alertMessageEntity.getEndpointId());
+			params.put("alertrule",alertMessageEntity.getRuleId());
+			params.put("datacenter",alertMessageEntity.getDcId());
+			params.put("hash ",alertMessageEntity.getHashKey());
+		}
 		IPage page = new Query(AlertMessageEntity.class).getPage(params);
 		List<AlertMessageEntity> alertMessageEntityList = msgHandlerDao.queryAlertMessageRelList(page,params);
 		page.setRecords(alertMessageEntityList);

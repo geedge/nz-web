@@ -533,39 +533,25 @@
 				(
 				<trim suffixOverrides="or">
 					<if test="params.scopeList.contains(&quot;asset&quot;)">
-						am.asset_id = (select ama.asset_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.asset_id = #{params.asset}  or
 					</if>
 					<if test="params.scopeList.contains(&quot;datacenter&quot;)">
-						am.dc_id = (select ama.dc_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.dc_id = #{params.datacenter} or
 					</if>
 					<if test="params.scopeList.contains(&quot;project&quot;)">
-						am.project_id = (select ama.project_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.project_id =  #{params.project} or
 					</if>
 					<if test="params.scopeList.contains(&quot;module&quot;)">
-						am.module_id = (select ama.module_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.module_id =  #{params.module} or
 					</if>
 					<if test="params.scopeList.contains(&quot;endpoint&quot;)">
-						am.endpoint_id = (select ama.endpoint_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.endpoint_id = #{params.endpoint} or
 					</if>
 					<if test="params.scopeList.contains(&quot;alertrule&quot;)">
-						am.rule_id = (select ama.rule_id from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.rule_id = #{params.alertrule} or
 					</if>
 					<if test="params.scopeList.contains(&quot;hash&quot;)">
-						am.hash_key = (select ama.hash_key from (select * from alert_message_active union all
-						select * from alert_message_history union all
-						select * from alert_message_silence) ama where ama.id = #{params.id} )  or
+						am.hash_key = #{params.hash}  or
 					</if>
 				</trim>
 				)
