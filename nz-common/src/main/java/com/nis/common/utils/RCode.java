@@ -246,7 +246,7 @@ public enum RCode {
     ASSET_NOT_EXIST(316005, "Asset does not exist"),                     // 资产不存在
     ASSET_MAINTENANCE_CONTENT_ISNULL(311006, "Asset maintenance content can not be empty"),// 资产维修记录内容不能为空
     ASSET_DC_NOTFOUND(316007, "Asset dc not found"),                   // 数据中心未找到
-    ASSET_CABINET_NOTFOUND(336008, "Asset cabinet not found"),           // 机柜未找到
+    ASSET_CABINET_NOTFOUND(316008, "Asset cabinet not found"),           // 机柜未找到
     ASSET_HOST_DUPLICATE(312009, "Asset host duplicate"),                // 资产主机地址重复
     ASSET_SN_DUPLICATE(312010, "Asset serial number duplicate"),         // 资产序列号重复
     ASSET_PURCHASEDATE_FORMAT(313011, "Asset purchase date format error"),// 资产购买日期格式错误
@@ -350,19 +350,6 @@ public enum RCode {
     ACCOUNT_SNMP_AUTHPROTOCOL_INVALIDE(334019,"Auth protocol must be MD5 or SHA"),
     ACCOUNT_SNMP_PRIVPROTOCOL_INVALIDE(334020,"Priv protocol must be DES or AES"),
 
-    ASSET_ACCOUNT_ID_ISNULL(331001,"asset account id can not be null"),
-    ASSET_ACCOUNT_NAME_ISNULL(331002,"asset account name can not be null"),
-    ASSET_ACCOUNT_PROTOCOL_ISNULL(331003,"asset account protocol can not be null"),
-    ASSET_ACCOUNT_AUTHTYPE_ISNULL(331004,"asset account auth type can not be null"),
-    ASSET_ACCOUNT_USERNAME_ISNULL(331005,"asset account username can not be null"),
-    ASSET_ACCOUNT_PASSWORD_ISNULL(331006,"asset account password can not be null"),
-    ASSET_ACCOUNT_PRIKEY_ISNULL(331007,"asset account prikey can not be null"),
-    ASSET_ACCOUNT_USERTIP_ISNULL(331008,"asset account user tip can not be null when auth type is telnet"),
-    ASSET_ACCOUNT_PASSWORDTIP_ISNULL(331009,"asset account password tip can not be null when auth type is telnet"),
-    ASSET_ACCOUNT_WEIGHT_ISNULL(331010,"asset account id can not be null"),
-    ASSET_ACCOUNT_STATE_ISNULL(331011,"asset account id can not be null"),
-    ASSET_ACCOUNT_NOT_FOUND(336012, "Asset account not found"),
-
     STATECONF_NAME_ISNULL(341000,"Asset state conf name is null"),
     STATECONF_PING_ISNULL(341001,"Asset state conf ping is null"),
     STATECONF_MONITOR_ISNULL(341002,"Asset state conf monitor is null"),
@@ -409,10 +396,9 @@ public enum RCode {
     ASSET_BRAND_BEUSED_CAN_NOT_REMOVE(367004, "This brand is already used and cannot be deleted"),
     ASSET_BRAND_NOT_CONTAIN_MODEL(366005, "This model is not included under this brand"),
 
-    ASSET_FIELD_GROUP_ID_ISNULL(361001,"Asset field group id can not be empty"),
-    ASSET_FIELD_GROUP_NAME_ISNULL(361002,"Asset field group name can not be empty"),
-    ASSET_FIELD_GROUP_NAME_DUPLICATE(362003,"Asset field group name can not duplicate"),
-    
+    /**
+     * ASSET_FIELD_META
+     */
     ASSET_FIELD_META_ID_ISNULL(371001,"Asset field meta id can not be empty"),
     ASSET_FIELD_META_NAME_ISNULL(371002,"Asset field meta name can not be empty"),
     ASSET_FIELD_META_KEY_ISNULL(371003,"Asset field meta key can not be empty"),
@@ -424,6 +410,13 @@ public enum RCode {
     ASSET_FIELD_META_KEY_ERROR(373009,"Asset field key value incorrect format"),
     ASSET_FIELD_META_KEY_NAME_DUPLICATE(372010,"Asset field key value or name duplicate"),
     ASSET_FIELD_META_NOT_FOUND(376011, "Asset field meta not found"),
+
+    /**
+     * ASSET_FIELD_GROUP
+     */
+    ASSET_FIELD_GROUP_ID_ISNULL(381001,"Asset field group id can not be empty"),
+    ASSET_FIELD_GROUP_NAME_ISNULL(381002,"Asset field group name can not be empty"),
+    ASSET_FIELD_GROUP_NAME_DUPLICATE(382003,"Asset field group name can not duplicate"),
     /**
      * alerts菜单栏相关
      */
@@ -534,9 +527,9 @@ public enum RCode {
     /**
      * 告警判断
      */
-    ALERT_JUDGE_RESULT_ISNULL(461001,"query result is null"),
-    ALERT_JUDGE_RESULT_FAILE(465002,"query result status is not success"),
-    ALERT_JUDGE_RESULT_TYPE_ERROR(465003,"query result type is not vetor"),
+    ALERT_JUDGE_RESULT_ISNULL(471001,"query result is null"),
+    ALERT_JUDGE_RESULT_FAILE(475002,"query result status is not success"),
+    ALERT_JUDGE_RESULT_TYPE_ERROR(475003,"query result type is not vetor"),
     
     /**
      * setting菜单项相关
@@ -595,6 +588,10 @@ public enum RCode {
     SYS_AUTHCODE_IS_INVALID(511042,"Authcode information is invalid"),
     SYS_RECOVERYCODE_IS_INVALID(518043,"Recoverycode is invalid"),
     SYS_AUTHTOKEN_ISNULL(511044,"Authtoken information is null"),
+    SYS_USER_STARRED_ISNULL(511045,"Starred can not be empty"),
+    SYS_USER_STARRED_TYPE_ISNULL(511046,"Starred type can not be empty"),
+    SYS_USER_STARRED_TID_ISNULL(511047,"Starred tid can not be empty"),
+    SYS_USER_STARRED_ID_TYPE_ISNULL(511048,"Starred id and type at the same time null"),
 
     PROMSERVER_ID_ISNULL(521000, "PromServer id can not be empty"),
     PROMSERVER_DCID_ISNULL(521001, "Dc id can not be empty"),
@@ -615,8 +612,8 @@ public enum RCode {
     PROMSERVER_TYPE_INVALIDE(523016,"PromServer type is incorrect"),
     PROMSERVER_UNAVAILABLE(526017,"No PromServer available"),
     PROMSERVER_TOKEN_ISNULL(521018, "PromServer token info can not be empty"),
-    PROMSERVER_NAME_ISNULL(521019, "PromServer name can not be empty"),
-    PROMSERVER_NAME_EXISTED(521020, "PromServer name existed"),
+    PROMSERVER_NAME_ISNULL(521019, "Agent name can not be empty"),
+    PROMSERVER_NAME_EXISTED(521020, "Agent name existed"),
 
 
     DC_NAME_ISNULL(531000, "Dc name can not be empty"),              // 数据中心name不能为空
@@ -780,24 +777,24 @@ public enum RCode {
     SYS_CONFIG_QUERYMAXSERIES_INTERVAL(575063, "The interval value of Query max series is between -1 and +1000"),
     SYS_CONFIG_EXPORT_MAX_LINE(579064,"The number of exported data than the configured max export line"),
     SYS_CONFIG_UNSAVEDCHANGE_ISNULL(571065, "System config unsaved change can not be empty"),
-    SYS_CONFIG_CODE_FILE_ISNULL(574001,"The validate file is not exist"), //不存在校验使用的文件
-    SYS_CONFIG_CODE_INVALID(574002,"The code is invalid"),//校验文件中的code与传递的值不符
-    SYS_CONFIG_DB_PARAM_INVALID(574003,"The DB connect params is invalid"),//校验文件中的code与传递的值不符
-    SYS_CONFIG_REDIS_PASSWORD_INVALID(574004,"The redis password is invalid"),
-    SYS_CONFIG_REDIS_PASSWORD_REQUIRED(574005,"The redis password is required"),
-    SYS_CONFIG_REDIS_PARAM_INVALID(574006,"The redis params is invalid"),
-    SYS_CONFIG_DB_URL_ISNULL(574007,"The DB host is null"),
-    SYS_CONFIG_DB_USERNAME_ISNULL(574008,"The DB username is null"),
-    SYS_CONFIG_DB_PASSWORD_ISNULL(574009,"The DB password is null"),
-    SYS_CONFIG_REDIS_HOST_ISNULL(574010,"The redis host is null"),
-    SYS_CONFIG_REDIS_PORT_ISNULL(574011,"The redis host is null"),
-    SYS_CONFIG_HAD_CONFIG(574012,"Someone has started to configure the system"),
-    SYS_CONFIG_SESSION_TIMEOUT_INVALID(573013,"Session timeout is not less than 15"),
-    SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT(574014, "Prometheus federation enabled must be 0 or 1"),
-    SYS_CONFIGI_ASSETPINGFROM_NCORRECT(574015, "Asset ping from must be 1 or 2"),
-    SYS_CONFIGI_METRICSSTORAGETYPE_NCORRECT(574016, "Metrics storage type must be 1 or 2"),
-    SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT(574017, "Logs storage type must be 1 or 2"),
-    SYS_CONFIG_DB_NAME_ISNULL(5740018,"The DB name is null"),
+    SYS_CONFIG_CODE_FILE_ISNULL(574066,"The validate file is not exist"), //不存在校验使用的文件
+    SYS_CONFIG_CODE_INVALID(574067,"The code is invalid"),//校验文件中的code与传递的值不符
+    SYS_CONFIG_DB_PARAM_INVALID(574068,"The DB connect params is invalid"),//校验文件中的code与传递的值不符
+    SYS_CONFIG_REDIS_PASSWORD_INVALID(574069,"The redis password is invalid"),
+    SYS_CONFIG_REDIS_PASSWORD_REQUIRED(574070,"The redis password is required"),
+    SYS_CONFIG_REDIS_PARAM_INVALID(574071,"The redis params is invalid"),
+    SYS_CONFIG_DB_URL_ISNULL(574072,"The DB host is null"),
+    SYS_CONFIG_DB_USERNAME_ISNULL(574073,"The DB username is null"),
+    SYS_CONFIG_DB_PASSWORD_ISNULL(574074,"The DB password is null"),
+    SYS_CONFIG_REDIS_HOST_ISNULL(574075,"The redis host is null"),
+    SYS_CONFIG_REDIS_PORT_ISNULL(574076,"The redis host is null"),
+    SYS_CONFIG_HAD_CONFIG(574077,"Someone has started to configure the system"),
+    SYS_CONFIG_SESSION_TIMEOUT_INVALID(573078,"Session timeout is not less than 15"),
+    SYS_CONFIGI_PROMEFEDEENABLED_NCORRECT(574079, "Prometheus federation enabled must be 0 or 1"),
+    SYS_CONFIGI_ASSETPINGFROM_NCORRECT(574080, "Asset ping from must be 1 or 2"),
+    SYS_CONFIGI_METRICSSTORAGETYPE_NCORRECT(574081, "Metrics storage type must be 1 or 2"),
+    SYS_CONFIGI_LOGSSTORAGETYPE_NCORRECT(574082, "Logs storage type must be 1 or 2"),
+    SYS_CONFIG_DB_NAME_ISNULL(574083,"The DB name is null"),
     
     SYS_ROLE_ID_ISNULL(581000, "Role id is required"),
     SYS_ROLE_ISNULL(586001, "Role is not exsits"),
@@ -808,18 +805,6 @@ public enum RCode {
     SYS_ROLE_NAME_CANNOT_MODIFY(587006, "The name of the built-in role cannot be modified"),
     SYS_ROLE_CANNOT_DELETE(587007, "Built-in roles cannot be deleted"),
     SYS_ROLE_REMOVE_ERROR(587008,"These roles contains user can't remove roles"),
-    SYS_USER_STARRED_ISNULL(511045,"Starred can not be empty"),
-    SYS_USER_STARRED_TYPE_ISNULL(511046,"Starred type can not be empty"),
-    SYS_USER_STARRED_TID_ISNULL(511047,"Starred tid can not be empty"),
-    SYS_USER_STARRED_ID_TYPE_ISNULL(511048,"Starred id and type at the same time null"),
-
-    LINK_ID_ISNULL(581001,"link id can not be null"),
-    LINK_NAME_ISNULL(581002,"link name can not be null"),
-    LINK_URL_ISNULL(581003,"link url can not be null"),
-    LINK_PREV_ISNULL(581004,"link prev can not be null"),
-	LINK_NEXT_ISNULL(581005,"link next can not be null"),
-	LINK_BUILDIN_CAN_NOT_REMOVE(587006,"This link is built-in and cannot be deleted"),
-	LINK_WEIGHT_PARAM_INVALID(587007,"link weight param is invalid"),
 
 	SNMP_CREDENTIAL_ID_ISNULL(591001,"Snmp credential id can not be null"),
 	SNMP_CREDENTIAL_TYPE_ISNULL(591002,"Snmp credential type can not be null"),
@@ -840,6 +825,14 @@ public enum RCode {
     TERMINAL_ISNULL(611004, "Error,Terminal is null"),
     TERMINAL_TELNET_TRANSFER(610005,"Telnet does not allow upload and download"),
     TERMINAL_QUERYSIZE_INVALIDED(613006, "Terminal query size cannot be less than 1"),
+
+    LINK_ID_ISNULL(621001,"link id can not be null"),
+    LINK_NAME_ISNULL(621002,"link name can not be null"),
+    LINK_URL_ISNULL(621003,"link url can not be null"),
+    LINK_PREV_ISNULL(621004,"link prev can not be null"),
+    LINK_NEXT_ISNULL(621005,"link next can not be null"),
+    LINK_BUILDIN_CAN_NOT_REMOVE(627006,"This link is built-in and cannot be deleted"),
+    LINK_WEIGHT_PARAM_INVALID(627007,"link weight param is invalid"),
 
     /**
      * agent相关

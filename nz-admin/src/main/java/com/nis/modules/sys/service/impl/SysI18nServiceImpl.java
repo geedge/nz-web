@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nis.common.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -25,11 +27,6 @@ import com.nis.common.config.I18nConfig;
 import com.nis.common.exception.NZException;
 import com.nis.common.smartvalidate.ValidateUtils;
 import com.nis.common.smartvalidate.utils.CommonUtil;
-import com.nis.common.utils.Constant;
-import com.nis.common.utils.PageUtils;
-import com.nis.common.utils.Query;
-import com.nis.common.utils.RCode;
-import com.nis.common.utils.ToolUtil;
 import com.nis.modules.sys.dao.SysI18nDao;
 import com.nis.modules.sys.entity.SysDictEntity;
 import com.nis.modules.sys.entity.SysI18nEntity;
@@ -207,5 +204,16 @@ public class SysI18nServiceImpl extends ServiceImpl<SysI18nDao, SysI18nEntity> i
 	@Override
 	public void clearCache() {
 		i18nConfig.reload();
+	}
+
+	@Override
+	public String queryValueByName(String name) {
+		String language = getLocale().getLanguage();
+		List<SysI18nEntity> list = this.list(new LambdaQueryWrapper<SysI18nEntity>().eq(SysI18nEntity::getName, name).eq(SysI18nEntity::getLang, language));
+		if (Tool.CollectionUtil.isEmpty(list) || list.size() > 1) {
+			return StrUtil.EMPTY;
+		}
+		SysI18nEntity sysI18nEntity = list.stream().findFirst().get();
+		return sysI18nEntity.getValue();
 	}
 }

@@ -43,5 +43,7 @@ public interface SysI18nService extends IService<SysI18nEntity> {
 	Locale getLocale();
 	
 	void clearCache();
+
+	String queryValueByName(String name);
 }
 
