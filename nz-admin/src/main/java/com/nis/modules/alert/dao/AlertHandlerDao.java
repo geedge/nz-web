@@ -167,6 +167,4 @@ public interface AlertHandlerDao {
 	AlertMessageEntity queryInfo(@Param("id") Long id);
 
 	List<AlertMessageEntity> queryAlertMessageRelList(IPage page, @Param("params") Map params);
-
-	int queryAlertMessageCount(@Param("id") Integer id);
 }

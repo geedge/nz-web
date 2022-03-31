@@ -928,9 +928,4 @@ public class AlertHandlerServiceImpl implements AlertHandlerService {
 		page.setRecords(alertMessageEntityList);
 		return new PageUtils(page);
 	}
-
-	@Override
-	public int queryAlertMessageCount(Integer id) {
-		return msgHandlerDao.queryAlertMessageCount(id);
-	}
 }

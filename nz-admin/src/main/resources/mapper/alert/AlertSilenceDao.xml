@@ -17,32 +17,33 @@
     </resultMap>
 
     <select id="selectAlertSilenceConfs" resultType="com.nis.modules.alert.entity.AlertSilenceConf">
-         select id,name,matchers,remark,start_at,end_at,utime,state
-         from alert_silence_conf
+         select ac.id,ac.name,ac.matchers,ac.remark,ac.start_at,ac.end_at,ac.utime,ac.state,c.num as alerts
+         from alert_silence_conf ac
+         left join ( select ac.id, COUNT(msgrel.id) num from alert_silence_conf ac left join alert_silence_message_rel msgrel on ac.id = msgrel.silence_conf_id GROUP BY ac.id ) c on ac.id = c.id
          <where>
          	 <if test="params.ids != null and params.ids != ''">
-                and id in
+                and ac.id in
                 <foreach collection="params.ids.split(',')" item="id" open="(" separator="," close=")">
                     #{id}
                 </foreach>
              </if>
 	         <if test="params.name != null and params.name !='' ">
-         		and locate(#{params.name} , name)
+         		and locate(#{params.name} , ac.name)
 	         </if>
 	         <if test="params.remark != null and params.remark !='' ">
-         		and remark concat('%', #{params.remark}, '%')
+         		and ac.remark concat('%', #{params.remark}, '%')
 	         </if>
 	         <if test="params.matchers != null and params.matchers !='' ">
-         		and locate(#{params.matchers} , matchers)
+         		and locate(#{params.matchers} , ac.matchers)
 	         </if>
 	         <if test="params.state != null and params.state !='' ">
-	         	and state = #{params.state}
+	         	and ac.state = #{params.state}
 	         </if>
 	         <if test="params.startAt != null">
-	         	and start_at &gt;= #{params.startAt}
+	         	and ac.start_at &gt;= #{params.startAt}
 	         </if>
 	         <if test="params.endAt != null">
-	         	and end_at &lt;= #{params.endAt}
+	         	and ac.end_at &lt;= #{params.endAt}
 	         </if>
          </where>
     </select>

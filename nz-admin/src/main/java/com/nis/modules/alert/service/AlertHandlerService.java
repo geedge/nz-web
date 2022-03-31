@@ -119,7 +119,5 @@ public interface AlertHandlerService  {
     AlertMessageEntity queryInfo(Long id);
 
 	PageUtils queryAlertMessageRelList(Map params);
-
-    int queryAlertMessageCount(Integer id);
 }
 
