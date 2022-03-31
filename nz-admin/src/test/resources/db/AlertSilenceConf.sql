@@ -1,0 +1,7 @@
+truncate alert_silence_conf;
+
+INSERT INTO `alert_silence_conf`(`id`, `name`, `matchers`, `remark`, `start_at`, `end_at`, `utime`, `state`, `seq`) VALUES (1, 'copy1', '[{\"name\":\"severity_id\",\"value\":\"3\",\"regex\":0}]', '', '2021-05-20 03:30:00', '2021-05-31 03:35:09', '2021-05-31 03:35:09', 3, '');
+INSERT INTO `alert_silence_conf`(`id`, `name`, `matchers`, `remark`, `start_at`, `end_at`, `utime`, `state`, `seq`) VALUES (2, 'copy2', '[{\"name\":\"severity_id\",\"value\":\"3\",\"regex\":0}]', '', '2021-05-20 03:30:00', '2021-05-31 03:35:09', '2021-05-31 03:35:09', 3, '');
+INSERT INTO `alert_silence_conf`(`id`, `name`, `matchers`, `remark`, `start_at`, `end_at`, `utime`, `state`, `seq`) VALUES (3, 'copy3', '[{\"name\":\"severity_id\",\"value\":\"3\",\"regex\":0}]', '', '2021-05-20 03:30:00', '2021-05-31 03:35:09', '2021-05-31 03:35:09', 3, '');
+INSERT INTO `alert_silence_conf`(`id`, `name`, `matchers`, `remark`, `start_at`, `end_at`, `utime`, `state`, `seq`) VALUES (4, 'copy4', '[{\"name\":\"severity_id\",\"value\":\"3\",\"regex\":0}]', '', '2021-05-20 03:30:00', '2021-05-31 03:35:09', '2021-05-31 03:35:09', 3, '');
+INSERT INTO `alert_silence_conf`(`id`, `name`, `matchers`, `remark`, `start_at`, `end_at`, `utime`, `state`, `seq`) VALUES (5, 'copy5', '[{\"name\":\"severity_id\",\"value\":\"3\",\"regex\":0}]', '', '2021-05-20 03:30:00', '2021-05-31 03:35:09', '2021-05-31 03:35:09', 3, '');
