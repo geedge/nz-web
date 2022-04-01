@@ -1,4 +1,99 @@
 {
-  "------------------ get  /monitor/project---------------------": "note"
-
+  "------------------ get  /monitor/project---------------------": "note",
+  "queryMonitorProjectList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryMonitorProjectList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "10,20"
+  },
+  "------------------ POST  /monitor/project---------------------": "note",
+  "addMonitorProject_success":{
+  "name": "kafka",
+  "remark": "module"
+  },
+  "addMonitorProject_nameisnull": {
+    "name": null,
+    "remark": "module"
+  },
+  "addMonitorProject_nameisduplicate": {
+    "name": "Nezha",
+    "remark": "module"
+  },
+  "------------------ PUT  /monitor/project---------------------": "note",
+  "updateMonitorProject_success": {
+    "id": 3,
+    "name": "Central-Management",
+    "remark": "Ceshiproject"
+  },
+  "updateMonitorProject_idisnull": {
+    "name": "Central-Management",
+    "remark": "Ceshiproject"
+  },
+  "updateMonitorProject_builtIn": {
+    "id": 1,
+    "name": "Common",
+    "remark": "builtIn"
+  },
+  "------------------ DELETE  /monitor/project---------------------": "note",
+  "deleteMonitorProject_success": {
+    "ids": "4"
+  },
+  "deleteMonitorProject_idisnull": {
+    "ids": ""
+  },
+  "------------------ GET  /monitor/project/topo/iconUnit---------------------": "note",
+  "queryTopoIconUnit_success" : {
+    "name": "mysql"
+  },
+  "------------------ DELETE  /monitor/project/topo/iconUnit---------------------": "note",
+  "deleteTopoIconUnit_success": {
+    "unit": "Bifang"
+  },
+  "deleteTopoIconUnit_unitsisnull": {
+    "unit": ""
+  },
+  "------------------ GET  /monitor/project/topo/icon---------------------": "note",
+  "queryTopoIconList_exits": {
+    "id": 1
+  },
+  "queryTopoIconList_notexits": {
+    "id": 10
+  },
+  "------------------ DELETE  /monitor/project/topo/icon---------------------": "note",
+  "deleteTopoIcon_success": {
+    "ids": "4"
+  },
+  "deleteTopoIcon_idsisnull": {
+    "ids": ""
+  },
+  "------------------ GET  /monitor/project/topo---------------------": "note",
+  "queryProjectTopo_exits": {
+    "projectId": 2
+  },
+  "queryProjectTopo_prijectIdisnull": {
+    "projectId": null
+  },
+  "------------------ UPDATE  /monitor/project/topo---------------------": "note",
+  "updateProjectTopo_success": {
+    "projectId": 2,
+    "topo": "{}"
+  },
+  "updateProjectTopo_projectIdisnull": {
+    "projectId": null,
+    "topo": "{}"
+  },
+  "updateProjectTopo_topoisnull": {
+    "projectId": 2,
+    "topo": ""
+  },
+  "updateProjectTopo_projectisnull": {
+    "projectId": 10,
+    "topo": "{}"
+  }
 }
