@@ -1,32 +1,7 @@
 package com.nis.common.utils;
 
-import java.awt.Graphics;
-import java.awt.Robot;
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.net.Socket;
-import java.net.URLDecoder;
-import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalAccessor;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Spliterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -34,9 +9,23 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
-
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
+import java.awt.*;
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.lang.ref.*;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAccessor;
+import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Tool {
 	public static final Pattern REGEX_SPECIAL_DATE = Pattern
@@ -1647,5 +1636,84 @@ public class Tool {
 	 *
 	 */
 	public static class HaspUtil extends com.nis.common.utils.HaspUtil {
+	}
+
+	public static class OSUtil {
+		private static String OS = System.getProperty("os.name").toLowerCase();
+
+		private static OSUtil instance = new OSUtil();
+
+		private Constant.OSType platform;
+
+		private OSUtil() {
+		}
+
+		public static boolean isLinux() {
+			return OS.indexOf("linux") >= 0;
+		}
+
+		public static boolean isWindows() {
+			return OS.indexOf("windows") >= 0;
+		}
+
+		/**
+		 * 获取操作系统名字
+		 *
+		 * @return 操作系统名
+		 */
+		public static String getOSname() {
+			if (isLinux()) {
+				instance.platform = Constant.OSType.Linux;
+			} else if (isWindows()) {
+				instance.platform = Constant.OSType.Windows;
+			}
+			return instance.platform.toString();
+		}
+	}
+
+	public static class InetAddressUtil {
+		public static String getLocalHostLANAddress() throws UnknownHostException {
+			try {
+				List<InetAddress> inetAddressList = Tool.ListUtil.list(false);
+				// 遍历所有的网络接口
+				for (Enumeration ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements(); ) {
+					NetworkInterface iface = (NetworkInterface) ifaces.nextElement();
+					// 在所有的接口下再遍历IP
+					for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
+						InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
+						if (!inetAddr.isAnyLocalAddress() && !inetAddr.isLoopbackAddress() && !inetAddr.isLinkLocalAddress()) {
+							inetAddressList.add(inetAddr);
+						}
+					}
+				}
+
+				InetAddress inet6Address = inetAddressList.stream().filter(inetAddress -> inetAddress instanceof Inet6Address).findFirst().orElse(null);
+				if (Optional.ofNullable(inet6Address).isPresent()) {
+					String ipAddr = inet6Address.getHostAddress();
+					int index = ipAddr.indexOf('%');
+					if (index > 0) {
+						ipAddr = ipAddr.substring(0, index);
+					}
+					return ipAddr;
+				}
+
+				InetAddress inet4Address = inetAddressList.stream().findFirst().orElse(null);
+				if (Optional.ofNullable(inet4Address).isPresent()) {
+					return inet4Address.getHostAddress();
+				}
+
+				// 如果没有发现 non-loopback地址.只能用最次选的方案
+				InetAddress jdkSuppliedAddress = InetAddress.getLocalHost();
+				if (Optional.ofNullable(jdkSuppliedAddress).isPresent()) {
+					throw new UnknownHostException("The JDK InetAddress.getLocalHost() method unexpectedly returned null.");
+				}
+				return jdkSuppliedAddress.getHostAddress();
+			} catch (Exception e) {
+				UnknownHostException unknownHostException = new UnknownHostException(
+						"Failed to determine LAN address: " + e);
+				unknownHostException.initCause(e);
+				throw unknownHostException;
+			}
+		}
 	}
 }
