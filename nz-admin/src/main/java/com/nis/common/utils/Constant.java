@@ -685,20 +685,6 @@ public class Constant {
 		}
 	}
 
-	public enum OSType {
-
-		Linux("Linux"), Windows("Windows");
-
-		private OSType(String desc) {
-			this.description = desc;
-		}
-
-		public String toString() {
-			return description;
-		}
-
-		private String description;
-	}
 
 	public enum MonitorConfType {
 		METRICS("metrics"), LOGS("logs"), TRACE("trace");
