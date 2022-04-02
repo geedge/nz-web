@@ -89,9 +89,13 @@ public class UTUtil extends BaseTest {
                 String key = entry.getKey();
                 Object value = entry.getValue();
                 if (value != null && value instanceof Map) {
-                    requestBuilder.param(key, JSONObject.toJSONString(value));
+                    //增加请求头参数
+                    requestBuilder.param(key, JSONObject.toJSONString(value))
+                    .header(key, JSONObject.toJSONString(value));
                 }
-                requestBuilder.param(key, value == null ? null : value.toString());
+                //增加请求头参数
+                requestBuilder.param(key, value == null ? null : value.toString())
+                        .header(key, value == null ? null : value.toString());
             }
         }
 

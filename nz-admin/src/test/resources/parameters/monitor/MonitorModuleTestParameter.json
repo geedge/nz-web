@@ -1,4 +1,207 @@
 {
-  "------------------ get  /monitor/module---------------------": "note"
-
+  "------------------ get  /monitor/module---------------------": "note",
+  "queryMonitorModuleList_exits": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryMonitorModuleList_notexits": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "15,20"
+  },
+  "------------------ get  /monitor/module/tree---------------------": "note",
+  "queryMonitorModuleTree_exits": {
+    "name": "CM"
+  },
+  "queryMonitorModuleTree_notexits": {
+    "name": "not"
+  },
+  "------------------ post  /monitor/module---------------------": "note",
+  "addMonitorModule_success": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_projectIdIsNull": {
+    "projectId": null,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_nameIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": null,
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_endPointNameTmplIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": null,
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configsIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": null,
+    "remark": "this is remark"
+  },
+  "addMonitorModule_projectNotExits": {
+    "projectId": 100,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_nameDuplicate": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "CM-API",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configTypeIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"":"metrics","config": {"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configTypeInvalid": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"kafka","config": {"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configTypeDuplicate": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"logs","config": {"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configMetricsPortError": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config": {"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":999999,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configMetricsProtocolError": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config": {"protocol":"HTTPTT","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configMetricsSnmpCredentialsIdIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"snmp","walk":["1.3.6.1.2.1.2.2"],"snmpCredentialsId":null,"metrics_path":"","port":161,"host":"{{asset.manageIp}}","scrape_interval":"","scrape_timeout":"","params":{},"labels":{},"relabel_config":[],"basic_auth":{"username":"","pin":""},"bearer_token":""},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"","labels":{},"pipeline":[]}],"enable":0}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configMetricsSnmpCredentialsIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"snmp","walk":["1.3.6.1.2.1.2.2"],"snmpCredentialsId":100,"metrics_path":"","port":161,"host":"{{asset.manageIp}}","scrape_interval":"","scrape_timeout":"","params":{},"labels":{},"relabel_config":[],"basic_auth":{"username":"","pin":""},"bearer_token":""},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"","labels":{},"pipeline":[]}],"enable":0}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configMetricsSnmpWalkIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"snmp","walk":null,"snmpCredentialsId":1,"metrics_path":"","port":161,"host":"{{asset.manageIp}}","scrape_interval":"","scrape_timeout":"","params":{},"labels":{},"relabel_config":[],"basic_auth":{"username":"","pin":""},"bearer_token":""},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"","labels":{},"pipeline":[]}],"enable":0}],
+    "remark": "this is remark"
+  },
+  "addMonitorModule_configLogsFileIsNull": {
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "kafka",
+    "configs": [{"type":"metrics","config":{"protocol":"http","walk":[],"snmpCredentialsId":"","metrics_path":"","port":9901,"host":"{{asset.manageIp}}","scrape_interval":"","scrape_timeout":"","params":{},"labels":{},"relabel_config":[{"source_labels":["__name__"],"target_label":"","action":"keep","regex":"kafka_server_BrokerTopicMetrics_OneMinuteRate|kafka_server_socket_server_metrics_request_rate|kafka_network_RequestMetrics_Errors_total","replacement":"$1"}],"basic_auth":{"username":"","pin":""},"bearer_token":""},"enable":1},{"type":"logs","config":[{"type":"file","fileName":null,"labels":{},"pipeline":[]}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "------------------ put  /monitor/module---------------------": "note",
+  "updateMonitorModule_success": {
+    "id": 9,
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "CESHI2",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "updateMonitorModule_buildIn": {
+    "id": 10,
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "CESHI2",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "updateMonitorModule_moduleIsNull": {
+    "id": 20,
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "CESHI2",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "updateMonitorModule_moduleIdIsNull": {
+    "id": null,
+    "projectId": 1,
+    "endpointNameTmpl": "{{asse.host}}-{{module.name}}",
+    "name": "CESHI2",
+    "configs": [{"type":"metrics","config":{"protocol":"HTTP","scrape_interval":30,"scrape_timeout":10,"host":"192.168.40.1","port":9090,"scrape_timeout":10,"metrics_path":"/metric","params":{"module":["cpu","memory"]},"basic_auth":{"username":"zhangsan","password":"lisi"},"bearer_token":"yiduanwenzi","labels":{"datacenter":"bj","module":"mysql"}},"enable":1},{"type":"logs","config":[{"type":"file","fileName":"/var/logs/mysqld.log","labels":{"datacenter":"bj","module":"mysql"},"pipeline":[{"type":"regex","expression":"ad?!*","source":""},{"type":"json","expressions":[{"abc":"abc","level":"config"}],"source":""},{"type":"template","template":"ad?!*","source":""},{"type":"timestamp","format":"RFC822Z","source":""},{"type":"labels","labels":[{"abc":"abc","level":"config"}]},{"type":"output","source":"content"}]},{"type":"syslog","listenAddress":"0.0.0.0:9100","appName":"sapp"},{"type":"journal","unit":"nzagent.service"}],"enable":1}],
+    "remark": "this is remark"
+  },
+  "------------------ get  /monitor/module/template---------------------": "note",
+  "getMonitorModuleTemplate_success": {
+    "format": 1,
+    "language": "en"
+  },
+  "getMonitorModuleTemplate_formatError": {
+    "format": 4,
+    "language": "en"
+  },
+  "getMonitorModuleTemplate_languageError": {
+    "format": 1,
+    "language": "cc"
+  },
+  "------------------ get  /monitor/module/export---------------------": "note",
+  "getMonitorModuleExportExcel_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 1
+  },
+  "getMonitorModuleExportJson_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 3
+  },
+  "getMonitorModuleExportCsv_success": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 2
+  },
+  "------------------ delete  /monitor/module/cancelImport---------------------": "note",
+  "MonitorModuleCancelImport_success": {
+    "seq": "9cafbc78-6666-4151-9a9a-7682bc587179"
+  }
 }
