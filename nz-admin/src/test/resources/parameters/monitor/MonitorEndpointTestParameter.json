@@ -1,4 +1,146 @@
 {
-  "------------------ get  /monitor/endpoint---------------------": "note"
-
+  "------------------ get  /monitor/endpoint---------------------": "note",
+  "queryMonitorEndpointList_exits": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryMonitorEndpointList_notExits": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "19,20"
+  },
+  "------------------ get  /monitor/endpoint/tree---------------------": "note",
+  "queryMonitorEndpointTree_exits": {
+    "name": "CM"
+  },
+  "queryMonitorEndpointTree_notExits": {
+    "name": "CESHI"
+  },
+  "------------------ post  /monitor/endpoint---------------------": "note",
+  "addMonitorEndpoint_success": {
+    "name": "mysql-endpoint",
+    "moduleId": 1,
+    "assetId": 1
+  },
+  "addMonitorEndpoint_nameIsNull": {
+    "name": null,
+    "moduleId": 1,
+    "assetId": 1
+  },
+  "addMonitorEndpoint_assetIdIsNull": {
+    "name": "mysql-endpoint",
+    "moduleId": 1,
+    "assetId": null
+  },
+  "addMonitorEndpoint_moduleIdIsNull": {
+    "name": "mysql-endpoint",
+    "moduleId": null,
+    "assetId": 1
+  },
+  "addMonitorEndpoint_assetNotExits": {
+    "name": "mysql-endpoint",
+    "moduleId": 1,
+    "assetId": 20
+  },
+  "addMonitorEndpoint_moduleNotExits": {
+    "name": "mysql-endpoint",
+    "moduleId": 20,
+    "assetId": 1
+  },
+  "addMonitorEndpoint_nameDuplicate": {
+    "name": "node-exporter-192.168.44.17",
+    "moduleId": 1,
+    "assetId": 1
+  },
+  "------------------ put  /monitor/endpoint---------------------": "note",
+  "updateMonitorEndpoint_success": {
+    "id": 1,
+    "name": "endpoint-ceShi",
+    "moduleId": 1,
+    "assetId": 1
+  },
+  "updateMonitorEndpoint_idIsNull": {
+    "id": null,
+    "name": "endpoint-ceShi",
+    "moduleId": 1,
+    "assetId": 1
+  },
+  "------------------ delete  /monitor/endpoint---------------------": "note",
+  "deleteMonitorEndpoint_success": {
+    "ids": "5,6"
+  },
+  "deleteMonitorEndpoint_idIsNull": {
+    "ids": ""
+  },
+  "------------------ get  /monitor/endpoint/template---------------------": "note",
+  "getMonitorEndpointTemplate_en": {
+    "format": 1,
+    "language": "en"
+  },
+  "getMonitorEndpointTemplate_zh": {
+    "format": 1,
+    "language": "zh"
+  },
+  "getMonitorEndpointTemplate_languageError": {
+    "format": 1,
+    "language": "ce"
+  },
+  "------------------ delete  /monitor/endpoint/cancelImport---------------------": "note",
+  "deleteMonitorEndpointCancelImport_success": {
+    "seq": "d1f0d730-5aa2-40b2-98ef-e6a03e870c50"
+  },
+  "deleteMonitorEndpointCancelImport_seqIsNull": {
+    "seq": null
+  },
+  "------------------ get  /monitor/endpoint/export---------------------": "note",
+  "getMonitorEndpointExport_excel": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 1
+  },
+  "getMonitorEndpointExport_csv": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 2
+  },
+  "getMonitorEndpointExport_json": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 3
+  },
+  "------------------ post  /monitor/endpoint/render---------------------": "note",
+  "getMonitorEndpointRender_success": {
+    "moduleIds": "1,2",
+    "assetIds": "1,2"
+  },
+  "getMonitorEndpointRender_assetExits": {
+    "moduleIds": "1,2",
+    "assetIds": "20,22"
+  },
+  "getMonitorEndpointRender_moduleExits": {
+    "moduleIds": "20,22",
+    "assetIds": "1,2"
+  },
+  "------------------ post  /monitor/endpoint/bulk---------------------": "note",
+  "addMonitorEndpointBulk_success": [
+    {
+      "name": "测试1",
+      "moduleId": 1,
+      "assetId": 1
+    },
+    {
+      "name": "测试2",
+      "moduleId": 1,
+      "assetId": 1
+    }
+  ]
 }
