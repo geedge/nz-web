@@ -152,8 +152,8 @@ public class TopoIconServiceImpl extends ServiceImpl<TopoIconDao, TopoIcon> impl
 
 	@Override
 	public List<String> queryTopoIconUnitName(String name) {
-		List<TopoIcon> topoIcons = topoIconDao.selectList(new LambdaQueryWrapper<TopoIcon>().like(TopoIcon::getName, Tool.StrUtil.likeEscape(name)));
-		List<String> result = topoIcons.stream().map(TopoIcon::getUnit).collect(Collectors.toList());
+        List<TopoIcon> topoIcons = topoIconDao.selectList(new LambdaQueryWrapper<TopoIcon>().like(Tool.StrUtil.isNotEmpty(name), TopoIcon::getName, Tool.StrUtil.likeEscape(name)));
+        List<String> result = topoIcons.stream().map(TopoIcon::getUnit).distinct().collect(Collectors.toList());
 		return result;
 	}
 
