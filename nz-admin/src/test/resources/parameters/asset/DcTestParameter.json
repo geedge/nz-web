@@ -1,0 +1,334 @@
+{
+  "------------------ GET  /dc data---------------------": "note",
+  "queryDcList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryDcList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "10,20"
+  },
+  "------------------ POST  /dc data---------------------": "note",
+  "addDc_success": {
+    "name": "dcTest4",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "addDc_nameIsNull": {
+    "name": null,
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "addDc_stateIsNull": {
+    "name": "dcTest5",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":null
+  },
+  "addDc_principalIsNull": {
+    "name": "dcTest5",
+    "location": "",
+    "tel": "",
+    "principal": 20,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "addDc_nameDUPLICATE": {
+    "name": "dcTest1",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "addDc_stateError": {
+    "name": "dcTest5",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"CD"
+  },
+  "addDc_longitudeError": {
+    "name": "dcTest5",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":188.000,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "addDc_latitudeError": {
+    "name": "dcTest5",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":99.000,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "------------------ PUT  /dc data---------------------": "note",
+  "updateDc_success": {
+    "id": 2,
+    "name": "dcTest6",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "updateDc_idIsNull": {
+    "id": null,
+    "name": "dcTest6",
+    "location": "",
+    "tel": "",
+    "principal": 1,
+    "longitude":103.222,
+    "latitude":39.231,
+    "x":1,
+    "y":1,
+    "state":"ON"
+  },
+  "------------------ DELETE  /dc data---------------------": "note",
+  "DeleteDc_success": {
+    "ids": "5,6"
+  },
+  "DeleteDc_idIsNull": {
+    "ids": ""
+  },
+  "------------------ GET  /dc/template data---------------------": "note",
+  "getDcTemplate_zh": {
+    "format": 1,
+    "language": "zh"
+  },
+  "getDcTemplate_en": {
+    "format": 1,
+    "language": "en"
+  },
+  "------------------ GET  /dc/export data---------------------": "note",
+  "getDcExport_excel": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 1
+  },
+  "getDcExport_csv": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 2
+  },
+  "getDcExport_json": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 3
+  },
+  "------------------ DELETE  /dc/cancelImport data---------------------": "note",
+  "cancelDcExport_success": {
+    "seq": "d1f0d730-5aa2-40b2-98ef-e6a03e870c50"
+  },
+  "cancelDcExport_seqIsNull": {
+    "seq": null
+  },
+  "------------------ GET  /dc/cabinet/{id} data---------------------": "note",
+  "queryCabinetList_exist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2"
+  },
+  "queryCabinetList_notexist": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "20,21"
+  },
+  "------------------ POST  /dc/cabinet data---------------------": "note",
+  "addCabinet_success": {
+    "name": "机柜7",
+    "dcId": 1,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_nameIsNull": {
+    "name": null,
+    "dcId": 1,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_dcIdIsNull": {
+    "name": "机柜8",
+    "dcId": null,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_yError": {
+    "name": "机柜8",
+    "dcId": 1,
+    "uSize": 1,
+    "y": -1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_xError": {
+    "name": "机柜8",
+    "dcId": 1,
+    "uSize": 1,
+    "y": 1,
+    "x": -1,
+    "remark": ""
+  },
+  "addCabinet_dcIsNull": {
+    "name": "机柜8",
+    "dcId": 100,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_nameDuplicate": {
+    "name": "机柜1",
+    "dcId": 1,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "addCabinet_usizeError": {
+    "name": "机柜8",
+    "dcId": 1,
+    "uSize": 50,
+    "y": 1,
+    "x": 1,
+    "remark": ""
+  },
+  "------------------ PUT  /dc/cabinet data---------------------": "note",
+  "updateCabinet_success": {
+    "id": 2,
+    "name": "机柜2",
+    "dcId": 1,
+    "uSize": 10,
+    "y": 2,
+    "x": 2,
+    "remark": "测试机柜"
+  },
+  "updateCabinet_idIsNull": {
+    "id": null,
+    "name": "机柜2",
+    "dcId": 1,
+    "uSize": 1,
+    "y": 1,
+    "x": 1,
+    "remark": "测试机柜"
+  },
+  "------------------ DELETE  /dc/cabinet data---------------------": "note",
+  "deleteCabinet_success": {
+    "ids": "4,5"
+  },
+  "deleteCabinet_idsIsNull": {
+    "ids": ""
+  },
+  "------------------ GET  /dc/cabinet/u data---------------------": "note",
+  "queryCabinetU_exist": {
+    "id": 1
+  },
+  "queryCabinetU_cabinetIdIsNull": {
+    "id": null
+  },
+  "queryCabinetU_cabinetIsNull": {
+    "id": 100
+  },
+  "------------------ GET  /dc/cabinet/template data---------------------": "note",
+  "getCabinetTemplate_zh": {
+    "format": 1,
+    "language": "zh"
+  },
+  "getCabinetTemplate_en": {
+    "format": 1,
+    "language": "en"
+  },
+  "getCabinetTemplate_languageError": {
+    "format": 1,
+    "language": "xx"
+  },
+  "getCabinetTemplate_formatError": {
+    "format": 4,
+    "language": "zh"
+  },
+  "------------------ GET  /dc/cabinet/export data---------------------": "note",
+  "getCabinetExport_excel": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 1
+  },
+  "getCabinetExport_csv": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 2
+  },
+  "getCabinetExport_json": {
+    "pageNo": null,
+    "pageSize": null,
+    "orderBy": "",
+    "ids": "1,2",
+    "format": 3
+  },
+  "------------------ DELETE  /dc/cabinet/cancelImport data---------------------": "note",
+  "cancelCabinetExport_success": {
+    "seq": "d1f0d730-5aa2-40b2-98ef-e6a03e870c50"
+  },
+  "cancelCabinetExport_seqIsNull": {
+    "seq": null
+  }
+}
